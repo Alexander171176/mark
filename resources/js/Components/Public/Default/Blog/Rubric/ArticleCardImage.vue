@@ -1,0 +1,190 @@
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { usePage } from '@inertiajs/vue3'
+import { unwrap } from '@/composables/useUnwrap.js'
+import useArticleImage from '@/composables/useArticleImage.js'
+
+const props = defineProps({
+    article: { type: Object, required: true },
+    aspectClass: {
+        type: String,
+        default: 'aspect-[16/9] sm:aspect-[4/3] lg:aspect-[16/10]',
+    },
+})
+
+const { appUrl } = usePage().props
+const { onImgError } = useArticleImage()
+
+const current = ref(0)
+
+/** storage helper */
+const getImgSrc = (imgPath) => {
+    if (!imgPath) return ''
+    const base = appUrl?.endsWith('/') ? appUrl.slice(0, -1) : (appUrl || '')
+    const path = imgPath.startsWith('/') ? imgPath.slice(1) : imgPath
+    return `${base}/storage/${path}`
+}
+
+const getDefaultImg = () => '/storage/article_images/default-image.png'
+
+/** deterministic hash -> stable random color */
+const hash32 = (str) => {
+    let h = 0x811c9dc5
+    for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i)
+        h = Math.imul(h, 0x01000193)
+    }
+    return h >>> 0
+}
+
+const hashToHsl = (seedStr) => {
+    const h = hash32(seedStr)
+    const hue = h % 360
+    const sat = 70 + (h % 21)      // 70..90
+    const light = 45 + ((h >>> 8) % 16) // 45..60
+    return `hsl(${hue} ${sat}% ${light}%)`
+}
+
+const images = computed(() => {
+    const a = unwrap(props.article)
+    const list = Array.isArray(a?.images) ? a.images : (a?.images?.data ?? [])
+
+    const normalized = (Array.isArray(list) ? list : [])
+        .slice()
+        .sort((x, y) => Number(x?.order ?? 0) - Number(y?.order ?? 0))
+        .map((img) => {
+            const raw =
+                img?.image_url ||
+                img?.url ||
+                img?.src ||
+                img?.path ||
+                img?.image ||
+                null
+
+            let src = ''
+            if (raw && /^https?:\/\//i.test(raw)) src = raw
+            else if (raw) src = getImgSrc(raw)
+            else src = getDefaultImg()
+
+            const id = img?.id ?? `${raw}-${img?.order ?? 0}`
+            const seed = `${id}|${src}|${img?.order ?? 0}`
+
+            return {
+                id,
+                src,
+                alt: img?.alt ?? '',
+                title: img?.title ?? img?.alt ?? '',
+                order: Number(img?.order ?? 0),
+                color: hashToHsl(seed),
+            }
+        })
+
+    if (normalized.length === 0) {
+        normalized.push({
+            id: 'default',
+            src: getDefaultImg(),
+            alt: '',
+            title: '',
+            order: 0,
+            color: hashToHsl('default'),
+        })
+    }
+
+    return normalized
+})
+
+const hasMany = computed(() => images.value.length > 1)
+
+watch(
+    () => images.value.length,
+    (len) => {
+        if (!len) current.value = 0
+        if (current.value > len - 1) current.value = 0
+    }
+)
+
+const setSlide = (idx) => {
+    const n = images.value.length
+    if (!n) return
+    const i = Number(idx)
+    current.value = Number.isFinite(i) ? Math.min(Math.max(0, i), n - 1) : 0
+}
+</script>
+
+<template>
+    <div class="card-image">
+        <div
+            class="relative w-full overflow-hidden rounded-b-xl bg-slate-100 dark:bg-[hsl(240_33%_12%)]"
+            :class="aspectClass"
+        >
+            <!-- красивый переход -->
+            <Transition name="imgfx" mode="out-in">
+                <img
+                    :key="images[current]?.id"
+                    class="absolute inset-0 w-full h-full object-cover"
+                    :src="images[current]?.src"
+                    :alt="images[current]?.alt"
+                    :title="images[current]?.title"
+                    loading="lazy"
+                    @error="onImgError"
+                />
+            </Transition>
+
+            <!-- тонкая полоса блоков снизу (кликабельная на всех устройствах) -->
+            <div v-if="hasMany" class="absolute left-0 right-0 bottom-0 px-2 pb-0.5">
+                <div class="flex gap-1">
+                    <button
+                        v-for="(img, idx) in images"
+                        :key="img.id"
+                        type="button"
+                        @click="setSlide(idx)"
+                        class="h-1.5 flex-1 rounded-sm transition-all duration-200"
+                        :style="{
+                          background: img.color,
+                          opacity: idx === current ? 1 : 0.45,
+                          transform: idx === current ? 'scaleY(1.35)' : 'scaleY(1)',
+                          filter: idx === current ? 'saturate(1.1)' : 'saturate(0.9)',
+                          transformOrigin: 'center',
+                        }"
+                        :aria-label="`image ${idx + 1}`"
+                        :title="img.title"
+                    />
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+/* Плавнее и “дороже”: fade + лёгкий blur + zoom */
+.imgfx-enter-active {
+    transition: opacity 320ms ease, transform 420ms ease, filter 420ms ease;
+    will-change: opacity, transform, filter;
+}
+.imgfx-leave-active {
+    transition: opacity 220ms ease, transform 220ms ease, filter 220ms ease;
+    will-change: opacity, transform, filter;
+}
+
+.imgfx-enter-from {
+    opacity: 0;
+    transform: scale(1.03);
+    filter: blur(4px);
+}
+.imgfx-enter-to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+}
+
+.imgfx-leave-from {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+}
+.imgfx-leave-to {
+    opacity: 0;
+    transform: scale(0.99);
+    filter: blur(3px);
+}
+</style>

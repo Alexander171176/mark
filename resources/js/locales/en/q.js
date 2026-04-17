@@ -1,0 +1,18 @@
+export default {
+    quantity: 'Quantity',
+    question: 'Question',
+    questionType: 'Question type',
+    questionTypeMultipleChoice: 'Several correct answers',
+    questionTypeSingleChoice: 'One correct answer',
+    questionTypeTrueFalse: 'True / False',
+    questionTypeOpenText: 'Detailed answer',
+    quiz: 'Quiz',
+    quizAnswers: 'Answer options',
+    quizAttemptItems: 'Attempts to answer',
+    quizAttempts: 'Passing quizzes',
+    quizQuestion: 'Question',
+    quizQuestions: 'Quiz questions',
+    quizTypeGraded: 'with an assessment',
+    quizTypePractice: 'training',
+    quizzes: 'Quizzes',
+}

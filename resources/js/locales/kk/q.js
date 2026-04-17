@@ -1,0 +1,18 @@
+export default {
+    quantity: 'Саны',
+    question: 'Сұрақ',
+    questionType: 'Сұрақ түрі',
+    questionTypeMultipleChoice: 'Бірнеше дұрыс жауаптар',
+    questionTypeSingleChoice: 'Бір дұрыс жауап',
+    questionTypeTrueFalse: 'Дұрыс / Жалған',
+    questionTypeOpenText: 'Толық жауап',
+    quiz: 'Викторина',
+    quizAnswers: 'Жауап нұсқалары',
+    quizAttemptItems: 'Жауап беруге тырысады',
+    quizAttempts: 'Викториналарды тапсыру',
+    quizQuestion: 'Сұрақ',
+    quizQuestions: 'Викторина сұрақтары',
+    quizTypeGraded: 'бағалаумен',
+    quizTypePractice: 'жаттығу',
+    quizzes: 'Викторины',
+}

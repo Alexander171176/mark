@@ -1,0 +1,16 @@
+export default {
+    failedToLoadBackups: 'Failed to download Backups',
+    failureReason: 'The reason for failure',
+    false: 'no',
+    feedback: 'Feedback',
+    fighterBlue: 'The athlete in the blue corner',
+    fighterRed: 'The athlete in the red corner',
+    fileBackup: 'Archiving and Restoring a website',
+    fillAllFields: 'All fields must be filled',
+    finance: 'Finance',
+    float: 'Fractional number',
+    forgotPassword: 'Forgot your password?',
+    forgotPasswordMessage: 'Forgot your password? No problem. Just let us know your email address, and we will email you a password reset link that will allow you to choose a new one.',
+    found: 'Found',
+    free: 'for free',
+}

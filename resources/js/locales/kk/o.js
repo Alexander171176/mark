@@ -1,0 +1,15 @@
+export default {
+    object: 'Нысан',
+    of: 'дан',
+    offline: 'оффлайн',
+    online: 'онлайн',
+    openLink: 'Сілтемені ашу',
+    options: 'Модульдің опциялары мен параметрлері',
+    order: 'Заказ',
+    orderNumber: 'Тапсырыс нөмірі',
+    orders: 'Тапсырыстар',
+    orEnterIdManually: 'немесе идентификаторды қолмен енгізіңіз',
+    ourCommunityBlog: 'Біздің қауымдастық блогымыз',
+    owner: 'Иесі',
+    ownerEmail: 'Иесінің email',
+}

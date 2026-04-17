@@ -1,0 +1,8 @@
+import "/@id/@purge-icons/generated";
+import { createApp } from "/src/app.ts";
+createApp().then(async ({ app, router }) => {
+  await router.isReady();
+  app.mount("#app");
+});
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImVudHJ5LWNsaWVudC50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgJ0BwdXJnZS1pY29ucy9nZW5lcmF0ZWQnXG5pbXBvcnQgeyBjcmVhdGVBcHAgfSBmcm9tICcvQHNyYy9hcHAnXG5cbmNyZWF0ZUFwcCgpLnRoZW4oYXN5bmMgKHsgYXBwLCByb3V0ZXIgfSkgPT4ge1xuICAvLyB3YWl0IGNsaWVudCBzaWRlIGh5ZHJhdGF0aW9uIHRvIGNvbXBsZXRlXG4gIGF3YWl0IHJvdXRlci5pc1JlYWR5KClcblxuICBhcHAubW91bnQoJyNhcHAnKVxufSlcbiJdLCJtYXBwaW5ncyI6IkFBQUEsT0FBTztBQUNQLFNBQVMsaUJBQWlCO0FBRTFCLFVBQVUsRUFBRSxLQUFLLE9BQU8sRUFBRSxLQUFLLE9BQU8sTUFBTTtBQUUxQyxRQUFNLE9BQU8sUUFBUTtBQUVyQixNQUFJLE1BQU0sTUFBTTtBQUNsQixDQUFDOyIsIm5hbWVzIjpbXX0=

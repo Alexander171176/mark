@@ -1,0 +1,18 @@
+export default {
+    quantity: 'Количество',
+    question: 'Вопрос',
+    questionType: 'Тип вопроса',
+    questionTypeMultipleChoice: 'Несколько правильных ответов',
+    questionTypeSingleChoice: 'Один правильный ответ',
+    questionTypeTrueFalse: 'Верно / Неверно',
+    questionTypeOpenText: 'Развернутый ответ',
+    quiz: 'Викторина',
+    quizAnswers: 'Варианты ответов',
+    quizAttemptItems: 'Попытки ответов',
+    quizAttempts: 'Прохождения викторин',
+    quizQuestion: 'Вопрос',
+    quizQuestions: 'Вопросы к викторинам',
+    quizTypeGraded: 'с оценкой',
+    quizTypePractice: 'тренировочный',
+    quizzes: 'Викторины',
+}

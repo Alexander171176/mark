@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+    <url>
+        <loc>http://localhost:8000</loc>
+        <lastmod>2026-01-06T00:00:00+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/rubrics/programmirovanie</loc>
+        <lastmod>2026-01-03T01:34:41+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/rubrics/baghdarlamalau</loc>
+        <lastmod>2026-01-03T01:34:41+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/rubrics/programming</loc>
+        <lastmod>2026-01-03T01:34:41+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/osnovy-html-kak-nachat</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/semanticheskie-tegi-v-html</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/osnovy-css-kak-stilizovat-stranicy</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/flexbox-sekrety-gibkoi-verstki</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/osnovy-javascript-peremennye-i-funktsii</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/sobytia-i-manipulyatsii-dom-v-javascript</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/osnovy-laravel-marshrutizatsiya-i-kontrollery</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/rabota-s-bazoi-dannykh-v-laravel-migratsii-i-modeli</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/osnovy-vuejs-sozdanie-komponentov</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/dvustoronnee-svyazyvanie-dannykh-vuejs</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/osnovy-tailwind-css-utilitarnye-klassy</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/articles/sozdanie-adaptivnogo-dizaina-tailwind-css</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/tags/html</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/tags/css</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/tags/javascript</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/tags/vuejs</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/tags/laravel</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/tags/tailwind-css</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/tags/web-development</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/tags/seo</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/tags/ui-ux</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/tags/programming</loc>
+        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+
+            </url>
+</urlset>

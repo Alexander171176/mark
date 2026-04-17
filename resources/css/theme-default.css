@@ -1,0 +1,120 @@
+/* Стили светлого режима */
+html, body {
+    background: var(--slate-1);
+    color: var(--gray-11);
+}
+/* логотип в топ-баре */
+.logo {
+    color: var(--indigo-7);
+}
+.logo:hover {
+    color: var(--indigo-6);
+}
+/* ссылки в топ-баре */
+.top-link {
+    color: var(--gray-11);
+}
+.top-link-active {
+    color: var(--indigo-7);
+    border-bottom: 2px solid var(--indigo-7);
+}
+.top-link:hover {
+    color: var(--indigo-9);
+    border-bottom: 2px solid var(--indigo-9);
+}
+/* хлебные крошки */
+.breadcrumb {
+    color: var(--gray-6);
+}
+.breadcrumb-link {
+    color: var(--purple-7);
+}
+/* Заголовок H1 */
+.title {
+    color: var(--slate-7);
+}
+/* Подзаголовок */
+.subtitle {
+    color: var(--gray-7);
+}
+/* Поиск */
+.search {
+    background: var(--white-1);
+    color: var(--gray-11);
+}
+.search-btn {
+    background: var(--indigo-7);
+}
+.search-btn:hover {
+    background: var(--indigo-6);
+}
+/* Кнопки */
+.btn-default {
+    background: var(--indigo-7);
+    color: var(--white-1);
+}
+.btn-default:hover {
+    background: var(--indigo-9);
+}
+
+/* ------------------------------------------------------------------- */
+/* Тёмная тема — включается, когда useDark ставит class="dark" на html */
+html.dark {
+    html, body {
+        background: var(--slate-11);
+        color: var(--gray-1);
+    }
+    /* логотип в топ-баре */
+    .logo {
+        color: var(--indigo-5);
+    }
+    .logo:hover {
+        color: var(--indigo-6);
+    }
+    /* ссылки в топ-баре */
+    .top-link {
+        color: var(--gray-1);
+    }
+    .top-link-active {
+        color: var(--indigo-5);
+        border-bottom: 2px solid var(--indigo-5);
+    }
+    .top-link:hover {
+        color: var(--indigo-3);
+        border-bottom: 2px solid var(--indigo-5);
+    }
+    /* хлебные крошки */
+    .breadcrumbs {
+        color: var(--gray-5);
+    }
+    .breadcrumb-link {
+        color: var(--purple-4);
+    }
+    /* Заголовок H1 */
+    .title {
+        color: var(--slate-4);
+    }
+    /* Подзаголовок */
+    .subtitle {
+        color: var(--gray-4);
+    }
+    /* Поиск */
+    .search {
+        background: var(--gray-9);
+        color: var(--gray-1);
+    }
+    .search-btn {
+        background: var(--indigo-7);
+    }
+    .search-btn:hover {
+        background: var(--indigo-6);
+    }
+    /* Кнопки */
+    .btn-default {
+        background: var(--indigo-7);
+        color: var(--white-1);
+    }
+    .btn-default:hover {
+        background: var(--indigo-9);
+    }
+}

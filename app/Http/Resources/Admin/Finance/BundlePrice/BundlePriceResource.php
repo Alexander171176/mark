@@ -1,0 +1,67 @@
+<?php
+
+namespace App\Http\Resources\Admin\Finance\BundlePrice;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class BundlePriceResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id'        => (int) $this->id,
+            'bundle_id' => (int) $this->bundle_id,
+
+            'currency_id' => (int) $this->currency_id,
+
+            // ✅ plain currency (как в CoursePriceResource)
+            'currency' => $this->whenLoaded('currency', function () {
+                return [
+                    'id'     => (int) $this->currency->id,
+                    'code'   => $this->currency->code,
+                    'name'   => $this->currency->name,
+                    'symbol' => $this->currency->symbol,
+                ];
+            }),
+
+            // ✅ plain bundle (для общего списка)
+            'bundle' => $this->whenLoaded('bundle', function () {
+                return [
+                    'id'     => (int) $this->bundle->id,
+                    'title'  => $this->bundle->title,
+                    'slug'   => $this->bundle->slug,
+                    'locale' => $this->bundle->locale,
+                ];
+            }),
+
+            // Цены
+            'price'            => (string) $this->price,
+            'sale_price'       => $this->sale_price !== null ? (string) $this->sale_price : null,
+            'compare_at_price' => $this->compare_at_price !== null ? (string) $this->compare_at_price : null,
+
+            // Главная цена (accessor в модели)
+            'effective_price' => (string) $this->effective_price,
+
+            'starts_at' => $this->starts_at?->toISOString(),
+            'ends_at'   => $this->ends_at?->toISOString(),
+
+            // Управление
+            'activity' => (bool) $this->activity,
+            'sort'     => (int) $this->sort,
+
+            // meta
+            'meta' => $this->meta,
+
+            // Таймстампы
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
+            'deleted_at' => $this->deleted_at?->toISOString(),
+
+            // Вычисляемые
+            'has_discount'     => (bool) $this->has_discount,
+            'discount_amount'  => $this->discount_amount !== null ? (string) $this->discount_amount : null,
+            'discount_percent' => $this->discount_percent !== null ? (float) $this->discount_percent : null,
+        ];
+    }
+}

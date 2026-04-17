@@ -1,0 +1,15 @@
+export default {
+    object: 'Объект',
+    of: 'из',
+    offline: 'оффлайн',
+    online: 'онлайн',
+    openLink: 'Открыть ссылку',
+    options: 'Опции и настройки модуля',
+    order: 'Заказ',
+    orderNumber: 'Номер заказа',
+    orders: 'Заказы',
+    orEnterIdManually: 'или введите идентификатор вручную',
+    ourCommunityBlog: 'Наш блог сообщества',
+    owner: 'Владелец',
+    ownerEmail: 'email владельца',
+}

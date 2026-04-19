@@ -14,6 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { fas } from '@fortawesome/free-solid-svg-icons';
 import { useI18n } from 'vue-i18n';
+import DraggableSidebarPageMarketLink from '@/Components/Admin/Links/DraggableSidebarPageMarketLink.vue'
 
 library.add(fas);
 
@@ -151,6 +152,14 @@ const isActive = (path) => {
                     {{ t('pageBuilder') }}
                 </span>
                 <DraggableSidebarPageBuilderLink :expanded="sidebarExpanded"/>
+
+                <!-- Ссылки страниц онлайн школы -->
+                <span :class="[colorTextActive]"
+                      class="flex justify-center text-xs uppercase font-semibold pl-3 opacity-45"
+                      v-if="sidebarExpanded">
+                    {{ t('store') }}
+                </span>
+                <DraggableSidebarPageMarketLink :expanded="sidebarExpanded"/>
 
                 <!-- Ссылки страниц онлайн школы -->
                 <span :class="[colorTextActive]"

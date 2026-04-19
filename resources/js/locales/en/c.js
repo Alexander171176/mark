@@ -40,6 +40,7 @@ export default {
     commentedArticle: 'The commented article: ',
     commentedRubric: 'The commented rubric',
     commentDetails: 'Comment Details',
+    companyType: 'Company type',
     compareAtPrice: 'Old price',
     componentEditorHeader: 'Component Code Viewer and Editor',
     componentEditorWarning: 'Component codes are edited only by competent System Administrator',

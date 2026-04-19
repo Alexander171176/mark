@@ -13,6 +13,7 @@ export default {
     backupRestoreFailed: 'Восстановить не удалось',
     badge: 'Бейдж (справа) текст',
     badges: 'Бейджи',
+    brand: 'Бренд',
     browserSessionDescription: 'Управляйте своими активными сессиями и выходите из них в других браузерах и устройствах.',
     bannerTitle: 'Название Баннера',
     banners: 'Баннеры',

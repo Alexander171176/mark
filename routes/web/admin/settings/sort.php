@@ -66,3 +66,5 @@ Route::put('/update-sort/permissions', [SettingController::class, 'updateAdminSo
     ->name('updateAdminSortPermissions');
 Route::put('/update-sort/settings', [SettingController::class, 'updateAdminSortSettings'])
     ->name('updateAdminSortSettings');
+Route::put('/update-sort/settings', [SettingController::class, 'updateAdminSortMarketCompanies'])
+    ->name('updateAdminSortMarketCompanies');

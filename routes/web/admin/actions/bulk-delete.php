@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\Blog\Video\VideoController;
 use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
 use App\Http\Controllers\Admin\School\Hashtag\HashtagController;
 use App\Http\Controllers\Admin\School\Quiz\QuizController;
@@ -71,3 +72,6 @@ Route::delete('course-prices/bulk-destroy', [CoursePriceController::class, 'bulk
 
 Route::delete('bundle-prices/bulk-destroy', [BundlePriceController::class, 'bulkDestroy'])
     ->name('bundlePrices.bulkDestroy');
+
+Route::delete('market-companies/bulk-destroy', [MarketCompanyController::class, 'bulkDestroy'])
+    ->name('marketCompanies.bulkDestroy');

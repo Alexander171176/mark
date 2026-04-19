@@ -178,6 +178,7 @@ export default {
     statusSelectPostponed: 'postponed',
     statusSelectRejected: 'Rejected',
     statuses: 'Statuses',
+    store: 'Store',
     student: 'Student',
     students: 'Students',
     studentAnswer: 'Student\'s answer',

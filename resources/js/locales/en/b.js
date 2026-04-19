@@ -13,6 +13,7 @@ export default {
     backupRestoreFailed: 'Couldn\'t be restored',
     badge: 'Badge (right) text',
     badges: 'Badges',
+    brand: 'Brand',
     browserSessionDescription: 'Manage and log out your active sessions on other browsers and devices.',
     bannerTitle: 'Banner Name',
     banners: 'Banners',

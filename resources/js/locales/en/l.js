@@ -10,6 +10,7 @@ export default {
     leaveComment: 'Leave a comment',
     leaveTeam: 'Leave Team',
     leaveTeamConfirmation: 'Are you sure you would like to leave this team?',
+    legalName: 'Registered name of the company',
     level: 'Level',
     levelBeginner: 'Beginner',
     levelIntermediate: 'Intermediate',

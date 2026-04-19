@@ -178,6 +178,7 @@ export default {
     statusSelectPostponed: 'Отложен',
     statusSelectRejected: 'Отклонено',
     statuses: 'Статусы',
+    store: 'Магазин',
     student: 'Студент',
     students: 'Студенты',
     studentAnswer: 'Ответ студента',

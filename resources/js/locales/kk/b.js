@@ -13,6 +13,7 @@ export default {
     backupRestoreFailed: 'Қалпына келтіру мүмкін емес',
     badge: 'Белгі (оң жақта) мәтін',
     badges: 'Белгілер',
+    brand: 'Бренд',
     browserSessionDescription: 'Белсенді сеанстарыңызды басқарыңыз және басқа браузерлер мен құрылғылардан шығыңыз.',
     bannerTitle: 'Баннер Атауы',
     banners: 'Баннерлер',

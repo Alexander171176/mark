@@ -2,6 +2,7 @@ export default {
     tabsTiles: 'Вкладки и плитки',
     tag: 'Тег',
     tags: 'Теги',
+    taxRegime: 'Налоговый режим',
     taxTotal: 'Общая сумма налога',
     teamInformation: 'Информация о группе',
     teamManagement: 'Управление Группы',

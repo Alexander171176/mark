@@ -10,6 +10,7 @@ export default {
     leaveComment: 'Оставьте комментарий',
     leaveTeam: 'Покинуть группу',
     leaveTeamConfirmation: 'Вы уверены, что хотели бы покинуть эту группу?',
+    legalName: 'Зарегистрированное имя компании',
     left: 'Показывать в левой колонке',
     level: 'Уровень',
     levelBeginner: 'Начальный',

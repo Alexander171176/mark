@@ -40,6 +40,7 @@ export default {
     commentedArticle: 'Пікір жазылған мақала: ',
     commentedRubric: 'Пікір жазылған рубрика',
     commentDetails: 'Пікірдің егжей-тегжейі',
+    companyType: 'Компания түрі',
     compareAtPrice: 'Ескі баға',
     componentEditorHeader: 'Компонент кодын қарау және өңдеу',
     componentEditorWarning: 'Компонент кодтары тек жүйенің құзыретті әкімшісімен өңделеді.',

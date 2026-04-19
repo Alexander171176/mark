@@ -18,14 +18,16 @@ class MarketCompanyRequest extends FormRequest
         $name = $this->input('name');
         $slug = $this->input('slug');
 
+        $preparedSlug = $this->filled('slug')
+            ? Str::slug(trim((string) $slug))
+            : ($this->filled('name') ? Str::slug(trim((string) $name)) : null);
+
         $this->merge([
             'name' => $this->filled('name') ? trim((string) $name) : null,
             'brand_name' => $this->filled('brand_name') ? trim((string) $this->input('brand_name')) : null,
             'legal_name' => $this->filled('legal_name') ? trim((string) $this->input('legal_name')) : null,
 
-            'slug' => $this->filled('slug')
-                ? Str::slug(trim((string) $slug))
-                : ($this->filled('name') ? Str::slug(trim((string) $name)) : null),
+            'slug' => filled($preparedSlug) ? $preparedSlug : null,
 
             'external_id' => $this->filled('external_id') ? trim((string) $this->input('external_id')) : null,
 
@@ -56,8 +58,8 @@ class MarketCompanyRequest extends FormRequest
 
     public function rules(): array
     {
-        $marketCompanyId = $this->route('market_company')?->id
-            ?? $this->route('market_company')
+        $marketCompanyId = $this->route('marketCompany')?->id
+            ?? $this->route('marketCompany')
             ?? $this->route('id');
 
         return [

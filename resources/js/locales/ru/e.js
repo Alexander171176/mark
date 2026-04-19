@@ -16,6 +16,7 @@ export default {
     editLearningCategory: 'Редактировать Категорию обучения',
     editLearningTag: 'Редактировать Тег обучения',
     editLesson: 'Редактировать Урок обучения',
+    editMarketCompany: 'Редактировать фирму',
     editModule: 'Редактировать Модуль',
     editNotes: 'Редактировать заметку',
     editOrder: 'Редактировать Заказ',

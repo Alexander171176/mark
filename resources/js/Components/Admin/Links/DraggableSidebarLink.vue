@@ -58,6 +58,7 @@ const {props: pageProps} = usePage();
 const linkInfo = {
     admin: {label: t('adminPanel'), route: 'admin.index'},
     home: {label: t('home'), route: 'admin.home-page.index'},
+    marketCompanies: {label: t('marketCompanies'), route: 'admin.marketCompanies.index'},
     currencies: {label: t('currencies'), route: 'admin.currencies.index'},
     subscriptionPlans: {label: t('subscriptionPlans'), route: 'admin.subscriptionPlans.index'},
     coursePrices: {label: t('coursePrices'), route: 'admin.coursePrices.index'},

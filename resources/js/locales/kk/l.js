@@ -10,6 +10,7 @@ export default {
     leaveComment: 'Пікір қалдырыңыз',
     leaveTeam: 'Топтан шығу',
     leaveTeamConfirmation: 'Сіз бұл топтан шыққыңыз келетініне сенімдісіз бе?',
+    legalName: 'Компанияның тіркелген атауы',
     level: 'Деңгей',
     levelBeginner: 'Бастауыш',
     levelIntermediate: 'Орташа',

@@ -338,4 +338,13 @@ trait CountSettingsTrait
         return $this->countSetting($request,
             'AdminCountPermissions', 'site_settings.AdminCountPermissions');
     }
+
+    /**
+     * Обновление количества элементов в фирмах
+     */
+    public function updateAdminCountMarketCompanies(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'AdminCountMarketCompanies', 'site_settings.AdminCountMarketCompanies');
+    }
 }

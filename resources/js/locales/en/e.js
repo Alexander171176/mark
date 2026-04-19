@@ -16,6 +16,7 @@ export default {
     editLearningCategory: 'Edit Training Category',
     editLearningTag: 'Edit Training Tag',
     editLesson: 'Edit Lesson',
+    editMarketCompany: 'Edit company',
     editModule: 'Edit Module',
     editNotes: 'Edit a note',
     editOrder: 'Edit Order',

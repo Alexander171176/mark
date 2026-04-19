@@ -436,4 +436,16 @@ trait SortSettingsTrait
         return $this->sortSetting($request,
             'AdminSortPermissions', 'site_settings.AdminSortPermissions');
     }
+
+    /**
+     * Обновляет сортировку элементов в фирмах
+     *
+     * @param UpdateSortRequest $request
+     * @return RedirectResponse
+     */
+    public function updateAdminSortMarketCompanies(UpdateSortRequest $request): RedirectResponse
+    {
+        return $this->sortSetting($request,
+            'AdminSortMarketCompanies', 'site_settings.AdminSortMarketCompanies');
+    }
 }

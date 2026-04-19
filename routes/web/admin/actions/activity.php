@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
+use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
 use App\Http\Controllers\Admin\School\Course\CourseController;
@@ -118,3 +119,7 @@ Route::put('bundle-prices/{bundlePrice}/update-activity',
 Route::put('subscription-plans/{subscriptionPlan}/update-activity',
     [SubscriptionPlanController::class, 'updateActivity'])
     ->name('subscriptionPlans.updateActivity');
+
+Route::put('market-companies/{marketCompany}/update-activity',
+    [MarketCompanyController::class, 'updateActivity'])
+    ->name('marketCompanies.updateActivity');

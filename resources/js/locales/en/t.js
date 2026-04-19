@@ -2,6 +2,7 @@ export default {
     tabsTiles: 'Tabs & Tiles',
     tag: 'Tag',
     tags: 'Tags',
+    taxRegime: 'Tax regime',
     taxTotal: 'Total tax amount',
     teamInformation: 'Team Information',
     teamManagement: 'Team Management',

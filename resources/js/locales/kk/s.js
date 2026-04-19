@@ -178,6 +178,7 @@ export default {
     statusSelectPostponed: 'Кейінге қалдырылды',
     statusSelectRejected: 'Қабылданбады',
     statuses: 'Мәртебелер',
+    store: 'Дүкен',
     student: 'Студент',
     students: 'Студенты',
     studentAnswer: 'Студенттің жауабы',

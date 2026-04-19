@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Finance\Order\OrderController;
 use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
+use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
 use App\Http\Controllers\Admin\School\CohortEnrollment\CohortEnrollmentController;
@@ -133,6 +134,13 @@ Route::resource('/reports', ReportController::class)->only(['index']);
 
 Route::resource('/comments', CommentController::class)->except(['create', 'store', 'show']); // Админ обычно не создает комменты с нуля
 Route::resource('/components', ComponentController::class);
-Route::post('/components/save', [ComponentController::class, 'save'])->name('components.save'); // Выносим отдельно, т.к. не ресурсный
 
-Route::get('/reports/download', [ReportController::class, 'download'])->name('reports.download'); // Выносим отдельно
+Route::post('/components/save', [ComponentController::class, 'save'])
+    ->name('components.save'); // Выносим отдельно, т.к. не ресурсный
+
+Route::get('/reports/download', [ReportController::class, 'download'])
+    ->name('reports.download'); // Выносим отдельно
+
+Route::resource('/market-companies', MarketCompanyController::class)
+    ->parameters(['market-companies' => 'marketCompany'])
+    ->names('marketCompanies');

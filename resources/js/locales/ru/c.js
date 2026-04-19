@@ -40,6 +40,7 @@ export default {
     commentedArticle: 'Комментируемая статья: ',
     commentedRubric: 'Комментируемая рубрика',
     commentDetails: 'Детали Комментария',
+    companyType: 'Тип компании',
     compareAtPrice: 'Старая цена',
     componentEditorHeader: 'Просмотр и редактирование кода компонента',
     componentEditorWarning: 'Код компонентов редактируются только компетентным Администратором системы',

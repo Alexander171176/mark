@@ -347,4 +347,13 @@ trait CountSettingsTrait
         return $this->countSetting($request,
             'AdminCountMarketCompanies', 'site_settings.AdminCountMarketCompanies');
     }
+
+    /**
+     * Обновление количества элементов в витринах
+     */
+    public function updateAdminCountMarketStorefronts(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'AdminCountMarketStorefronts', 'site_settings.AdminCountMarketStorefronts');
+    }
 }

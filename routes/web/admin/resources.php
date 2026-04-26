@@ -2,18 +2,19 @@
 
 // --- Основные CRUD Ресурсы ---
 
-use App\Http\Controllers\Admin\Blog\Article\ArticleController;
-use App\Http\Controllers\Admin\Blog\Banner\BannerController;
+use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
+use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
+use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
+use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
+use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
-use App\Http\Controllers\Admin\Blog\Rubric\RubricController;
-use App\Http\Controllers\Admin\Blog\Tag\TagController;
-use App\Http\Controllers\Admin\Blog\Video\VideoController;
 use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Finance\Order\OrderController;
 use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
 use App\Http\Controllers\Admin\School\CohortEnrollment\CohortEnrollmentController;
@@ -118,15 +119,25 @@ Route::resource('/currencies', CurrencyController::class);
 
 Route::resource('/orders', OrderController::class);
 
-Route::resource('/rubrics', RubricController::class);
+Route::resource('/blog-rubrics', BlogRubricController::class)
+    ->parameters(['blog-rubrics' => 'blogRubric'])
+    ->names('blogRubrics');
 
-Route::resource('/articles', ArticleController::class);
+Route::resource('/blog-articles', BlogArticleController::class)
+    ->parameters(['blog-articles' => 'blogArticle'])
+    ->names('blogArticles');
 
-Route::resource('/tags', TagController::class);
+Route::resource('/blog-tags', BlogTagController::class)
+    ->parameters(['blog-tags' => 'blogTag'])
+    ->names('blogTags');
 
-Route::resource('/banners', BannerController::class);
+Route::resource('/blog-banners', BlogBannerController::class)
+    ->parameters(['blog-banners' => 'blogBanner'])
+    ->names('blogBanners');
 
-Route::resource('/videos', VideoController::class);
+Route::resource('/blog-videos', BlogVideoController::class)
+    ->parameters(['blog-videos' => 'blogVideo'])
+    ->names('blogVideos');
 
 Route::resource('/charts', ChartController::class)->except(['show']);
 
@@ -144,3 +155,7 @@ Route::get('/reports/download', [ReportController::class, 'download'])
 Route::resource('/market-companies', MarketCompanyController::class)
     ->parameters(['market-companies' => 'marketCompany'])
     ->names('marketCompanies');
+
+Route::resource('/market-storefronts', MarketStorefrontController::class)
+    ->parameters(['market-storefronts' => 'marketStorefront'])
+    ->names('marketStorefronts');

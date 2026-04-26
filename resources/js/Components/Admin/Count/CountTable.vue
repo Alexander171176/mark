@@ -1,5 +1,5 @@
 <template>
-    <div class="px-4 py-1 text-right">
+    <div class="py-1 text-right">
         <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100">
             {{ t('total') }} <span class="text-blue-500 dark:text-blue-200 font-medium">
                 <slot></slot>

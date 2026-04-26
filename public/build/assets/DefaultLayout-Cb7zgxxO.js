@@ -1,0 +1,1 @@
+import{aW as s,n as o,o as n,y as r,v as t,l}from"./vendor-UQgtKMQn.js";const _={__name:"DefaultLayout",props:{title:String,canLogin:Boolean,canRegister:Boolean},setup(i){const a=s("isDark");return(e,c)=>(n(),o("div",{id:"app",class:t([l(a)?"is-dark":""])},[r(e.$slots,"default")],2))}};export{_};

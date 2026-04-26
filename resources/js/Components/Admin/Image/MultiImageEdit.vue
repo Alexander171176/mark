@@ -58,7 +58,7 @@ const removeImage = (index) => {
         <div v-if="localImages.length" class="mt-4">
             <!-- Оборачиваем список изображений в draggable -->
             <draggable v-model="localImages" group="images" item-key="id" @end="updateOrder"
-                       class="grid grid-cols-4 gap-4">
+                       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 <template #item="{ element, index }">
                     <div class="relative border border-slate-500 rounded-sm py-0.5 px-2">
                         <img :src="element.url" alt="Existing Image" class="h-40 w-full object-cover" />

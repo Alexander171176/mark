@@ -45,6 +45,7 @@ const { t } = useI18n();
 
 const pageLinks = ref(JSON.parse(localStorage.getItem('pageLinks')) || [
     'marketCompanies',
+    'marketStorefronts',
 ]);
 
 const handleDragEnd = () => {

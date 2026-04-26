@@ -206,85 +206,87 @@
 -------------------------------------------------------------------------------------
 
 1) creating business logic app Rubric <br>
-`docker exec mark-php-app php artisan make:model Admin/Blog/Rubric/Rubric -mf` <br>
-`docker exec mark-php-app php artisan make:model Admin/Blog/Rubric/RubricImage -mf` <br>
-`docker exec mark-php-app php artisan make:migration create_rubric_has_images_table --create=rubric_has_images` <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogRubric/BlogRubric -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogRubric/BlogRubricTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogRubric/BlogRubricImage -mf` <br>
+`docker exec mark-php-app php artisan make:migration create_blog_rubric_has_images_table --create=blog_rubric_has_images` <br>
 `docker exec mark-php-app php artisan migrate`<br>
-`docker exec mark-php-app php artisan make:seeder RubricSeeder` <br>
-`docker exec mark-php-app php artisan db:seed --class=RubricSeeder` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Rubric/RubricResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Rubric/RubricImageResource` <br>
-`docker exec mark-php-app php artisan make:request Admin/Blog/Rubric/RubricRequest` <br>
+`docker exec mark-php-app php artisan db:seed --class=BlogRubricSeeder` <br>
+`docker exec mark-php-app php artisan make:request Admin/Blog/BlogRubric/BlogRubricRequest` <br>
 `docker exec mark-php-app php artisan make:request Admin/Blog/UpdateActivityRequest` <br>
 `docker exec mark-php-app php artisan make:request Admin/Blog/UpdateSortEntityRequest` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Blog/Rubric/Rubric/RubricController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/Blog/RubricController` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Rubric/RubricSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogRubric/BlogRubricResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogRubric/BlogRubricTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogRubric/BlogRubricImageResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogRubric/BlogRubricSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Blog/BlogRubric/BlogRubricController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/Blog/BlogRubric/BlogRubricController` <br>
 
-2) creating business logic app Article <br>
-`docker exec mark-php-app php artisan make:model Admin/Blog/Article/Article -mf` <br>
-`docker exec mark-php-app php artisan make:model Admin/Blog/Article/ArticleImage -mf` <br>
-`docker exec mark-php-app php artisan make:migration create_article_has_images_table --create=article_has_images` <br>
-`docker exec mark-php-app php artisan make:migration create_article_has_rubric_table --create=article_has_rubric` <br>
-`docker exec mark-php-app php artisan make:migration create_article_related_table --create=article_related` <br>
-`docker exec mark-php-app php artisan migrate`<br>
-`docker exec mark-php-app php artisan make:seeder ArticleSeeder` <br>
-`docker exec mark-php-app php artisan db:seed --class=ArticleSeeder` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Article/ArticleResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Article/ArticleImageResource` <br>
-`docker exec mark-php-app php artisan make:request Admin/Blog/Article/ArticleRequest` <br>
+2) creating business logic app BlogArticle <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogArticle/BlogArticle -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogArticle/BlogArticleTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogArticle/BlogArticleImage -mf` <br>
+`docker exec mark-php-app php artisan make:migration create_blog_article_has_images_table --create=blog_article_has_images` <br>
+`docker exec mark-php-app php artisan make:migration create_blog_article_has_rubric_table --create=blog_article_has_rubric` <br>
+`docker exec mark-php-app php artisan make:migration create_blog_article_related_table --create=blog_article_related` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan db:seed --class=BlogArticleSeeder` <br>
+`docker exec mark-php-app php artisan make:request Admin/Blog/BlogArticle/BlogArticleRequest` <br>
 `docker exec mark-php-app php artisan make:request Admin/Blog/UpdateLeftRequest` <br>
 `docker exec mark-php-app php artisan make:request Admin/Blog/UpdateMainRequest` <br>
 `docker exec mark-php-app php artisan make:request Admin/Blog/UpdateRightRequest` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Blog/Article/ArticleController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/Blog/ArticleController` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Article/ArticleSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Invokable/RemoveArticleFromSectionController --invokable` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogArticle/BlogArticleResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogArticle/BlogArticleTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogArticle/BlogArticleImageResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogArticle/BlogArticleSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Blog/BlogArticle/BlogArticleController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/Blog/BlogArticle/BlogArticleController` <br>
+`docker exec mark-php-app php artisan make:model User/Like/BlogArticleLike -m` <br>
 
-3) creating business logic app Tag <br>
-`docker exec mark-php-app php artisan make:model Admin/Blog/Tag/Tag -mf` <br>
-`docker exec mark-php-app php artisan make:migration create_article_has_tag_table --create=article_has_tag` <br>
-`docker exec mark-php-app php artisan make:migration add_icon_to_tags_table` <br>
+3) creating business logic app BlogTag <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogTag/BlogTag -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogTag/BlogTagTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:migration create_blog_article_has_tag_table --create=blog_article_has_tag` <br>
 `docker exec mark-php-app php artisan migrate` <br>
-`docker exec mark-php-app php artisan make:seeder TagSeeder` <br>
-`docker exec mark-php-app php artisan db:seed --class=TagSeeder` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Tag/TagResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Tag/TagSharedResource` <br>
-`docker exec mark-php-app php artisan make:request Admin/Blog/Tag/TagRequest` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Blog/Tag/TagController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Invokable/RemoveArticleFromTagController --invokable` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/Blog/TagController` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Invokable/RemoveTagFromArticleController --invokable` <br>
+`docker exec mark-php-app php artisan db:seed --class=BlogTagSeeder` <br>
+`docker exec mark-php-app php artisan make:request Admin/Blog/BlogTag/BlogTagRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogTag/BlogTagResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogTag/BlogTagTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogTag/BlogTagSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Blog/BlogTag/BlogTagController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/Blog/BlogTag/BlogTagController` <br>
 
-4) creating business logic ap Banner
-`docker exec mark-php-app php artisan make:model Admin/Blog/Banner/Banner -mf` <br>
+4) creating business logic app BlogBanner <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogBanner/BlogBanner -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogBanner/BlogBannerTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogBanner/BlogBannerImage -mf` <br>
+`docker exec mark-php-app php artisan make:migration create_blog_banner_has_images_table --create=blog_banner_has_images` <br>
 `docker exec mark-php-app php artisan migrate` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Banner/BannerResource` <br>
-`docker exec mark-php-app php artisan make:request Admin/Blog/Banner/BannerRequest` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Blog/Banner/BannerController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Blog/Invokable/RemoveBannerFromSectionController --invokable` <br>
-`docker exec mark-php-app php artisan make:model Admin/Blog/Banner/BannerImage -mf` <br>
-`docker exec mark-php-app php artisan make:migration create_banner_has_images_table --create=banner_has_images` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Banner/BannerImageResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Banner/BannerSharedResource` <br>
-`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan db:seed --class=BlogBannerSeeder` <br>
+`docker exec mark-php-app php artisan make:request Admin/Blog/BlogBanner/BlogBannerRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogBanner/BlogBannerResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogBanner/BlogBannerTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogBanner/BlogBannerImageResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogBanner/BlogBannerSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Blog/BlogBanner/BlogBannerController --resource` <br>
 
-5) creating business logic ap Video
-`docker exec mark-php-app php artisan make:model Admin/Blog/Video/Video -mf` <br>
-`docker exec mark-php-app php artisan make:migration add_is_private_to_videos_table` <br>
-`docker exec mark-php-app php artisan make:model Admin/Blog/Video/VideoImage -mf` <br>
-`docker exec mark-php-app php artisan make:migration create_video_has_images_table --create=video_has_images` <br>
-`docker exec mark-php-app php artisan make:migration create_article_has_video_table --create=article_has_video` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Video/VideoResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Video/VideoSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Blog/Video/VideoImageResource` <br>
-`docker exec mark-php-app php artisan make:request Admin/Blog/Video/VideoRequest` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Blog/Video/VideoController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/Blog/VideoController` <br>
-`docker exec mark-php-app php artisan make:migration create_video_related_table --create=video_related` <br>
-`docker exec mark-php-app php artisan make:migration create_video_likes_table --create=video_likes` <br>
-`docker exec mark-php-app php artisan make:model User/Like/VideoLike` <br>
+5) creating business logic app BlogVideo <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogVideo/BlogVideo -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogVideo/BlogVideoTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Blog/BlogVideo/BlogVideoImage -mf` <br>
+`docker exec mark-php-app php artisan make:migration create_blog_video_has_images_table --create=blog_video_has_images` <br>
+`docker exec mark-php-app php artisan make:migration create_blog_article_has_video_table --create=blog_article_has_video` <br>
+`docker exec mark-php-app php artisan make:migration create_blog_video_related_table --create=blog_video_related` <br>
+`docker exec mark-php-app php artisan make:model User/Like/BlogVideoLike -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan db:seed --class=BlogVideoSeeder` <br>
+`docker exec mark-php-app php artisan make:request Admin/Blog/BlogVideo/BlogVideoRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogVideo/BlogVideoResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogVideo/BlogVideoTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogVideo/BlogVideoSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Blog/BlogVideo/BlogVideoImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Blog/BlogVideo/BlogVideoController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/Blog/BlogVideo/BlogVideoController` <br>
 -------------------------------------------------------------------------------------
 
 1) creating business logic app Comment <br>
@@ -299,11 +301,6 @@
 `docker exec mark-php-app php artisan make:request Admin/Blog/Comment/ApproveCommentRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Blog/Comment/CommentController --resource` <br>
 `docker exec mark-php-app php artisan make:controller Public/CommentController --resource` <br>
-
-2) creating business logic app Like <br>
-`docker exec mark-php-app php artisan make:migration create_article_likes_table --create=article_likes` <br>
-`docker exec mark-php-app php artisan migrate` <br>
-`docker exec mark-php-app php artisan make:model User/Like/ArticleLike` <br>
 -------------------------------------------------------------------------------------
 
 1) creating business logic app Report <br>
@@ -1009,47 +1006,53 @@
 `docker exec mark-php-app php artisan make:controller Admin/School/Testimonial/TestimonialController --resource` <br>
 -------------------------------------------------------------------------------------
 
-1) Компания / Витрина / Настройки
+1) Компания 
 `docker exec mark-php-app php artisan make:migration create_market_companies_table --create=market_companies` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompany -fs` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketCompany/MarketCompanyRequest` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketCompany/MarketCompanyResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketCompany/MarketCompanyController --resource` <br>
+
+2) Витрина / Настройки
 `docker exec mark-php-app php artisan make:migration create_market_storefronts_table --create=market_storefronts` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketStorefront/MarketStorefront -fs` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketStorefront/MarketStorefrontRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketStorefront/MarketStorefrontResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketStorefront/MarketStorefrontController --resource` <br>
 `docker exec mark-php-app php artisan make:migration create_market_storefront_settings_table --create=market_storefront_settings` <br>
 `docker exec mark-php-app php artisan make:migration create_market_storefront_locale_settings_table --create=market_storefront_locale_settings` <br>
 
-2) Валюта, локаль витрины
+3) Валюта, локаль витрины
 `docker exec mark-php-app php artisan make:migration create_market_storefront_has_currencies_table --create=market_storefront_has_currencies` <br>
 `docker exec mark-php-app php artisan make:migration create_market_storefront_locale_currency_settings_table --create=market_storefront_locale_currency_settings` <br>
 
-3) Категории (дерево)
+4) Категории (дерево)
 `docker exec mark-php-app php artisan make:migration create_market_categories_table --create=market_categories` <br>
 
-4) Товары / Бренды
+5) Товары / Бренды
 `docker exec mark-php-app php artisan make:migration create_market_products_table --create=market_products` <br>
 `docker exec mark-php-app php artisan make:migration create_market_category_has_products_table --create=market_category_has_products` <br>
 `docker exec mark-php-app php artisan make:migration create_market_brands_table --create=market_brands` <br>
 `docker exec mark-php-app php artisan make:migration create_market_brand_has_products_table --create=market_brand_has_products` <br>
 
-5) Варианты товаров / Рекомендованные товары / Комплекты товаров 
+6) Варианты товаров / Рекомендованные товары / Комплекты товаров 
 `docker exec mark-php-app php artisan make:migration create_market_product_variants_table --create=market_product_variants` <br>
 `docker exec mark-php-app php artisan make:migration create_market_product_recommendations_table --create=market_product_recommendations` <br>
 `docker exec mark-php-app php artisan make:migration create_market_kits_table --create=market_kits` <br>
 `docker exec mark-php-app php artisan make:migration create_market_kit_items_table --create=market_kit_items` <br>
 
-6) Группы характеристик / Характеристики / Значения характеристик
+7) Группы характеристик / Характеристики / Значения характеристик
 `docker exec mark-php-app php artisan make:migration create_market_property_groups_table --create=market_property_groups` <br>
 `docker exec mark-php-app php artisan make:migration create_market_properties_table --create=market_properties` <br>
 `docker exec mark-php-app php artisan make:migration create_market_property_values_table --create=market_property_values` <br>
 `docker exec mark-php-app php artisan make:migration create_market_category_has_properties_table --create=market_category_has_properties` <br>
 `docker exec mark-php-app php artisan make:migration create_market_product_variant_has_property_values_table --create=market_product_variant_has_property_values` <br>
 
-7) Склады / остатки 
+8) Склады / остатки 
 `docker exec mark-php-app php artisan make:migration create_market_warehouses_table --create=market_warehouses` <br>
 `docker exec mark-php-app php artisan make:migration create_market_warehouse_stocks_table --create=market_warehouse_stocks` <br>
 
-8) Модуль доставки / Логистика / ПВЗ / Зоны
+9) Модуль доставки / Логистика / ПВЗ / Зоны
 `docker exec mark-php-app php artisan make:migration create_market_address_dictionary_table --create=market_address_dictionary` <br>
 `docker exec mark-php-app php artisan make:migration create_market_delivery_providers_table --create=market_delivery_providers` <br>
 `docker exec mark-php-app php artisan make:migration create_market_delivery_provider_services_table --create=market_delivery_provider_services` <br>
@@ -1067,7 +1070,7 @@
 `docker exec mark-php-app php artisan make:migration create_market_delivery_method_has_providers_table --create=market_delivery_method_has_providers` <br>
 `docker exec mark-php-app php artisan make:migration create_market_delivery_quotes_cache_table --create=market_delivery_quotes_cache` <br>
 
-9) Корзина / События / Избранное
+10) Корзина / События / Избранное
 `docker exec mark-php-app php artisan make:model Admin/Market/Cart/Cart -fs` <br>
 `docker exec mark-php-app php artisan make:migration create_market_carts_table --create=market_carts` <br>
 `docker exec mark-php-app php artisan make:migration create_market_cart_sessions_table --create=market_cart_sessions` <br>
@@ -1078,7 +1081,7 @@
 `docker exec mark-php-app php artisan make:migration create_market_cart_event_items_table --create=market_cart_event_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_favorites_table --create=market_favorites` <br>
 
-10) Бонусы / Программа бонусов
+11) Бонусы / Программа бонусов
 `docker exec mark-php-app php artisan make:migration create_market_bonus_programs_table --create=market_bonus_programs` <br>
 `docker exec mark-php-app php artisan make:migration create_market_bonus_accounts_table --create=market_bonus_accounts` <br>
 `docker exec mark-php-app php artisan make:migration create_market_bonus_operations_table --create=market_bonus_operations` <br>
@@ -1088,27 +1091,27 @@
 `docker exec mark-php-app php artisan make:migration create_market_bonus_rule_conditions_table --create=market_bonus_rule_conditions` <br>
 `docker exec mark-php-app php artisan make:migration create_market_bonus_rule_rewards_table --create=market_bonus_rule_rewards` <br>
 
-11) Заказы / Статусы заказов / История заказов
+12) Заказы / Статусы заказов / История заказов
 `docker exec mark-php-app php artisan make:migration create_market_order_statuses_table --create=market_order_statuses` <br>
 `docker exec mark-php-app php artisan make:migration create_market_orders_table --create=market_orders` <br>
 `docker exec mark-php-app php artisan make:migration create_market_order_items_table --create=market_order_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_order_histories_table --create=market_order_histories` <br>
 
-12) Модуль оплаты / Провайдеры оплаты / Транзакции / История оплаты 
+13) Модуль оплаты / Провайдеры оплаты / Транзакции / История оплаты 
 `docker exec mark-php-app php artisan make:migration create_market_payment_providers_table --create=market_payment_providers` <br>
 `docker exec mark-php-app php artisan make:migration create_market_storefront_payment_provider_settings_table --create=market_storefront_payment_provider_settings` <br>
 `docker exec mark-php-app php artisan make:migration create_market_payments_table --create=market_payments` <br>
 `docker exec mark-php-app php artisan make:migration create_market_payment_transactions_table --create=market_payment_transactions` <br>
 `docker exec mark-php-app php artisan make:migration create_market_payment_histories_table --create=market_payment_histories` <br>
 
-13) Инвойсы / Фискальные чеки / Документы
+14) Инвойсы / Фискальные чеки / Документы
 `docker exec mark-php-app php artisan make:migration create_market_invoices_table --create=market_invoices` <br>
 `docker exec mark-php-app php artisan make:migration create_market_invoice_items_table --create=market_invoice_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_fiscal_receipts_table --create=market_fiscal_receipts` <br>
 `docker exec mark-php-app php artisan make:migration create_market_fiscal_receipt_items_table --create=market_fiscal_receipt_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_order_documents_table --create=market_order_documents` <br>
 
-14) Возвраты / История возвратов / Документы
+15) Возвраты / История возвратов / Документы
 `docker exec mark-php-app php artisan make:migration create_market_refunds_table --create=market_refunds` <br>
 `docker exec mark-php-app php artisan make:migration create_market_refund_items_table --create=market_refund_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_refund_documents_table --create=market_refund_documents` <br>
@@ -1118,37 +1121,37 @@
 `docker exec mark-php-app php artisan make:migration create_market_return_histories_table --create=market_return_histories` <br>
 `docker exec mark-php-app php artisan make:migration create_market_return_documents_table --create=market_return_documents` <br>
 
-15) Промокоды
+16) Промокоды
 `docker exec mark-php-app php artisan make:migration create_market_promo_campaigns_table --create=market_promo_campaigns` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_code_batches_table --create=market_promo_code_batches` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_codes_table --create=market_promo_codes` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_redemptions_table --create=market_promo_redemptions` <br>
 
-16) Реферальная система 
+17) Реферальная система 
 `docker exec mark-php-app php artisan make:migration create_market_referral_programs_table --create=market_referral_programs` <br>
 `docker exec mark-php-app php artisan make:migration create_market_referral_codes_table --create=market_referral_codes` <br>
 `docker exec mark-php-app php artisan make:migration create_market_referral_events_table --create=market_referral_events` <br>
 `docker exec mark-php-app php artisan make:migration create_market_referral_rewards_table --create=market_referral_rewards` <br>
 
-17) Отзывы / Бонусы
+18) Отзывы / Бонусы
 `docker exec mark-php-app php artisan make:migration create_market_review_bonus_rules_table --create=market_review_bonus_rules` <br>
 `docker exec mark-php-app php artisan make:migration create_market_product_reviews_table --create=market_product_reviews` <br>
 `docker exec mark-php-app php artisan make:migration create_market_review_bonus_awards_table --create=market_review_bonus_awards` <br>
 `docker exec mark-php-app php artisan make:migration create_market_company_reviews_table --create=market_company_reviews` <br>
 
-18) Промо-коды
+19) Промо-коды
 `docker exec mark-php-app php artisan make:migration add_unique_to_market_promo_redemptions_table --create=market_promo_redemptions` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_campaign_has_products_table --create=market_promo_campaign_has_products` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_campaign_has_categories_table --create=market_promo_campaign_has_categories` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_campaign_has_brands_table --create=market_promo_campaign_has_brands` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_campaign_has_delivery_methods_table --create=market_promo_campaign_has_delivery_methods` <br>
 
-19) Страницы (дерево) / FAQ, категории
+20) Страницы (дерево) / FAQ, категории
 `docker exec mark-php-app php artisan make:migration create_market_storefront_pages_table --create=market_storefront_pages` <br>
 `docker exec mark-php-app php artisan make:migration create_market_faq_categories_table --create=market_faq_categories` <br>
 `docker exec mark-php-app php artisan make:migration create_market_faq_items_table --create=market_faq_items` <br>
 
-20) Тикетная система (вопросы/ответы) / История / Теги
+21) Тикетная система (вопросы/ответы) / История / Теги
 `docker exec mark-php-app php artisan make:migration create_market_ticket_statuses_table --create=market_ticket_statuses` <br>
 `docker exec mark-php-app php artisan make:migration create_market_tickets_table --create=market_tickets` <br>
 `docker exec mark-php-app php artisan make:migration create_market_ticket_messages_table --create=market_ticket_messages` <br>
@@ -1157,7 +1160,7 @@
 `docker exec mark-php-app php artisan make:migration create_market_ticket_tags_table --create=market_ticket_tags` <br>
 `docker exec mark-php-app php artisan make:migration create_market_ticket_has_tags_table --create=market_ticket_has_tags` <br>
 
-21) Конструктор форм обратной связи / Антиспам
+22) Конструктор форм обратной связи / Антиспам
 `docker exec mark-php-app php artisan make:migration create_market_feedback_forms_table --create=market_feedback_forms` <br>
 `docker exec mark-php-app php artisan make:migration create_market_feedback_form_fields_table --create=market_feedback_form_fields` <br>
 `docker exec mark-php-app php artisan make:migration create_market_feedback_form_rules_table --create=market_feedback_form_rules` <br>
@@ -1166,7 +1169,7 @@
 `docker exec mark-php-app php artisan make:migration create_market_feedback_spam_blocks_table --create=market_feedback_spam_blocks` <br>
 `docker exec mark-php-app php artisan make:migration create_market_feedback_submission_events_table --create=market_feedback_submission_events` <br>
 
-22) Конструктор опросов / Опции / Результаты
+23) Конструктор опросов / Опции / Результаты
 `docker exec mark-php-app php artisan make:migration create_market_poll_surveys_table --create=market_poll_surveys` <br>
 `docker exec mark-php-app php artisan make:migration create_market_poll_questions_table --create=market_poll_questions` <br>
 `docker exec mark-php-app php artisan make:migration create_market_poll_options_table --create=market_poll_options` <br>
@@ -1174,7 +1177,7 @@
 `docker exec mark-php-app php artisan make:migration create_market_poll_vote_items_table --create=market_poll_vote_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_poll_results_cache_table --create=market_poll_results_cache` <br>
 
-23) Категории вакансий / Вакансии / Отклики
+24) Категории вакансий / Вакансии / Отклики
 `docker exec mark-php-app php artisan make:migration create_market_job_categories_table --create=market_job_categories` <br>
 `docker exec mark-php-app php artisan make:migration create_market_jobs_table --create=market_jobs` <br>
 `docker exec mark-php-app php artisan make:migration create_market_job_applications_table --create=market_job_applications` <br>
@@ -1182,7 +1185,7 @@
 `docker exec mark-php-app php artisan make:migration create_market_job_application_messages_table --create=market_job_application_messages` <br>
 `docker exec mark-php-app php artisan make:migration create_market_job_application_message_media_table --create=market_job_application_message_media` <br>
 
-24) Каталог групп / Группы
+25) Каталог групп / Группы
 `docker exec mark-php-app php artisan make:migration create_market_catalog_groups_table --create=market_catalog_groups` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/CatalogGroupItem -fs` <br>
 `docker exec mark-php-app php artisan make:migration create_market_catalog_group_items_table --create=market_catalog_group_items` <br>

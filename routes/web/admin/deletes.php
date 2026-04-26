@@ -21,15 +21,3 @@ Route::delete('/users/{user}/roles/{role}',
 Route::delete('/users/{user}/permissions/{permission}',
     RemovePermissionFromUserController::class)
     ->name('users.permissions.destroy');
-
-Route::delete('/articles/{article}/tags/{tag}',
-    RemoveArticleFromTagController::class)
-    ->name('articles.tags.destroy');
-
-Route::delete('/tags/{tag}/articles/{article}',
-    RemoveTagFromArticleController::class)
-    ->name('tags.articles.destroy');
-
-Route::delete('/videos/{video}/articles/{article}',
-    RemoveArticleFromVideoController::class)
-    ->name('videos.articles.destroy');

@@ -17,9 +17,13 @@ const { t } = useI18n();
             {{ t('adminPanel') }}
         </ResponsiveNavLink>
         <!-- Админские маршруты с префиксом -->
-        <ResponsiveNavLink :href="route('admin.home-page.index')"
-                           :active="route().current('admin.home-page.index')">
-            {{ t('home') }}
+        <ResponsiveNavLink :href="route('admin.marketCompanies.index')"
+                           :active="route().current('admin.marketCompanies.index')">
+            {{ t('marketCompanies') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink :href="route('admin.marketStorefronts.index')"
+                           :active="route().current('admin.marketStorefronts.index')">
+            {{ t('marketStorefronts') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink :href="route('admin.orders.index')"
                            :active="route().current('admin.orders.index')">
@@ -117,28 +121,28 @@ const { t } = useI18n();
                            :active="route().current('admin.permissions.index')">
             {{ t('permissions') }}
         </ResponsiveNavLink>
-        <ResponsiveNavLink :href="route('admin.rubrics.index')"
-                           :active="route().current('admin.rubrics.index')">
+        <ResponsiveNavLink :href="route('admin.blogRubrics.index')"
+                           :active="route().current('admin.blogRubrics.index')">
             {{ t('rubrics') }}
         </ResponsiveNavLink>
-        <ResponsiveNavLink :href="route('admin.articles.index')"
-                           :active="route().current('admin.articles.index')">
+        <ResponsiveNavLink :href="route('admin.blogArticles.index')"
+                           :active="route().current('admin.blogArticles.index')">
             {{ t('articles') }}
         </ResponsiveNavLink>
-        <ResponsiveNavLink :href="route('admin.tags.index')"
-                           :active="route().current('admin.tags.index')">
+        <ResponsiveNavLink :href="route('admin.blogTags.index')"
+                           :active="route().current('admin.blogTags.index')">
             {{ t('tags') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink :href="route('admin.comments.index')"
                            :active="route().current('admin.comments.index')">
             {{ t('comments') }}
         </ResponsiveNavLink>
-        <ResponsiveNavLink :href="route('admin.banners.index')"
-                           :active="route().current('admin.banners.index')">
+        <ResponsiveNavLink :href="route('admin.blogBanners.index')"
+                           :active="route().current('admin.blogBanners.index')">
             {{ t('banners') }}
         </ResponsiveNavLink>
-        <ResponsiveNavLink :href="route('admin.videos.index')"
-                           :active="route().current('admin.videos.index')">
+        <ResponsiveNavLink :href="route('admin.blogVideos.index')"
+                           :active="route().current('admin.blogVideos.index')">
             {{ t('videos') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink :href="route('admin.charts.index')"

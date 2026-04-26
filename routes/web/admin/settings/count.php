@@ -68,3 +68,5 @@ Route::put('/update-count/settings', [SettingController::class, 'updateAdminCoun
     ->name('updateAdminCountSettings');
 Route::put('/update-count/settings', [SettingController::class, 'updateAdminCountMarketCompanies'])
     ->name('updateAdminCountMarketCompanies');
+Route::put('/update-count/settings', [SettingController::class, 'updateAdminCountMarketStorefronts'])
+    ->name('updateAdminCountMarketStorefronts');

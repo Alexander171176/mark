@@ -9,6 +9,7 @@ export default {
     managerComment: 'Менеджердің пікірі',
     marketCompanies: 'Компаниялар',
     marketCompany: 'Қатты',
+    marketStorefronts: 'Көрме витриналары',
     maxScore: 'Максималды балл',
     meetingUrl: 'Кездесу URL мекенжайы',
     menu: 'Мәзір',

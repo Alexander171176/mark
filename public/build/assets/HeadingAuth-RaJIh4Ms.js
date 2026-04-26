@@ -1,1 +1,0 @@
-import{_ as o}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{n as s,o as n,y as r,q as a}from"./vendor-Cms3wL8z.js";const c={name:"HeadingAuth"},d={class:"text-center text-lg text-blue-400 font-semibold mb-1"};function l(e,t,p,i,m,f){return n(),s("h1",d,[r(e.$slots,"default",{type:"text"}),t[0]||(t[0]=a(" ✨ "))])}const x=o(c,[["render",l]]);export{x as H};

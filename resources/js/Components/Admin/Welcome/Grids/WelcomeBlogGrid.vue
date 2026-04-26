@@ -27,7 +27,7 @@ const descriptions = computed(() => ({
                border-dashed border-y border-gray-400"
     >
         <WelcomeCard
-            :href="route('admin.rubrics.index')"
+            :href="route('admin.blogRubrics.index')"
             :title="t('rubrics')"
             :description="descriptions.rubrics">
             <template #icon>
@@ -44,7 +44,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.articles.index')"
+            :href="route('admin.blogArticles.index')"
             :title="t('posts')"
             :description="descriptions.posts">
             <template #icon>
@@ -60,7 +60,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.tags.index')"
+            :href="route('admin.blogTags.index')"
             :title="t('tags')"
             :description="descriptions.tags">
             <template #icon>
@@ -98,7 +98,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.banners.index')"
+            :href="route('admin.blogBanners.index')"
             :title="t('banners')"
             :description="descriptions.banners">
             <template #icon>
@@ -116,7 +116,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.videos.index')"
+            :href="route('admin.blogVideos.index')"
             :title="t('videos')"
             :description="descriptions.videos">
             <template #icon>

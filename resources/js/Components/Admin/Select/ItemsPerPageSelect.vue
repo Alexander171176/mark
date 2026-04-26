@@ -20,11 +20,13 @@ const updateItemsPerPage = (event) => {
 </script>
 
 <template>
-    <select :title="t('titleItemsPerPage')" :value="props.itemsPerPage" @change="updateItemsPerPage"
-            class="w-20 sm:ml-4 px-3 py-0.5 form-select bg-white dark:bg-gray-200
-                 text-gray-600 dark:text-gray-900
-                 border border-slate-400 dark:border-slate-600
-                 rounded-sm shadow-sm">
+    <select :title="t('titleItemsPerPage')"
+            :value="props.itemsPerPage"
+            @change="updateItemsPerPage"
+            class="w-20 px-3 py-0.5 form-select bg-white dark:bg-gray-200
+                   text-gray-600 dark:text-gray-900
+                   border border-slate-400 dark:border-slate-600
+                   rounded-sm shadow-sm">
         <option value="4">4</option>
         <option value="8">8</option>
         <option value="16">16</option>

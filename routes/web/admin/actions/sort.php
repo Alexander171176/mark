@@ -2,15 +2,17 @@
 
 // Обновление сортировки для одной строки
 
-use App\Http\Controllers\Admin\Blog\Banner\BannerController;
-use App\Http\Controllers\Admin\Blog\Rubric\RubricController;
-use App\Http\Controllers\Admin\Blog\Tag\TagController;
-use App\Http\Controllers\Admin\Blog\Video\VideoController;
+use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
+use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
+use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
+use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
+use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
 use App\Http\Controllers\Admin\School\Course\CourseController;
@@ -79,21 +81,25 @@ Route::put('/bundles/{bundle}/sort',
     [BundleController::class, 'updateSort'])
     ->name('bundles.updateSort');
 
-Route::put('/rubrics/{rubric}/sort',
-    [RubricController::class, 'updateSort'])
-    ->name('rubrics.updateSort');
+Route::put('/blog-rubrics/{blogRubric}/sort',
+    [BlogRubricController::class, 'updateSort'])
+    ->name('blogRubrics.updateSort');
 
-Route::put('/tags/{tag}/sort',
-    [TagController::class, 'updateSort'])
-    ->name('tags.updateSort');
+Route::put('/blog-articles/{blogArticle}/sort',
+    [BlogArticleController::class, 'updateSort'])
+    ->name('blogArticles.updateSort');
 
-Route::put('/banners/{banner}/sort',
-    [BannerController::class, 'updateSort'])
-    ->name('banners.updateSort');
+Route::put('/blog-tags/{blogTag}/sort',
+    [BlogTagController::class, 'updateSort'])
+    ->name('blogTags.updateSort');
 
-Route::put('/videos/{video}/sort',
-    [VideoController::class, 'updateSort'])
-    ->name('videos.updateSort');
+Route::put('/blog-banners/{blogBanner}/sort',
+    [BlogBannerController::class, 'updateSort'])
+    ->name('blogBanners.updateSort');
+
+Route::put('/blog-videos/{blogVideo}/sort',
+    [BlogVideoController::class, 'updateSort'])
+    ->name('blogVideos.updateSort');
 
 Route::put('/parameters/{parameter}/sort',
     [ParameterController::class, 'updateSort'])
@@ -118,3 +124,7 @@ Route::put('subscription-plans/{subscriptionPlan}/update-sort',
 Route::put('market-companies/{marketCompany}/update-sort',
     [MarketCompanyController::class, 'updateSort'])
     ->name('marketCompanies.updateSort');
+
+Route::put('market-storefronts/{marketStorefront}/update-sort',
+    [MarketStorefrontController::class, 'updateSort'])
+    ->name('marketStorefronts.updateSort');

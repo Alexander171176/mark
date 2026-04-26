@@ -85,8 +85,7 @@ watch(() => page.props.flash, (flashMessages) => {
             </header>
 
             <!-- Page Content -->
-            <main class="flex-grow bg-center border-l border-r border-slate-400"
-                  :style="{ backgroundImage: `url(${authImage})`, backgroundAttachment: 'fixed' }">
+            <main class="flex-grow bg-center border-l border-r border-slate-400">
                 <slot/>
             </main>
 

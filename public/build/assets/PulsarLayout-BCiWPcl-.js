@@ -1,1 +1,0 @@
-import{aW as e,n as o,o as r,y as n,v as t,l}from"./vendor-Cms3wL8z.js";const _={__name:"PulsarLayout",props:{title:String,canLogin:Boolean,canRegister:Boolean},setup(i){const a=e("isDark");return(s,c)=>(r(),o("div",{id:"app",class:t([l(a)?"is-dark":""])},[n(s.$slots,"default")],2))}};export{_};

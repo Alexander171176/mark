@@ -9,6 +9,7 @@ export default {
     managerComment: 'Manager\'s comment',
     marketCompanies: 'Companies',
     marketCompany: 'Company',
+    marketStorefronts: 'Showcases',
     maxScore: 'Maximum score',
     meetingUrl: 'Meeting URL',
     menu: 'Menu',

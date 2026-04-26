@@ -9,6 +9,7 @@ export default {
     managerComment: 'Комментарий менеджера',
     marketCompanies: 'Фирмы',
     marketCompany: 'Фирма',
+    marketStorefronts: 'Витрины',
     maxScore: 'Максимальный балл',
     meetingUrl: 'URL встречи',
     menu: 'Меню',

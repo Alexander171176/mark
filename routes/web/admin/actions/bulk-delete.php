@@ -3,16 +3,17 @@
 // Массовое удаление
 
 
-use App\Http\Controllers\Admin\Blog\Article\ArticleController;
-use App\Http\Controllers\Admin\Blog\Banner\BannerController;
+use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
+use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
+use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
+use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
+use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
-use App\Http\Controllers\Admin\Blog\Rubric\RubricController;
-use App\Http\Controllers\Admin\Blog\Tag\TagController;
-use App\Http\Controllers\Admin\Blog\Video\VideoController;
 use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
 use App\Http\Controllers\Admin\School\Hashtag\HashtagController;
 use App\Http\Controllers\Admin\School\Quiz\QuizController;
@@ -22,20 +23,25 @@ use App\Http\Controllers\Admin\School\QuizAttemptItem\QuizAttemptItemController;
 use App\Http\Controllers\Admin\School\QuizQuestion\QuizQuestionController;
 use Illuminate\Support\Facades\Route;
 
-Route::delete('/rubrics/bulk-delete', [RubricController::class, 'bulkDestroy'])
-    ->name('rubrics.bulkDestroy');
+Route::delete('/blog-rubrics/bulk-delete',
+    [BlogRubricController::class, 'bulkDestroy'])
+    ->name('blogRubrics.bulkDestroy');
 
-Route::delete('/articles/bulk-delete', [ArticleController::class, 'bulkDestroy'])
-    ->name('articles.bulkDestroy');
+Route::delete('/blog-articles/bulk-delete',
+    [BlogArticleController::class, 'bulkDestroy'])
+    ->name('blogArticles.bulkDestroy');
 
-Route::delete('/tags/bulk-delete', [TagController::class, 'bulkDestroy'])
-    ->name('tags.bulkDestroy');
+Route::delete('/blog-tags/bulk-delete',
+    [BlogTagController::class, 'bulkDestroy'])
+    ->name('blogTags.bulkDestroy');
 
-Route::delete('/banners/bulk-delete', [BannerController::class, 'bulkDestroy'])
-    ->name('banners.bulkDestroy');
+Route::delete('/blog-banners/bulk-delete',
+    [BlogBannerController::class, 'bulkDestroy'])
+    ->name('blogBanners.bulkDestroy');
 
-Route::delete('/videos/bulk-delete', [VideoController::class, 'bulkDestroy'])
-    ->name('videos.bulkDestroy');
+Route::delete('/blog-videos/bulk-delete',
+    [BlogVideoController::class, 'bulkDestroy'])
+    ->name('blogVideos.bulkDestroy');
 
 Route::delete('/comments/bulk-delete', [CommentController::class, 'bulkDestroy'])
     ->name('comments.bulkDestroy');
@@ -58,9 +64,6 @@ Route::delete('/quiz-answers/bulk-delete', [QuizAnswerController::class, 'bulkDe
 Route::delete('/quiz-attempts/bulk-delete', [QuizAttemptController::class, 'bulkDestroy'])
     ->name('quizAttempts.bulkDestroy');
 
-Route::delete('/quiz-attempts/bulk-delete', [QuizAttemptController::class, 'bulkDestroy'])
-    ->name('quizAttempts.bulkDestroy');
-
 Route::delete('/quiz-attempt-items/bulk-delete', [QuizAttemptItemController::class, 'bulkDestroy'])
     ->name('quizAttemptItems.bulkDestroy');
 
@@ -75,3 +78,6 @@ Route::delete('bundle-prices/bulk-destroy', [BundlePriceController::class, 'bulk
 
 Route::delete('market-companies/bulk-destroy', [MarketCompanyController::class, 'bulkDestroy'])
     ->name('marketCompanies.bulkDestroy');
+
+Route::delete('market-storefronts/bulk-destroy', [MarketStorefrontController::class, 'bulkDestroy'])
+    ->name('marketStorefronts.bulkDestroy');

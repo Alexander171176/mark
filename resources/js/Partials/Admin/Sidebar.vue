@@ -1,20 +1,19 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { defineProps, defineEmits } from 'vue';
-import {Link, usePage} from '@inertiajs/vue3';
-import ApplicationMark from '@/Components/ApplicationMark.vue';
-import DraggableSidebarPageBuilderLink from '@/Components/Admin/Links/DraggableSidebarPageBuilderLink.vue';
-import DraggableSidebarPageFinanceLink from '@/Components/Admin/Links/DraggableSidebarPageFinanceLink.vue';
-import DraggableSidebarPageSchoolLink from '@/Components/Admin/Links/DraggableSidebarPageSchoolLink.vue';
-import DraggableSidebarPageBlogLink from '@/Components/Admin/Links/DraggableSidebarPageBlogLink.vue';
-import DraggableSidebarPageMainLink from '@/Components/Admin/Links/DraggableSidebarPageMainLink.vue';
-import DraggableSidebarGroupLink from '@/Components/Admin/Links/DraggableSidebarGroupLink.vue';
-import DigitalClock from '@/Components/Admin/CurrentTime/DigitalClock.vue';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { library } from '@fortawesome/fontawesome-svg-core';
-import { fas } from '@fortawesome/free-solid-svg-icons';
-import { useI18n } from 'vue-i18n';
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { defineProps, defineEmits } from 'vue'
+import {Link, usePage} from '@inertiajs/vue3'
+import ApplicationMark from '@/Components/ApplicationMark.vue'
+import DraggableSidebarPageFinanceLink from '@/Components/Admin/Links/DraggableSidebarPageFinanceLink.vue'
+import DraggableSidebarPageSchoolLink from '@/Components/Admin/Links/DraggableSidebarPageSchoolLink.vue'
+import DraggableSidebarPageBlogLink from '@/Components/Admin/Links/DraggableSidebarPageBlogLink.vue'
+import DraggableSidebarPageMainLink from '@/Components/Admin/Links/DraggableSidebarPageMainLink.vue'
+import DraggableSidebarGroupLink from '@/Components/Admin/Links/DraggableSidebarGroupLink.vue'
 import DraggableSidebarPageMarketLink from '@/Components/Admin/Links/DraggableSidebarPageMarketLink.vue'
+import DigitalClock from '@/Components/Admin/CurrentTime/DigitalClock.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { fas } from '@fortawesome/free-solid-svg-icons'
+import { useI18n } from 'vue-i18n'
 
 library.add(fas);
 
@@ -144,14 +143,6 @@ const isActive = (path) => {
                     {{ t('pages') }}
                 </span>
                 <DraggableSidebarPageMainLink :expanded="sidebarExpanded"/>
-
-                <!-- Ссылки страниц конструктора -->
-                <span :class="[colorTextActive]"
-                      class="flex justify-center text-xs uppercase font-semibold pl-3 opacity-45"
-                      v-if="sidebarExpanded">
-                    {{ t('pageBuilder') }}
-                </span>
-                <DraggableSidebarPageBuilderLink :expanded="sidebarExpanded"/>
 
                 <!-- Ссылки страниц онлайн школы -->
                 <span :class="[colorTextActive]"

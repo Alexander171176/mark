@@ -1,0 +1,1 @@
+import{n as e,o as s,t as r}from"./vendor-UQgtKMQn.js";const a={class:"ml-2 font-medium text-sm text-indigo-600 dark:text-sky-500"},i={__name:"LabelCheckbox",props:{customClass:{type:String,required:!1,default:""},text:{type:String,required:!0}},setup(t){return(o,n)=>(s(),e("label",a,r(t.text),1))}};export{i as _};

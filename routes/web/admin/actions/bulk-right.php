@@ -2,16 +2,19 @@
 
 // Переключение активности в правой колонке массово
 
-use App\Http\Controllers\Admin\Blog\Article\ArticleController;
-use App\Http\Controllers\Admin\Blog\Banner\BannerController;
-use App\Http\Controllers\Admin\Blog\Video\VideoController;
+use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
+use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
+use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use Illuminate\Support\Facades\Route;
 
-Route::put('/articles/bulk-right', [ArticleController::class, 'bulkUpdateRight'])
-    ->name('articles.bulkUpdateRight');
+Route::put('/blog-articles/bulk-right',
+    [BlogArticleController::class, 'bulkUpdateRight'])
+    ->name('blogArticles.bulkUpdateRight');
 
-Route::put('/banners/bulk-right', [BannerController::class, 'bulkUpdateRight'])
-    ->name('banners.bulkUpdateRight');
+Route::put('/blog-banners/bulk-right',
+    [BlogBannerController::class, 'bulkUpdateRight'])
+    ->name('blogBanners.bulkUpdateRight');
 
-Route::put('/videos/bulk-right', [VideoController::class, 'bulkUpdateRight'])
-    ->name('videos.bulkUpdateRight');
+Route::put('/blog-videos/bulk-right',
+    [BlogVideoController::class, 'bulkUpdateRight'])
+    ->name('blogVideos.bulkUpdateRight');

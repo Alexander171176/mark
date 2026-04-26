@@ -2,16 +2,19 @@
 
 // Переключение активности в главном массово
 
-use App\Http\Controllers\Admin\Blog\Article\ArticleController;
-use App\Http\Controllers\Admin\Blog\Banner\BannerController;
-use App\Http\Controllers\Admin\Blog\Video\VideoController;
+use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
+use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
+use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use Illuminate\Support\Facades\Route;
 
-Route::put('/articles/bulk-main', [ArticleController::class, 'bulkUpdateMain'])
-    ->name('articles.bulkUpdateMain');
+Route::put('/blog-articles/bulk-main',
+    [BlogArticleController::class, 'bulkUpdateMain'])
+    ->name('blogArticles.bulkUpdateMain');
 
-Route::put('/banners/bulk-main', [BannerController::class, 'bulkUpdateMain'])
-    ->name('banners.bulkUpdateMain');
+Route::put('/blog-banners/bulk-main',
+    [BlogBannerController::class, 'bulkUpdateMain'])
+    ->name('blogBanners.bulkUpdateMain');
 
-Route::put('/videos/bulk-main', [VideoController::class, 'bulkUpdateMain'])
-    ->name('videos.bulkUpdateMain');
+Route::put('/blog-videos/bulk-main',
+    [BlogVideoController::class, 'bulkUpdateMain'])
+    ->name('blogVideos.bulkUpdateMain');

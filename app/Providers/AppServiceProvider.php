@@ -2,12 +2,12 @@
 
 namespace App\Providers;
 
-use App\Models\Admin\Blog\Article\Article;
-use App\Models\Admin\Blog\Banner\Banner;
+use App\Models\Admin\Blog\BlogArticle\BlogArticle;
+use App\Models\Admin\Blog\BlogBanner\BlogBanner;
+use App\Models\Admin\Blog\BlogRubric\BlogRubric;
+use App\Models\Admin\Blog\BlogTag\BlogTag;
+use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\Comment\Comment;
-use App\Models\Admin\Blog\Rubric\Rubric;
-use App\Models\Admin\Blog\Tag\Tag;
-use App\Models\Admin\Blog\Video\Video;
 use App\Models\Admin\Finance\SubscriptionPlan\SubscriptionPlan;
 use App\Models\Admin\School\Bundle\Bundle;
 use App\Models\Admin\School\Course\Course;
@@ -80,20 +80,20 @@ class AppServiceProvider extends ServiceProvider
             'availableLocales' => fn () => config('app.available_locales', ['ru']),
 
             'admin' => fn () => (
-                Schema::hasTable('rubrics') &&
-                Schema::hasTable('articles') &&
-                Schema::hasTable('tags') &&
-                Schema::hasTable('banners') &&
-                Schema::hasTable('videos') &&
+                Schema::hasTable('blog_rubrics') &&
+                Schema::hasTable('blog_articles') &&
+                Schema::hasTable('blog_tags') &&
+                Schema::hasTable('blog_banners') &&
+                Schema::hasTable('blog_videos') &&
                 Schema::hasTable('comments')
             )
                 ? Cache::remember('admin_moderation_counts', 60, function () {
                     return [
-                        'rubrics_under_moderation_count' => Rubric::where('moderation_status', 0)->count(),
-                        'articles_under_moderation_count' => Article::where('moderation_status', 0)->count(),
-                        'tags_under_moderation_count' => Tag::where('moderation_status', 0)->count(),
-                        'banners_under_moderation_count' => Banner::where('moderation_status', 0)->count(),
-                        'videos_under_moderation_count' => Video::where('moderation_status', 0)->count(),
+                        'rubrics_under_moderation_count' => BlogRubric::where('moderation_status', 0)->count(),
+                        'articles_under_moderation_count' => BlogArticle::where('moderation_status', 0)->count(),
+                        'tags_under_moderation_count' => BlogTag::where('moderation_status', 0)->count(),
+                        'banners_under_moderation_count' => BlogBanner::where('moderation_status', 0)->count(),
+                        'videos_under_moderation_count' => BlogVideo::where('moderation_status', 0)->count(),
                         'comments_under_moderation_count' => Comment::where('moderation_status', 0)->count(),
                     ];
                 })
@@ -120,11 +120,12 @@ class AppServiceProvider extends ServiceProvider
          * 4) Morph map для polymorphic relations.
          */
         Relation::morphMap([
-            'rubric' => Rubric::class,
-            'article' => Article::class,
-            'tag' => Tag::class,
-            'banner' => Banner::class,
-            'video' => Video::class,
+            'rubric' => BlogRubric::class,
+            'article' => BlogArticle::class,
+            'tag' => BlogTag::class,
+            'banner' => BlogBanner::class,
+            'video' => BlogVideo::class,
+
             'track' => LearningCategory::class,
             'course' => Course::class,
             'module' => Module::class,

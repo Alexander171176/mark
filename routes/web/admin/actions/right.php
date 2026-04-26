@@ -2,21 +2,24 @@
 
 // Переключение активности в правой колонке
 
-use App\Http\Controllers\Admin\Blog\Article\ArticleController;
-use App\Http\Controllers\Admin\Blog\Banner\BannerController;
-use App\Http\Controllers\Admin\Blog\Video\VideoController;
+use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
+use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
+use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
 use App\Http\Controllers\Admin\School\Quiz\QuizController;
 use Illuminate\Support\Facades\Route;
 
-Route::put('/articles/{article}/right', [ArticleController::class, 'updateRight'])
-    ->name('articles.updateRight');
+Route::put('/blog-articles/{blogArticle}/right',
+    [BlogArticleController::class, 'updateRight'])
+    ->name('blogArticles.updateRight');
 
-Route::put('/banners/{banner}/right', [BannerController::class, 'updateRight'])
-    ->name('banners.updateRight');
+Route::put('/blog-banners/{blogBanner}/right',
+    [BlogBannerController::class, 'updateRight'])
+    ->name('blogBanners.updateRight');
 
-Route::put('/videos/{video}/right', [VideoController::class, 'updateRight'])
-    ->name('videos.updateRight');
+Route::put('/blog-videos/{blogVideo}/right',
+    [BlogVideoController::class, 'updateRight'])
+    ->name('blogVideos.updateRight');
 
 Route::put('/assignments/{assignment}/right', [AssignmentController::class, 'updateRight'])
     ->name('assignments.updateRight');

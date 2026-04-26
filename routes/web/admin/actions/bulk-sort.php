@@ -2,16 +2,17 @@
 
 // Обновление сортировки для Drag and Drop
 
-use App\Http\Controllers\Admin\Blog\Article\ArticleController;
-use App\Http\Controllers\Admin\Blog\Banner\BannerController;
-use App\Http\Controllers\Admin\Blog\Rubric\RubricController;
-use App\Http\Controllers\Admin\Blog\Tag\TagController;
-use App\Http\Controllers\Admin\Blog\Video\VideoController;
+use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
+use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
+use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
+use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
+use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
 use App\Http\Controllers\Admin\School\Course\CourseController;
@@ -75,25 +76,25 @@ Route::put('/bundles/update-sort-bulk',
     [BundleController::class, 'updateSortBulk'])
     ->name('bundles.updateSortBulk');
 
-Route::put('/rubrics/update-sort-bulk',
-    [RubricController::class, 'updateSortBulk'])
-    ->name('rubrics.updateSortBulk');
+Route::put('/blog-rubrics/update-sort-bulk',
+    [BlogRubricController::class, 'updateSortBulk'])
+    ->name('blogRubrics.updateSortBulk');
 
-Route::put('/articles/update-sort-bulk',
-    [ArticleController::class, 'updateSortBulk'])
-    ->name('articles.updateSortBulk');
+Route::put('/blog-articles/update-sort-bulk',
+    [BlogArticleController::class, 'updateSortBulk'])
+    ->name('blogArticles.updateSortBulk');
 
-Route::put('/tags/update-sort-bulk',
-    [TagController::class, 'updateSortBulk'])
-    ->name('tags.updateSortBulk');
+Route::put('/blog-tags/update-sort-bulk',
+    [BlogTagController::class, 'updateSortBulk'])
+    ->name('blogTags.updateSortBulk');
 
-Route::put('/banners/update-sort-bulk',
-    [BannerController::class, 'updateSortBulk'])
-    ->name('banners.updateSortBulk');
+Route::put('/blog-banners/update-sort-bulk',
+    [BlogBannerController::class, 'updateSortBulk'])
+    ->name('blogBanners.updateSortBulk');
 
-Route::put('/videos/update-sort-bulk',
-    [VideoController::class, 'updateSortBulk'])
-    ->name('videos.updateSortBulk');
+Route::put('/blog-videos/update-sort-bulk',
+    [BlogVideoController::class, 'updateSortBulk'])
+    ->name('blogVideos.updateSortBulk');
 
 Route::put('/settings/update-sort-bulk',
     [ParameterController::class, 'updateSortBulk'])
@@ -118,3 +119,7 @@ Route::put('subscription-plans/update-sort-bulk',
 Route::put('market-companies/update-sort-bulk',
     [MarketCompanyController::class, 'updateSortBulk'])
     ->name('marketCompanies.updateSortBulk');
+
+Route::put('market-storefronts/update-sort-bulk',
+    [MarketStorefrontController::class, 'updateSortBulk'])
+    ->name('marketStorefronts.updateSortBulk');

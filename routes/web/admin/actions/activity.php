@@ -2,17 +2,18 @@
 
 // Переключение активности (Используем имена моделей для параметров RMB)
 
-use App\Http\Controllers\Admin\Blog\Article\ArticleController;
-use App\Http\Controllers\Admin\Blog\Banner\BannerController;
+use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
+use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
+use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
+use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
+use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
-use App\Http\Controllers\Admin\Blog\Rubric\RubricController;
-use App\Http\Controllers\Admin\Blog\Tag\TagController;
-use App\Http\Controllers\Admin\Blog\Video\VideoController;
 use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
 use App\Http\Controllers\Admin\School\Course\CourseController;
@@ -76,25 +77,25 @@ Route::put('/bundles/{bundle}/activity',
     [BundleController::class, 'updateActivity'])
     ->name('bundles.updateActivity');
 
-Route::put('/rubrics/{rubric}/activity',
-    [RubricController::class, 'updateActivity'])
-    ->name('rubrics.updateActivity');
+Route::put('/blog-rubrics/{blogRubric}/activity',
+    [BlogRubricController::class, 'updateActivity'])
+    ->name('blogRubrics.updateActivity');
 
-Route::put('/articles/{article}/activity',
-    [ArticleController::class, 'updateActivity'])
-    ->name('articles.updateActivity');
+Route::put('/blog-articles/{blogArticle}/activity',
+    [BlogArticleController::class, 'updateActivity'])
+    ->name('blogArticles.updateActivity');
 
-Route::put('/tags/{tag}/activity',
-    [TagController::class, 'updateActivity'])
-    ->name('tags.updateActivity');
+Route::put('/blog-tags/{blogTag}/activity',
+    [BlogTagController::class, 'updateActivity'])
+    ->name('blogTags.updateActivity');
 
-Route::put('/banners/{banner}/activity',
-    [BannerController::class, 'updateActivity'])
-    ->name('banners.updateActivity');
+Route::put('/blog-banners/{blogBanner}/activity',
+    [BlogBannerController::class, 'updateActivity'])
+    ->name('blogBanners.updateActivity');
 
-Route::put('/videos/{video}/activity',
-    [VideoController::class, 'updateActivity'])
-    ->name('videos.updateActivity');
+Route::put('/blog-videos/{blogVideo}/activity',
+    [BlogVideoController::class, 'updateActivity'])
+    ->name('blogVideos.updateActivity');
 
 Route::put('/settings/{setting}/activity',
     [ParameterController::class, 'updateActivity'])
@@ -123,3 +124,7 @@ Route::put('subscription-plans/{subscriptionPlan}/update-activity',
 Route::put('market-companies/{marketCompany}/update-activity',
     [MarketCompanyController::class, 'updateActivity'])
     ->name('marketCompanies.updateActivity');
+
+Route::put('market-storefronts/{marketStorefront}/update-activity',
+    [MarketStorefrontController::class, 'updateActivity'])
+    ->name('marketStorefronts.updateActivity');

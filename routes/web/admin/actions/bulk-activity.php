@@ -2,17 +2,18 @@
 
 // Переключение активности массово
 
-use App\Http\Controllers\Admin\Blog\Article\ArticleController;
-use App\Http\Controllers\Admin\Blog\Banner\BannerController;
+use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
+use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
+use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
+use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
+use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
-use App\Http\Controllers\Admin\Blog\Rubric\RubricController;
-use App\Http\Controllers\Admin\Blog\Tag\TagController;
-use App\Http\Controllers\Admin\Blog\Video\VideoController;
 use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
 use App\Http\Controllers\Admin\School\Course\CourseController;
@@ -76,25 +77,25 @@ Route::put('/bundles/bulk-activity',
     [BundleController::class, 'bulkUpdateActivity'])
     ->name('bundles.bulkUpdateActivity');
 
-Route::put('/rubrics/bulk-activity',
-    [RubricController::class, 'bulkUpdateActivity'])
-    ->name('rubrics.bulkUpdateActivity');
+Route::put('/blog-rubrics/bulk-activity',
+    [BlogRubricController::class, 'bulkUpdateActivity'])
+    ->name('blogRubrics.bulkUpdateActivity');
 
-Route::put('/articles/bulk-activity',
-    [ArticleController::class, 'bulkUpdateActivity'])
-    ->name('articles.bulkUpdateActivity');
+Route::put('/blog-articles/bulk-activity',
+    [BlogArticleController::class, 'bulkUpdateActivity'])
+    ->name('blogArticles.bulkUpdateActivity');
 
-Route::put('/tags/bulk-activity',
-    [TagController::class, 'bulkUpdateActivity'])
-    ->name('tags.bulkUpdateActivity');
+Route::put('/blog-tags/bulk-activity',
+    [BlogTagController::class, 'bulkUpdateActivity'])
+    ->name('blogTags.bulkUpdateActivity');
 
-Route::put('/banners/bulk-activity',
-    [BannerController::class, 'bulkUpdateActivity'])
-    ->name('banners.bulkUpdateActivity');
+Route::put('/blog-banners/bulk-activity',
+    [BlogBannerController::class, 'bulkUpdateActivity'])
+    ->name('blogBanners.bulkUpdateActivity');
 
-Route::put('/videos/bulk-activity',
-    [VideoController::class, 'bulkUpdateActivity'])
-    ->name('videos.bulkUpdateActivity');
+Route::put('/blog-videos/bulk-activity',
+    [BlogVideoController::class, 'bulkUpdateActivity'])
+    ->name('blogVideos.bulkUpdateActivity');
 
 Route::put('/settings/bulk-activity',
     [ParameterController::class, 'bulkUpdateActivity'])
@@ -123,3 +124,7 @@ Route::put('subscription-plans/bulk-update-activity',
 Route::put('market-companies/bulk-update-activity',
     [MarketCompanyController::class, 'bulkUpdateActivity'])
     ->name('marketCompanies.bulkUpdateActivity');
+
+Route::put('market-storefronts/bulk-update-activity',
+    [MarketStorefrontController::class, 'bulkUpdateActivity'])
+    ->name('marketStorefronts.bulkUpdateActivity');

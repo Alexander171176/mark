@@ -2,24 +2,17 @@
 
 namespace App\Http\Controllers\Admin\Blog\BlogVideo;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Admin\Blog\Base\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogVideo\BlogVideoRequest;
-use App\Http\Requests\Admin\System\UpdateActivityRequest;
-use App\Http\Requests\Admin\System\UpdateLeftRequest;
-use App\Http\Requests\Admin\System\UpdateMainRequest;
-use App\Http\Requests\Admin\System\UpdateRightRequest;
-use App\Http\Requests\Admin\System\UpdateSortEntityRequest;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoSharedResource;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\BlogVideo\BlogVideoImage;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -40,99 +33,41 @@ use Throwable;
  * @version 1.1
  * @author Александр
  */
-class BlogVideoController extends Controller
+class BlogVideoController extends BaseBlogAdminController
 {
-    /**
-     * Берём все разрешённые языки из config/app.php
-     */
-    private function availableLocales(): array
-    {
-        return config('app.available_locales', ['ru']);
-    }
+    protected string $modelClass = BlogVideo::class;
+
+    protected string $imageModelClass = BlogVideoImage::class;
+
+    protected string $imageMediaCollection = 'images';
+
+    protected string $entityLabel = 'видео';
+
+    protected array $translationFields = [
+        'title',
+        'short',
+        'description',
+        'pseudonym',
+        'meta_title',
+        'meta_keywords',
+        'meta_desc',
+    ];
 
     /**
-     * Базовый запрос:
-     * - admin видит всё
-     * - обычный пользователь только свои видео
+     * Расширенная сортировка от базовой
      */
-    private function baseQuery(): Builder
+    protected function extendedSortMap(): array
     {
-        $query = BlogVideo::query();
-
-        $user = auth()->user();
-
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
-            $query->where('user_id', $user->id);
-        }
-
-        return $query;
-    }
-
-    /**
-     * Нормализация локали:
-     * если локаль невалидна — fallback
-     */
-    private function normalizeLocale(?string $locale): string
-    {
-        $availableLocales = $this->availableLocales();
-        $fallback = config('app.fallback_locale', 'ru');
-
-        if (!$locale || !in_array($locale, $availableLocales, true)) {
-            return $fallback;
-        }
-
-        return $locale;
-    }
-
-    /**
-     * Приведение сортировки из UI к форматам модели
-     */
-    private function normalizeSortParam(?string $sort): string
-    {
-        return match ($sort) {
-            'idAsc' => 'date_asc',
-            'idDesc' => 'date_desc',
-            'sortAsc' => 'sort_asc',
-            'sortDesc' => 'sort_desc',
-            'titleAsc' => 'title_asc',
-            'titleDesc' => 'title_desc',
+        return [
             'viewsAsc' => 'views_asc',
             'viewsDesc' => 'views_desc',
+
             'likesAsc' => 'likes_asc',
             'likesDesc' => 'likes_desc',
+
             'durationAsc' => 'duration_asc',
             'durationDesc' => 'duration_desc',
-            default => $sort ?: 'sort_asc',
-        };
-    }
-
-    /**
-     * Синхронизация переводов:
-     * - создание/обновление текущих
-     * - удаление отсутствующих
-     */
-    private function syncTranslations(BlogVideo $video, array $translations): void
-    {
-        $locales = array_keys($translations);
-
-        foreach ($translations as $locale => $translationData) {
-            $video->translations()->updateOrCreate(
-                ['locale' => $locale],
-                [
-                    'title' => $translationData['title'] ?? null,
-                    'short' => $translationData['short'] ?? null,
-                    'description' => $translationData['description'] ?? null,
-                    'pseudonym' => $translationData['pseudonym'] ?? null,
-                    'meta_title' => $translationData['meta_title'] ?? null,
-                    'meta_keywords' => $translationData['meta_keywords'] ?? null,
-                    'meta_desc' => $translationData['meta_desc'] ?? null,
-                ]
-            );
-        }
-
-        $video->translations()
-            ->whereNotIn('locale', $locales)
-            ->delete();
+        ];
     }
 
     /**
@@ -157,83 +92,6 @@ class BlogVideoController extends Controller
         }
 
         $video->relatedVideos()->sync($syncData);
-    }
-
-    /**
-     * Синхронизация превью-изображений видео
-     */
-    private function syncImages(BlogVideo $video, Request $request, array $imagesData, array $deletedImageIds = []): void
-    {
-        if (!empty($deletedImageIds)) {
-            $video->images()->detach($deletedImageIds);
-            $this->deleteImages($deletedImageIds);
-        }
-
-        $syncData = [];
-
-        foreach ($imagesData as $index => $imageData) {
-            $fileKey = "images.{$index}.file";
-
-            if (!empty($imageData['id'])) {
-                $image = BlogVideoImage::find($imageData['id']);
-
-                if (!$image || in_array($image->id, $deletedImageIds, true)) {
-                    continue;
-                }
-
-                $image->update([
-                    'order' => $imageData['order'] ?? $image->order,
-                    'alt' => $imageData['alt'] ?? $image->alt,
-                    'caption' => $imageData['caption'] ?? $image->caption,
-                ]);
-
-                if ($request->hasFile($fileKey)) {
-                    $image->clearMediaCollection('images');
-                    $image->addMedia($request->file($fileKey))->toMediaCollection('images');
-                }
-
-                $syncData[$image->id] = [
-                    'order' => $image->order,
-                ];
-
-                continue;
-            }
-
-            if ($request->hasFile($fileKey)) {
-                $image = BlogVideoImage::create([
-                    'order' => $imageData['order'] ?? 0,
-                    'alt' => $imageData['alt'] ?? '',
-                    'caption' => $imageData['caption'] ?? '',
-                ]);
-
-                $image->addMedia($request->file($fileKey))->toMediaCollection('images');
-
-                $syncData[$image->id] = [
-                    'order' => $image->order,
-                ];
-            }
-        }
-
-        $video->images()->sync($syncData);
-    }
-
-    /**
-     * Полное удаление изображений:
-     * - media Spatie
-     * - записи из БД
-     */
-    private function deleteImages(array $imageIds): void
-    {
-        if (empty($imageIds)) {
-            return;
-        }
-
-        $images = BlogVideoImage::whereIn('id', $imageIds)->get();
-
-        foreach ($images as $image) {
-            $image->clearMediaCollection('images');
-            $image->delete();
-        }
     }
 
     /**
@@ -266,11 +124,9 @@ class BlogVideoController extends Controller
                 ->sortByParam($sortParam, $currentLocale)
                 ->get();
 
-            $videosCount = $this->baseQuery()->count();
-
             return Inertia::render('Admin/Blog/BlogVideos/Index', [
                 'videos' => BlogVideoResource::collection($videos),
-                'videosCount' => $videosCount,
+                'videosCount' => $this->baseQuery()->count(),
 
                 'adminCountVideos' => $adminCountVideos,
                 'adminSortVideos' => $adminSortVideos,
@@ -344,7 +200,13 @@ class BlogVideoController extends Controller
 
         if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
             $data['user_id'] = $user->id;
-            unset($data['moderation_status'], $data['moderated_by'], $data['moderated_at'], $data['moderation_note']);
+
+            unset(
+                $data['moderation_status'],
+                $data['moderated_by'],
+                $data['moderated_at'],
+                $data['moderation_note']
+            );
         } else {
             $data['user_id'] = $data['user_id'] ?? $user?->id;
         }
@@ -451,7 +313,13 @@ class BlogVideoController extends Controller
 
         if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
             $data['user_id'] = $user->id;
-            unset($data['moderation_status'], $data['moderated_by'], $data['moderated_at'], $data['moderation_note']);
+
+            unset(
+                $data['moderation_status'],
+                $data['moderated_by'],
+                $data['moderated_at'],
+                $data['moderation_note']
+            );
         }
 
         try {
@@ -575,261 +443,5 @@ class BlogVideoController extends Controller
 
             return back()->with('error', 'Ошибка при массовом удалении видео.');
         }
-    }
-
-    /**
-     * Обновление активности одного видео
-     */
-    public function updateActivity(UpdateActivityRequest $request, int $blogVideo): RedirectResponse
-    {
-        $video = $this->baseQuery()->findOrFail($blogVideo);
-
-        $video->update([
-            'activity' => $request->validated('activity'),
-        ]);
-
-        return back()->with('success', 'Активность видео обновлена.');
-    }
-
-    /**
-     * Массовое обновление активности
-     */
-    public function bulkUpdateActivity(Request $request): RedirectResponse|JsonResponse
-    {
-        $validated = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:blog_videos,id'],
-            'activity' => ['required', 'boolean'],
-        ]);
-
-        $allowedIds = $this->baseQuery()
-            ->whereIn('id', $validated['ids'])
-            ->pluck('id')
-            ->toArray();
-
-        if (count($allowedIds) !== count($validated['ids'])) {
-            return back()->with('error', 'Часть видео недоступна для обновления активности.');
-        }
-
-        BlogVideo::whereIn('id', $allowedIds)->update([
-            'activity' => $validated['activity'],
-        ]);
-
-        $message = 'Активность выбранных видео обновлена.';
-
-        return $request->expectsJson()
-            ? response()->json(['message' => $message])
-            : back()->with('success', $message);
-    }
-
-    /**
-     * Обновление сортировки одного видео
-     */
-    public function updateSort(UpdateSortEntityRequest $request, int $blogVideo): RedirectResponse
-    {
-        $video = $this->baseQuery()->findOrFail($blogVideo);
-
-        $video->update([
-            'sort' => $request->validated('sort'),
-        ]);
-
-        return back()->with('success', 'Сортировка видео обновлена.');
-    }
-
-    /**
-     * Массовое обновление сортировки
-     */
-    public function updateSortBulk(Request $request): RedirectResponse|JsonResponse
-    {
-        $validated = $request->validate([
-            'items' => ['required_without:videos', 'array'],
-            'items.*.id' => ['required_with:items', 'integer', 'exists:blog_videos,id'],
-            'items.*.sort' => ['required_with:items', 'integer', 'min:0'],
-
-            'videos' => ['required_without:items', 'array'],
-            'videos.*.id' => ['required_with:videos', 'integer', 'exists:blog_videos,id'],
-            'videos.*.sort' => ['required_with:videos', 'integer', 'min:0'],
-        ]);
-
-        $items = $validated['items'] ?? $validated['videos'];
-        $ids = array_column($items, 'id');
-
-        $allowedIds = $this->baseQuery()
-            ->whereIn('id', $ids)
-            ->pluck('id')
-            ->toArray();
-
-        if (count($allowedIds) !== count($ids)) {
-            $message = 'Часть видео недоступна для изменения сортировки.';
-
-            return $request->expectsJson()
-                ? response()->json(['message' => $message], 400)
-                : back()->with('error', $message);
-        }
-
-        try {
-            DB::transaction(function () use ($items) {
-                foreach ($items as $row) {
-                    BlogVideo::whereKey($row['id'])->update([
-                        'sort' => (int) $row['sort'],
-                    ]);
-                }
-            });
-
-            $message = 'Сортировка видео обновлена.';
-
-            return $request->expectsJson()
-                ? response()->json(['message' => $message])
-                : back()->with('success', $message);
-        } catch (Throwable $e) {
-            Log::error('Ошибка updateSortBulk blog videos: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
-
-            $message = 'Ошибка при массовом обновлении сортировки видео.';
-
-            return $request->expectsJson()
-                ? response()->json(['message' => $message], 500)
-                : back()->with('error', $message);
-        }
-    }
-
-    /**
-     * Обновление позиции left
-     */
-    public function updateLeft(UpdateLeftRequest $request, int $blogVideo): RedirectResponse
-    {
-        $video = $this->baseQuery()->findOrFail($blogVideo);
-
-        $video->update([
-            'left' => $request->validated('left'),
-        ]);
-
-        return back()->with('success', 'Позиция left обновлена.');
-    }
-
-    /**
-     * Обновление позиции main
-     */
-    public function updateMain(UpdateMainRequest $request, int $blogVideo): RedirectResponse
-    {
-        $video = $this->baseQuery()->findOrFail($blogVideo);
-
-        $video->update([
-            'main' => $request->validated('main'),
-        ]);
-
-        return back()->with('success', 'Позиция main обновлена.');
-    }
-
-    /**
-     * Обновление позиции right
-     */
-    public function updateRight(UpdateRightRequest $request, int $blogVideo): RedirectResponse
-    {
-        $video = $this->baseQuery()->findOrFail($blogVideo);
-
-        $video->update([
-            'right' => $request->validated('right'),
-        ]);
-
-        return back()->with('success', 'Позиция right обновлена.');
-    }
-
-    /**
-     * Массовое обновление позиции left
-     */
-    public function bulkUpdateLeft(Request $request): RedirectResponse|JsonResponse
-    {
-        return $this->bulkUpdateBooleanFlag($request, 'left', 'Позиция left выбранных видео обновлена.');
-    }
-
-    /**
-     * Массовое обновление позиции main
-     */
-    public function bulkUpdateMain(Request $request): RedirectResponse|JsonResponse
-    {
-        return $this->bulkUpdateBooleanFlag($request, 'main', 'Позиция main выбранных видео обновлена.');
-    }
-
-    /**
-     * Массовое обновление позиции right
-     */
-    public function bulkUpdateRight(Request $request): RedirectResponse|JsonResponse
-    {
-        return $this->bulkUpdateBooleanFlag($request, 'right', 'Позиция right выбранных видео обновлена.');
-    }
-
-    /**
-     * Общий метод массового обновления boolean-флага
-     */
-    private function bulkUpdateBooleanFlag(Request $request, string $field, string $message): RedirectResponse|JsonResponse
-    {
-        $validated = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:blog_videos,id'],
-            $field => ['required', 'boolean'],
-        ]);
-
-        $allowedIds = $this->baseQuery()
-            ->whereIn('id', $validated['ids'])
-            ->pluck('id')
-            ->toArray();
-
-        if (count($allowedIds) !== count($validated['ids'])) {
-            $error = 'Часть видео недоступна для обновления.';
-
-            return $request->expectsJson()
-                ? response()->json(['message' => $error], 403)
-                : back()->with('error', $error);
-        }
-
-        BlogVideo::whereIn('id', $allowedIds)->update([
-            $field => $validated[$field],
-        ]);
-
-        return $request->expectsJson()
-            ? response()->json(['message' => $message])
-            : back()->with('success', $message);
-    }
-
-    /**
-     * Модерация видео:
-     * доступ только для admin
-     */
-    public function approve(Request $request, int $blogVideo): RedirectResponse|JsonResponse
-    {
-        $user = auth()->user();
-
-        if (!$user || !method_exists($user, 'hasRole') || !$user->hasRole('admin')) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'moderation_status' => ['required', 'integer', Rule::in([0, 1, 2])],
-            'moderation_note' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $video = BlogVideo::findOrFail($blogVideo);
-
-        $video->update([
-            'moderation_status' => (int) $validated['moderation_status'],
-            'moderation_note' => $validated['moderation_note'] ?? null,
-            'moderated_by' => $user->id,
-            'moderated_at' => now(),
-        ]);
-
-        $message = 'Статус модерации видео обновлён.';
-
-        return $request->expectsJson()
-            ? response()->json([
-                'message' => $message,
-                'video' => new BlogVideoResource(
-                    $video
-                        ->load(['owner', 'moderator', 'translations', 'images', 'relatedVideos.translations', 'relatedVideos.images'])
-                        ->loadCount(['images', 'comments', 'likes'])
-                ),
-            ])
-            : back()->with('success', $message);
     }
 }

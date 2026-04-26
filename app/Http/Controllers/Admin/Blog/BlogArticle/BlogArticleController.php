@@ -2,13 +2,8 @@
 
 namespace App\Http\Controllers\Admin\Blog\BlogArticle;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Admin\Blog\Base\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogArticle\BlogArticleRequest;
-use App\Http\Requests\Admin\System\UpdateActivityRequest;
-use App\Http\Requests\Admin\System\UpdateLeftRequest;
-use App\Http\Requests\Admin\System\UpdateMainRequest;
-use App\Http\Requests\Admin\System\UpdateRightRequest;
-use App\Http\Requests\Admin\System\UpdateSortEntityRequest;
 use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleResource;
 use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleSharedResource;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricSharedResource;
@@ -20,12 +15,10 @@ use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -44,81 +37,45 @@ use Throwable;
  * - moderation (approve/reject) только для admin
  * - images (Spatie)
  *
- * @version 1.1 (Улучшен с RMB, транзакциями, Form Requests)
+ * @version 1.1 (мультиязычеая архитектура)
  * @author Александр Косолапов <kosolapov1976@gmail.com>
- *
- * @see BlogArticle
- * @see BlogArticleRequest
  */
-class BlogArticleController extends Controller
+class BlogArticleController extends BaseBlogAdminController
 {
-    /**
-     * Берём все разрешённые языки из config/app.php.
-     */
-    private function availableLocales(): array
-    {
-        return config('app.available_locales', ['ru']);
-    }
+    protected string $modelClass = BlogArticle::class;
+
+    protected string $imageModelClass = BlogArticleImage::class;
+
+    protected string $imageMediaCollection = 'images';
+
+    protected string $entityLabel = 'статей';
+
+    protected array $translationFields = [
+        'title',
+        'subtitle',
+        'short',
+        'description',
+        'pseudonym',
+        'meta_title',
+        'meta_keywords',
+        'meta_desc',
+    ];
 
     /**
-     * Базовый запрос:
-     * - admin видит всё
-     * - обычный пользователь только свои статьи
+     * Дополнительные варианты сортировки статей
      */
-    private function baseQuery(): Builder
+    protected function extendedSortMap(): array
     {
-        $query = BlogArticle::query();
-
-        $user = auth()->user();
-
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
-            $query->where('user_id', $user->id);
-        }
-
-        return $query;
-    }
-
-    /**
-     * Нормализация локали.
-     */
-    private function normalizeLocale(?string $locale): string
-    {
-        $availableLocales = $this->availableLocales();
-        $fallback = config('app.fallback_locale', 'ru');
-
-        if (!$locale || !in_array($locale, $availableLocales, true)) {
-            return $fallback;
-        }
-
-        return $locale;
-    }
-
-    /**
-     * Приведение сортировки из UI к форматам модели.
-     */
-    private function normalizeSortParam(?string $sort): string
-    {
-        return match ($sort) {
-            'idAsc' => 'date_asc',
-            'idDesc' => 'date_desc',
-            'sortAsc' => 'sort_asc',
-            'sortDesc' => 'sort_desc',
-            'titleAsc' => 'title_asc',
-            'titleDesc' => 'title_desc',
+        return [
             'viewsAsc' => 'views_asc',
             'viewsDesc' => 'views_desc',
             'likesAsc' => 'likes_asc',
             'likesDesc' => 'likes_desc',
-            default => $sort ?: 'sort_asc',
-        };
+        ];
     }
 
     /**
-     * Общие данные для create/edit:
-     * - рубрики
-     * - теги
-     * - видео
-     * - связанные статьи
+     * Общие данные для create/edit
      */
     private function sharedSelects(string $locale, ?int $excludeArticleId = null): array
     {
@@ -153,49 +110,13 @@ class BlogArticleController extends Controller
             'rubrics' => BlogRubricSharedResource::collection($rubrics),
             'tags' => BlogTagSharedResource::collection($tags),
             'videos' => BlogVideoSharedResource::collection($videos),
-
-            /**
-             * Оставляю snake_case как в старой архитектуре.
-             */
             'related_articles' => BlogArticleSharedResource::collection($relatedArticles),
-
-            /**
-             * И camelCase на будущее, если Vue-компонент будет собран в новом стиле.
-             */
             'relatedArticles' => BlogArticleSharedResource::collection($relatedArticles),
         ];
     }
 
     /**
-     * Синхронизация переводов статьи.
-     */
-    private function syncTranslations(BlogArticle $article, array $translations): void
-    {
-        $locales = array_keys($translations);
-
-        foreach ($translations as $locale => $translationData) {
-            $article->translations()->updateOrCreate(
-                ['locale' => $locale],
-                [
-                    'title' => $translationData['title'] ?? null,
-                    'subtitle' => $translationData['subtitle'] ?? null,
-                    'short' => $translationData['short'] ?? null,
-                    'description' => $translationData['description'] ?? null,
-                    'pseudonym' => $translationData['pseudonym'] ?? null,
-                    'meta_title' => $translationData['meta_title'] ?? null,
-                    'meta_keywords' => $translationData['meta_keywords'] ?? null,
-                    'meta_desc' => $translationData['meta_desc'] ?? null,
-                ]
-            );
-        }
-
-        $article->translations()
-            ->whereNotIn('locale', $locales)
-            ->delete();
-    }
-
-    /**
-     * Синхронизация видео статьи с сортировкой.
+     * Синхронизация видео статьи
      */
     private function syncVideos(BlogArticle $article, array $videos): void
     {
@@ -223,7 +144,7 @@ class BlogArticleController extends Controller
     }
 
     /**
-     * Синхронизация связанных статей.
+     * Синхронизация связанных статей
      */
     private function syncRelatedArticles(BlogArticle $article, array $relatedArticles): void
     {
@@ -247,88 +168,7 @@ class BlogArticleController extends Controller
     }
 
     /**
-     * Синхронизация изображений статьи.
-     */
-    private function syncImages(
-        BlogArticle $article,
-        Request $request,
-        array $imagesData,
-        array $deletedImageIds = []
-    ): void {
-        if (!empty($deletedImageIds)) {
-            $article->images()->detach($deletedImageIds);
-            $this->deleteImages($deletedImageIds);
-        }
-
-        $syncData = [];
-
-        foreach ($imagesData as $index => $imageData) {
-            $fileKey = "images.{$index}.file";
-
-            if (!empty($imageData['id'])) {
-                $image = BlogArticleImage::find($imageData['id']);
-
-                if (!$image || in_array($image->id, $deletedImageIds, true)) {
-                    continue;
-                }
-
-                $image->update([
-                    'order' => $imageData['order'] ?? $image->order,
-                    'alt' => $imageData['alt'] ?? $image->alt,
-                    'caption' => $imageData['caption'] ?? $image->caption,
-                ]);
-
-                if ($request->hasFile($fileKey)) {
-                    $image->clearMediaCollection('images');
-                    $image->addMedia($request->file($fileKey))->toMediaCollection('images');
-                }
-
-                $syncData[$image->id] = [
-                    'order' => $image->order,
-                ];
-
-                continue;
-            }
-
-            if ($request->hasFile($fileKey)) {
-                $image = BlogArticleImage::create([
-                    'order' => $imageData['order'] ?? 0,
-                    'alt' => $imageData['alt'] ?? '',
-                    'caption' => $imageData['caption'] ?? '',
-                ]);
-
-                $image->addMedia($request->file($fileKey))->toMediaCollection('images');
-
-                $syncData[$image->id] = [
-                    'order' => $image->order,
-                ];
-            }
-        }
-
-        $article->images()->sync($syncData);
-    }
-
-    /**
-     * Полное удаление изображений:
-     * - media Spatie
-     * - записи из БД
-     */
-    private function deleteImages(array $imageIds): void
-    {
-        if (empty($imageIds)) {
-            return;
-        }
-
-        $images = BlogArticleImage::whereIn('id', $imageIds)->get();
-
-        foreach ($images as $image) {
-            $image->clearMediaCollection('images');
-            $image->delete();
-        }
-    }
-
-    /**
-     * Список статей.
+     * Список статей
      */
     public function index(Request $request): Response
     {
@@ -366,11 +206,9 @@ class BlogArticleController extends Controller
                 ->sortByParam($sortParam, $currentLocale)
                 ->get();
 
-            $articlesCount = $this->baseQuery()->count();
-
             return Inertia::render('Admin/Blog/BlogArticles/Index', [
                 'articles' => BlogArticleResource::collection($articles),
-                'articlesCount' => $articlesCount,
+                'articlesCount' => $this->baseQuery()->count(),
 
                 'adminCountArticles' => $adminCountArticles,
                 'adminSortArticles' => $adminSortArticles,
@@ -404,7 +242,7 @@ class BlogArticleController extends Controller
     }
 
     /**
-     * Страница создания статьи.
+     * Страница создания статьи
      */
     public function create(Request $request): Response
     {
@@ -417,7 +255,7 @@ class BlogArticleController extends Controller
     }
 
     /**
-     * Создание статьи.
+     * Создание статьи
      */
     public function store(BlogArticleRequest $request): RedirectResponse
     {
@@ -445,7 +283,13 @@ class BlogArticleController extends Controller
 
         if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
             $data['user_id'] = $user->id;
-            unset($data['moderation_status'], $data['moderated_by'], $data['moderated_at'], $data['moderation_note']);
+
+            unset(
+                $data['moderation_status'],
+                $data['moderated_by'],
+                $data['moderated_at'],
+                $data['moderation_note']
+            );
         } else {
             $data['user_id'] = $data['user_id'] ?? $user?->id;
         }
@@ -484,7 +328,7 @@ class BlogArticleController extends Controller
     }
 
     /**
-     * Редирект на страницу редактирования.
+     * Редирект на страницу редактирования
      */
     public function show(string $id): RedirectResponse
     {
@@ -492,7 +336,7 @@ class BlogArticleController extends Controller
     }
 
     /**
-     * Страница редактирования статьи.
+     * Страница редактирования статьи
      */
     public function edit(int $blogArticle, Request $request): Response
     {
@@ -530,7 +374,7 @@ class BlogArticleController extends Controller
     }
 
     /**
-     * Обновление статьи.
+     * Обновление статьи
      */
     public function update(BlogArticleRequest $request, int $blogArticle): RedirectResponse
     {
@@ -562,7 +406,13 @@ class BlogArticleController extends Controller
 
         if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
             $data['user_id'] = $user->id;
-            unset($data['moderation_status'], $data['moderated_by'], $data['moderated_at'], $data['moderation_note']);
+
+            unset(
+                $data['moderation_status'],
+                $data['moderated_by'],
+                $data['moderated_at'],
+                $data['moderation_note']
+            );
         }
 
         try {
@@ -594,7 +444,7 @@ class BlogArticleController extends Controller
     }
 
     /**
-     * Удаление статьи.
+     * Удаление статьи
      */
     public function destroy(int $blogArticle): RedirectResponse
     {
@@ -633,7 +483,7 @@ class BlogArticleController extends Controller
     }
 
     /**
-     * Массовое удаление статей.
+     * Массовое удаление статей
      */
     public function bulkDestroy(Request $request): RedirectResponse
     {
@@ -688,257 +538,5 @@ class BlogArticleController extends Controller
 
             return back()->with('error', 'Ошибка при массовом удалении статей.');
         }
-    }
-
-    /**
-     * Обновление активности одной статьи.
-     */
-    public function updateActivity(UpdateActivityRequest $request, int $blogArticle): RedirectResponse
-    {
-        $article = $this->baseQuery()->findOrFail($blogArticle);
-
-        $article->update([
-            'activity' => $request->validated('activity'),
-        ]);
-
-        return back()->with('success', 'Активность статьи обновлена.');
-    }
-
-    /**
-     * Массовое обновление активности.
-     */
-    public function bulkUpdateActivity(Request $request): RedirectResponse|JsonResponse
-    {
-        return $this->bulkUpdateBooleanFlag($request, 'activity', 'Активность выбранных статей обновлена.');
-    }
-
-    /**
-     * Обновление сортировки одной статьи.
-     */
-    public function updateSort(UpdateSortEntityRequest $request, int $blogArticle): RedirectResponse
-    {
-        $article = $this->baseQuery()->findOrFail($blogArticle);
-
-        $article->update([
-            'sort' => $request->validated('sort'),
-        ]);
-
-        return back()->with('success', 'Сортировка статьи обновлена.');
-    }
-
-    /**
-     * Массовое обновление сортировки.
-     */
-    public function updateSortBulk(Request $request): RedirectResponse|JsonResponse
-    {
-        $validated = $request->validate([
-            'items' => ['required_without:articles', 'array'],
-            'items.*.id' => ['required_with:items', 'integer', 'exists:blog_articles,id'],
-            'items.*.sort' => ['required_with:items', 'integer', 'min:0'],
-
-            'articles' => ['required_without:items', 'array'],
-            'articles.*.id' => ['required_with:articles', 'integer', 'exists:blog_articles,id'],
-            'articles.*.sort' => ['required_with:articles', 'integer', 'min:0'],
-        ]);
-
-        $items = $validated['items'] ?? $validated['articles'];
-        $ids = array_column($items, 'id');
-
-        $allowedIds = $this->baseQuery()
-            ->whereIn('id', $ids)
-            ->pluck('id')
-            ->toArray();
-
-        if (count($allowedIds) !== count($ids)) {
-            $message = 'Часть статей недоступна для изменения сортировки.';
-
-            return $request->expectsJson()
-                ? response()->json(['message' => $message], 400)
-                : back()->with('error', $message);
-        }
-
-        try {
-            DB::transaction(function () use ($items) {
-                foreach ($items as $row) {
-                    BlogArticle::whereKey($row['id'])->update([
-                        'sort' => (int) $row['sort'],
-                    ]);
-                }
-            });
-
-            $message = 'Сортировка статей обновлена.';
-
-            return $request->expectsJson()
-                ? response()->json(['message' => $message])
-                : back()->with('success', $message);
-        } catch (Throwable $e) {
-            Log::error('Ошибка updateSortBulk blog articles: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
-
-            $message = 'Ошибка при массовом обновлении сортировки статей.';
-
-            return $request->expectsJson()
-                ? response()->json(['message' => $message], 500)
-                : back()->with('error', $message);
-        }
-    }
-
-    /**
-     * Обновление позиции left.
-     */
-    public function updateLeft(UpdateLeftRequest $request, int $blogArticle): RedirectResponse
-    {
-        $article = $this->baseQuery()->findOrFail($blogArticle);
-
-        $article->update([
-            'left' => $request->validated('left'),
-        ]);
-
-        return back()->with('success', 'Позиция left обновлена.');
-    }
-
-    /**
-     * Обновление позиции main.
-     */
-    public function updateMain(UpdateMainRequest $request, int $blogArticle): RedirectResponse
-    {
-        $article = $this->baseQuery()->findOrFail($blogArticle);
-
-        $article->update([
-            'main' => $request->validated('main'),
-        ]);
-
-        return back()->with('success', 'Позиция main обновлена.');
-    }
-
-    /**
-     * Обновление позиции right.
-     */
-    public function updateRight(UpdateRightRequest $request, int $blogArticle): RedirectResponse
-    {
-        $article = $this->baseQuery()->findOrFail($blogArticle);
-
-        $article->update([
-            'right' => $request->validated('right'),
-        ]);
-
-        return back()->with('success', 'Позиция right обновлена.');
-    }
-
-    /**
-     * Массовое обновление left.
-     */
-    public function bulkUpdateLeft(Request $request): RedirectResponse|JsonResponse
-    {
-        return $this->bulkUpdateBooleanFlag($request, 'left', 'Позиция left выбранных статей обновлена.');
-    }
-
-    /**
-     * Массовое обновление main.
-     */
-    public function bulkUpdateMain(Request $request): RedirectResponse|JsonResponse
-    {
-        return $this->bulkUpdateBooleanFlag($request, 'main', 'Позиция main выбранных статей обновлена.');
-    }
-
-    /**
-     * Массовое обновление right.
-     */
-    public function bulkUpdateRight(Request $request): RedirectResponse|JsonResponse
-    {
-        return $this->bulkUpdateBooleanFlag($request, 'right', 'Позиция right выбранных статей обновлена.');
-    }
-
-    /**
-     * Общий метод массового обновления boolean-поля.
-     */
-    private function bulkUpdateBooleanFlag(Request $request, string $field, string $message): RedirectResponse|JsonResponse
-    {
-        $validated = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:blog_articles,id'],
-            $field => ['required', 'boolean'],
-        ]);
-
-        $allowedIds = $this->baseQuery()
-            ->whereIn('id', $validated['ids'])
-            ->pluck('id')
-            ->toArray();
-
-        if (count($allowedIds) !== count($validated['ids'])) {
-            $error = 'Часть статей недоступна для обновления.';
-
-            return $request->expectsJson()
-                ? response()->json(['message' => $error], 403)
-                : back()->with('error', $error);
-        }
-
-        BlogArticle::whereIn('id', $allowedIds)->update([
-            $field => $validated[$field],
-        ]);
-
-        return $request->expectsJson()
-            ? response()->json(['message' => $message])
-            : back()->with('success', $message);
-    }
-
-    /**
-     * Модерация статьи:
-     * доступ только для admin.
-     */
-    public function approve(Request $request, int $blogArticle): RedirectResponse|JsonResponse
-    {
-        $user = auth()->user();
-
-        if (!$user || !method_exists($user, 'hasRole') || !$user->hasRole('admin')) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'moderation_status' => ['required', 'integer', Rule::in([0, 1, 2])],
-            'moderation_note' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $article = BlogArticle::findOrFail($blogArticle);
-
-        $article->update([
-            'moderation_status' => (int) $validated['moderation_status'],
-            'moderation_note' => $validated['moderation_note'] ?? null,
-            'moderated_by' => $user->id,
-            'moderated_at' => now(),
-        ]);
-
-        $message = 'Статус модерации статьи обновлён.';
-
-        return $request->expectsJson()
-            ? response()->json([
-                'message' => $message,
-                'article' => new BlogArticleResource(
-                    $article
-                        ->load([
-                            'owner',
-                            'moderator',
-                            'translations',
-                            'images',
-                            'rubrics.translations',
-                            'tags.translations',
-                            'videos.translations',
-                            'videos.images',
-                            'relatedArticles.translations',
-                            'relatedArticles.images',
-                        ])
-                        ->loadCount([
-                            'comments',
-                            'rubrics',
-                            'tags',
-                            'images',
-                            'videos',
-                            'likes',
-                            'relatedArticles',
-                        ])
-                ),
-            ])
-            : back()->with('success', $message);
     }
 }

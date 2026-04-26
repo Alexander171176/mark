@@ -11,6 +11,9 @@ use Throwable;
 
 trait HasBlogSortingTrait
 {
+    /**
+     * Обновление сортировки одной записи
+     */
     public function updateSort(UpdateSortEntityRequest $request, int $id): RedirectResponse
     {
         $model = $this->baseQuery()->findOrFail($id);
@@ -22,10 +25,14 @@ trait HasBlogSortingTrait
         return back()->with('success', "Сортировка {$this->entityLabel} обновлена.");
     }
 
+    /**
+     * Массовое обновление сортировки
+     */
     public function updateSortBulk(Request $request): RedirectResponse|JsonResponse
     {
         $table = (new $this->modelClass)->getTable();
 
+        // Валидация входных данных
         $validated = $request->validate([
             'items' => ['required', 'array'],
             'items.*.id' => ['required', 'integer', "exists:{$table},id"],
@@ -35,6 +42,7 @@ trait HasBlogSortingTrait
         $items = $validated['items'];
         $ids = array_column($items, 'id');
 
+        // Проверка доступности записей
         $allowedIds = $this->baseQuery()
             ->whereIn('id', $ids)
             ->pluck('id')
@@ -49,6 +57,7 @@ trait HasBlogSortingTrait
         }
 
         try {
+            // Обновление сортировки в транзакции
             DB::transaction(function () use ($items) {
                 foreach ($items as $item) {
                     $this->modelClass::whereKey($item['id'])->update([
@@ -59,6 +68,7 @@ trait HasBlogSortingTrait
 
             $message = "Сортировка {$this->entityLabel} обновлена.";
 
+            // Поддержка JSON и обычного ответа
             return $request->expectsJson()
                 ? response()->json(['message' => $message])
                 : back()->with('success', $message);

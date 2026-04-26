@@ -2,21 +2,17 @@
 
 namespace App\Http\Controllers\Admin\Blog\BlogRubric;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Admin\Blog\Base\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogRubric\BlogRubricRequest;
-use App\Http\Requests\Admin\System\UpdateActivityRequest;
-use App\Http\Requests\Admin\System\UpdateSortEntityRequest;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricSharedResource;
 use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\Blog\BlogRubric\BlogRubricImage;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use InvalidArgumentException;
@@ -37,43 +33,40 @@ use Throwable;
  *
  * @version 1.1 (Улучшен с RMB, транзакциями, Form Requests)
  * @author Александр Косолапов <kosolapov1976@gmail.com>
- *
- * @see BlogRubric
- * @see BlogRubricRequest
  */
-class BlogRubricController extends Controller
+class BlogRubricController extends BaseBlogAdminController
 {
+    protected string $modelClass = BlogRubric::class;
+
+    protected string $imageModelClass = BlogRubricImage::class;
+
+    protected string $imageMediaCollection = 'images';
+
+    protected string $entityLabel = 'рубрик';
+
+    protected array $translationFields = [
+        'title',
+        'subtitle',
+        'short',
+        'description',
+        'meta_title',
+        'meta_keywords',
+        'meta_desc',
+    ];
+
     /**
-     * Берём все разрешенные языки из config/app.php
-     * Используется для табов переводов
+     * Дополнительные варианты сортировки рубрик
      */
-    private function availableLocales(): array
+    protected function extendedSortMap(): array
     {
-        return config('app.available_locales', ['ru']);
+        return [
+            'viewsAsc' => 'views_asc',
+            'viewsDesc' => 'views_desc',
+        ];
     }
 
     /**
-     * Базовый запрос с учётом прав:
-     * - admin видит всё
-     * - обычный пользователь только свои записи
-     */
-    private function baseQuery(): Builder
-    {
-        $query = BlogRubric::query();
-
-        $user = auth()->user();
-
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
-            $query->where('user_id', $user->id);
-        }
-
-        return $query;
-    }
-
-    /**
-     * Определение уровня вложенности рубрики:
-     * root = 1
-     * дочерние = parent.level + 1
+     * Определение уровня вложенности
      */
     private function resolveLevel(?int $parentId): int
     {
@@ -85,184 +78,21 @@ class BlogRubricController extends Controller
             ->select('id', 'level')
             ->find($parentId);
 
-        if (!$parent) {
-            return 1;
-        }
-
-        return ((int) $parent->level) + 1;
+        return $parent ? ((int) $parent->level) + 1 : 1;
     }
 
     /**
-     * Проверка допустимой глубины вложенности (макс 3 уровня)
+     * Проверка максимальной глубины
      */
     private function ensureAllowedLevel(?int $parentId): void
     {
-        $level = $this->resolveLevel($parentId);
-
-        if ($level > 3) {
+        if ($this->resolveLevel($parentId) > 3) {
             throw new InvalidArgumentException('Нельзя создавать рубрику глубже 3 уровня вложенности.');
         }
     }
 
     /**
-     * Нормализация локали:
-     * если локаль невалидна → fallback
-     */
-    private function normalizeLocale(?string $locale): string
-    {
-        $availableLocales = $this->availableLocales();
-        $fallback = config('app.fallback_locale', 'ru');
-
-        if (!$locale || !in_array($locale, $availableLocales, true)) {
-            return $fallback;
-        }
-
-        return $locale;
-    }
-
-    /**
-     * Приведение параметра сортировки из UI к внутреннему формату
-     */
-    private function normalizeSortParam(?string $sort): string
-    {
-        return match ($sort) {
-            'idAsc' => 'date_asc',
-            'idDesc' => 'date_desc',
-            'sortAsc' => 'sort_asc',
-            'sortDesc' => 'sort_desc',
-            'titleAsc' => 'title_asc',
-            'titleDesc' => 'title_desc',
-            'viewsAsc' => 'views_asc',
-            'viewsDesc' => 'views_desc',
-            default => $sort ?: 'sort_asc',
-        };
-    }
-
-    /**
-     * Синхронизация переводов:
-     * - updateOrCreate для текущих
-     * - удаление отсутствующих
-     */
-    private function syncTranslations(BlogRubric $rubric, array $translations): void
-    {
-        $locales = array_keys($translations);
-
-        foreach ($translations as $locale => $translationData) {
-            $rubric->translations()->updateOrCreate(
-                ['locale' => $locale],
-                [
-                    'title' => $translationData['title'] ?? null,
-                    'subtitle' => $translationData['subtitle'] ?? null,
-                    'short' => $translationData['short'] ?? null,
-                    'description' => $translationData['description'] ?? null,
-                    'meta_title' => $translationData['meta_title'] ?? null,
-                    'meta_keywords' => $translationData['meta_keywords'] ?? null,
-                    'meta_desc' => $translationData['meta_desc'] ?? null,
-                ]
-            );
-        }
-
-        $rubric->translations()
-            ->whereNotIn('locale', $locales)
-            ->delete();
-    }
-
-    /**
-     * Синхронизация изображений:
-     * - обновление существующих
-     * - добавление новых
-     * - удаление помеченных
-     * - синхронизация pivot (order)
-     */
-    private function syncImages(BlogRubric $rubric, Request $request, array $imagesData, array $deletedImageIds = []): void
-    {
-        if (!empty($deletedImageIds)) {
-            $rubric->images()->detach($deletedImageIds);
-            $this->deleteImages($deletedImageIds);
-        }
-
-        $syncData = [];
-
-        foreach ($imagesData as $index => $imageData) {
-            $fileKey = "images.{$index}.file";
-
-            // существующее изображение
-            if (!empty($imageData['id'])) {
-                $image = BlogRubricImage::find($imageData['id']);
-
-                if (!$image || in_array((int) $image->id, $deletedImageIds, true)) {
-                    continue;
-                }
-
-                $image->update([
-                    'order' => $imageData['order'] ?? $image->order,
-                    'alt' => $imageData['alt'] ?? $image->alt,
-                    'caption' => $imageData['caption'] ?? $image->caption,
-                ]);
-
-                if ($request->hasFile($fileKey)) {
-                    $image->clearMediaCollection('images');
-                    $image->addMedia($request->file($fileKey))->toMediaCollection('images');
-                }
-
-                $syncData[$image->id] = ['order' => $image->order];
-                continue;
-            }
-
-            // новое изображение
-            if ($request->hasFile($fileKey)) {
-                $image = BlogRubricImage::create([
-                    'order' => $imageData['order'] ?? 0,
-                    'alt' => $imageData['alt'] ?? '',
-                    'caption' => $imageData['caption'] ?? '',
-                ]);
-
-                $image->addMedia($request->file($fileKey))->toMediaCollection('images');
-
-                $syncData[$image->id] = ['order' => $image->order];
-            }
-        }
-
-        $existingIds = $rubric->images()
-            ->whereNotIn('blog_rubric_images.id', $deletedImageIds)
-            ->pluck('blog_rubric_images.id')
-            ->toArray();
-
-        foreach ($existingIds as $existingId) {
-            if (!array_key_exists($existingId, $syncData)) {
-                $existingImage = BlogRubricImage::find($existingId);
-                if ($existingImage) {
-                    $syncData[$existingId] = ['order' => $existingImage->order];
-                }
-            }
-        }
-
-        $rubric->images()->sync($syncData);
-    }
-
-    /**
-     * Полное удаление изображений:
-     * - удаление медиа (Spatie)
-     * - удаление записи из БД
-     */
-    private function deleteImages(array $imageIds): void
-    {
-        if (empty($imageIds)) {
-            return;
-        }
-
-        $images = BlogRubricImage::whereIn('id', $imageIds)->get();
-
-        foreach ($images as $image) {
-            $image->clearMediaCollection('images');
-            $image->delete();
-        }
-    }
-
-    /**
-     * Подготовка дерева:
-     * childrenRecursive → children
-     * для удобства фронта (Vue)
+     * Подготовка childrenRecursive для Vue
      */
     private function prepareTreeChildren($nodes): void
     {
@@ -277,10 +107,7 @@ class BlogRubricController extends Controller
     }
 
     /**
-     * Список рубрик:
-     * - дерево (для drag&drop)
-     * - плоский список (для таблицы)
-     * - поиск + сортировка + локаль
+     * Список рубрик
      */
     public function index(Request $request): Response
     {
@@ -319,12 +146,10 @@ class BlogRubricController extends Controller
                 ->sortByParam($sortParam, $currentLocale)
                 ->get();
 
-            $rubricsCount = $this->baseQuery()->count();
-
             return Inertia::render('Admin/Blog/BlogRubrics/Index', [
                 'rubricsTree' => BlogRubricResource::collection($rubricsTree),
                 'rubrics' => BlogRubricResource::collection($rubricsFlat),
-                'rubricsCount' => $rubricsCount,
+                'rubricsCount' => $this->baseQuery()->count(),
 
                 'adminCountRubrics' => $adminCountRubrics,
                 'adminSortRubrics' => $adminSortRubrics,
@@ -357,9 +182,7 @@ class BlogRubricController extends Controller
     }
 
     /**
-     * Страница создания рубрики:
-     * - список родителей
-     * - текущая локаль
+     * Страница создания рубрики
      */
     public function create(Request $request): Response
     {
@@ -378,11 +201,7 @@ class BlogRubricController extends Controller
     }
 
     /**
-     * Создание рубрики:
-     * - проверка уровня вложенности
-     * - авто sort
-     * - сохранение переводов
-     * - сохранение изображений
+     * Создание рубрики
      */
     public function store(BlogRubricRequest $request): RedirectResponse
     {
@@ -397,7 +216,13 @@ class BlogRubricController extends Controller
 
         if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
             $data['user_id'] = $user->id;
-            unset($data['moderation_status'], $data['moderated_by'], $data['moderated_at'], $data['moderation_note']);
+
+            unset(
+                $data['moderation_status'],
+                $data['moderated_by'],
+                $data['moderated_at'],
+                $data['moderation_note']
+            );
         } else {
             $data['user_id'] = $data['user_id'] ?? $user?->id;
         }
@@ -445,11 +270,9 @@ class BlogRubricController extends Controller
     }
 
     /**
-     * Страница редактирования:
-     * - загрузка рубрики с переводами
-     * - список возможных родителей
+     * Страница редактирования рубрики
      */
-    public function edit(int $blogRubric, Request $request): Response|RedirectResponse
+    public function edit(int $blogRubric, Request $request): Response
     {
         $rubric = $this->baseQuery()
             ->with([
@@ -478,10 +301,7 @@ class BlogRubricController extends Controller
     }
 
     /**
-     * Обновление рубрики:
-     * - защита от self-parent
-     * - обновление уровня
-     * - синхронизация переводов и изображений
+     * Обновление рубрики
      */
     public function update(BlogRubricRequest $request, int $blogRubric): RedirectResponse
     {
@@ -501,7 +321,13 @@ class BlogRubricController extends Controller
 
         if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
             $data['user_id'] = $user->id;
-            unset($data['moderation_status'], $data['moderated_by'], $data['moderated_at'], $data['moderation_note']);
+
+            unset(
+                $data['moderation_status'],
+                $data['moderated_by'],
+                $data['moderated_at'],
+                $data['moderation_note']
+            );
         }
 
         try {
@@ -535,10 +361,7 @@ class BlogRubricController extends Controller
     }
 
     /**
-     * Удаление рубрики:
-     * - запрещено если есть дочерние
-     * - удаление изображений
-     * - удаление переводов
+     * Удаление рубрики
      */
     public function destroy(int $blogRubric): RedirectResponse
     {
@@ -576,10 +399,7 @@ class BlogRubricController extends Controller
     }
 
     /**
-     * Массовое удаление:
-     * - проверка доступа
-     * - проверка отсутствия детей
-     * - удаление pivot + изображений + переводов
+     * Массовое удаление рубрик
      */
     public function bulkDestroy(Request $request): RedirectResponse
     {
@@ -637,67 +457,7 @@ class BlogRubricController extends Controller
     }
 
     /**
-     * Обновление активности одной рубрики
-     */
-    public function updateActivity(UpdateActivityRequest $request, int $blogRubric): RedirectResponse
-    {
-        $rubric = $this->baseQuery()->findOrFail($blogRubric);
-
-        $rubric->update([
-            'activity' => $request->validated('activity'),
-        ]);
-
-        return back()->with('success', 'Активность рубрики обновлена.');
-    }
-
-    /**
-     * Массовое обновление активности
-     */
-    public function bulkUpdateActivity(Request $request): RedirectResponse|JsonResponse
-    {
-        $validated = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:blog_rubrics,id'],
-            'activity' => ['required', 'boolean'],
-        ]);
-
-        $allowedIds = $this->baseQuery()
-            ->whereIn('id', $validated['ids'])
-            ->pluck('id')
-            ->toArray();
-
-        if (count($allowedIds) !== count($validated['ids'])) {
-            return back()->with('error', 'Часть рубрик недоступна для обновления активности.');
-        }
-
-        BlogRubric::whereIn('id', $allowedIds)->update([
-            'activity' => $validated['activity'],
-        ]);
-
-        $message = 'Активность выбранных рубрик обновлена.';
-
-        return $request->expectsJson()
-            ? response()->json(['message' => $message])
-            : back()->with('success', $message);
-    }
-
-    /**
-     * Обновление сортировки одной записи
-     */
-    public function updateSort(UpdateSortEntityRequest $request, int $blogRubric): RedirectResponse
-    {
-        $rubric = $this->baseQuery()->findOrFail($blogRubric);
-
-        $rubric->update([
-            'sort' => $request->validated('sort'),
-        ]);
-
-        return back()->with('success', 'Сортировка рубрики обновлена.');
-    }
-
-    /**
-     * Массовое обновление сортировки (drag & drop):
-     * - обновляет sort + parent_id + level
+     * Массовое обновление сортировки дерева
      */
     public function updateSortBulk(Request $request): RedirectResponse|JsonResponse
     {
@@ -723,6 +483,7 @@ class BlogRubricController extends Controller
 
         if (count($allowedIds) !== count($ids)) {
             $message = 'Часть рубрик недоступна для изменения сортировки.';
+
             return $request->expectsJson()
                 ? response()->json(['message' => $message], 400)
                 : back()->with('error', $message);
@@ -766,10 +527,7 @@ class BlogRubricController extends Controller
     }
 
     /**
-     * Клонирование рубрики:
-     * - копия записи
-     * - копия переводов
-     * - копия изображений (Spatie)
+     * Клонирование рубрики
      */
     public function clone(int $blogRubric): RedirectResponse
     {
@@ -808,6 +566,7 @@ class BlogRubricController extends Controller
                     $newImage->save();
 
                     $media = $image->getFirstMedia('images');
+
                     if ($media) {
                         $media->copy($newImage, 'images');
                     }
@@ -830,43 +589,5 @@ class BlogRubricController extends Controller
 
             return back()->with('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'Ошибка при клонировании рубрики.');
         }
-    }
-
-    /**
-     * Модерация (approve/reject):
-     * доступ только для admin
-     */
-    public function approve(Request $request, int $blogRubric): RedirectResponse|JsonResponse
-    {
-        $user = auth()->user();
-
-        if (!$user || !method_exists($user, 'hasRole') || !$user->hasRole('admin')) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'moderation_status' => ['required', 'integer', Rule::in([0, 1, 2])],
-            'moderation_note' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $rubric = BlogRubric::findOrFail($blogRubric);
-
-        $rubric->update([
-            'moderation_status' => (int) $validated['moderation_status'],
-            'moderation_note' => $validated['moderation_note'] ?? null,
-            'moderated_by' => $user->id,
-            'moderated_at' => now(),
-        ]);
-
-        $message = 'Статус модерации рубрики обновлён.';
-
-        return $request->expectsJson()
-            ? response()->json([
-                'message' => $message,
-                'rubric' => new BlogRubricResource(
-                    $rubric->load(['owner', 'moderator', 'translations', 'images'])->loadCount(['articles', 'images'])
-                ),
-            ])
-            : back()->with('success', $message);
     }
 }

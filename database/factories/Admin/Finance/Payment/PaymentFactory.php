@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Finance\Payment;
 
-use App\Models\Admin\Finance\Payment\Payment;
+use App\Models\Admin\School\Payment\Payment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

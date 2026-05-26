@@ -3,8 +3,8 @@
 namespace App\Models\Admin\School\Course;
 
 use App\Models\Admin\Blog\Comment\Comment;
-use App\Models\Admin\Finance\CoursePrice\CoursePrice;
 use App\Models\Admin\School\Bundle\Bundle;
+use App\Models\Admin\School\CoursePrice\CoursePrice;
 use App\Models\Admin\School\CourseSchedule\CourseSchedule;
 use App\Models\Admin\School\Enrollment\Enrollment;
 use App\Models\Admin\School\Hashtag\Hashtag;

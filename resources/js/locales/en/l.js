@@ -6,6 +6,7 @@ export default {
     latestNews: 'Latest news',
     learningCategories: 'Training categories',
     learningTags: 'Training tags',
+    learningFlow: 'Learning flow',
     leave: 'Leave',
     leaveComment: 'Leave a comment',
     leaveTeam: 'Leave Team',

@@ -54,12 +54,12 @@ class BlogBannerController extends BaseBlogAdminController
      */
     public function index(Request $request): Response
     {
-        $adminCountBanners = (int) config('site_settings.AdminCountBanners', 15);
-        $adminSortBanners = (string) config('site_settings.AdminSortBanners', 'idDesc');
+        $adminBlogBannersPerPage = (int) config('site_settings.adminBlogBannersPerPage', 20);
+        $adminBlogBannersDefaultSort = (string) config('site_settings.adminBlogBannersDefaultSort', 'idDesc');
 
-        $currentLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
         $search = trim((string) $request->query('search', ''));
-        $sortParam = $this->normalizeSortParam($request->query('sort', $adminSortBanners));
+        $sortParam = $this->normalizeSortParam($request->query('sort', $adminBlogBannersDefaultSort));
 
         try {
             $banners = $this->baseQuery()
@@ -78,8 +78,8 @@ class BlogBannerController extends BaseBlogAdminController
                 'banners' => BlogBannerResource::collection($banners),
                 'bannersCount' => $this->baseQuery()->count(),
 
-                'adminCountBanners' => $adminCountBanners,
-                'adminSortBanners' => $adminSortBanners,
+                'adminBlogBannersPerPage' => $adminBlogBannersPerPage,
+                'adminBlogBannersDefaultSort' => $adminBlogBannersDefaultSort,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -95,8 +95,8 @@ class BlogBannerController extends BaseBlogAdminController
                 'banners' => [],
                 'bannersCount' => 0,
 
-                'adminCountBanners' => $adminCountBanners,
-                'adminSortBanners' => $adminSortBanners,
+                'adminBlogBannersPerPage' => $adminBlogBannersPerPage,
+                'adminBlogBannersDefaultSort' => $adminBlogBannersDefaultSort,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -112,10 +112,10 @@ class BlogBannerController extends BaseBlogAdminController
      */
     public function create(Request $request): Response
     {
-        $targetLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
 
         return Inertia::render('Admin/Blog/BlogBanners/Create', [
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
         ]);
     }
@@ -202,11 +202,11 @@ class BlogBannerController extends BaseBlogAdminController
             ->withCount(['images'])
             ->findOrFail($blogBanner);
 
-        $targetLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
 
         return Inertia::render('Admin/Blog/BlogBanners/Edit', [
             'banner' => new BlogBannerResource($banner),
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
         ]);
     }

@@ -102,12 +102,12 @@ class BlogVideoController extends BaseBlogAdminController
      */
     public function index(Request $request): Response
     {
-        $adminCountVideos = (int) config('site_settings.AdminCountVideos', 15);
-        $adminSortVideos = (string) config('site_settings.AdminSortVideos', 'idDesc');
+        $adminBlogVideosPerPage = (int) config('site_settings.adminBlogVideosPerPage', 20);
+        $adminBlogVideosDefaultSort = (string) config('site_settings.AdminSortVideos', 'idDesc');
 
-        $currentLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
         $search = trim((string) $request->query('search', ''));
-        $sortParam = $this->normalizeSortParam($request->query('sort', $adminSortVideos));
+        $sortParam = $this->normalizeSortParam($request->query('sort', $adminBlogVideosDefaultSort));
 
         try {
             $videos = $this->baseQuery()
@@ -128,8 +128,8 @@ class BlogVideoController extends BaseBlogAdminController
                 'videos' => BlogVideoResource::collection($videos),
                 'videosCount' => $this->baseQuery()->count(),
 
-                'adminCountVideos' => $adminCountVideos,
-                'adminSortVideos' => $adminSortVideos,
+                'adminBlogVideosPerPage' => $adminBlogVideosPerPage,
+                'adminBlogVideosDefaultSort' => $adminBlogVideosDefaultSort,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -145,8 +145,8 @@ class BlogVideoController extends BaseBlogAdminController
                 'videos' => [],
                 'videosCount' => 0,
 
-                'adminCountVideos' => $adminCountVideos,
-                'adminSortVideos' => $adminSortVideos,
+                'adminBlogVideosPerPage' => $adminBlogVideosPerPage,
+                'adminBlogVideosDefaultSort' => $adminBlogVideosDefaultSort,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -162,17 +162,17 @@ class BlogVideoController extends BaseBlogAdminController
      */
     public function create(Request $request): Response
     {
-        $targetLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
 
         $relatedVideos = $this->baseQuery()
             ->with(['translations', 'images'])
-            ->whereHas('translations', fn (Builder $q) => $q->where('locale', $targetLocale))
+            ->whereHas('translations', fn (Builder $q) => $q->where('locale', $currentLocale))
             ->orderBy('sort')
             ->orderByDesc('id')
             ->get();
 
         return Inertia::render('Admin/Blog/BlogVideos/Create', [
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
             'relatedVideos' => BlogVideoSharedResource::collection($relatedVideos),
         ]);
@@ -269,12 +269,12 @@ class BlogVideoController extends BaseBlogAdminController
             ->withCount(['images', 'comments', 'likes'])
             ->findOrFail($blogVideo);
 
-        $targetLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
 
         $relatedVideos = $this->baseQuery()
             ->with(['translations', 'images'])
             ->where('id', '<>', $video->id)
-            ->whereHas('translations', fn (Builder $q) => $q->where('locale', $targetLocale))
+            ->whereHas('translations', fn (Builder $q) => $q->where('locale', $currentLocale))
             ->orderBy('sort')
             ->orderByDesc('id')
             ->get();
@@ -283,7 +283,7 @@ class BlogVideoController extends BaseBlogAdminController
             'video' => new BlogVideoResource($video),
             'videoUrl' => $video->getFirstMediaUrl('videos') ?: null,
             'relatedVideos' => BlogVideoSharedResource::collection($relatedVideos),
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
         ]);
     }

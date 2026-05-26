@@ -94,8 +94,8 @@ class CurrencyController extends Controller
 
     public function index(): Response
     {
-        $adminCountCurrencies = (int) config('site_settings.AdminCountCurrencies', 15);
-        $adminSortCurrencies  = (string) config('site_settings.AdminSortCurrencies', 'idAsc');
+        $adminFinanceCurrenciesPerPage = (int) config('site_settings.adminFinanceCurrenciesPerPage', 10);
+        $adminFinanceCurrenciesDefaultSort  = (string) config('site_settings.adminFinanceCurrenciesDefaultSort', 'idAsc');
 
         try {
             $currencies = Currency::query()->ordered()->get();
@@ -149,8 +149,8 @@ class CurrencyController extends Controller
         return Inertia::render('Admin/Finance/Currencies/Index', [
             'currencies'           => $currenciesArray,
             'currenciesCount'      => $currenciesCount,
-            'adminCountCurrencies' => $adminCountCurrencies,
-            'adminSortCurrencies'  => $adminSortCurrencies,
+            'adminFinanceCurrenciesPerPage' => $adminFinanceCurrenciesPerPage,
+            'adminFinanceCurrenciesDefaultSort'  => $adminFinanceCurrenciesDefaultSort,
         ]);
     }
 

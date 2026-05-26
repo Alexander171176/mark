@@ -29,7 +29,7 @@ export default {
     titleProperty: 'Қасиеттің атауы',
     toggleDarkMode: 'Жарық/қараңғы режимге ауыстыру',
     toggleSidebar: 'Бүйірлік панельді ашу/жабу',
-    total: 'Барлығы:',
+    total: 'Барлығы',
     totalShopCurrency: 'Валютадағы жалпы сома',
     totals: 'Қосынды',
     tracks: 'Жолдар',

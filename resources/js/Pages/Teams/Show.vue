@@ -1,10 +1,10 @@
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import DeleteTeamForm from '@/Pages/Teams/Partials/DeleteTeamForm.vue'
-import SectionBorder from '@/Components/SectionBorder.vue'
+import SectionBorder from '@/Components/Base/SectionBorder.vue'
 import TeamMemberManager from '@/Pages/Teams/Partials/TeamMemberManager.vue'
 import UpdateTeamNameForm from '@/Pages/Teams/Partials/UpdateTeamNameForm.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

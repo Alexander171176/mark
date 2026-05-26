@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Crm\EmailSubscription;
 
-use App\Models\Admin\Crm\EmailSubscription\EmailSubscription;
+use App\Models\Admin\School\EmailSubscription\EmailSubscription;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

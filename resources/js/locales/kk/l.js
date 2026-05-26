@@ -5,6 +5,7 @@ export default {
     lastUsed: 'Соңғы пайдалану',
     latestNews: 'Соңғы жаңалықтар',
     learningCategories: 'Оқыту санаттары',
+    learningFlow: 'Оқу ағыны',
     learningTags: 'Жаттығу тегтері',
     leave: 'Шығу',
     leaveComment: 'Пікір қалдырыңыз',

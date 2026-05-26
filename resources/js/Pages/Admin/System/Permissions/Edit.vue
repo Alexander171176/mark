@@ -7,13 +7,14 @@ import { useToast } from "vue-toastification";
 import { useI18n } from 'vue-i18n';
 import { defineProps } from 'vue';
 import { useForm } from '@inertiajs/vue3';
+
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue';
-import LabelInput from '@/Components/Admin/Input/LabelInput.vue';
-import InputText from '@/Components/Admin/Input/InputText.vue';
-import InputError from '@/Components/Admin/Input/InputError.vue';
-import PrimaryButton from '@/Components/Admin/Buttons/PrimaryButton.vue';
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue';
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue';
+import InputText from '@/Components/Admin/UI/Input/InputText.vue';
+import InputError from '@/Components/Admin/UI/Input/InputError.vue';
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue';
 
 // --- Инициализация ---
 const toast = useToast();
@@ -102,7 +103,7 @@ const submit = () => {
                     </div>
 
                     <div class="flex items-center justify-center mt-4">
-                        <DefaultButton :href="route('admin.permissions.index')" class="mb-3">
+                        <DefaultButton :href="route('admin.permissions.index')">
                             <template #icon>
                                 <!-- SVG -->
                                 <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2" viewBox="0 0 16 16">

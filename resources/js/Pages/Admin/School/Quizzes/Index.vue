@@ -2,435 +2,398 @@
 /**
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
- * Список квизов (паттерн, аналог Assignment Index)
+ *
+ * Список квизов школы
  */
-
-import { defineProps, ref, computed, watch } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { router, Link } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import BulkActionSelect from '@/Components/Admin/Quiz/Select/BulkActionSelect.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
-import QuizTable from '@/Components/Admin/Quiz/Table/QuizTable.vue'
-import QuizCardGrid from '@/Components/Admin/Quiz/View/QuizCardGrid.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import SortSelect from '@/Components/Admin/Quiz/Sort/SortSelect.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 
-// --- i18n, toast ---
+import BulkActionSelect from '@/Components/Admin/School/Quiz/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/School/Quiz/Sort/SortSelect.vue'
+import QuizTable from '@/Components/Admin/School/Quiz/Table/QuizTable.vue'
+import QuizCardGrid from '@/Components/Admin/School/Quiz/View/QuizCardGrid.vue'
+
+// Локализация интерфейса
 const { t } = useI18n()
+
+// Уведомления
 const toast = useToast()
 
-/**
- * Входные свойства компонента.
- */
+// Входящие данные страницы
 const props = defineProps({
-    quizzes: Array,
-    quizzesCount: Number,
-    adminCountQuizzes: Number,
-    adminSortQuizzes: String,
-    currentLocale: String,
-    availableLocales: Array,
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
+    quizzes: { type: Array, default: () => [] },
+    quizzesCount: { type: Number, default: 0 },
+    adminSchoolQuizzesPerPage: { type: Number, default: 10 },
+    adminSchoolQuizzesDefaultSort: { type: String, default: 'idDesc' },
 })
 
-/** Вид: таблица или карточки (общий ключ для админки) */
+// Режим отображения (таблица/карточки)
 const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
 
+// Сохранение режима отображения
 watch(viewMode, (val) => {
     localStorage.setItem('admin_view_mode', val)
 })
 
-/** Кол-во элементов на странице */
-const itemsPerPage = ref(props.adminCountQuizzes || 10)
+// Локальный список квизов
+const localQuizzes = ref([])
 
-/**
- * Наблюдатель за изменением количества элементов на странице.
- */
+// Синхронизация локального списка
+watch(
+    () => props.quizzes,
+    (newVal) => {
+        localQuizzes.value = JSON.parse(JSON.stringify(newVal || []))
+    },
+    { immediate: true, deep: true }
+)
+
+// Количество элементов на странице
+const itemsPerPage = ref(props.adminSchoolQuizzesPerPage || 10)
+
+// Обновление количества элементов
 watch(itemsPerPage, (newVal) => {
-    router.put(
-        route('admin.settings.updateAdminCountQuizzes'),
-        { value: newVal },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-            onError: (errors) =>
-                toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
-        }
-    )
+    router.put(route('admin.settings.updateAdminCountQuizzes'), { value: newVal }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
+        onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+    })
 })
 
-/** Параметр сортировки */
-const sortParam = ref(props.adminSortQuizzes || 'idDesc')
+// Параметр сортировки
+const sortParam = ref(props.adminSchoolQuizzesDefaultSort || 'idDesc')
 
-/**
- * Наблюдатель за изменением параметра сортировки.
- */
+// Обновление сортировки
 watch(sortParam, (newVal) => {
-    router.put(
-        route('admin.settings.updateAdminSortQuizzes'),
-        { value: newVal },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.info('Сортировка успешно изменена'),
-            onError: (errors) => {
-                const firstError = errors ? Object.values(errors)[0] : null
-                toast.error(firstError || 'Ошибка обновления сортировки.')
-            },
-        }
-    )
+    router.put(route('admin.settings.updateAdminSortQuizzes'), { value: newVal }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => toast.info('Сортировка успешно изменена'),
+        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
+    })
 })
 
-/** Модалка удаления */
+// Модальное окно удаления
 const showConfirmDeleteModal = ref(false)
+
+// ID удаляемого квиза
 const quizToDeleteId = ref(null)
+
+// Название удаляемого квиза
 const quizToDeleteTitle = ref('')
 
-/**
- * Открывает модальное окно подтверждения удаления с входными переменными.
- */
-const confirmDelete = (id, title) => {
-    quizToDeleteId.value = id
-    quizToDeleteTitle.value = title
+// Подтверждение удаления квиза
+const confirmDelete = (quizOrId, title = null) => {
+    if (typeof quizOrId === 'object') {
+        quizToDeleteId.value = quizOrId.id
+        quizToDeleteTitle.value = title || quizOrId.title || `ID: ${quizOrId.id}`
+    } else {
+        quizToDeleteId.value = quizOrId
+        quizToDeleteTitle.value = title || `ID: ${quizOrId}`
+    }
+
     showConfirmDeleteModal.value = true
 }
 
-/**
- * Закрывает модальное окно подтверждения и сбрасывает связанные переменные.
- */
+// Закрытие модального окна
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     quizToDeleteId.value = null
     quizToDeleteTitle.value = ''
 }
 
-/**
- * Отправляет запрос на удаление.
- */
+// Удаление квиза
 const deleteQuiz = () => {
     if (quizToDeleteId.value === null) return
+
     const idToDelete = quizToDeleteId.value
     const titleToDelete = quizToDeleteTitle.value
 
-    router.delete(route('admin.quizzes.destroy', { quiz: idToDelete }), {
+    router.delete(route('admin.schoolQuizzes.destroy', {
+        schoolQuiz: idToDelete,
+    }), {
         preserveScroll: true,
         preserveState: false,
         onSuccess: () => {
-            closeModal()
             toast.success(`Квиз "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
         },
         onError: (errors) => {
-            closeModal()
-            const errorMsg =
-                errors.general ||
-                errors[Object.keys(errors)[0]] ||
-                'Произошла ошибка при удалении.'
+            const errorKey = Object.keys(errors || {})[0]
+            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
+
             toast.error(`${errorMsg} (Квиз: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
-        onFinish: () => {
-            quizToDeleteId.value = null
-            quizToDeleteTitle.value = ''
-        },
+        onFinish: () => closeModal(),
     })
 }
 
-/**
- * Отправляет запрос для изменения статуса активности в левой колонке.
- */
-const toggleLeft = (quiz) => {
-    const newLeft = !quiz.left
-    const actionText = newLeft ? 'активирован в левой колонке' : 'деактивирован в левой колонке'
-
-    router.put(
-        route('admin.actions.quizzes.updateLeft', { quiz: quiz.id }),
-        { left: newLeft },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.success(`Квиз "${quiz.title}" ${actionText}.`)
-            },
-            onError: (errors) => {
-                toast.error(
-                    errors.left || errors.general || `Ошибка изменения активности для "${quiz.title}".`
-                )
-            },
-        }
-    )
-}
-
-/**
- * Отправляет запрос для изменения статуса активности в главном.
- */
-const toggleMain = (quiz) => {
-    const newMain = !quiz.main
-    const actionText = newMain ? 'активирован в главном' : 'деактивирован в главном'
-
-    router.put(
-        route('admin.actions.quizzes.updateMain', { quiz: quiz.id }),
-        { main: newMain },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.success(`Квиз "${quiz.title}" ${actionText}.`)
-            },
-            onError: (errors) => {
-                toast.error(
-                    errors.main || errors.general || `Ошибка изменения активности для "${quiz.title}".`
-                )
-            },
-        }
-    )
-}
-
-/**
- * Отправляет запрос для изменения статуса активности в правой колонке.
- */
-const toggleRight = (quiz) => {
-    const newRight = !quiz.right
-    const actionText = newRight ? 'активирован в правой колонке' : 'деактивирован в правой колонке'
-
-    router.put(
-        route('admin.actions.quizzes.updateRight', { quiz: quiz.id }),
-        { right: newRight },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.success(`Квиз "${quiz.title}" ${actionText}.`)
-            },
-            onError: (errors) => {
-                toast.error(
-                    errors.right || errors.general || `Ошибка изменения активности для "${quiz.title}".`
-                )
-            },
-        }
-    )
-}
-
-/**
- * Отправляет запрос для клонирования.
- */
-const cloneQuiz = (quizObject) => {
-    const quizId = quizObject?.id
-    const quizTitle = quizObject?.title || `ID: ${quizId}`
-
-    if (typeof quizId === 'undefined' || quizId === null) {
-        console.error('Не удалось получить ID квиза для клонирования', quizObject)
-        toast.error('Не удалось определить квиз для клонирования.')
-        return
-    }
-
-    if (!confirm(`Вы уверены, что хотите клонировать квиз "${quizTitle}"?`)) {
-        return
-    }
-
-    router.post(
-        route('admin.actions.quizzes.clone', { quiz: quizId }),
-        {},
-        {
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                toast.success(`Квиз "${quizTitle}" успешно клонирован.`)
-            },
-            onError: (errors) => {
-                const errorKey = Object.keys(errors)[0]
-                const errorMessage =
-                    errors[errorKey] || `Ошибка клонирования квиза "${quizTitle}".`
-                toast.error(errorMessage)
-            },
-        }
-    )
-}
-
-/** Пагинация и поиск */
+// Текущая страница пагинации
 const currentPage = ref(1)
+
+// Поисковый запрос
 const searchQuery = ref('')
 
-/** Сортировка массива квизов */
-const sortQuizzes = (quizzes) => {
-    const value = sortParam.value
-    const list = quizzes.slice()
+// Нормализация строк поиска
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
-    if (value === 'idAsc') {
-        return list.sort((a, b) => a.id - b.id)
+// Сортировка и фильтрация квизов
+const sortQuizzes = (items) => {
+    const list = (items || []).slice()
+
+    if (sortParam.value === 'idAsc') {
+        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
     }
 
-    if (value === 'idDesc') {
-        return list.sort((a, b) => b.id - a.id)
+    if (sortParam.value === 'idDesc') {
+        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
     }
 
-    if (sortParam.value === 'left') {
-        return list.sort((quiz) => quiz.left)
-    }
-    if (sortParam.value === 'noLeft') {
-        return list.sort((quiz) => !quiz.left)
-    }
-    if (sortParam.value === 'main') {
-        return list.sort((quiz) => quiz.main)
+    if (sortParam.value === 'sortAsc') {
+        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
     }
 
-    // Дата публикации — от новых к старым, null в конец
-    if (value === 'published_at') {
-        return list.sort((a, b) => {
-            const aTime = a.published_at ? new Date(a.published_at).getTime() : 0
-            const bTime = b.published_at ? new Date(b.published_at).getTime() : 0
-            return bTime - aTime
-        })
+    if (sortParam.value === 'sortDesc') {
+        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
     }
 
-    // Фильтры по активности
-    if (value === 'activity') return quizzes.filter((q) => q.activity)
-    if (value === 'inactive') return quizzes.filter((q) => !q.activity)
+    if (sortParam.value === 'titleAsc') {
+        return list.sort((a, b) => normalize(a.title).localeCompare(normalize(b.title)))
+    }
 
-    // sort, title и прочее — обычная сортировка по возрастанию
-    return list.sort((a, b) => {
-        const av = a[value] ?? ''
-        const bv = b[value] ?? ''
-        if (av < bv) return -1
-        if (av > bv) return 1
-        return 0
-    })
+    if (sortParam.value === 'titleDesc') {
+        return list.sort((a, b) => normalize(b.title).localeCompare(normalize(a.title)))
+    }
+
+    if (sortParam.value === 'passScoreAsc') {
+        return list.sort((a, b) => (a.pass_score ?? 0) - (b.pass_score ?? 0))
+    }
+
+    if (sortParam.value === 'passScoreDesc') {
+        return list.sort((a, b) => (b.pass_score ?? 0) - (a.pass_score ?? 0))
+    }
+
+    if (sortParam.value === 'attemptsLimitAsc') {
+        return list.sort((a, b) => (a.attempts_limit ?? 0) - (b.attempts_limit ?? 0))
+    }
+
+    if (sortParam.value === 'attemptsLimitDesc') {
+        return list.sort((a, b) => (b.attempts_limit ?? 0) - (a.attempts_limit ?? 0))
+    }
+
+    if (sortParam.value === 'timeLimitAsc') {
+        return list.sort((a, b) => (a.time_limit_minutes ?? 0) - (b.time_limit_minutes ?? 0))
+    }
+
+    if (sortParam.value === 'timeLimitDesc') {
+        return list.sort((a, b) => (b.time_limit_minutes ?? 0) - (a.time_limit_minutes ?? 0))
+    }
+
+    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
+    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
+
+    if (sortParam.value === 'left') return list.filter(item => !!item.left)
+    if (sortParam.value === 'noLeft') return list.filter(item => !item.left)
+    if (sortParam.value === 'main') return list.filter(item => !!item.main)
+    if (sortParam.value === 'noMain') return list.filter(item => !item.main)
+    if (sortParam.value === 'right') return list.filter(item => !!item.right)
+    if (sortParam.value === 'noRight') return list.filter(item => !item.right)
+
+    if (sortParam.value === 'graded') return list.filter(item => item.type === 'graded')
+    if (sortParam.value === 'practice') return list.filter(item => item.type === 'practice')
+
+    if ([
+        'questions_count',
+        'attempts_count',
+        'images_count',
+    ].includes(sortParam.value)) {
+        return list.sort((a, b) => (b[sortParam.value] ?? 0) - (a[sortParam.value] ?? 0))
+    }
+
+    return list
 }
 
-/** Фильтрация + сортировка (поиск по title/slug) */
+// Отфильтрованные квизы
 const filteredQuizzes = computed(() => {
-    let filtered = props.quizzes || []
+    let filtered = localQuizzes.value || []
+    const q = normalize(searchQuery.value)
 
-    if (searchQuery.value) {
-        const q = searchQuery.value.toLowerCase()
-        filtered = filtered.filter(
-            (quiz) =>
-                (quiz.title || '').toLowerCase().includes(q) ||
-                (quiz.slug || '').toLowerCase().includes(q)
-        )
+    if (!q) {
+        return sortQuizzes(filtered)
     }
+
+    filtered = filtered.filter((quiz) => {
+        const values = [
+            quiz.title,
+            quiz.short,
+            quiz.description,
+            quiz.slug,
+            quiz.type,
+
+            quiz.course?.title,
+            quiz.course?.slug,
+
+            quiz.module?.title,
+            quiz.module?.slug,
+
+            quiz.lesson?.title,
+            quiz.lesson?.slug,
+        ]
+
+        return values.some(value => normalize(value).includes(q))
+    })
 
     return sortQuizzes(filtered)
 })
 
-/** Пагинация */
+// Квизы текущей страницы
 const paginatedQuizzes = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage.value
-    return filteredQuizzes.value.slice(start, start + itemsPerPage.value)
+    const per = Number(itemsPerPage.value || 20)
+    const start = (currentPage.value - 1) * per
+
+    return filteredQuizzes.value.slice(start, start + per)
 })
 
-/** Общее число страниц */
-const totalPages = computed(() =>
-    Math.ceil((filteredQuizzes.value.length || 0) / itemsPerPage.value)
-)
+// Сброс страницы при изменении поиска или лимита
+watch([itemsPerPage, searchQuery], () => {
+    currentPage.value = 1
+})
 
-/** Обновление сортировки (drag&drop) */
+// Локальное обновление данных квиза
+const patchQuiz = (quizId, payload) => {
+    const index = localQuizzes.value.findIndex(quiz => quiz.id === quizId)
+
+    if (index !== -1) {
+        localQuizzes.value[index] = {
+            ...localQuizzes.value[index],
+            ...payload,
+        }
+    }
+}
+
+// Выбранные квизы
+const selectedQuizzes = ref([])
+
+// Выбор или снятие выбора всех квизов
+const toggleAll = ({ ids, checked }) => {
+    selectedQuizzes.value = checked ? [...ids] : []
+}
+
+// Переключение выбора квиза
+const toggleSelectQuiz = (id) => {
+    const index = selectedQuizzes.value.indexOf(id)
+
+    if (index > -1) {
+        selectedQuizzes.value.splice(index, 1)
+    } else {
+        selectedQuizzes.value.push(id)
+    }
+}
+
+// Обновление сортировки drag-and-drop
 const handleSortOrderUpdate = (orderedIds) => {
     const startSort = (currentPage.value - 1) * itemsPerPage.value
 
-    const sortData = orderedIds.map((id, index) => ({
+    const items = orderedIds.map((id, index) => ({
         id,
         sort: startSort + index + 1,
     }))
 
-    router.put(
-        route('admin.actions.quizzes.updateSortBulk'),
-        { quizzes: sortData },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.success('Порядок квизов успешно обновлён.'),
-            onError: (errors) => {
-                console.error('Ошибка обновления сортировки квизов:', errors)
-                toast.error(
-                    errors?.general ||
-                    errors?.quizzes ||
-                    'Не удалось обновить порядок квизов.'
-                )
-                router.reload({ only: ['quizzes'], preserveScroll: true })
-            },
-        }
-    )
+    if (!items.length) return
+
+    router.put(route('admin.actions.schoolQuizzes.updateSortBulk'), { items }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => toast.success('Порядок квизов успешно обновлён.'),
+        onError: (errors) => {
+            console.error('Ошибка обновления сортировки квизов:', errors)
+            toast.error(errors?.message || errors?.general || 'Не удалось обновить порядок квизов.')
+
+            router.reload({
+                only: ['quizzes'],
+                preserveScroll: true,
+            })
+        },
+    })
 }
 
-/** Массовые действия */
-const selectedQuizzes = ref([])
-
-/**
- * Логика выбора всех для массовых действий.
- */
-const toggleAll = ({ ids, checked }) => {
-    if (checked) {
-        selectedQuizzes.value = [...ids]
-    } else {
-        selectedQuizzes.value = []
-    }
-}
-
-/**
- * Обрабатывает событие выбора/снятия выбора одной строки.
- */
-const toggleSelectQuiz = (id) => {
-    const idx = selectedQuizzes.value.indexOf(id)
-    if (idx > -1) selectedQuizzes.value.splice(idx, 1)
-    else selectedQuizzes.value.push(id)
-}
-
-/**
- * Выполняет массовое включение/выключение активности выбранных.
- */
+// Массовое обновление активности
 const bulkToggleActivity = (newActivity) => {
     if (!selectedQuizzes.value.length) {
-        toast.warning('Выберите квизы для активации/деактивации')
+        toast.warning('Выберите квизы для активации/деактивации.')
         return
     }
 
-    router.put(
-        route('admin.actions.quizzes.bulkUpdateActivity'),
-        { ids: selectedQuizzes.value, activity: newActivity },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.success('Активность квизов массово обновлена')
-                const updatedIds = [...selectedQuizzes.value]
-                selectedQuizzes.value = []
+    const idsToUpdate = [...selectedQuizzes.value]
 
-                paginatedQuizzes.value.forEach((q) => {
-                    if (updatedIds.includes(q.id)) q.activity = newActivity
-                })
-            },
-            onError: (errors) => {
-                const msg =
-                    errors?.ids ||
-                    errors?.activity ||
-                    errors?.general ||
-                    'Не удалось массово обновить активность квизов'
-                toast.error(msg)
-            },
-        }
-    )
+    router.put(route('admin.actions.schoolQuizzes.bulkUpdateActivity'), {
+        ids: idsToUpdate,
+        activity: newActivity,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            idsToUpdate.forEach(id => patchQuiz(id, { activity: newActivity }))
+            selectedQuizzes.value = []
+            toast.success('Активность выбранных квизов обновлена.')
+        },
+        onError: (errors) => {
+            toast.error(errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.')
+        },
+    })
 }
 
-/**
- * Выполняет массовое удаление выбранных.
- */
+// Массовое обновление флагов left/main/right
+const bulkToggleFlag = (field, routeName, value) => {
+    if (!selectedQuizzes.value.length) {
+        toast.warning('Выберите квизы.')
+        return
+    }
+
+    const idsToUpdate = [...selectedQuizzes.value]
+
+    router.put(route(routeName), {
+        ids: idsToUpdate,
+        [field]: value,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            idsToUpdate.forEach(id => patchQuiz(id, { [field]: value }))
+            selectedQuizzes.value = []
+            toast.success('Выбранные квизы обновлены.')
+        },
+        onError: (errors) => {
+            toast.error(errors?.ids || errors?.[field] || errors?.general || 'Ошибка массового обновления.')
+        },
+    })
+}
+
+// Массовое удаление квизов
 const bulkDelete = () => {
-    if (selectedQuizzes.value.length === 0) {
+    if (!selectedQuizzes.value.length) {
         toast.warning('Выберите хотя бы один квиз для удаления.')
         return
     }
-    if (!confirm('Вы уверены, что хотите их удалить ?')) {
+
+    if (!confirm('Вы уверены, что хотите удалить выбранные квизы?')) {
         return
     }
 
-    router.delete(route('admin.actions.quizzes.bulkDestroy'), {
+    router.delete(route('admin.actions.schoolQuizzes.bulkDestroy'), {
         data: { ids: selectedQuizzes.value },
         preserveScroll: true,
         preserveState: false,
@@ -439,29 +402,38 @@ const bulkDelete = () => {
             toast.success('Массовое удаление квизов успешно завершено.')
         },
         onError: (errors) => {
-            console.error('Ошибка массового удаления:', errors)
-            const errorKey = Object.keys(errors)[0]
-            const errorMessage =
-                errors[errorKey] || 'Произошла ошибка при удалении квизов.'
+            const errorKey = Object.keys(errors || {})[0]
+            const errorMessage = errors[errorKey] || 'Произошла ошибка при удалении квизов.'
+
             toast.error(errorMessage)
         },
     })
 }
 
-/**
- * Обрабатывает выбор действия в селекте массовых действий.
- */
+// Обработка массовых действий
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedQuizzes.value = paginatedQuizzes.value.map((q) => q.id)
+        selectedQuizzes.value = paginatedQuizzes.value.map(quiz => quiz.id)
     } else if (action === 'deselectAll') {
         selectedQuizzes.value = []
     } else if (action === 'activate') {
         bulkToggleActivity(true)
     } else if (action === 'deactivate') {
         bulkToggleActivity(false)
+    } else if (action === 'leftOn') {
+        bulkToggleFlag('left', 'admin.actions.schoolQuizzes.bulkUpdateLeft', true)
+    } else if (action === 'leftOff') {
+        bulkToggleFlag('left', 'admin.actions.schoolQuizzes.bulkUpdateLeft', false)
+    } else if (action === 'mainOn') {
+        bulkToggleFlag('main', 'admin.actions.schoolQuizzes.bulkUpdateMain', true)
+    } else if (action === 'mainOff') {
+        bulkToggleFlag('main', 'admin.actions.schoolQuizzes.bulkUpdateMain', false)
+    } else if (action === 'rightOn') {
+        bulkToggleFlag('right', 'admin.actions.schoolQuizzes.bulkUpdateRight', true)
+    } else if (action === 'rightOff') {
+        bulkToggleFlag('right', 'admin.actions.schoolQuizzes.bulkUpdateRight', false)
     } else if (action === 'delete') {
         bulkDelete()
     }
@@ -469,31 +441,93 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-/** Переключение активности одного квиза */
+// Переключение активности квиза
 const toggleActivity = (quiz) => {
     const newActivity = !quiz.activity
+    const quizTitle = quiz.title || `ID: ${quiz.id}`
     const actionText = newActivity ? t('activated') : t('deactivated')
 
-    router.put(
-        route('admin.actions.quizzes.updateActivity', { quiz: quiz.id }),
-        { activity: newActivity },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.success(`Квиз "${quiz.title}" ${actionText}.`)
-            },
-            onError: (errors) => {
-                toast.error(
-                    errors.activity || errors.general || `Ошибка изменения активности для "${quiz.title}".`
-                )
-            },
-        }
-    )
+    router.put(route('admin.actions.schoolQuizzes.updateActivity', {
+        schoolQuiz: quiz.id,
+    }), {
+        activity: newActivity,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            patchQuiz(quiz.id, { activity: newActivity })
+            quiz.activity = newActivity
+            toast.success(`Квиз "${quizTitle}" ${actionText}.`)
+        },
+        onError: (errors) => {
+            toast.error(errors?.activity || errors?.general || `Ошибка изменения активности для квиза "${quizTitle}".`)
+        },
+    })
 }
 
-/** Ссылка для табов локалей */
-const localeLink = (locale) => route('admin.quizzes.index', { locale })
+// Универсальное переключение флагов
+const togglePlacement = (quiz, field, routeName) => {
+    const newValue = !quiz[field]
+    const quizTitle = quiz.title || `ID: ${quiz.id}`
+
+    router.put(route(routeName, {
+        schoolQuiz: quiz.id,
+    }), {
+        [field]: newValue,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            patchQuiz(quiz.id, { [field]: newValue })
+            quiz[field] = newValue
+            toast.success(`Поле "${field}" для квиза "${quizTitle}" обновлено.`)
+        },
+        onError: (errors) => {
+            toast.error(errors?.[field] || errors?.general || `Ошибка обновления поля "${field}".`)
+        },
+    })
+}
+
+// Переключение левой колонки
+const toggleLeft = (quiz) =>
+    togglePlacement(quiz, 'left', 'admin.actions.schoolQuizzes.updateLeft')
+
+// Переключение центральной колонки
+const toggleMain = (quiz) =>
+    togglePlacement(quiz, 'main', 'admin.actions.schoolQuizzes.updateMain')
+
+// Переключение правой колонки
+const toggleRight = (quiz) =>
+    togglePlacement(quiz, 'right', 'admin.actions.schoolQuizzes.updateRight')
+
+// Клонирование квиза
+const cloneQuiz = (quiz) => {
+    const quizId = quiz?.id
+    const quizTitle = quiz?.title || `ID: ${quizId}`
+
+    if (!quizId) {
+        toast.error('Не удалось определить квиз для клонирования.')
+        return
+    }
+
+    if (!confirm(`Вы уверены, что хотите клонировать квиз "${quizTitle}"?`)) {
+        return
+    }
+
+    router.post(route('admin.actions.schoolQuizzes.clone', {
+        schoolQuiz: quizId,
+    }), {}, {
+        preserveScroll: true,
+        preserveState: false,
+        onSuccess: () => toast.success(`Квиз "${quizTitle}" успешно клонирован.`),
+        onError: (errors) => {
+            const errorKey = Object.keys(errors || {})[0]
+            const errorMessage = errors[errorKey] || `Ошибка клонирования квиза "${quizTitle}".`
+
+            toast.error(errorMessage)
+        },
+    })
+}
 </script>
 
 <template>
@@ -504,18 +538,15 @@ const localeLink = (locale) => route('admin.quizzes.index', { locale })
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <!-- Добавить квиз -->
-                    <DefaultButton :href="route('admin.quizzes.create')">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                    <DefaultButton :href="route('admin.schoolQuizzes.create')">
                         <template #icon>
-                            <svg
-                                class="w-4 h-4 fill-current opacity-50 shrink-0"
-                                viewBox="0 0 16 16"
-                            >
+                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
                                 <path
                                     d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
                                 />
@@ -523,61 +554,43 @@ const localeLink = (locale) => route('admin.quizzes.index', { locale })
                         </template>
                         {{ t('addQuiz') }}
                     </DefaultButton>
-
-                    <BulkActionSelect
-                        v-if="quizzesCount"
-                        @change="handleBulkAction"
-                    />
                 </div>
-
-                <!-- Локали + счётчик -->
-                <div class="flex items-center justify-between mt-5">
-                    <div
-                        class="flex items-center justify-end space-x-2 px-3 py-1
-                               border-x border-t border-gray-400 rounded-t-lg
-                               bg-gray-100 dark:bg-gray-900"
-                    >
-                        <span
-                            class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                        >
-                            {{ t('localization') }}:
-                        </span>
-                        <template
-                            v-for="locale in availableLocales"
-                            :key="locale"
-                        >
-                            <Link
-                                :href="localeLink(locale)"
-                                :class="[
-                                    'px-3 py-1 text-sm font-medium rounded-sm',
-                                    currentLocale === locale
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600'
-                                ]"
-                                preserve-scroll
-                                preserve-state
-                            >
-                                {{ locale.toUpperCase() }}
-                            </Link>
-                        </template>
-                    </div>
-
-                    <div class="flex items-center space-x-3">
-                        <CountTable v-if="quizzesCount">
-                            {{ quizzesCount }}
-                        </CountTable>
-
-                        <ToggleViewButton v-model:viewMode="viewMode" />
-                    </div>
-                </div>
-
                 <SearchInput
                     v-if="quizzesCount"
                     v-model="searchQuery"
                     :placeholder="t('searchByName')"
                 />
-
-                <!-- Таблица / Карточки -->
+                <div v-if="quizzesCount"
+                     class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val"
+                    />
+                </div>
+                <div v-if="quizzesCount"
+                     class="flex flex-col lg:flex-row items-center justify-between gap-3"
+                >
+                    <CountTable>{{ quizzesCount }}</CountTable>
+                    <BulkActionSelect @change="handleBulkAction" />
+                    <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+                <div
+                    v-if="quizzesCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredQuizzes.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                </div>
                 <QuizTable
                     v-if="viewMode === 'table'"
                     :quizzes="paginatedQuizzes"
@@ -592,7 +605,6 @@ const localeLink = (locale) => route('admin.quizzes.index', { locale })
                     @toggle-select="toggleSelectQuiz"
                     @toggle-all="toggleAll"
                 />
-
                 <QuizCardGrid
                     v-else
                     :quizzes="paginatedQuizzes"
@@ -607,15 +619,10 @@ const localeLink = (locale) => route('admin.quizzes.index', { locale })
                     @toggle-select="toggleSelectQuiz"
                     @toggle-all="toggleAll"
                 />
-
                 <div
-                    class="flex justify-between items-center flex-col md:flex-row my-1"
                     v-if="quizzesCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
-                    <ItemsPerPageSelect
-                        :items-per-page="itemsPerPage"
-                        @update:itemsPerPage="itemsPerPage = $event"
-                    />
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
@@ -623,14 +630,9 @@ const localeLink = (locale) => route('admin.quizzes.index', { locale })
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
                     />
-                    <SortSelect
-                        :sortParam="sortParam"
-                        @update:sortParam="val => (sortParam = val)"
-                    />
                 </div>
             </div>
         </div>
-
         <DangerModal
             :show="showConfirmDeleteModal"
             @close="closeModal"

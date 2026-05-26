@@ -7,17 +7,19 @@ import {defineProps, ref, computed, watch} from 'vue';
 import {useI18n} from 'vue-i18n';
 import {useToast} from 'vue-toastification';
 import {router} from '@inertiajs/vue3';
+
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue';
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue';
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue';
-import CountTable from '@/Components/Admin/Count/CountTable.vue';
-import UserTable from '@/Components/Admin/User/Table/UserTable.vue';
-import UserCardGrid from '@/Components/Admin/User/View/UserCardGrid.vue';
-import ItemsPerPageSelect from "@/Components/Admin/Select/ItemsPerPageSelect.vue";
-import SortSelect from "@/Components/Admin/User/Sort/SortSelect.vue";
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue';
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue';
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue';
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue';
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue';
+import ItemsPerPageSelect from "@/Components/Admin/UI/Select/ItemsPerPageSelect.vue";
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue';
+
+import SortSelect from "@/Components/Admin/System/User/Sort/SortSelect.vue";
+import UserTable from '@/Components/Admin/System/User/Table/UserTable.vue';
+import UserCardGrid from '@/Components/Admin/System/User/View/UserCardGrid.vue';
 
 // --- Инициализация экземпляр i18n, toast ---
 const {t} = useI18n();
@@ -26,12 +28,27 @@ const toast = useToast();
 /**
  * Входные свойства компонента.
  */
-const props = defineProps([
-    'users',
-    'usersCount',
-    'adminCountUsers',
-    'adminSortUsers',
-]);
+const props = defineProps({
+    users: {
+        type: Array,
+        default: () => [],
+    },
+
+    usersCount: {
+        type: Number,
+        default: 0,
+    },
+
+    adminCountUsers: {
+        type: Number,
+        default: 20,
+    },
+
+    adminSortUsers: {
+        type: String,
+        default: 'idAsc',
+    },
+})
 
 /**
  * Вид: таблица или карточки.
@@ -194,12 +211,6 @@ const paginatedUsers = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value;
     return filteredUsers.value.slice(start, start + itemsPerPage.value);
 });
-
-/**
- * Вычисляемое свойство, возвращающее общее количество страниц пагинации.
- */
-const totalPages = computed(() => Math.ceil(filteredUsers.value.length / itemsPerPage.value));
-
 </script>
 
 <template>
@@ -210,28 +221,49 @@ const totalPages = computed(() => Math.ceil(filteredUsers.value.length / itemsPe
             </TitlePage>
         </template>
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
-            <div class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
-                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
-                        bg-opacity-95 dark:bg-opacity-95">
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <!-- Кнопка добавить -->
-                </div>
+            <div
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                       bg-opacity-95 dark:bg-opacity-95"
+            >
                 <SearchInput
                     v-if="usersCount"
                     v-model="searchQuery"
                     :placeholder="t('searchByNameOrEmail')"
                 />
 
+                <div
+                    v-if="usersCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event" />
+
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val" />
+                </div>
+
                 <!-- Количество + переключатель вида -->
                 <div
                     v-if="usersCount"
-                    class="flex items-center justify-between my-2"
+                    class="flex justify-between items-center flex-col md:flex-row"
                 >
-                    <CountTable>
-                        {{ usersCount }}
-                    </CountTable>
-
+                    <CountTable>{{ usersCount }}</CountTable>
                     <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div class="flex justify-center items-center flex-col md:flex-row"
+                     v-if="usersCount">
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredUsers.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
                 </div>
 
                 <!-- Таблица -->
@@ -247,8 +279,9 @@ const totalPages = computed(() => Math.ceil(filteredUsers.value.length / itemsPe
                     :users="paginatedUsers"
                     @delete="confirmDelete"
                 />
-                <div class="flex justify-between items-center flex-col md:flex-row my-1" v-if="usersCount">
-                    <ItemsPerPageSelect :items-per-page="itemsPerPage" @update:itemsPerPage="itemsPerPage = $event" />
+
+                <div class="flex justify-center items-center flex-col md:flex-row mt-3"
+                     v-if="usersCount">
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
@@ -256,7 +289,6 @@ const totalPages = computed(() => Math.ceil(filteredUsers.value.length / itemsPe
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
                     />
-                    <SortSelect :sortParam="sortParam" @update:sortParam="val => sortParam = val"/>
                 </div>
             </div>
         </div>

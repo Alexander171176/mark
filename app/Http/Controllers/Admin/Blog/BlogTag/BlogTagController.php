@@ -52,12 +52,12 @@ class BlogTagController extends BaseBlogAdminController
      */
     public function index(Request $request): Response
     {
-        $adminCountTags = (int) config('site_settings.AdminCountTags', 15);
-        $adminSortTags = (string) config('site_settings.AdminSortTags', 'idDesc');
+        $adminBlogTagsPerPage = (int) config('site_settings.adminBlogTagsPerPage', 20);
+        $adminBlogTagsDefaultSort = (string) config('site_settings.adminBlogTagsDefaultSort', 'idDesc');
 
-        $currentLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
         $search = trim((string) $request->query('search', ''));
-        $sortParam = $this->normalizeSortParam($request->query('sort', $adminSortTags));
+        $sortParam = $this->normalizeSortParam($request->query('sort', $adminBlogTagsDefaultSort));
 
         try {
             $tags = $this->baseQuery()
@@ -75,8 +75,8 @@ class BlogTagController extends BaseBlogAdminController
                 'tags' => BlogTagResource::collection($tags),
                 'tagsCount' => $this->baseQuery()->count(),
 
-                'adminCountTags' => $adminCountTags,
-                'adminSortTags' => $adminSortTags,
+                'adminBlogTagsPerPage' => $adminBlogTagsPerPage,
+                'adminBlogTagsDefaultSort' => $adminBlogTagsDefaultSort,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -92,8 +92,8 @@ class BlogTagController extends BaseBlogAdminController
                 'tags' => [],
                 'tagsCount' => 0,
 
-                'adminCountTags' => $adminCountTags,
-                'adminSortTags' => $adminSortTags,
+                'adminBlogTagsPerPage' => $adminBlogTagsPerPage,
+                'adminBlogTagsDefaultSort' => $adminBlogTagsDefaultSort,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -109,10 +109,10 @@ class BlogTagController extends BaseBlogAdminController
      */
     public function create(Request $request): Response
     {
-        $targetLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
 
         return Inertia::render('Admin/Blog/BlogTags/Create', [
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
         ]);
     }
@@ -196,11 +196,11 @@ class BlogTagController extends BaseBlogAdminController
             ->withCount(['articles'])
             ->findOrFail($blogTag);
 
-        $targetLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
 
         return Inertia::render('Admin/Blog/BlogTags/Edit', [
             'tag' => new BlogTagResource($tag),
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
         ]);
     }

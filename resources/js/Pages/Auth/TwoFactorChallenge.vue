@@ -2,12 +2,12 @@
 import {nextTick, ref} from 'vue'
 import {Head, useForm} from '@inertiajs/vue3'
 import ImageAuthentication from "@/Components/User/Image/ImageAuthentication.vue"
-import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue'
+import AuthenticationCardLogo from '@/Components/Base/AuthenticationCardLogo.vue'
 import HeadingAuth from '@/Components/User/Heading/HeadingAuth.vue'
-import InputError from '@/Components/InputError.vue'
-import InputLabel from '@/Components/InputLabel.vue'
-import PrimaryButton from '@/Components/PrimaryButton.vue'
-import TextInput from '@/Components/TextInput.vue'
+import InputError from '@/Components/Base/InputError.vue'
+import InputLabel from '@/Components/Base/InputLabel.vue'
+import PrimaryButton from '@/Components/Base/PrimaryButton.vue'
+import TextInput from '@/Components/Base/TextInput.vue'
 import {useI18n} from 'vue-i18n'
 import DefaultLayout from "@/Layouts/DefaultLayout.vue";
 

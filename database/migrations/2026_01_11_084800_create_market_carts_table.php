@@ -69,7 +69,6 @@ return new class extends Migration {
                 ->comment('Доп. контекст (utm, source, device, etc.)');
 
             $table->timestamps();
-            $table->softDeletes();
 
             /* =========================================================
              * UNIQUE / INDEXES

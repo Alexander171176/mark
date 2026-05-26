@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Finance\OrderItem;
 
-use App\Models\Admin\Finance\OrderItem\OrderItem;
+use App\Models\Admin\School\OrderItem\OrderItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

@@ -1,7 +1,4 @@
 <script setup>
-
-import {Link} from "@inertiajs/vue3";
-
 defineProps({
     href: String,
     as: String
@@ -17,7 +14,7 @@ defineProps({
                        dark:text-slate-100 dark:hover:text-yellow-200
                        focus:outline focus:outline-2 focus:rounded-sm
                        focus:outline-orange-500 dark:focus:outline-yellow-200">
-            <slot/>
+            <slot />
         </button>
     </div>
 </template>

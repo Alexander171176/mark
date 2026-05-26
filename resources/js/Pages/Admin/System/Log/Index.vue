@@ -3,8 +3,9 @@ import { defineProps, ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'vue-toastification';
 import { router, useForm } from '@inertiajs/vue3';
+
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
 
 const { t } = useI18n();
 const toast = useToast();

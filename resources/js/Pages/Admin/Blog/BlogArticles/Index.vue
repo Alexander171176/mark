@@ -11,19 +11,19 @@ import { useToast } from 'vue-toastification'
 import { router, usePage } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
 
-import BulkActionSelect from '@/Components/Admin/Blog/Article/Select/BulkActionSelect.vue'
-import SortSelect from '@/Components/Admin/Blog/Article/Sort/SortSelect.vue'
-import ArticleTable from '@/Components/Admin/Blog/Article/Table/ArticleTable.vue'
-import ArticleCardGrid from '@/Components/Admin/Blog/Article/View/ArticleCardGrid.vue'
+import BulkActionSelect from '@/Components/Admin/Blog/BlogArticle/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/Blog/BlogArticle/Sort/SortSelect.vue'
+import ArticleTable from '@/Components/Admin/Blog/BlogArticle/Table/ArticleTable.vue'
+import ArticleCardGrid from '@/Components/Admin/Blog/BlogArticle/View/ArticleCardGrid.vue'
 
 const { t, locale } = useI18n()
 const toast = useToast()
@@ -34,11 +34,11 @@ const props = defineProps({
     articles: { type: Array, default: () => [] },
     articlesCount: { type: Number, default: 0 },
 
-    adminCountArticles: { type: Number, default: 15 },
-    adminSortArticles: { type: String, default: 'idDesc' },
+    adminBlogArticlesPerPage: { type: Number, default: 20 },
+    adminBlogArticlesDefaultSort: { type: String, default: 'idDesc' },
 
-    currentLocale: { type: String, default: 'ru' },
-    availableLocales: { type: Array, default: () => ['ru', 'en', 'kk'] },
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
 
     search: { type: String, default: '' },
     sortParam: { type: String, default: '' },
@@ -51,47 +51,47 @@ const isAdmin = computed(() => {
     return roles.some((role) => role?.name === 'admin')
 })
 
-/** Текущий перевод статьи */
+/** Получение текущего перевода */
 const getArticleTranslation = (article) => article?.translation || {}
 
-/** Название статьи */
-const getArticleTitle = (article) => {
-    return getArticleTranslation(article)?.title || `ID: ${article?.id}`
-}
+/** Название статьи в текущей локали */
+const getArticleTitle = (article) => getArticleTranslation(article)?.title || `ID: ${article?.id}`
 
-/** Краткое описание статьи */
-const getArticleShort = (article) => {
-    return getArticleTranslation(article)?.short || ''
-}
+/** Краткое описание статьи в текущей локали */
+const getArticleShort = (article) => getArticleTranslation(article)?.short || ''
 
-/** Описание статьи */
-const getArticleDescription = (article) => {
-    return getArticleTranslation(article)?.description || ''
-}
+/** Описание статьи в текущей локали */
+const getArticleDescription = (article) => getArticleTranslation(article)?.description || ''
 
 /** Локаль текущего перевода статьи */
-const getArticleLocale = (article) => {
-    return getArticleTranslation(article)?.locale || props.currentLocale || ''
-}
+const getArticleLocale = (article) => getArticleTranslation(article)?.locale || props.currentLocale || ''
 
-/** Нормализация строки */
+/** Нормализация строки для поиска/сортировки */
 const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
-/** Безопасное число статуса модерации */
+/** Безопасное приведение статуса модерации к числу */
 const moderationNum = (value) => {
     const number = Number(value)
     return Number.isFinite(number) ? number : 0
 }
 
-/** Режим отображения */
+/**
+ * Режим отображения:
+ * - cards = карточки
+ * - table = дерево с drag-and-drop
+ * Сохраняем выбор в localStorage.
+ */
 const viewMode = ref(localStorage.getItem('admin_view_mode_articles') || 'cards')
 
 watch(viewMode, (value) => {
     localStorage.setItem('admin_view_mode_articles', value)
 })
 
-/** Количество элементов на странице */
-const itemsPerPage = ref(props.adminCountArticles || 15)
+/**
+ * Количество элементов на странице.
+ * Значение сохраняется в настройках админки.
+ */
+const itemsPerPage = ref(props.adminBlogArticlesPerPage || 20)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
@@ -106,8 +106,11 @@ watch(itemsPerPage, (newVal) => {
     )
 })
 
-/** Параметр сортировки */
-const sortParam = ref(props.sortParam || props.adminSortArticles || 'idDesc')
+/**
+ * Параметр сортировки.
+ * Значение также сохраняется в настройках админки.
+ */
+const sortParam = ref(props.sortParam || props.adminBlogArticlesDefaultSort || 'idDesc')
 
 watch(sortParam, (newVal) => {
     router.put(
@@ -122,7 +125,12 @@ watch(sortParam, (newVal) => {
     )
 })
 
-/** Локальная копия статей */
+/**
+ * Локальные копии данных нужны, чтобы:
+ * - менять активность без полной перезагрузки;
+ * - обновлять drag-and-drop;
+ * - работать с карточками и массовыми действиями.
+ */
 const localArticles = ref([])
 
 watch(
@@ -133,12 +141,14 @@ watch(
     { immediate: true, deep: true }
 )
 
-/** Модалка удаления */
+/**
+ * Модальное подтверждение удаления одной статьи
+ */
 const showConfirmDeleteModal = ref(false)
 const articleToDeleteId = ref(null)
 const articleToDeleteTitle = ref('')
 
-/** Открыть модалку удаления */
+/** Открываем модалку удаления и запоминаем статью */
 const confirmDelete = (articleOrId, title = null) => {
     if (typeof articleOrId === 'object') {
         articleToDeleteId.value = articleOrId.id
@@ -151,14 +161,14 @@ const confirmDelete = (articleOrId, title = null) => {
     showConfirmDeleteModal.value = true
 }
 
-/** Закрыть модалку */
+/** Закрываем модалку удаления */
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     articleToDeleteId.value = null
     articleToDeleteTitle.value = ''
 }
 
-/** Удалить статью */
+/** Удаление одной статьи через destroy route */
 const deleteArticle = () => {
     if (articleToDeleteId.value === null) return
 
@@ -180,7 +190,9 @@ const deleteArticle = () => {
     })
 }
 
-/** Локальное обновление статьи */
+/**
+ * Обновление статьи без полной перезагрузки страницы
+ */
 const patchLocalArticle = (articleId, callback) => {
     const index = localArticles.value.findIndex((article) => article.id === articleId)
 
@@ -189,7 +201,7 @@ const patchLocalArticle = (articleId, callback) => {
     }
 }
 
-/** Переключение активности */
+/** Переключение активности одной статьи */
 const toggleActivity = (article) => {
     const newActivity = !article.activity
     const title = getArticleTitle(article)
@@ -215,7 +227,7 @@ const toggleActivity = (article) => {
     )
 }
 
-/** Переключение left */
+/** Переключение в левой колонке */
 const toggleLeft = (article) => {
     const newLeft = !article.left
     const title = getArticleTitle(article)
@@ -240,7 +252,7 @@ const toggleLeft = (article) => {
     )
 }
 
-/** Переключение main */
+/** Переключение в главном окне */
 const toggleMain = (article) => {
     const newMain = !article.main
     const title = getArticleTitle(article)
@@ -265,7 +277,7 @@ const toggleMain = (article) => {
     )
 }
 
-/** Переключение right */
+/** Переключение в правой колонке */
 const toggleRight = (article) => {
     const newRight = !article.right
     const title = getArticleTitle(article)
@@ -290,146 +302,70 @@ const toggleRight = (article) => {
     )
 }
 
-/** Поиск */
+/**
+ * Локальный поиск по уже загруженному списку статей
+ */
 const searchQuery = ref(props.search || '')
 const currentPage = ref(1)
 
-/** Локальная сортировка */
+/**
+ * Локальная сортировка списка карточек.
+ * Backend уже отдаёт отсортированный список, но здесь нужна быстрая
+ * клиентская пересортировка при смене select.
+ */
 const sortArticles = (articles) => {
     const list = (articles || []).slice()
 
-    if (sortParam.value === 'ownerNameAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
-    }
+    if (sortParam.value === 'ownerNameAsc') return list.sort((a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
+    if (sortParam.value === 'ownerNameDesc') return list.sort((a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
+    if (sortParam.value === 'ownerEmailAsc') return list.sort((a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
+    if (sortParam.value === 'ownerEmailDesc') return list.sort((a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
 
-    if (sortParam.value === 'ownerNameDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
-    }
+    if (sortParam.value === 'idAsc') return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
+    if (sortParam.value === 'idDesc') return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
+    if (sortParam.value === 'sortAsc') return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+    if (sortParam.value === 'sortDesc') return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
 
-    if (sortParam.value === 'ownerEmailAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
-    }
+    if (sortParam.value === 'titleAsc') return list.sort((a, b) => normalize(getArticleTitle(a)).localeCompare(normalize(getArticleTitle(b)), locale.value))
+    if (sortParam.value === 'titleDesc') return list.sort((a, b) => normalize(getArticleTitle(b)).localeCompare(normalize(getArticleTitle(a)), locale.value))
 
-    if (sortParam.value === 'ownerEmailDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
-    }
+    if (sortParam.value === 'activity') return list.filter((article) => !!article.activity)
+    if (sortParam.value === 'inactive') return list.filter((article) => !article.activity)
 
-    if (sortParam.value === 'idAsc') {
-        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    }
+    if (sortParam.value === 'left') return list.filter((article) => !!article.left)
+    if (sortParam.value === 'noLeft') return list.filter((article) => !article.left)
+    if (sortParam.value === 'main') return list.filter((article) => !!article.main)
+    if (sortParam.value === 'noMain') return list.filter((article) => !article.main)
+    if (sortParam.value === 'right') return list.filter((article) => !!article.right)
+    if (sortParam.value === 'noRight') return list.filter((article) => !article.right)
 
-    if (sortParam.value === 'idDesc') {
-        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-    }
+    if (sortParam.value === 'publishedAtDesc') return list.sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0))
+    if (sortParam.value === 'publishedAtAsc') return list.sort((a, b) => new Date(a.published_at || 0) - new Date(b.published_at || 0))
 
-    if (sortParam.value === 'sortAsc') {
-        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    }
+    if (sortParam.value === 'locale') return list.sort((a, b) => getArticleLocale(a).localeCompare(getArticleLocale(b), locale.value))
 
-    if (sortParam.value === 'sortDesc') {
-        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
-    }
+    if (sortParam.value === 'views' || sortParam.value === 'viewsDesc') return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
+    if (sortParam.value === 'viewsAsc') return list.sort((a, b) => (a.views ?? 0) - (b.views ?? 0))
 
-    if (sortParam.value === 'titleAsc') {
-        return list.sort((a, b) => normalize(getArticleTitle(a)).localeCompare(normalize(getArticleTitle(b)), locale.value))
-    }
+    if (sortParam.value === 'likes' || sortParam.value === 'likesDesc') return list.sort((a, b) => (b.likes_count ?? 0) - (a.likes_count ?? 0))
+    if (sortParam.value === 'likesAsc') return list.sort((a, b) => (a.likes_count ?? 0) - (b.likes_count ?? 0))
 
-    if (sortParam.value === 'titleDesc') {
-        return list.sort((a, b) => normalize(getArticleTitle(b)).localeCompare(normalize(getArticleTitle(a)), locale.value))
-    }
+    if (sortParam.value === 'commentsDesc') return list.sort((a, b) => (b.comments_count ?? 0) - (a.comments_count ?? 0))
+    if (sortParam.value === 'commentsAsc') return list.sort((a, b) => (a.comments_count ?? 0) - (b.comments_count ?? 0))
 
-    if (sortParam.value === 'activity') {
-        return list.filter((article) => !!article.activity)
-    }
+    if (sortParam.value === 'moderation_pending') return list.filter((article) => moderationNum(article?.moderation_status) === 0)
+    if (sortParam.value === 'moderation_approved') return list.filter((article) => moderationNum(article?.moderation_status) === 1)
+    if (sortParam.value === 'moderation_rejected') return list.filter((article) => moderationNum(article?.moderation_status) === 2)
 
-    if (sortParam.value === 'inactive') {
-        return list.filter((article) => !article.activity)
-    }
-
-    if (sortParam.value === 'left') {
-        return list.filter((article) => !!article.left)
-    }
-
-    if (sortParam.value === 'noLeft') {
-        return list.filter((article) => !article.left)
-    }
-
-    if (sortParam.value === 'main') {
-        return list.filter((article) => !!article.main)
-    }
-
-    if (sortParam.value === 'noMain') {
-        return list.filter((article) => !article.main)
-    }
-
-    if (sortParam.value === 'right') {
-        return list.filter((article) => !!article.right)
-    }
-
-    if (sortParam.value === 'noRight') {
-        return list.filter((article) => !article.right)
-    }
-
-    if (sortParam.value === 'publishedAtDesc') {
-        return list.sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0))
-    }
-
-    if (sortParam.value === 'publishedAtAsc') {
-        return list.sort((a, b) => new Date(a.published_at || 0) - new Date(b.published_at || 0))
-    }
-
-    if (sortParam.value === 'locale') {
-        return list.sort((a, b) => getArticleLocale(a).localeCompare(getArticleLocale(b), locale.value))
-    }
-
-    if (sortParam.value === 'views' || sortParam.value === 'viewsDesc') {
-        return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
-    }
-
-    if (sortParam.value === 'viewsAsc') {
-        return list.sort((a, b) => (a.views ?? 0) - (b.views ?? 0))
-    }
-
-    if (sortParam.value === 'likes' || sortParam.value === 'likesDesc') {
-        return list.sort((a, b) => (b.likes_count ?? 0) - (a.likes_count ?? 0))
-    }
-
-    if (sortParam.value === 'likesAsc') {
-        return list.sort((a, b) => (a.likes_count ?? 0) - (b.likes_count ?? 0))
-    }
-
-    if (sortParam.value === 'commentsDesc') {
-        return list.sort((a, b) => (b.comments_count ?? 0) - (a.comments_count ?? 0))
-    }
-
-    if (sortParam.value === 'commentsAsc') {
-        return list.sort((a, b) => (a.comments_count ?? 0) - (b.comments_count ?? 0))
-    }
-
-    if (sortParam.value === 'moderation_pending') {
-        return list.filter((article) => moderationNum(article?.moderation_status) === 0)
-    }
-
-    if (sortParam.value === 'moderation_approved') {
-        return list.filter((article) => moderationNum(article?.moderation_status) === 1)
-    }
-
-    if (sortParam.value === 'moderation_rejected') {
-        return list.filter((article) => moderationNum(article?.moderation_status) === 2)
-    }
-
-    if (sortParam.value === 'moderation_statusAsc') {
-        return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
-    }
-
-    if (sortParam.value === 'moderation_statusDesc') {
-        return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
-    }
+    if (sortParam.value === 'moderation_statusAsc') return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
+    if (sortParam.value === 'moderation_statusDesc') return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
 
     return list
 }
 
-/** Фильтрация статей */
+/**
+ * Фильтрация рубрик по поисковой строке + применение сортировки
+ */
 const filteredArticles = computed(() => {
     let filtered = localArticles.value || []
     const query = normalize(searchQuery.value)
@@ -457,7 +393,9 @@ const filteredArticles = computed(() => {
     return sortArticles(filtered)
 })
 
-/** Пагинация */
+/**
+ * Ручная клиентская пагинация для карточек
+ */
 const paginatedArticles = computed(() => {
     const perPage = Number(itemsPerPage.value || 10)
     const start = (currentPage.value - 1) * perPage
@@ -469,10 +407,12 @@ watch([itemsPerPage, searchQuery], () => {
     currentPage.value = 1
 })
 
-/** Выбранные статьи */
+/**
+ * Выбранные статьи для массовых действий
+ */
 const selectedArticles = ref([])
 
-/** Выбрать/снять все статьи */
+/** Выбрать/снять все статьи в текущем режиме отображения */
 const toggleAll = (payload) => {
     const checked = payload?.checked ?? payload?.target?.checked ?? false
     const ids = payload?.ids ?? paginatedArticles.value.map((article) => article.id)
@@ -506,10 +446,7 @@ const bulkToggleActivity = (newActivity) => {
 
     router.put(
         route('admin.actions.blogArticles.bulkUpdateActivity'),
-        {
-            ids: idsToUpdate,
-            activity: newActivity,
-        },
+        { ids: idsToUpdate, activity: newActivity },
         {
             preserveScroll: true,
             preserveState: true,
@@ -533,7 +470,7 @@ const bulkToggleActivity = (newActivity) => {
     )
 }
 
-/** Массовое изменение boolean-поля */
+/** Массовое включение/выключение по флагам */
 const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
     if (!selectedArticles.value.length) {
         toast.warning('Выберите статьи для массового действия')
@@ -544,10 +481,7 @@ const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
 
     router.put(
         route(routeName),
-        {
-            ids: idsToUpdate,
-            [field]: newValue,
-        },
+        { ids: idsToUpdate, [field]: newValue },
         {
             preserveScroll: true,
             preserveState: true,
@@ -571,7 +505,7 @@ const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
     )
 }
 
-/** Массовое удаление */
+/** Массовое удаление выбранных статей */
 const bulkDelete = () => {
     if (!selectedArticles.value.length) {
         toast.warning('Выберите хотя бы одну статью для удаления.')
@@ -626,16 +560,15 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-/** Одобрение / отклонение статьи */
+/**
+ * Одобрение / отклонение статьи администратором
+ */
 const approveArticle = (article, status = 1, note = '') => {
     if (!article?.id) return
 
     router.put(
         route('admin.actions.blogArticles.approve', { blogArticle: article.id }),
-        {
-            moderation_status: status,
-            moderation_note: note,
-        },
+        { moderation_status: status, moderation_note: note },
         {
             preserveScroll: true,
             preserveState: true,
@@ -653,7 +586,11 @@ const approveArticle = (article, status = 1, note = '') => {
     )
 }
 
-/** Обновление сортировки */
+/**
+ * После drag-and-drop собираем только изменённые элементы:
+ * id, sort, parent_id.
+ * Затем отправляем их на updateSortBulk.
+ */
 const handleSortOrderUpdate = (newOrderIds) => {
     const items = newOrderIds.map((id, index) => ({
         id,
@@ -693,27 +630,13 @@ const handleSortOrderUpdate = (newOrderIds) => {
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-3">
                     <DefaultButton :href="route('admin.blogArticles.create')">
-                        <template #icon>
-                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
-                                <path
-                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
-                                />
-                            </svg>
-                        </template>
-
                         {{ t('addArticle') }}
                     </DefaultButton>
                 </div>
 
-                <SearchInput
-                    v-if="articlesCount"
-                    v-model="searchQuery"
-                />
+                <SearchInput v-if="articlesCount" v-model="searchQuery" />
 
-                <div
-                    v-if="articlesCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
-                >
+                <div v-if="articlesCount" class="flex justify-between items-center flex-col md:flex-row my-3">
                     <ItemsPerPageSelect
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
@@ -725,10 +648,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     />
                 </div>
 
-                <div
-                    v-if="articlesCount"
-                    class="flex items-center justify-between mb-3"
-                >
+                <div v-if="articlesCount" class="flex flex-col lg:flex-row items-center justify-between gap-3">
                     <CountTable>{{ articlesCount }}</CountTable>
 
                     <BulkActionSelect
@@ -737,6 +657,16 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     />
 
                     <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div v-if="articlesCount" class="flex justify-center items-center flex-col md:flex-row mt-3">
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredArticles.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
                 </div>
 
                 <ArticleTable
@@ -771,10 +701,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     @approve="approveArticle"
                 />
 
-                <div
-                    v-if="articlesCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
-                >
+                <div v-if="articlesCount" class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
@@ -788,11 +715,11 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
         <DangerModal
             :show="showConfirmDeleteModal"
-            @close="closeModal"
             :onCancel="closeModal"
             :onConfirm="deleteArticle"
             :cancelText="t('cancel')"
             :confirmText="t('yesDelete')"
+            @close="closeModal"
         />
     </AdminLayout>
 </template>

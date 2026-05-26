@@ -2,9 +2,9 @@
 import { defineProps } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
-import ArticleLineChart01 from '@/Components/Admin/Chart/Article/ArticleLineChart01.vue';
-import RubricBarChart01 from "@/Components/Admin/Chart/Rubric/RubricBarChart01.vue";
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
+import ArticleLineChart01 from '@/Components/Admin/Statistic/Chart/Article/ArticleLineChart01.vue';
+import RubricBarChart01 from "@/Components/Admin/Statistic/Chart/Rubric/RubricBarChart01.vue";
 
 const { t } = useI18n();
 

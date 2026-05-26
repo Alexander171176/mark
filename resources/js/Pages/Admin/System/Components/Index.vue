@@ -2,11 +2,12 @@
 import { ref } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
+
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import HighlightEditor from '@/Components/Admin/HighlightEditor/HighlightEditor.vue' // компонент редактора
-import DirectoryStructure from '@/Components/Admin/Component/DirectoryStructure.vue'
-import CodeMirrorEditor from '@/Components/Admin/CodeMirrorEditor/CodeMirrorEditor.vue' // Импортируем новый компонент редактора
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import HighlightEditor from '@/Components/Admin/UI/HighlightEditor/HighlightEditor.vue' // компонент редактора
+import DirectoryStructure from '@/Components/Admin/System/Component/DirectoryStructure.vue'
+import CodeMirrorEditor from '@/Components/Admin/UI/CodeMirrorEditor/CodeMirrorEditor.vue' // Импортируем новый компонент редактора
 
 const { t } = useI18n()
 

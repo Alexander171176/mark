@@ -8,7 +8,6 @@ defineProps({ t: { type: Function, required: true } })
 const page = usePage()
 
 const d = (key) => page.props.laravelLang?.admin?.welcome?.system?.[key]?.description ?? ''
-const titles = (key) => page.props.laravelLang?.admin?.welcome?.system?.[key]?.title ?? ''
 
 const descriptions = computed(() => ({
     users: d('users'),
@@ -27,13 +26,6 @@ const descriptions = computed(() => ({
     robot: d('robot'),
     sitemapTitle: d('sitemapTitle'),
     reports: d('reports'),
-}))
-
-const systemTitles = computed(() => ({
-    phpinfo: titles('phpinfo'),
-    composer: titles('composer'),
-    package: titles('package'),
-    env: titles('env'),
 }))
 </script>
 

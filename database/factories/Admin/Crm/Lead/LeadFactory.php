@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Crm\Lead;
 
-use App\Models\Admin\Crm\Lead\Lead;
+use App\Models\Admin\School\Lead\Lead;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

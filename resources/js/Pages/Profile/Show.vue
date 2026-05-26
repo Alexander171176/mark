@@ -2,11 +2,11 @@
 import AppLayout from '@/Layouts/AppLayout.vue'
 import DeleteUserForm from '@/Pages/Profile/Partials/DeleteUserForm.vue'
 import LogoutOtherBrowserSessionsForm from '@/Pages/Profile/Partials/LogoutOtherBrowserSessionsForm.vue'
-import SectionBorder from '@/Components/SectionBorder.vue'
+import SectionBorder from '@/Components/Base/SectionBorder.vue'
 import TwoFactorAuthenticationForm from '@/Pages/Profile/Partials/TwoFactorAuthenticationForm.vue'
 import UpdatePasswordForm from '@/Pages/Profile/Partials/UpdatePasswordForm.vue'
 import UpdateProfileInformationForm from '@/Pages/Profile/Partials/UpdateProfileInformationForm.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import { useI18n } from 'vue-i18n'
 
 defineProps({

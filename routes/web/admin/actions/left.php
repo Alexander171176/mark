@@ -5,8 +5,9 @@
 use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
-use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
-use App\Http\Controllers\Admin\School\Quiz\QuizController;
+use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
+use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
+use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use Illuminate\Support\Facades\Route;
 
 Route::put('/blog-articles/{blogArticle}/left',
@@ -21,8 +22,17 @@ Route::put('/blog-videos/{blogVideo}/left',
     [BlogVideoController::class, 'updateLeft'])
     ->name('blogVideos.updateLeft');
 
-Route::put('/assignments/{assignment}/left', [AssignmentController::class, 'updateLeft'])
-    ->name('assignments.updateLeft');
+Route::put('/school-courses/{schoolCourse}/left',
+    [SchoolCourseController::class, 'updateLeft'])
+    ->whereNumber('schoolCourse')
+    ->name('schoolCourses.updateLeft');
 
-Route::put('/quizzes/{quiz}/left', [QuizController::class, 'updateLeft'])
-    ->name('quizzes.updateLeft');
+Route::put('/school-assignments/{schoolAssignment}/left',
+    [SchoolAssignmentController::class, 'updateLeft'])
+    ->whereNumber('schoolAssignment')
+    ->name('schoolAssignments.updateLeft');
+
+Route::put('/school-quizzes/{schoolQuiz}/left',
+    [SchoolQuizController::class, 'updateLeft'])
+    ->whereNumber('schoolQuiz')
+    ->name('schoolQuizzes.updateLeft');

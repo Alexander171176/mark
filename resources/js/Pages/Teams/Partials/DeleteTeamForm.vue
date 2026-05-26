@@ -1,10 +1,10 @@
 <script setup>
 import {ref} from 'vue'
 import {useForm} from '@inertiajs/vue3'
-import ActionSection from '@/Components/ActionSection.vue'
-import ConfirmationModal from '@/Components/ConfirmationModal.vue'
-import DangerButton from '@/Components/DangerButton.vue'
-import SecondaryButton from '@/Components/SecondaryButton.vue'
+import ActionSection from '@/Components/Base/ActionSection.vue'
+import ConfirmationModal from '@/Components/Base/ConfirmationModal.vue'
+import DangerButton from '@/Components/Base/DangerButton.vue'
+import SecondaryButton from '@/Components/Base/SecondaryButton.vue'
 import {useI18n} from 'vue-i18n'
 
 const {t} = useI18n()

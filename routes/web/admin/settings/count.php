@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\System\Setting\SettingController;
 use Illuminate\Support\Facades\Route;
 
 // Количество элементов на странице
+Route::put('/update-count/settings', [SettingController::class, 'updateAdminCountSettings'])
+    ->name('updateAdminCountSettings');
 Route::put('/update-count/rubrics', [SettingController::class, 'updateAdminCountRubrics'])
     ->name('updateAdminCountRubrics');
 Route::put('/update-count/articles', [SettingController::class, 'updateAdminCountArticles'])
@@ -18,16 +20,16 @@ Route::put('/update-count/videos', [SettingController::class, 'updateAdminCountV
     ->name('updateAdminCountVideos');
 Route::put('/update-count/instructors', [SettingController::class, 'updateAdminCountInstructors'])
     ->name('updateAdminCountInstructors');
-Route::put('/update-count/learning-categories', [SettingController::class, 'updateAdminCountLearningCategories'])
-    ->name('updateAdminCountLearningCategories');
+Route::put('/update-count/tracks', [SettingController::class, 'updateAdminCountTracks'])
+    ->name('updateAdminCountTracks');
 Route::put('/update-count/hashtags', [SettingController::class, 'updateAdminCountHashtags'])
     ->name('updateAdminCountHashtags');
-Route::put('/update-count/courses', [SettingController::class, 'updateAdminCountLearningCourses'])
-    ->name('updateAdminCountLearningCourses');
-Route::put('/update-count/modules', [SettingController::class, 'updateAdminCountLearningModules'])
-    ->name('updateAdminCountLearningModules');
-Route::put('/update-count/lessons', [SettingController::class, 'updateAdminCountLearningLessons'])
-    ->name('updateAdminCountLearningLessons');
+Route::put('/update-count/courses', [SettingController::class, 'updateAdminCountCourses'])
+    ->name('updateAdminCountCourses');
+Route::put('/update-count/modules', [SettingController::class, 'updateAdminCountModules'])
+    ->name('updateAdminCountModules');
+Route::put('/update-count/lessons', [SettingController::class, 'updateAdminCountLessons'])
+    ->name('updateAdminCountLessons');
 Route::put('/update-count/assignments', [SettingController::class, 'updateAdminCountAssignments'])
     ->name('updateAdminCountAssignments');
 Route::put('/update-count/course-schedules', [SettingController::class, 'updateAdminCountCourseSchedules'])
@@ -64,9 +66,7 @@ Route::put('/update-count/roles', [SettingController::class, 'updateAdminCountRo
     ->name('updateAdminCountRoles');
 Route::put('/update-count/permissions', [SettingController::class, 'updateAdminCountPermissions'])
     ->name('updateAdminCountPermissions');
-Route::put('/update-count/settings', [SettingController::class, 'updateAdminCountSettings'])
-    ->name('updateAdminCountSettings');
-Route::put('/update-count/settings', [SettingController::class, 'updateAdminCountMarketCompanies'])
+Route::put('/update-count/market-storefronts', [SettingController::class, 'updateAdminCountMarketCompanies'])
     ->name('updateAdminCountMarketCompanies');
-Route::put('/update-count/settings', [SettingController::class, 'updateAdminCountMarketStorefronts'])
+Route::put('/update-count/market-storefronts', [SettingController::class, 'updateAdminCountMarketStorefronts'])
     ->name('updateAdminCountMarketStorefronts');

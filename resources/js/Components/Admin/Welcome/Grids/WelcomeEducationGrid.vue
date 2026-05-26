@@ -9,26 +9,30 @@ defineProps({
 
 const page = usePage()
 
-const description = (key) =>
+const d = (key) =>
     page.props.laravelLang?.admin?.welcome?.education?.[key]?.description ?? ''
 
 const descriptions = computed(() => ({
-    instructors: description('instructors'),
-    hashtags: description('hashtags'),
-    learningCategories: description('learningCategories'),
-    bundles: description('bundles'),
-    courses: description('courses'),
-    modules: description('modules'),
-    lessons: description('lessons'),
-    assignments: description('assignments'),
-    courseSchedules: description('courseSchedules'),
-    cohortEnrollments: description('cohortEnrollments'),
-    enrollments: description('enrollments'),
-    quizzes: description('quizzes'),
-    quizQuestions: description('quizQuestions'),
-    quizAnswers: description('quizAnswers'),
-    quizAttempts: description('quizAttempts'),
-    quizAttemptItems: description('quizAttemptItems'),
+    instructors: d('instructors'),
+    hashtags: d('hashtags'),
+    learningCategories: d('learningCategories'),
+    bundles: d('bundles'),
+    courses: d('courses'),
+    modules: d('modules'),
+    lessons: d('lessons'),
+    assignments: d('assignments'),
+    courseSchedules: d('courseSchedules'),
+    cohortEnrollments: d('cohortEnrollments'),
+    enrollments: d('enrollments'),
+    quizzes: d('quizzes'),
+    quizQuestions: d('quizQuestions'),
+    quizAnswers: d('quizAnswers'),
+    quizAttempts: d('quizAttempts'),
+    quizAttemptItems: d('quizAttemptItems'),
+    orders: d('orders'),
+    coursePrices: d('coursePrices'),
+    bundlePrices: d('bundlePrices'),
+    subscriptionPlans: d('subscriptionPlans'),
 }))
 </script>
 
@@ -38,7 +42,7 @@ const descriptions = computed(() => ({
                grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5"
     >
         <WelcomeCard
-            :href="route('admin.instructorProfiles.index')"
+            :href="route('admin.schoolInstructorProfiles.index')"
             :title="t('instructors')"
             :description="descriptions.instructors"
         >
@@ -54,7 +58,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.hashtags.index')"
+            :href="route('admin.schoolHashtags.index')"
             :title="t('hashtags')"
             :description="descriptions.hashtags"
         >
@@ -66,7 +70,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.learningCategories.index')"
+            :href="route('admin.schoolTracks.index')"
             :title="t('learningCategories')"
             :description="descriptions.learningCategories"
         >
@@ -96,7 +100,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.courses.index')"
+            :href="route('admin.schoolCourses.index')"
             :title="t('courses')"
             :description="descriptions.courses"
         >
@@ -109,7 +113,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.modules.index')"
+            :href="route('admin.schoolModules.index')"
             :title="t('modules')"
             :description="descriptions.modules"
         >
@@ -124,7 +128,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.lessons.index')"
+            :href="route('admin.schoolLessons.index')"
             :title="t('lessons')"
             :description="descriptions.lessons"
         >
@@ -139,7 +143,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.assignments.index')"
+            :href="route('admin.schoolAssignments.index')"
             :title="t('assignments')"
             :description="descriptions.assignments"
         >
@@ -152,7 +156,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.courseSchedules.index')"
+            :href="route('admin.schoolCourseSchedules.index')"
             :title="t('courseSchedules')"
             :description="descriptions.courseSchedules"
         >
@@ -164,8 +168,8 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.cohortEnrollments.index')"
-            :title="t('cohortEnrollments')"
+            :href="route('admin.schoolCohortEnrollments.index')"
+            :title="t('schoolCohortEnrollments')"
             :description="descriptions.cohortEnrollments"
         >
             <template #icon>
@@ -178,7 +182,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.enrollments.index')"
+            :href="route('admin.schoolEnrollments.index')"
             :title="t('enrollments')"
             :description="descriptions.enrollments"
         >
@@ -191,7 +195,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.quizzes.index')"
+            :href="route('admin.schoolQuizzes.index')"
             :title="t('quizzes')"
             :description="descriptions.quizzes"
         >
@@ -203,7 +207,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.quizQuestions.index')"
+            :href="route('admin.schoolQuizQuestions.index')"
             :title="t('quizQuestions')"
             :description="descriptions.quizQuestions"
         >
@@ -255,6 +259,78 @@ const descriptions = computed(() => ({
                     <path d="M18,5.014l3.882-1.941L18.447,1.356a1,1,0,0,0-.894,0L14.118,3.073Z"></path>
                     <path d="M19,6.75v5.382l3.447-1.724A1,1,0,0,0,23,9.514V4.75Z"></path>
                     <path d="M17,6.75l-4-2V9.514a1,1,0,0,0,.553.894L17,12.132Z"></path>
+                </svg>
+            </template>
+        </WelcomeCard>
+        <WelcomeCard
+            :href="route('admin.schoolOrders.index')"
+            :title="t('orders')"
+            :description="descriptions.orders">
+            <template #icon>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="0.5"
+                    class="w-5 h-5 stroke-gray-900 dark:stroke-gray-100"
+                >
+                    <path
+                        d="M14,0H3A1,1,0,0,0,2,1V23a1,1,0,0,0,1,1H21a1,1,0,0,0,1-1V8H15a1,1,0,0,1-1-1ZM5.5,17h13a.5.5,0,0,1,.5.5v1a.5.5,0,0,1-.5.5H5.5a.5.5,0,0,1-.5-.5v-1A.5.5,0,0,1,5.5,17Zm0-5h13a.5.5,0,0,1,.5.5v1a.5.5,0,0,1-.5.5H5.5a.5.5,0,0,1-.5-.5v-1A.5.5,0,0,1,5.5,12Zm5-3h-5A.5.5,0,0,1,5,8.5v-1A.5.5,0,0,1,5.5,7h5a.5.5,0,0,1,.5.5v1A.5.5,0,0,1,10.5,9Z"></path>
+                    <polygon points="21.414 6 16 6 16 0.586 21.414 6"></polygon>
+                </svg>
+            </template>
+        </WelcomeCard>
+        <WelcomeCard
+            :href="route('admin.subscriptionPlans.index')"
+            :title="t('subscriptionPlans')"
+            :description="descriptions.subscriptionPlans">
+            <template #icon>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="0.5"
+                    class="w-6 h-6 stroke-gray-900 dark:stroke-gray-100"
+                >
+                    <path class="fill-none" stroke-width="0.5"
+                          stroke-linecap="round" stroke-linejoin="round"
+                          d="M10 19H6.2C5.0799 19 4.51984 19 4.09202 18.782C3.71569 18.5903 3.40973 18.2843 3.21799 17.908C3 17.4802 3 16.9201 3 15.8V8.2C3 7.07989 3 6.51984 3.21799 6.09202C3.40973 5.71569 3.71569 5.40973 4.09202 5.21799C4.51984 5 5.0799 5 6.2 5H17.8C18.9201 5 19.4802 5 19.908 5.21799C20.2843 5.40973 20.5903 5.71569 20.782 6.09202C21 6.51984 21 7.0799 21 8.2V8.5M9 9.5V8.5M9 9.5H11.0001M9 9.5C7.88279 9.49998 7.00244 9.62616 7.0001 10.8325C6.99834 11.7328 7.00009 12 9.00009 12C11.0001 12 11.0001 12.2055 11.0001 13.1667C11.0001 13.889 11 14.5 9 14.5M9 15.5V14.5M9 14.5L7.0001 14.5M14 10H17M14 20L16.025 19.595C16.2015 19.5597 16.2898 19.542 16.3721 19.5097C16.4452 19.4811 16.5147 19.4439 16.579 19.399C16.6516 19.3484 16.7152 19.2848 16.8426 19.1574L21 15C21.5523 14.4477 21.5523 13.5523 21 13C20.4477 12.4477 19.5523 12.4477 19 13L14.8426 17.1574C14.7152 17.2848 14.6516 17.3484 14.601 17.421C14.5561 17.4853 14.5189 17.5548 14.4903 17.6279C14.458 17.7102 14.4403 17.7985 14.405 17.975L14 20Z"></path>
+                </svg>
+            </template>
+        </WelcomeCard>
+        <WelcomeCard
+            :href="route('admin.coursePrices.index')"
+            :title="t('coursePrices')"
+            :description="descriptions.coursePrices">
+            <template #icon>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="0.5"
+                    class="w-6 h-6 stroke-gray-900 dark:stroke-gray-100"
+                >
+                    <path class="fill-none" stroke-width="0.5"
+                          stroke-linecap="round" stroke-linejoin="round"
+                          d="M10 19H6.2C5.0799 19 4.51984 19 4.09202 18.782C3.71569 18.5903 3.40973 18.2843 3.21799 17.908C3 17.4802 3 16.9201 3 15.8V8.2C3 7.07989 3 6.51984 3.21799 6.09202C3.40973 5.71569 3.71569 5.40973 4.09202 5.21799C4.51984 5 5.0799 5 6.2 5H17.8C18.9201 5 19.4802 5 19.908 5.21799C20.2843 5.40973 20.5903 5.71569 20.782 6.09202C21 6.51984 21 7.0799 21 8.2V8.5M9 9.5V8.5M9 9.5H11.0001M9 9.5C7.88279 9.49998 7.00244 9.62616 7.0001 10.8325C6.99834 11.7328 7.00009 12 9.00009 12C11.0001 12 11.0001 12.2055 11.0001 13.1667C11.0001 13.889 11 14.5 9 14.5M9 15.5V14.5M9 14.5L7.0001 14.5M14 10H17M14 20L16.025 19.595C16.2015 19.5597 16.2898 19.542 16.3721 19.5097C16.4452 19.4811 16.5147 19.4439 16.579 19.399C16.6516 19.3484 16.7152 19.2848 16.8426 19.1574L21 15C21.5523 14.4477 21.5523 13.5523 21 13C20.4477 12.4477 19.5523 12.4477 19 13L14.8426 17.1574C14.7152 17.2848 14.6516 17.3484 14.601 17.421C14.5561 17.4853 14.5189 17.5548 14.4903 17.6279C14.458 17.7102 14.4403 17.7985 14.405 17.975L14 20Z"></path>
+                </svg>
+            </template>
+        </WelcomeCard>
+        <WelcomeCard
+            :href="route('admin.bundlePrices.index')"
+            :title="t('bundlePrices')"
+            :description="descriptions.bundlePrices">
+            <template #icon>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="0.5"
+                    class="w-6 h-6 stroke-gray-900 dark:stroke-gray-100"
+                >
+                    <path class="fill-none" stroke-width="0.5"
+                          stroke-linecap="round" stroke-linejoin="round"
+                          d="M10 19H6.2C5.0799 19 4.51984 19 4.09202 18.782C3.71569 18.5903 3.40973 18.2843 3.21799 17.908C3 17.4802 3 16.9201 3 15.8V8.2C3 7.07989 3 6.51984 3.21799 6.09202C3.40973 5.71569 3.71569 5.40973 4.09202 5.21799C4.51984 5 5.0799 5 6.2 5H17.8C18.9201 5 19.4802 5 19.908 5.21799C20.2843 5.40973 20.5903 5.71569 20.782 6.09202C21 6.51984 21 7.0799 21 8.2V8.5M9 9.5V8.5M9 9.5H11.0001M9 9.5C7.88279 9.49998 7.00244 9.62616 7.0001 10.8325C6.99834 11.7328 7.00009 12 9.00009 12C11.0001 12 11.0001 12.2055 11.0001 13.1667C11.0001 13.889 11 14.5 9 14.5M9 15.5V14.5M9 14.5L7.0001 14.5M14 10H17M14 20L16.025 19.595C16.2015 19.5597 16.2898 19.542 16.3721 19.5097C16.4452 19.4811 16.5147 19.4439 16.579 19.399C16.6516 19.3484 16.7152 19.2848 16.8426 19.1574L21 15C21.5523 14.4477 21.5523 13.5523 21 13C20.4477 12.4477 19.5523 12.4477 19 13L14.8426 17.1574C14.7152 17.2848 14.6516 17.3484 14.601 17.421C14.5561 17.4853 14.5189 17.5548 14.4903 17.6279C14.458 17.7102 14.4403 17.7985 14.405 17.975L14 20Z"></path>
                 </svg>
             </template>
         </WelcomeCard>

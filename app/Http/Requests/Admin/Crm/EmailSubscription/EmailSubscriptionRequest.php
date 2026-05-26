@@ -45,7 +45,7 @@ class EmailSubscriptionRequest extends FormRequest
         // Для уникальности email+list при обновлении нужно игнорировать текущую запись
         // Пытаемся получить id из route-model binding или параметра маршрута.
         $currentId = $this->route('email_subscription');
-        if ($currentId instanceof \App\Models\Admin\Crm\EmailSubscription\EmailSubscription) {
+        if ($currentId instanceof \App\Models\Admin\School\EmailSubscription\EmailSubscription) {
             $currentId = $currentId->getKey();
         }
 

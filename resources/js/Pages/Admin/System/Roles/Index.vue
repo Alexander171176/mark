@@ -7,18 +7,20 @@ import {defineProps, ref, computed, watch} from 'vue';
 import {useToast} from 'vue-toastification';
 import { useI18n } from 'vue-i18n';
 import {router} from "@inertiajs/vue3";
+
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue';
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue';
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue';
-import CountTable from '@/Components/Admin/Count/CountTable.vue';
-import RoleTable from '@/Components/Admin/Role/Table/RoleTable.vue';
-import RoleCardGrid from '@/Components/Admin/Role/View/RoleCardGrid.vue';
-import DefaultButton from "@/Components/Admin/Buttons/DefaultButton.vue";
-import ItemsPerPageSelect from "@/Components/Admin/Select/ItemsPerPageSelect.vue";
-import SortSelect from "@/Components/Admin/Role/Sort/SortSelect.vue";
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue';
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue';
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue';
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue';
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue';
+import DefaultButton from "@/Components/Admin/UI/Buttons/DefaultButton.vue";
+import ItemsPerPageSelect from "@/Components/Admin/UI/Select/ItemsPerPageSelect.vue";
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue';
+
+import SortSelect from "@/Components/Admin/System/Role/Sort/SortSelect.vue";
+import RoleTable from '@/Components/Admin/System/Role/Table/RoleTable.vue';
+import RoleCardGrid from '@/Components/Admin/System/Role/View/RoleCardGrid.vue';
 
 // --- Инициализация экземпляр i18n, toast ---
 const {t} = useI18n();
@@ -27,7 +29,27 @@ const toast = useToast();
 /**
  * Входные свойства компонента.
  */
-const props = defineProps(['roles', 'rolesCount', 'adminCountRoles', 'adminSortRoles']);
+const props = defineProps({
+    roles: {
+        type: Array,
+        default: () => [],
+    },
+
+    rolesCount: {
+        type: Number,
+        default: 0,
+    },
+
+    adminCountRoles: {
+        type: Number,
+        default: 20,
+    },
+
+    adminSortRoles: {
+        type: String,
+        default: 'idAsc',
+    },
+})
 
 /**
  * Вид: таблица или карточки.
@@ -189,11 +211,6 @@ const paginatedRoles = computed(() => {
     return filteredRoles.value.slice(start, start + itemsPerPage.value);
 });
 
-/**
- * Вычисляемое свойство, возвращающее общее количество страниц пагинации.
- */
-const totalPages = computed(() => Math.ceil(filteredRoles.value.length / itemsPerPage.value));
-
 </script>
 
 <template>
@@ -204,10 +221,13 @@ const totalPages = computed(() => Math.ceil(filteredRoles.value.length / itemsPe
             </TitlePage>
         </template>
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
-            <div class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
-                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
-                        bg-opacity-95 dark:bg-opacity-95">
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
+            <div
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                       bg-opacity-95 dark:bg-opacity-95"
+            >
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
                     <!-- Кнопка добавить -->
                     <DefaultButton :href="route('admin.roles.create')">
                         <template #icon>
@@ -225,16 +245,38 @@ const totalPages = computed(() => Math.ceil(filteredRoles.value.length / itemsPe
                     :placeholder="t('searchByName')"
                 />
 
+                <div
+                    v-if="rolesCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event" />
+
+                    <SortSelect :sortParam="sortParam" @update:sortParam="val => sortParam = val" />
+                </div>
+
                 <!-- Количество + переключатель вида -->
                 <div
                     v-if="rolesCount"
-                    class="flex items-center justify-between my-2"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
                 >
                     <CountTable>
                         {{ rolesCount }}
                     </CountTable>
 
                     <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div class="flex justify-center items-center flex-col md:flex-row"
+                     v-if="rolesCount">
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredRoles.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event" />
                 </div>
 
                 <!-- Таблица -->
@@ -251,14 +293,14 @@ const totalPages = computed(() => Math.ceil(filteredRoles.value.length / itemsPe
                     @delete="confirmDelete"
                 />
 
-                <div class="flex justify-between items-center flex-col md:flex-row my-1" v-if="rolesCount">
-                    <ItemsPerPageSelect :items-per-page="itemsPerPage" @update:itemsPerPage="itemsPerPage = $event" />
-                    <Pagination :current-page="currentPage"
-                                :items-per-page="itemsPerPage"
-                                :total-items="filteredRoles.length"
-                                @update:currentPage="currentPage = $event"
-                                @update:itemsPerPage="itemsPerPage = $event"/>
-                    <SortSelect :sortParam="sortParam" @update:sortParam="val => sortParam = val"/>
+                <div class="flex justify-center items-center flex-col md:flex-row mt-3"
+                     v-if="rolesCount">
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredRoles.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event" />
                 </div>
             </div>
         </div>

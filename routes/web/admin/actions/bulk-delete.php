@@ -9,18 +9,18 @@ use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
-use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
-use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
-use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
-use App\Http\Controllers\Admin\School\Hashtag\HashtagController;
-use App\Http\Controllers\Admin\School\Quiz\QuizController;
+use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
+use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
+use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
+use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
+use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\QuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizAttempt\QuizAttemptController;
 use App\Http\Controllers\Admin\School\QuizAttemptItem\QuizAttemptItemController;
-use App\Http\Controllers\Admin\School\QuizQuestion\QuizQuestionController;
+use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
 use Illuminate\Support\Facades\Route;
 
 Route::delete('/blog-rubrics/bulk-delete',
@@ -43,20 +43,25 @@ Route::delete('/blog-videos/bulk-delete',
     [BlogVideoController::class, 'bulkDestroy'])
     ->name('blogVideos.bulkDestroy');
 
-Route::delete('/comments/bulk-delete', [CommentController::class, 'bulkDestroy'])
+Route::delete('/comments/bulk-delete',
+    [CommentController::class, 'bulkDestroy'])
     ->name('comments.bulkDestroy');
 
-Route::delete('/hashtags/bulk-delete', [HashtagController::class, 'bulkDestroy'])
-    ->name('hashtags.bulkDestroy');
+Route::delete('/school-hashtags/bulk-delete',
+    [SchoolHashtagController::class, 'bulkDestroy'])
+    ->name('schoolHashtags.bulkDestroy');
 
-Route::delete('/assignments/bulk-delete', [AssignmentController::class, 'bulkDestroy'])
-    ->name('assignments.bulkDestroy');
+Route::delete('/school-assignments/bulk-delete',
+    [SchoolAssignmentController::class, 'bulkDestroy'])
+    ->name('schoolAssignments.bulkDestroy');
 
-Route::delete('/quizzes/bulk-delete', [QuizController::class, 'bulkDestroy'])
-    ->name('quizzes.bulkDestroy');
+Route::delete('/school-quizzes/bulk-delete',
+    [SchoolQuizController::class, 'bulkDestroy'])
+    ->name('schoolQuizzes.bulkDestroy');
 
-Route::delete('/quiz-questions/bulk-delete', [QuizQuestionController::class, 'bulkDestroy'])
-    ->name('quizQuestions.bulkDestroy');
+Route::delete('/school-quiz-questions/bulk-delete',
+    [SchoolQuizQuestionController::class, 'bulkDestroy'])
+    ->name('schoolQuizQuestions.bulkDestroy');
 
 Route::delete('/quiz-answers/bulk-delete', [QuizAnswerController::class, 'bulkDestroy'])
     ->name('quizAnswers.bulkDestroy');

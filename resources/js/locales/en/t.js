@@ -29,7 +29,7 @@ export default {
     titleProperty: 'Property Name',
     toggleDarkMode: 'Toggle light/dark mode',
     toggleSidebar: 'Expand / Collapse Sidebar',
-    total: 'Total:',
+    total: 'Total',
     totalShopCurrency: 'Total amount in currency',
     totals: 'Sum',
     tracks: 'Tracks',

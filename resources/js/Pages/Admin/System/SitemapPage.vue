@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import PrimaryButton from '@/Components/Admin/Buttons/PrimaryButton.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
 
 const { t } = useI18n()
 const toast = useToast()

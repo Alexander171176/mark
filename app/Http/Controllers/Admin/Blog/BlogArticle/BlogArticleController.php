@@ -45,11 +45,9 @@ class BlogArticleController extends BaseBlogAdminController
     protected string $modelClass = BlogArticle::class;
 
     protected string $imageModelClass = BlogArticleImage::class;
-
     protected string $imageMediaCollection = 'images';
 
     protected string $entityLabel = 'статей';
-
     protected array $translationFields = [
         'title',
         'subtitle',
@@ -172,12 +170,12 @@ class BlogArticleController extends BaseBlogAdminController
      */
     public function index(Request $request): Response
     {
-        $adminCountArticles = (int) config('site_settings.AdminCountArticles', 15);
-        $adminSortArticles = (string) config('site_settings.AdminSortArticles', 'idDesc');
+        $adminBlogArticlesPerPage = (int) config('site_settings.adminBlogArticlesPerPage', 20);
+        $adminBlogArticlesDefaultSort = (string) config('site_settings.adminBlogArticlesDefaultSort', 'idDesc');
 
-        $currentLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
         $search = trim((string) $request->query('search', ''));
-        $sortParam = $this->normalizeSortParam($request->query('sort', $adminSortArticles));
+        $sortParam = $this->normalizeSortParam($request->query('sort', $adminBlogArticlesDefaultSort));
 
         try {
             $articles = $this->baseQuery()
@@ -210,8 +208,8 @@ class BlogArticleController extends BaseBlogAdminController
                 'articles' => BlogArticleResource::collection($articles),
                 'articlesCount' => $this->baseQuery()->count(),
 
-                'adminCountArticles' => $adminCountArticles,
-                'adminSortArticles' => $adminSortArticles,
+                'adminBlogArticlesPerPage' => $adminBlogArticlesPerPage,
+                'adminBlogArticlesDefaultSort' => $adminBlogArticlesDefaultSort,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -228,8 +226,8 @@ class BlogArticleController extends BaseBlogAdminController
                 'articles' => [],
                 'articlesCount' => 0,
 
-                'adminCountArticles' => $adminCountArticles,
-                'adminSortArticles' => $adminSortArticles,
+                'adminBlogArticlesPerPage' => $adminBlogArticlesPerPage,
+                'adminBlogArticlesDefaultSort' => $adminBlogArticlesDefaultSort,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -246,12 +244,12 @@ class BlogArticleController extends BaseBlogAdminController
      */
     public function create(Request $request): Response
     {
-        $targetLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
 
         return Inertia::render('Admin/Blog/BlogArticles/Create', array_merge([
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
-        ], $this->sharedSelects($targetLocale)));
+        ], $this->sharedSelects($currentLocale)));
     }
 
     /**
@@ -364,13 +362,13 @@ class BlogArticleController extends BaseBlogAdminController
             ])
             ->findOrFail($blogArticle);
 
-        $targetLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
 
         return Inertia::render('Admin/Blog/BlogArticles/Edit', array_merge([
             'article' => new BlogArticleResource($article),
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
-        ], $this->sharedSelects($targetLocale, $article->id)));
+        ], $this->sharedSelects($currentLocale, $article->id)));
     }
 
     /**

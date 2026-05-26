@@ -2,12 +2,12 @@
 import {defineProps} from 'vue'
 import {Head, Link, useForm} from '@inertiajs/vue3'
 import HeadingAuth from '@/Components/User/Heading/HeadingAuth.vue'
-import Checkbox from '@/Components/Checkbox.vue'
-import InputError from '@/Components/InputError.vue'
-import InputLabel from '@/Components/InputLabel.vue'
-import PrimaryButton from '@/Components/PrimaryButton.vue'
+import Checkbox from '@/Components/Base/Checkbox.vue'
+import InputError from '@/Components/Base/InputError.vue'
+import InputLabel from '@/Components/Base/InputLabel.vue'
+import PrimaryButton from '@/Components/Base/PrimaryButton.vue'
 import {useI18n} from 'vue-i18n'
-import TextInput from "@/Components/TextInput.vue";
+import TextInput from "@/Components/Base/TextInput.vue";
 import DefaultLayout from "@/Layouts/DefaultLayout.vue";
 import CustomImageAuthentication from "@/Components/User/Image/CustomImageAuthentication.vue";
 

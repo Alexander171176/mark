@@ -2,463 +2,385 @@
 /**
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
- * Список заданий (паттерн)
+ *
+ * Список заданий школы
  */
-import { defineProps, ref, computed, watch } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { router, Link } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import BulkActionSelect from '@/Components/Admin/Assignment/Select/BulkActionSelect.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
-import AssignmentTable from '@/Components/Admin/Assignment/Table/AssignmentTable.vue'
-import AssignmentCardGrid from '@/Components/Admin/Assignment/View/AssignmentCardGrid.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import SortSelect from '@/Components/Admin/Assignment/Sort/SortSelect.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
 
-// --- Инициализация экземпляр i18n, toast ---
+import BulkActionSelect from '@/Components/Admin/School/Assignment/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/School/Assignment/Sort/SortSelect.vue'
+import AssignmentTable from '@/Components/Admin/School/Assignment/Table/AssignmentTable.vue'
+import AssignmentCardGrid from '@/Components/Admin/School/Assignment/View/AssignmentCardGrid.vue'
+
+// Локализация и Toast уведомления
 const { t } = useI18n()
 const toast = useToast()
 
-/**
- * Входные свойства компонента.
- */
+// Props из контроллера
 const props = defineProps({
-    assignments: Array,
-    assignmentsCount: Number,
-    adminCountAssignments: Number,
-    adminSortAssignments: String,
-    currentLocale: String,
-    availableLocales: Array,
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
+
+    assignments: { type: Array, default: () => [] },
+    assignmentsCount: { type: Number, default: 0 },
+
+    adminSchoolAssignmentsPerPage: { type: Number, default: 10 },
+    adminSchoolAssignmentsDefaultSort: { type: String, default: 'idDesc' },
 })
 
-/** Вид: таблица или карточки (общий ключ для админки) */
+// Режим отображения
 const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
 
+// Сохраняем режим отображения
 watch(viewMode, (val) => {
     localStorage.setItem('admin_view_mode', val)
 })
 
-/** Кол-во элементов на странице */
-const itemsPerPage = ref(props.adminCountAssignments || 10)
+// Локальная копия заданий
+const localAssignments = ref([])
 
-/**
- * Наблюдатель за изменением количества элементов на странице.
- */
+// Обновление локального списка заданий
+watch(
+    () => props.assignments,
+    (newVal) => {
+        localAssignments.value = JSON.parse(JSON.stringify(newVal || []))
+    },
+    { immediate: true, deep: true }
+)
+
+// Количество элементов на странице
+const itemsPerPage = ref(props.adminSchoolAssignmentsPerPage || 10)
+
+// Сохранение количества элементов
 watch(itemsPerPage, (newVal) => {
     router.put(route('admin.settings.updateAdminCountAssignments'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-        onError: (errors) =>
-            toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+        onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
     })
 })
 
-/** Параметр сортировки */
-const sortParam = ref(props.adminSortAssignments || 'idDesc')
+// Параметр сортировки
+const sortParam = ref(props.adminSchoolAssignmentsDefaultSort || 'idDesc')
 
-/**
- * Наблюдатель за изменением параметра сортировки.
- */
+// Сохранение параметра сортировки
 watch(sortParam, (newVal) => {
     router.put(route('admin.settings.updateAdminSortAssignments'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => toast.info('Сортировка успешно изменена'),
-        onError: (errors) => {
-            const firstError = errors ? Object.values(errors)[0] : null
-            toast.error(firstError || 'Ошибка обновления кол-ва элементов.')
-        },
+        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
     })
 })
 
-/** Модалка удаления */
+// Модальное окно удаления
 const showConfirmDeleteModal = ref(false)
 const assignmentToDeleteId = ref(null)
 const assignmentToDeleteTitle = ref('')
 
-/**
- * Открывает модальное окно подтверждения удаления с входными переменными.
- */
-const confirmDelete = (id, title) => {
-    assignmentToDeleteId.value = id
-    assignmentToDeleteTitle.value = title
+// Открытие модального окна удаления
+const confirmDelete = (assignmentOrId, title = null) => {
+    if (typeof assignmentOrId === 'object') {
+        assignmentToDeleteId.value = assignmentOrId.id
+        assignmentToDeleteTitle.value = title || assignmentOrId.title || `ID: ${assignmentOrId.id}`
+    } else {
+        assignmentToDeleteId.value = assignmentOrId
+        assignmentToDeleteTitle.value = title || `ID: ${assignmentOrId}`
+    }
+
     showConfirmDeleteModal.value = true
 }
 
-/**
- * Закрывает модальное окно подтверждения и сбрасывает связанные переменные.
- */
+// Закрытие модального окна
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     assignmentToDeleteId.value = null
     assignmentToDeleteTitle.value = ''
 }
 
-/**
- * Отправляет запрос на удаление.
- */
+// Удаление задания
 const deleteAssignment = () => {
     if (assignmentToDeleteId.value === null) return
+
     const idToDelete = assignmentToDeleteId.value
     const titleToDelete = assignmentToDeleteTitle.value
 
-    router.delete(route('admin.assignments.destroy', { assignment: idToDelete }), {
+    router.delete(route('admin.schoolAssignments.destroy', { schoolAssignment: idToDelete }), {
         preserveScroll: true,
         preserveState: false,
         onSuccess: () => {
-            closeModal()
             toast.success(`Задание "${titleToDelete || 'ID: ' + idToDelete}" удалено.`)
         },
         onError: (errors) => {
-            closeModal()
-            const errorMsg =
-                errors.general ||
-                errors[Object.keys(errors)[0]] ||
-                'Произошла ошибка при удалении.'
+            const errorKey = Object.keys(errors || {})[0]
+            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
             toast.error(`${errorMsg} (Задание: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
-        onFinish: () => {
-            assignmentToDeleteId.value = null
-            assignmentToDeleteTitle.value = ''
-        },
+        onFinish: () => closeModal(),
     })
 }
 
-/**
- * Отправляет запрос для изменения статуса активности в левой колонке.
- */
-const toggleLeft = (assignment) => {
-    const newLeft = !assignment.left;
-    const actionText = newLeft ? 'активировано в левой колонке' : 'деактивировано в левой колонке';
-
-    // Используем Inertia.put для простого обновления
-    router.put(route('admin.actions.assignments.updateLeft', {assignment: assignment.id}),
-        {left: newLeft},
-        {
-            preserveScroll: true, // Сохраняем скролл
-            preserveState: true,  // Обновляем только измененные props (если бэк отдает reload: false)
-            // Или false, если бэк всегда отдает reload: true и нужно перезагрузить данные
-            onSuccess: () => {
-                // Обновляем состояние локально СРАЗУ ЖЕ (оптимистичное обновление)
-                // Или дожидаемся обновления props, если preserveState: false
-                // assignment.left = newLeft; // Уже не нужно, если preserveState: false
-                toast.success(`Задание "${assignment.title}" ${actionText}.`);
-            },
-            onError: (errors) => {
-                toast.error(errors.left || errors.general || `Ошибка изменения активности для "${assignment.title}".`);
-                // Можно откатить изменение на фронте, если нужно
-                // assignment.left = !newLeft;
-            },
-        }
-    );
-};
-
-/**
- * Отправляет запрос для изменения статуса активности в главном.
- */
-const toggleMain = (assignment) => {
-    const newMain = !assignment.main;
-    const actionText = newMain ? 'активировано в главном' : 'деактивировано в главном';
-
-    // Используем Inertia.put для простого обновления
-    router.put(route('admin.actions.assignments.updateMain', {assignment: assignment.id}),
-        {main: newMain},
-        {
-            preserveScroll: true, // Сохраняем скролл
-            preserveState: true,  // Обновляем только измененные props (если бэк отдает reload: false)
-            // Или false, если бэк всегда отдает reload: true и нужно перезагрузить данные
-            onSuccess: () => {
-                // Обновляем состояние локально СРАЗУ ЖЕ (оптимистичное обновление)
-                // Или дожидаемся обновления props, если preserveState: false
-                // assignment.main = newMain; // Уже не нужно, если preserveState: false
-                toast.success(`Задание "${assignment.title}" ${actionText}.`);
-            },
-            onError: (errors) => {
-                toast.error(errors.main || errors.general || `Ошибка изменения активности для "${assignment.title}".`);
-                // Можно откатить изменение на фронте, если нужно
-                // assignment.main = !newMain;
-            },
-        }
-    );
-};
-
-/**
- * Отправляет запрос для изменения статуса активности в правой колонке.
- */
-const toggleRight = (assignment) => {
-    const newRight = !assignment.right;
-    const actionText = newRight ? 'активировано в правой колонке' : 'деактивировано в правой колонке';
-
-    // Используем Inertia.put для простого обновления
-    router.put(route('admin.actions.assignments.updateRight', {assignment: assignment.id}),
-        {right: newRight},
-        {
-            preserveScroll: true, // Сохраняем скролл
-            preserveState: true,  // Обновляем только измененные props (если бэк отдает reload: false)
-            // Или false, если бэк всегда отдает reload: true и нужно перезагрузить данные
-            onSuccess: () => {
-                // Обновляем состояние локально СРАЗУ ЖЕ (оптимистичное обновление)
-                // Или дожидаемся обновления props, если preserveState: false
-                // assignment.right = newRight; // Уже не нужно, если preserveState: false
-                toast.success(`Задание "${assignment.title}" ${actionText}.`);
-            },
-            onError: (errors) => {
-                toast.error(errors.right || errors.general || `Ошибка изменения активности для "${assignment.title}".`);
-                // Можно откатить изменение на фронте, если нужно
-                // assignment.right = !newRight;
-            },
-        }
-    );
-};
-
-/**
- * Отправляет запрос для клонирования.
- */
-const cloneAssignment = (assignmentObject) => { // Переименовываем параметр для ясности
-    // Извлекаем ID из объекта
-    const assignmentId = assignmentObject?.id; // Используем опциональную цепочку на случай undefined/null
-    const assignmentTitle = assignmentObject?.title || `ID: ${assignmentId}`; // Пытаемся получить title или используем ID
-
-    // Проверяем, что ID получен
-    if (typeof assignmentId === 'undefined' || assignmentId === null) {
-        console.error("Не удалось получить ID задания для клонирования", assignmentObject);
-        toast.error("Не удалось определить задание для клонирования.");
-        return;
-    }
-
-    // Используем confirm с извлеченным ID (или title)
-    if (!confirm(`Вы уверены, что хотите клонировать задание "${assignmentTitle}"?`)) {
-        return;
-    }
-
-    // В route() передаем именно assignmentId
-    router.post(route('admin.actions.assignments.clone', {assignment: assignmentId}), {}, {
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: (page) => {
-            // Используем assignmentTitle или assignmentId в сообщении
-            toast.success(`Задание "${assignmentTitle}" успешно клонировано.`);
-        },
-        onError: (errors) => {
-            const errorKey = Object.keys(errors)[0];
-            const errorMessage = errors[errorKey] || `Ошибка клонирования задания "${assignmentTitle}".`;
-            toast.error(errorMessage);
-        }
-    });
-};
-
-/** Пагинация и поиск */
+// Текущая страница
 const currentPage = ref(1)
+
+// Поисковый запрос
 const searchQuery = ref('')
 
-/** Сортировка массива уроков */
-const sortAssignments = (assignments) => {
-    const value = sortParam.value
-    const list = assignments.slice()
+// Нормализация строки
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
-    if (value === 'idAsc') {
-        return list.sort((a, b) => a.id - b.id)
+// Сортировка заданий
+const sortAssignments = (items) => {
+    const list = (items || []).slice()
+
+    if (sortParam.value === 'idAsc') {
+        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
     }
 
-    if (value === 'idDesc') {
-        return list.sort((a, b) => b.id - a.id)
+    if (sortParam.value === 'idDesc') {
+        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
     }
 
-
-    if (sortParam.value === 'left') {
-        return list.sort(assignment => assignment.left);
-    }
-    if (sortParam.value === 'noLeft') {
-        return list.sort(assignment => !assignment.left);
-    }
-    if (sortParam.value === 'main') {
-        return list.sort(assignment => assignment.main);
+    if (sortParam.value === 'sortAsc') {
+        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
     }
 
-    // Дата публикации — от новых к старым, null в конец
-    if (value === 'published_at') {
+    if (sortParam.value === 'sortDesc') {
+        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
+    }
+
+    if (sortParam.value === 'titleAsc') {
+        return list.sort((a, b) => normalize(a.title).localeCompare(normalize(b.title)))
+    }
+
+    if (sortParam.value === 'titleDesc') {
+        return list.sort((a, b) => normalize(b.title).localeCompare(normalize(a.title)))
+    }
+
+    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
+    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
+
+    if (sortParam.value === 'left') return list.filter(item => !!item.left)
+    if (sortParam.value === 'noLeft') return list.filter(item => !item.left)
+
+    if (sortParam.value === 'main') return list.filter(item => !!item.main)
+    if (sortParam.value === 'noMain') return list.filter(item => !item.main)
+
+    if (sortParam.value === 'right') return list.filter(item => !!item.right)
+    if (sortParam.value === 'noRight') return list.filter(item => !item.right)
+
+    if (sortParam.value === 'published_at') {
         return list.sort((a, b) => {
             const aTime = a.published_at ? new Date(a.published_at).getTime() : 0
             const bTime = b.published_at ? new Date(b.published_at).getTime() : 0
+
             return bTime - aTime
         })
     }
 
-    // Фильтры по активности и колонкам
-    if (value === 'activity') return assignments.filter(l => l.activity)
-    if (value === 'inactive') return assignments.filter(l => !l.activity)
+    if (sortParam.value === 'due_at') {
+        return list.sort((a, b) => {
+            const aTime = a.due_at ? new Date(a.due_at).getTime() : 0
+            const bTime = b.due_at ? new Date(b.due_at).getTime() : 0
 
-    // status, availability, title, sort и прочее — обычная сортировка по возрастанию
-    return list.sort((a, b) => {
-        const av = a[value] ?? ''
-        const bv = b[value] ?? ''
-        if (av < bv) return -1
-        if (av > bv) return 1
-        return 0
-    })
+            return bTime - aTime
+        })
+    }
+
+    if ([
+        'attempts_limit',
+        'max_score',
+        'images_count',
+        'submissions_count',
+    ].includes(sortParam.value)) {
+        return list.sort((a, b) => (b[sortParam.value] ?? 0) - (a[sortParam.value] ?? 0))
+    }
+
+    return list
 }
 
-/** Фильтрация + сортировка (поиск по title) */
+// Отфильтрованные задания
 const filteredAssignments = computed(() => {
-    let filtered = props.assignments || []
+    let filtered = localAssignments.value || []
+    const q = normalize(searchQuery.value)
 
-    if (searchQuery.value) {
-        const q = searchQuery.value.toLowerCase()
-        filtered = filtered.filter(a =>
-            (a.title || '').toLowerCase().includes(q) ||
-            (a.slug || '').toLowerCase().includes(q)
-        )
+    if (!q) {
+        return sortAssignments(filtered)
     }
+
+    filtered = filtered.filter((assignment) => {
+        const title = normalize(assignment?.title)
+        const subtitle = normalize(assignment?.subtitle)
+        const slug = normalize(assignment?.slug)
+        const short = normalize(assignment?.short)
+        const description = normalize(assignment?.description)
+        const instructions = normalize(assignment?.instructions)
+
+        const courseTitle = normalize(assignment?.course?.title)
+        const moduleTitle = normalize(assignment?.module?.title)
+        const lessonTitle = normalize(assignment?.lesson?.title)
+        const instructorTitle = normalize(assignment?.instructor?.title)
+        const instructorName = normalize(assignment?.instructor?.user?.name)
+
+        return (
+            title.includes(q) ||
+            subtitle.includes(q) ||
+            slug.includes(q) ||
+            short.includes(q) ||
+            description.includes(q) ||
+            instructions.includes(q) ||
+            courseTitle.includes(q) ||
+            moduleTitle.includes(q) ||
+            lessonTitle.includes(q) ||
+            instructorTitle.includes(q) ||
+            instructorName.includes(q)
+        )
+    })
 
     return sortAssignments(filtered)
 })
 
-/** Пагинация */
+// Задания текущей страницы
 const paginatedAssignments = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage.value
-    return filteredAssignments.value.slice(start, start + itemsPerPage.value)
+    const per = Number(itemsPerPage.value || 20)
+    const start = (currentPage.value - 1) * per
+
+    return filteredAssignments.value.slice(start, start + per)
 })
 
-/**
- * Вычисляемое свойство, возвращающее общее количество страниц пагинации.
- */
-const totalPages = computed(() =>
-    Math.ceil((filteredAssignments.value.length || 0) / itemsPerPage.value)
-)
+// Сброс страницы при поиске и изменении лимита
+watch([itemsPerPage, searchQuery], () => {
+    currentPage.value = 1
+})
 
-/** Обновление сортировки (drag&drop) */
+// Локальное обновление задания
+const patchAssignment = (assignmentId, payload) => {
+    const index = localAssignments.value.findIndex(assignment => assignment.id === assignmentId)
+
+    if (index !== -1) {
+        localAssignments.value[index] = {
+            ...localAssignments.value[index],
+            ...payload,
+        }
+    }
+}
+
+// Выбранные задания
+const selectedAssignments = ref([])
+
+// Выбрать / снять выбор со всех заданий
+const toggleAll = ({ ids, checked }) => {
+    selectedAssignments.value = checked ? [...ids] : []
+}
+
+// Выбор одного задания
+const toggleSelectAssignment = (id) => {
+    const index = selectedAssignments.value.indexOf(id)
+
+    if (index > -1) {
+        selectedAssignments.value.splice(index, 1)
+    } else {
+        selectedAssignments.value.push(id)
+    }
+}
+
+// Обновление порядка сортировки
 const handleSortOrderUpdate = (orderedIds) => {
     const startSort = (currentPage.value - 1) * itemsPerPage.value
 
-    const sortData = orderedIds.map((id, index) => ({
+    const items = orderedIds.map((id, index) => ({
         id,
         sort: startSort + index + 1,
     }))
 
-    router.put(
-        route('admin.actions.assignments.updateSortBulk'),
-        { assignments: sortData },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.success('Порядок заданий успешно обновлён.'),
-            onError: (errors) => {
-                console.error('Ошибка обновления сортировки заданий:', errors)
-                toast.error(
-                    errors?.general ||
-                    errors?.assignments ||
-                    'Не удалось обновить порядок заданий.'
-                )
-                router.reload({ only: ['assignments'], preserveScroll: true })
-            },
-        }
-    )
+    if (!items.length) return
+
+    router.put(route('admin.actions.schoolAssignments.updateSortBulk'), { items }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => toast.success('Порядок заданий успешно обновлён.'),
+        onError: (errors) => {
+            console.error('Ошибка обновления сортировки заданий:', errors)
+            toast.error(errors?.message || errors?.general || 'Не удалось обновить порядок заданий.')
+
+            router.reload({
+                only: ['assignments'],
+                preserveScroll: true,
+            })
+        },
+    })
 }
 
-/** Массовые действия */
-const selectedAssignments = ref([])
-
-/**
- * Логика выбора всех для массовых действий.
- */
-const toggleAll = ({ ids, checked }) => {
-    if (checked) {
-        selectedAssignments.value = [...ids]
-    } else {
-        selectedAssignments.value = []
-    }
-}
-
-/**
- * Обрабатывает событие выбора/снятия выбора одной строки.
- */
-const toggleSelectAssignment = (id) => {
-    const idx = selectedAssignments.value.indexOf(id)
-    if (idx > -1) selectedAssignments.value.splice(idx, 1)
-    else selectedAssignments.value.push(id)
-}
-
-/**
- * Выполняет массовое включение/выключение активности выбранных.
- */
+// Массовое обновление активности
 const bulkToggleActivity = (newActivity) => {
     if (!selectedAssignments.value.length) {
-        toast.warning('Выберите задания для активации/деактивации')
+        toast.warning('Выберите задания для активации/деактивации.')
         return
     }
 
-    router.put(
-        route('admin.actions.assignments.bulkUpdateActivity'),
-        { ids: selectedAssignments.value, activity: newActivity },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.success('Активность заданий массово обновлена')
-                const updatedIds = [...selectedAssignments.value]
-                selectedAssignments.value = []
+    const idsToUpdate = [...selectedAssignments.value]
 
-                paginatedAssignments.value.forEach(a => {
-                    if (updatedIds.includes(a.id)) a.activity = newActivity
-                })
-            },
-            onError: (errors) => {
-                const msg =
-                    errors?.ids || errors?.activity || errors?.general ||
-                    'Не удалось массово обновить активность заданий'
-                toast.error(msg)
-            },
-        }
-    )
-}
-
-/**
- * Выполняет массовое удаление выбранных.
- */
-const bulkDelete = () => {
-    if (selectedAssignments.value.length === 0) {
-        toast.warning('Выберите хотя бы одно задание для удаления.'); // <--- Используем toast
-        return;
-    }
-    if (!confirm(`Вы уверены, что хотите их удалить ?`)) {
-        return;
-    }
-    router.delete(route('admin.actions.assignments.bulkDestroy'), {
-        data: {ids: selectedAssignments.value},
+    router.put(route('admin.actions.schoolAssignments.bulkUpdateActivity'), {
+        ids: idsToUpdate,
+        activity: newActivity,
+    }, {
         preserveScroll: true,
-        preserveState: false, // Перезагружаем данные страницы
-        onSuccess: (page) => {
-            selectedAssignments.value = []; // Очищаем выбор
-            toast.success('Массовое удаление заданий успешно завершено.');
-            // console.log('Массовое удаление статей успешно завершено.');
+        preserveState: true,
+        onSuccess: () => {
+            idsToUpdate.forEach(id => patchAssignment(id, { activity: newActivity }))
+            selectedAssignments.value = []
+            toast.success('Активность выбранных заданий обновлена.')
         },
         onError: (errors) => {
-            console.error("Ошибка массового удаления:", errors);
-            // Отображаем первую ошибку
-            const errorKey = Object.keys(errors)[0];
-            const errorMessage = errors[errorKey] || 'Произошла ошибка при удалении заданий.';
-            toast.error(errorMessage);
+            toast.error(errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.')
         },
-    });
-};
+    })
+}
 
-/**
- * Обрабатывает выбор действия в селекте массовых действий.
- */
+// Массовое удаление
+const bulkDelete = () => {
+    if (!selectedAssignments.value.length) {
+        toast.warning('Выберите задания для удаления.')
+        return
+    }
+
+    if (!confirm('Вы уверены, что хотите удалить выбранные задания?')) return
+
+    router.delete(route('admin.actions.schoolAssignments.bulkDestroy'), {
+        data: { ids: selectedAssignments.value },
+        preserveScroll: true,
+        preserveState: false,
+        onSuccess: () => {
+            selectedAssignments.value = []
+            toast.success('Выбранные задания успешно удалены.')
+        },
+        onError: (errors) => {
+            const errorKey = Object.keys(errors || {})[0]
+            toast.error(errors[errorKey] || 'Ошибка массового удаления заданий.')
+        },
+    })
+}
+
+// Обработка массовых действий
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedAssignments.value = paginatedAssignments.value.map(a => a.id)
+        selectedAssignments.value = paginatedAssignments.value.map(assignment => assignment.id)
     } else if (action === 'deselectAll') {
         selectedAssignments.value = []
     } else if (action === 'activate') {
@@ -466,41 +388,112 @@ const handleBulkAction = (event) => {
     } else if (action === 'deactivate') {
         bulkToggleActivity(false)
     } else if (action === 'delete') {
-        bulkDelete();
+        bulkDelete()
     }
 
     event.target.value = ''
 }
 
-/** Переключение активности одного урока */
+// Переключение активности задания
 const toggleActivity = (assignment) => {
-    const newActivity = !assignment.activity;
-    const actionText = newActivity ? t('activated') : t('deactivated');
+    const newActivity = !assignment.activity
+    const assignmentTitle = assignment.title || `ID: ${assignment.id}`
+    const actionText = newActivity ? t('activated') : t('deactivated')
 
-    // Используем Inertia.put для простого обновления
-    router.put(route('admin.actions.assignments.updateActivity', {assignment: assignment.id}),
-        {activity: newActivity},
-        {
-            preserveScroll: true, // Сохраняем скролл
-            preserveState: true,  // Обновляем только измененные props (если бэк отдает reload: false)
-            // Или false, если бэк всегда отдает reload: true и нужно перезагрузить данные
-            onSuccess: () => {
-                // Обновляем состояние локально СРАЗУ ЖЕ (оптимистичное обновление)
-                // Или дожидаемся обновления props, если preserveState: false
-                // assignment.activity = newActivity; // Уже не нужно, если preserveState: false
-                toast.success(`Статья "${assignment.title}" ${actionText}.`);
-            },
-            onError: (errors) => {
-                toast.error(errors.activity || errors.general || `Ошибка изменения активности для "${assignment.title}".`);
-                // Можно откатить изменение на фронте, если нужно
-                // assignment.activity = !newActivity;
-            },
-        }
-    );
-};
+    router.put(route('admin.actions.schoolAssignments.updateActivity', {
+        schoolAssignment: assignment.id,
+    }), {
+        activity: newActivity,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            patchAssignment(assignment.id, { activity: newActivity })
+            assignment.activity = newActivity
+            toast.success(`Задание "${assignmentTitle}" ${actionText}.`)
+        },
+        onError: (errors) => {
+            toast.error(errors?.activity || errors?.general || `Ошибка изменения активности для задания "${assignmentTitle}".`)
+        },
+    })
+}
 
-/** Ссылка для табов локалей */
-const localeLink = (locale) => route('admin.assignments.index', { locale })
+// Переключение левой колонки
+const toggleLeft = (assignment) => {
+    const newLeft = !assignment.left
+
+    router.put(route('admin.actions.schoolAssignments.updateLeft', {
+        schoolAssignment: assignment.id,
+    }), {
+        left: newLeft,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            patchAssignment(assignment.id, { left: newLeft })
+            assignment.left = newLeft
+            toast.success('Левая колонка обновлена.')
+        },
+        onError: (errors) => {
+            toast.error(errors?.left || errors?.general || 'Ошибка обновления левой колонки.')
+        },
+    })
+}
+
+// Переключение главного блока
+const toggleMain = (assignment) => {
+    const newMain = !assignment.main
+
+    router.put(route('admin.actions.schoolAssignments.updateMain', {
+        schoolAssignment: assignment.id,
+    }), {
+        main: newMain,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            patchAssignment(assignment.id, { main: newMain })
+            assignment.main = newMain
+            toast.success('Главный блок обновлён.')
+        },
+        onError: (errors) => {
+            toast.error(errors?.main || errors?.general || 'Ошибка обновления главного блока.')
+        },
+    })
+}
+
+// Переключение правой колонки
+const toggleRight = (assignment) => {
+    const newRight = !assignment.right
+
+    router.put(route('admin.actions.schoolAssignments.updateRight', {
+        schoolAssignment: assignment.id,
+    }), {
+        right: newRight,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            patchAssignment(assignment.id, { right: newRight })
+            assignment.right = newRight
+            toast.success('Правая колонка обновлена.')
+        },
+        onError: (errors) => {
+            toast.error(errors?.right || errors?.general || 'Ошибка обновления правой колонки.')
+        },
+    })
+}
+
+// Клонирование задания
+const cloneAssignment = (assignment) => {
+    router.post(route('admin.actions.schoolAssignments.clone', {
+        schoolAssignment: assignment.id,
+    }), {}, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('Задание успешно клонировано.'),
+        onError: () => toast.error('Ошибка при клонировании задания.'),
+    })
+}
 </script>
 
 <template>
@@ -511,63 +504,21 @@ const localeLink = (locale) => route('admin.assignments.index', { locale })
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <!-- Добавить модуль -->
-                    <DefaultButton :href="route('admin.assignments.create')">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                    <DefaultButton :href="route('admin.schoolAssignments.create')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
-                                <path
-                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
-                                />
+                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0"
+                                 viewBox="0 0 16 16">
+                                <path d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"></path>
                             </svg>
                         </template>
                         {{ t('addAssignment') }}
                     </DefaultButton>
-
-                    <BulkActionSelect
-                        v-if="assignmentsCount"
-                        @change="handleBulkAction"
-                    />
-                </div>
-
-                <!-- Локали + счётчик -->
-                <div class="flex items-center justify-between mt-5">
-                    <div
-                        class="flex items-center justify-end space-x-2 px-3 py-1
-                               border-x border-t border-gray-400 rounded-t-lg
-                               bg-gray-100 dark:bg-gray-900"
-                    >
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {{ t('localization') }}:
-                        </span>
-                        <template v-for="locale in availableLocales" :key="locale">
-                            <Link
-                                :href="localeLink(locale)"
-                                :class="[
-                                    'px-3 py-1 text-sm font-medium rounded-sm',
-                                    currentLocale === locale
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600'
-                                ]"
-                                preserve-scroll
-                                preserve-state
-                            >
-                                {{ locale.toUpperCase() }}
-                            </Link>
-                        </template>
-                    </div>
-
-                    <div class="flex items-center space-x-3">
-                        <CountTable v-if="assignmentsCount">
-                            {{ assignmentsCount }}
-                        </CountTable>
-
-                        <ToggleViewButton v-model:viewMode="viewMode" />
-                    </div>
                 </div>
 
                 <SearchInput
@@ -576,7 +527,45 @@ const localeLink = (locale) => route('admin.assignments.index', { locale })
                     :placeholder="t('searchByName')"
                 />
 
-                <!-- Таблица / Карточки -->
+                <div
+                    v-if="assignmentsCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val"
+                    />
+                </div>
+
+                <div
+                    v-if="assignmentsCount"
+                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
+                >
+                    <CountTable>{{ assignmentsCount }}</CountTable>
+
+                    <BulkActionSelect @change="handleBulkAction" />
+
+                    <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div
+                    v-if="assignmentsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredAssignments.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                </div>
+
                 <AssignmentTable
                     v-if="viewMode === 'table'"
                     :assignments="paginatedAssignments"
@@ -586,10 +575,10 @@ const localeLink = (locale) => route('admin.assignments.index', { locale })
                     @toggle-main="toggleMain"
                     @toggle-right="toggleRight"
                     @delete="confirmDelete"
-                    @clone="cloneAssignment"
                     @update-sort-order="handleSortOrderUpdate"
                     @toggle-select="toggleSelectAssignment"
                     @toggle-all="toggleAll"
+                    @clone="cloneAssignment"
                 />
 
                 <AssignmentCardGrid
@@ -601,30 +590,22 @@ const localeLink = (locale) => route('admin.assignments.index', { locale })
                     @toggle-main="toggleMain"
                     @toggle-right="toggleRight"
                     @delete="confirmDelete"
-                    @clone="cloneAssignment"
                     @update-sort-order="handleSortOrderUpdate"
                     @toggle-select="toggleSelectAssignment"
                     @toggle-all="toggleAll"
+                    @clone="cloneAssignment"
                 />
 
                 <div
-                    class="flex justify-between items-center flex-col md:flex-row my-1"
                     v-if="assignmentsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
-                    <ItemsPerPageSelect
-                        :items-per-page="itemsPerPage"
-                        @update:itemsPerPage="itemsPerPage = $event"
-                    />
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredAssignments.length"
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
-                    />
-                    <SortSelect
-                        :sortParam="sortParam"
-                        @update:sortParam="val => (sortParam = val)"
                     />
                 </div>
             </div>

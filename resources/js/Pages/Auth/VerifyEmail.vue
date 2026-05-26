@@ -2,9 +2,9 @@
 import {computed} from 'vue'
 import {Head, Link, useForm} from '@inertiajs/vue3'
 import ImageAuthentication from "@/Components/User/Image/ImageAuthentication.vue"
-import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue'
+import AuthenticationCardLogo from '@/Components/Base/AuthenticationCardLogo.vue'
 import HeadingAuth from '@/Components/User/Heading/HeadingAuth.vue'
-import PrimaryButton from '@/Components/PrimaryButton.vue'
+import PrimaryButton from '@/Components/Base/PrimaryButton.vue'
 import {useI18n} from 'vue-i18n'
 import DefaultLayout from "@/Layouts/DefaultLayout.vue";
 

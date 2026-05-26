@@ -2,14 +2,16 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { defineProps, defineEmits } from 'vue'
 import {Link, usePage} from '@inertiajs/vue3'
-import ApplicationMark from '@/Components/ApplicationMark.vue'
-import DraggableSidebarPageFinanceLink from '@/Components/Admin/Links/DraggableSidebarPageFinanceLink.vue'
-import DraggableSidebarPageSchoolLink from '@/Components/Admin/Links/DraggableSidebarPageSchoolLink.vue'
-import DraggableSidebarPageBlogLink from '@/Components/Admin/Links/DraggableSidebarPageBlogLink.vue'
-import DraggableSidebarPageMainLink from '@/Components/Admin/Links/DraggableSidebarPageMainLink.vue'
-import DraggableSidebarGroupLink from '@/Components/Admin/Links/DraggableSidebarGroupLink.vue'
-import DraggableSidebarPageMarketLink from '@/Components/Admin/Links/DraggableSidebarPageMarketLink.vue'
-import DigitalClock from '@/Components/Admin/CurrentTime/DigitalClock.vue'
+
+import ApplicationMark from '@/Components/Base/ApplicationMark.vue'
+import DraggableSidebarGroupLink from '@/Components/Admin/UI/Links/DraggableSidebarGroupLink.vue'
+import DraggableSidebarPageMarketLink from '@/Components/Admin/UI/Links/DraggableSidebarPageMarketLink.vue'
+import DraggableSidebarPageFinanceLink from '@/Components/Admin/UI/Links/DraggableSidebarPageFinanceLink.vue'
+import DraggableSidebarPageSchoolLink from '@/Components/Admin/UI/Links/DraggableSidebarPageSchoolLink.vue'
+import DraggableSidebarPageBlogLink from '@/Components/Admin/UI/Links/DraggableSidebarPageBlogLink.vue'
+import DraggableSidebarPageStatisticLink from '@/Components/Admin/UI/Links/DraggableSidebarPageStatisticLink.vue'
+import DraggableSidebarPageMainLink from '@/Components/Admin/UI/Links/DraggableSidebarPageMainLink.vue'
+import DigitalClock from '@/Components/Admin/UI/CurrentTime/DigitalClock.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { fas } from '@fortawesome/free-solid-svg-icons'
@@ -65,7 +67,6 @@ const emit = defineEmits(['close-sidebar']);
 const trigger = ref(null);
 const sidebar = ref(null);
 const sidebarExpanded = ref(localStorage.getItem('sidebar-expanded') === 'true'); // Теперь состояние раскрытия загружается из localStorage
-const currentPath = ref(window.location.pathname); // Используем window.location.pathname для текущего пути
 
 const clickHandler = ({ target }) => {
     if (!sidebar.value || !trigger.value) return;
@@ -93,9 +94,6 @@ watch(sidebarExpanded, (newVal) => {
     localStorage.setItem('sidebar-expanded', newVal.toString());
 });
 
-const isActive = (path) => {
-    return currentPath.value === path;
-};
 </script>
 
 <template>
@@ -121,19 +119,19 @@ const isActive = (path) => {
                                 border border-gray-400 hover:border-red-400"
                          viewBox="0 0 24 24">
                         <path class="text-slate-400 hover:text-red-400"
-                              d="M19.586 11l-5-5L16 4.586 23.414 12 16 19.414 14.586 18l5-5H7v-2z"/>
-                        <path class="text-slate-600" d="M3 23H1V1h2z"/>
+                              d="M19.586 11l-5-5L16 4.586 23.414 12 16 19.414 14.586 18l5-5H7v-2z" />
+                        <path class="text-slate-600" d="M3 23H1V1h2z" />
                     </svg>
                 </button>
                 <Link :href="route('admin.index')" v-if="sidebarExpanded">
-                    <ApplicationMark class="h-6 w-auto 2xl:block"/>
+                    <ApplicationMark class="h-6 w-auto 2xl:block" />
                 </Link>
                 <span class="text-indigo-300 font-semibold text-md hidden 2xl:block" v-if="sidebarExpanded">
                     Pulsar CMS {{ sidebarTitle }}
                 </span>
-                <FontAwesomeIcon :icon="['fas', 'sliders']" class="text-white" v-if="sidebarExpanded"/>
+                <FontAwesomeIcon :icon="['fas', 'sliders']" class="text-white" v-if="sidebarExpanded" />
             </div>
-            <DigitalClock v-if="sidebarExpanded" class="mb-2 relative z-10"/>
+            <DigitalClock v-if="sidebarExpanded" class="mb-2 relative z-10" />
             <div class="space-y-1">
 
                 <!-- Ссылки администратора -->
@@ -142,7 +140,7 @@ const isActive = (path) => {
                       v-if="sidebarExpanded">
                     {{ t('pages') }}
                 </span>
-                <DraggableSidebarPageMainLink :expanded="sidebarExpanded"/>
+                <DraggableSidebarPageMainLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки страниц онлайн школы -->
                 <span :class="[colorTextActive]"
@@ -150,7 +148,7 @@ const isActive = (path) => {
                       v-if="sidebarExpanded">
                     {{ t('store') }}
                 </span>
-                <DraggableSidebarPageMarketLink :expanded="sidebarExpanded"/>
+                <DraggableSidebarPageMarketLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки страниц онлайн школы -->
                 <span :class="[colorTextActive]"
@@ -158,7 +156,7 @@ const isActive = (path) => {
                       v-if="sidebarExpanded">
                     {{ t('finance') }}
                 </span>
-                <DraggableSidebarPageFinanceLink :expanded="sidebarExpanded"/>
+                <DraggableSidebarPageFinanceLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки страниц онлайн школы -->
                 <span :class="[colorTextActive]"
@@ -166,7 +164,7 @@ const isActive = (path) => {
                       v-if="sidebarExpanded">
                     {{ t('school') }}
                 </span>
-                <DraggableSidebarPageSchoolLink :expanded="sidebarExpanded"/>
+                <DraggableSidebarPageSchoolLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки страниц блога -->
                 <span :class="[colorTextActive]"
@@ -174,7 +172,15 @@ const isActive = (path) => {
                       v-if="sidebarExpanded">
                     {{ t('blog') }}
                 </span>
-                <DraggableSidebarPageBlogLink :expanded="sidebarExpanded"/>
+                <DraggableSidebarPageBlogLink :expanded="sidebarExpanded" />
+
+                <!-- Ссылки страниц статистики -->
+                <span :class="[colorTextActive]"
+                      class="flex justify-center text-xs uppercase font-semibold pl-3 opacity-45"
+                      v-if="sidebarExpanded">
+                    {{ t('statistics') }}
+                </span>
+                <DraggableSidebarPageStatisticLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки главного ряда -->
                 <span :class="[colorTextActive]"
@@ -182,15 +188,9 @@ const isActive = (path) => {
                       v-if="sidebarExpanded">
                     {{ t('administrator') }}
                 </span>
-                <DraggableSidebarGroupLink :expanded="sidebarExpanded"/>
+                <DraggableSidebarGroupLink :expanded="sidebarExpanded" />
 
             </div>
         </div>
     </div>
 </template>
-
-<style>
-.sidebar-expanded {
-    width: 18rem !important;
-}
-</style>

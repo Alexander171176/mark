@@ -2,21 +2,24 @@
 /**
  * @version PulsarCMS 1.0
  * @author Александр Косолапов
+ *
+ * Записи пользователей на потоки
  */
 import { defineProps, ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'vue-toastification';
 import { router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue';
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue';
-import CohortEnrollmentTable from '@/Components/Admin/CohortEnrollment/Table/CohortEnrollmentTable.vue';
-import CohortEnrollmentCardGrid from '@/Components/Admin/CohortEnrollment/View/CohortEnrollmentCardGrid.vue';
-import CountTable from '@/Components/Admin/Count/CountTable.vue';
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue';
-import SortSelect from '@/Components/Admin/CohortEnrollment/Sort/SortSelect.vue';
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue';
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue';
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue';
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue';
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue';
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue';
+
+import CohortEnrollmentTable from '@/Components/Admin/School/CohortEnrollment/Table/CohortEnrollmentTable.vue';
+import CohortEnrollmentCardGrid from '@/Components/Admin/School/CohortEnrollment/View/CohortEnrollmentCardGrid.vue';
+import SortSelect from '@/Components/Admin/School/CohortEnrollment/Sort/SortSelect.vue';
 
 // --- i18n, toast ---
 const { t } = useI18n();
@@ -25,12 +28,12 @@ const toast = useToast();
 /**
  * Входные свойства компонента.
  */
-const props = defineProps([
-    'enrollments',                // Array (из CohortEnrollmentResource::collection(...)->resolve())
-    'enrollmentsCount',           // Общее количество (на всякий случай, но мы считаем и по массиву)
-    'adminCountCohortEnrollments',
-    'adminSortCohortEnrollments',
-]);
+const props = defineProps({
+    enrollments: { type: Array, default: () => [] },
+    enrollmentsCount: { type: Number, default: 0 },
+    adminSchoolCohortEnrollmentsPerPage: { type: Number, default: 10 },
+    adminSchoolCohortEnrollmentsDefaultSort: { type: String, default: 'idDesc' },
+})
 
 /**
  * Вид: таблица или карточки (общий ключ, как у Courses / Lessons / Modules)
@@ -44,7 +47,7 @@ watch(viewMode, (val) => {
 /**
  * Кол-во на странице (локально).
  */
-const itemsPerPage = ref(props.adminCountCohortEnrollments ?? 10);
+const itemsPerPage = ref(props.adminSchoolCohortEnrollmentsPerPage ?? 10);
 
 /**
  * Обновление значения в настройках (count).
@@ -62,7 +65,7 @@ watch(itemsPerPage, (newVal) => {
  * Параметр сортировки.
  * По смыслу — строка вида "idAsc", "idDesc", "status", "enrolled_at" и т.п.
  */
-const sortParam = ref(props.adminSortCohortEnrollments ?? 'idDesc');
+const sortParam = ref(props.adminSchoolCohortEnrollmentsDefaultSort ?? 'idDesc');
 
 /**
  * Обновление значения в настройках (sort).
@@ -266,27 +269,50 @@ watch(filteredEnrollments, () => {
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <!-- Кнопка "Добавить" здесь не нужна, записи создаются на публичной части -->
-                </div>
-
                 <!-- Поиск по фронту -->
                 <SearchInput
                     v-if="enrollmentsCount"
                     v-model="searchQuery"
                     :placeholder="t('search')"
                 />
+                <div
+                    v-if="enrollmentsCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val"
+                    />
+                </div>
 
                 <!-- Кол-во записей + переключатель вида -->
                 <div
                     v-if="enrollmentsCount"
-                    class="flex items-center justify-between my-2"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
                 >
                     <CountTable>
                         {{ enrollmentsCount }}
                     </CountTable>
 
                     <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <!-- Управление пагинацией / сортировкой -->
+                <div
+                    v-if="enrollmentsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mb-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredEnrollments.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
                 </div>
 
                 <!-- Таблица с записями -->
@@ -301,28 +327,17 @@ watch(filteredEnrollments, () => {
                     :enrollments="paginatedEnrollments"
                 />
 
-
                 <!-- Управление пагинацией / сортировкой -->
                 <div
                     v-if="enrollmentsCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-1"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
-                    <ItemsPerPageSelect
-                        :items-per-page="itemsPerPage"
-                        @update:itemsPerPage="itemsPerPage = $event"
-                    />
-
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredEnrollments.length"
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
-                    />
-
-                    <SortSelect
-                        :sortParam="sortParam"
-                        @update:sortParam="val => sortParam = val"
                     />
                 </div>
             </div>

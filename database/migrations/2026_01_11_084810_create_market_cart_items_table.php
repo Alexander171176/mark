@@ -72,7 +72,6 @@ return new class extends Migration {
             $table->json('meta')->nullable()->comment('Опции/атрибуты/выбранные свойства и др.');
 
             $table->timestamps();
-            $table->softDeletes();
 
             /* =========================================================
              * UNIQUE / INDEXES

@@ -1,8 +1,8 @@
 <script setup>
 import {ref} from "vue";
 import {Head, Link, router} from '@inertiajs/vue3'
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue'
-import ApplicationMark from '@/Components/ApplicationMark.vue'
+import ResponsiveNavLink from '@/Components/Base/ResponsiveNavLink.vue'
+import ApplicationMark from '@/Components/Base/ApplicationMark.vue'
 import ThemeToggle from '@/Components/User/ThemeToggle/ThemeToggle.vue'
 import LogoutButton from '@/Components/User/Button/LogoutButton.vue'
 

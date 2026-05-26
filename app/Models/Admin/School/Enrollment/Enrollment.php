@@ -2,10 +2,10 @@
 
 namespace App\Models\Admin\School\Enrollment;
 
-use App\Models\Admin\Finance\Order\Order;
 use App\Models\Admin\School\Certificate\Certificate;
 use App\Models\Admin\School\Course\Course;
 use App\Models\Admin\School\CourseSchedule\CourseSchedule;
+use App\Models\Admin\School\Order\Order;
 use App\Models\Admin\School\ProgressRecord\ProgressRecord;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

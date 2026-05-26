@@ -5,20 +5,20 @@ import { useToast } from 'vue-toastification'
 import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 
 // новые компоненты под компании
-import BulkActionSelect from '@/Components/Admin/MarketCompany/Select/BulkActionSelect.vue'
-import SortSelect from '@/Components/Admin/MarketCompany/Sort/SortSelect.vue'
-import MarketCompanyTable from '@/Components/Admin/MarketCompany/Table/MarketCompanyTable.vue'
-import MarketCompanyCardGrid from '@/Components/Admin/MarketCompany/View/MarketCompanyCardGrid.vue'
+import BulkActionSelect from '@/Components/Admin/Market/MarketCompany/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/Market/MarketCompany/Sort/SortSelect.vue'
+import MarketCompanyTable from '@/Components/Admin/Market/MarketCompany/Table/MarketCompanyTable.vue'
+import MarketCompanyCardGrid from '@/Components/Admin/Market/MarketCompany/View/MarketCompanyCardGrid.vue'
 
 const { t } = useI18n()
 const toast = useToast()

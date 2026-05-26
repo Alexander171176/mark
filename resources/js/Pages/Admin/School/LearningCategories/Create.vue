@@ -9,22 +9,24 @@ import { useToast } from 'vue-toastification';
 import {useI18n} from 'vue-i18n';
 import {transliterate} from '@/utils/transliteration';
 import {useForm, usePage} from '@inertiajs/vue3';
+
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue';
-import LabelInput from '@/Components/Admin/Input/LabelInput.vue';
-import InputText from '@/Components/Admin/Input/InputText.vue';
-import InputError from '@/Components/Admin/Input/InputError.vue';
-import PrimaryButton from '@/Components/Admin/Buttons/PrimaryButton.vue';
-import SelectLocale from "@/Components/Admin/Select/SelectLocale.vue";
-import MetaDescTextarea from "@/Components/Admin/Textarea/MetaDescTextarea.vue";
-import MetatagsButton from "@/Components/Admin/Buttons/MetatagsButton.vue";
-import LabelCheckbox from "@/Components/Admin/Checkbox/LabelCheckbox.vue";
-import ActivityCheckbox from "@/Components/Admin/Checkbox/ActivityCheckbox.vue";
-import InputNumber from "@/Components/Admin/Input/InputNumber.vue";
-import TinyEditor from "@/Components/Admin/TinyEditor/TinyEditor.vue";
-import SelectParentCategory from "@/Components/Admin/LearningCategory/Select/SelectParentCategory.vue";
-import MultiImageUpload from "@/Components/Admin/Image/MultiImageUpload.vue";
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue';
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue';
+import InputText from '@/Components/Admin/UI/Input/InputText.vue';
+import InputError from '@/Components/Admin/UI/Input/InputError.vue';
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue';
+import SelectLocale from "@/Components/Admin/UI/Select/SelectLocale.vue";
+import MetaDescTextarea from "@/Components/Admin/UI/Textarea/MetaDescTextarea.vue";
+import MetatagsButton from "@/Components/Admin/UI/Buttons/MetatagsButton.vue";
+import LabelCheckbox from "@/Components/Admin/UI/Checkbox/LabelCheckbox.vue";
+import ActivityCheckbox from "@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue";
+import InputNumber from "@/Components/Admin/UI/Input/InputNumber.vue";
+import TinyEditor from "@/Components/Admin/UI/TinyEditor/TinyEditor.vue";
+import MultiImageUpload from "@/Components/Admin/UI/Image/MultiImageUpload.vue";
+
+import SelectParentCategory from "@/Components/Admin/School/LearningCategory/Select/SelectParentCategory.vue";
 
 // --- Инициализация ---
 const toast = useToast();

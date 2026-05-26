@@ -1,12 +1,12 @@
 <script setup>
 import {ref} from 'vue'
 import {useForm} from '@inertiajs/vue3'
-import ActionMessage from '@/Components/ActionMessage.vue'
-import FormSection from '@/Components/FormSection.vue'
-import InputError from '@/Components/InputError.vue'
-import InputLabel from '@/Components/InputLabel.vue'
-import PrimaryButton from '@/Components/PrimaryButton.vue'
-import TextInput from '@/Components/TextInput.vue'
+import ActionMessage from '@/Components/Base/ActionMessage.vue'
+import FormSection from '@/Components/Base/FormSection.vue'
+import InputError from '@/Components/Base/InputError.vue'
+import InputLabel from '@/Components/Base/InputLabel.vue'
+import PrimaryButton from '@/Components/Base/PrimaryButton.vue'
+import TextInput from '@/Components/Base/TextInput.vue'
 import { useI18n } from 'vue-i18n'
 
 const passwordInput = ref(null)

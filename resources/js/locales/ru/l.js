@@ -5,6 +5,7 @@ export default {
     lastUsed: 'Последнее использование',
     latestNews: 'Последние новости',
     learningCategories: 'Категории обучения',
+    learningFlow: 'Поток обучения',
     learningTags: 'Теги обучения',
     leave: 'Покинуть',
     leaveComment: 'Оставьте комментарий',

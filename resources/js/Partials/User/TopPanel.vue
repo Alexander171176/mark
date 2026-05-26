@@ -1,8 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { useI18n } from 'vue-i18n';
 
-const {t} = useI18n();
 const isPanelOpen = ref(false)
 
 const togglePanel = () => {
@@ -41,39 +39,3 @@ const togglePanel = () => {
         </transition>
     </div>
 </template>
-
-<style scoped>
-.top-panel-enter-active,
-.top-panel-leave-active {
-    transition: transform 0.3s ease;
-}
-.top-panel-enter-from,
-.top-panel-leave-to {
-    transform: translateY(-100%);
-}
-.top-panel-enter-to,
-.top-panel-leave-from {
-    transform: translateY(0);
-}
-
-.base-link {
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    color: #e2e8f0; /* slate-200 */
-    font-size: 11px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-.base-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-.active-link {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    font-weight: 600;
-}
-</style>

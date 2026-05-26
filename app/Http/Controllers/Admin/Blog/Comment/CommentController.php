@@ -55,8 +55,8 @@ class CommentController extends Controller
      */
     public function index(Request $request): Response
     {
-        $adminCountComments = (int) config('site_settings.AdminCountComments', 15);
-        $adminSortComments  = (string) config('site_settings.AdminSortComments', 'idDesc');
+        $adminCommentsPerPage = (int) config('site_settings.adminCommentsPerPage', 20);
+        $adminCommentsDefaultSort  = (string) config('site_settings.adminCommentsDefaultSort', 'idDesc');
 
         $user = auth()->user();
         $isAdmin = (bool) ($user && $user->hasRole('admin'));
@@ -64,7 +64,7 @@ class CommentController extends Controller
         try {
             // сортировку оставим минимально (как настройка), без фильтров/поиска
             $sortField = 'id';
-            $sortDirection = $adminSortComments === 'idAsc' ? 'asc' : 'desc';
+            $sortDirection = $adminCommentsDefaultSort === 'idAsc' ? 'asc' : 'desc';
 
             $comments = $this->baseQuery()
                 ->with([
@@ -81,8 +81,8 @@ class CommentController extends Controller
                 'comments' => CommentResource::collection($comments),
                 'commentsCount' => $comments->count(),
 
-                'adminCountComments' => $adminCountComments,
-                'adminSortComments'  => $adminSortComments,
+                'adminCommentsPerPage' => $adminCommentsPerPage,
+                'adminCommentsDefaultSort'  => $adminCommentsDefaultSort,
 
                 'isAdmin' => $isAdmin,
             ]);
@@ -94,8 +94,8 @@ class CommentController extends Controller
                 'comments' => [],
                 'commentsCount' => 0,
 
-                'adminCountComments' => $adminCountComments,
-                'adminSortComments'  => $adminSortComments,
+                'adminCommentsPerPage' => $adminCommentsPerPage,
+                'adminCommentsDefaultSort'  => $adminCommentsDefaultSort,
 
                 'isAdmin' => $isAdmin,
 

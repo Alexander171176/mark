@@ -16,26 +16,27 @@ import { useForm } from '@inertiajs/vue3'
 import VueMultiselect from 'vue-multiselect'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import PrimaryButton from '@/Components/Admin/Buttons/PrimaryButton.vue'
-import ClearMetaButton from '@/Components/Admin/Buttons/ClearMetaButton.vue'
-import MetatagsButton from '@/Components/Admin/Buttons/MetatagsButton.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
+import ClearMetaButton from '@/Components/Admin/UI/Buttons/ClearMetaButton.vue'
+import MetatagsButton from '@/Components/Admin/UI/Buttons/MetatagsButton.vue'
 
-import LabelCheckbox from '@/Components/Admin/Checkbox/LabelCheckbox.vue'
-import ActivityCheckbox from '@/Components/Admin/Checkbox/ActivityCheckbox.vue'
+import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue'
+import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue'
 
-import MetaDescTextarea from '@/Components/Admin/Textarea/MetaDescTextarea.vue'
-import InputNumber from '@/Components/Admin/Input/InputNumber.vue'
-import LabelInput from '@/Components/Admin/Input/LabelInput.vue'
-import InputText from '@/Components/Admin/Input/InputText.vue'
-import InputError from '@/Components/Admin/Input/InputError.vue'
+import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
+import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
+import InputText from '@/Components/Admin/UI/Input/InputText.vue'
+import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 
-import MultiImageUpload from '@/Components/Admin/Image/MultiImageUpload.vue'
-import MultiImageEdit from '@/Components/Admin/Image/MultiImageEdit.vue'
-import VideoSourceFields from '@/Components/Admin/Video/Upload/VideoSourceFields.vue'
-import TinyEditor from '@/Components/Admin/TinyEditor/TinyEditor.vue'
-import TranslationTabs from '@/Components/Admin/Locale/TranslationTabs.vue'
+import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
+import MultiImageEdit from '@/Components/Admin/UI/Image/MultiImageEdit.vue'
+import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
+import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
+
+import VideoSourceFields from '@/Components/Admin/Blog/BlogVideo/Upload/VideoSourceFields.vue'
 
 const toast = useToast()
 const { t } = useI18n()
@@ -44,9 +45,8 @@ const props = defineProps({
     video: { type: Object, required: true },
     videoUrl: { type: String, default: null },
     relatedVideos: { type: Array, default: () => [] },
-    targetLocale: { type: String, default: 'ru' },
-    availableLocales: { type: Array, default: () => ['ru', 'en', 'kk'] },
-    currentLocale: { type: String, default: 'ru' },
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
     errors: { type: Object, default: () => ({}) },
 })
 
@@ -76,9 +76,9 @@ const buildTranslations = () => {
     })
 
     const defaultLocale =
-        props.targetLocale ||
         props.currentLocale ||
         props.video.translation?.locale ||
+        props.availableLocales[0] ||
         'ru'
 
     if (!Object.keys(result).length) {
@@ -93,9 +93,9 @@ const buildTranslations = () => {
 }
 
 const defaultLocale =
-    props.targetLocale ||
     props.currentLocale ||
     props.video.translation?.locale ||
+    props.availableLocales[0] ||
     'ru'
 
 const activeLocale = ref(defaultLocale)
@@ -300,6 +300,13 @@ const submitForm = () => {
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
                     <DefaultButton :href="route('admin.blogVideos.index')">
+                        <template #icon>
+                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2" viewBox="0 0 16 16">
+                                <path
+                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
+                                />
+                            </svg>
+                        </template>
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
@@ -567,7 +574,14 @@ const submitForm = () => {
                     </div>
 
                     <div class="flex items-center justify-center mt-4">
-                        <DefaultButton :href="route('admin.blogVideos.index')" class="mb-3">
+                        <DefaultButton :href="route('admin.blogVideos.index')">
+                            <template #icon>
+                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2" viewBox="0 0 16 16">
+                                    <path
+                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
+                                    />
+                                </svg>
+                            </template>
                             {{ t('back') }}
                         </DefaultButton>
 

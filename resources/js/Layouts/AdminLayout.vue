@@ -1,44 +1,21 @@
 <script setup>
-import {ref, defineProps, computed, watch} from 'vue';
-import {Head, router, usePage} from '@inertiajs/vue3';
+import {ref, defineProps, watch} from 'vue';
+import { Head } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification'; // Импортируем useToast
 import Header from '@/Partials/Admin/Header.vue';
 import Sidebar from '@/Partials/Admin/Sidebar.vue';
 import Footer from '@/Partials/Admin/Footer.vue';
 import WidgetPanel from '@/Partials/Admin/WidgetPanel.vue';
-import ScrollButtons from '@/Components/Admin/Scroll/ScrollButtons.vue';
-import {usePermission} from '@/composables/permissions.js';
-
-// Импорт изображения
-import authImage from '../../images/auth-image.jpg';
+import ScrollButtons from '@/Components/Admin/UI/Scroll/ScrollButtons.vue';
 import {Container as page} from "vue-smooth-dnd";
 
-const props = defineProps({
+defineProps({
     title: String,
 });
-
-const {HasRole} = usePermission();
 
 const sidebarOpen = ref(false);
 const showingNavigationDropdown = ref(false);
 
-const switchToTeam = (team) => {
-    router.put(
-        route('current-team.update'),
-        {
-            team_id: team.id,
-        },
-        {
-            preserveState: false,
-        }
-    );
-};
-
-const logout = () => {
-    router.post(route('logout'));
-};
-
-const {props: pageProps} = usePage();
 const toast = useToast(); // Получаем экземпляр toast
 
 // Наблюдаем за изменением flash-сообщений в props
@@ -65,16 +42,16 @@ watch(() => page.props.flash, (flashMessages) => {
 </script>
 
 <template>
-    <Head :title="title"/>
+    <Head :title="title" />
     <div class="flex flex-row h-screen overflow-hidden">
         <!-- Sidebar -->
-        <Sidebar :sidebar-open="sidebarOpen" @close-sidebar="sidebarOpen = false"/>
+        <Sidebar :sidebar-open="sidebarOpen" @close-sidebar="sidebarOpen = false" />
 
         <div class="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
 
             <!-- Header -->
             <Header :showing-navigation-dropdown="showingNavigationDropdown"
-                    @toggle-navigation-dropdown="showingNavigationDropdown = !showingNavigationDropdown"/>
+                    @toggle-navigation-dropdown="showingNavigationDropdown = !showingNavigationDropdown" />
 
             <!-- TitlePage Page Heading -->
             <header v-if="$slots.header" class="dark:bg-slate-700 bg-slate-50 shadow">
@@ -86,13 +63,13 @@ watch(() => page.props.flash, (flashMessages) => {
 
             <!-- Page Content -->
             <main class="flex-grow bg-center border-l border-r border-slate-400">
-                <slot/>
+                <slot />
             </main>
 
             <!-- Footer -->
-            <Footer/>
+            <Footer />
 
-            <ScrollButtons/>
+            <ScrollButtons />
 
         </div>
 
@@ -103,13 +80,6 @@ watch(() => page.props.flash, (flashMessages) => {
 </template>
 
 <style scoped>
-/* Убедитесь, что ваше основное содержимое занимает доступное пространство */
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
 main {
     width: 100%;
     height: auto;

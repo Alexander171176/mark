@@ -18,16 +18,16 @@ Route::put('/update-sort/videos', [SettingController::class, 'updateAdminSortVid
     ->name('updateAdminSortVideos');
 Route::put('/update-sort/instructors', [SettingController::class, 'updateAdminSortInstructors'])
     ->name('updateAdminSortInstructors');
-Route::put('/update-sort/learning-categories', [SettingController::class, 'updateAdminSortLearningCategories'])
-    ->name('updateAdminSortLearningCategories');
+Route::put('/update-sort/tracks', [SettingController::class, 'updateAdminSortTracks'])
+    ->name('updateAdminSortTracks');
 Route::put('/update-sort/hashtags', [SettingController::class, 'updateAdminSortHashtags'])
     ->name('updateAdminSortHashtags');
-Route::put('/update-sort/courses', [SettingController::class, 'updateAdminSortLearningCourses'])
-    ->name('updateAdminSortLearningCourses');
-Route::put('/update-sort/lessons', [SettingController::class, 'updateAdminSortLearningLessons'])
-    ->name('updateAdminSortLearningLessons');
-Route::put('/update-sort/modules', [SettingController::class, 'updateAdminSortLearningModules'])
-    ->name('updateAdminSortLearningModules');
+Route::put('/update-sort/courses', [SettingController::class, 'updateAdminSortCourses'])
+    ->name('updateAdminSortCourses');
+Route::put('/update-sort/lessons', [SettingController::class, 'updateAdminSortLessons'])
+    ->name('updateAdminSortLessons');
+Route::put('/update-sort/modules', [SettingController::class, 'updateAdminSortModules'])
+    ->name('updateAdminSortModules');
 Route::put('/update-sort/assignments', [SettingController::class, 'updateAdminSortAssignments'])
     ->name('updateAdminSortAssignments');
 Route::put('/update-sort/course-schedules', [SettingController::class, 'updateAdminSortCourseSchedules'])
@@ -66,7 +66,7 @@ Route::put('/update-sort/permissions', [SettingController::class, 'updateAdminSo
     ->name('updateAdminSortPermissions');
 Route::put('/update-sort/settings', [SettingController::class, 'updateAdminSortSettings'])
     ->name('updateAdminSortSettings');
-Route::put('/update-sort/settings', [SettingController::class, 'updateAdminSortMarketCompanies'])
+Route::put('/update-sort/market-storefronts', [SettingController::class, 'updateAdminSortMarketCompanies'])
     ->name('updateAdminSortMarketCompanies');
-Route::put('/update-sort/settings', [SettingController::class, 'updateAdminSortMarketStorefronts'])
+Route::put('/update-sort/market-storefronts', [SettingController::class, 'updateAdminSortMarketStorefronts'])
     ->name('updateAdminSortMarketStorefronts');

@@ -2,114 +2,179 @@
 /**
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
- * Создание инструктора (паттерн)
+ *
+ * Страница создания инструктора школы
+ * - мультиязычные переводы
+ * - изображения
+ * - соц. ссылки
+ * - SEO
  */
 import { ref, computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { transliterate } from '@/utils/transliteration'
+import VueMultiselect from 'vue-multiselect'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import PrimaryButton from '@/Components/Admin/Buttons/PrimaryButton.vue'
-import LabelInput from '@/Components/Admin/Input/LabelInput.vue'
-import InputText from '@/Components/Admin/Input/InputText.vue'
-import InputError from '@/Components/Admin/Input/InputError.vue'
-import VueMultiselect from 'vue-multiselect'
-import TinyEditor from '@/Components/Admin/TinyEditor/TinyEditor.vue'
-import ActivityCheckbox from '@/Components/Admin/Checkbox/ActivityCheckbox.vue'
-import LabelCheckbox from '@/Components/Admin/Checkbox/LabelCheckbox.vue'
-import InputNumber from '@/Components/Admin/Input/InputNumber.vue'
-import InputDecimal from '@/Components/Admin/Input/InputDecimal.vue'
-import DeleteIconButton from '@/Components/Admin/Buttons/DeleteIconButton.vue'
-import SelectLocale from '@/Components/Admin/Select/SelectLocale.vue'
-import MetaDescTextarea from '@/Components/Admin/Textarea/MetaDescTextarea.vue'
-import MetatagsButton from '@/Components/Admin/Buttons/MetatagsButton.vue'
-import MultiImageUpload from '@/Components/Admin/Image/MultiImageUpload.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
+import InputText from '@/Components/Admin/UI/Input/InputText.vue'
+import InputError from '@/Components/Admin/UI/Input/InputError.vue'
+import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
+import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue'
+import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue'
+import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
+import InputDecimal from '@/Components/Admin/UI/Input/InputDecimal.vue'
+import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue'
+import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
+import MetatagsButton from '@/Components/Admin/UI/Buttons/MetatagsButton.vue'
+import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
+import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 
-// --- Инициализация ---
+/* ======================== UI и сервисы ======================== */
 const { t } = useI18n()
 const toast = useToast()
 
-/**
- * Из контроллера: ['users' => User::select('id','name')->orderBy('name')->get()]
- */
+/* ======================== Props ======================== */
 const props = defineProps({
-    users: { type: Array, default: () => [] },
+    users: {
+        type: Array,
+        default: () => [],
+    },
+    targetLocale: {
+        type: String,
+        default: 'ru',
+    },
+    availableLocales: {
+        type: Array,
+        default: () => ['ru', 'en', 'kk'],
+    },
 })
 
-/** 🔹 Один выбранный инструктор */
+/* ======================== Выбор пользователя ======================== */
+
+// выбранный пользователь (инструктор)
 const selectedInstructorProfile = ref(null)
 
-/** 🔹 Опции селекта инструктора */
+// список пользователей для select
 const userOptions = computed(() =>
-    props.users.map(u => ({ id: u.id, label: u.name || `#${u.id}` }))
+    props.users.map(user => ({
+        id: user.id,
+        label: user.name || `#${user.id}`,
+    }))
 )
 
-/** Форма создания инструктора */
-const form = useForm({
-    activity: true,
-    sort: 0,
-    locale: '', // en, kk, ru
+/* ======================== Переводы ======================== */
+
+// шаблон перевода
+const makeTranslation = () => ({
     title: '',
-    slug: '',
-    short: '', // Краткое описание
+    short: '',
     bio: '',
-    user_id: null,
-    experience_years: 0,
-    hourly_rate: '',     // строка, как в Edit.vue
-    rating_count: 0,
-    rating_avg: '',
     meta_title: '',
     meta_keywords: '',
     meta_desc: '',
-    social_links: {},    // будет объект вида { github: '...', telegram: '...' }
-    images: [],          // массив объектов { file, order, alt, caption }
 })
 
-/** Новые изображения (из MultiImageUpload) */
+// текущая активная локаль
+const defaultLocale = props.targetLocale || 'ru'
+const activeLocale = ref(defaultLocale)
+
+/* ======================== Форма ======================== */
+const form = useForm({
+    activity: true,
+    sort: 0,
+    slug: '',
+
+    user_id: null,
+    experience_years: 0,
+    hourly_rate: '',
+    rating_count: 0,
+    rating_avg: '',
+
+    social_links: {},
+    images: [],
+
+    translations: {
+        [defaultLocale]: makeTranslation(),
+    },
+})
+
+/* ======================== Текущий перевод ======================== */
+
+// текущий перевод (вкладка)
+const currentTranslation = computed(() => {
+    if (!form.translations[activeLocale.value]) {
+        form.translations[activeLocale.value] = makeTranslation()
+    }
+
+    return form.translations[activeLocale.value]
+})
+
+// ошибка перевода по полю
+const getError = (key) => {
+    return form.errors[`translations.${activeLocale.value}.${key}`]
+}
+
+/* ======================== Изображения ======================== */
+
+// новые изображения
 const newImages = ref([])
 
-/** Обновление новых изображений */
+// обновление изображений из компонента
 const handleNewImagesUpdate = (images) => {
     newImages.value = images
 }
 
-/** Автогенерация slug по фокусу */
+/* ======================== Слаг ======================== */
+
+// генерация slug при фокусе
 const handleSlugFocus = () => {
-    if (!form.slug && form.title) {
-        form.slug = transliterate(form.title.toLowerCase())
+    if (!form.slug && currentTranslation.value.title) {
+        form.slug = transliterate(currentTranslation.value.title.toLowerCase())
     }
 }
 
-/** Обрезка текста для мета-тегов */
+/* ======================== Утилиты ======================== */
+
+// обрезка текста
 const truncateText = (text, maxLength, addEllipsis = false) => {
     if (!text) return ''
-    if (text.length <= maxLength) return text
-    const truncated = text.substr(0, text.lastIndexOf(' ', maxLength))
+
+    const str = String(text)
+
+    if (str.length <= maxLength) return str
+
+    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
+    const truncated = lastSpaceIndex === -1
+        ? str.substring(0, maxLength)
+        : str.substring(0, lastSpaceIndex)
+
     return addEllipsis ? `${truncated}...` : truncated
 }
 
-/**
- * Соц. ссылки как строки [{platform, url}]
- */
-const socialRows = ref([]) // [{ platform:'github', url:'https://github.com/...' }, ...]
+/* ======================== Социальные сети ======================== */
 
-/** Добавить новую строку контакта */
-const addSocialRow = () => socialRows.value.push({ platform: '', url: '' })
+// список строк соц. ссылок
+const socialRows = ref([])
 
-/** Удалить строку контакта */
-const removeSocialRow = (idx) => socialRows.value.splice(idx, 1)
+// добавить строку
+const addSocialRow = () => {
+    socialRows.value.push({
+        platform: '',
+        url: '',
+    })
+}
 
-/**
- * Собираем соц. ссылки в формат:
- * {
- *   github: 'https://...',
- *   telegram: 'https://...',
- * }
- */
+// удалить строку
+const removeSocialRow = (idx) => {
+    socialRows.value.splice(idx, 1)
+}
+
+// собрать объект ссылок
 const buildSocialLinks = () => {
     const links = {}
 
@@ -125,58 +190,54 @@ const buildSocialLinks = () => {
     return links
 }
 
-/** Генерация meta-полей, если не заданы вручную. */
+/* ======================== SEO ======================== */
+
+// автогенерация meta
 const generateMetaFields = () => {
-    // meta_title
-    if (form.title && !form.meta_title) {
-        form.meta_title = truncateText(form.title, 160)
+    const translation = currentTranslation.value
+
+    if (translation.title && !translation.meta_title) {
+        translation.meta_title = truncateText(translation.title, 160)
     }
 
-    // meta_keywords из short
-    if (!form.meta_keywords && form.short) {
-        // 1. убираем HTML
-        let text = form.short.replace(/(<([^>]+)>)/gi, '')
+    if (!translation.meta_keywords && translation.short) {
+        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
+        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
 
-        // 2. убираем пунктуацию
-        text = text.replace(/[.,!?;:()\[\]{}"'«»]/g, '')
-
-        // 3. разбиваем на слова
         const words = text
             .split(/\s+/)
             .filter(word => word && word.length >= 3)
             .map(word => word.toLowerCase())
             .filter((value, index, self) => self.indexOf(value) === index)
 
-        const keywords = words.join(', ')
-        form.meta_keywords = truncateText(keywords, 255)
+        translation.meta_keywords = truncateText(words.join(', '), 255)
     }
 
-    // meta_desc из short
-    if (form.short && !form.meta_desc) {
-        const descText = form.short.replace(/(<([^>]+)>)/gi, '')
-        form.meta_desc = truncateText(descText, 255, true)
+    if (translation.short && !translation.meta_desc) {
+        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
+        translation.meta_desc = truncateText(descText, 255, true)
     }
 }
 
-/**
- * Отправка формы создания инструктора.
- * Логика приведена к той же схеме, что и в Edit.vue:
- * - activity -> 1/0
- * - social_links -> объект
- * - images -> массив объектов { file, order, alt, caption }
- * - forceFormData: true
- */
+/* ======================== Отправка формы ======================== */
 const submit = () => {
-    const social_links = buildSocialLinks()
+    const socialLinks = buildSocialLinks()
 
     form.transform((data) => {
         const toNum = (val, digits = 2) => {
-            if (val === '' || val === null || typeof val === 'undefined') return null
+            if (val === '' || val === null || typeof val === 'undefined') {
+                return null
+            }
+
             const n = Number(val)
-            return Number.isFinite(n) ? Number(n.toFixed(digits)) : null
+
+            return Number.isFinite(n)
+                ? Number(n.toFixed(digits))
+                : null
         }
 
         let rating = toNum(data.rating_avg, 2)
+
         if (rating !== null) {
             if (rating < 0) rating = 0
             if (rating > 5) rating = 5
@@ -188,7 +249,7 @@ const submit = () => {
             activity: data.activity ? 1 : 0,
             hourly_rate: toNum(data.hourly_rate, 2),
             rating_avg: rating,
-            social_links,
+            social_links: socialLinks,
             images: newImages.value.map((img) => ({
                 file: img.file,
                 order: img.order ?? 0,
@@ -198,13 +259,16 @@ const submit = () => {
         }
     })
 
-    form.post(route('admin.instructorProfiles.store'), {
+    form.post(route('admin.schoolInstructorProfiles.store'), {
+        errorBag: 'createSchoolInstructorProfile',
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => {
             toast.success('Инструктор успешно создан!')
         },
         onError: (errors) => {
+            console.error('Не удалось отправить форму:', errors)
+
             const firstKey = Object.keys(errors || {})[0]
             toast.error(errors[firstKey] || 'Проверьте корректность полей.')
         },
@@ -226,7 +290,7 @@ const submit = () => {
                        bg-opacity-95 dark:bg-opacity-95"
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <DefaultButton :href="route('admin.instructorProfiles.index')">
+                    <DefaultButton :href="route('admin.schoolInstructorProfiles.index')">
                         <template #icon>
                             <svg
                                 class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
@@ -239,10 +303,6 @@ const submit = () => {
                         </template>
                         {{ t('back') }}
                     </DefaultButton>
-                    <div
-                        class="grid grid-flow-col
-                               sm:auto-cols-max justify-start sm:justify-end gap-2"
-                    />
                 </div>
 
                 <form
@@ -251,7 +311,6 @@ const submit = () => {
                     class="p-3 w-full"
                 >
                     <div class="pb-12">
-                        <!-- Активность + Локализация + Сортировка -->
                         <div
                             class="mb-3 flex justify-between flex-col
                                    lg:flex-row items-center gap-4"
@@ -265,19 +324,6 @@ const submit = () => {
                                 />
                             </div>
 
-                            <!-- Локализация -->
-                            <div class="flex flex-row items-center w-auto">
-                                <SelectLocale
-                                    v-model="form.locale"
-                                    :errorMessage="form.errors.locale"
-                                />
-                                <InputError
-                                    class="mt-2 lg:mt-0"
-                                    :message="form.errors.locale"
-                                />
-                            </div>
-
-                            <!-- Сортировка -->
                             <div class="flex flex-row items-center gap-2">
                                 <div class="h-8 flex items-center">
                                     <LabelInput
@@ -286,12 +332,14 @@ const submit = () => {
                                         class="text-sm"
                                     />
                                 </div>
+
                                 <InputNumber
                                     id="sort"
                                     type="number"
                                     v-model.number="form.sort"
                                     class="w-full lg:w-28"
                                 />
+
                                 <InputError
                                     class="mt-2 lg:mt-0"
                                     :message="form.errors.sort"
@@ -299,34 +347,12 @@ const submit = () => {
                             </div>
                         </div>
 
-                        <!-- Название -->
-                        <div class="mb-3 flex flex-col items-start">
-                            <LabelInput for="title">
-                                <span
-                                    class="text-red-500 dark:text-red-300 font-semibold"
-                                >*</span
-                                >
-                                {{ t('title') }}
-                            </LabelInput>
-                            <InputText
-                                id="title"
-                                type="text"
-                                v-model="form.title"
-                                required
-                                autocomplete="off"
-                            />
-                            <InputError class="mt-2" :message="form.errors.title" />
-                        </div>
-
-                        <!-- Slug: автогенерация по фокусу -->
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput for="slug">
-                                <span
-                                    class="text-red-500 dark:text-red-300 font-semibold"
-                                >*</span
-                                >
+                                <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
                                 {{ t('slug') }}
                             </LabelInput>
+
                             <InputText
                                 id="slug"
                                 type="text"
@@ -336,16 +362,17 @@ const submit = () => {
                                 @focus="handleSlugFocus"
                                 required
                             />
+
                             <InputError class="mt-2" :message="form.errors.slug" />
                         </div>
 
-                        <!-- Привязка к пользователю -->
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput
                                 for="user_id"
                                 :value="t('instructor')"
                                 class="mb-1"
                             />
+
                             <VueMultiselect
                                 id="user_id"
                                 v-model="selectedInstructorProfile"
@@ -357,13 +384,13 @@ const submit = () => {
                                 track-by="id"
                                 class="min-w-[240px] w-full"
                             />
+
                             <InputError
                                 class="mt-2"
                                 :message="form.errors.user_id"
                             />
                         </div>
 
-                        <!-- Опыт и ставка -->
                         <div
                             class="mb-3 flex justify-between flex-col
                                    lg:flex-row items-center gap-4"
@@ -372,6 +399,7 @@ const submit = () => {
                                 <LabelInput for="experience_years">
                                     {{ t('experienceYears') }}
                                 </LabelInput>
+
                                 <InputNumber
                                     id="experience_years"
                                     type="number"
@@ -379,6 +407,7 @@ const submit = () => {
                                     v-model.number="form.experience_years"
                                     class="w-full lg:w-28"
                                 />
+
                                 <InputError
                                     class="mt-2"
                                     :message="form.errors.experience_years"
@@ -389,6 +418,7 @@ const submit = () => {
                                 <LabelInput for="hourly_rate">
                                     {{ t('hourlyRate') }}
                                 </LabelInput>
+
                                 <InputDecimal
                                     id="hourly_rate"
                                     v-model="form.hourly_rate"
@@ -397,6 +427,7 @@ const submit = () => {
                                     :fraction-digits="2"
                                     class="w-full lg:w-28"
                                 />
+
                                 <InputError
                                     class="mt-2"
                                     :message="form.errors.hourly_rate"
@@ -404,7 +435,6 @@ const submit = () => {
                             </div>
                         </div>
 
-                        <!-- Рейтинги -->
                         <div
                             class="mb-3 flex justify-between flex-col
                                    lg:flex-row items-center gap-4"
@@ -417,6 +447,7 @@ const submit = () => {
                                         class="text-sm"
                                     />
                                 </div>
+
                                 <InputNumber
                                     id="rating_count"
                                     type="number"
@@ -424,6 +455,7 @@ const submit = () => {
                                     v-model.number="form.rating_count"
                                     class="w-full lg:w-28"
                                 />
+
                                 <InputError
                                     class="mt-2 lg:mt-0"
                                     :message="form.errors.rating_count"
@@ -438,6 +470,7 @@ const submit = () => {
                                         class="text-sm"
                                     />
                                 </div>
+
                                 <InputDecimal
                                     id="rating_avg"
                                     v-model="form.rating_avg"
@@ -447,6 +480,7 @@ const submit = () => {
                                     :fraction-digits="2"
                                     class="w-full lg:w-28"
                                 />
+
                                 <InputError
                                     class="mt-2 lg:mt-0"
                                     :message="form.errors.rating_avg"
@@ -454,33 +488,158 @@ const submit = () => {
                             </div>
                         </div>
 
-                        <!-- Краткое описание инструктора -->
-                        <div class="mb-3 flex flex-col items-start">
-                            <div class="flex justify-between w-full">
-                                <LabelInput
-                                    for="short"
-                                    :value="t('shortDescription')"
+                        <div
+                            class="my-5 p-3 border border-slate-300 dark:border-slate-500
+                                   bg-white dark:bg-slate-800 rounded-sm"
+                        >
+                            <TranslationTabs
+                                v-model="activeLocale"
+                                :translations="form.translations"
+                                :available-locales="availableLocales"
+                                :make-translation="makeTranslation"
+                                @update:translations="form.translations = $event"
+                                @removed="toast.warning('Перевод удалён.')"
+                                @added="toast.success('Локаль добавлена.')"
+                            />
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <LabelInput for="title">
+                                    <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                                    {{ t('title') }} [{{ activeLocale.toUpperCase() }}]
+                                </LabelInput>
+
+                                <InputText
+                                    id="title"
+                                    type="text"
+                                    v-model="currentTranslation.title"
+                                    required
+                                    autocomplete="off"
                                 />
-                                <div
-                                    class="text-md text-gray-900 dark:text-gray-400 mt-1"
-                                >
-                                    {{ form.short.length }} / 255 {{ t('characters') }}
-                                </div>
+
+                                <InputError class="mt-2" :message="getError('title')" />
                             </div>
-                            <MetaDescTextarea v-model="form.short" class="w-full" />
-                            <InputError class="mt-2" :message="form.errors.short" />
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <div class="flex justify-between w-full">
+                                    <LabelInput
+                                        for="short"
+                                        :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
+                                    />
+
+                                    <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
+                                        {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
+                                    </div>
+                                </div>
+
+                                <MetaDescTextarea
+                                    v-model="currentTranslation.short"
+                                    class="w-full"
+                                />
+
+                                <InputError class="mt-2" :message="getError('short')" />
+                            </div>
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <LabelInput
+                                    for="bio"
+                                    :value="`${t('bio')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <TinyEditor
+                                    v-model="currentTranslation.bio"
+                                    :height="500"
+                                />
+
+                                <InputError class="mt-2" :message="getError('bio')" />
+                            </div>
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <div class="flex justify-between w-full">
+                                    <LabelInput
+                                        for="meta_title"
+                                        :value="`${t('metaTitle')} [${activeLocale.toUpperCase()}]`"
+                                    />
+
+                                    <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
+                                        {{ (currentTranslation.meta_title || '').length }} / 160 {{ t('characters') }}
+                                    </div>
+                                </div>
+
+                                <InputText
+                                    id="meta_title"
+                                    type="text"
+                                    v-model="currentTranslation.meta_title"
+                                    maxlength="160"
+                                    autocomplete="meta_title"
+                                />
+
+                                <InputError class="mt-2" :message="getError('meta_title')" />
+                            </div>
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <div class="flex justify-between w-full">
+                                    <LabelInput
+                                        for="meta_keywords"
+                                        :value="`${t('metaKeywords')} [${activeLocale.toUpperCase()}]`"
+                                    />
+
+                                    <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
+                                        {{ (currentTranslation.meta_keywords || '').length }} / 255 {{ t('characters') }}
+                                    </div>
+                                </div>
+
+                                <InputText
+                                    id="meta_keywords"
+                                    type="text"
+                                    v-model="currentTranslation.meta_keywords"
+                                    maxlength="255"
+                                    autocomplete="meta_keywords"
+                                />
+
+                                <InputError class="mt-2" :message="getError('meta_keywords')" />
+                            </div>
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <div class="flex justify-between w-full">
+                                    <LabelInput
+                                        for="meta_desc"
+                                        :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
+                                    />
+
+                                    <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
+                                        {{ (currentTranslation.meta_desc || '').length }} / 255 {{ t('characters') }}
+                                    </div>
+                                </div>
+
+                                <MetaDescTextarea
+                                    v-model="currentTranslation.meta_desc"
+                                    maxlength="255"
+                                    class="w-full"
+                                />
+
+                                <InputError class="mt-2" :message="getError('meta_desc')" />
+                            </div>
+
+                            <div class="flex justify-end mt-4">
+                                <MetatagsButton @click.prevent="generateMetaFields">
+                                    <template #icon>
+                                        <svg
+                                            class="w-4 h-4 fill-current text-slate-600 shrink-0 mr-2"
+                                            viewBox="0 0 16 16"
+                                        >
+                                            <path
+                                                d="M13 7h2v6a1 1 0 01-1 1H4v2l-4-3 4-3v2h9V7zM3 9H1V3a1 1 0 011-1h10V0l4 3-4 3V4H3v5z"
+                                            />
+                                        </svg>
+                                    </template>
+                                    {{ t('generateMetaTags') }}
+                                </MetatagsButton>
+                            </div>
                         </div>
 
-                        <!-- Биография -->
-                        <div class="mb-3 flex flex-col items-start">
-                            <LabelInput for="bio" :value="t('bio')" />
-                            <TinyEditor v-model="form.bio" :height="500" />
-                            <InputError class="mt-2" :message="form.errors.bio" />
-                        </div>
-
-                        <!-- Социальные ссылки -->
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput for="social" :value="t('socialLinks')" />
+
                             <div class="w-full space-y-2">
                                 <div
                                     v-for="(row, idx) in socialRows"
@@ -495,6 +654,7 @@ const submit = () => {
                                         class="w-full lg:w-1/3"
                                         autocomplete="off"
                                     />
+
                                     <InputText
                                         :id="`social_url_${idx}`"
                                         v-model="row.url"
@@ -502,14 +662,13 @@ const submit = () => {
                                         class="w-full lg:flex-1"
                                         autocomplete="off"
                                     />
-                                    <!-- Удалить ссылку -->
+
                                     <DeleteIconButton
                                         :title="t('delete')"
                                         @click="removeSocialRow(idx)"
                                     />
                                 </div>
 
-                                <!-- Добавить ссылку -->
                                 <PrimaryButton
                                     type="button"
                                     class="mt-2 float-end"
@@ -531,109 +690,13 @@ const submit = () => {
                                     {{ t('addLink') }}
                                 </PrimaryButton>
                             </div>
+
                             <InputError
                                 class="mt-2"
                                 :message="form.errors.social_links"
                             />
                         </div>
 
-                        <!-- Мета title -->
-                        <div class="mb-3 flex flex-col items-start">
-                            <div class="flex justify-between w-full">
-                                <LabelInput
-                                    for="meta_title"
-                                    :value="t('metaTitle')"
-                                />
-                                <div
-                                    class="text-md text-gray-900 dark:text-gray-400 mt-1"
-                                >
-                                    {{ form.meta_title.length }} / 160
-                                    {{ t('characters') }}
-                                </div>
-                            </div>
-                            <InputText
-                                id="meta_title"
-                                type="text"
-                                v-model="form.meta_title"
-                                maxlength="160"
-                                autocomplete="url"
-                            />
-                            <InputError
-                                class="mt-2"
-                                :message="form.errors.meta_title"
-                            />
-                        </div>
-
-                        <!-- Мета keywords -->
-                        <div class="mb-3 flex flex-col items-start">
-                            <div class="flex justify-between w-full">
-                                <LabelInput
-                                    for="meta_keywords"
-                                    :value="t('metaKeywords')"
-                                />
-                                <div
-                                    class="text-md text-gray-900 dark:text-gray-400 mt-1"
-                                >
-                                    {{ form.meta_keywords.length }} / 255
-                                    {{ t('characters') }}
-                                </div>
-                            </div>
-                            <InputText
-                                id="meta_keywords"
-                                type="text"
-                                v-model="form.meta_keywords"
-                                maxlength="255"
-                                autocomplete="url"
-                            />
-                            <InputError
-                                class="mt-2"
-                                :message="form.errors.meta_keywords"
-                            />
-                        </div>
-
-                        <!-- Мета Description -->
-                        <div class="mb-3 flex flex-col items-start">
-                            <div class="flex justify-between w-full">
-                                <LabelInput
-                                    for="meta_desc"
-                                    :value="t('metaDescription')"
-                                />
-                                <div
-                                    class="text-md text-gray-900 dark:text-gray-400 mt-1"
-                                >
-                                    {{ form.meta_desc.length }} / 255
-                                    {{ t('characters') }}
-                                </div>
-                            </div>
-                            <MetaDescTextarea
-                                v-model="form.meta_desc"
-                                maxlength="255"
-                                class="w-full"
-                            />
-                            <InputError
-                                class="mt-2"
-                                :message="form.errors.meta_desc"
-                            />
-                        </div>
-
-                        <!-- Кнопка генерации метатегов -->
-                        <div class="flex justify-end mt-4">
-                            <MetatagsButton @click.prevent="generateMetaFields">
-                                <template #icon>
-                                    <svg
-                                        class="w-4 h-4 fill-current text-slate-600 shrink-0 mr-2"
-                                        viewBox="0 0 16 16"
-                                    >
-                                        <path
-                                            d="M13 7h2v6a1 1 0 01-1 1H4v2l-4-3 4-3v2h9V7zM3 9H1V3a1 1 0 011-1h10V0l4 3-4 3V4H3v5z"
-                                        />
-                                    </svg>
-                                </template>
-                                {{ t('generateMetaTags') }}
-                            </MetatagsButton>
-                        </div>
-
-                        <!-- Блок загрузки новых изображений -->
                         <div class="mt-4">
                             <MultiImageUpload @update:images="handleNewImagesUpdate" />
                         </div>
@@ -641,9 +704,7 @@ const submit = () => {
 
                     <div class="flex items-center justify-center mt-4 gap-3">
                         <DefaultButton
-                            :href="route('admin.instructorProfiles.index')"
-                            class="mb-3"
-                        >
+                            :href="route('admin.schoolInstructorProfiles.index')">
                             <template #icon>
                                 <svg
                                     class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"

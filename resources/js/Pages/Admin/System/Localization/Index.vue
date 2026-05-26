@@ -13,9 +13,9 @@ import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 
 /**
  * Корневые файлы локалей должны оставаться в /locales,

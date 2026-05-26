@@ -28,6 +28,12 @@ Route::prefix('actions')->name('actions.')->group(function () { // Группи�
     require __DIR__ . '/bulk-main.php';
     require __DIR__ . '/bulk-right.php';
 
+    // Переключение флагов курсов New/Hit/Sale
+    require __DIR__ . '/school-course-flags.php';
+
+    // Переключение флагов курсов New/Hit/Sale массовое
+    require __DIR__ . '/school-course-flags-bulk.php';
+
     // Обновление сортировки (bulk / drag-and-drop)
     require __DIR__ . '/bulk-sort.php';
 

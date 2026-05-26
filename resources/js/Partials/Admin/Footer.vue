@@ -4,7 +4,7 @@ import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Inertia } from '@inertiajs/inertia'
 import axios from 'axios'
-import LocaleSelectOption from '@/Components/Admin/Select/LocaleSelectOption.vue'
+import LocaleSelectOption from '@/Components/Admin/UI/Select/LocaleSelectOption.vue'
 
 const page = usePage()
 const { t, locale } = useI18n()

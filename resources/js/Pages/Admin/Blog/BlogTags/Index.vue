@@ -14,18 +14,19 @@ import { useToast } from 'vue-toastification'
 import { router, usePage } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import BulkActionSelect from '@/Components/Admin/Blog/Tag/Select/BulkActionSelect.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
-import SortSelect from '@/Components/Admin/Blog/Tag/Sort/SortSelect.vue'
-import TagTable from '@/Components/Admin/Blog/Tag/Table/TagTable.vue'
-import TagCardGrid from '@/Components/Admin/Blog/Tag/View/TagCardGrid.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+
+import BulkActionSelect from '@/Components/Admin/Blog/BlogTag/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/Blog/BlogTag/Sort/SortSelect.vue'
+import TagTable from '@/Components/Admin/Blog/BlogTag/Table/TagTable.vue'
+import TagCardGrid from '@/Components/Admin/Blog/BlogTag/View/TagCardGrid.vue'
 
 const { t, locale } = useI18n()
 const toast = useToast()
@@ -38,11 +39,11 @@ const props = defineProps({
     tags: { type: Array, default: () => [] },
     tagsCount: { type: Number, default: 0 },
 
-    adminCountTags: { type: Number, default: 15 },
-    adminSortTags: { type: String, default: 'idDesc' },
+    adminBlogTagsPerPage: { type: Number, default: 20 },
+    adminBlogTagsDefaultSort: { type: String, default: 'idDesc' },
 
-    currentLocale: { type: String, default: 'ru' },
-    availableLocales: { type: Array, default: () => ['ru', 'en', 'kk'] },
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
 
     search: { type: String, default: '' },
     sortParam: { type: String, default: '' },
@@ -96,7 +97,7 @@ watch(viewMode, (value) => {
 })
 
 /** Количество элементов на странице */
-const itemsPerPage = ref(props.adminCountTags || 15)
+const itemsPerPage = ref(props.adminBlogTagsPerPage || 20)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
@@ -112,7 +113,7 @@ watch(itemsPerPage, (newVal) => {
 })
 
 /** Параметр сортировки */
-const sortParam = ref(props.sortParam || props.adminSortTags || 'idDesc')
+const sortParam = ref(props.sortParam || props.adminBlogTagsDefaultSort || 'idDesc')
 
 watch(sortParam, (newVal) => {
     router.put(
@@ -557,7 +558,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
                 <div
                     v-if="tagsCount"
-                    class="flex items-center justify-between mb-3"
+                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
                 >
                     <CountTable>{{ tagsCount }}</CountTable>
 
@@ -567,6 +568,19 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     />
 
                     <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div
+                    v-if="tagsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredTags.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
                 </div>
 
                 <!-- Таблица -->

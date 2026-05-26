@@ -26,9 +26,9 @@ const textClasses = computed(() => {
 <template>
     <div :class="containerClasses">
         <Link :href="href" :class="classes">
-            <slot/>
+            <slot />
             <span class="text-lg font-medium transition-opacity duration-200 max-w-full" :class="textClasses">
-                <slot name="text"/>
+                <slot name="text" />
             </span>
         </Link>
     </div>

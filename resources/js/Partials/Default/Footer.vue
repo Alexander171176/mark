@@ -41,7 +41,7 @@
                     <div class="has-text-centered flex justify-center">
                         <a href="https://cssninja.io/" target="_blank">
                             <span class="is-sr-only">Css Ninja</span>
-                            <svg id="Layer_1" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                            <svg id="Layer_1" xmlns="http://www.w3.org/2000/svg"
                                  x="0px" y="0px" viewBox="450 -55.9 726 232.8"
                                  xml:space="preserve"><g><g>
                             <path class="st0"

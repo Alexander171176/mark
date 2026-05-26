@@ -11,18 +11,19 @@ import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
-import BulkActionSelect from '@/Components/Admin/Comment/Select/BulkActionSelect.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import SortSelect from '@/Components/Admin/Comment/Sort/SortSelect.vue'
-import CommentTable from '@/Components/Admin/Comment/Table/CommentTable.vue'
-import CommentCardGrid from '@/Components/Admin/Comment/View/CommentCardGrid.vue'
-import CommentDetailsModal from '@/Components/Admin/Comment/Modal/CommentDetailsModal.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+
+import BulkActionSelect from '@/Components/Admin/Blog/Comment/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/Blog/Comment/Sort/SortSelect.vue'
+import CommentTable from '@/Components/Admin/Blog/Comment/Table/CommentTable.vue'
+import CommentCardGrid from '@/Components/Admin/Blog/Comment/View/CommentCardGrid.vue'
+import CommentDetailsModal from '@/Components/Admin/Blog/Comment/Modal/CommentDetailsModal.vue'
 
 const { t, locale } = useI18n()
 const toast = useToast()
@@ -32,8 +33,8 @@ const props = defineProps({
     comments: Array,
     commentsCount: Number,
 
-    adminCountComments: Number,
-    adminSortComments: String,
+    adminCommentsPerPage: Number,
+    adminCommentsDefaultSort: String,
 
     isAdmin: Boolean,
 
@@ -64,7 +65,7 @@ const patchLocal = (id, patch) => {
 }
 
 /** Пагинация */
-const itemsPerPage = ref(Number(props.adminCountComments || 10))
+const itemsPerPage = ref(Number(props.adminCommentsPerPage || 10))
 watch(itemsPerPage, (newVal) => {
     router.put(route('admin.settings.updateAdminCountComments'), { value: newVal }, {
         preserveScroll: true,
@@ -75,7 +76,7 @@ watch(itemsPerPage, (newVal) => {
 })
 
 /** Параметры сортировки */
-const sortParam = ref(props.adminSortComments || 'idDesc')
+const sortParam = ref(props.adminCommentsDefaultSort || 'idDesc')
 watch(sortParam, (newVal) => {
     router.put(route('admin.settings.updateAdminSortComments'), { value: newVal }, {
         preserveScroll: true,
@@ -387,23 +388,57 @@ const approveComment = (comment, status = 1, note = '') => {
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
-            <div class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
-                  overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
-                  bg-opacity-95 dark:bg-opacity-95">
+            <div
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                       bg-opacity-95 dark:bg-opacity-95"
+            >
 
-                <div class="sm:flex sm:justify-end sm:items-center mb-2">
-                    <BulkActionSelect v-if="commentsCount" @change="handleBulkAction" />
+                <SearchInput
+                    v-if="commentsCount"
+                    v-model="searchQuery"
+                    :placeholder="t('search')" />
+
+                <div
+                    v-if="commentsCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val" />
                 </div>
 
-                <SearchInput v-if="commentsCount" v-model="searchQuery" :placeholder="t('search')" />
+                <div
+                    v-if="commentsCount"
+                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
+                >
+                    <CountTable>{{ commentsCount }}</CountTable>
 
-                <!-- Count + переключатель вида -->
-                <div v-if="commentsCount" class="flex items-center justify-between my-2">
-                    <div class="flex items-center gap-3">
-                        <CountTable>{{ commentsCount }}</CountTable>
-                    </div>
+                    <BulkActionSelect
+                        v-if="commentsCount"
+                        @change="handleBulkAction" />
 
                     <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div
+                    v-if="commentsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3">
+
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredComments.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
                 </div>
 
                 <!-- Таблица -->
@@ -440,8 +475,9 @@ const approveComment = (comment, status = 1, note = '') => {
                     @close="closeCommentDetailsModal"
                 />
 
-                <div class="flex justify-between items-center flex-col md:flex-row my-1" v-if="commentsCount">
-                    <ItemsPerPageSelect :items-per-page="itemsPerPage" @update:itemsPerPage="itemsPerPage = $event" />
+                <div
+                    v-if="commentsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3">
 
                     <Pagination
                         :current-page="currentPage"
@@ -451,10 +487,10 @@ const approveComment = (comment, status = 1, note = '') => {
                         @update:itemsPerPage="itemsPerPage = $event"
                     />
 
-                    <SortSelect :sortParam="sortParam" @update:sortParam="val => sortParam = val" />
                 </div>
 
-                <div v-if="props.error" class="mt-3 text-sm font-semibold text-rose-700 dark:text-rose-300">
+                <div v-if="props.error"
+                     class="mt-3 text-sm font-semibold text-rose-700 dark:text-rose-300">
                     {{ props.error }}
                 </div>
             </div>

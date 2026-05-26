@@ -6,7 +6,7 @@ import DraggableSidebarLink from '@/Components/User/Links/DraggableSidebarLink.v
 import {usePage} from "@inertiajs/vue3";
 
 const { siteSettings } = usePage().props;
-const props = defineProps({
+defineProps({
     expanded: Boolean
 });
 
@@ -85,7 +85,7 @@ onMounted(() => {
 <template>
     <Draggable v-model="mainLinks" @end="handleDragEnd" itemKey="id" group="links" tag="ul">
         <template #item="{ element }">
-            <DraggableSidebarLink :id="element" :expanded="expanded"/>
+            <DraggableSidebarLink :id="element" :expanded="expanded" />
         </template>
     </Draggable>
 
@@ -97,7 +97,7 @@ onMounted(() => {
     <Draggable v-if="showHiddenLinks"
                v-model="hiddenLinks" @end="handleDragEnd" itemKey="id" group="links" tag="ul" class="my-3">
         <template #item="{ element }">
-            <DraggableSidebarLink :id="element" :expanded="expanded"/>
+            <DraggableSidebarLink :id="element" :expanded="expanded" />
         </template>
     </Draggable>
 

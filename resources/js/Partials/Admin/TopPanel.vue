@@ -230,19 +230,6 @@ const togglePanel = () => {
 </template>
 
 <style scoped>
-.top-panel-enter-active,
-.top-panel-leave-active {
-    transition: transform 0.3s ease;
-}
-.top-panel-enter-from,
-.top-panel-leave-to {
-    transform: translateY(-100%);
-}
-.top-panel-enter-to,
-.top-panel-leave-from {
-    transform: translateY(0);
-}
-
 .base-link {
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;

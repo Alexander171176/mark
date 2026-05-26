@@ -1,11 +1,13 @@
 <script setup>
 import {ref, watch, defineProps} from 'vue';
-import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
-import SiteLayoutSetting from '@/Components/Admin/Setting/Parameters/SiteLayoutSetting.vue';
-import DowntimeSetting from '@/Components/Admin/Setting/Parameters/DowntimeSetting.vue';
-import Modal from '@/Components/Admin/Setting/Modal/Modal.vue';
 import {useI18n} from 'vue-i18n';
+
+import AdminLayout from '@/Layouts/AdminLayout.vue';
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
+
+import SiteLayoutSetting from '@/Components/Admin/System/Setting/Parameters/SiteLayoutSetting.vue';
+import DowntimeSetting from '@/Components/Admin/System/Setting/Parameters/DowntimeSetting.vue';
+import Modal from '@/Components/Admin/System/Setting/Modal/Modal.vue';
 
 const {t} = useI18n();
 

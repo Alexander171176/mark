@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import CreateTeamForm from '@/Pages/Teams/Partials/CreateTeamForm.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

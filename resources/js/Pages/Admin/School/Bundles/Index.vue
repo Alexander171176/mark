@@ -10,20 +10,20 @@ import { useToast } from 'vue-toastification'
 import { router, Link } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 
 // 🔹 новые компоненты бандлов
-import BulkActionSelect from '@/Components/Admin/Bundle/Select/BulkActionSelect.vue'
-import SortSelect from '@/Components/Admin/Bundle/Sort/SortSelect.vue'
-import BundleTable from '@/Components/Admin/Bundle/Table/BundleTable.vue'
-import BundleCardGrid from '@/Components/Admin/Bundle/View/BundleCardGrid.vue'
+import BulkActionSelect from '@/Components/Admin/School/Bundle/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/School/Bundle/Sort/SortSelect.vue'
+import BundleTable from '@/Components/Admin/School/Bundle/Table/BundleTable.vue'
+import BundleCardGrid from '@/Components/Admin/School/Bundle/View/BundleCardGrid.vue'
 
 const { t } = useI18n()
 const toast = useToast()

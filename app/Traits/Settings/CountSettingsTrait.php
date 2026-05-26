@@ -10,12 +10,12 @@ trait CountSettingsTrait
     /**
      * Тип значения для всех count-настроек.
      */
-    private string $countSettingType = 'number';
+    protected string $countSettingType = 'number';
 
     /**
      * Категория всех count-настроек.
      */
-    private string $countSettingCategory = 'admin';
+    protected string $countSettingCategory = 'admin';
 
     /**
      * Сообщение об успешном обновлении.
@@ -35,7 +35,7 @@ trait CountSettingsTrait
      * @param string $configKey Ключ в конфигурации site_settings
      * @return RedirectResponse
      */
-    private function countSetting(
+    protected function countSetting(
         UpdateCountSettingRequest $request,
         string $optionKey,
         string $configKey
@@ -51,309 +51,234 @@ trait CountSettingsTrait
         );
     }
 
-    /**
-     * Обновление количества элементов в настройках
-     */
+    /** Обновление количества элементов в настройках */
     public function updateAdminCountSettings(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountSettings', 'site_settings.AdminCountSettings');
+            'adminSystemSettingsPerPage', 'site_settings.adminSystemSettingsPerPage');
     }
 
-    /**
-     * Обновление количества элементов в категориях
-     */
-    public function updateAdminCountCategories(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountCategories', 'site_settings.AdminCountCategories');
-    }
-
-    /**
-     * Обновление количества элементов в рубриках
-     */
+    /** Обновление количества элементов в рубриках */
     public function updateAdminCountRubrics(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountRubrics', 'site_settings.AdminCountRubrics');
+            'adminBlogRubricsPerPage', 'site_settings.adminBlogRubricsPerPage');
     }
 
-    /**
-     * Обновление количества элементов в статьях
-     */
+    /** Обновление количества элементов в статьях */
     public function updateAdminCountArticles(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountArticles', 'site_settings.AdminCountArticles');
+            'adminBlogArticlesPerPage', 'site_settings.adminBlogArticlesPerPage');
     }
 
-    /**
-     * Обновление количества элементов в тегах
-     */
+    /** Обновление количества элементов в тегах */
     public function updateAdminCountTags(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountTags', 'site_settings.AdminCountTags');
+            'adminBlogTagsPerPage', 'site_settings.adminBlogTagsPerPage');
     }
 
-    /**
-     * Обновление количества элементов в комментариях
-     */
-    public function updateAdminCountComments(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountComments', 'site_settings.AdminCountComments');
-    }
-
-    /**
-     * Обновление количества элементов в баннерах
-     */
+    /** Обновление количества элементов в баннерах */
     public function updateAdminCountBanners(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountBanners', 'site_settings.AdminCountBanners');
+            'adminBlogBannersPerPage', 'site_settings.adminBlogBannersPerPage');
     }
 
-    /**
-     * Обновление количества элементов в видео
-     */
+    /** Обновление количества элементов в видео */
     public function updateAdminCountVideos(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountVideos', 'site_settings.AdminCountVideos');
+            'adminBlogVideosPerPage', 'site_settings.adminBlogVideosPerPage');
     }
 
-    /**
-     * Обновление количества элементов в преподователях
-     */
-    public function updateAdminCountInstructors(UpdateCountSettingRequest $request): RedirectResponse
+    /** Обновление количества элементов в комментариях */
+    public function updateAdminCountComments(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountInstructors', 'site_settings.AdminCountInstructors');
+            'adminCommentsPerPage', 'site_settings.adminCommentsPerPage');
     }
 
-    /**
-     * Обновление количества элементов в категориях курсов
-     */
-    public function updateAdminCountLearningCategories(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountLearningCategories', 'site_settings.AdminCountLearningCategories');
-    }
-
-    /**
-     * Обновление количества элементов в тегах обучения
-     */
-    public function updateAdminCountHashtags(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountHashtags', 'site_settings.AdminCountHashtags');
-    }
-
-    /**
-     * Обновление количества элементов в курсах
-     */
-    public function updateAdminCountLearningCourses(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountLearningCourses', 'site_settings.AdminCountLearningCourses');
-    }
-
-    /**
-     * Обновление количества элементов в модулях обучения
-     */
-    public function updateAdminCountLearningModules(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountLearningModules', 'site_settings.AdminCountLearningModules');
-    }
-
-    /**
-     * Обновление количества элементов в уроках обучения
-     */
-    public function updateAdminCountLearningLessons(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountLearningLessons', 'site_settings.AdminCountLearningLessons');
-    }
-
-    /**
-     * Обновление количества элементов в заданиях
-     */
-    public function updateAdminCountAssignments(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountAssignments', 'site_settings.AdminCountAssignments');
-    }
-
-    /**
-     * Обновление количества элементов в расписании потоков
-     */
-    public function updateAdminCountCourseSchedules(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountCourseSchedules', 'site_settings.AdminCountCourseSchedules');
-    }
-
-    /**
-     * Обновление количества элементов в записях на потоки
-     */
-    public function updateAdminCountCohortEnrollments(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountCohortEnrollments', 'site_settings.AdminCountCohortEnrollments');
-    }
-
-    /**
-     * Обновление количества элементов в зачислениях на потоки
-     */
-    public function updateAdminCountEnrollments(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountEnrollments', 'site_settings.AdminCountEnrollments');
-    }
-
-    /**
-     * Обновление количества элементов в квизах
-     */
-    public function updateAdminCountQuizzes(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountQuizzes', 'site_settings.AdminCountQuizzes');
-    }
-
-    /**
-     * Обновление количества элементов в вопросах квиза
-     */
-    public function updateAdminCountQuizQuestions(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountQuizQuestions', 'site_settings.AdminCountQuizQuestions');
-    }
-
-    /**
-     * Обновление количества элементов в ответах квиза
-     */
-    public function updateAdminCountQuizAnswers(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountQuizAnswers', 'site_settings.AdminCountQuizAnswers');
-    }
-
-    /**
-     * Обновление количества элементов в прохождениях квиза
-     */
-    public function updateAdminCountQuizAttempts(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountQuizAttempts', 'site_settings.AdminCountQuizAttempts');
-    }
-
-    /**
-     * Обновление количества элементов в ответах на квизы
-     */
-    public function updateAdminCountQuizAttemptItems(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountQuizAttemptItems', 'site_settings.AdminCountQuizAttemptItems');
-    }
-
-    /**
-     * Обновление количества элементов в бандлах
-     */
-    public function updateAdminCountBundles(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'AdminCountBundles', 'site_settings.AdminCountBundles');
-    }
-
-    /**
-     * Обновление количества элементов в валютах
-     */
+    /** Обновление количества элементов в валютах */
     public function updateAdminCountCurrencies(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountCurrencies', 'site_settings.AdminCountCurrencies');
+            'adminFinanceCurrenciesPerPage', 'site_settings.adminFinanceCurrenciesPerPage');
     }
 
-    /**
-     * Обновление количества элементов в заказах
-     */
+    /** Обновление количества элементов в тегах обучения */
+    public function updateAdminCountHashtags(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolHashtagsPerPage', 'site_settings.adminSchoolHashtagsPerPage');
+    }
+
+    /** Обновление количества элементов в преподователях */
+    public function updateAdminCountInstructors(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolInstructorsPerPage', 'site_settings.adminSchoolInstructorsPerPage');
+    }
+
+    /** Обновление количества элементов в категориях курсов */
+    public function updateAdminCountTracks(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolTracksPerPage', 'site_settings.adminSchoolTracksPerPage');
+    }
+
+    /** Обновление количества элементов в курсах */
+    public function updateAdminCountCourses(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolCoursesPerPage', 'site_settings.adminSchoolCoursesPerPage');
+    }
+
+    /** Обновление количества элементов в модулях обучения */
+    public function updateAdminCountModules(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolModulesPerPage', 'site_settings.adminSchoolModulesPerPage');
+    }
+
+    /** Обновление количества элементов в уроках обучения */
+    public function updateAdminCountLessons(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolLessonsPerPage', 'site_settings.adminSchoolLessonsPerPage');
+    }
+
+    /** Обновление количества элементов в заданиях */
+    public function updateAdminCountAssignments(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolAssignmentsPerPage', 'site_settings.adminSchoolAssignmentsPerPage');
+    }
+
+    /** Обновление количества элементов в расписании потоков */
+    public function updateAdminCountCourseSchedules(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolCourseSchedulesPerPage', 'site_settings.adminSchoolCourseSchedulesPerPage');
+    }
+
+    /** Обновление количества элементов в записях на потоки */
+    public function updateAdminCountCohortEnrollments(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolCohortEnrollmentsPerPage', 'site_settings.adminSchoolCohortEnrollmentsPerPage');
+    }
+
+    /** Обновление количества элементов в зачислениях на потоки */
+    public function updateAdminCountEnrollments(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolEnrollmentsPerPage', 'site_settings.adminSchoolEnrollmentsPerPage');
+    }
+
+    /** Обновление количества элементов в квизах */
+    public function updateAdminCountQuizzes(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolQuizzesPerPage', 'site_settings.adminSchoolQuizzesPerPage');
+    }
+
+    /** Обновление количества элементов в вопросах квиза */
+    public function updateAdminCountQuizQuestions(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolQuizQuestionsPerPage', 'site_settings.adminSchoolQuizQuestionsPerPage');
+    }
+
+    /** Обновление количества элементов в ответах квиза */
+    public function updateAdminCountQuizAnswers(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolQuizAnswersPerPage', 'site_settings.adminSchoolQuizAnswersPerPage');
+    }
+
+    /** Обновление количества элементов в прохождениях квиза */
+    public function updateAdminCountQuizAttempts(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolQuizAttemptsPerPage', 'site_settings.adminSchoolQuizAttemptsPerPage');
+    }
+
+    /** Обновление количества элементов в попытках ответа квиза */
+    public function updateAdminCountQuizAttemptItems(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolQuizAttemptItemsPerPage', 'site_settings.adminSchoolQuizAttemptItemsPerPage');
+    }
+
+    /** Обновление количества элементов в бандлах */
+    public function updateAdminCountBundles(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSchoolBundlesPerPage', 'site_settings.adminSchoolBundlesPerPage');
+    }
+
+    /** Обновление количества элементов в заказах школы */
     public function updateAdminCountOrders(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountOrders', 'site_settings.AdminCountOrders');
+            'adminSchoolOrdersPerPage', 'site_settings.adminSchoolOrdersPerPage');
     }
 
-    /**
-     * Обновление количества элементов в прайсах курсов
-     */
+    /** Обновление количества элементов в прайсах курсов */
     public function updateAdminCountCoursePrices(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountCoursePrices', 'site_settings.AdminCountCoursePrices');
+            'adminSchoolCoursePricesPerPage', 'site_settings.adminSchoolCoursePricesPerPage');
     }
 
-    /**
-     * Обновление количества элементов в прайсах наборов курсов
-     */
+    /** Обновление количества элементов в прайсах наборов курсов */
     public function updateAdminCountBundlePrices(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountBundlePrices', 'site_settings.AdminCountBundlePrices');
+            'adminSchoolBundlePricesPerPage', 'site_settings.adminSchoolBundlePricesPerPage');
     }
 
-    /**
-     * Обновление количества элементов в тарифных планах
-     */
+    /** Обновление количества элементов в тарифных планах */
     public function updateAdminCountSubscriptionPlans(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountSubscriptionPlans', 'site_settings.AdminCountSubscriptionPlans');
+            'adminSchoolSubscriptionPlansPerPage', 'site_settings.adminSchoolSubscriptionPlansPerPage');
     }
 
-    /**
-     * Обновление количества элементов в пользователях
-     */
+    /** Обновление количества элементов в пользователях */
     public function updateAdminCountUsers(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountUsers', 'site_settings.AdminCountUsers');
+            'adminSystemUsersPerPage', 'site_settings.adminSystemUsersPerPage');
     }
 
-    /**
-     * Обновление количества элементов в ролях
-     */
+    /** Обновление количества элементов в ролях */
     public function updateAdminCountRoles(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountRoles', 'site_settings.AdminCountRoles');
+            'adminSystemRolesPerPage', 'site_settings.adminSystemRolesPerPage');
     }
 
-    /**
-     * Обновление количества элементов в разрешениях
-     */
+    /** Обновление количества элементов в разрешениях */
     public function updateAdminCountPermissions(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountPermissions', 'site_settings.AdminCountPermissions');
+            'adminSystemPermissionsPerPage', 'site_settings.adminSystemPermissionsPerPage');
     }
 
-    /**
-     * Обновление количества элементов в фирмах
-     */
+    /** Обновление количества элементов в фирмах */
     public function updateAdminCountMarketCompanies(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountMarketCompanies', 'site_settings.AdminCountMarketCompanies');
+            'adminMarketCompaniesPerPage', 'site_settings.adminMarketCompaniesPerPage');
     }
 
-    /**
-     * Обновление количества элементов в витринах
-     */
+    /** Обновление количества элементов в витринах */
     public function updateAdminCountMarketStorefronts(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'AdminCountMarketStorefronts', 'site_settings.AdminCountMarketStorefronts');
+            'adminMarketStorefrontsPerPage', 'site_settings.adminMarketStorefrontsPerPage');
     }
 }

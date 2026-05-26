@@ -7,19 +7,21 @@ import { useToast } from "vue-toastification";
 import { useI18n } from 'vue-i18n';
 import {defineProps} from 'vue';
 import { useForm } from '@inertiajs/vue3'
+
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import LabelInput from '@/Components/Admin/Input/LabelInput.vue'
-import InputText from '@/Components/Admin/Input/InputText.vue'
-import InputError from '@/Components/Admin/Input/InputError.vue'
-import PrimaryButton from '@/Components/Admin/Buttons/PrimaryButton.vue'
-import MetaDescTextarea from '@/Components/Admin/Textarea/MetaDescTextarea.vue';
-import LabelCheckbox from '@/Components/Admin/Checkbox/LabelCheckbox.vue';
-import ActivityCheckbox from '@/Components/Admin/Checkbox/ActivityCheckbox.vue';
-import TypeSelect from "@/Components/Admin/Parameters/Select/TypeSelect.vue";
-import InputNumber from "@/Components/Admin/Input/InputNumber.vue";
-import CategorySelect from "@/Components/Admin/Parameters/Select/CategorySelect.vue";
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
+import InputText from '@/Components/Admin/UI/Input/InputText.vue'
+import InputError from '@/Components/Admin/UI/Input/InputError.vue'
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
+import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue';
+import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue';
+import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue';
+import InputNumber from "@/Components/Admin/UI/Input/InputNumber.vue";
+
+import CategorySelect from "@/Components/Admin/System/Parameters/Select/CategorySelect.vue";
+import TypeSelect from "@/Components/Admin/System/Parameters/Select/TypeSelect.vue";
 
 // --- Инициализация ---
 const toast = useToast();

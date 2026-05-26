@@ -1,5 +1,5 @@
 <script setup>
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue'
+import ResponsiveNavLink from '@/Components/Base/ResponsiveNavLink.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

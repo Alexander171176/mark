@@ -2,9 +2,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import CurrencyRatesTable from '@/Components/Admin/CurrencyRate/Table/CurrencyRatesTable.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+
+import CurrencyRatesTable from '@/Components/Admin/Finance/CurrencyRate/Table/CurrencyRatesTable.vue'
 
 const { t } = useI18n()
 

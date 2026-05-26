@@ -1,84 +1,130 @@
 <script setup>
 /**
  * @version PulsarCMS 1.0
- * @author Александр Косолапов
+ * @author Александр Косолапов <kosolapov1976@gmail.com>
+ *
  * Редактирование урока
  */
-import { ref, computed, watch, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { transliterate } from '@/utils/transliteration'
+import VueMultiselect from 'vue-multiselect'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import PrimaryButton from '@/Components/Admin/Buttons/PrimaryButton.vue'
-import ClearMetaButton from '@/Components/Admin/Buttons/ClearMetaButton.vue'
-import MetatagsButton from '@/Components/Admin/Buttons/MetatagsButton.vue'
-import LabelCheckbox from '@/Components/Admin/Checkbox/LabelCheckbox.vue'
-import ActivityCheckbox from '@/Components/Admin/Checkbox/ActivityCheckbox.vue'
-import TinyEditor from '@/Components/Admin/TinyEditor/TinyEditor.vue'
-import MetaDescTextarea from '@/Components/Admin/Textarea/MetaDescTextarea.vue'
-import InputNumber from '@/Components/Admin/Input/InputNumber.vue'
-import InputDecimalExt from '@/Components/Admin/Input/InputDecimalExt.vue'
-import LabelInput from '@/Components/Admin/Input/LabelInput.vue'
-import InputText from '@/Components/Admin/Input/InputText.vue'
-import InputError from '@/Components/Admin/Input/InputError.vue'
-import SelectLocale from '@/Components/Admin/Select/SelectLocale.vue'
-import SelectStatus from '@/Components/Admin/Lesson/Select/SelectStatus.vue'
-import SelectAvailability from '@/Components/Admin/Lesson/Select/SelectAvailability.vue'
-import SelectAccessType from '@/Components/Admin/Lesson/Select/SelectAccessType.vue'
-import SelectPreviewMode from '@/Components/Admin/Lesson/Select/SelectPreviewMode.vue'
-import LessonMetricsBlock from '@/Components/Admin/Lesson/Block/LessonMetricsBlock.vue'
-import LessonContentSelect from '@/Components/Admin/Lesson/Block/LessonContentSelect.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
+import ClearMetaButton from '@/Components/Admin/UI/Buttons/ClearMetaButton.vue'
+import MetatagsButton from '@/Components/Admin/UI/Buttons/MetatagsButton.vue'
+import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue'
+import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue'
+import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
+import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
+import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
+import InputDecimalExt from '@/Components/Admin/UI/Input/InputDecimalExt.vue'
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
+import InputText from '@/Components/Admin/UI/Input/InputText.vue'
+import InputError from '@/Components/Admin/UI/Input/InputError.vue'
+import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
+import MultiImageEdit from '@/Components/Admin/UI/Image/MultiImageEdit.vue'
+import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 
-import VueMultiselect from 'vue-multiselect'
-import MultiImageUpload from '@/Components/Admin/Image/MultiImageUpload.vue'
-import MultiImageEdit from '@/Components/Admin/Image/MultiImageEdit.vue'
+import SelectStatus from '@/Components/Admin/School/Lesson/Select/SelectStatus.vue'
+import SelectAvailability from '@/Components/Admin/School/Lesson/Select/SelectAvailability.vue'
+import SelectAccessType from '@/Components/Admin/School/Lesson/Select/SelectAccessType.vue'
+import SelectPreviewMode from '@/Components/Admin/School/Lesson/Select/SelectPreviewMode.vue'
+import LessonContentSelect from '@/Components/Admin/School/Lesson/Block/LessonContentSelect.vue'
 
-// --- Инициализация ---
-const { t } = useI18n()
+// Toast уведомления
 const toast = useToast()
 
-/**
- * Пропсы из контроллера:
- *  - lesson
- *  - modules (с course внутри)
- *  - hashtags
- *  - articles
- *  - videos
- *  - currentLocale
- */
+// Локализация
+const { t } = useI18n()
+
+// Props страницы редактирования урока
 const props = defineProps({
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
     lesson: { type: Object, required: true },
     modules: { type: Array, default: () => [] },
     hashtags: { type: Array, default: () => [] },
-    currentLocale: { type: String, default: 'ru' },
     articles: { type: Array, default: () => [] },
     videos: { type: Array, default: () => [] },
 })
 
-/** Инициализация формы на основе LessonResource */
+// Пустая структура перевода
+const makeTranslation = () => ({
+    title: '',
+    subtitle: '',
+    short: '',
+    description: '',
+    meta_title: '',
+    meta_keywords: '',
+    meta_desc: '',
+})
+
+// Формирование переводов из lesson.translations
+const buildTranslations = () => {
+    const result = {}
+
+    ;(props.lesson.translations || []).forEach((translation) => {
+        result[translation.locale] = {
+            title: translation.title || '',
+            subtitle: translation.subtitle || '',
+            short: translation.short || '',
+            description: translation.description || '',
+            meta_title: translation.meta_title || '',
+            meta_keywords: translation.meta_keywords || '',
+            meta_desc: translation.meta_desc || '',
+        }
+    })
+
+    // Определение локали по умолчанию
+    const defaultLocale =
+        props.currentLocale ||
+        props.lesson.translation?.locale ||
+        props.availableLocales[0] ||
+        'ru'
+
+    // Если переводов нет — создаём дефолтный
+    if (!Object.keys(result).length) {
+        result[defaultLocale] = makeTranslation()
+    }
+
+    // Гарантия существования дефолтной локали
+    if (!result[defaultLocale]) {
+        result[defaultLocale] = makeTranslation()
+    }
+
+    return result
+}
+
+// Активная локаль по умолчанию
+const defaultLocale =
+    props.currentLocale ||
+    props.lesson.translation?.locale ||
+    props.availableLocales[0] ||
+    'ru'
+
+// Текущая активная локаль
+const activeLocale = ref(defaultLocale)
+
+// Основная форма редактирования урока
 const form = useForm({
     _method: 'PUT',
 
-    // связь
-    module_id: props.lesson.module_id ?? null,
+    school_module_id:
+        props.lesson.school_module_id ??
+        props.lesson.module?.id ??
+        null,
 
-    // базовые
-    activity: Boolean(props.lesson.activity),
     sort: props.lesson.sort ?? 0,
+    activity: Boolean(props.lesson.activity),
 
-    // локаль и поля
-    locale: props.lesson.locale ?? (props.currentLocale || 'ru'),
-    title: props.lesson.title ?? '',
     slug: props.lesson.slug ?? '',
-    subtitle: props.lesson.subtitle ?? '',
-    short: props.lesson.short ?? '',
-    description: props.lesson.description ?? '',
 
-    // учебные
     difficulty: props.lesson.difficulty ?? 0,
     duration: Number(props.lesson.duration ?? 0),
     access_type: props.lesson.access_type ?? 'free',
@@ -86,276 +132,199 @@ const form = useForm({
     status: props.lesson.status ?? 'draft',
     published_at: props.lesson.published_at ?? '',
 
-    // meta
-    meta_title: props.lesson.meta_title ?? '',
-    meta_keywords: props.lesson.meta_keywords ?? '',
-    meta_desc: props.lesson.meta_desc ?? '',
-
-    // preview
     preview_mode: props.lesson.preview_mode ?? 'none',
     preview_value: props.lesson.preview_value ?? 0,
 
-    // content
-    content_type: props.lesson.content_type ?? null,
-    content_id: props.lesson.content_id ?? null,
+    // Связанный контент
+    content_type: props.lesson.content_type ?? '',
+    content_id: props.lesson.content_id ?? '',
 
-    // metrics
-    rating_avg: props.lesson.rating_avg ?? 0,
-    rating_count: props.lesson.rating_count ?? 0,
-    popularity: props.lesson.popularity ?? 0,
-    views: props.lesson.views ?? 0,
-    likes: props.lesson.likes ?? 0,
+    // Хэштеги
+    hashtag_ids: (props.lesson.hashtags || []).map(item => item.id),
 
-    // hashtags
-    hashtag_ids: (props.lesson.hashtags ?? []).map(h => h.id),
+    // Переводы
+    translations: buildTranslations(),
 
-    // изображения
+    // Удалённые изображения
     deletedImages: [],
 })
 
-/* ============================================================
-   Дата публикации (как у тебя было)
-   ============================================================ */
+// Текущий активный перевод
+const currentTranslation = computed(() => {
+    if (!form.translations[activeLocale.value]) {
+        form.translations[activeLocale.value] = makeTranslation()
+    }
+
+    return form.translations[activeLocale.value]
+})
+
+// Заголовок страницы
+const pageTitle = computed(() => {
+    return currentTranslation.value.title
+        || props.lesson.translation?.title
+        || props.lesson.title
+        || `ID: ${props.lesson.id}`
+})
+
+// Получение ошибок переводов
+const getError = (key) => form.errors[`translations.${activeLocale.value}.${key}`]
+
+// Форматирование даты в yyyy-MM-dd
 const formatDate = (dateStr) => {
     if (!dateStr) return ''
+
     const date = new Date(dateStr)
+
     if (isNaN(date.getTime())) return ''
+
     return date.toISOString().split('T')[0]
 }
 
+// Нормализация даты после загрузки страницы
 onMounted(() => {
     if (form.published_at) {
         form.published_at = formatDate(form.published_at)
     }
 })
 
-/* ============================================================
-   Helpers
-   ============================================================ */
+// Динамический лимит multiselect
 const dynamicOptionsLimit = (items) => {
     if (!items) return 10
     return items.length + 10
 }
 
-/* ============================================================
-   MODULE select (как в Create.vue — но один селект)
-   ============================================================ */
+// Опции модулей
 const moduleOptions = computed(() =>
-    props.modules.map(m => {
-        const moduleTitle = m.title || m.slug || `#${m.id}`
-        const courseTitle = m.course?.title ?? null
-        const locale = m.locale || '—'
-
-        let labelCore = moduleTitle
-        if (courseTitle) labelCore = `[${courseTitle}] ${moduleTitle}`
+    props.modules.map((item) => {
+        const moduleTitle = item.title || item.slug || `#${item.id}`
+        const courseTitle = item.course?.title || null
 
         return {
-            id: m.id,
-            label: `[ID: ${m.id}] [${locale}] ${labelCore}`,
+            id: item.id,
+            label: courseTitle
+                ? `[ID: ${item.id}] [${courseTitle}] ${moduleTitle}`
+                : `[ID: ${item.id}] ${moduleTitle}`,
         }
     })
 )
 
-/** Один выбранный модуль (объект в multiselect) */
-const selectedModule = ref(null)
-
-/** Выбранный модуль как сущность (по form.module_id) */
-const selectedModuleEntity = computed(() =>
-    props.modules.find(m => Number(m.id) === Number(form.module_id))
+// Выбранный модуль
+const selectedModule = ref(
+    moduleOptions.value.find(item => Number(item.id) === Number(form.school_module_id)) || null
 )
 
-/* ============================================================
-   FLAGS (анти-зацикливание)
-   ============================================================ */
-const isAutoSyncFromModule = ref(false)
-
-/* ============================================================
-   INIT selectedModule из form.module_id (важно для Edit)
-   ============================================================ */
-watch(
-    moduleOptions,
-    (options) => {
-        if (!options.length) {
-            selectedModule.value = null
-            form.module_id = null
-            return
-        }
-
-        // если module_id пришел из урока — ставим его
-        if (form.module_id) {
-            const found = options.find(o => Number(o.id) === Number(form.module_id))
-            selectedModule.value = found || options[0]
-
-            // страховка на случай "несуществующего" module_id
-            if (!found) form.module_id = options[0].id
-            return
-        }
-
-        // если module_id пуст — ставим первый модуль
-        selectedModule.value = options[0]
-        form.module_id = options[0].id
-    },
-    { immediate: true }
-)
-
-/* ============================================================
-   VueMultiselect -> form.module_id
-   ============================================================ */
+// Синхронизация выбранного модуля с form
 watch(selectedModule, (val) => {
-    if (!val) {
-        form.module_id = null
-        return
-    }
-    if (Number(form.module_id) !== Number(val.id)) {
-        form.module_id = val.id
-    }
+    form.school_module_id = val?.id ?? null
 })
 
-/* ============================================================
-   form.module_id -> VueMultiselect (UI sync)
-   (как в Create.vue: чтобы любое программное изменение отражалось в UI)
-   ============================================================ */
-watch(
-    () => form.module_id,
-    () => {
-        if (isAutoSyncFromModule.value) return
-
-        if (!form.module_id) {
-            selectedModule.value = null
-            return
-        }
-
-        const found =
-            moduleOptions.value.find(m => Number(m.id) === Number(form.module_id)) || null
-
-        // чтобы не было лишних циклов, меняем только если реально другое
-        if (found && (!selectedModule.value || Number(selectedModule.value.id) !== Number(found.id))) {
-            selectedModule.value = found
-        }
-    }
-)
-
-/* ============================================================
-   AUTOLOGIC (по аналогии с Create.vue)
-   При выборе модуля → "автоподставить курс"
-   В Edit Lesson курса в форме нет, но:
-   - мы валидируем связность
-   - можем уведомить, если у модуля нет курса
-   - (если позже добавишь course_id в lesson) — тут же включишь присваивание
-   ============================================================ */
-watch(
-    () => form.module_id,
-    () => {
-        if (isAutoSyncFromModule.value) return
-
-        const module = selectedModuleEntity.value
-        if (!module) return
-
-        isAutoSyncFromModule.value = true
-
-        const courseId = module.course_id ?? module.course?.id ?? null
-        if (!courseId) {
-            toast.warning('У выбранного модуля не найден связанный курс')
-        }
-        // Здесь курс НЕ записываем, потому что в LessonEdit форме нет course_id.
-        // Если появится поле course_id — просто добавишь:
-        // form.course_id = Number(courseId)
-
-        isAutoSyncFromModule.value = false
-    }
-)
-
-/* ============================================================
-   HASHTAGS (как у тебя было)
-   ============================================================ */
+// Опции хэштегов
 const hashtagOptions = computed(() =>
-    props.hashtags.map(h => ({
-        id: h.id,
-        label: h.name || `#${h.id}`,
-        color: h.color || null,
+    props.hashtags.map((item) => ({
+        id: item.id,
+        label: item.name || item.title || item.slug || `#${item.id}`,
+        color: item.color || null,
     }))
 )
 
+// Выбранные хэштеги
 const selectedHashtags = ref([])
 
+// Восстановление выбранных хэштегов
 watch(
     hashtagOptions,
     (options) => {
         const ids = form.hashtag_ids || []
-        selectedHashtags.value = options.filter(o => ids.includes(o.id))
+        selectedHashtags.value = options.filter(item => ids.includes(item.id))
     },
     { immediate: true }
 )
 
+// Синхронизация хэштегов с form
 watch(selectedHashtags, (val) => {
-    form.hashtag_ids = Array.isArray(val) ? val.map(v => v.id) : []
+    form.hashtag_ids = Array.isArray(val) ? val.map(item => item.id) : []
 })
 
-/* ============================================================
-   IMAGES (как у тебя было)
-   ============================================================ */
+// Существующие изображения
 const existingImages = ref(
     (props.lesson.images || [])
-        .filter(img => img.url)
-        .map(img => ({
-            id: img.id,
-            url: img.webp_url || img.url,
-            order: img.order || 0,
-            alt: img.alt || '',
-            caption: img.caption || '',
+        .filter(image => image.webp_url || image.url || image.image_url)
+        .map(image => ({
+            id: image.id,
+            url: image.webp_url || image.url || image.image_url,
+            order: image.order || 0,
+            alt: image.alt || '',
+            caption: image.caption || '',
         }))
 )
 
+// Новые изображения
 const newImages = ref([])
 
+// Обновление существующих изображений
 const handleExistingImagesUpdate = (images) => {
-    existingImages.value = images
+    existingImages.value = images || []
 }
 
+// Удаление существующего изображения
 const handleDeleteExistingImage = (deletedId) => {
     if (!form.deletedImages.includes(deletedId)) {
         form.deletedImages.push(deletedId)
     }
-    existingImages.value = existingImages.value.filter(img => img.id !== deletedId)
+
+    existingImages.value = existingImages.value.filter(
+        image => image.id !== deletedId
+    )
 }
 
+// Обновление новых изображений
 const handleNewImagesUpdate = (images) => {
-    newImages.value = images
+    newImages.value = images || []
 }
 
-/* ============================================================
-   SLUG
-   ============================================================ */
+// Автогенерация slug из title
 const handleSlugFocus = () => {
-    if (form.title && !form.slug) {
-        form.slug = transliterate(form.title.toLowerCase())
+    if (!form.slug && currentTranslation.value.title) {
+        form.slug = transliterate(currentTranslation.value.title.toLowerCase())
     }
 }
 
-/* ============================================================
-   META (как у тебя было)
-   ============================================================ */
+// Обрезка текста
 const truncateText = (text, maxLength, addEllipsis = false) => {
     if (!text) return ''
-    if (text.length <= maxLength) return text
-    const truncated = text.substr(0, text.lastIndexOf(' ', maxLength))
+
+    const str = String(text)
+
+    if (str.length <= maxLength) return str
+
+    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
+    const truncated = lastSpaceIndex === -1
+        ? str.substring(0, maxLength)
+        : str.substring(0, lastSpaceIndex)
+
     return addEllipsis ? `${truncated}...` : truncated
 }
 
+// Очистка SEO полей
 const clearMetaFields = () => {
-    form.meta_title = ''
-    form.meta_keywords = ''
-    form.meta_desc = ''
+    const translation = currentTranslation.value
+
+    translation.meta_title = ''
+    translation.meta_keywords = ''
+    translation.meta_desc = ''
 }
 
+// Генерация SEO полей
 const generateMetaFields = () => {
-    if (form.title && !form.meta_title) {
-        form.meta_title = truncateText(form.title, 160)
+    const translation = currentTranslation.value
+
+    if (translation.title && !translation.meta_title) {
+        translation.meta_title = truncateText(translation.title, 160)
     }
 
-    if (!form.meta_keywords && form.short) {
-        let text = form.short.replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()\[\]{}"'«»]/g, '')
+    if (!translation.meta_keywords && translation.short) {
+        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
+        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
 
         const words = text
             .split(/\s+/)
@@ -363,75 +332,124 @@ const generateMetaFields = () => {
             .map(word => word.toLowerCase())
             .filter((value, index, self) => self.indexOf(value) === index)
 
-        const keywords = words.join(', ')
-        form.meta_keywords = truncateText(keywords, 255)
+        translation.meta_keywords = truncateText(words.join(', '), 255)
     }
 
-    if (form.short && !form.meta_desc) {
-        const descText = form.short.replace(/(<([^>]+)>)/gi, '')
-        form.meta_desc = truncateText(descText, 255, true)
+    if (translation.short && !translation.meta_desc) {
+        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
+        translation.meta_desc = truncateText(descText, 255, true)
     }
 }
 
-/* ============================================================
-   SUBMIT
-   ============================================================ */
+// Отправка формы
 const submitForm = () => {
     form.transform((data) => {
+
+        // Преобразование значения в число
         const toNum = (val, digits = 2) => {
-            if (val === '' || val === null || typeof val === 'undefined') return null
+            if (val === '' || val === null || typeof val === 'undefined') {
+                return null
+            }
+
             const n = Number(val)
-            return Number.isFinite(n) ? Number(n.toFixed(digits)) : null
+
+            return Number.isFinite(n)
+                ? Number(n.toFixed(digits))
+                : null
         }
 
+        // Ограничение сложности от 0 до 5
         let difficulty = toNum(data.difficulty, 2)
+
         if (difficulty !== null) {
             if (difficulty < 0) difficulty = 0
             if (difficulty > 5) difficulty = 5
         }
 
-        const payload = {
+        // Подготовка данных формы
+        const transformed = {
             ...data,
+
+            school_module_id: selectedModule.value?.id ?? null,
+
             difficulty,
+
+            duration: data.duration === '' || data.duration === null
+                ? null
+                : Number(data.duration),
+
+            preview_value: data.preview_value === '' || data.preview_value === null
+                ? null
+                : Number(data.preview_value),
+
             activity: data.activity ? 1 : 0,
 
-            images: [
-                ...newImages.value.map(img => ({
-                    file: img.file,
-                    order: img.order ?? 0,
-                    alt: img.alt ?? '',
-                    caption: img.caption ?? '',
-                })),
-                ...existingImages.value.map(img => ({
-                    id: img.id,
-                    order: img.order ?? 0,
-                    alt: img.alt ?? '',
-                    caption: img.caption ?? '',
-                })),
-            ],
-            deletedImages: form.deletedImages,
+            hashtag_ids: selectedHashtags.value.map(item => item.id),
         }
 
-        // страховка: если один из пары не задан — обнуляем оба
-        if (!payload.content_type || !payload.content_id) {
-            payload.content_type = null
-            payload.content_id = null
+        // Сброс связанного контента если связь пустая
+        if (!transformed.content_type || !transformed.content_id) {
+            transformed.content_type = null
+            transformed.content_id = null
         }
 
-        return payload
+        // Удаление лишних полей
+        delete transformed.images
+        delete transformed.deletedImages
+
+        let index = 0
+
+        // Существующие изображения
+        existingImages.value.forEach((image) => {
+            transformed[`images[${index}][id]`] = image.id
+            transformed[`images[${index}][order]`] = image.order ?? 0
+            transformed[`images[${index}][alt]`] = image.alt ?? ''
+            transformed[`images[${index}][caption]`] = image.caption ?? ''
+            index++
+        })
+
+        // Новые изображения
+        newImages.value.forEach((image) => {
+            transformed[`images[${index}][file]`] = image.file
+            transformed[`images[${index}][order]`] = image.order ?? 0
+            transformed[`images[${index}][alt]`] = image.alt ?? ''
+            transformed[`images[${index}][caption]`] = image.caption ?? ''
+            index++
+        })
+
+        // Удалённые изображения
+        form.deletedImages.forEach((id, deletedIndex) => {
+            transformed[`deletedImages[${deletedIndex}]`] = id
+        })
+
+        return transformed
     })
 
-    form.post(route('admin.lessons.update', props.lesson.id), {
+    // Отправка формы обновления
+    form.post(route('admin.schoolLessons.update', {
+        schoolLesson: props.lesson.id,
+    }), {
+        errorBag: 'editSchoolLesson',
         preserveScroll: true,
         forceFormData: true,
+
+        // Успешное обновление
         onSuccess: () => {
-            toast.success('Урок обучения успешно обновлён!')
+            toast.success('Урок успешно обновлён!')
+
+            newImages.value = []
+            form.deletedImages = []
         },
+
+        // Ошибки валидации
         onError: (errors) => {
-            console.error('❌ Ошибка при обновлении Урока обучения:', errors)
+            console.error('Ошибка обновления урока:', errors)
+
             const firstKey = Object.keys(errors || {})[0]
-            const firstError = firstKey ? errors[firstKey] : null
-            toast.error(firstError || 'Пожалуйста, проверьте правильность заполнения полей.')
+
+            toast.error(
+                errors[firstKey] || 'Проверьте корректность полей.'
+            )
         },
     })
 }
@@ -441,7 +459,7 @@ const submitForm = () => {
     <AdminLayout :title="t('editLesson')">
         <template #header>
             <TitlePage>
-                {{ t('editLesson') }} - {{lesson.title}} [ID: {{lesson.id}}]
+                {{ t('editLesson') }}: {{ pageTitle }} [ID: {{ props.lesson.id }}]
             </TitlePage>
         </template>
 
@@ -453,15 +471,12 @@ const submitForm = () => {
                        bg-opacity-95 dark:bg-opacity-95"
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <!-- Кнопка назад -->
-                    <DefaultButton :href="route('admin.lessons.index')">
+                    <DefaultButton :href="route('admin.schoolLessons.index')">
                         <template #icon>
-                            <svg
-                                class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                viewBox="0 0 16 16"
-                            >
+                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                 viewBox="0 0 16 16">
                                 <path
-                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
+                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                 />
                             </svg>
                         </template>
@@ -472,477 +487,345 @@ const submitForm = () => {
                 <form
                     @submit.prevent="submitForm"
                     enctype="multipart/form-data"
-                    class="p-3 w-full">
-
-                    <!-- Активность, локаль, сортировка -->
-                    <div
-                        class="mb-3 flex justify-between flex-col
-                               lg:flex-row items-center gap-4">
-
-                        <div class="flex flex-row items-center gap-2">
-                            <ActivityCheckbox v-model="form.activity" />
-                            <LabelCheckbox
-                                for="activity"
-                                :text="t('activity')"
-                                class="text-sm h-8 flex items-center"
-                            />
-                        </div>
-
-                        <div class="flex flex-row items-center gap-2 w-auto">
-                            <SelectLocale
-                                v-model="form.locale"
-                                :errorMessage="form.errors.locale"
-                            />
-                            <InputError
-                                class="mt-2 lg:mt-0"
-                                :message="form.errors.locale"
-                            />
-                        </div>
-
-                        <div class="flex flex-row items-center gap-2">
-                            <div class="h-8 flex items-center">
-                                <LabelInput
-                                    for="sort"
-                                    :value="t('sort')"
-                                    class="text-sm"
+                    class="p-3 w-full"
+                >
+                    <div class="pb-12">
+                        <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
+                            <div class="flex flex-row items-center gap-2">
+                                <ActivityCheckbox v-model="form.activity" />
+                                <LabelCheckbox
+                                    for="activity"
+                                    :text="t('activity')"
+                                    class="text-sm h-8 flex items-center"
                                 />
                             </div>
-                            <InputNumber
-                                id="sort"
-                                type="number"
-                                v-model="form.sort"
-                                autocomplete="sort"
-                                class="w-full lg:w-28"
+
+                            <div class="flex flex-row items-center gap-2">
+                                <LabelInput for="sort" :value="t('sort')" class="text-sm" />
+                                <InputNumber
+                                    id="sort"
+                                    type="number"
+                                    v-model.number="form.sort"
+                                    class="w-full lg:w-28"
+                                />
+                                <InputError :message="form.errors.sort" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
+                            <SelectStatus
+                                v-model="form.status"
+                                :errorMessage="form.errors.status"
                             />
-                            <InputError
-                                class="mt-2 lg:mt-0"
-                                :message="form.errors.sort"
+
+                            <SelectAvailability
+                                v-model="form.availability"
+                                :errorMessage="form.errors.availability"
+                            />
+
+                            <SelectAccessType
+                                v-model="form.access_type"
+                                :errorMessage="form.errors.access_type"
                             />
                         </div>
-                    </div>
 
-                    <!-- Доступность, Статус -->
-                    <div class="mb-3 flex justify-between flex-col
-                                lg:flex-row items-center gap-4">
+                        <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
+                            <SelectPreviewMode
+                                v-model="form.preview_mode"
+                                :errorMessage="form.errors.preview_mode"
+                            />
 
-                        <!-- Статус -->
-                        <SelectStatus
-                            v-model="form.status"
-                            :errorMessage="form.errors.status"
-                        />
+                            <div class="flex flex-col items-start">
+                                <LabelInput for="preview_value">
+                                    {{ t('previewValue') }}
+                                </LabelInput>
 
-                        <!-- Доступность -->
-                        <SelectAvailability
-                            v-model="form.availability"
-                            :errorMessage="form.errors.availability"
-                        />
-                    </div>
+                                <InputNumber
+                                    id="preview_value"
+                                    type="number"
+                                    min="0"
+                                    v-model.number="form.preview_value"
+                                    class="w-full lg:w-28"
+                                />
 
-                    <!-- Тип доступа и режим превью -->
-                    <div class="mb-3 flex justify-between flex-col
-                                lg:flex-row items-center gap-4">
+                                <InputError :message="form.errors.preview_value" />
+                            </div>
+                        </div>
 
-                        <!-- Тип доступа -->
-                        <SelectAccessType
-                            v-model="form.access_type"
-                            :errorMessage="form.errors.access_type"
-                        />
+                        <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
+                            <div class="flex flex-col items-start">
+                                <LabelInput for="published_at" :value="t('publishedAt')" />
 
-                        <!-- Режим превью -->
-                        <SelectPreviewMode
-                            v-model="form.preview_mode"
-                            :errorMessage="form.errors.preview_mode"
-                        />
+                                <InputText
+                                    id="published_at"
+                                    type="date"
+                                    v-model="form.published_at"
+                                    class="w-full max-w-56"
+                                />
 
-                        <!-- Значение превью -->
-                        <div class="flex flex-col items-start">
-                            <LabelInput for="preview_value">
-                                {{ t('previewValue') }}
+                                <InputError :message="form.errors.published_at" />
+                            </div>
+
+                            <div class="flex flex-col items-start">
+                                <LabelInput for="difficulty">{{ t('difficulty') }}</LabelInput>
+
+                                <InputDecimalExt
+                                    id="difficulty"
+                                    v-model="form.difficulty"
+                                    :min="0"
+                                    :max="5"
+                                    :step="0.01"
+                                    :fraction-digits="2"
+                                    class="w-full lg:w-28"
+                                />
+
+                                <InputError :message="form.errors.difficulty" />
+                            </div>
+
+                            <div class="flex flex-col items-start">
+                                <LabelInput for="duration">{{ t('duration') }}</LabelInput>
+
+                                <InputNumber
+                                    id="duration"
+                                    type="number"
+                                    min="0"
+                                    v-model.number="form.duration"
+                                    class="w-full lg:w-28"
+                                />
+
+                                <InputError :message="form.errors.duration" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <LabelInput for="school_module_id" :value="t('module')" class="mb-1" />
+
+                            <VueMultiselect
+                                id="school_module_id"
+                                v-model="selectedModule"
+                                :options="moduleOptions"
+                                :options-limit="dynamicOptionsLimit(moduleOptions)"
+                                :multiple="false"
+                                :close-on-select="true"
+                                :allow-empty="true"
+                                :placeholder="t('select')"
+                                label="label"
+                                track-by="id"
+                                class="w-full"
+                            />
+
+                            <InputError class="mt-2" :message="form.errors.school_module_id" />
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <LabelInput for="slug">
+                                <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                                {{ t('slug') }}
                             </LabelInput>
-                            <InputNumber
-                                id="preview_value"
-                                type="number"
-                                min="0"
-                                v-model.number="form.preview_value"
-                                class="w-full lg:w-28"
-                            />
-                            <InputError
-                                class="mt-2"
-                                :message="form.errors.preview_value"
-                            />
-                        </div>
-                    </div>
 
-                    <!-- Длительность, Дата публикации -->
-                    <div class="mb-3 flex justify-between flex-col
-                                lg:flex-row items-center gap-4">
-
-                        <!-- Дата публикации -->
-                        <div class="flex flex-col items-start">
-                            <LabelInput
-                                for="published_at"
-                                :value="t('publishedAt')"
-                            />
                             <InputText
-                                id="published_at"
-                                type="date"
-                                v-model="form.published_at"
-                                autocomplete="published_at"
-                                class="w-full max-w-56"
+                                id="slug"
+                                type="text"
+                                v-model="form.slug"
+                                required
+                                autocomplete="slug"
+                                @focus="handleSlugFocus"
                             />
-                            <InputError
-                                class="mt-1 sm:mt-0"
-                                :message="form.errors.published_at"
-                            />
+
+                            <InputError class="mt-2" :message="form.errors.slug" />
                         </div>
 
-                        <!-- Сложность -->
-                        <div class="flex flex-col items-start">
-                            <LabelInput for="difficulty">
-                                {{ t('difficulty') }}
-                            </LabelInput>
-                            <InputDecimalExt
-                                id="difficulty"
-                                v-model="form.difficulty"
-                                :min="0"
-                                :max="5"
-                                :step="0.01"
-                                :fraction-digits="2"
-                                class="w-full lg:w-28"
-                            />
-                            <InputError
-                                class="mt-2"
-                                :message="form.errors.difficulty"
-                            />
-                        </div>
-
-                        <!-- Длительность -->
-                        <div class="flex flex-col items-start">
-                            <LabelInput for="duration">
-                                {{ t('duration') }}
-                            </LabelInput>
-                            <InputNumber
-                                id="duration"
-                                type="number"
-                                min="0"
-                                v-model.number="form.duration"
-                                class="w-full lg:w-28"
-                            />
-                            <InputError
-                                class="mt-2"
-                                :message="form.errors.duration"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Модуль -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <LabelInput
-                            for="module"
-                            :value="t('module')"
-                            class="mb-1"
-                        />
-                        <VueMultiselect
-                            id="module"
-                            v-model="selectedModule"
-                            :options="moduleOptions"
-                            :options-limit="dynamicOptionsLimit(moduleOptions)"
-                            :multiple="false"
-                            :close-on-select="true"
-                            :clear-on-select="false"
-                            :preserve-search="true"
-                            :placeholder="t('select')"
-                            label="label"
-                            track-by="id"
-                            class="w-full"
-                        />
-                        <InputError
-                            class="mt-2"
-                            :message="form.errors.module_id"
-                        />
-                    </div>
-
-                    <!-- Название -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <LabelInput for="title">
-                            <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                            {{ t('title') }}
-                        </LabelInput>
-                        <InputText
-                            id="title"
-                            type="text"
-                            v-model="form.title"
-                            required
-                            autocomplete="title"
-                        />
-                        <InputError class="mt-2" :message="form.errors.title" />
-                    </div>
-
-                    <!-- Slug -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <LabelInput for="slug">
-                            <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                            {{ t('slug') }}
-                        </LabelInput>
-                        <InputText
-                            id="slug"
-                            type="text"
-                            v-model="form.slug"
-                            required
-                            autocomplete="slug"
-                            @focus="handleSlugFocus"
-                        />
-                        <InputError class="mt-2" :message="form.errors.slug" />
-                    </div>
-
-                    <!-- Подзаголовок/оффер -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <div class="flex justify-between w-full">
-                            <LabelInput
-                                for="subtitle"
-                                :value="t('subtitle')"
-                            />
-                            <div
-                                class="text-md text-gray-900 dark:text-gray-400 mt-1"
-                            >
-                                {{ form.subtitle.length }} / 255
-                                {{ t('characters') }}
-                            </div>
-                        </div>
-                        <MetaDescTextarea v-model="form.subtitle" class="w-full" />
-                        <InputError
-                            class="mt-2"
-                            :message="form.errors.subtitle"
-                        />
-                    </div>
-
-                    <!-- Краткое описание -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <div class="flex justify-between w-full">
-                            <LabelInput
-                                for="short"
-                                :value="t('shortDescription')"
-                            />
-                            <div
-                                class="text-md text-gray-900 dark:text-gray-400 mt-1"
-                            >
-                                {{ form.short.length }} / 255
-                                {{ t('characters') }}
-                            </div>
-                        </div>
-                        <MetaDescTextarea v-model="form.short" class="w-full" />
-                        <InputError class="mt-2" :message="form.errors.short" />
-                    </div>
-
-                    <!-- Описание урока -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <LabelInput
-                            for="description"
-                            :value="t('description')"
-                        />
-                        <TinyEditor
-                            v-model="form.description"
-                            :height="500"
-                        />
-                        <InputError
-                            class="mt-2"
-                            :message="form.errors.description"
-                        />
-                    </div>
-
-                    <!-- Хэштеги -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <LabelInput
-                            for="hashtags"
-                            :value="t('hashtags')"
-                            class="mb-1"
-                        />
-                        <VueMultiselect
-                            id="hashtags"
-                            v-model="selectedHashtags"
-                            :options="hashtagOptions"
-                            :multiple="true"
-                            :close-on-select="false"
-                            :clear-on-select="false"
-                            :preserve-search="true"
-                            :placeholder="t('select')"
-                            label="label"
-                            track-by="id"
-                            class="w-full"
-                        />
-                        <InputError
-                            class="mt-2"
-                            :message="form.errors.hashtag_ids"
-                        />
-                    </div>
-
-                    <!-- Связанный контент (Article / Video) -->
-                    <LessonContentSelect
-                        :articles="articles"
-                        :videos="videos"
-                        v-model:contentType="form.content_type"
-                        v-model:contentId="form.content_id"
-                        :error-type="form.errors.content_type"
-                        :error-id="form.errors.content_id"
-                    />
-
-                    <LessonMetricsBlock
-                        :rating_avg="form.rating_avg"
-                        :rating_count="form.rating_count"
-                        :popularity="form.popularity"
-                        :views="form.views"
-                        :likes="form.likes"
-                        :errors="{
-                            rating_avg: form.errors.rating_avg,
-                            rating_count: form.errors.rating_count,
-                            popularity: form.errors.popularity,
-                            views: form.errors.views,
-                            likes: form.errors.likes
-                        }"
-                        @update:rating_avg="val => (form.rating_avg = val)"
-                        @update:rating_count="val => (form.rating_count = val)"
-                        @update:popularity="val => (form.popularity = val)"
-                        @update:views="val => (form.views = val)"
-                        @update:likes="val => (form.likes = val)"
-                    />
-
-                    <!-- Мета Title -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <div class="flex justify-between w-full">
-                            <LabelInput
-                                for="meta_title"
-                                :value="t('metaTitle')"
-                            />
-                            <div
-                                class="text-md text-gray-900 dark:text-gray-400 mt-1"
-                            >
-                                {{ form.meta_title.length }} / 160
-                                {{ t('characters') }}
-                            </div>
-                        </div>
-                        <InputText
-                            id="meta_title"
-                            type="text"
-                            v-model="form.meta_title"
-                            maxlength="160"
-                            autocomplete="off"
-                        />
-                        <InputError
-                            class="mt-2"
-                            :message="form.errors.meta_title"
-                        />
-                    </div>
-
-                    <!-- Мета Keywords -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <div class="flex justify-between w-full">
-                            <LabelInput
-                                for="meta_keywords"
-                                :value="t('metaKeywords')"
-                            />
-                            <div
-                                class="text-md text-gray-900 dark:text-gray-400 mt-1"
-                            >
-                                {{ form.meta_keywords.length }} / 255
-                                {{ t('characters') }}
-                            </div>
-                        </div>
-                        <InputText
-                            id="meta_keywords"
-                            type="text"
-                            v-model="form.meta_keywords"
-                            maxlength="255"
-                            autocomplete="off"
-                        />
-                        <InputError
-                            class="mt-2"
-                            :message="form.errors.meta_keywords"
-                        />
-                    </div>
-
-                    <!-- Мета Description -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <div class="flex justify-between w-full">
-                            <LabelInput
-                                for="meta_desc"
-                                :value="t('metaDescription')"
-                            />
-                            <div
-                                class="text-md text-gray-900 dark:text-gray-400 mt-1"
-                            >
-                                {{ form.meta_desc.length }} / 255
-                                {{ t('characters') }}
-                            </div>
-                        </div>
-                        <MetaDescTextarea
-                            v-model="form.meta_desc"
-                            maxlength="255"
-                            class="w-full"
-                        />
-                        <InputError
-                            class="mt-2"
-                            :message="form.errors.meta_desc"
-                        />
-                    </div>
-
-                    <!-- Кнопки мета-полей -->
-                    <div class="flex justify-end mt-4">
-                        <ClearMetaButton @clear="clearMetaFields" class="mr-4">
-                            <template #default>
-                                <svg
-                                    class="w-4 h-4 fill-current text-gray-500 shrink-0 mr-2"
-                                    viewBox="0 0 16 16"
-                                >
-                                    <path
-                                        d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm3 9H5V7h6v2z"
-                                    />
-                                </svg>
-                                {{ t('clearMetaFields') }}
-                            </template>
-                        </ClearMetaButton>
-
-                        <MetatagsButton @click.prevent="generateMetaFields">
-                            <template #icon>
-                                <svg
-                                    class="w-4 h-4 fill-current text-slate-600 shrink-0 mr-2"
-                                    viewBox="0 0 16 16"
-                                >
-                                    <path
-                                        d="M13 7h2v6a1 1 0 01-1 1H4v2l-4-3 4-3v2h9V7zM3 9H1V3a1 1 0 011-1h10V0l4 3-4 3V4H3v5z"
-                                    />
-                                </svg>
-                            </template>
-                            {{ t('generateMetaTags') }}
-                        </MetatagsButton>
-                    </div>
-
-                    <!-- Редактирование существующих изображений -->
-                    <div class="mt-4">
-                        <MultiImageEdit
-                            :images="existingImages"
-                            @update:images="handleExistingImagesUpdate"
-                            @delete-image="handleDeleteExistingImage"
-                        />
-                    </div>
-
-                    <!-- Загрузка новых изображений -->
-                    <div class="mt-4">
-                        <MultiImageUpload @update:images="handleNewImagesUpdate" />
-                    </div>
-
-                    <!-- Кнопки сохранить/назад -->
-                    <div class="flex items-center justify-center mt-4 gap-3">
-                        <DefaultButton
-                            :href="route('admin.lessons.index')"
-                            class="mb-3"
+                        <div
+                            class="my-5 p-3 border border-slate-300 dark:border-slate-500
+                                   bg-white dark:bg-slate-800 rounded-sm"
                         >
+                            <TranslationTabs
+                                v-model="activeLocale"
+                                :translations="form.translations"
+                                :available-locales="availableLocales"
+                                :make-translation="makeTranslation"
+                                @update:translations="form.translations = $event"
+                                @removed="toast.warning('Перевод удалён.')"
+                                @added="toast.success('Локаль добавлена.')"
+                            />
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <div class="flex justify-between w-full">
+                                    <LabelInput for="title">
+                                        <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                                        {{ t('title') }} [{{ activeLocale.toUpperCase() }}]
+                                    </LabelInput>
+
+                                    <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
+                                        {{ (currentTranslation.title || '').length }} / 255 {{ t('characters') }}
+                                    </div>
+                                </div>
+
+                                <InputText
+                                    id="title"
+                                    type="text"
+                                    v-model="currentTranslation.title"
+                                    maxlength="255"
+                                    required
+                                />
+
+                                <InputError class="mt-2" :message="getError('title')" />
+                            </div>
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <LabelInput
+                                    for="subtitle"
+                                    :value="`${t('subtitle')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <MetaDescTextarea v-model="currentTranslation.subtitle" class="w-full" />
+                                <InputError class="mt-2" :message="getError('subtitle')" />
+                            </div>
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <LabelInput
+                                    for="short"
+                                    :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <MetaDescTextarea v-model="currentTranslation.short" class="w-full" />
+                                <InputError class="mt-2" :message="getError('short')" />
+                            </div>
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <LabelInput
+                                    for="description"
+                                    :value="`${t('description')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <TinyEditor
+                                    v-model="currentTranslation.description"
+                                    :height="500"
+                                />
+
+                                <InputError class="mt-2" :message="getError('description')" />
+                            </div>
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <LabelInput
+                                    for="meta_title"
+                                    :value="`${t('metaTitle')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <InputText
+                                    id="meta_title"
+                                    type="text"
+                                    v-model="currentTranslation.meta_title"
+                                    maxlength="160"
+                                />
+
+                                <InputError class="mt-2" :message="getError('meta_title')" />
+                            </div>
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <LabelInput
+                                    for="meta_keywords"
+                                    :value="`${t('metaKeywords')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <InputText
+                                    id="meta_keywords"
+                                    type="text"
+                                    v-model="currentTranslation.meta_keywords"
+                                    maxlength="255"
+                                />
+
+                                <InputError class="mt-2" :message="getError('meta_keywords')" />
+                            </div>
+
+                            <div class="mb-3 flex flex-col items-start">
+                                <LabelInput
+                                    for="meta_desc"
+                                    :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <MetaDescTextarea
+                                    v-model="currentTranslation.meta_desc"
+                                    maxlength="255"
+                                    class="w-full"
+                                />
+
+                                <InputError class="mt-2" :message="getError('meta_desc')" />
+                            </div>
+
+                            <div class="flex justify-end gap-2 mt-4">
+                                <ClearMetaButton @click.prevent="clearMetaFields">
+                                    <template #default>
+                                        {{ t('clearMetaFields') }}
+                                    </template>
+                                </ClearMetaButton>
+
+                                <MetatagsButton @click.prevent="generateMetaFields">
+                                    {{ t('generateMetaTags') }}
+                                </MetatagsButton>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <LabelInput
+                                for="hashtags"
+                                :value="t('hashtags')"
+                                class="mb-1"
+                            />
+
+                            <VueMultiselect
+                                id="hashtags"
+                                v-model="selectedHashtags"
+                                :options="hashtagOptions"
+                                :multiple="true"
+                                :close-on-select="false"
+                                :clear-on-select="false"
+                                :preserve-search="true"
+                                :placeholder="t('select')"
+                                label="label"
+                                track-by="id"
+                                class="w-full"
+                            />
+
+                            <InputError class="mt-2" :message="form.errors.hashtag_ids" />
+                        </div>
+
+                        <LessonContentSelect
+                            :articles="articles"
+                            :videos="videos"
+                            v-model:contentType="form.content_type"
+                            v-model:contentId="form.content_id"
+                            :error-type="form.errors.content_type"
+                            :error-id="form.errors.content_id"
+                        />
+
+                        <div class="mt-4">
+                            <MultiImageEdit
+                                :images="existingImages"
+                                @update:images="handleExistingImagesUpdate"
+                                @delete-image="handleDeleteExistingImage"
+                            />
+                        </div>
+
+                        <div class="mt-4">
+                            <MultiImageUpload @update:images="handleNewImagesUpdate" />
+
+                            <div
+                                v-if="newImages.length"
+                                class="text-xs text-slate-600 dark:text-slate-300 mt-2"
+                            >
+                                {{ t('images') }}: {{ newImages.length }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-center mt-4 gap-3">
+                        <DefaultButton :href="route('admin.schoolLessons.index')">
                             <template #icon>
-                                <svg
-                                    class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                    viewBox="0 0 16 16"
-                                >
+                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                     viewBox="0 0 16 16">
                                     <path
-                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
+                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                     />
                                 </svg>
                             </template>
@@ -954,16 +837,6 @@ const submitForm = () => {
                             :class="{ 'opacity-25': form.processing }"
                             :disabled="form.processing"
                         >
-                            <template #icon>
-                                <svg
-                                    class="w-4 h-4 fill-current text-slate-100"
-                                    viewBox="0 0 16 16"
-                                >
-                                    <path
-                                        d="M14.3 2.3L5 11.6 1.7 8.3c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4l4 4c.2.2.4.3.7.3.3 0 .5-.1.7-.3l10-10c.4-.4.4-1 0-1.4-.4-.4-1-.4-1.4 0z"
-                                    />
-                                </svg>
-                            </template>
                             {{ t('save') }}
                         </PrimaryButton>
                     </div>

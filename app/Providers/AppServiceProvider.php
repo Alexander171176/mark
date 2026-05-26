@@ -8,12 +8,12 @@ use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\Comment\Comment;
-use App\Models\Admin\Finance\SubscriptionPlan\SubscriptionPlan;
 use App\Models\Admin\School\Bundle\Bundle;
-use App\Models\Admin\School\Course\Course;
-use App\Models\Admin\School\LearningCategory\LearningCategory;
-use App\Models\Admin\School\Lesson\Lesson;
-use App\Models\Admin\School\Module\Module;
+use App\Models\Admin\School\Course\SchoolCourse;
+use App\Models\Admin\School\Lesson\SchoolLesson;
+use App\Models\Admin\School\Module\SchoolModule;
+use App\Models\Admin\School\SubscriptionPlan\SubscriptionPlan;
+use App\Models\Admin\School\Track\SchoolTrack;
 use App\Models\Admin\System\Setting\Setting;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -126,10 +126,10 @@ class AppServiceProvider extends ServiceProvider
             'banner' => BlogBanner::class,
             'video' => BlogVideo::class,
 
-            'track' => LearningCategory::class,
-            'course' => Course::class,
-            'module' => Module::class,
-            'lesson' => Lesson::class,
+            'track' => SchoolTrack::class,
+            'course' => SchoolCourse::class,
+            'module' => SchoolModule::class,
+            'lesson' => SchoolLesson::class,
             'bundle' => Bundle::class,
             'subscription_plan' => SubscriptionPlan::class,
         ]);

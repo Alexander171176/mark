@@ -4,9 +4,9 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail; // Если используете верификацию email
 use App\Models\Admin\Blog\Comment\Comment;
-use App\Models\Admin\School\InstructorProfile\InstructorProfile;
-use App\Models\User\Like\ArticleLike;
-use App\Models\User\Like\VideoLike;
+use App\Models\Admin\School\InstructorProfile\SchoolInstructorProfile;
+use App\Models\User\Like\BlogArticleLike;
+use App\Models\User\Like\BlogVideoLike;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -16,11 +16,6 @@ use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-
-// Добавляем Comment
-// Добавляем ArticleLike
-// Добавляем VideoLike
-// Добавляем HasMany
 
 // Если используете MustVerifyEmail, раскомментируйте его и implements
 class User extends Authenticatable /* implements MustVerifyEmail */
@@ -94,7 +89,7 @@ class User extends Authenticatable /* implements MustVerifyEmail */
      */
     public function articleLikes(): HasMany
     {
-        return $this->hasMany(ArticleLike::class, 'user_id');
+        return $this->hasMany(BlogArticleLike::class, 'user_id');
     }
 
     /**
@@ -102,12 +97,12 @@ class User extends Authenticatable /* implements MustVerifyEmail */
      */
     public function videoLikes(): HasMany
     {
-        return $this->hasMany(VideoLike::class, 'user_id');
+        return $this->hasMany(BlogVideoLike::class, 'user_id');
     }
 
     public function instructorProfiles(): HasMany
     {
-        return $this->hasMany(InstructorProfile::class, 'user_id');
+        return $this->hasMany(SchoolInstructorProfile::class, 'user_id');
     }
     // --- КОНЕЦ НОВЫХ СВЯЗЕЙ ---
 

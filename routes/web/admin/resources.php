@@ -8,29 +8,29 @@ use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
-use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
-use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
-use App\Http\Controllers\Admin\Finance\Order\OrderController;
-use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
-use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
+use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
-use App\Http\Controllers\Admin\School\CohortEnrollment\CohortEnrollmentController;
-use App\Http\Controllers\Admin\School\Course\CourseController;
-use App\Http\Controllers\Admin\School\CourseSchedule\CourseScheduleController;
-use App\Http\Controllers\Admin\School\Enrollment\EnrollmentController;
-use App\Http\Controllers\Admin\School\Hashtag\HashtagController;
-use App\Http\Controllers\Admin\School\InstructorProfile\InstructorProfileController;
-use App\Http\Controllers\Admin\School\LearningCategory\LearningCategoryController;
-use App\Http\Controllers\Admin\School\Lesson\LessonController;
-use App\Http\Controllers\Admin\School\Module\ModuleController;
-use App\Http\Controllers\Admin\School\Quiz\QuizController;
+use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
+use App\Http\Controllers\Admin\School\CohortEnrollment\SchoolCohortEnrollmentController;
+use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
+use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
+use App\Http\Controllers\Admin\School\CourseSchedule\SchoolCourseScheduleController;
+use App\Http\Controllers\Admin\School\Enrollment\SchoolEnrollmentController;
+use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
+use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileController;
+use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
+use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
+use App\Http\Controllers\Admin\School\Order\SchoolOrderController;
+use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\QuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizAttempt\QuizAttemptController;
 use App\Http\Controllers\Admin\School\QuizAttemptItem\QuizAttemptItemController;
-use App\Http\Controllers\Admin\School\QuizQuestion\QuizQuestionController;
+use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
+use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
+use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
 use App\Http\Controllers\Admin\Statistics\Chart\ChartController;
 use App\Http\Controllers\Admin\System\Component\ComponentController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
@@ -51,46 +51,69 @@ Route::resource('/roles', RoleController::class);
 
 Route::resource('/permissions', PermissionController::class);
 
-Route::resource('instructor-profiles', InstructorProfileController::class)
-    ->parameters(['instructor-profiles' => 'instructorProfile'])
-    ->names('instructorProfiles');
+Route::resource('/school-instructor-profiles',
+    SchoolInstructorProfileController::class)
+    ->parameters(['school-instructor-profiles' => 'schoolInstructorProfile'])
+    ->names('schoolInstructorProfiles');
 
-Route::resource('/learning-categories', LearningCategoryController::class)
-    ->parameters(['learning-categories' => 'learningCategory'])
-    ->names('learningCategories');
+Route::resource('/school-tracks',
+    SchoolTrackController::class)
+    ->parameters(['school-tracks' => 'schoolTrack'])
+    ->names('schoolTracks');
 
-Route::resource('/hashtags', HashtagController::class)
-    ->parameters(['hashtags' => 'hashtag'])
-    ->names('hashtags');
+Route::resource('/school-hashtags',
+    SchoolHashtagController::class)
+    ->parameters(['school-hashtags' => 'schoolHashtag'])
+    ->names('schoolHashtags');
 
-Route::resource('/courses', CourseController::class);
+Route::resource('/school-courses',
+    SchoolCourseController::class)
+    ->parameters(['school-courses' => 'schoolCourse'])
+    ->names('schoolCourses');
 
 Route::resource('/course-prices', CoursePriceController::class)
     ->parameters(['course-prices' => 'coursePrice'])
     ->names('coursePrices');
 
-Route::resource('/modules', ModuleController::class);
+Route::resource('/school-modules',
+    SchoolModuleController::class)
+    ->parameters(['school-modules' => 'schoolModule'])
+    ->names('schoolModules');
 
-Route::resource('/lessons', LessonController::class);
+Route::resource('/school-lessons',
+    SchoolLessonController::class)
+    ->parameters(['school-lessons' => 'schoolLesson'])
+    ->names('schoolLessons');
 
-Route::resource('/assignments', AssignmentController::class);
+Route::resource('/school-assignments',
+    SchoolAssignmentController::class)
+    ->parameters(['school-assignments' => 'schoolAssignment'])
+    ->names('schoolAssignments');
 
-Route::resource('/course-schedules', CourseScheduleController::class)
-    ->parameters(['course-schedules' => 'courseSchedule'])
-    ->names('courseSchedules');
+Route::resource('/school-course-schedules',
+    SchoolCourseScheduleController::class)
+    ->parameters(['school-course-schedules' => 'schoolCourseSchedule'])
+    ->names('schoolCourseSchedules');
 
-Route::resource('/cohort-enrollments', CohortEnrollmentController::class)
-    ->only(['index'])
-    ->parameters(['cohort-enrollments' => 'cohortEnrollment'])
-    ->names('cohortEnrollments');
+Route::resource('/school-cohort-enrollments',
+    SchoolCohortEnrollmentController::class)
+    ->parameters(['school-cohort-enrollments' => 'schoolCohortEnrollment'])
+    ->names('schoolCohortEnrollments');
 
-Route::resource('/enrollments', EnrollmentController::class);
+Route::resource('/school-enrollments',
+    SchoolEnrollmentController::class)
+    ->parameters(['school-enrollments' => 'schoolEnrollment'])
+    ->names('schoolEnrollments');
 
-Route::resource('/quizzes', QuizController::class);
+Route::resource('/school-quizzes',
+    SchoolQuizController::class)
+    ->parameters(['school-quizzes' => 'schoolQuiz'])
+    ->names('schoolQuizzes');
 
-Route::resource('/quiz-questions', QuizQuestionController::class)
-    ->parameters(['quiz-questions' => 'quizQuestion'])
-    ->names('quizQuestions');
+Route::resource('/school-quiz-questions',
+    SchoolQuizQuestionController::class)
+    ->parameters(['school-quiz-questions' => 'schoolQuizQuestion'])
+    ->names('schoolQuizQuestions');
 
 Route::resource('/quiz-answers', QuizAnswerController::class)
     ->parameters(['quiz-answers' => 'quizAnswer'])
@@ -117,7 +140,10 @@ Route::resource('/subscription-plans', SubscriptionPlanController::class)
 
 Route::resource('/currencies', CurrencyController::class);
 
-Route::resource('/orders', OrderController::class);
+Route::resource('/school-orders',
+    SchoolOrderController::class)
+    ->parameters(['school-orders' => 'schoolOrder'])
+    ->names('schoolOrders');
 
 Route::resource('/blog-rubrics', BlogRubricController::class)
     ->parameters(['blog-rubrics' => 'blogRubric'])

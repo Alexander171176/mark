@@ -2,390 +2,316 @@
 /**
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
- * Список потоков (Lesson)
+ *
+ * Список расписаний курсов школы
  */
-import { defineProps, ref, computed, watch } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { router, Link } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import BulkActionSelect from '@/Components/Admin/CourseSchedule/Select/BulkActionSelect.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
-import CourseScheduleTable from '@/Components/Admin/CourseSchedule/Table/CourseScheduleTable.vue'
-import CourseScheduleCardGrid from '@/Components/Admin/CourseSchedule/View/CourseScheduleCardGrid.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import SortSelect from '@/Components/Admin/CourseSchedule/Sort/SortSelect.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
 
-// --- Инициализация экземпляр i18n, toast ---
+import BulkActionSelect from '@/Components/Admin/School/CourseSchedule/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/School/CourseSchedule/Sort/SortSelect.vue'
+import CourseScheduleTable from '@/Components/Admin/School/CourseSchedule/Table/CourseScheduleTable.vue'
+import CourseScheduleCardGrid from '@/Components/Admin/School/CourseSchedule/View/CourseScheduleCardGrid.vue'
+
 const { t } = useI18n()
 const toast = useToast()
 
-/**
- * Входные свойства компонента.
- */
 const props = defineProps({
-    schedules: Array,
-    schedulesCount: Number,
-    adminCountCourseSchedules: Number,
-    adminSortCourseSchedules: String,
-    currentLocale: String,
-    availableLocales: Array,
+    schedules: { type: Array, default: () => [] },
+    schedulesCount: { type: Number, default: 0 },
+
+    adminSchoolCourseSchedulesPerPage: { type: Number, default: 10 },
+    adminSchoolCourseSchedulesDefaultSort: { type: String, default: 'idDesc' },
+
+    currentLocale: { type: String, default: 'ru' },
+    availableLocales: { type: Array, default: () => ['ru', 'en', 'kk'] },
 })
 
-/** Вид: таблица или карточки (общий ключ, как у курсов/модулей/потоков) */
 const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
 
 watch(viewMode, (val) => {
     localStorage.setItem('admin_view_mode', val)
 })
 
-/** Кол-во элементов на странице */
-const itemsPerPage = ref(props.adminCountCourseSchedules || 10)
+const localSchedules = ref([])
 
-/**
- * Наблюдатель за изменением количества элементов на странице.
- */
+watch(
+    () => props.schedules,
+    (newVal) => {
+        localSchedules.value = JSON.parse(JSON.stringify(newVal || []))
+    },
+    { immediate: true, deep: true }
+)
+
+const itemsPerPage = ref(props.adminSchoolCourseSchedulesPerPage || 10)
+
 watch(itemsPerPage, (newVal) => {
     router.put(route('admin.settings.updateAdminCountCourseSchedules'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-        onError: (errors) =>
-            toast.error(errors.value || 'Ошибка обновления сортировки.'),
+        onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
     })
 })
 
-/** Параметр сортировки */
-const sortParam = ref(props.adminSortCourseSchedules || 'idDesc')
+const sortParam = ref(props.adminSchoolCourseSchedulesDefaultSort || 'idDesc')
 
-/**
- * Наблюдатель за изменением параметра сортировки.
- */
 watch(sortParam, (newVal) => {
     router.put(route('admin.settings.updateAdminSortCourseSchedules'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => toast.info('Сортировка успешно изменена'),
-        onError: (errors) => {
-            const firstError = errors ? Object.values(errors)[0] : null
-            toast.error(firstError || 'Ошибка обновления кол-ва элементов.')
-        },
+        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
     })
 })
 
-/** Модалка удаления */
 const showConfirmDeleteModal = ref(false)
 const scheduleToDeleteId = ref(null)
 const scheduleToDeleteTitle = ref('')
 
-/**
- * Открывает модальное окно подтверждения удаления с входными переменными.
- */
-const confirmDelete = (id, title) => {
-    scheduleToDeleteId.value = id
-    scheduleToDeleteTitle.value = title
+const confirmDelete = (scheduleOrId, title = null) => {
+    if (typeof scheduleOrId === 'object') {
+        scheduleToDeleteId.value = scheduleOrId.id
+        scheduleToDeleteTitle.value = title || scheduleOrId.title || `ID: ${scheduleOrId.id}`
+    } else {
+        scheduleToDeleteId.value = scheduleOrId
+        scheduleToDeleteTitle.value = title || `ID: ${scheduleOrId}`
+    }
+
     showConfirmDeleteModal.value = true
 }
 
-/**
- * Закрывает модальное окно подтверждения и сбрасывает связанные переменные.
- */
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     scheduleToDeleteId.value = null
     scheduleToDeleteTitle.value = ''
 }
 
-/**
- * Отправляет запрос на удаление.
- */
 const deleteSchedule = () => {
     if (scheduleToDeleteId.value === null) return
+
     const idToDelete = scheduleToDeleteId.value
     const titleToDelete = scheduleToDeleteTitle.value
 
-    router.delete(route('admin.courseSchedules.destroy', { courseSchedule: idToDelete }), {
+    router.delete(route('admin.schoolCourseSchedules.destroy', {
+        schoolCourseSchedule: idToDelete,
+    }), {
         preserveScroll: true,
         preserveState: false,
         onSuccess: () => {
-            closeModal()
-            toast.success(`Поток "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
+            toast.success(`Расписание "${titleToDelete || 'ID: ' + idToDelete}" удалено.`)
         },
         onError: (errors) => {
-            closeModal()
-            const errorMsg =
-                errors.general ||
-                errors[Object.keys(errors)[0]] ||
-                'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Поток: ${titleToDelete || 'ID: ' + idToDelete})`)
+            const errorKey = Object.keys(errors || {})[0]
+            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
+
+            toast.error(`${errorMsg} (Расписание: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
-        onFinish: () => {
-            scheduleToDeleteId.value = null
-            scheduleToDeleteTitle.value = ''
-        },
+        onFinish: () => closeModal(),
     })
 }
 
-/**
- * Отправляет запрос для клонирования.
- */
-const cloneSchedule = (scheduleObject) => { // Переименовываем параметр для ясности
-    // Извлекаем ID из объекта
-    const scheduleId = scheduleObject?.id; // Используем опциональную цепочку на случай undefined/null
-    const scheduleTitle = scheduleObject?.title || `ID: ${scheduleId}`; // Пытаемся получить title или используем ID
-
-    // Проверяем, что ID получен
-    if (typeof scheduleId === 'undefined' || scheduleId === null) {
-        console.error("Не удалось получить ID потока для клонирования", scheduleObject);
-        toast.error("Не удалось определить поток для клонирования.");
-        return;
-    }
-
-    // Используем confirm с извлеченным ID (или title)
-    if (!confirm(`Вы уверены, что хотите клонировать поток "${scheduleTitle}"?`)) {
-        return;
-    }
-
-    // В route() передаем именно scheduleId
-    router.post(
-        route('admin.actions.courseSchedules.clone', { courseSchedule: scheduleId }),
-        {}, {
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                toast.success(`Поток "${scheduleTitle}" успешно клонирован.`);
-            },
-            onError: (errors) => {
-                const errorKey = Object.keys(errors)[0];
-                const errorMessage = errors[errorKey] || `Ошибка клонирования потока "${scheduleTitle}".`;
-                toast.error(errorMessage);
-            }
-    });
-};
-
-/** Пагинация и поиск */
 const currentPage = ref(1)
 const searchQuery = ref('')
 
-/** Сортировка массива потоков */
-const sortSchedules = (schedules) => {
-    const value = sortParam.value
-    const list = schedules.slice()
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
-    // --- ID ---
-    if (value === 'idAsc') {
-        return list.sort((a, b) => a.id - b.id)
+const sortSchedules = (items) => {
+    const list = (items || []).slice()
+
+    if (sortParam.value === 'idAsc') {
+        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
     }
 
-    if (value === 'idDesc') {
-        return list.sort((a, b) => b.id - a.id)
+    if (sortParam.value === 'idDesc') {
+        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
     }
 
-    // --- Фильтры по активности ---
-    if (value === 'activity') return schedules.filter(s => s.activity)
-    if (value === 'inactive') return schedules.filter(s => !s.activity)
-
-    // --- Фильтры по онлайн/офлайн ---
-    if (value === 'online') return schedules.filter(s => s.is_online)
-    if (value === 'offline') return schedules.filter(s => !s.is_online)
-
-    // --- Сортировка по отношениям (курс, инструктор) ---
-
-    // Курс — по названию курса (course.title) по возрастанию
-    if (value === 'courseTitle') {
-        return list.sort((a, b) => {
-            const av = (a.course?.title || '').toLowerCase()
-            const bv = (b.course?.title || '').toLowerCase()
-            if (av < bv) return -1
-            if (av > bv) return 1
-            return 0
-        })
+    if (sortParam.value === 'sortAsc') {
+        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
     }
 
-    // Инструктор — сначала user.name / user.email, потом instructor.title
-    if (value === 'instructorUser') {
-        const getInstructorKey = (s) => {
-            const userName  = s.instructor?.user?.name || ''
-            const userEmail = s.instructor?.user?.email || ''
-            const title     = s.instructor?.title || ''
-
-            // приоритет: name → email → title
-            return (userName || userEmail || title).toLowerCase()
-        }
-
-        return list.sort((a, b) => {
-            const av = getInstructorKey(a)
-            const bv = getInstructorKey(b)
-            if (av < bv) return -1
-            if (av > bv) return 1
-            return 0
-        })
+    if (sortParam.value === 'sortDesc') {
+        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
     }
 
-    // --- Даты (новые сверху, null в конец) ---
+    if (sortParam.value === 'titleAsc') {
+        return list.sort((a, b) => normalize(a.title).localeCompare(normalize(b.title)))
+    }
+
+    if (sortParam.value === 'titleDesc') {
+        return list.sort((a, b) => normalize(b.title).localeCompare(normalize(a.title)))
+    }
+
+    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
+    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
+
+    if (sortParam.value === 'online') return list.filter(item => !!item.is_online)
+    if (sortParam.value === 'offline') return list.filter(item => !item.is_online)
+
     if ([
         'starts_at',
         'ends_at',
         'enroll_starts_at',
-        'enroll_ends_at'
-    ].includes(value)) {
+        'enroll_ends_at',
+    ].includes(sortParam.value)) {
         return list.sort((a, b) => {
-            const aTime = a[value] ? new Date(a[value]).getTime() : 0
-            const bTime = b[value] ? new Date(b[value]).getTime() : 0
-            // от новых к старым
+            const aTime = a[sortParam.value] ? new Date(a[sortParam.value]).getTime() : 0
+            const bTime = b[sortParam.value] ? new Date(b[sortParam.value]).getTime() : 0
+
             return bTime - aTime
         })
     }
 
-    // --- Числовые поля — по убыванию (больше → выше) ---
-    if (['views', 'capacity'].includes(value)) {
-        return list.sort((a, b) => {
-            const av = a[value] ?? 0
-            const bv = b[value] ?? 0
-            return bv - av
-        })
+    if ([
+        'views',
+        'capacity',
+        'images_count',
+        'cohort_enrollments_count',
+    ].includes(sortParam.value)) {
+        return list.sort((a, b) => (b[sortParam.value] ?? 0) - (a[sortParam.value] ?? 0))
     }
 
-    // --- Остальные строковые/числовые поля — по возрастанию ---
-    // (status, title, sort и т.д.)
-    return list.sort((a, b) => {
-        const av = a[value] ?? ''
-        const bv = b[value] ?? ''
-        if (av < bv) return -1
-        if (av > bv) return 1
-        return 0
-    })
+    return list
 }
 
-/** Фильтрация + сортировка (поиск по title) */
 const filteredSchedules = computed(() => {
-    let filtered = props.schedules || []
+    let filtered = localSchedules.value || []
+    const q = normalize(searchQuery.value)
 
-    if (searchQuery.value) {
-        const q = searchQuery.value.toLowerCase()
-        filtered = filtered.filter(s =>
-            (s.title || '').toLowerCase().includes(q) ||
-            (s.slug || '').toLowerCase().includes(q)
-        )
+    if (!q) {
+        return sortSchedules(filtered)
     }
+
+    filtered = filtered.filter((schedule) => {
+        const title = normalize(schedule?.title)
+        const slug = normalize(schedule?.slug)
+        const notes = normalize(schedule?.notes)
+        const location = normalize(schedule?.location)
+        const courseTitle = normalize(schedule?.course?.title)
+        const instructorTitle = normalize(schedule?.instructor?.title)
+        const instructorUser = normalize(schedule?.instructor?.user?.name || schedule?.instructor?.user?.email)
+
+        return (
+            title.includes(q) ||
+            slug.includes(q) ||
+            notes.includes(q) ||
+            location.includes(q) ||
+            courseTitle.includes(q) ||
+            instructorTitle.includes(q) ||
+            instructorUser.includes(q)
+        )
+    })
 
     return sortSchedules(filtered)
 })
 
-/** Пагинация */
 const paginatedSchedules = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage.value
-    return filteredSchedules.value.slice(start, start + itemsPerPage.value)
+    const per = Number(itemsPerPage.value || 20)
+    const start = (currentPage.value - 1) * per
+
+    return filteredSchedules.value.slice(start, start + per)
 })
 
-/**
- * Вычисляемое свойство, возвращающее общее количество страниц пагинации.
- */
-const totalPages = computed(() =>
-    Math.ceil((filteredSchedules.value.length || 0) / itemsPerPage.value)
-)
+watch([itemsPerPage, searchQuery], () => {
+    currentPage.value = 1
+})
 
-/** Обновление сортировки (drag&drop) */
+const patchSchedule = (scheduleId, payload) => {
+    const index = localSchedules.value.findIndex(schedule => schedule.id === scheduleId)
+
+    if (index !== -1) {
+        localSchedules.value[index] = {
+            ...localSchedules.value[index],
+            ...payload,
+        }
+    }
+}
+
+const selectedSchedules = ref([])
+
+const toggleAll = ({ ids, checked }) => {
+    selectedSchedules.value = checked ? [...ids] : []
+}
+
+const toggleSelectSchedule = (id) => {
+    const index = selectedSchedules.value.indexOf(id)
+
+    if (index > -1) {
+        selectedSchedules.value.splice(index, 1)
+    } else {
+        selectedSchedules.value.push(id)
+    }
+}
+
 const handleSortOrderUpdate = (orderedIds) => {
     const startSort = (currentPage.value - 1) * itemsPerPage.value
 
-    const sortData = orderedIds.map((id, index) => ({
+    const items = orderedIds.map((id, index) => ({
         id,
         sort: startSort + index + 1,
     }))
 
-    router.put(
-        route('admin.actions.courseSchedules.updateSortBulk'),
-        { schedules: sortData },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.success('Порядок потоков успешно обновлён.'),
-            onError: (errors) => {
-                console.error('Ошибка обновления сортировки потоков:', errors)
-                toast.error(
-                    errors?.general ||
-                    errors?.schedules ||
-                    'Не удалось обновить порядок потоков.'
-                )
-                router.reload({ only: ['schedules'], preserveScroll: true })
-            },
-        }
-    )
+    if (!items.length) return
+
+    router.put(route('admin.actions.schoolCourseSchedules.updateSortBulk'), { items }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => toast.success('Порядок расписаний успешно обновлён.'),
+        onError: (errors) => {
+            console.error('Ошибка обновления сортировки расписаний:', errors)
+            toast.error(errors?.message || errors?.general || 'Не удалось обновить порядок расписаний.')
+
+            router.reload({
+                only: ['schedules'],
+                preserveScroll: true,
+            })
+        },
+    })
 }
 
-/** Массовые действия */
-const selectedSchedules = ref([])
-
-/**
- * Логика выбора всех для массовых действий.
- */
-const toggleAll = ({ ids, checked }) => {
-    if (checked) {
-        selectedSchedules.value = [...ids]
-    } else {
-        selectedSchedules.value = []
-    }
-}
-
-/**
- * Обрабатывает событие выбора/снятия выбора одной строки.
- */
-const toggleSelectSchedule = (id) => {
-    const idx = selectedSchedules.value.indexOf(id)
-    if (idx > -1) selectedSchedules.value.splice(idx, 1)
-    else selectedSchedules.value.push(id)
-}
-
-/**
- * Выполняет массовое включение/выключение активности выбранных.
- */
 const bulkToggleActivity = (newActivity) => {
     if (!selectedSchedules.value.length) {
-        toast.warning('Выберите потоки для активации/деактивации')
+        toast.warning('Выберите расписания для активации/деактивации.')
         return
     }
 
-    router.put(
-        route('admin.actions.courseSchedules.bulkUpdateActivity'),
-        { ids: selectedSchedules.value, activity: newActivity },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.success('Активность потоков массово обновлена')
-                const updatedIds = [...selectedSchedules.value]
-                selectedSchedules.value = []
+    const idsToUpdate = [...selectedSchedules.value]
 
-                paginatedSchedules.value.forEach(l => {
-                    if (updatedIds.includes(l.id)) l.activity = newActivity
-                })
-            },
-            onError: (errors) => {
-                const msg =
-                    errors?.ids || errors?.activity || errors?.general ||
-                    'Не удалось массово обновить активность потоков'
-                toast.error(msg)
-            },
-        }
-    )
+    router.put(route('admin.actions.schoolCourseSchedules.bulkUpdateActivity'), {
+        ids: idsToUpdate,
+        activity: newActivity,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            idsToUpdate.forEach(id => patchSchedule(id, { activity: newActivity }))
+            selectedSchedules.value = []
+            toast.success('Активность выбранных расписаний обновлена.')
+        },
+        onError: (errors) => {
+            toast.error(errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.')
+        },
+    })
 }
 
-/**
- * Обрабатывает выбор действия в селекте массовых действий.
- */
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedSchedules.value = paginatedSchedules.value.map(l => l.id)
+        selectedSchedules.value = paginatedSchedules.value.map(schedule => schedule.id)
     } else if (action === 'deselectAll') {
         selectedSchedules.value = []
     } else if (action === 'activate') {
@@ -397,34 +323,38 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-/** Переключение активности одного потока */
 const toggleActivity = (schedule) => {
     const newActivity = !schedule.activity
+    const scheduleTitle = schedule.title || `ID: ${schedule.id}`
     const actionText = newActivity ? t('activated') : t('deactivated')
 
-    router.put(
-        route('admin.actions.courseSchedules.updateActivity', { courseSchedule: schedule.id }),
-        { activity: newActivity },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                schedule.activity = newActivity
-                toast.success(`Поток "${schedule.title}" ${actionText}.`)
-            },
-            onError: (errors) => {
-                toast.error(
-                    errors?.activity ||
-                    errors?.general ||
-                    `Ошибка изменения активности для потока "${schedule.title}".`
-                )
-            },
-        }
-    )
+    router.put(route('admin.actions.schoolCourseSchedules.updateActivity', {
+        schoolCourseSchedule: schedule.id,
+    }), {
+        activity: newActivity,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            patchSchedule(schedule.id, { activity: newActivity })
+            schedule.activity = newActivity
+            toast.success(`Расписание "${scheduleTitle}" ${actionText}.`)
+        },
+        onError: (errors) => {
+            toast.error(errors?.activity || errors?.general || `Ошибка изменения активности для расписания "${scheduleTitle}".`)
+        },
+    })
 }
 
-/** Ссылка для табов локалей */
-const localeLink = (locale) => route('admin.courseSchedules.index', { locale })
+const cloneSchedule = (schedule) => {
+    router.post(route('admin.actions.schoolCourseSchedules.clone', {
+        schoolCourseSchedule: schedule.id,
+    }), {}, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('Расписание успешно клонировано.'),
+        onError: () => toast.error('Ошибка при клонировании расписания.'),
+    })
+}
 </script>
 
 <template>
@@ -435,15 +365,16 @@ const localeLink = (locale) => route('admin.courseSchedules.index', { locale })
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <!-- Добавить модуль -->
-                    <DefaultButton :href="route('admin.courseSchedules.create')">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                    <DefaultButton :href="route('admin.schoolCourseSchedules.create')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
+                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0"
+                                 viewBox="0 0 16 16">
                                 <path
                                     d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
                                 />
@@ -451,58 +382,48 @@ const localeLink = (locale) => route('admin.courseSchedules.index', { locale })
                         </template>
                         {{ t('addSchedule') }}
                     </DefaultButton>
-
-                    <BulkActionSelect
-                        v-if="schedulesCount"
-                        @change="handleBulkAction"
-                    />
                 </div>
-
-                <!-- Локали + счётчик -->
-                <div class="flex items-center justify-between mt-5">
-                    <div
-                        class="flex items-center justify-end space-x-2 px-3 py-1
-                               border-x border-t border-gray-400 rounded-t-lg
-                               bg-gray-100 dark:bg-gray-900"
-                    >
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {{ t('localization') }}:
-                        </span>
-                        <template v-for="locale in availableLocales" :key="locale">
-                            <Link
-                                :href="localeLink(locale)"
-                                :class="[
-                                    'px-3 py-1 text-sm font-medium rounded-sm',
-                                    currentLocale === locale
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600'
-                                ]"
-                                preserve-scroll
-                                preserve-state
-                            >
-                                {{ locale.toUpperCase() }}
-                            </Link>
-                        </template>
-                    </div>
-
-                    <div class="flex items-center space-x-3">
-                        <CountTable v-if="schedulesCount">
-                            {{ schedulesCount }}
-                        </CountTable>
-
-                        <!-- Переключатель вида (таблица / карточки), общий для админки -->
-                        <ToggleViewButton v-model:viewMode="viewMode" />
-                    </div>
-
-                </div>
-
                 <SearchInput
                     v-if="schedulesCount"
                     v-model="searchQuery"
                     :placeholder="t('searchByName')"
                 />
+                <div v-if="schedulesCount"
+                     class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val"
+                    />
+                </div>
 
-                <!-- Таблица -->
+                <div v-if="schedulesCount"
+                     class="flex flex-col lg:flex-row items-center justify-between gap-3"
+                >
+                    <CountTable>{{ schedulesCount }}</CountTable>
+
+                    <BulkActionSelect @change="handleBulkAction" />
+
+                    <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div
+                    v-if="schedulesCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredSchedules.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                </div>
+
                 <CourseScheduleTable
                     v-if="viewMode === 'table'"
                     :schedules="paginatedSchedules"
@@ -515,7 +436,6 @@ const localeLink = (locale) => route('admin.courseSchedules.index', { locale })
                     @toggle-all="toggleAll"
                 />
 
-                <!-- Карточки -->
                 <CourseScheduleCardGrid
                     v-else
                     :schedules="paginatedSchedules"
@@ -529,23 +449,15 @@ const localeLink = (locale) => route('admin.courseSchedules.index', { locale })
                 />
 
                 <div
-                    class="flex justify-between items-center flex-col md:flex-row my-1"
                     v-if="schedulesCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
-                    <ItemsPerPageSelect
-                        :items-per-page="itemsPerPage"
-                        @update:itemsPerPage="itemsPerPage = $event"
-                    />
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredSchedules.length"
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
-                    />
-                    <SortSelect
-                        :sortParam="sortParam"
-                        @update:sortParam="val => (sortParam = val)"
                     />
                 </div>
             </div>

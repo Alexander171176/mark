@@ -1,9 +1,9 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import Welcome from '@/Components/Welcome.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import PagePropsModal from '@/Components/Admin/Dev/PagePropsModal.vue'
+import Welcome from '@/Components/Admin/Base/Welcome.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import PagePropsModal from '@/Components/Admin/UI/Dev/PagePropsModal.vue'
 
 const { t } = useI18n()
 </script>

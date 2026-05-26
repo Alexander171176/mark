@@ -1,7 +1,7 @@
 <script setup>
 import {defineProps} from 'vue';
 import AdminLayout from "@/Layouts/AdminLayout.vue";
-import TitlePage from "@/Components/Admin/Headlines/TitlePage.vue";
+import TitlePage from "@/Components/Admin/UI/Headlines/TitlePage.vue";
 
 const props = defineProps({
     phpinfo: String,

@@ -2,14 +2,16 @@
 import { defineProps } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue';
-import LabelInput from '@/Components/Admin/Input/LabelInput.vue';
-import InputText from '@/Components/Admin/Input/InputText.vue';
-import InputError from '@/Components/Admin/Input/InputError.vue';
-import PrimaryButton from '@/Components/Admin/Buttons/PrimaryButton.vue';
+
 import VueMultiselect from 'vue-multiselect';
+
+import AdminLayout from '@/Layouts/AdminLayout.vue';
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue';
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue';
+import InputText from '@/Components/Admin/UI/Input/InputText.vue';
+import InputError from '@/Components/Admin/UI/Input/InputError.vue';
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue';
 
 const { t } = useI18n();
 
@@ -77,7 +79,7 @@ const submit = () => {
                                 required
                                 autocomplete="name"
                             />
-                            <InputError class="mt-2" :message="form.errors.name"/>
+                            <InputError class="mt-2" :message="form.errors.name" />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -91,7 +93,7 @@ const submit = () => {
                                 required
                                 autocomplete="email"
                             />
-                            <InputError class="mt-2" :message="form.errors.email"/>
+                            <InputError class="mt-2" :message="form.errors.email" />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -105,7 +107,7 @@ const submit = () => {
                                 required
                                 autocomplete="new-password"
                             />
-                            <InputError class="mt-2" :message="form.errors.password"/>
+                            <InputError class="mt-2" :message="form.errors.password" />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -120,15 +122,15 @@ const submit = () => {
                                 required
                                 autocomplete="new-password"
                             />
-                            <InputError class="mt-2" :message="form.errors.password_confirmation"/>
+                            <InputError class="mt-2" :message="form.errors.password_confirmation" />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
-                            <LabelInput for="roles" :value="t('roles')" class="mb-1"/>
+                            <LabelInput for="roles" :value="t('roles')" class="mb-1" />
                             <VueMultiselect v-model="form.roles"
                                             :options="props.roles"
                                             :multiple="true"
-                                            :close-on-select="true"
+                                            :close-on-select="false"
                                             :placeholder="t('select')"
                                             label="name"
                                             track-by="name"
@@ -137,11 +139,11 @@ const submit = () => {
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
-                            <LabelInput for="permissions" :value="t('permissions')" class="mb-1"/>
+                            <LabelInput for="permissions" :value="t('permissions')" class="mb-1" />
                             <VueMultiselect v-model="form.permissions"
                                             :options="props.permissions"
                                             :multiple="true"
-                                            :close-on-select="true"
+                                            :close-on-select="false"
                                             :placeholder="t('select')"
                                             label="name"
                                             track-by="name"
@@ -151,7 +153,7 @@ const submit = () => {
                     </div>
 
                     <div class="flex items-center justify-center mt-4">
-                        <DefaultButton :href="route('admin.users.index')" class="mb-3">
+                        <DefaultButton :href="route('admin.users.index')">
                             <template #icon>
                                 <!-- SVG -->
                                 <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2" viewBox="0 0 16 16">

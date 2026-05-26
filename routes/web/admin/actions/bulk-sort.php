@@ -7,66 +7,66 @@ use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
-use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
-use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
-use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
-use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
+use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
-use App\Http\Controllers\Admin\School\Course\CourseController;
-use App\Http\Controllers\Admin\School\CourseSchedule\CourseScheduleController;
-use App\Http\Controllers\Admin\School\Hashtag\HashtagController;
-use App\Http\Controllers\Admin\School\InstructorProfile\InstructorProfileController;
-use App\Http\Controllers\Admin\School\LearningCategory\LearningCategoryController;
-use App\Http\Controllers\Admin\School\Lesson\LessonController;
-use App\Http\Controllers\Admin\School\Module\ModuleController;
-use App\Http\Controllers\Admin\School\Quiz\QuizController;
+use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
+use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
+use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
+use App\Http\Controllers\Admin\School\CourseSchedule\SchoolCourseScheduleController;
+use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
+use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileController;
+use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
+use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
+use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\QuizAnswerController;
-use App\Http\Controllers\Admin\School\QuizQuestion\QuizQuestionController;
+use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
+use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
+use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
-Route::put('/instructors/update-sort-bulk',
-    [InstructorProfileController::class, 'updateSortBulk'])
-    ->name('instructors.updateSortBulk');
+Route::put('/school-instructor-profiles/update-sort-bulk',
+    [SchoolInstructorProfileController::class, 'updateSortBulk'])
+    ->name('schoolInstructorProfiles.updateSortBulk');
 
-Route::put('/learning-categories/update-sort-bulk',
-    [LearningCategoryController::class, 'updateSortBulk'])
-    ->name('learningCategories.updateSortBulk');
+Route::put('/school-tracks/update-sort-bulk',
+    [SchoolTrackController::class, 'updateSortBulk'])
+    ->name('schoolTracks.updateSortBulk');
 
-Route::put('/hashtags/update-sort-bulk',
-    [HashtagController::class, 'updateSortBulk'])
-    ->name('hashtags.updateSortBulk');
+Route::put('/school-hashtags/update-sort-bulk',
+    [SchoolHashtagController::class, 'updateSortBulk'])
+    ->name('schoolHashtags.updateSortBulk');
 
-Route::put('/courses/update-sort-bulk',
-    [CourseController::class, 'updateSortBulk'])
-    ->name('courses.updateSortBulk');
+Route::put('/school-courses/update-sort-bulk',
+    [SchoolCourseController::class, 'updateSortBulk'])
+    ->name('schoolCourses.updateSortBulk');
 
-Route::put('/modules/update-sort-bulk',
-    [ModuleController::class, 'updateSortBulk'])
-    ->name('modules.updateSortBulk');
+Route::put('/school-modules/update-sort-bulk',
+    [SchoolModuleController::class, 'updateSortBulk'])
+    ->name('schoolModules.updateSortBulk');
 
-Route::put('/lessons/update-sort-bulk',
-    [LessonController::class, 'updateSortBulk'])
-    ->name('lessons.updateSortBulk');
+Route::put('/school-lessons/update-sort-bulk',
+    [SchoolLessonController::class, 'updateSortBulk'])
+    ->name('schoolLessons.updateSortBulk');
 
-Route::put('/assignments/update-sort-bulk',
-    [AssignmentController::class, 'updateSortBulk'])
-    ->name('assignments.updateSortBulk');
+Route::put('/school-assignments/update-sort-bulk',
+    [SchoolAssignmentController::class, 'updateSortBulk'])
+    ->name('schoolAssignments.updateSortBulk');
 
-Route::put('/course-schedules/update-sort-bulk',
-    [CourseScheduleController::class, 'updateSortBulk'])
-    ->name('courseSchedules.updateSortBulk');
+Route::put('/school-course-schedules/update-sort-bulk',
+    [SchoolCourseScheduleController::class, 'updateSortBulk'])
+    ->name('schoolCourseSchedules.updateSortBulk');
 
-Route::put('/quizzes/update-sort-bulk',
-    [QuizController::class, 'updateSortBulk'])
-    ->name('quizzes.updateSortBulk');
+Route::put('/school-quizzes/update-sort-bulk',
+    [SchoolQuizController::class, 'updateSortBulk'])
+    ->name('schoolQuizzes.updateSortBulk');
 
-Route::put('/quiz-questions/update-sort-bulk',
-    [QuizQuestionController::class, 'updateSortBulk'])
-    ->name('quizQuestions.updateSortBulk');
+Route::put('/school-quiz-questions/update-sort-bulk',
+    [SchoolQuizQuestionController::class, 'updateSortBulk'])
+    ->name('schoolQuizQuestions.updateSortBulk');
 
 Route::put('/quiz-answers/update-sort-bulk',
     [QuizAnswerController::class, 'updateSortBulk'])

@@ -1,265 +1,259 @@
 <script setup>
 /**
  * @version PulsarCMS 1.0
- * @author Александр Косолапов
- * Список зачислений (паттерн)
+ * @author Александр Косолапов <kosolapov1976@gmail.com>
+ *
+ * Список зачислений студентов
  */
-import { defineProps, ref, computed, watch } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import SortSelect from '@/Components/Admin/Enrollment/Sort/SortSelect.vue'
-import EnrollmentTable from '@/Components/Admin/Enrollment/Table/EnrollmentTable.vue'
-import EnrollmentCardGrid from '@/Components/Admin/Enrollment/View/EnrollmentCardGrid.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 
-// --- i18n, toast
+import EnrollmentTable from '@/Components/Admin/School/Enrollment/Table/EnrollmentTable.vue'
+import EnrollmentCardGrid from '@/Components/Admin/School/Enrollment/View/EnrollmentCardGrid.vue'
+import SortSelect from '@/Components/Admin/School/Enrollment/Sort/SortSelect.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+
+// Локализация и уведомления
 const { t } = useI18n()
 const toast = useToast()
 
-/**
- * Входные свойства компонента.
- */
+// Пропсы страницы списка зачислений
 const props = defineProps({
-    enrollments: {
-        type: Array,
-        default: () => [],
-    },
-    enrollmentsCount: {
-        type: Number,
-        default: 0,
-    },
-    adminCountEnrollments: {
-        type: Number,
-        default: 10,
-    },
-    adminSortEnrollments: {
-        type: String,
-        default: 'idDesc',
-    },
-    filters: {
-        type: Object,
-        default: () => ({
-            status: null,
-            user_id: null,
-            course_id: null,
-        }),
-    },
+    enrollments: { type: Array, default: () => [] },
+    enrollmentsCount: { type: Number, default: 0 },
+    filters: { type: Object, default: () => ({}) },
+
+    adminSchoolEnrollmentsPerPage: { type: Number, default: 10 },
+    adminSchoolEnrollmentsDefaultSort: { type: String, default: 'idDesc' },
+
+    users: { type: Array, default: () => [] },
+    courses: { type: Array, default: () => [] },
+    schedules: { type: Array, default: () => [] },
+    orders: { type: Array, default: () => [] },
 })
 
-/**
- * Вид: таблица или карточки (общий ключ, как у Courses / CohortEnrollments)
- */
+// Режим отображения списка
 const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
 
+// Сохранение режима отображения
 watch(viewMode, (val) => {
     localStorage.setItem('admin_view_mode', val)
 })
 
-/** Кол-во элементов на странице (из настроек) */
-const itemsPerPage = ref(props.adminCountEnrollments || 10)
+// Количество элементов на странице
+const itemsPerPage = ref(props.adminSchoolEnrollmentsPerPage ?? 10)
 
-/**
- * Сохранение настройки количества элементов на странице.
- */
+// Сохранение количества элементов
 watch(itemsPerPage, (newVal) => {
-    router.put(
-        route('admin.settings.updateAdminCountEnrollments'),
-        { value: newVal },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-            onError: (errors) =>
-                toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
-        },
-    )
+    router.put(route('admin.settings.updateAdminCountEnrollments'), { value: newVal }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
+        onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+    })
 })
 
-/** Параметр сортировки (из настроек) */
-const sortParam = ref(props.adminSortEnrollments || 'idDesc')
+// Параметр сортировки
+const sortParam = ref(props.adminSchoolEnrollmentsDefaultSort ?? 'idDesc')
 
-/**
- * Сохранение настройки сортировки.
- */
+// Сохранение выбранной сортировки
 watch(sortParam, (newVal) => {
-    router.put(
-        route('admin.settings.updateAdminSortEnrollments'),
-        { value: newVal },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.info('Сортировка успешно изменена'),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
-        },
-    )
+    router.put(route('admin.settings.updateAdminSortEnrollments'), { value: newVal }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => toast.info('Сортировка успешно изменена'),
+        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
+    })
 })
 
-/** Модалка удаления */
-const showConfirmDeleteModal = ref(false)
-const enrollmentToDeleteId = ref(null)
+// Текущая страница пагинации
+const currentPage = ref(1)
 
-/**
- * Открывает модальное окно подтверждения удаления.
- */
-const confirmDelete = (id) => {
-    enrollmentToDeleteId.value = id
+// Поисковый запрос
+const searchQuery = ref('')
+
+// Состояние модального окна удаления
+const showConfirmDeleteModal = ref(false)
+
+// Выбранное зачисление для удаления
+const enrollmentToDelete = ref(null)
+
+// Открытие модального окна удаления
+const confirmDelete = (enrollment) => {
+    enrollmentToDelete.value = enrollment
     showConfirmDeleteModal.value = true
 }
 
-/**
- * Закрывает модальное окно подтверждения удаления.
- */
+// Закрытие модального окна
 const closeModal = () => {
     showConfirmDeleteModal.value = false
-    enrollmentToDeleteId.value = null
+    enrollmentToDelete.value = null
 }
 
-/**
- * Отправляет запрос на удаление зачисления (soft delete).
- */
+// Удаление зачисления
 const deleteEnrollment = () => {
-    if (enrollmentToDeleteId.value === null) return
-    const idToDelete = enrollmentToDeleteId.value
+    if (!enrollmentToDelete.value?.id) return
 
-    router.delete(
-        route('admin.enrollments.destroy', { enrollment: idToDelete }),
-        {
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                closeModal()
-                toast.success('Зачисление удалено', { id: idToDelete })
-            },
-            onError: (errors) => {
-                closeModal()
-                const errorMsg =
-                    errors.general ||
-                    errors[Object.keys(errors)[0]] ||
-                    'Произошла ошибка при удалении.'
-                toast.error(`${errorMsg} (ID: ${idToDelete})`)
-            },
-            onFinish: () => {
-                enrollmentToDeleteId.value = null
-            },
+    const idToDelete = enrollmentToDelete.value.id
+
+    router.delete(route('admin.schoolEnrollments.destroy', {
+        schoolEnrollment: idToDelete,
+    }), {
+        preserveScroll: true,
+        preserveState: false,
+        onSuccess: () => {
+            toast.success(`Зачисление ID: ${idToDelete} удалено.`)
         },
-    )
+        onError: (errors) => {
+            const firstKey = Object.keys(errors || {})[0]
+            const errorMsg = errors?.general || errors?.[firstKey] || 'Ошибка при удалении зачисления.'
+
+            toast.error(`${errorMsg} ID: ${idToDelete}`)
+        },
+        onFinish: () => closeModal(),
+    })
 }
 
-/** Пагинация и поиск */
-const currentPage = ref(1)
-const searchQuery = ref('')
+// Нормализация значения для поиска и сортировки
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
-/**
- * Сортировка массива зачислений.
- * sortParam:
- *  - idAsc / idDesc
- *  - started_at / expires_at / completed_at (новые сверху)
- *  - status
- *  - progress_desc (по прогрессу)
- */
-const sortEnrollments = (enrollments) => {
-    const value = sortParam.value
-    const list = enrollments.slice()
+// Преобразование даты в timestamp
+const toTime = (value) => {
+    if (!value) return 0
 
-    if (value === 'idAsc') {
-        return list.sort((a, b) => a.id - b.id)
-    }
+    const time = new Date(value).getTime()
 
-    if (value === 'idDesc') {
-        return list.sort((a, b) => b.id - a.id)
-    }
-
-    if (['started_at', 'expires_at', 'completed_at'].includes(value)) {
-        // Новые сверху, null в конец
-        return list.sort((a, b) => {
-            const aTime = a[value] ? new Date(a[value]).getTime() : 0
-            const bTime = b[value] ? new Date(b[value]).getTime() : 0
-            return bTime - aTime
-        })
-    }
-
-    if (value === 'progress_desc') {
-        return list.sort((a, b) => {
-            const av = a.progress_percent ?? 0
-            const bv = b.progress_percent ?? 0
-            return bv - av
-        })
-    }
-
-    if (value === 'status') {
-        return list.sort((a, b) => {
-            const av = a.status || ''
-            const bv = b.status || ''
-            if (av < bv) return -1
-            if (av > bv) return 1
-            return 0
-        })
-    }
-
-    // По умолчанию — id по убыванию
-    return list.sort((a, b) => b.id - a.id)
+    return Number.isNaN(time) ? 0 : time
 }
 
-/**
- * Фильтрация + сортировка.
- * Поиск: по user.name, user.email, course.title, course.slug, статусу.
- */
+// Сортировка зачислений
+const sortEnrollments = (items) => {
+    const list = items.slice()
+
+    switch (sortParam.value) {
+        case 'idAsc':
+            return list.sort((a, b) => a.id - b.id)
+
+        case 'idDesc':
+            return list.sort((a, b) => b.id - a.id)
+
+        case 'startedAtAsc':
+            return list.sort((a, b) => toTime(a.started_at) - toTime(b.started_at))
+
+        case 'startedAtDesc':
+            return list.sort((a, b) => toTime(b.started_at) - toTime(a.started_at))
+
+        case 'completedAtAsc':
+            return list.sort((a, b) => toTime(a.completed_at) - toTime(b.completed_at))
+
+        case 'completedAtDesc':
+            return list.sort((a, b) => toTime(b.completed_at) - toTime(a.completed_at))
+
+        case 'expiresAtAsc':
+            return list.sort((a, b) => toTime(a.expires_at) - toTime(b.expires_at))
+
+        case 'expiresAtDesc':
+            return list.sort((a, b) => toTime(b.expires_at) - toTime(a.expires_at))
+
+        case 'progressAsc':
+            return list.sort((a, b) => (a.progress_percent ?? 0) - (b.progress_percent ?? 0))
+
+        case 'progressDesc':
+            return list.sort((a, b) => (b.progress_percent ?? 0) - (a.progress_percent ?? 0))
+
+        case 'statusAsc':
+            return list.sort((a, b) => normalize(a.status).localeCompare(normalize(b.status)))
+
+        case 'statusDesc':
+            return list.sort((a, b) => normalize(b.status).localeCompare(normalize(a.status)))
+
+        case 'userNameAsc':
+            return list.sort((a, b) =>
+                normalize(a.user?.name).localeCompare(normalize(b.user?.name))
+            )
+
+        case 'userNameDesc':
+            return list.sort((a, b) =>
+                normalize(b.user?.name).localeCompare(normalize(a.user?.name))
+            )
+
+        case 'courseTitleAsc':
+            return list.sort((a, b) =>
+                normalize(a.course?.title).localeCompare(normalize(b.course?.title))
+            )
+
+        case 'courseTitleDesc':
+            return list.sort((a, b) =>
+                normalize(b.course?.title).localeCompare(normalize(a.course?.title))
+            )
+
+        default:
+            return list
+    }
+}
+
+// Фильтрация и поиск зачислений
 const filteredEnrollments = computed(() => {
-    let filtered = props.enrollments || []
+    let filtered = Array.isArray(props.enrollments) ? props.enrollments : []
 
     if (searchQuery.value) {
-        const q = searchQuery.value.toLowerCase()
+        const q = normalize(searchQuery.value)
 
-        filtered = filtered.filter((e) => {
-            const userName = e.user?.name?.toLowerCase() || ''
-            const userEmail = e.user?.email?.toLowerCase() || ''
-            const courseTitle = e.course?.title?.toLowerCase() || ''
-            const courseSlug = e.course?.slug?.toLowerCase() || ''
-            const status = e.status?.toLowerCase() || ''
+        filtered = filtered.filter((enrollment) => {
+            const values = [
+                enrollment.id,
+                enrollment.status,
 
-            return (
-                userName.includes(q) ||
-                userEmail.includes(q) ||
-                courseTitle.includes(q) ||
-                courseSlug.includes(q) ||
-                status.includes(q)
-            )
+                enrollment.user?.name,
+                enrollment.user?.email,
+
+                enrollment.course?.title,
+                enrollment.course?.slug,
+
+                enrollment.schedule?.title,
+                enrollment.schedule?.slug,
+
+                enrollment.order?.number,
+
+                enrollment.notes,
+            ]
+
+            return values.some(value => normalize(value).includes(q))
         })
     }
 
     return sortEnrollments(filtered)
 })
 
-/** Пагинация */
+// Пагинация списка зачислений
 const paginatedEnrollments = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value
-    return filteredEnrollments.value.slice(
-        start,
-        start + itemsPerPage.value,
-    )
+
+    return filteredEnrollments.value.slice(start, start + itemsPerPage.value)
 })
 
-/**
- * Общее количество страниц.
- */
-const totalPages = computed(() =>
-    Math.ceil((filteredEnrollments.value.length || 0) / itemsPerPage.value),
-)
+// Общее количество страниц
+const totalPages = computed(() => {
+    if (!itemsPerPage.value) return 1
 
-// Если после фильтрации текущая страница > totalPages — откатываем
-watch(filteredEnrollments, () => {
+    return Math.ceil(filteredEnrollments.value.length / itemsPerPage.value) || 1
+})
+
+// Корректировка страницы после фильтрации
+watch([filteredEnrollments, itemsPerPage], () => {
     if (currentPage.value > totalPages.value) {
-        currentPage.value = totalPages.value || 1
+        currentPage.value = totalPages.value
     }
 })
 </script>
@@ -267,24 +261,22 @@ watch(filteredEnrollments, () => {
 <template>
     <AdminLayout :title="t('enrollments')">
         <template #header>
-            <TitlePage>{{ t('enrollments') }}</TitlePage>
+            <TitlePage>
+                {{ t('enrollments') }}
+            </TitlePage>
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <!-- Верхняя панель: кнопка + счётчик + переключение вида -->
-                <div class="flex justify-between items-center mb-4">
-                    <!-- Добавить зачисление -->
-                    <DefaultButton :href="route('admin.enrollments.create')">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                    <DefaultButton :href="route('admin.schoolEnrollments.create')">
                         <template #icon>
-                            <svg
-                                class="w-4 h-4 fill-current opacity-50 shrink-0"
-                                viewBox="0 0 16 16"
-                            >
+                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
                                 <path
                                     d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
                                 />
@@ -292,46 +284,44 @@ watch(filteredEnrollments, () => {
                         </template>
                         {{ t('addEnrollment') }}
                     </DefaultButton>
-
-                    <div class="flex items-center space-x-3">
-                        <CountTable v-if="enrollmentsCount">
-                            {{ enrollmentsCount }}
-                        </CountTable>
-
-                        <ToggleViewButton v-if="enrollmentsCount" v-model:viewMode="viewMode" />
-                    </div>
                 </div>
 
-                <!-- Поиск -->
                 <SearchInput
                     v-if="enrollmentsCount"
                     v-model="searchQuery"
                     :placeholder="t('search')"
                 />
 
-                <!-- Таблица / карточки зачислений -->
-                <EnrollmentTable
-                    v-if="enrollmentsCount && viewMode === 'table'"
-                    :enrollments="paginatedEnrollments"
-                    @delete="confirmDelete"
-                />
-
-                <EnrollmentCardGrid
-                    v-else-if="enrollmentsCount && viewMode === 'cards'"
-                    :enrollments="paginatedEnrollments"
-                    @delete="confirmDelete"
-                />
-
                 <div
                     v-if="enrollmentsCount"
-                    class="flex justify-between items-center flex-col md:flex-row
-                           my-2 space-y-2 md:space-y-0"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
                 >
                     <ItemsPerPageSelect
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
                     />
 
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val"
+                    />
+                </div>
+
+                <div
+                    v-if="enrollmentsCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <CountTable>
+                        {{ enrollmentsCount }}
+                    </CountTable>
+
+                    <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div
+                    v-if="enrollmentsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mb-3"
+                >
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
@@ -339,10 +329,30 @@ watch(filteredEnrollments, () => {
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
                     />
+                </div>
 
-                    <SortSelect
-                        :sortParam="sortParam"
-                        @update:sortParam="(val) => (sortParam = val)"
+                <EnrollmentTable
+                    v-if="viewMode === 'table'"
+                    :enrollments="paginatedEnrollments"
+                    @delete="confirmDelete"
+                />
+
+                <EnrollmentCardGrid
+                    v-else
+                    :enrollments="paginatedEnrollments"
+                    @delete="confirmDelete"
+                />
+
+                <div
+                    v-if="enrollmentsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredEnrollments.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
                     />
                 </div>
             </div>

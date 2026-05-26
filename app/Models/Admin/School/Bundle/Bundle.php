@@ -2,9 +2,9 @@
 
 namespace App\Models\Admin\School\Bundle;
 
-use App\Models\Admin\Finance\BundlePrice\BundlePrice;
-use App\Models\Admin\Finance\OrderItem\OrderItem;
+use App\Models\Admin\School\BundlePrice\BundlePrice;
 use App\Models\Admin\School\Course\Course;
+use App\Models\Admin\School\OrderItem\OrderItem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

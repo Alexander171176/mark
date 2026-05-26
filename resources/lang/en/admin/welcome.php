@@ -4,20 +4,11 @@ return [
 
     // Finance (will be expanded)
     'finance' => [
-        'orders' => [
-            'description' => 'Orders reflect the fact that users have placed paid services or products in the system. They record selected items, cost, payment status and are linked to users and training programs. Orders are used to track sales, access to content and financial analytics.',
-        ],
-        'subscriptionPlans' => [
-            'description' => 'Tariff plans are a system of subscriptions and access levels for online school users. They allow you to configure validity periods, prices, currencies, plan content, and restrictions. They are used to manage access to courses, modules, and additional platform features.',
-        ],
-        'coursePrices' => [
-            'description' => 'Online School Course Pricing — Manage tuition for each course and currency. Allows you to set base, promotional, and legacy prices, validity period, display order, and activity. This is used to accurately calculate prices, discounts, and display prices on the storefront.',
-        ],
-        'bundlePrices' => [
-            'description' => 'Online School Bundle Pricing — Manage the pricing of packages containing multiple courses. Allows you to set the base and promotional prices, currency, validity period, sorting, and activity. This feature is used to set up special offers, promotions, and accurately calculate the final price.',
-        ],
         'currencies' => [
             'description' => 'Currencies is a multicurrency module for working with different currencies in the system. It supports automatic exchange rate updates from an external provider, manual adjustments, change history, and the use of exchange rates in pricing calculations, orders, reports, and analytics.',
+        ],
+        'charts' => [
+            'description' => 'Graphs are used to visually display statistics based on views and likes. They allow you to visually analyze the popularity of materials, track the dynamics of user activity and compare indicators between various website entities.',
         ],
     ],
 
@@ -107,9 +98,6 @@ return [
         'videos' => [
             'description' => 'Videos are used to post educational, informational and media content on the site. They can be local or external, relate to headings and sections, have publication statuses and customizable display options, providing a visual and convenient presentation of materials.',
         ],
-        'charts' => [
-            'description' => 'Graphs are used to visually display statistics based on views and likes. They allow you to visually analyze the popularity of materials, track the dynamics of user activity and compare indicators between various website entities.',
-        ],
     ],
 
     // Online school
@@ -161,6 +149,18 @@ return [
         ],
         'quizAttemptItems' => [
             'description' => 'Quiz attempts record each answer a student enters as part of the test. They allow you to take into account correct and incorrect answers, execution time and sequence of actions. Used to analyze knowledge, calculate points and generate the final result.',
+        ],
+        'orders' => [
+            'description' => 'Orders reflect the fact that users have placed paid services or products in the system. They record selected items, cost, payment status and are linked to users and training programs. Orders are used to track sales, access to content and financial analytics.',
+        ],
+        'subscriptionPlans' => [
+            'description' => 'Tariff plans are a system of subscriptions and access levels for online school users. They allow you to configure validity periods, prices, currencies, plan content, and restrictions. They are used to manage access to courses, modules, and additional platform features.',
+        ],
+        'coursePrices' => [
+            'description' => 'Online School Course Pricing — Manage tuition for each course and currency. Allows you to set base, promotional, and legacy prices, validity period, display order, and activity. This is used to accurately calculate prices, discounts, and display prices on the storefront.',
+        ],
+        'bundlePrices' => [
+            'description' => 'Online School Bundle Pricing — Manage the pricing of packages containing multiple courses. Allows you to set the base and promotional prices, currency, validity period, sorting, and activity. This feature is used to set up special offers, promotions, and accurately calculate the final price.',
         ],
     ],
 ];

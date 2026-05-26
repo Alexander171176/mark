@@ -42,9 +42,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified',
         // --- Маршруты для дополнительных действий ---
         require __DIR__ . '/actions/_actions.php';
 
-        // --- Маршруты для редактирования главной страницы ---
-        require __DIR__ . '/home-page/_home-page.php';
-
         // --- Маршрут просмотр локалей и другие ---
         require __DIR__ . '/misc.php';
     });

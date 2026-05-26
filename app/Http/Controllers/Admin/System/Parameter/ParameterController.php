@@ -50,8 +50,8 @@ class ParameterController extends Controller
         // TODO: Проверка прав $this->authorize('show-parameters');
 
         // Используем тот же конфиг, что и для Settings? Или нужен отдельный?
-        $adminCountSettings = config('site_settings.AdminCountSettings', 15); // Используем свой ключ или общий
-        $adminSortSettings  = config('site_settings.AdminSortSettings', 'idDesc'); // Используем свой ключ или общий
+        $adminSystemSettingsPerPage = config('site_settings.adminSystemSettingsPerPage', 20); // Используем свой ключ или общий
+        $adminSystemSettingsDefaultSort  = config('site_settings.adminSystemSettingsDefaultSort', 'idDesc'); // Используем свой ключ или общий
 
         try {
             $settings = Setting::all();
@@ -67,8 +67,8 @@ class ParameterController extends Controller
             // Используем SettingResource, но передаем как 'parameters'
             'settings' => SettingResource::collection($settings),
             'settingsCount' => $settingsCount,
-            'adminCountSettings' => (int)$adminCountSettings,
-            'adminSortSettings' => $adminSortSettings,
+            'adminSystemSettingsPerPage' => (int)$adminSystemSettingsPerPage,
+            'adminSystemSettingsDefaultSort' => $adminSystemSettingsDefaultSort,
         ]);
     }
 

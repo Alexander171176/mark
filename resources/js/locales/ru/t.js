@@ -29,7 +29,7 @@ export default {
     titleProperty: 'Имя Свойства',
     toggleDarkMode: 'Переключить на светлый/темный режим',
     toggleSidebar: 'Развернуть / свернуть боковую панель',
-    total: 'Всего:',
+    total: 'Всего',
     totalShopCurrency: 'Итоговая сумма в валюте',
     totals: 'Сумма',
     tracks: 'Треки',

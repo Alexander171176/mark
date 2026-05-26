@@ -1,21 +1,21 @@
 <script setup>
-import { ref, defineEmits } from 'vue';
+import { defineEmits } from 'vue';
 import { router, Link } from '@inertiajs/vue3'
-import Dropdown from '@/Components/Dropdown.vue'
-import DropdownLink from '@/Components/DropdownLink.vue'
-import ApplicationMark from '@/Components/ApplicationMark.vue'
+import Dropdown from '@/Components/Base/Dropdown.vue'
+import DropdownLink from '@/Components/Base/DropdownLink.vue'
+import ApplicationMark from '@/Components/Base/ApplicationMark.vue'
 import ThemeToggle from '@/Components/User/ThemeToggle/ThemeToggle.vue'
 import ResponsiveNavLinks from '@/Components/User/Links/ResponsiveNavLinks.vue'
 import TopPanel from '@/Partials/User/TopPanel.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
-const emits = defineEmits(['toggleNavigationDropdown']);
+const emit = defineEmits(['toggleNavigationDropdown'])
 
-const props = defineProps({
+defineProps({
     title: String,
     currentTime: String,
-    showingNavigationDropdown: Boolean
+    showingNavigationDropdown: Boolean,
 });
 
 const switchToTeam = (team) => {
@@ -41,7 +41,7 @@ const logout = () => {
                 border-x border-slate-400 dark:border-slate-900
                 shadow-md shadow-slate-400 dark:shadow-slate-900 z-20">
 
-        <TopPanel/>
+        <TopPanel />
 
         <nav class="border-b border-gray-200 dark:border-gray-800">
             <div class="max-w-full mx-auto px-4 sm:px-0">
@@ -49,7 +49,7 @@ const logout = () => {
                     <div class="flex items-center justify-center">
                         <div class="shrink-0 flex items-center md:hidden">
                             <Link :href="route('dashboard')">
-                                <ApplicationMark class="block h-9 w-auto"/>
+                                <ApplicationMark class="block h-9 w-auto" />
                             </Link>
                         </div>
                     </div>
@@ -67,7 +67,7 @@ const logout = () => {
                                                     transition">
                                         <img class="h-8 w-8 mr-2 rounded-full object-cover"
                                              :src="$page.props.auth.user.profile_photo_url"
-                                             :alt="$page.props.auth.user.name"/>
+                                             :alt="$page.props.auth.user.name" />
                                         <span>{{ $page.props.auth.user.email }}</span>
                                     </button>
                                     <span v-else class="inline-flex rounded-md">
@@ -87,7 +87,7 @@ const logout = () => {
                                                  viewBox="0 0 24 24"
                                                  stroke-width="1.5"
                                                  stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                                             </svg>
                                         </button>
                                     </span>
@@ -111,7 +111,7 @@ const logout = () => {
                             </Dropdown>
                         </div>
                         <div class="mx-2 flex items-center">
-                            <ThemeToggle class="relative z-10"/>
+                            <ThemeToggle class="relative z-10" />
                         </div>
                         <div class="hidden sm:block sm:me-8 relative">
                             <Dropdown v-if="$page.props.jetstream.hasTeamFeatures"
@@ -134,7 +134,7 @@ const logout = () => {
                                                  viewBox="0 0 24 24"
                                                  stroke-width="1.5"
                                                  stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                                             </svg>
                                         </button>
                                     </span>
@@ -167,7 +167,7 @@ const logout = () => {
                                                                  viewBox="0 0 24 24"
                                                                  stroke-width="1.5"
                                                                  stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                             </svg>
                                                             <div>{{ team.name }}</div>
                                                         </div>
@@ -187,10 +187,11 @@ const logout = () => {
                                         hover:bg-gray-100
                                         focus:outline-none focus:bg-gray-100 focus:text-slate-500
                                         transition duration-150 ease-in-out"
-                                @click="$emit('toggleNavigationDropdown')">
+                                @click="emit('toggleNavigationDropdown')"
+                        >
                             <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                <path :class="{ hidden: showingNavigationDropdown, 'inline-flex': !showingNavigationDropdown }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                                <path :class="{ hidden: !showingNavigationDropdown, 'inline-flex': showingNavigationDropdown }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                <path :class="{ hidden: showingNavigationDropdown, 'inline-flex': !showingNavigationDropdown }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                                <path :class="{ hidden: !showingNavigationDropdown, 'inline-flex': showingNavigationDropdown }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
@@ -204,7 +205,7 @@ const logout = () => {
     <!-- Page Heading -->
     <header v-if="$slots.header" class="bg-slate-100 dark:bg-sky-900 shadow">
         <div class="max-w-7xl mx-auto py-4 px-4 sm:px-4 lg:px-8">
-            <slot name="header"/>
+            <slot name="header" />
         </div>
     </header>
 </template>

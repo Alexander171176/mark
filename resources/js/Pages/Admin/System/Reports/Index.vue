@@ -2,7 +2,7 @@
 import {ref, watch, onMounted} from 'vue';
 import {useI18n} from 'vue-i18n';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
 import * as XLSX from 'xlsx';
 
 // @ts-ignore

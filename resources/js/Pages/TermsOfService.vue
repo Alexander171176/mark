@@ -1,6 +1,6 @@
 <script setup>
 import { Head } from '@inertiajs/vue3'
-import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue'
+import AuthenticationCardLogo from '@/Components/Base/AuthenticationCardLogo.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

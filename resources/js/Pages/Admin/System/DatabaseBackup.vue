@@ -6,7 +6,7 @@ import axios from 'axios'
 import { useToast } from 'vue-toastification'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 
 const { t } = useI18n()
 const toast = useToast()

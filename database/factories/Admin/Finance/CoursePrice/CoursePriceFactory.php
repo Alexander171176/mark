@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Finance\CoursePrice;
 
-use App\Models\Admin\Finance\CoursePrice\CoursePrice;
+use App\Models\Admin\School\CoursePrice\CoursePrice;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

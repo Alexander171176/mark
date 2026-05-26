@@ -7,18 +7,20 @@ import {defineProps, ref, computed, watch} from 'vue';
 import {useToast} from 'vue-toastification';
 import { useI18n } from 'vue-i18n';
 import {router} from '@inertiajs/vue3';
+
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
-import DefaultButton from "@/Components/Admin/Buttons/DefaultButton.vue";
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue';
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue';
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue';
-import CountTable from '@/Components/Admin/Count/CountTable.vue';
-import PermissionTable from '@/Components/Admin/Permission/Table/PermissionTable.vue';
-import PermissionCardGrid from '@/Components/Admin/Permission/View/PermissionCardGrid.vue';
-import ItemsPerPageSelect from "@/Components/Admin/Select/ItemsPerPageSelect.vue";
-import SortSelect from "@/Components/Admin/Permission/Sort/SortSelect.vue";
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue';
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
+import DefaultButton from "@/Components/Admin/UI/Buttons/DefaultButton.vue";
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue';
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue';
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue';
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue';
+import ItemsPerPageSelect from "@/Components/Admin/UI/Select/ItemsPerPageSelect.vue";
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue';
+
+import SortSelect from "@/Components/Admin/System/Permission/Sort/SortSelect.vue";
+import PermissionTable from '@/Components/Admin/System/Permission/Table/PermissionTable.vue';
+import PermissionCardGrid from '@/Components/Admin/System/Permission/View/PermissionCardGrid.vue';
 
 // --- Инициализация экземпляр i18n, toast ---
 const {t} = useI18n();
@@ -27,12 +29,27 @@ const toast = useToast();
 /**
  * Входные свойства компонента.
  */
-const props = defineProps([
-    'permissions',
-    'permissionsCount',
-    'adminCountPermissions',
-    'adminSortPermissions'
-]);
+const props = defineProps({
+    permissions: {
+        type: Array,
+        default: () => [],
+    },
+
+    permissionsCount: {
+        type: Number,
+        default: 0,
+    },
+
+    adminCountPermissions: {
+        type: Number,
+        default: 20,
+    },
+
+    adminSortPermissions: {
+        type: String,
+        default: 'idDesc',
+    },
+})
 
 /**
  * Вид: таблица или карточки.
@@ -194,11 +211,6 @@ const paginatedPermissions = computed(() => {
     return filteredPermissions.value.slice(start, start + itemsPerPage.value);
 });
 
-/**
- * Вычисляемое свойство, возвращающее общее количество страниц пагинации.
- */
-const totalPages = computed(() => Math.ceil(filteredPermissions.value.length / itemsPerPage.value));
-
 </script>
 
 <template>
@@ -209,13 +221,18 @@ const totalPages = computed(() => Math.ceil(filteredPermissions.value.length / i
             </TitlePage>
         </template>
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
-            <div class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
-                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
-                        bg-opacity-95 dark:bg-opacity-95">
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
+            <div
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                       bg-opacity-95 dark:bg-opacity-95"
+            >
+
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
                     <DefaultButton :href="route('admin.permissions.create')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
+                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0"
+                                 viewBox="0 0 16 16">
                                 <path
                                     d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"></path>
                             </svg>
@@ -223,11 +240,26 @@ const totalPages = computed(() => Math.ceil(filteredPermissions.value.length / i
                         {{ t('addPermission') }}
                     </DefaultButton>
                 </div>
+
                 <SearchInput
                     v-if="permissionsCount"
                     v-model="searchQuery"
                     :placeholder="t('searchByName')"
                 />
+
+                <div
+                    v-if="permissionsCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-1"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event" />
+
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val =>
+                        sortParam = val" />
+                </div>
 
                 <!-- Кол-во + переключатель вида -->
                 <div
@@ -239,6 +271,16 @@ const totalPages = computed(() => Math.ceil(filteredPermissions.value.length / i
                     </CountTable>
 
                     <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div class="flex justify-center items-center flex-col md:flex-row"
+                     v-if="permissionsCount">
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredPermissions.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event" />
                 </div>
 
                 <!-- Таблица -->
@@ -255,14 +297,14 @@ const totalPages = computed(() => Math.ceil(filteredPermissions.value.length / i
                     @delete="confirmDelete"
                 />
 
-                <div class="flex justify-between items-center flex-col md:flex-row my-1"  v-if="permissionsCount">
-                    <ItemsPerPageSelect :items-per-page="itemsPerPage" @update:itemsPerPage="itemsPerPage = $event" />
-                    <Pagination :current-page="currentPage"
-                                :items-per-page="itemsPerPage"
-                                :total-items="filteredPermissions.length"
-                                @update:currentPage="currentPage = $event"
-                                @update:itemsPerPage="itemsPerPage = $event"/>
-                    <SortSelect :sortParam="sortParam" @update:sortParam="val => sortParam = val"/>
+                <div class="flex justify-center items-center flex-col md:flex-row mt-3"
+                     v-if="permissionsCount">
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredPermissions.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event" />
                 </div>
             </div>
         </div>

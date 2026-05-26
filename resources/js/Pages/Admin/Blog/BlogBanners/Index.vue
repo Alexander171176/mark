@@ -11,19 +11,19 @@ import { useToast } from 'vue-toastification'
 import { router, usePage } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
 
-import BulkActionSelect from '@/Components/Admin/Blog/Banner/Select/BulkActionSelect.vue'
-import SortSelect from '@/Components/Admin/Blog/Banner/Sort/SortSelect.vue'
-import BannerTable from '@/Components/Admin/Blog/Banner/Table/BannerTable.vue'
-import BannerCardGrid from '@/Components/Admin/Blog/Banner/View/BannerCardGrid.vue'
+import BulkActionSelect from '@/Components/Admin/Blog/BlogBanner/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/Blog/BlogBanner/Sort/SortSelect.vue'
+import BannerTable from '@/Components/Admin/Blog/BlogBanner/Table/BannerTable.vue'
+import BannerCardGrid from '@/Components/Admin/Blog/BlogBanner/View/BannerCardGrid.vue'
 
 const { t, locale } = useI18n()
 const toast = useToast()
@@ -36,11 +36,11 @@ const props = defineProps({
     banners: { type: Array, default: () => [] },
     bannersCount: { type: Number, default: 0 },
 
-    adminCountBanners: { type: Number, default: 15 },
-    adminSortBanners: { type: String, default: 'idDesc' },
+    adminBlogBannersPerPage: { type: Number, default: 20 },
+    adminBlogBannersDefaultSort: { type: String, default: 'idDesc' },
 
-    currentLocale: { type: String, default: 'ru' },
-    availableLocales: { type: Array, default: () => ['ru', 'en', 'kk'] },
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
 
     search: { type: String, default: '' },
     sortParam: { type: String, default: '' },
@@ -113,7 +113,7 @@ watch(viewMode, (value) => {
 /**
  * Количество элементов на странице
  */
-const itemsPerPage = ref(props.adminCountBanners || 15)
+const itemsPerPage = ref(props.adminBlogBannersPerPage || 20)
 
 /**
  * Обновление количества элементов (сохранение в настройках)
@@ -134,7 +134,7 @@ watch(itemsPerPage, (newVal) => {
 /**
  * Текущий параметр сортировки
  */
-const sortParam = ref(props.sortParam || props.adminSortBanners || 'idDesc')
+const sortParam = ref(props.sortParam || props.adminBlogBannersDefaultSort || 'idDesc')
 
 /**
  * Обновление сортировки (сохранение в настройках)
@@ -775,7 +775,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
                 <div
                     v-if="bannersCount"
-                    class="flex items-center justify-between mb-3"
+                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
                 >
                     <CountTable>{{ bannersCount }}</CountTable>
 
@@ -785,6 +785,19 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     />
 
                     <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div
+                    v-if="bannersCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredBanners.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
                 </div>
 
                 <BannerTable

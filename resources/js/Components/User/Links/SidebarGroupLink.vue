@@ -6,7 +6,7 @@ import DraggableSidebarLink from '@/Components/User/Links/DraggableSidebarLink.v
 import {usePage} from "@inertiajs/vue3";
 
 const { siteSettings } = usePage().props;
-const props = defineProps({
+defineProps({
     expanded: Boolean
 });
 

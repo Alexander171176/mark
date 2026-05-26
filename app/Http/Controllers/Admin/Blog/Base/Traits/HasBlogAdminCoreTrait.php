@@ -3,20 +3,17 @@
 namespace App\Http\Controllers\Admin\Blog\Base\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 
 trait HasBlogAdminCoreTrait
 {
-    /**
-     * Доступные локали приложения
-     */
+    /** Доступные локали приложения */
     protected function availableLocales(): array
     {
-        return config('app.available_locales', ['ru']);
+        return config('app.available_locales', []);
     }
 
-    /**
-     * Базовый запрос с учётом прав пользователя
-     */
+    /** Базовый запрос с учётом прав пользователя */
     protected function baseQuery(): Builder
     {
         $query = $this->modelClass::query();
@@ -30,22 +27,32 @@ trait HasBlogAdminCoreTrait
         return $query;
     }
 
-    /**
-     * Нормализация локали (если невалидна — fallback)
-     */
+    /** Определение локали */
+    protected function resolveLocale(Request $request): string
+    {
+        $locale = $request->route('locale')
+            ?? app()->getLocale()
+            ?? $request->query('locale');
+
+        $locale = $this->normalizeLocale($locale);
+
+        app()->setLocale($locale);
+
+        return $locale;
+    }
+
+    /** Нормализация локали (если невалидна — fallback) */
     protected function normalizeLocale(?string $locale): string
     {
         $availableLocales = $this->availableLocales();
-        $fallback = config('app.fallback_locale', 'ru');
+        $fallback = config('app.fallback_locale');
 
         return $locale && in_array($locale, $availableLocales, true)
             ? $locale
             : $fallback;
     }
 
-    /**
-     * Нормализация параметра сортировки
-     */
+    /** Нормализация параметра сортировки */
     protected function normalizeSortParam(?string $sort): string
     {
         $map = array_merge(
@@ -56,9 +63,7 @@ trait HasBlogAdminCoreTrait
         return $map[$sort] ?? ($sort ?: 'sort_asc');
     }
 
-    /**
-     * Базовые варианты сортировки (для всех сущностей)
-     */
+    /** Базовые варианты сортировки (для всех сущностей) */
     protected function baseSortMap(): array
     {
         return [
@@ -76,9 +81,7 @@ trait HasBlogAdminCoreTrait
         ];
     }
 
-    /**
-     * Расширение сортировки (переопределяется в контроллерах)
-     */
+    /** Расширение сортировки (переопределяется в контроллерах) */
     protected function extendedSortMap(): array
     {
         return [];

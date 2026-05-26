@@ -14,19 +14,19 @@ import { useToast } from 'vue-toastification'
 import { router, usePage } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
 
-import BulkActionSelect from '@/Components/Admin/Blog/Video/Select/BulkActionSelect.vue'
-import SortSelect from '@/Components/Admin/Blog/Video/Sort/SortSelect.vue'
-import VideoTable from '@/Components/Admin/Blog/Video/Table/VideoTable.vue'
-import VideoCardGrid from '@/Components/Admin/Blog/Video/View/VideoCardGrid.vue'
+import BulkActionSelect from '@/Components/Admin/Blog/BlogVideo/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/Blog/BlogVideo/Sort/SortSelect.vue'
+import VideoTable from '@/Components/Admin/Blog/BlogVideo/Table/VideoTable.vue'
+import VideoCardGrid from '@/Components/Admin/Blog/BlogVideo/View/VideoCardGrid.vue'
 
 const { t, locale } = useI18n()
 const toast = useToast()
@@ -37,11 +37,11 @@ const props = defineProps({
     videos: { type: Array, default: () => [] },
     videosCount: { type: Number, default: 0 },
 
-    adminCountVideos: { type: Number, default: 15 },
-    adminSortVideos: { type: String, default: 'idDesc' },
+    adminBlogVideosPerPage: { type: Number, default: 20 },
+    adminBlogVideosDefaultSort: { type: String, default: 'idDesc' },
 
-    currentLocale: { type: String, default: 'ru' },
-    availableLocales: { type: Array, default: () => ['ru', 'en', 'kk'] },
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
 
     search: { type: String, default: '' },
     sortParam: { type: String, default: '' },
@@ -94,7 +94,7 @@ watch(viewMode, (value) => {
 })
 
 /** Количество элементов на странице */
-const itemsPerPage = ref(props.adminCountVideos || 15)
+const itemsPerPage = ref(props.adminBlogVideosPerPage || 20)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
@@ -110,7 +110,7 @@ watch(itemsPerPage, (newVal) => {
 })
 
 /** Параметр сортировки */
-const sortParam = ref(props.sortParam || props.adminSortVideos || 'idDesc')
+const sortParam = ref(props.sortParam || props.adminBlogVideosDefaultSort || 'idDesc')
 
 watch(sortParam, (newVal) => {
     router.put(
@@ -734,7 +734,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
                 <div
                     v-if="videosCount"
-                    class="flex items-center justify-between mb-3"
+                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
                 >
                     <CountTable>{{ videosCount }}</CountTable>
 
@@ -744,6 +744,19 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     />
 
                     <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div
+                    v-if="videosCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredVideos.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
                 </div>
 
                 <VideoTable

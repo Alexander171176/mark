@@ -1,7 +1,7 @@
 <script setup>
 import { defineProps, inject } from 'vue'
 
-const props = defineProps({
+defineProps({
     title: String,
     canLogin: Boolean,
     canRegister: Boolean,

@@ -4,24 +4,22 @@
  * @author Александр Косолапов
  * Редактирование варианта ответа квиза (QuizAnswer)
  */
-
 import { ref, computed, watchEffect, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
+import VueMultiselect from 'vue-multiselect'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import PrimaryButton from '@/Components/Admin/Buttons/PrimaryButton.vue'
-import LabelCheckbox from '@/Components/Admin/Checkbox/LabelCheckbox.vue'
-import ActivityCheckbox from '@/Components/Admin/Checkbox/ActivityCheckbox.vue'
-import TinyEditor from '@/Components/Admin/TinyEditor/TinyEditor.vue'
-import InputNumber from '@/Components/Admin/Input/InputNumber.vue'
-import LabelInput from '@/Components/Admin/Input/LabelInput.vue'
-import InputError from '@/Components/Admin/Input/InputError.vue'
-
-import VueMultiselect from 'vue-multiselect'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
+import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue'
+import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue'
+import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
+import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
+import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 
 // --- i18n, toast ---
 const { t } = useI18n()

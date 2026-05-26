@@ -5,6 +5,7 @@
 use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
+use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
 use Illuminate\Support\Facades\Route;
 
 Route::put('/blog-articles/bulk-left',
@@ -18,3 +19,7 @@ Route::put('/blog-banners/bulk-left',
 Route::put('/blog-videos/bulk-left',
     [BlogVideoController::class, 'bulkUpdateLeft'])
     ->name('blogVideos.bulkUpdateLeft');
+
+Route::put('/school-courses/bulk-left',
+    [SchoolCourseController::class, 'bulkUpdateLeft'])
+    ->name('schoolCourses.bulkUpdateLeft');

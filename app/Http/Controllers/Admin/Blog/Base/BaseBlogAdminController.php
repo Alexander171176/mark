@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Admin\Blog\Base;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Admin\Blog\Base\Traits\HasBlogActivityTrait;
 use App\Http\Controllers\Admin\Blog\Base\Traits\HasBlogAdminCoreTrait;
+use App\Http\Controllers\Admin\Blog\Base\Traits\HasBlogImagesTrait;
 use App\Http\Controllers\Admin\Blog\Base\Traits\HasBlogModerationTrait;
+use App\Http\Controllers\Admin\Blog\Base\Traits\HasBlogPlacementTrait;
 use App\Http\Controllers\Admin\Blog\Base\Traits\HasBlogSortingTrait;
 use App\Http\Controllers\Admin\Blog\Base\Traits\HasBlogTranslationsTrait;
-use App\Http\Controllers\Admin\Blog\Base\Traits\HasBlogPlacementTrait;
-use App\Http\Controllers\Admin\Blog\Base\Traits\HasBlogImagesTrait;
+use App\Http\Controllers\Controller;
 
 abstract class BaseBlogAdminController extends Controller
 {

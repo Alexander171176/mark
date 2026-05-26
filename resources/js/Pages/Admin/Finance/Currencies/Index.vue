@@ -10,19 +10,20 @@ import { useToast } from 'vue-toastification'
 import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import CurrencyTable from '@/Components/Admin/Currency/Table/CurrencyTable.vue'
-import CurrencyCardGrid from '@/Components/Admin/Currency/View/CurrencyCardGrid.vue'
-import BulkActionSelect from '@/Components/Admin/Currency/Select/BulkActionSelect.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
-import SortSelect from '@/Components/Admin/Currency/Sort/SortSelect.vue'
-import RefreshRatesButton from '@/Components/Admin/Currency/Buttons/RefreshRatesButton.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+
+import CurrencyTable from '@/Components/Admin/Finance/Currency/Table/CurrencyTable.vue'
+import CurrencyCardGrid from '@/Components/Admin/Finance/Currency/View/CurrencyCardGrid.vue'
+import BulkActionSelect from '@/Components/Admin/Finance/Currency/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/Finance/Currency/Sort/SortSelect.vue'
+import RefreshRatesButton from '@/Components/Admin/Finance/Currency/Buttons/RefreshRatesButton.vue'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -30,8 +31,8 @@ const toast = useToast()
 const props = defineProps({
     currencies: { type: Array, default: () => [] },
     currenciesCount: { type: Number, default: 0 },
-    adminCountCurrencies: { type: Number, default: 10 },
-    adminSortCurrencies: { type: String, default: 'idDesc' },
+    adminFinanceCurrenciesPerPage: { type: Number, default: 10 },
+    adminFinanceCurrenciesDefaultSort: { type: String, default: 'idDesc' },
 })
 
 /** Вид: таблица или карточки (общий ключ) */
@@ -39,7 +40,7 @@ const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
 watch(viewMode, (val) => localStorage.setItem('admin_view_mode', val))
 
 /** Кол-во элементов на странице */
-const itemsPerPage = ref(props.adminCountCurrencies || 10)
+const itemsPerPage = ref(props.adminFinanceCurrenciesPerPage || 10)
 watch(itemsPerPage, (newVal) => {
     router.put(route('admin.settings.updateAdminCountCurrencies'), { value: newVal }, {
         preserveScroll: true,
@@ -50,7 +51,7 @@ watch(itemsPerPage, (newVal) => {
 })
 
 /** Параметр сортировки */
-const sortParam = ref(props.adminSortCurrencies || 'idDesc')
+const sortParam = ref(props.adminFinanceCurrenciesDefaultSort || 'idDesc')
 watch(sortParam, (newVal) => {
     router.put(route('admin.settings.updateAdminSortCurrencies'), { value: newVal }, {
         preserveScroll: true,
@@ -147,10 +148,6 @@ const filteredCurrencies = computed(() => {
 })
 
 /** Пагинация */
-const totalPages = computed(() =>
-    Math.ceil((filteredCurrencies.value.length || 0) / (itemsPerPage.value || 1))
-)
-
 const paginatedCurrencies = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value
     return filteredCurrencies.value.slice(start, start + itemsPerPage.value)
@@ -356,11 +353,12 @@ const saveRate = ({ id, value }) => {
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
                     <DefaultButton :href="route('admin.currencies.create')">
                         <template #icon>
                             <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
@@ -372,13 +370,6 @@ const saveRate = ({ id, value }) => {
                         {{ t('addCurrency') }}
                     </DefaultButton>
 
-                    <BulkActionSelect
-                        v-if="currenciesCount"
-                        @change="handleBulkAction"
-                    />
-                </div>
-
-                <div class="flex justify-center items-center mb-2">
                     <RefreshRatesButton
                         :title="`${t('currencyRefreshRates')} (${currentBase?.code || '—'})`"
                         :disabled="!currentBase"
@@ -392,9 +383,39 @@ const saveRate = ({ id, value }) => {
                     :placeholder="t('searchByName')"
                 />
 
-                <div class="flex items-center justify-between my-2" v-if="currenciesCount">
+                <div class="flex flex-col lg:flex-row items-center justify-between mb-3 gap-1"
+                     v-if="currenciesCount">
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => (sortParam = val)"
+                    />
+                </div>
+
+                <div class="flex flex-col lg:flex-row items-center justify-between gap-3"
+                     v-if="currenciesCount">
                     <CountTable>{{ currenciesCount }}</CountTable>
+                    <BulkActionSelect
+                        v-if="currenciesCount"
+                        @change="handleBulkAction"
+                    />
                     <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div
+                    class="flex justify-center items-center flex-col md:flex-row"
+                    v-if="currenciesCount"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredCurrencies.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
                 </div>
 
                 <!-- Таблица -->
@@ -426,23 +447,15 @@ const saveRate = ({ id, value }) => {
                 />
 
                 <div
-                    class="flex justify-between items-center flex-col md:flex-row my-1"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
                     v-if="currenciesCount"
                 >
-                    <ItemsPerPageSelect
-                        :items-per-page="itemsPerPage"
-                        @update:itemsPerPage="itemsPerPage = $event"
-                    />
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredCurrencies.length"
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
-                    />
-                    <SortSelect
-                        :sortParam="sortParam"
-                        @update:sortParam="val => (sortParam = val)"
                     />
                 </div>
             </div>

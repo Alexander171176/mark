@@ -15,28 +15,28 @@ import { transliterate } from '@/utils/transliteration'
 import { useForm } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import PrimaryButton from '@/Components/Admin/Buttons/PrimaryButton.vue'
-import MetatagsButton from '@/Components/Admin/Buttons/MetatagsButton.vue'
-import LabelCheckbox from '@/Components/Admin/Checkbox/LabelCheckbox.vue'
-import ActivityCheckbox from '@/Components/Admin/Checkbox/ActivityCheckbox.vue'
-import DescriptionTextarea from '@/Components/Admin/Textarea/DescriptionTextarea.vue'
-import MetaDescTextarea from '@/Components/Admin/Textarea/MetaDescTextarea.vue'
-import InputNumber from '@/Components/Admin/Input/InputNumber.vue'
-import LabelInput from '@/Components/Admin/Input/LabelInput.vue'
-import InputText from '@/Components/Admin/Input/InputText.vue'
-import InputError from '@/Components/Admin/Input/InputError.vue'
-import TinyEditor from '@/Components/Admin/TinyEditor/TinyEditor.vue'
-import TranslationTabs from '@/Components/Admin/Locale/TranslationTabs.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
+import MetatagsButton from '@/Components/Admin/UI/Buttons/MetatagsButton.vue'
+import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue'
+import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue'
+import DescriptionTextarea from '@/Components/Admin/UI/Textarea/DescriptionTextarea.vue'
+import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
+import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
+import InputText from '@/Components/Admin/UI/Input/InputText.vue'
+import InputError from '@/Components/Admin/UI/Input/InputError.vue'
+import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
+import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 
 const { t } = useI18n()
 const toast = useToast()
 
 /** Props приходят из BlogTagController@create */
 const props = defineProps({
-    targetLocale: { type: String, default: 'ru' },
-    availableLocales: { type: Array, default: () => ['ru', 'en', 'kk'] },
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
     errors: { type: Object, default: () => ({}) },
 })
 
@@ -52,7 +52,7 @@ const makeTranslation = () => ({
 })
 
 /** Дефолтная локаль */
-const defaultLocale = props.targetLocale || 'ru'
+const defaultLocale = props.currentLocale || 'ru'
 
 /** Активная вкладка перевода */
 const activeLocale = ref(defaultLocale)
@@ -355,7 +355,7 @@ const submitForm = () => {
                     </div>
 
                     <div class="flex items-center justify-center mt-4">
-                        <DefaultButton :href="route('admin.blogTags.index')" class="mb-3">
+                        <DefaultButton :href="route('admin.blogTags.index')">
                             <template #icon>
                                 <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
                                      viewBox="0 0 16 16">

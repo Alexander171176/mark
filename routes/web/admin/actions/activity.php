@@ -8,66 +8,75 @@ use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
-use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
-use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
-use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
-use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
+use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
-use App\Http\Controllers\Admin\School\Course\CourseController;
-use App\Http\Controllers\Admin\School\CourseSchedule\CourseScheduleController;
-use App\Http\Controllers\Admin\School\Hashtag\HashtagController;
-use App\Http\Controllers\Admin\School\InstructorProfile\InstructorProfileController;
-use App\Http\Controllers\Admin\School\LearningCategory\LearningCategoryController;
-use App\Http\Controllers\Admin\School\Lesson\LessonController;
-use App\Http\Controllers\Admin\School\Module\ModuleController;
-use App\Http\Controllers\Admin\School\Quiz\QuizController;
+use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
+use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
+use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
+use App\Http\Controllers\Admin\School\CourseSchedule\SchoolCourseScheduleController;
+use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
+use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileController;
+use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
+use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
+use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\QuizAnswerController;
-use App\Http\Controllers\Admin\School\QuizQuestion\QuizQuestionController;
+use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
+use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
+use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
-Route::put('/instructors/{instructorProfile}/activity',
-    [InstructorProfileController::class, 'updateActivity'])
-    ->name('instructors.updateActivity');
+Route::put('/school-instructor-profiles/{schoolInstructorProfile}/activity',
+    [SchoolInstructorProfileController::class, 'updateActivity'])
+    ->whereNumber('schoolInstructorProfile')
+    ->name('schoolInstructorProfiles.updateActivity');
 
-Route::put('/learning-categories/{learningCategory}/activity',
-    [LearningCategoryController::class, 'updateActivity'])
-    ->name('learningCategories.updateActivity');
+Route::put('/school-tracks/{schoolTrack}/activity',
+    [SchoolTrackController::class, 'updateActivity'])
+    ->whereNumber('schoolTrack')
+    ->name('schoolTracks.updateActivity');
 
-Route::put('/hashtags/{hashtag}/activity',
-    [HashtagController::class, 'updateActivity'])
-    ->name('hashtags.updateActivity');
+Route::put('/school-hashtags/{schoolHashtag}/activity',
+    [SchoolHashtagController::class, 'updateActivity'])
+    ->name('schoolHashtags.updateActivity');
 
-Route::put('/courses/{course}/activity',
-    [CourseController::class, 'updateActivity'])
-    ->name('courses.updateActivity');
+Route::put('/school-courses/{schoolCourse}/activity',
+    [SchoolCourseController::class, 'updateActivity'])
+    ->whereNumber('schoolCourse')
+    ->name('schoolCourses.updateActivity');
 
-Route::put('/modules/{module}/activity',
-    [ModuleController::class, 'updateActivity'])
-    ->name('modules.updateActivity');
+Route::put('/school-modules/{schoolModule}/activity',
+    [SchoolModuleController::class, 'updateActivity'])
+    ->whereNumber('schoolModule')
+    ->name('schoolModules.updateActivity');
 
-Route::put('/lessons/{lesson}/activity',
-    [LessonController::class, 'updateActivity'])
-    ->name('lessons.updateActivity');
+Route::put('/school-lessons/{schoolLesson}/activity',
+    [SchoolLessonController::class, 'updateActivity'])
+    ->whereNumber('schoolLesson')
+    ->name('schoolLessons.updateActivity');
 
-Route::put('/assignments/{assignment}/activity',
-    [AssignmentController::class, 'updateActivity'])
-    ->name('assignments.updateActivity');
+Route::put('/school-assignments/{schoolAssignment}/activity',
+    [SchoolAssignmentController::class, 'updateActivity'])
+    ->whereNumber('schoolAssignment')
+    ->name('schoolAssignments.updateActivity');
 
-Route::put('/course-schedules/{courseSchedule}/activity',
-    [CourseScheduleController::class, 'updateActivity'])
-    ->name('courseSchedules.updateActivity');
+Route::put('/school-course-schedules/{schoolCourseSchedule}/activity',
+    [SchoolCourseScheduleController::class, 'updateActivity'])
+    ->whereNumber('schoolCourseSchedule')
+    ->name('schoolCourseSchedules.updateActivity');
 
-Route::put('/quizzes/{quiz}/activity',
-    [QuizController::class, 'updateActivity'])
-    ->name('quizzes.updateActivity');
+Route::put('/school-quizzes/{schoolQuiz}/activity',
+    [SchoolQuizController::class, 'updateActivity'])
+    ->whereNumber('schoolQuiz')
+    ->name('schoolQuizzes.updateActivity');
 
-Route::put('/quiz-questions/{quizQuestion}/activity',
-    [QuizQuestionController::class, 'updateActivity'])
-    ->name('quizQuestions.updateActivity');
+Route::put('/school-quiz-questions/{schoolQuizQuestion}/activity',
+    [SchoolQuizQuestionController::class, 'updateActivity'])
+    ->whereNumber('schoolQuizQuestion')
+    ->name('schoolQuizQuestions.updateActivity');
 
 Route::put('/quiz-answers/{quizAnswer}/activity',
     [QuizAnswerController::class, 'updateActivity'])

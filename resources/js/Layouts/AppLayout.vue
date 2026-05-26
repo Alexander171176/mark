@@ -1,53 +1,36 @@
 <script setup>
-import {ref, defineProps, computed} from 'vue';
-import {Head, router, usePage} from '@inertiajs/vue3';
+import { ref, defineProps } from 'vue';
+import { Head } from '@inertiajs/vue3';
 import Header from '@/Partials/User/Header.vue';
 import Sidebar from '@/Partials/User/Sidebar.vue';
 import Footer from '@/Partials/User/Footer.vue';
 import WidgetPanel from '@/Partials/User/WidgetPanel.vue';
-import ScrollButtons from '@/Components/Admin/Scroll/ScrollButtons.vue';
-import {usePermission} from '@/composables/permissions.js';
+import ScrollButtons from '@/Components/Admin/UI/Scroll/ScrollButtons.vue';
 
 // Импорт изображения
 import authImage from '../../images/auth-image.jpg';
 
-const props = defineProps({
+defineProps({
     title: String,
 });
 
-const {HasRole} = usePermission();
 
 const sidebarOpen = ref(false);
 const showingNavigationDropdown = ref(false);
 
-const switchToTeam = (team) => {
-    router.put(
-        route('current-team.update'),
-        {
-            team_id: team.id,
-        },
-        {
-            preserveState: false,
-        }
-    );
-};
-
-const logout = () => {
-    router.post(route('logout'));
-};
 </script>
 
 <template>
-    <Head :title="title"/>
+    <Head :title="title" />
     <div class="flex flex-row h-screen overflow-hidden">
         <!-- Sidebar -->
-        <Sidebar :sidebar-open="sidebarOpen" @close-sidebar="sidebarOpen = false"/>
+        <Sidebar :sidebar-open="sidebarOpen" @close-sidebar="sidebarOpen = false" />
 
         <div class="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
 
             <!-- Header -->
             <Header :showing-navigation-dropdown="showingNavigationDropdown"
-                    @toggle-navigation-dropdown="showingNavigationDropdown = !showingNavigationDropdown"/>
+                    @toggle-navigation-dropdown="showingNavigationDropdown = !showingNavigationDropdown" />
 
             <!-- TitlePage Page Heading -->
             <header v-if="$slots.header" class="dark:bg-slate-700 bg-slate-50 shadow">
@@ -59,13 +42,13 @@ const logout = () => {
             <!-- Page Content -->
             <main class="flex-grow bg-center"
                   :style="{ backgroundImage: `url(${authImage})`, backgroundAttachment: 'fixed' }">
-                <slot/>
+                <slot />
             </main>
 
             <!-- Footer -->
-            <Footer/>
+            <Footer />
 
-            <ScrollButtons/>
+            <ScrollButtons />
 
         </div>
 
@@ -76,13 +59,6 @@ const logout = () => {
 </template>
 
 <style scoped>
-/* Убедитесь, что ваше основное содержимое занимает доступное пространство */
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
 main {
     width: 100%;
     height: auto;

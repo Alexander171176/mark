@@ -11,22 +11,23 @@
 import { defineProps, ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { router, Link, usePage } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import draggable from 'vuedraggable'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/Buttons/DefaultButton.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue'
-import CountTable from '@/Components/Admin/Count/CountTable.vue'
-import BulkActionSelect from '@/Components/Admin/Blog/Rubric/Select/BulkActionSelect.vue'
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue'
-import RubricTreeDraggable from '@/Components/Admin/Blog/Rubric/Tree/RubricTreeDraggable.vue'
-import RubricCardGrid from '@/Components/Admin/Blog/Rubric/View/RubricCardGrid.vue'
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue'
-import ItemsPerPageSelect from '@/Components/Admin/Select/ItemsPerPageSelect.vue'
-import SortSelect from '@/Components/Admin/Blog/Rubric/Sort/SortSelect.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+
+import BulkActionSelect from '@/Components/Admin/Blog/BlogRubric/Select/BulkActionSelect.vue'
+import RubricTreeDraggable from '@/Components/Admin/Blog/BlogRubric/Tree/RubricTreeDraggable.vue'
+import RubricCardGrid from '@/Components/Admin/Blog/BlogRubric/View/RubricCardGrid.vue'
+import SortSelect from '@/Components/Admin/Blog/BlogRubric/Sort/SortSelect.vue'
 
 const { t, locale } = useI18n()
 const toast = useToast()
@@ -40,11 +41,11 @@ const props = defineProps({
     rubrics: { type: Array, default: () => [] },
     rubricsCount: { type: Number, default: 0 },
 
-    adminCountRubrics: { type: Number, default: 15 },
-    adminSortRubrics: { type: String, default: 'idDesc' },
+    adminBlogRubricsPerPage: { type: Number, default: 20 },
+    adminBlogRubricsDefaultSort: { type: String, default: 'idDesc' },
 
-    currentLocale: { type: String, default: 'ru' },
-    availableLocales: { type: Array, default: () => ['ru', 'en', 'kk'] },
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
 
     search: { type: String, default: '' },
     sortParam: { type: String, default: '' },
@@ -105,7 +106,7 @@ watch(viewMode, (value) => {
  * Количество элементов на странице.
  * Значение сохраняется в настройках админки.
  */
-const itemsPerPage = ref(props.adminCountRubrics || 15)
+const itemsPerPage = ref(props.adminBlogRubricsPerPage || 20)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
@@ -124,7 +125,7 @@ watch(itemsPerPage, (newVal) => {
  * Параметр сортировки.
  * Значение также сохраняется в настройках админки.
  */
-const sortParam = ref(props.sortParam || props.adminSortRubrics || 'idDesc')
+const sortParam = ref(props.sortParam || props.adminBlogRubricsDefaultSort || 'idDesc')
 
 watch(sortParam, (newVal) => {
     router.put(
@@ -645,13 +646,6 @@ const handleBulkAction = (event) => {
 }
 
 /**
- * Ссылка переключения локали списка рубрик
- */
-const localeLink = (loc) => {
-    return route('admin.blogRubrics.index', { locale: loc })
-}
-
-/**
  * Одобрение / отклонение рубрики администратором
  */
 const approveRubric = (rubric, status = 1, note = '') => {
@@ -738,7 +732,6 @@ const handleSortOrderUpdate = (newOrderIds) => {
                         </template>
                         {{ t('addRubric') }}
                     </DefaultButton>
-
                 </div>
 
                 <SearchInput v-if="rubricsCount" v-model="searchQuery" />
@@ -757,7 +750,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
                 </div>
 
                 <div v-if="rubricsCount"
-                     class="flex items-center justify-between mb-3">
+                     class="flex flex-col lg:flex-row items-center justify-between gap-3">
                     <CountTable>{{ rubricsCount }}</CountTable>
                     <BulkActionSelect
                         v-if="rubricsCount"
@@ -766,9 +759,22 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     <ToggleViewButton v-model:viewMode="viewMode" />
                 </div>
 
+                <!-- Пагинация -->
+                <div v-if="rubricsCount && viewMode !== 'table'"
+                     class="flex justify-center items-center flex-col md:flex-row mt-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredRubrics.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                </div>
+
                 <!-- Дерево -->
                 <div v-if="viewMode === 'table'"
-                     class="border border-gray-400 bg-white dark:bg-slate-800">
+                     class="mt-2 border border-gray-400 bg-white dark:bg-slate-800">
                     <div
                         v-if="rubricsCount"
                         class="flex justify-between items-center px-3 py-2
@@ -846,6 +852,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     @approve="approveRubric"
                 />
 
+                <!-- Пагинация -->
                 <div v-if="rubricsCount && viewMode !== 'table'"
                      class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >

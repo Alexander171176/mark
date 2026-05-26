@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Finance\SubscriptionPlan;
 
-use App\Models\Admin\Finance\SubscriptionPlan\SubscriptionPlanImage;
+use App\Models\Admin\School\SubscriptionPlan\SubscriptionPlanImage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

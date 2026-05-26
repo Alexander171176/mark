@@ -27,18 +27,16 @@ export default defineConfig({
     },
     optimizeDeps: {
         include: [
-            // ОСТАВЬ только то, что реально установлено и используется.
-            // Удалите/закомментируйте @codemirror/history, если не нужен или не установлен.
             '@codemirror/state',
             '@codemirror/view',
             '@codemirror/commands',
-            '@codemirror/history',
             '@codemirror/language',
             '@codemirror/lang-javascript',
             '@codemirror/theme-one-dark',
         ],
     },
     build: {
+        sourcemap: false,
         rollupOptions: {
             output: {
                 manualChunks(id) {

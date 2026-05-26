@@ -2,25 +2,33 @@
 /**
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
- * Список инструкторов (паттерн)
+ *
+ * Список инструкторов (вид в строку и карточками)
+ * - Выбор количества элементов на странице
+ * - Сортировка
+ * - Массовые действия
+ * - Поиск
+ * - Пагинация
  */
 import { defineProps, ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'vue-toastification';
-import { router, Link } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
+
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/Headlines/TitlePage.vue';
-import SearchInput from '@/Components/Admin/Search/SearchInput.vue';
-import DefaultButton from "@/Components/Admin/Buttons/DefaultButton.vue";
-import BulkActionSelect from '@/Components/Admin/InstructorProfile/Select/BulkActionSelect.vue';
-import CountTable from '@/Components/Admin/Count/CountTable.vue';
-import ItemsPerPageSelect from "@/Components/Admin/Select/ItemsPerPageSelect.vue";
-import InstructorProfileTable from '@/Components/Admin/InstructorProfile/Table/InstructorProfileTable.vue';
-import InstuctorCardGrid from '@/Components/Admin/InstructorProfile/View/InstuctorCardGrid.vue'
-import DangerModal from '@/Components/Admin/Modal/DangerModal.vue';
-import Pagination from '@/Components/Admin/Pagination/Pagination.vue';
-import SortSelect from "@/Components/Admin/InstructorProfile/Sort/SortSelect.vue";
-import ToggleViewButton from '@/Components/Admin/Buttons/ToggleViewButton.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
+import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue';
+import DefaultButton from "@/Components/Admin/UI/Buttons/DefaultButton.vue";
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue';
+import ItemsPerPageSelect from "@/Components/Admin/UI/Select/ItemsPerPageSelect.vue";
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue';
+import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue';
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+
+import SortSelect from "@/Components/Admin/School/InstructorProfile/Sort/SortSelect.vue";
+import BulkActionSelect from '@/Components/Admin/School/InstructorProfile/Select/BulkActionSelect.vue';
+import InstructorProfileTable from '@/Components/Admin/School/InstructorProfile/Table/InstructorProfileTable.vue';
+import InstuctorCardGrid from '@/Components/Admin/School/InstructorProfile/View/InstuctorCardGrid.vue'
 
 // --- Инициализация экземпляр i18n, toast ---
 const { t } = useI18n();
@@ -32,8 +40,8 @@ const toast = useToast();
 const props = defineProps({
     instructorProfiles: Array,
     instructorProfilesCount: Number,
-    adminCountInstructors: Number,
-    adminSortInstructors: String,
+    adminSchoolInstructorsPerPage: Number,
+    adminSchoolInstructorsDefaultSort: String,
     currentLocale: String,
     availableLocales: Array,
 });
@@ -53,7 +61,7 @@ watch(viewMode, (val) => {
 /**
  * Реактивная переменная для хранения текущего количества элементов на странице.
  */
-const itemsPerPage = ref(props.adminCountInstructors);
+const itemsPerPage = ref(props.adminSchoolInstructorsPerPage);
 
 /**
  * Наблюдатель за изменением количества элементов на странице.
@@ -70,7 +78,7 @@ watch(itemsPerPage, (newVal) => {
 /**
  * Реактивная переменная для хранения текущего параметра сортировки.
  */
-const sortParam = ref(props.adminSortInstructors);
+const sortParam = ref(props.adminSchoolInstructorsDefaultSort);
 
 /**
  * Наблюдатель за изменением параметра сортировки.
@@ -124,7 +132,8 @@ const deleteInstructorProfile = () => {
     if (instructorProfileToDeleteId.value === null) return;
     const idToDelete = instructorProfileToDeleteId.value;
     const titleToDelete = instructorProfileToDeleteTitle.value;
-    router.delete(route('admin.instructorProfiles.destroy', { instructorProfile: idToDelete }), {
+    router.delete(route('admin.schoolInstructorProfiles.destroy',
+        { schoolInstructorProfile: idToDelete }), {
         preserveScroll: true,
         preserveState: false,
         onSuccess: () => {
@@ -255,13 +264,31 @@ const sortInstructorProfiles = (instructorProfiles) => {
  * Вычисляемое свойство, отсортированный список поиска.
  */
 const filteredInstructorProfiles = computed(() => {
-    let filtered = props.instructorProfiles || [];
+    let filtered = props.instructorProfiles || []
+
     if (searchQuery.value) {
-        filtered = filtered.filter(i => (i.title || '')
-            .toLowerCase().includes(searchQuery.value.toLowerCase()));
+        const query = searchQuery.value.toLowerCase()
+
+        filtered = filtered.filter(i => {
+            const title = (i.title || '').toLowerCase()
+            const userName = (i.user?.name || '').toLowerCase()
+            const slug = (i.slug || '').toLowerCase()
+
+            const hasCourse = (i.courses || []).some(course =>
+                (course.title || '').toLowerCase().includes(query)
+            )
+
+            return (
+                title.includes(query) ||
+                userName.includes(query) ||
+                slug.includes(query) ||
+                hasCourse
+            )
+        })
     }
-    return sortInstructorProfiles(filtered);
-});
+
+    return sortInstructorProfiles(filtered)
+})
 
 /**
  * Вычисляемое свойство пагинации, возвращающее для текущей страницы.
@@ -270,12 +297,6 @@ const paginatedInstructorProfiles = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value;
     return filteredInstructorProfiles.value.slice(start, start + itemsPerPage.value);
 });
-
-/**
- * Вычисляемое свойство, возвращающее общее количество страниц пагинации.
- */
-const totalPages = computed(() =>
-    Math.ceil((filteredInstructorProfiles.value.length || 0) / itemsPerPage.value));
 
 /**
  * Обрабатывает событие обновления порядка сортировки от компонента таблицы (Drag and drop).
@@ -289,8 +310,8 @@ const handleSortOrderUpdate = (orderedIds) => {
     }));
 
     router.put(
-        route('admin.actions.instructors.updateSortBulk'),
-        { instructorProfiles: sortData },
+        route('admin.actions.schoolInstructorProfiles.updateSortBulk'),
+        { items: sortData },
         {
             preserveScroll: true,
             preserveState: true,
@@ -344,7 +365,7 @@ const bulkToggleActivity = (newActivity) => {
         toast.warning('Выберите инструкторов для активации/деактивации');
         return;
     }
-    router.put(route('admin.actions.instructors.bulkUpdateActivity'),
+    router.put(route('admin.actions.schoolInstructorProfiles.bulkUpdateActivity'),
         { ids: selectedInstructorProfiles.value, activity: newActivity },
         {
             preserveScroll: true,
@@ -391,7 +412,7 @@ const toggleActivity = (instructorProfile) => {
     const actionText = newActivity ? t('activated') : t('deactivated');
 
     router.put(
-        route('admin.actions.instructors.updateActivity',
+        route('admin.actions.schoolInstructorProfiles.updateActivity',
             { instructorProfile: instructorProfile.id }),
         { activity: newActivity },
         {
@@ -413,8 +434,6 @@ const toggleActivity = (instructorProfile) => {
     );
 };
 
-/** ССЫЛКА ДЛЯ ТАБОВ ЛОКАЛЕЙ */
-const localeLink = (locale) => route('admin.instructorProfiles.index', { locale });
 </script>
 
 <template>
@@ -426,13 +445,16 @@ const localeLink = (locale) => route('admin.instructorProfiles.index', { locale 
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
-            <div class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
-                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
-                        bg-opacity-95 dark:bg-opacity-95">
+            <div
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                       bg-opacity-95 dark:bg-opacity-95"
+            >
 
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
                     <!-- Кнопка добавить инструктора -->
-                    <DefaultButton :href="route('admin.instructorProfiles.create')">
+                    <DefaultButton :href="route('admin.schoolInstructorProfiles.create')">
                         <template #icon>
                             <svg class="w-4 h-4 fill-current opacity-50 shrink-0"
                                  viewBox="0 0 16 16">
@@ -442,49 +464,47 @@ const localeLink = (locale) => route('admin.instructorProfiles.index', { locale 
                         </template>
                         {{ t('addInstructor') }}
                     </DefaultButton>
-
-                    <BulkActionSelect v-if="instructorProfilesCount" @change="handleBulkAction" />
                 </div>
 
-                <div class="flex items-center justify-between mt-5">
-                    <!-- ПЕРЕКЛЮЧАТЕЛЬ ЛОКАЛЕЙ (как было) -->
-                    <div class="flex items-center justify-end space-x-2 px-3 py-1
-                                border-x border-t border-gray-400 rounded-t-lg
-                                bg-gray-100 dark:bg-gray-900">
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {{ t('localization') }}:
-                        </span>
-                        <template v-for="locale in availableLocales" :key="locale">
-                            <Link
-                                :href="localeLink(locale)"
-                                :class="[
-                                    'px-3 py-1 text-sm font-medium rounded-sm',
-                                    currentLocale === locale
-                                      ? 'bg-blue-500 text-white'
-                                      : 'bg-slate-100 dark:bg-slate-900 ' +
-                                       'text-slate-700 dark:text-slate-200 ' +
-                                        'hover:bg-slate-300 dark:hover:bg-slate-600'
-                                ]"
-                                preserve-scroll
-                                preserve-state
-                            >
-                                {{ locale.toUpperCase() }}
-                            </Link>
-                        </template>
-                    </div>
+                <SearchInput
+                    v-if="instructorProfilesCount"
+                    v-model="searchQuery"
+                    :placeholder="t('searchByName')" />
 
-                    <!-- Справа: количество + переключатель вида -->
-                    <div class="flex items-center space-x-3">
-                        <CountTable v-if="instructorProfilesCount">
-                            {{ instructorProfilesCount }}
-                        </CountTable>
-
-                        <ToggleViewButton v-model:viewMode="viewMode" />
-                    </div>
+                <div
+                    v-if="instructorProfilesCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event" />
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val" />
                 </div>
 
-                <SearchInput v-if="instructorProfilesCount"
-                             v-model="searchQuery" :placeholder="t('searchByName')" />
+                <div
+                    v-if="instructorProfilesCount"
+                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
+                >
+                    <CountTable>{{ instructorProfilesCount }}</CountTable>
+                    <BulkActionSelect
+                        v-if="instructorProfilesCount"
+                        @change="handleBulkAction" />
+                    <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div
+                    v-if="instructorProfilesCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3">
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredInstructorProfiles.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                </div>
 
                 <!-- Таблица -->
                 <InstructorProfileTable
@@ -510,11 +530,9 @@ const localeLink = (locale) => route('admin.instructorProfiles.index', { locale 
                     @update-sort-order="handleSortOrderUpdate"
                 />
 
-                <div class="flex justify-between items-center flex-col md:flex-row my-1"
-                     v-if="instructorProfilesCount">
-                    <ItemsPerPageSelect
-                        :items-per-page="itemsPerPage"
-                        @update:itemsPerPage="itemsPerPage = $event" />
+                <div
+                    v-if="instructorProfilesCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
@@ -522,7 +540,6 @@ const localeLink = (locale) => route('admin.instructorProfiles.index', { locale 
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
                     />
-                    <SortSelect :sortParam="sortParam" @update:sortParam="val => sortParam = val" />
                 </div>
             </div>
         </div>

@@ -12,9 +12,9 @@ import { useI18n } from 'vue-i18n'
 import { Inertia } from '@inertiajs/inertia'
 
 import ThemeToggle from '@/Components/User/ThemeToggle/ThemeToggle.vue'
-import DropdownLink from '@/Components/DropdownLink.vue'
-import Dropdown from '@/Components/Dropdown.vue'
-import LocaleSelectOption from '@/Components/Admin/Select/LocaleSelectOption.vue'
+import DropdownLink from '@/Components/Base/DropdownLink.vue'
+import Dropdown from '@/Components/Base/Dropdown.vue'
+import LocaleSelectOption from '@/Components/Admin/UI/Select/LocaleSelectOption.vue'
 import NavDropdown from '@/Components/Public/Default/Link/NavDropdown.vue'
 
 import { publicDropdownMenus } from '@/utils/publicDropdownMenus'

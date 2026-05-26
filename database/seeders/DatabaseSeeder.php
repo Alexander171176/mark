@@ -14,60 +14,96 @@ class DatabaseSeeder extends Seeder
         // Запускаем сидеры после регистрации первого суперпользователя
         $this->call([
 //            RoleSeeder::class,
+
+            // Настройки
             SettingSeeder::class,
+
+            // Блог
             BlogRubricSeeder::class,
             BlogTagSeeder::class,
             BlogArticleSeeder::class,
-// HashtagSeeder::class,
-// InstructorProfileSeeder::class,
+
+            // Мультивалютность
+            CurrencySeeder::class,
+            CurrencyRateSeeder::class,
+
+            // Хештеги
+            SchoolHashtagSeeder::class,
+            SchoolHashtagTranslationSeeder::class,
+
+            // Пользователи
+            UserSeeder::class,
+
+            // Инструкторы
+            SchoolInstructorProfileSeeder::class,
+            SchoolInstructorProfileTranslationSeeder::class,
+
+            // Треки
+            SchoolTrackSeeder::class,
+            SchoolTrackTranslationSeeder::class,
+
+            // Курсы
+            SchoolCourseSeeder::class,
+            SchoolCourseTranslationSeeder::class,
+
+            // Модули
+            SchoolModuleSeeder::class,
+            SchoolModuleTranslationSeeder::class,
+
+            // Уроки
+            SchoolLessonSeeder::class,
+            SchoolLessonTranslationSeeder::class,
+
+            // Задания
+            SchoolAssignmentSeeder::class,
+            SchoolAssignmentTranslationSeeder::class,
+
+            // Потоки
+            SchoolCourseScheduleSeeder::class,
+            SchoolCourseScheduleTranslationSeeder::class,
+
+            // Записи
+            SchoolCohortEnrollmentSeeder::class,
+
+            // Заказы
+            SchoolOrderSeeder::class,
+
+            // Зачисления
+            SchoolEnrollmentSeeder::class,
+
+            // Квизы
+            SchoolQuizSeeder::class,
+            SchoolQuizTranslationSeeder::class,
+
+            // Вопросы
+            SchoolQuizQuestionSeeder::class,
+            SchoolQuizQuestionTranslationSeeder::class,
+
+            // Ответы
+            SchoolQuizAnswerSeeder::class,
+            SchoolQuizAnswerTranslationSeeder::class,
+
+            // Попытки
+            SchoolQuizAttemptSeeder::class,
+            SchoolQuizAttemptItemSeeder::class,
+
+            // Бандлы
+            SchoolBundleSeeder::class,
+            SchoolBundleTranslationSeeder::class,
+
+            // Цены
+            SchoolCoursePriceSeeder::class,
+            SchoolBundlePriceSeeder::class,
+
+            // Подписки
+            SchoolSubscriptionPlanSeeder::class,
+            SchoolSubscriptionPlanTranslationSeeder::class,
+
+            // Заказы
+            SchoolOrderItemSeeder::class,
+
+            // Комментарии
             CommentsSeeder::class,
-// LearningCategorySeeder::class,
-// CourseSeeder::class,
-// ModuleSeeder::class,
-// LessonSeeder::class,
-// AssignmentSeeder::class,
-// CourseScheduleSeeder::class,
-// CohortEnrollmentSeeder::class,
-// OrderSeeder::class,
-// EnrollmentSeeder::class,
-// QuizSeeder::class,
-// QuizQuestionSeeder::class,
-// QuizAnswerSeeder::class,
-// QuizAttemptItemSeeder::class,
-// BundleSeeder::class,
-// DefaultCurrenciesSeeder::class,
-// CoursePriceSeeder::class,
-// BundlePriceSeeder::class,
-// SubscriptionPlanSeeder::class,
-// OrderItemSeeder::class,
-// PaymentMethodSeeder::class,
-// UserPaymentMethodSeeder::class,
-// SubscriptionSeeder::class,
-// CouponSeeder::class,
-// InvoiceSeeder::class,
-// ProviderAccountSeeder::class,
-// PayoutSeeder::class,
-// PayoutItemSeeder::class,
-// ExchangeRateSeeder::class,
-// WebhookEventSeeder::class,
-// AssignmentSubmissionSeeder::class,
-// ReviewSeeder::class,
-// QaThreadSeeder::class,
-// QaMessageSeeder::class,
-// BookmarkSeeder::class,
-// CertificateSeeder::class,
-// PageSeeder::class,
-// BlogPostSeeder::class,
-// SeoMetaSeeder::class,
-// LeadSeeder::class,
-// EmailSubscriptionSeeder::class,
-// NavigationMenuSeeder::class,
-// NavigationItemSeeder::class,
-// CmsBannerSeeder::class,
-// RedirectSeeder::class,
-// FormSubmissionSeeder::class,
-// FaqSeeder::class,
-// TestimonialSeeder::class,
 
 // Добавьте сюда другие сидеры по мере необходимости
         ]);

@@ -98,7 +98,7 @@ return [
 
     'fallback_locale' => 'ru',
 
-    'available_locales' => ['ru', 'en', 'kk'],
+    'available_locales' => ['ru', 'en', 'kk', 'zh'],
 
     /*
     |--------------------------------------------------------------------------

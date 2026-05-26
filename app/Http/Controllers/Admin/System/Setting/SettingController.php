@@ -44,8 +44,8 @@ class SettingController extends Controller
         // TODO: Проверка прав $this->authorize('view-settings', Setting::class);
 
         // Получаем настройки для фронтенда (дефолтные значения)
-        $adminCountSettings = config('site_settings.AdminCountSettings', 15); // Для ItemsPerPageSelect
-        $adminSortSettings  = config('site_settings.AdminSortSettings', 'idDesc'); // Для SortSelect
+        $adminSystemSettingsPerPage = config('site_settings.adminSystemSettingsPerPage', 20); // Для ItemsPerPageSelect
+        $adminSystemSettingsDefaultSort = config('site_settings.adminSystemSettingsDefaultSort', 'idDesc'); // Для SortSelect
 
         try {
             // Загружаем ВСЕ рубрики с количеством секций (или без, если не нужно в таблице)
@@ -64,8 +64,8 @@ class SettingController extends Controller
             'settings' => SettingResource::collection($settings),
             'settingsCount' => $settingsCount,
             // Передаем дефолтные/текущие настройки для инициализации фронтенда
-            'adminCountSettings' => (int)$adminCountSettings,
-            'adminSortSettings' => $adminSortSettings, // Это значение прочитает SortSelect при загрузке
+            'adminSystemSettingsPerPage' => (int)$adminSystemSettingsPerPage,
+            'adminSystemSettingsDefaultSort' => $adminSystemSettingsDefaultSort, // Это значение прочитает SortSelect при загрузке
         ]);
     }
 
@@ -158,8 +158,8 @@ class SettingController extends Controller
     public function bulkUpdateActivity(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'ids'      => 'required|array',
-            'ids.*'    => 'required|integer|exists:settings,id',
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|exists:settings,id',
             'activity' => 'required|boolean',
         ]);
 

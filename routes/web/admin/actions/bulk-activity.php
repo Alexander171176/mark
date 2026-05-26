@@ -8,66 +8,67 @@ use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
-use App\Http\Controllers\Admin\Finance\BundlePrice\BundlePriceController;
-use App\Http\Controllers\Admin\Finance\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
-use App\Http\Controllers\Admin\Finance\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
-use App\Http\Controllers\Admin\School\Assignment\AssignmentController;
+use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\BundleController;
-use App\Http\Controllers\Admin\School\Course\CourseController;
-use App\Http\Controllers\Admin\School\CourseSchedule\CourseScheduleController;
-use App\Http\Controllers\Admin\School\Hashtag\HashtagController;
-use App\Http\Controllers\Admin\School\InstructorProfile\InstructorProfileController;
-use App\Http\Controllers\Admin\School\LearningCategory\LearningCategoryController;
-use App\Http\Controllers\Admin\School\Lesson\LessonController;
-use App\Http\Controllers\Admin\School\Module\ModuleController;
-use App\Http\Controllers\Admin\School\Quiz\QuizController;
+use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
+use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
+use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
+use App\Http\Controllers\Admin\School\CourseSchedule\SchoolCourseScheduleController;
+use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
+use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileController;
+use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
+use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
+use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\QuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizQuestion\QuizQuestionController;
+use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
+use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
+use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
-Route::put('/instructors/bulk-activity',
-    [InstructorProfileController::class, 'bulkUpdateActivity'])
-    ->name('instructors.bulkUpdateActivity');
+Route::put('/school-instructor-profiles/bulk-activity',
+    [SchoolInstructorProfileController::class, 'bulkUpdateActivity'])
+    ->name('schoolInstructorProfiles.bulkUpdateActivity');
 
-Route::put('/learning-categories/bulk-activity',
-    [LearningCategoryController::class, 'bulkUpdateActivity'])
-    ->name('learningCategories.bulkUpdateActivity');
+Route::put('/school-tracks/bulk-activity',
+    [SchoolTrackController::class, 'bulkUpdateActivity'])
+    ->name('schoolTracks.bulkUpdateActivity');
 
-Route::put('/hashtags/bulk-activity',
-    [HashtagController::class, 'bulkUpdateActivity'])
-    ->name('hashtags.bulkUpdateActivity');
+Route::put('/school-hashtags/bulk-activity',
+    [SchoolHashtagController::class, 'bulkUpdateActivity'])
+    ->name('schoolHashtags.bulkUpdateActivity');
 
-Route::put('/courses/bulk-activity',
-    [CourseController::class, 'bulkUpdateActivity'])
-    ->name('courses.bulkUpdateActivity');
+Route::put('/school-courses/bulk-activity',
+    [SchoolCourseController::class, 'bulkUpdateActivity'])
+    ->name('schoolCourses.bulkUpdateActivity');
 
-Route::put('/modules/bulk-activity',
-    [ModuleController::class, 'bulkUpdateActivity'])
-    ->name('modules.bulkUpdateActivity');
+Route::put('/school-modules/bulk-activity',
+    [SchoolModuleController::class, 'bulkUpdateActivity'])
+    ->name('schoolModules.bulkUpdateActivity');
 
-Route::put('/lessons/bulk-activity',
-    [LessonController::class, 'bulkUpdateActivity'])
-    ->name('lessons.bulkUpdateActivity');
+Route::put('/school-lessons/bulk-activity',
+    [SchoolLessonController::class, 'bulkUpdateActivity'])
+    ->name('schoolLessons.bulkUpdateActivity');
 
-Route::put('/assignments/bulk-activity',
-    [AssignmentController::class, 'bulkUpdateActivity'])
-    ->name('assignments.bulkUpdateActivity');
+Route::put('/school-assignments/bulk-activity',
+    [SchoolAssignmentController::class, 'bulkUpdateActivity'])
+    ->name('schoolAssignments.bulkUpdateActivity');
 
-Route::put('/course-schedules/bulk-activity',
-    [CourseScheduleController::class, 'bulkUpdateActivity'])
-    ->name('courseSchedules.bulkUpdateActivity');
+Route::put('/school-course-schedules/bulk-activity',
+    [SchoolCourseScheduleController::class, 'bulkUpdateActivity'])
+    ->name('schoolCourseSchedules.bulkUpdateActivity');
 
-Route::put('/quizzes/bulk-activity',
-    [QuizController::class, 'bulkUpdateActivity'])
-    ->name('quizzes.bulkUpdateActivity');
+Route::put('/school-quizzes/bulk-activity',
+    [SchoolQuizController::class, 'bulkUpdateActivity'])
+    ->name('schoolQuizzes.bulkUpdateActivity');
 
-Route::put('/quiz-questions/bulk-activity',
-    [QuizQuestionController::class, 'bulkUpdateActivity'])
-    ->name('quizQuestions.bulkUpdateActivity');
+Route::put('/school-quiz-questions/bulk-activity',
+    [SchoolQuizQuestionController::class, 'bulkUpdateActivity'])
+    ->name('schoolQuizQuestions.bulkUpdateActivity');
 
 Route::put('/quiz-answers/bulk-activity',
     [QuizAnswerController::class, 'bulkUpdateActivity'])

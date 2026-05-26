@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Finance\ProviderAccount;
 
-use App\Models\Admin\Finance\ProviderAccount\ProviderAccount;
+use App\Models\Admin\School\ProviderAccount\ProviderAccount;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

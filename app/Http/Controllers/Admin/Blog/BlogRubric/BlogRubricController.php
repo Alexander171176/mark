@@ -111,12 +111,12 @@ class BlogRubricController extends BaseBlogAdminController
      */
     public function index(Request $request): Response
     {
-        $adminCountRubrics = (int) config('site_settings.AdminCountRubrics', 15);
-        $adminSortRubrics = (string) config('site_settings.AdminSortRubrics', 'idDesc');
+        $adminBlogRubricsPerPage = (int) config('site_settings.adminBlogRubricsPerPage', 20);
+        $adminBlogRubricsDefaultSort = (string) config('site_settings.adminBlogRubricsDefaultSort', 'idDesc');
 
-        $currentLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
         $search = trim((string) $request->query('search', ''));
-        $sortParam = $this->normalizeSortParam($request->query('sort', $adminSortRubrics));
+        $sortParam = $this->normalizeSortParam($request->query('sort', $adminBlogRubricsDefaultSort));
 
         try {
             $rubricsTree = $this->baseQuery()
@@ -151,8 +151,8 @@ class BlogRubricController extends BaseBlogAdminController
                 'rubrics' => BlogRubricResource::collection($rubricsFlat),
                 'rubricsCount' => $this->baseQuery()->count(),
 
-                'adminCountRubrics' => $adminCountRubrics,
-                'adminSortRubrics' => $adminSortRubrics,
+                'adminBlogRubricsPerPage' => $adminBlogRubricsPerPage,
+                'adminBlogRubricsDefaultSort' => $adminBlogRubricsDefaultSort,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -169,8 +169,8 @@ class BlogRubricController extends BaseBlogAdminController
                 'rubrics' => [],
                 'rubricsCount' => 0,
 
-                'adminCountRubrics' => $adminCountRubrics,
-                'adminSortRubrics' => $adminSortRubrics,
+                'adminBlogRubricsPerPage' => $adminBlogRubricsPerPage,
+                'adminBlogRubricsDefaultSort' => $adminBlogRubricsDefaultSort,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -186,7 +186,7 @@ class BlogRubricController extends BaseBlogAdminController
      */
     public function create(Request $request): Response
     {
-        $targetLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
 
         $parents = $this->baseQuery()
             ->with(['translations'])
@@ -194,7 +194,7 @@ class BlogRubricController extends BaseBlogAdminController
             ->get();
 
         return Inertia::render('Admin/Blog/BlogRubrics/Create', [
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'parents' => BlogRubricSharedResource::collection($parents),
             'availableLocales' => $this->availableLocales(),
         ]);
@@ -284,7 +284,7 @@ class BlogRubricController extends BaseBlogAdminController
             ->withCount(['articles', 'images'])
             ->findOrFail($blogRubric);
 
-        $targetLocale = $this->normalizeLocale($request->query('locale'));
+        $currentLocale = $this->resolveLocale($request);
 
         $parents = $this->baseQuery()
             ->where('id', '!=', $rubric->id)
@@ -295,7 +295,7 @@ class BlogRubricController extends BaseBlogAdminController
         return Inertia::render('Admin/Blog/BlogRubrics/Edit', [
             'rubric' => new BlogRubricResource($rubric),
             'parents' => BlogRubricSharedResource::collection($parents),
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
         ]);
     }

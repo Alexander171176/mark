@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Crm\FormSubmission;
 
-use App\Models\Admin\Crm\FormSubmission\FormSubmission;
+use App\Models\Admin\School\FormSubmission\FormSubmission;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

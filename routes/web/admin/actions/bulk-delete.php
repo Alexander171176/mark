@@ -17,7 +17,7 @@ use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
-use App\Http\Controllers\Admin\School\QuizAnswer\QuizAnswerController;
+use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizAttempt\QuizAttemptController;
 use App\Http\Controllers\Admin\School\QuizAttemptItem\QuizAttemptItemController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
@@ -63,8 +63,9 @@ Route::delete('/school-quiz-questions/bulk-delete',
     [SchoolQuizQuestionController::class, 'bulkDestroy'])
     ->name('schoolQuizQuestions.bulkDestroy');
 
-Route::delete('/quiz-answers/bulk-delete', [QuizAnswerController::class, 'bulkDestroy'])
-    ->name('quizAnswers.bulkDestroy');
+Route::delete('/school-quiz-answers/bulk-delete',
+    [SchoolQuizAnswerController::class, 'bulkDestroy'])
+    ->name('schoolQuizAnswers.bulkDestroy');
 
 Route::delete('/quiz-attempts/bulk-delete', [QuizAttemptController::class, 'bulkDestroy'])
     ->name('quizAttempts.bulkDestroy');

@@ -17,7 +17,7 @@ class SchoolQuizAnswerRequest extends FormRequest
         $data = [];
 
         foreach (['school_quiz_id', 'school_quiz_question_id', 'weight', 'sort'] as $field) {
-            if ($this->filled($field)) {
+            if ($this->has($field) && $this->input($field) !== null && $this->input($field) !== '') {
                 $data[$field] = (int) $this->input($field);
             }
         }
@@ -32,18 +32,6 @@ class SchoolQuizAnswerRequest extends FormRequest
             }
         }
 
-        if ($this->has('translations') && is_array($this->input('translations'))) {
-            $data['translations'] = collect($this->input('translations'))
-                ->map(function ($translation) {
-                    if (isset($translation['locale']) && is_string($translation['locale'])) {
-                        $translation['locale'] = mb_strtolower(trim($translation['locale']));
-                    }
-
-                    return $translation;
-                })
-                ->toArray();
-        }
-
         if (!empty($data)) {
             $this->merge($data);
         }
@@ -51,6 +39,15 @@ class SchoolQuizAnswerRequest extends FormRequest
 
     public function rules(): array
     {
+        $answer = $this->route('schoolQuizAnswer')
+            ?? $this->route('quizAnswer')
+            ?? $this->route('school_quiz_answer')
+            ?? $this->route('id');
+
+        $answerId = is_object($answer)
+            ? $answer->id
+            : ($answer ? (int) $answer : null);
+
         return [
             'school_quiz_id' => [
                 'required',
@@ -64,13 +61,12 @@ class SchoolQuizAnswerRequest extends FormRequest
                 Rule::exists('school_quiz_questions', 'id'),
             ],
 
-            'is_correct' => ['nullable', 'boolean'],
+            'is_correct' => ['required', 'boolean'],
             'weight' => ['nullable', 'integer', 'min:0', 'max:100'],
             'sort' => ['nullable', 'integer', 'min:0'],
-            'activity' => ['nullable', 'boolean'],
+            'activity' => ['required', 'boolean'],
 
             'translations' => ['required', 'array', 'min:1'],
-            'translations.*.locale' => ['required', 'string', 'max:10', 'distinct'],
             'translations.*.text' => ['required', 'string'],
             'translations.*.explanation' => ['nullable', 'string'],
         ];
@@ -87,6 +83,7 @@ class SchoolQuizAnswerRequest extends FormRequest
             'school_quiz_question_id.integer' => 'Идентификатор вопроса должен быть числом.',
             'school_quiz_question_id.exists' => 'Указанный вопрос не найден.',
 
+            'is_correct.required' => 'Укажите, является ли ответ правильным.',
             'is_correct.boolean' => 'Поле «Правильный ответ» должно быть булевым значением.',
 
             'weight.integer' => 'Вес ответа должен быть целым числом.',
@@ -96,16 +93,12 @@ class SchoolQuizAnswerRequest extends FormRequest
             'sort.integer' => 'Позиция должна быть целым числом.',
             'sort.min' => 'Позиция не может быть отрицательной.',
 
+            'activity.required' => 'Укажите активность ответа.',
             'activity.boolean' => 'Поле активности должно быть булевым значением.',
 
             'translations.required' => 'Необходимо передать переводы ответа.',
             'translations.array' => 'Переводы должны быть массивом.',
             'translations.min' => 'Добавьте хотя бы один перевод.',
-
-            'translations.*.locale.required' => 'Укажите локаль перевода.',
-            'translations.*.locale.string' => 'Локаль должна быть строкой.',
-            'translations.*.locale.max' => 'Локаль не должна превышать 10 символов.',
-            'translations.*.locale.distinct' => 'Локали переводов не должны повторяться.',
 
             'translations.*.text.required' => 'Заполните текст варианта ответа.',
             'translations.*.text.string' => 'Текст ответа должен быть строкой.',

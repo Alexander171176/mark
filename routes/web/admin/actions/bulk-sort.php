@@ -21,7 +21,7 @@ use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileC
 use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
 use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
-use App\Http\Controllers\Admin\School\QuizAnswer\QuizAnswerController;
+use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
@@ -68,9 +68,9 @@ Route::put('/school-quiz-questions/update-sort-bulk',
     [SchoolQuizQuestionController::class, 'updateSortBulk'])
     ->name('schoolQuizQuestions.updateSortBulk');
 
-Route::put('/quiz-answers/update-sort-bulk',
-    [QuizAnswerController::class, 'updateSortBulk'])
-    ->name('quizAnswers.updateSortBulk');
+Route::put('/school-quiz-answers/update-sort-bulk',
+    [SchoolQuizAnswerController::class, 'updateSortBulk'])
+    ->name('schoolQuizAnswers.updateSortBulk');
 
 Route::put('/bundles/update-sort-bulk',
     [BundleController::class, 'updateSortBulk'])

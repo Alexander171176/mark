@@ -21,7 +21,7 @@ use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileC
 use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
 use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
-use App\Http\Controllers\Admin\School\QuizAnswer\QuizAnswerController;
+use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
@@ -106,10 +106,10 @@ Route::put('/school-quiz-questions/{schoolQuizQuestion}/sort',
     ->whereNumber('schoolQuizQuestion')
     ->name('schoolQuizQuestions.updateSort');
 
-Route::put('/quiz-answers/{quizAnswer}/sort',
-    [QuizAnswerController::class, 'updateSort'])
-    ->whereNumber('quizAnswer')
-    ->name('quizAnswers.updateSort');
+Route::put('/school-quiz-answers/{schoolQuizAnswer}/sort',
+    [SchoolQuizAnswerController::class, 'updateSort'])
+    ->whereNumber('schoolQuizAnswer')
+    ->name('schoolQuizAnswers.updateSort');
 
 Route::put('/bundles/{bundle}/sort',
     [BundleController::class, 'updateSort'])

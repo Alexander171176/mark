@@ -169,7 +169,7 @@ const descriptions = computed(() => ({
         </WelcomeCard>
         <WelcomeCard
             :href="route('admin.schoolCohortEnrollments.index')"
-            :title="t('schoolCohortEnrollments')"
+            :title="t('cohortEnrollments')"
             :description="descriptions.cohortEnrollments"
         >
             <template #icon>
@@ -219,7 +219,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.quizAnswers.index')"
+            :href="route('admin.schoolQuizAnswers.index')"
             :title="t('quizAnswers')"
             :description="descriptions.quizAnswers"
         >

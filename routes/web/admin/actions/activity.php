@@ -22,7 +22,7 @@ use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileC
 use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
 use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
-use App\Http\Controllers\Admin\School\QuizAnswer\QuizAnswerController;
+use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
@@ -78,9 +78,10 @@ Route::put('/school-quiz-questions/{schoolQuizQuestion}/activity',
     ->whereNumber('schoolQuizQuestion')
     ->name('schoolQuizQuestions.updateActivity');
 
-Route::put('/quiz-answers/{quizAnswer}/activity',
-    [QuizAnswerController::class, 'updateActivity'])
-    ->name('quizAnswers.updateActivity');
+Route::put('/school-quiz-answers/{schoolQuizAnswer}/activity',
+    [SchoolQuizAnswerController::class, 'updateActivity'])
+    ->whereNumber('schoolQuizAnswer')
+    ->name('schoolQuizAnswers.updateActivity');
 
 Route::put('/bundles/{bundle}/activity',
     [BundleController::class, 'updateActivity'])

@@ -80,7 +80,7 @@ const linkInfo = {
     enrollments: {label: t('enrollments'), route: 'admin.schoolEnrollments.index'},
     quizzes: {label: t('quizzes'), route: 'admin.schoolQuizzes.index'},
     quizQuestions: {label: t('quizQuestions'), route: 'admin.schoolQuizQuestions.index'},
-    quizAnswers: {label: t('quizAnswers'), route: 'admin.quizAnswers.index'},
+    quizAnswers: {label: t('quizAnswers'), route: 'admin.schoolQuizAnswers.index'},
     quizAttempts: {label: t('quizAttempts'), route: 'admin.quizAttempts.index'},
     quizAttemptItems: {label: t('quizAttemptItems'), route: 'admin.quizAttemptItems.index'},
     users: {label: t('users'), route: 'admin.users.index'},

@@ -26,7 +26,7 @@ use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
 use App\Http\Controllers\Admin\School\Order\SchoolOrderController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
-use App\Http\Controllers\Admin\School\QuizAttempt\QuizAttemptController;
+use App\Http\Controllers\Admin\School\QuizAttempt\SchoolQuizAttemptController;
 use App\Http\Controllers\Admin\School\QuizAttemptItem\QuizAttemptItemController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
@@ -120,9 +120,10 @@ Route::resource('/school-quiz-answers',
     ->parameters(['school-quiz-answers' => 'schoolQuizAnswer'])
     ->names('schoolQuizAnswers');
 
-Route::resource('/quiz-attempts', QuizAttemptController::class)
-    ->parameters(['quiz-attempts' => 'quizAttempt'])
-    ->names('quizAttempts');
+Route::resource('/school-quiz-attempts',
+    SchoolQuizAttemptController::class)
+    ->parameters(['school-quiz-attempts' => 'schoolQuizAttempt'])
+    ->names('schoolQuizAttempts');
 
 Route::resource('/quiz-attempt-items', QuizAttemptItemController::class)
     ->parameters(['quiz-attempt-items' => 'quizAttemptItem'])

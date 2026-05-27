@@ -5,7 +5,7 @@ import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 
 const { t } = useI18n()
 
-const props = defineProps({
+defineProps({
     modelValue: {
         type: String,
         default: '',

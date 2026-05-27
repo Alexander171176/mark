@@ -1,10 +1,11 @@
 <script setup>
 /**
  * @version PulsarCMS 1.0
- * @author Александр Косолапов
- * Список попыток (QuizAttempt)
+ * @author Александр Косолапов <kosolapov1976@gmail.com>
+ *
+ * список попыток прохождения викторин
  */
-import { defineProps, ref, computed, watch } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { router } from '@inertiajs/vue3'
@@ -24,30 +25,39 @@ import QuizAttemptTable from '@/Components/Admin/School/QuizAttempt/Table/QuizAt
 import QuizAttemptCardGrid from '@/Components/Admin/School/QuizAttempt/View/QuizAttemptCardGrid.vue'
 import BulkActionSelect from '@/Components/Admin/School/QuizAttempt/Select/BulkActionSelect.vue'
 
-// --- Инициализация экземпляр i18n, toast ---
+// Локализация и уведомления
 const { t } = useI18n()
 const toast = useToast()
 
-/**
- * Входные свойства компонента.
- */
+// Пропсы страницы списка попыток квизов
 const props = defineProps({
-    attempts: Array,
-    attemptsCount: Number,
-    adminCountAttempts: Number,
-    adminSortAttempts: String,
+    attempts: { type: Array, default: () => [] },
+    attemptsCount: { type: Number, default: 0 },
+    filters: { type: Object, default: () => ({}) },
+
+    adminSchoolQuizAttemptsPerPage: { type: Number, default: 10 },
+    adminSchoolQuizAttemptsDefaultSort: { type: String, default: 'idDesc' },
+
+    users: { type: Array, default: () => [] },
+    quizzes: { type: Array, default: () => [] },
+    enrollments: { type: Array, default: () => [] },
+    courses: { type: Array, default: () => [] },
+    modules: { type: Array, default: () => [] },
+    lessons: { type: Array, default: () => [] },
 })
 
-/** Вид: таблица или карточки (общий ключ для админки) */
+// Режим отображения таблица/карточки
 const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
-watch(viewMode, (val) => localStorage.setItem('admin_view_mode', val))
 
-/** Кол-во элементов на странице */
-const itemsPerPage = ref(props.adminCountAttempts || 10)
+// Сохранение режима отображения в localStorage
+watch(viewMode, (val) => {
+    localStorage.setItem('admin_view_mode', val)
+})
 
-/**
- * Наблюдатель за изменением количества элементов на странице.
- */
+// Количество элементов на странице
+const itemsPerPage = ref(props.adminSchoolQuizAttemptsPerPage ?? 10)
+
+// Обновление настройки количества элементов
 watch(itemsPerPage, (newVal) => {
     router.put(route('admin.settings.updateAdminCountQuizAttempts'), { value: newVal }, {
         preserveScroll: true,
@@ -57,275 +67,307 @@ watch(itemsPerPage, (newVal) => {
     })
 })
 
-/** Параметр сортировки */
-const sortParam = ref(props.adminSortAttempts || 'idDesc')
+// Параметр сортировки
+const sortParam = ref(props.adminSchoolQuizAttemptsDefaultSort ?? 'idDesc')
 
-/**
- * Наблюдатель за изменением параметра сортировки.
- */
+// Обновление настройки сортировки
 watch(sortParam, (newVal) => {
     router.put(route('admin.settings.updateAdminSortQuizAttempts'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => toast.info('Сортировка успешно изменена'),
-        onError: (errors) => {
-            const firstError = errors ? Object.values(errors)[0] : null
-            toast.error(firstError || 'Ошибка обновления параметра сортировки.')
-        },
+        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
     })
 })
 
-/** Модалка удаления (как у уроков) */
-const showConfirmDeleteModal = ref(false)
-const attemptToDeleteId = ref(null)
-const attemptToDeleteTitle = ref('')
+// Текущая страница пагинации
+const currentPage = ref(1)
 
-/**
- * Открывает модальное окно подтверждения удаления с входными переменными.
- * (как Lessons: confirmDelete(id, title))
- */
-const confirmDelete = (id, title) => {
-    attemptToDeleteId.value = id
-    attemptToDeleteTitle.value = title
+// Поисковый запрос
+const searchQuery = ref('')
+
+// Модальное окно удаления
+const showConfirmDeleteModal = ref(false)
+
+// Попытка для удаления
+const attemptToDelete = ref(null)
+
+// Открытие модального окна удаления
+const confirmDelete = (attempt) => {
+    attemptToDelete.value = attempt
     showConfirmDeleteModal.value = true
 }
 
-/**
- * Закрывает модальное окно подтверждения и сбрасывает связанные переменные.
- */
+// Закрытие модального окна удаления
 const closeModal = () => {
     showConfirmDeleteModal.value = false
-    attemptToDeleteId.value = null
-    attemptToDeleteTitle.value = ''
+    attemptToDelete.value = null
 }
 
-/**
- * Отправляет запрос на удаление (как Lessons: deleteLesson, только deleteAttempt).
- */
+// Удаление попытки
 const deleteAttempt = () => {
-    if (attemptToDeleteId.value === null) return
+    if (!attemptToDelete.value?.id) return
 
-    const idToDelete = attemptToDeleteId.value
-    const titleToDelete = attemptToDeleteTitle.value
+    const idToDelete = attemptToDelete.value.id
 
-    router.delete(route('admin.quizAttempts.destroy', { quizAttempt: idToDelete }), {
+    router.delete(route('admin.schoolQuizAttempts.destroy', {
+        schoolQuizAttempt: idToDelete,
+    }), {
         preserveScroll: true,
         preserveState: false,
         onSuccess: () => {
-            closeModal()
-            toast.success(`Попытка "${titleToDelete || 'ID: ' + idToDelete}" удалена.`)
+            toast.success(`Попытка ID: ${idToDelete} удалена.`)
         },
         onError: (errors) => {
-            closeModal()
-            const errorMsg =
-                errors.general ||
-                errors[Object.keys(errors)[0]] ||
-                'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Попытка: ${titleToDelete || 'ID: ' + idToDelete})`)
+            const firstKey = Object.keys(errors || {})[0]
+            const errorMsg = errors?.general || errors?.[firstKey] || 'Ошибка при удалении попытки.'
+
+            toast.error(`${errorMsg} ID: ${idToDelete}`)
         },
-        onFinish: () => {
-            attemptToDeleteId.value = null
-            attemptToDeleteTitle.value = ''
-        },
+        onFinish: () => closeModal(),
     })
 }
 
-/** Пагинация и поиск */
-const currentPage = ref(1)
-const searchQuery = ref('')
+// Нормализация строк для поиска и сортировки
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
-/** Нормализация даты */
-const toTs = (v) => {
-    if (!v) return null
-    const ts = new Date(v).getTime()
-    return Number.isFinite(ts) ? ts : null
+// Преобразование даты во временную метку
+const toTime = (value) => {
+    if (!value) return 0
+
+    const time = new Date(value).getTime()
+
+    return Number.isNaN(time) ? 0 : time
 }
 
-/** Сортировка массива попыток */
-const sortAttempts = (attempts) => {
-    const value = sortParam.value
-    const list = attempts.slice()
+// Сортировка попыток
+const sortAttempts = (items) => {
+    const list = items.slice()
 
-    if (value === 'idAsc') return list.sort((a, b) => a.id - b.id)
-    if (value === 'idDesc') return list.sort((a, b) => b.id - a.id)
+    switch (sortParam.value) {
+        case 'idAsc':
+            return list.sort((a, b) => a.id - b.id)
 
-    if (value === 'startedAtAsc' || value === 'startedAtDesc') {
-        return list.sort((a, b) => {
-            const ad = toTs(a.started_at)
-            const bd = toTs(b.started_at)
-            if (ad == null && bd == null) return 0
-            if (ad == null) return 1
-            if (bd == null) return -1
-            return value === 'startedAtAsc' ? (ad - bd) : (bd - ad)
-        })
+        case 'idDesc':
+            return list.sort((a, b) => b.id - a.id)
+
+        case 'attemptAsc':
+            return list.sort((a, b) => (a.attempt_number ?? 0) - (b.attempt_number ?? 0))
+
+        case 'attemptDesc':
+            return list.sort((a, b) => (b.attempt_number ?? 0) - (a.attempt_number ?? 0))
+
+        case 'scoreAsc':
+            return list.sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
+
+        case 'scoreDesc':
+            return list.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+
+        case 'percentAsc':
+            return list.sort((a, b) => (a.percent ?? 0) - (b.percent ?? 0))
+
+        case 'percentDesc':
+            return list.sort((a, b) => (b.percent ?? 0) - (a.percent ?? 0))
+
+        case 'startedAtAsc':
+            return list.sort((a, b) => toTime(a.started_at) - toTime(b.started_at))
+
+        case 'startedAtDesc':
+            return list.sort((a, b) => toTime(b.started_at) - toTime(a.started_at))
+
+        case 'finishedAtAsc':
+            return list.sort((a, b) => toTime(a.finished_at) - toTime(b.finished_at))
+
+        case 'finishedAtDesc':
+            return list.sort((a, b) => toTime(b.finished_at) - toTime(a.finished_at))
+
+        case 'statusAsc':
+            return list.sort((a, b) => normalize(a.status).localeCompare(normalize(b.status)))
+
+        case 'statusDesc':
+            return list.sort((a, b) => normalize(b.status).localeCompare(normalize(a.status)))
+
+        case 'userNameAsc':
+            return list.sort((a, b) => normalize(a.user?.name).localeCompare(normalize(b.user?.name)))
+
+        case 'userNameDesc':
+            return list.sort((a, b) => normalize(b.user?.name).localeCompare(normalize(a.user?.name)))
+
+        case 'quizTitleAsc':
+            return list.sort((a, b) => normalize(a.quiz?.title).localeCompare(normalize(b.quiz?.title)))
+
+        case 'quizTitleDesc':
+            return list.sort((a, b) => normalize(b.quiz?.title).localeCompare(normalize(a.quiz?.title)))
+
+        default:
+            return list
     }
-
-    if (value === 'finishedAtAsc' || value === 'finishedAtDesc') {
-        return list.sort((a, b) => {
-            const ad = toTs(a.finished_at)
-            const bd = toTs(b.finished_at)
-            if (ad == null && bd == null) return 0
-            if (ad == null) return 1
-            if (bd == null) return -1
-            return value === 'finishedAtAsc' ? (ad - bd) : (bd - ad)
-        })
-    }
-
-    if (value === 'percentAsc' || value === 'percentDesc') {
-        return list.sort((a, b) => {
-            const av = Number.isFinite(+a.percent) ? +a.percent : 0
-            const bv = Number.isFinite(+b.percent) ? +b.percent : 0
-            return value === 'percentAsc' ? (av - bv) : (bv - av)
-        })
-    }
-
-    return list
 }
 
-/** Фильтрация + сортировка */
+// Фильтрация и поиск попыток
 const filteredAttempts = computed(() => {
-    let filtered = props.attempts || []
+    let filtered = Array.isArray(props.attempts) ? props.attempts : []
 
     if (searchQuery.value) {
-        const q = searchQuery.value.toLowerCase()
+        const q = normalize(searchQuery.value)
 
-        filtered = filtered.filter(a =>
-            (a.status || '').toString().toLowerCase().includes(q) ||
-            (a.quiz?.title || '').toString().toLowerCase().includes(q) ||
-            (a.quiz?.slug || '').toString().toLowerCase().includes(q) ||
-            (a.user?.name || '').toString().toLowerCase().includes(q) ||
-            (a.user?.email || '').toString().toLowerCase().includes(q) ||
-            (a.course?.title || '').toString().toLowerCase().includes(q) ||
-            (a.module?.title || '').toString().toLowerCase().includes(q) ||
-            (a.lesson?.title || '').toString().toLowerCase().includes(q) ||
-            (a.attempt_number ?? '').toString().toLowerCase().includes(q) ||
-            (a.score ?? '').toString().toLowerCase().includes(q) ||
-            (a.max_score ?? '').toString().toLowerCase().includes(q) ||
-            (a.percent ?? '').toString().toLowerCase().includes(q)
-        )
+        filtered = filtered.filter((attempt) => {
+            const values = [
+                attempt.id,
+                attempt.status,
+                attempt.attempt_number,
+                attempt.score,
+                attempt.max_score,
+                attempt.percent,
+
+                attempt.user?.name,
+                attempt.user?.email,
+
+                attempt.quiz?.title,
+                attempt.quiz?.slug,
+
+                attempt.enrollment?.id,
+
+                attempt.course?.title,
+                attempt.course?.slug,
+
+                attempt.module?.title,
+                attempt.module?.slug,
+
+                attempt.lesson?.title,
+                attempt.lesson?.slug,
+
+                attempt.ip_address,
+                attempt.user_agent,
+            ]
+
+            return values.some(value => normalize(value).includes(q))
+        })
     }
 
     return sortAttempts(filtered)
 })
 
-/** Пагинация */
+// Пагинация списка попыток
 const paginatedAttempts = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value
+
     return filteredAttempts.value.slice(start, start + itemsPerPage.value)
 })
 
-/** Общее количество страниц */
-const totalPages = computed(() =>
-    Math.ceil((filteredAttempts.value.length || 0) / itemsPerPage.value)
-)
+// Общее количество страниц
+const totalPages = computed(() => {
+    if (!itemsPerPage.value) return 1
 
-/** Если после фильтрации текущая страница > totalPages — откатываем */
-watch(filteredAttempts, () => {
-    if (currentPage.value > totalPages.value) currentPage.value = totalPages.value
+    return Math.ceil(filteredAttempts.value.length / itemsPerPage.value) || 1
 })
 
-/** Массовые действия */
+// Корректировка страницы после фильтрации
+watch([filteredAttempts, itemsPerPage], () => {
+    if (currentPage.value > totalPages.value) {
+        currentPage.value = totalPages.value
+    }
+})
+
+// Выбранные попытки
 const selectedAttempts = ref([])
 
-/**
- * Логика выбора всех для массовых действий. (как Lessons)
- */
+// Выбор/снятие всех попыток
 const toggleAll = ({ ids, checked }) => {
-    if (checked) selectedAttempts.value = [...ids]
-    else selectedAttempts.value = []
+    selectedAttempts.value = checked ? [...ids] : []
 }
 
-/**
- * Обрабатывает событие выбора/снятия выбора одной строки. (как Lessons)
- */
+// Выбор одной попытки
 const toggleSelectAttempt = (id) => {
-    const idx = selectedAttempts.value.indexOf(id)
-    if (idx > -1) selectedAttempts.value.splice(idx, 1)
-    else selectedAttempts.value.push(id)
+    const index = selectedAttempts.value.indexOf(id)
+
+    if (index > -1) {
+        selectedAttempts.value.splice(index, 1)
+    } else {
+        selectedAttempts.value.push(id)
+    }
 }
 
-/**
- * Массовое обновление статуса выбранных.
- * (аналог bulkToggleActivity, только статус)
- */
+// Обновление локальной записи попытки
+const patchAttempt = (attemptId, payload) => {
+    const attempt = props.attempts.find(item => item.id === attemptId)
+
+    if (attempt) {
+        Object.assign(attempt, payload)
+    }
+}
+
+// Массовое обновление статуса
 const bulkUpdateStatus = (status) => {
     if (!selectedAttempts.value.length) {
-        toast.warning('Выберите попытки')
+        toast.warning('Выберите попытки.')
         return
     }
 
-    router.put(
-        route('admin.actions.quizAttempts.bulkUpdateStatus'),
-        { ids: selectedAttempts.value, status },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.success('Статус попыток массово обновлён')
-                const updatedIds = [...selectedAttempts.value]
-                selectedAttempts.value = []
+    const idsToUpdate = [...selectedAttempts.value]
 
-                paginatedAttempts.value.forEach(a => {
-                    if (updatedIds.includes(a.id)) a.status = status
-                })
-            },
-            onError: (errors) => {
-                const msg =
-                    errors?.ids || errors?.status || errors?.general ||
-                    'Не удалось массово обновить статус'
-                toast.error(msg)
-            },
-        }
-    )
+    router.put(route('admin.actions.schoolQuizAttempts.bulkUpdateStatus'), {
+        ids: idsToUpdate,
+        status,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            idsToUpdate.forEach(id => patchAttempt(id, { status }))
+            selectedAttempts.value = []
+            toast.success('Статус выбранных попыток обновлён.')
+        },
+        onError: (errors) => {
+            toast.error(errors?.ids || errors?.status || errors?.general || 'Ошибка массового обновления статуса.')
+        },
+    })
 }
 
-/**
- * Обрабатывает выбор действия в селекте массовых действий. (как Lessons)
- */
+// Массовое удаление попыток
+const bulkDestroy = () => {
+    if (!selectedAttempts.value.length) {
+        toast.warning('Выберите попытки для удаления.')
+        return
+    }
+
+    if (!confirm('Вы уверены, что хотите удалить выбранные попытки?')) return
+
+    router.delete(route('admin.actions.schoolQuizAttempts.bulkDestroy'), {
+        data: {
+            ids: selectedAttempts.value,
+            ...(props.filters?.school_quiz_id ? { school_quiz_id: props.filters.school_quiz_id } : {}),
+            ...(props.filters?.user_id ? { user_id: props.filters.user_id } : {}),
+            ...(props.filters?.status ? { status: props.filters.status } : {}),
+        },
+        preserveScroll: true,
+        preserveState: false,
+        onSuccess: () => {
+            selectedAttempts.value = []
+            toast.success('Выбранные попытки успешно удалены.')
+        },
+        onError: (errors) => {
+            const firstKey = Object.keys(errors || {})[0]
+            toast.error(errors[firstKey] || 'Ошибка массового удаления попыток.')
+        },
+    })
+}
+
+// Обработка массовых действий
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedAttempts.value = paginatedAttempts.value.map(a => a.id)
+        selectedAttempts.value = paginatedAttempts.value.map(attempt => attempt.id)
     } else if (action === 'deselectAll') {
         selectedAttempts.value = []
     } else if (action.startsWith('status:')) {
-        const status = action.split(':')[1]
-        bulkUpdateStatus(status)
+        bulkUpdateStatus(action.split(':')[1])
     } else if (action === 'delete') {
         bulkDestroy()
     }
 
     event.target.value = ''
 }
-
-/** Массовое удаление */
-const bulkDestroy = () => {
-    if (!selectedAttempts.value.length) {
-        toast.warning('Выберите попытки')
-        return
-    }
-
-    router.delete(
-        route('admin.actions.quizAttempts.bulkDestroy'),
-        {
-            data: { ids: selectedAttempts.value },
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                toast.success('Попытки успешно удалены')
-                selectedAttempts.value = []
-            },
-            onError: (errors) => {
-                const msg =
-                    errors?.ids || errors?.general ||
-                    'Ошибка удаления'
-                toast.error(msg)
-            },
-        }
-    )
-}
-
 </script>
 
 <template>
@@ -336,14 +378,16 @@ const bulkDestroy = () => {
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
-                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
-                       bg-opacity-95 dark:bg-opacity-95"
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       overflow-hidden shadow-md shadow-gray-500
+                       dark:shadow-slate-400 bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <DefaultButton :href="route('admin.quizAttempts.create')">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                    <DefaultButton :href="route('admin.schoolQuizAttempts.create')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
+                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0"
+                                 viewBox="0 0 16 16">
                                 <path
                                     d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
                                 />
@@ -351,11 +395,6 @@ const bulkDestroy = () => {
                         </template>
                         {{ t('addQuizAttempt') }}
                     </DefaultButton>
-
-                    <BulkActionSelect
-                        v-if="attemptsCount"
-                        @change="handleBulkAction"
-                    />
                 </div>
 
                 <SearchInput
@@ -364,35 +403,45 @@ const bulkDestroy = () => {
                     :placeholder="t('search')"
                 />
 
-                <div v-if="attemptsCount" class="flex items-center justify-end my-2">
+                <div
+                    v-if="attemptsCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val"
+                    />
+                </div>
+
+                <div
+                    v-if="attemptsCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
                     <CountTable>{{ attemptsCount }}</CountTable>
+
+                    <BulkActionSelect @change="handleBulkAction" />
+
                     <ToggleViewButton v-model:viewMode="viewMode" />
                 </div>
 
-                <!-- Один общий чекбокс выбрать всё -->
-                <div v-if="attemptsCount"
-                     class="flex items-center justify-between px-3 py-2
-                            border-b border-slate-400 dark:border-slate-500">
-
-                    <div class="text-xs text-slate-600 dark:text-slate-200">
-                        {{ t('selected') }}: {{ selectedAttempts.length }}
-                    </div>
-                    <label
-                        class="flex items-center text-xs text-slate-600
-                               dark:text-slate-200 cursor-pointer">
-                        <span>{{ t('selectAll') }}</span>
-                        <input
-                            type="checkbox"
-                            class="rounded-sm border-slate-400 mx-2"
-                            :checked="paginatedAttempts.length &&
-                            paginatedAttempts.every(a => selectedAttempts.includes(a.id))"
-                            @change="toggleAll({ ids: paginatedAttempts.map(a => a.id),
-                            checked: $event.target.checked })"
-                        />
-                    </label>
+                <div
+                    v-if="attemptsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mb-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredAttempts.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
                 </div>
 
-                <!-- Табличный вид -->
                 <QuizAttemptTable
                     v-if="viewMode === 'table'"
                     :attempts="paginatedAttempts"
@@ -402,7 +451,6 @@ const bulkDestroy = () => {
                     @delete="confirmDelete"
                 />
 
-                <!-- Карточный вид -->
                 <QuizAttemptCardGrid
                     v-else
                     :attempts="paginatedAttempts"
@@ -413,13 +461,9 @@ const bulkDestroy = () => {
                 />
 
                 <div
-                    class="flex justify-between items-center flex-col md:flex-row my-1"
                     v-if="attemptsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
-                    <ItemsPerPageSelect
-                        :items-per-page="itemsPerPage"
-                        @update:itemsPerPage="itemsPerPage = $event"
-                    />
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
@@ -427,15 +471,10 @@ const bulkDestroy = () => {
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
                     />
-                    <SortSelect
-                        :sortParam="sortParam"
-                        @update:sortParam="val => (sortParam = val)"
-                    />
                 </div>
             </div>
         </div>
 
-        <!-- Обычное удаление 1 попытки -->
         <DangerModal
             :show="showConfirmDeleteModal"
             @close="closeModal"

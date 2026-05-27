@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\School\QuizAttempt;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SchoolQuizAttemptRequest extends FormRequest
@@ -26,7 +27,6 @@ class SchoolQuizAttemptRequest extends FormRequest
                      'attempt_number',
                      'score',
                      'max_score',
-                     'percent',
                      'duration_seconds',
                  ] as $field) {
             if ($this->filled($field)) {
@@ -35,7 +35,7 @@ class SchoolQuizAttemptRequest extends FormRequest
         }
 
         if ($this->filled('status')) {
-            $data['status'] = strtolower((string) $this->input('status'));
+            $data['status'] = mb_strtolower(trim((string) $this->input('status')));
         }
 
         if (!empty($data)) {
@@ -45,45 +45,132 @@ class SchoolQuizAttemptRequest extends FormRequest
 
     public function rules(): array
     {
-        $statuses = ['in_progress', 'completed', 'graded'];
+        $attempt = $this->route('schoolQuizAttempt')
+            ?? $this->route('quizAttempt')
+            ?? $this->route('school_quiz_attempt')
+            ?? $this->route('id');
 
-        if ($this->isMethod('post')) {
-            return [
-                'user_id' => ['required', 'integer', Rule::exists('users', 'id')],
-                'school_quiz_id' => ['required', 'integer', Rule::exists('school_quizzes', 'id')],
+        $attemptId = is_object($attempt)
+            ? $attempt->id
+            : ($attempt ? (int) $attempt : null);
 
-                'school_enrollment_id' => ['nullable', 'integer', Rule::exists('school_enrollments', 'id')],
-                'school_course_id' => ['nullable', 'integer', Rule::exists('school_courses', 'id')],
-                'school_module_id' => ['nullable', 'integer', Rule::exists('school_modules', 'id')],
-                'school_lesson_id' => ['nullable', 'integer', Rule::exists('school_lessons', 'id')],
-
-                'attempt_number' => ['nullable', 'integer', 'min:1', 'max:65535'],
-
-                'score' => ['nullable', 'integer', 'min:0', 'max:65535'],
-                'max_score' => ['nullable', 'integer', 'min:0', 'max:65535'],
-                'percent' => ['nullable', 'integer', 'min:0', 'max:100'],
-
-                'status' => ['nullable', 'string', Rule::in($statuses)],
-
-                'started_at' => ['nullable', 'date'],
-                'finished_at' => ['nullable', 'date', 'after_or_equal:started_at'],
-                'duration_seconds' => ['nullable', 'integer', 'min:0'],
-
-                'ip_address' => ['nullable', 'string', 'max:45'],
-                'user_agent' => ['nullable', 'string', 'max:512'],
-            ];
-        }
+        $isStore = $this->isMethod('post');
 
         return [
-            'status' => ['nullable', 'string', Rule::in($statuses)],
+            'user_id' => [
+                $isStore ? 'required' : 'sometimes',
+                'integer',
+                Rule::exists('users', 'id'),
+            ],
 
-            'score' => ['nullable', 'integer', 'min:0', 'max:65535'],
-            'max_score' => ['nullable', 'integer', 'min:0', 'max:65535'],
-            'percent' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'duration_seconds' => ['nullable', 'integer', 'min:0'],
+            'school_quiz_id' => [
+                $isStore ? 'required' : 'sometimes',
+                'integer',
+                Rule::exists('school_quizzes', 'id'),
+            ],
 
-            'started_at' => ['nullable', 'date'],
-            'finished_at' => ['nullable', 'date', 'after_or_equal:started_at'],
+            'school_enrollment_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('school_enrollments', 'id'),
+            ],
+
+            'school_course_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('school_courses', 'id'),
+            ],
+
+            'school_module_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('school_modules', 'id'),
+            ],
+
+            'school_lesson_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('school_lessons', 'id'),
+            ],
+
+            'attempt_number' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:65535',
+            ],
+
+            'score' => [
+                'nullable',
+                'integer',
+                'min:0',
+                'max:65535',
+            ],
+
+            'max_score' => [
+                'nullable',
+                'integer',
+                'min:0',
+                'max:65535',
+            ],
+
+            'status' => [
+                $isStore ? 'nullable' : 'sometimes',
+                'string',
+                Rule::in(['in_progress', 'completed', 'graded']),
+            ],
+
+            'started_at' => [
+                'nullable',
+                'date',
+            ],
+
+            'finished_at' => [
+                'nullable',
+                'date',
+                'after_or_equal:started_at',
+            ],
+
+            'duration_seconds' => [
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+
+            'ip_address' => [
+                'nullable',
+                'string',
+                'max:45',
+            ],
+
+            'user_agent' => [
+                'nullable',
+                'string',
+                'max:512',
+            ],
+
+            'unique_attempt' => [
+                function ($attribute, $value, $fail) use ($attemptId) {
+                    $userId = $this->input('user_id');
+                    $quizId = $this->input('school_quiz_id');
+                    $attemptNumber = $this->input('attempt_number');
+
+                    if (!$userId || !$quizId || !$attemptNumber) {
+                        return;
+                    }
+
+                    $exists = DB::table('school_quiz_attempts')
+                        ->where('user_id', $userId)
+                        ->where('school_quiz_id', $quizId)
+                        ->where('attempt_number', $attemptNumber)
+                        ->when($attemptId, fn ($q) => $q->where('id', '!=', $attemptId))
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('У этого пользователя уже есть такая попытка для выбранного квиза.');
+                    }
+                },
+            ],
         ];
     }
 
@@ -112,16 +199,15 @@ class SchoolQuizAttemptRequest extends FormRequest
 
             'attempt_number.integer' => 'Номер попытки должен быть целым числом.',
             'attempt_number.min' => 'Номер попытки должен быть не менее 1.',
+            'attempt_number.max' => 'Номер попытки не должен быть больше 65535.',
 
             'score.integer' => 'Баллы должны быть целым числом.',
             'score.min' => 'Баллы не могут быть отрицательными.',
+            'score.max' => 'Баллы не могут быть больше 65535.',
 
             'max_score.integer' => 'Максимальный балл должен быть целым числом.',
             'max_score.min' => 'Максимальный балл не может быть отрицательным.',
-
-            'percent.integer' => 'Процент должен быть целым числом.',
-            'percent.min' => 'Процент не может быть меньше 0.',
-            'percent.max' => 'Процент не может быть больше 100.',
+            'max_score.max' => 'Максимальный балл не может быть больше 65535.',
 
             'status.in' => 'Недопустимый статус. Разрешены: in_progress, completed, graded.',
 
@@ -149,7 +235,6 @@ class SchoolQuizAttemptRequest extends FormRequest
             'attempt_number' => 'Номер попытки',
             'score' => 'Баллы',
             'max_score' => 'Максимальные баллы',
-            'percent' => 'Процент',
             'status' => 'Статус',
             'started_at' => 'Начало',
             'finished_at' => 'Завершение',

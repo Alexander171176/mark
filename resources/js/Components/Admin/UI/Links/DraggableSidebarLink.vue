@@ -81,7 +81,7 @@ const linkInfo = {
     quizzes: {label: t('quizzes'), route: 'admin.schoolQuizzes.index'},
     quizQuestions: {label: t('quizQuestions'), route: 'admin.schoolQuizQuestions.index'},
     quizAnswers: {label: t('quizAnswers'), route: 'admin.schoolQuizAnswers.index'},
-    quizAttempts: {label: t('quizAttempts'), route: 'admin.quizAttempts.index'},
+    quizAttempts: {label: t('quizAttempts'), route: 'admin.schoolQuizAttempts.index'},
     quizAttemptItems: {label: t('quizAttemptItems'), route: 'admin.quizAttemptItems.index'},
     users: {label: t('users'), route: 'admin.users.index'},
     roles: {label: t('roles'), route: 'admin.roles.index'},
@@ -112,13 +112,47 @@ const link = computed(() => linkInfo[props.id]);
 
 const svgContent = computed(() => sidebarIcons[props.id]);
 
-const classes = computed(() => {
-    if (link.value.route === route().current()) {
-        return `flex items-center px-1 text-sm font-medium leading-3 ${colorTextActive.value} hover:${colorTextHover.value} focus:${colorTextHover.value} focus:outline-none transition duration-150 ease-in-out`;
-    } else {
-        return `flex items-center px-1 text-sm font-medium leading-3 ${colorText.value} hover:${colorTextActive.value} focus:${colorTextActive.value} focus:outline-none transition duration-150 ease-in-out`;
+const isActive = computed(() => {
+    if (!link.value?.route) {
+        return false
     }
-});
+
+    const currentRoute = route().current()
+
+    if (!currentRoute) {
+        return false
+    }
+
+    // Точное совпадение
+    if (currentRoute === link.value.route) {
+        return true
+    }
+
+    // Если ссылка ведёт на index, подсвечиваем также create/edit/show/update/destroy
+    if (link.value.route.endsWith('.index')) {
+        const baseRoute = link.value.route.replace(/\.index$/, '')
+
+        return currentRoute.startsWith(`${baseRoute}.`)
+    }
+
+    return false
+})
+
+const classes = computed(() => {
+    if (isActive.value) {
+        return `flex items-center px-1 text-sm font-medium leading-3
+        ${colorTextActive.value}
+        hover:${colorTextHover.value}
+        focus:${colorTextHover.value}
+        focus:outline-none transition duration-150 ease-in-out`;
+    }
+
+    return `flex items-center px-1 text-sm font-medium leading-3
+    ${colorText.value}
+    hover:${colorTextActive.value}
+    focus:${colorTextActive.value}
+    focus:outline-none transition duration-150 ease-in-out`;
+})
 
 const containerClasses = computed(() => {
     return props.expanded ? 'mb-1' : 'mb-3';
@@ -133,7 +167,8 @@ const textClasses = computed(() => {
     <li class="mt-0" :class="containerClasses">
         <Link :href="route(link.route, link.params || {})" :class="classes">
             <span v-html="svgContent"></span>
-            <span class="text-sm font-medium transition-opacity duration-200 max-w-full" :class="textClasses">
+            <span class="text-sm font-medium transition-opacity duration-200 max-w-full"
+                  :class="textClasses">
                 {{ link.label }}
             </span>
         </Link>

@@ -2,9 +2,9 @@
 
 // массовое обновление/удаление статусов прохождений викторин
 
-use App\Http\Controllers\Admin\School\QuizAttempt\QuizAttemptController;
+use App\Http\Controllers\Admin\School\QuizAttempt\SchoolQuizAttemptController;
 use Illuminate\Support\Facades\Route;
 
-Route::put('/quiz-attempts/bulk-status',
-    [QuizAttemptController::class, 'bulkUpdateStatus'])
-    ->name('quizAttempts.bulkUpdateStatus');
+Route::put('/school-quiz-attempts/bulk-status',
+    [SchoolQuizAttemptController::class, 'bulkUpdateStatus'])
+    ->name('schoolQuizAttempts.bulkUpdateStatus');

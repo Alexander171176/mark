@@ -131,7 +131,8 @@ const logout = () => {
         class="fixed top-0 left-0 right-0 z-30 transition-all duration-300 border-b"
         :class="[
             isSolid
-                ? 'bg-gray-100/90 dark:bg-gray-900/90 backdrop-blur border-gray-200 dark:border-gray-700 shadow-md'
+                ? 'bg-gray-100/90 dark:bg-gray-900/90 backdrop-blur ' +
+                 'border-gray-200 dark:border-gray-700 shadow-md'
                 : 'bg-transparent border-transparent'
         ]"
         role="navigation"
@@ -161,14 +162,16 @@ const logout = () => {
                             viewBox="0 0 24 24"
                         >
                             <path
-                                :class="{ hidden: showingNavigationDropdown, 'inline-flex': !showingNavigationDropdown }"
+                                :class="{ hidden: showingNavigationDropdown,
+                                'inline-flex': !showingNavigationDropdown }"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 stroke-width="2"
                                 d="M4 6h16M4 12h16M4 18h16"
                             />
                             <path
-                                :class="{ hidden: !showingNavigationDropdown, 'inline-flex': showingNavigationDropdown }"
+                                :class="{ hidden: !showingNavigationDropdown,
+                                'inline-flex': showingNavigationDropdown }"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 stroke-width="2"

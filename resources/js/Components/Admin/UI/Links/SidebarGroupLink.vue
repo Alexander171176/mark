@@ -100,7 +100,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.marketCompanies.index')"
-                 :active="route().current('marketCompanies.index')"
+                 :active="route().current('marketCompanies.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -115,7 +115,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.marketStorefronts.index')"
-                 :active="route().current('marketStorefronts.index')"
+                 :active="route().current('marketStorefronts.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -130,7 +130,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolOrders.index')"
-                 :active="route().current('schoolOrders.index')"
+                 :active="route().current('schoolOrders.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -145,7 +145,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.subscriptionPlans.index')"
-                 :active="route().current('subscriptionPlans.index')"
+                 :active="route().current('subscriptionPlans.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -160,7 +160,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.coursePrices.index')"
-                 :active="route().current('coursePrices.index')"
+                 :active="route().current('coursePrices.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -175,7 +175,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.bundlePrices.index')"
-                 :active="route().current('bundlePrices.index')"
+                 :active="route().current('bundlePrices.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -190,7 +190,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.currencies.index')"
-                 :active="route().current('currencies.index')"
+                 :active="route().current('currencies.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -205,7 +205,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolInstructorProfiles.index')"
-                 :active="route().current('schoolInstructorProfiles.index')"
+                 :active="route().current('schoolInstructorProfiles.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -220,7 +220,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolHashtags.index')"
-                 :active="route().current('schoolHashtags.index')"
+                 :active="route().current('schoolHashtags.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -235,7 +235,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolTracks.index')"
-                 :active="route().current('schoolTracks.index')"
+                 :active="route().current('schoolTracks.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -250,7 +250,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.bundles.index')"
-                 :active="route().current('bundles.index')"
+                 :active="route().current('bundles.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -265,7 +265,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolCourses.index')"
-                 :active="route().current('schoolCourses.index')"
+                 :active="route().current('schoolCourses.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -280,7 +280,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolModules.index')"
-                 :active="route().current('schoolModules.index')"
+                 :active="route().current('schoolModules.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -295,7 +295,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolLessons.index')"
-                 :active="route().current('schoolLessons.index')"
+                 :active="route().current('schoolLessons.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -310,7 +310,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolAssignments.index')"
-                 :active="route().current('schoolAssignments.index')"
+                 :active="route().current('schoolAssignments.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -325,7 +325,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolCourseSchedules.index')"
-                 :active="route().current('schoolCourseSchedules.index')"
+                 :active="route().current('schoolCourseSchedules.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -340,7 +340,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolCohortEnrollments.index')"
-                 :active="route().current('schoolCohortEnrollments.index')"
+                 :active="route().current('schoolCohortEnrollments.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -355,7 +355,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolEnrollments.index')"
-                 :active="route().current('schoolEnrollments.index')"
+                 :active="route().current('schoolEnrollments.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -370,7 +370,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolQuizzes.index')"
-                 :active="route().current('schoolQuizzes.index')"
+                 :active="route().current('schoolQuizzes.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -385,7 +385,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolQuizQuestions.index')"
-                 :active="route().current('schoolQuizQuestions.index')"
+                 :active="route().current('schoolQuizQuestions.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -400,7 +400,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolQuizAnswers.index')"
-                 :active="route().current('schoolQuizAnswers.index')"
+                 :active="route().current('schoolQuizAnswers.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -414,8 +414,8 @@ const {t} = useI18n();
             {{ t('quizAnswers') }}
         </template>
     </SidebarLink>
-    <SidebarLink :href="route('admin.quizAttempts.index')"
-                 :active="route().current('quizAttempts.index')"
+    <SidebarLink :href="route('admin.schoolQuizAttempts.index')"
+                 :active="route().current('schoolQuizAttempts.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -430,7 +430,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.quizAttemptItems.index')"
-                 :active="route().current('quizAttemptItems.index')"
+                 :active="route().current('quizAttemptItems.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -445,7 +445,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.users.index')"
-                 :active="route().current('users.index')"
+                 :active="route().current('users.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -460,7 +460,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.roles.index')"
-                 :active="route().current('roles.index')"
+                 :active="route().current('roles.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -475,7 +475,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.permissions.index')"
-                 :active="route().current('permissions.index')"
+                 :active="route().current('permissions.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -490,7 +490,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.blogRubrics.index')"
-                 :active="route().current('blogRubrics.index')"
+                 :active="route().current('blogRubrics.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -503,7 +503,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.blogArticles.index')"
-                 :active="route().current('blogArticles.index')"
+                 :active="route().current('blogArticles.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -518,7 +518,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.blogTags.index')"
-                 :active="route().current('blogTags.index')"
+                 :active="route().current('blogTags.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -531,7 +531,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.blogBanners.index')"
-                 :active="route().current('blogBanners.index')"
+                 :active="route().current('blogBanners.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -544,7 +544,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.blogVideos.index')"
-                 :active="route().current('blogVideos.index')"
+                 :active="route().current('blogVideos.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -557,7 +557,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.comments.index')"
-                 :active="route().current('comments.index')"
+                 :active="route().current('comments.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -570,7 +570,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.charts.index')"
-                 :active="route().current('charts.index')"
+                 :active="route().current('charts.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -587,7 +587,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.settings.index')"
-                 :active="route().current('settings.index')"
+                 :active="route().current('settings.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -601,7 +601,7 @@ const {t} = useI18n();
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.parameters.index')"
-                 :active="route().current('parameters.index')"
+                 :active="route().current('parameters.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 640 512" xmlns="http://www.w3.org/2000/svg">

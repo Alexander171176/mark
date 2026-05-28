@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, defineEmits, ref, watch } from 'vue'
+import { defineEmits, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
@@ -9,10 +9,14 @@ const { t } = useI18n()
 
 const props = defineProps({
     items: { type: Array, default: () => [] },
-    selectedItems: { type: Array, default: () => [] },
+    selectedItems: { type: Array, default: () => [] }
 })
 
-const emits = defineEmits(['delete', 'toggle-select', 'toggle-all'])
+const emit = defineEmits([
+    'delete',
+    'toggle-select',
+    'toggle-all'
+])
 
 const localItems = ref([])
 
@@ -24,60 +28,131 @@ watch(
     { immediate: true, deep: true }
 )
 
-const formatBool = (v) => (v ? t('yes') : t('no'))
-
-const formatAnswerShort = (item) => {
-    if (item.free_text_answer) return item.free_text_answer
-    if (item.selected_answer?.text) return item.selected_answer.text
-    if (item.selected_answer_id) return `#${item.selected_answer_id}`
-    if (item.selected_answer_ids?.length) return item.selected_answer_ids.join(', ')
-    return '—'
+const stripHtml = (html = '') => {
+    return (html || '')
+        .replace(/<\/p>/gi, ' ')
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#039;/gi, '\'')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/\s+/g, ' ')
+        .trim()
 }
 
-/** Тип вопроса (map) */
-const questionTypeLabel = (type) => {
-    if (!type) return '—'
-    const key = String(type)
+const shortText = (value, limit = 120) => {
+    const clean = stripHtml(value)
 
+    return clean.length > limit ? clean.slice(0, limit) + '…' : clean
+}
+
+const formatBool = (value) => {
+    return value ? t('yes') : t('no')
+}
+
+const toggleAll = (event) => {
+    emit('toggle-all', {
+        ids: localItems.value.map(item => item.id),
+        checked: event.target.checked
+    })
+}
+
+const questionTypeLabel = (type) => {
     const map = {
         single_choice: t('questionTypeSingleChoice'),
         multiple_choice: t('questionTypeMultipleChoice'),
         true_false: t('questionTypeTrueFalse'),
-        open_text: t('questionTypeOpenText'),
+        open_text: t('questionTypeOpenText')
     }
 
-    return map[key] || key
+    return map[type] || type || '—'
 }
-
-/** Статус попытки (map) */
-const attemptStatusMap = () => ({
-    in_progress: t('setStatusInProgress'),
-    completed: t('setStatusCompleted'),
-    graded: t('setStatusGraded'),
-})
 
 const attemptStatusLabel = (status) => {
-    if (!status) return '—'
-    const key = String(status)
-    return attemptStatusMap()[key] || key
+    const map = {
+        in_progress: t('setStatusInProgress'),
+        completed: t('setStatusCompleted'),
+        graded: t('setStatusGraded')
+    }
+
+    return map[status] || status || '—'
 }
 
-/** “подсветка” по статусу */
 const attemptStatusClass = (status) => {
-    const s = String(status || '')
-    if (s === 'graded') return 'text-emerald-700 dark:text-emerald-200'
-    if (s === 'completed') return 'text-sky-800 dark:text-sky-200'
-    if (s === 'in_progress') return 'text-amber-800 dark:text-amber-200'
+    if (status === 'graded') {
+        return 'text-emerald-700 dark:text-emerald-200'
+    }
+
+    if (status === 'completed') {
+        return 'text-sky-800 dark:text-sky-200'
+    }
+
+    if (status === 'in_progress') {
+        return 'text-amber-800 dark:text-amber-200'
+    }
+
     return 'text-slate-500 dark:text-slate-300'
 }
 
+const formatAnswerShort = (item) => {
+    if (item.free_text_answer) {
+        return shortText(item.free_text_answer, 160)
+    }
+
+    if (item.selected_answer?.text) {
+        return shortText(item.selected_answer.text, 160)
+    }
+
+    if (Array.isArray(item.selected_answers) && item.selected_answers.length) {
+        return item.selected_answers
+            .map(answer => shortText(answer.text || `#${answer.id}`, 60))
+            .join(', ')
+    }
+
+    if (item.selected_answer_id) {
+        return `#${item.selected_answer_id}`
+    }
+
+    if (Array.isArray(item.selected_answer_ids) && item.selected_answer_ids.length) {
+        return item.selected_answer_ids.join(', ')
+    }
+
+    return '—'
+}
 </script>
 
 <template>
     <div
         class="bg-white dark:bg-slate-700 shadow-lg rounded-sm
-               border border-slate-200 dark:border-slate-600 relative">
-
+               border border-slate-200 dark:border-slate-600 relative"
+    >
+        <div
+            class="flex items-center justify-between px-3 py-2
+                   border-b border-slate-400 dark:border-slate-500"
+        >
+            <div class="text-xs text-slate-600 dark:text-slate-200">
+                {{ t('selected') }}: {{ selectedItems.length }}
+            </div>
+            <label
+                v-if="localItems.length"
+                class="flex items-center text-xs text-slate-600
+                       dark:text-slate-200 cursor-pointer"
+            >
+                <span>{{ t('selectAll') }}</span>
+                <input
+                    type="checkbox"
+                    class="rounded-sm border-slate-400 mx-2"
+                    :checked="
+                        localItems.length &&
+                        localItems.every(item => selectedItems.includes(item.id))
+                    "
+                    @change="toggleAll"
+                />
+            </label>
+        </div>
         <div v-if="localItems.length" class="p-3">
             <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <article
@@ -88,7 +163,7 @@ const attemptStatusClass = (status) => {
                            bg-slate-50/70 dark:bg-slate-800/80 shadow-sm
                            hover:shadow-md transition-shadow duration-150"
                 >
-                    <!-- Header -->
+                    <!-- шапка ID, статус -->
                     <header
                         class="flex items-center justify-between px-2 py-1
                                border-b border-dashed border-slate-400 dark:border-slate-500"
@@ -101,131 +176,149 @@ const attemptStatusClass = (status) => {
                             >
                                 ID: {{ item.id }}
                             </div>
-
+                            <span
+                                v-if="item.attempt?.status"
+                                class="text-[11px] font-semibold"
+                                :class="attemptStatusClass(item.attempt.status)"
+                            >
+                            {{ attemptStatusLabel(item.attempt.status) }}
+                        </span>
+                        </div>
+                        <div class="flex items-center gap-2">
                             <span
                                 class="inline-flex items-center px-2 py-0.5 rounded-sm border
                                        text-[11px] font-semibold"
                                 :class="item.is_correct
-                                  ? 'border-green-500 bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                                  : 'border-rose-500 bg-rose-50 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200'"
+                                    ? 'border-green-500 bg-green-50 text-green-800 ' +
+                                     'dark:bg-green-900/30 dark:text-green-200'
+                                    : 'border-rose-500 bg-rose-50 text-rose-800 ' +
+                                     'dark:bg-rose-900/30 dark:text-rose-200'"
                                 :title="t('isCorrect')"
                             >
                                 {{ formatBool(item.is_correct) }}
                             </span>
+                            <input
+                                type="checkbox"
+                                :checked="selectedItems.includes(item.id)"
+                                @change="emit('toggle-select', item.id)"
+                            />
                         </div>
-
-                        <input
-                            type="checkbox"
-                            :checked="selectedItems.includes(item.id)"
-                            @change="$emit('toggle-select', item.id)"
-                        />
                     </header>
 
-                    <!-- Body -->
-                    <div class="flex flex-col flex-1 px-3 py-2 space-y-2">
-
-                        <!-- Content: question meta -->
-                        <div class="flex flex-col items-center text-[11px] font-semibold">
-
-                            <span class="text-orange-600 dark:text-orange-200">
-                                {{ t('quiz') }} ID:{{ item.quiz_question_id }}
-                            </span>
-
-                            <span v-if="item.question?.type"
-                                  class="text-slate-500 dark:text-slate-400 ml-2">
-                              · {{ questionTypeLabel(item.question.type) }}
-                            </span>
-
-                            <span
-                                v-if="item.question?.points !== null && item.question?.points !== undefined"
-                                class="text-slate-700 dark:text-slate-300 ml-2"
-                            >
-                                · {{ t('points') }}: {{ item.question.points }}
-                            </span>
-                        </div>
-
-                        <!-- Question text -->
-                        <div class="font-semibold text-[12px]
-                                    text-fuchsia-800 dark:text-fuchsia-200 line-clamp-3">
-                            {{ item.question?.text || '—' }}
-                        </div>
-
-                        <!-- Answer block -->
-                        <div class="font-semibold pt-1 border-t border-dotted
-                                    border-slate-700/70 dark:border-slate-300/70">
-                            <div class="text-[12px] text-teal-700 dark:text-teal-300">
-                                {{ t('answer') }}:
-                            </div>
-
-                            <div class="line-clamp-4 text-[11px] text-slate-800 dark:text-slate-200">
-                                {{ formatAnswerShort(item) || '—' }}
-                            </div>
-                        </div>
-
-                        <!-- Reviewer comment -->
+                    <!-- контент -->
+                    <div class="flex flex-col flex-1 px-3 py-2">
                         <div
-                            v-if="item.reviewer_comment"
-                            class="mt-1 line-clamp-2 text-[11px] font-semibold
-                                   text-slate-600 dark:text-slate-400"
+                            class="flex flex-col items-center text-[11px] font-semibold"
                         >
-                            {{ t('comment') }}: {{ item.reviewer_comment }}
-                        </div>
-
-                        <!-- Attempt block (как “Попытка” в таблице) -->
-                        <div class="font-semibold pt-1 border-t border-dotted
-                                    border-slate-700/70 dark:border-slate-300/70">
-                            <div class="flex flex-col items-center gap-0.5">
-                                <span
-                                    v-if="item.attempt?.attempt_number"
-                                    class="text-[11px] text-slate-500 dark:text-slate-200"
-                                >
-                                    ID:{{ item.quiz_attempt_id }} · {{ t('attemptNumber')
-                                    }} {{ item.attempt.attempt_number }}
-                                </span>
-
-                                <span
-                                    v-if="item.attempt?.user"
-                                    class="text-[11px] text-slate-500 dark:text-slate-200 text-center"
-                                >
-                                    {{ item.attempt.user.name || '—' }} ({{ item.attempt.user.email || '—' }})
-                                </span>
-
-                                <span
-                                    v-if="item.attempt?.status"
-                                    class="text-[11px] text-sky-800 dark:text-sky-200"
-                                    :class="attemptStatusClass(item.attempt.status)"
-                                >
-                                  {{ attemptStatusLabel(item.attempt.status) }}
-                                </span>
-
-                                <span
-                                    v-if="item.attempt?.quiz"
-                                    class="text-[11px] text-slate-500
-                                           dark:text-slate-200 text-center line-clamp-2"
-                                >
-                                    {{ ('Q#' + item.attempt.quiz.id) || item.attempt.quiz.title || item.attempt.quiz.slug
-                                    }}
-                                </span>
+                            <!-- Название викторины, максимальный балл -->
+                            <div
+                                v-if="item.attempt?.quiz"
+                                class="w-full pb-1 text-[11px] text-center
+                                       text-slate-500 dark:text-slate-200
+                                       border-b border-dotted
+                                       border-slate-700/70 dark:border-slate-300/70"
+                                :title="item.attempt.quiz.title || item.attempt.quiz.slug"
+                            >
+                                [ID: {{ item.attempt.quiz.id }}] {{ t('quiz') }} —
+                                <div class="text-rose-700 dark:text-rose-300">
+                                    {{ item.attempt.quiz.title || item.attempt.quiz.slug || '—' }}
+                                </div>
+                                <div class="text-center text-amber-800 dark:text-amber-200"
+                                      :title="`${t('passScore')} / ${t('maxScore')}`">
+                                    {{ item.score ?? '—' }} / {{ item.max_score ?? '—' }}
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Score -->
-                        <div class="text-center text-[11px] font-semibold">
-                            <span class="text-amber-800 dark:text-amber-200">
-                                {{ (item.score ?? '—') }} / {{ (item.max_score ?? '—') }}
-                            </span>
+                            <!-- Вопрос викторины -->
+                            <div class="pt-1 text-slate-500 dark:text-slate-300">
+                                [ID: {{ item.school_quiz_question_id }}] {{ t('quizQuestion') }}:
+                            </div>
+                            <div
+                                class="pb-1 font-semibold text-[12px]
+                                       text-fuchsia-800 dark:text-fuchsia-200
+                                       border-b border-dotted
+                                       border-slate-700/70 dark:border-slate-300/70"
+                                :title="stripHtml(item.question?.question_text)"
+                            >
+                                {{ shortText(item.question?.question_text) || '—' }}
+                            </div>
+
+                            <!-- Вариант ответа  -->
+                            <div
+                                v-if="item.question?.question_type"
+                                class="py-1 text-orange-600 dark:text-orange-200"
+                            >
+                                {{ questionTypeLabel(item.question.question_type) }}
+                            </div>
+
+                            <div
+                                class="w-full font-semibold py-1 border-t border-b border-dotted
+                                       border-slate-700/70 dark:border-slate-300/70"
+                            >
+                                <div class="text-[12px] text-slate-500 dark:text-slate-300">
+                                    {{ t('answer') }}:
+                                </div>
+                                <div
+                                    class="text-[11px] text-teal-700 dark:text-teal-300"
+                                    :title="stripHtml(formatAnswerShort(item))"
+                                >
+                                    {{ formatAnswerShort(item) }}
+                                </div>
+                                <div
+                                    v-if="item.question?.points !== null
+                                        && item.question?.points !== undefined"
+                                    class="text-amber-700 dark:text-amber-300"
+                                >
+                                    {{ t('points') }}: {{ item.question.points }}
+                                </div>
+                            </div>
+                            <div class="py-1 flex flex-col items-center gap-0.5">
+                                <div class="text-[11px] text-slate-500 dark:text-slate-200">
+                                    ID: {{ item.school_quiz_attempt_id }}
+                                    <span v-if="item.attempt?.attempt_number"
+                                          class="text-indigo-700 dark:text-indigo-300">
+                                        · {{ t('attemptNumber') }} {{ item.attempt.attempt_number }}
+                                    </span>
+                                </div>
+                                <div
+                                    v-if="item.attempt?.user"
+                                    class="flex flex-col items-center justify-center
+                                       text-[11px] text-blue-700 dark:text-blue-300"
+                                >
+                                    {{ item.attempt.user.name || '—' }}
+                                    <span v-if="item.attempt.user.email"
+                                          class="text-slate-500 dark:text-slate-200">
+                                    ({{ item.attempt.user.email }})
+                                </span>
+                                </div>
+                            </div>
+                            <div
+                                v-if="item.reviewer_comment"
+                                class="pt-1 text-[11px] font-semibold
+                                       text-slate-600 dark:text-slate-400
+                                       border-t border-dotted
+                                       border-slate-700/70 dark:border-slate-300/70"
+                                :title="stripHtml(item.reviewer_comment)"
+                            >
+                                {{ t('comment') }}: {{ shortText(item.reviewer_comment, 100) }}
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Footer -->
+                    <!-- подвал action -->
                     <footer
                         class="flex items-center justify-center px-3 py-2
                                border-t border-dashed border-slate-400 dark:border-slate-500"
                     >
                         <div class="flex items-center space-x-1">
-                            <IconEdit :href="route('admin.quizAttemptItems.edit', item.id)" />
+                            <IconEdit
+                                :href="route('admin.schoolQuizAttemptItems.edit', {
+                                    schoolQuizAttemptItem: item.id,
+                                })"
+                            />
                             <DeleteIconButton
-                                @delete="$emit('delete', item.id, item.question?.text || '')"
+                                :title="t('delete')"
+                                @delete="emit('delete', item)"
                             />
                         </div>
                     </footer>
@@ -233,7 +326,10 @@ const attemptStatusClass = (status) => {
             </div>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

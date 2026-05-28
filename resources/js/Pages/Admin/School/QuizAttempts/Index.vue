@@ -13,7 +13,7 @@ import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
-import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+// import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
 import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
@@ -384,17 +384,17 @@ const handleBulkAction = (event) => {
                        dark:shadow-slate-400 bg-opacity-95 dark:bg-opacity-95"
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-3">
-                    <DefaultButton :href="route('admin.schoolQuizAttempts.create')">
-                        <template #icon>
-                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0"
-                                 viewBox="0 0 16 16">
-                                <path
-                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
-                                />
-                            </svg>
-                        </template>
-                        {{ t('addQuizAttempt') }}
-                    </DefaultButton>
+<!--                    <DefaultButton :href="route('admin.schoolQuizAttempts.create')">-->
+<!--                        <template #icon>-->
+<!--                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0"-->
+<!--                                 viewBox="0 0 16 16">-->
+<!--                                <path-->
+<!--                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"-->
+<!--                                />-->
+<!--                            </svg>-->
+<!--                        </template>-->
+<!--                        {{ t('addQuizAttempt') }}-->
+<!--                    </DefaultButton>-->
                 </div>
 
                 <SearchInput

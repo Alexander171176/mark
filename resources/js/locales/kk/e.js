@@ -29,7 +29,7 @@ export default {
     editQuiz: 'Викторинаны өңдеу',
     editQuizAnswer: 'Жауапты өңдеу',
     editQuizAttempt: 'Викторинаны өңдеу',
-    editQuizAttemptItem: 'Өңдеу әрекеті',
+    editQuizAttemptItem: 'Викторина сұрағына пайдаланушының жауабын өңдеу',
     editQuizQuestion: 'Викторина сұрағын өңдеу',
     editRole: 'Рөлді өңдеу',
     editRubric: 'Рубриканы өңдеу',

@@ -243,7 +243,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.quizAttemptItems.index')"
+            :href="route('admin.schoolQuizAttemptItems.index')"
             :title="t('quizAttemptItems')"
             :description="descriptions.quizAttemptItems"
         >

@@ -29,7 +29,7 @@ export default {
     editQuiz: 'Edit Quiz',
     editQuizAnswer: 'Edit Reply',
     editQuizAttempt: 'Edit a quiz attempt',
-    editQuizAttemptItem: 'Edit attempt',
+    editQuizAttemptItem: 'Edit a user\'s answer to a quiz question',
     editQuizQuestion: 'Edit Quiz Question',
     editRole: 'Edit the Role',
     editRubric: 'Edit the Rubric',

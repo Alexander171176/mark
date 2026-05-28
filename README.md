@@ -543,7 +543,7 @@
 `docker exec mark-php-app php artisan make:resource Admin/School/QuizAnswer/SchoolQuizAnswerTranslationResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/QuizAnswer/SchoolQuizAnswerController --resource` <br>
 
-15) creating business logic SchoolQuizAttempt - попытка прохождения квиза
+15) creating business logic SchoolQuizAttempt - попытка прохождения викторины
 `docker exec mark-php-app php artisan make:model Admin/School/QuizAttempt/SchoolQuizAttempt -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>

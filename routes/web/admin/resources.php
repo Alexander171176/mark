@@ -27,7 +27,7 @@ use App\Http\Controllers\Admin\School\Order\SchoolOrderController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizAttempt\SchoolQuizAttemptController;
-use App\Http\Controllers\Admin\School\QuizAttemptItem\QuizAttemptItemController;
+use App\Http\Controllers\Admin\School\QuizAttemptItem\SchoolQuizAttemptItemController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
 use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
@@ -125,10 +125,10 @@ Route::resource('/school-quiz-attempts',
     ->parameters(['school-quiz-attempts' => 'schoolQuizAttempt'])
     ->names('schoolQuizAttempts');
 
-Route::resource('/quiz-attempt-items', QuizAttemptItemController::class)
-    ->parameters(['quiz-attempt-items' => 'quizAttemptItem'])
-    ->names('quizAttemptItems')
-    ->except(['create', 'store']);
+Route::resource('/school-quiz-attempt-items',
+    SchoolQuizAttemptItemController::class)
+    ->parameters(['school-quiz-attempt-items' => 'schoolQuizAttemptItem'])
+    ->names('schoolQuizAttemptItems');
 
 Route::resource('/bundles', BundleController::class);
 

@@ -29,7 +29,7 @@ export default {
     editQuiz: 'Редактировать Викторину',
     editQuizAnswer: 'Редактировать Ответ',
     editQuizAttempt: 'Редактировать попытку прохождения викторины',
-    editQuizAttemptItem: 'Редактировать попытку',
+    editQuizAttemptItem: 'Редактировать ответ пользователя на вопрос викторины',
     editQuizQuestion: 'Редактировать Вопрос викторины',
     editRole: 'Редактировать Роль',
     editRubric: 'Редактировать Рубрику',

@@ -429,8 +429,8 @@ const {t} = useI18n();
             {{ t('quizAttempts') }}
         </template>
     </SidebarLink>
-    <SidebarLink :href="route('admin.quizAttemptItems.index')"
-                 :active="route().current('quizAttemptItems.*')"
+    <SidebarLink :href="route('admin.schoolQuizAttemptItems.index')"
+                 :active="route().current('schoolQuizAttemptItems.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">

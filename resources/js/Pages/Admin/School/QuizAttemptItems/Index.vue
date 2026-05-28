@@ -1,10 +1,11 @@
 <script setup>
 /**
  * @version PulsarCMS 1.0
- * @author Александр
- * Список ответов в попытках (QuizAttemptItem)
+ * @author Александр Косолапов <kosolapov1976@gmail.com>
+ *
+ * Список ответов на конкретные вопросы викторин
  */
-import { defineProps, ref, computed, watch } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { router } from '@inertiajs/vue3'
@@ -12,6 +13,7 @@ import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+// import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
 import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
@@ -23,23 +25,36 @@ import SortSelect from '@/Components/Admin/School/QuizAttemptItem/Sort/SortSelec
 import QuizAttemptItemTable from '@/Components/Admin/School/QuizAttemptItem/Table/QuizAttemptItemTable.vue'
 import QuizAttemptItemCardGrid from '@/Components/Admin/School/QuizAttemptItem/View/QuizAttemptItemCardGrid.vue'
 
+// Локализация и уведомления
 const { t } = useI18n()
 const toast = useToast()
 
+// Пропсы страницы списка ответов попыток
 const props = defineProps({
-    items: Array,
-    itemsCount: Number,
-    adminCountItems: Number,
-    adminSortItems: String,
+    items: { type: Array, default: () => [] },
+    itemsCount: { type: Number, default: 0 },
+    filters: { type: Object, default: () => ({}) },
+
+    adminSchoolQuizAttemptItemsPerPage: { type: Number, default: 20 },
+    adminSchoolQuizAttemptItemsDefaultSort: { type: String, default: 'idDesc' },
+
+    attempts: { type: Array, default: () => [] },
+    questions: { type: Array, default: () => [] },
+    answers: { type: Array, default: () => [] },
 })
 
-/** Вид: таблица или карточки */
+// Режим отображения таблица/карточки
 const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
-watch(viewMode, (val) => localStorage.setItem('admin_view_mode', val))
 
-/** Кол-во элементов на странице */
-const itemsPerPage = ref(props.adminCountItems || 10)
+// Сохранение режима отображения в localStorage
+watch(viewMode, (val) => {
+    localStorage.setItem('admin_view_mode', val)
+})
 
+// Количество элементов на странице
+const itemsPerPage = ref(props.adminSchoolQuizAttemptItemsPerPage ?? 20)
+
+// Обновление настройки количества элементов
 watch(itemsPerPage, (newVal) => {
     router.put(route('admin.settings.updateAdminCountQuizAttemptItems'), { value: newVal }, {
         preserveScroll: true,
@@ -49,9 +64,10 @@ watch(itemsPerPage, (newVal) => {
     })
 })
 
-/** Параметр сортировки */
-const sortParam = ref(props.adminSortItems || 'idDesc')
+// Параметр сортировки
+const sortParam = ref(props.adminSchoolQuizAttemptItemsDefaultSort ?? 'idDesc')
 
+// Обновление настройки сортировки
 watch(sortParam, (newVal) => {
     router.put(route('admin.settings.updateAdminSortQuizAttemptItems'), { value: newVal }, {
         preserveScroll: true,
@@ -64,229 +80,343 @@ watch(sortParam, (newVal) => {
     })
 })
 
-/** Модалка удаления */
-const showConfirmDeleteModal = ref(false)
-const itemToDeleteId = ref(null)
-const itemToDeleteTitle = ref('')
+// Текущая страница пагинации
+const currentPage = ref(1)
 
-const confirmDelete = (id, title) => {
-    itemToDeleteId.value = id
-    itemToDeleteTitle.value = title
+// Поисковый запрос
+const searchQuery = ref('')
+
+// Модальное окно удаления
+const showConfirmDeleteModal = ref(false)
+
+// Элемент для удаления
+const itemToDelete = ref(null)
+
+// Очистка HTML из текста
+const stripHtml = (value = '') => {
+    if (value === null || typeof value === 'undefined') {
+        return ''
+    }
+
+    const html = typeof value === 'string'
+        ? value
+        : JSON.stringify(value)
+
+    return html
+        .replace(/<\/p>/gi, ' ')
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#039;/gi, "'")
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/\s+/g, ' ')
+        .trim()
+}
+
+// Нормализация строк для поиска и сортировки
+const normalize = (value) => {
+    return stripHtml(value)
+        .toString()
+        .trim()
+        .toLowerCase()
+}
+
+// Преобразование даты во временную метку
+const toTime = (value) => {
+    if (!value) return 0
+
+    const time = new Date(value).getTime()
+
+    return Number.isNaN(time) ? 0 : time
+}
+
+// Нормализация чисел
+const normalizeNum = (value) => {
+    const number = Number(value)
+
+    return Number.isFinite(number) ? number : 0
+}
+
+// Заголовок элемента для удаления
+const itemTitle = (item) => {
+    if (!item) return ''
+
+    return item.question?.question_text
+        ? stripHtml(item.question.question_text)
+        : `ID: ${item.id}`
+}
+
+// Открытие модального окна удаления
+const confirmDelete = (item) => {
+    itemToDelete.value = item
     showConfirmDeleteModal.value = true
 }
 
+// Закрытие модального окна удаления
 const closeModal = () => {
     showConfirmDeleteModal.value = false
-    itemToDeleteId.value = null
-    itemToDeleteTitle.value = ''
+    itemToDelete.value = null
 }
 
+// Удаление одного ответа попытки
 const deleteItem = () => {
-    if (itemToDeleteId.value === null) return
+    if (!itemToDelete.value?.id) return
 
-    const idToDelete = itemToDeleteId.value
-    const titleToDelete = itemToDeleteTitle.value
+    const idToDelete = itemToDelete.value.id
+    const titleToDelete = itemTitle(itemToDelete.value)
 
-    router.delete(route('admin.quizAttemptItems.destroy', { quizAttemptItem: idToDelete }), {
+    router.delete(route('admin.schoolQuizAttemptItems.destroy', {
+        schoolQuizAttemptItem: idToDelete,
+    }), {
         preserveScroll: true,
         preserveState: false,
         onSuccess: () => {
-            closeModal()
             toast.success(`Ответ "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
         },
         onError: (errors) => {
-            closeModal()
-            const errorMsg =
-                errors?.general ||
-                errors?.[Object.keys(errors || {})[0]] ||
-                'Произошла ошибка при удалении.'
+            const firstKey = Object.keys(errors || {})[0]
+            const errorMsg = errors?.general || errors?.[firstKey] || 'Произошла ошибка при удалении.'
+
             toast.error(`${errorMsg} (Ответ: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
-        onFinish: () => {
-            itemToDeleteId.value = null
-            itemToDeleteTitle.value = ''
-        },
+        onFinish: () => closeModal(),
     })
 }
 
-/** Пагинация и поиск */
-const currentPage = ref(1)
-const searchQuery = ref('')
-
-/** Сортировка */
-const toTs = (v) => {
-    if (!v) return null
-    const ts = new Date(v).getTime()
-    return Number.isFinite(ts) ? ts : null
-}
-
-const normalizeNum = (v) => {
-    const n = Number(v)
-    return Number.isFinite(n) ? n : 0
-}
-
+// Сортировка ответов попыток
 const sortItems = (items) => {
-    const value = sortParam.value
     const list = items.slice()
 
-    if (value === 'idAsc') return list.sort((a, b) => a.id - b.id)
-    if (value === 'idDesc') return list.sort((a, b) => b.id - a.id)
+    switch (sortParam.value) {
+        case 'idAsc':
+            return list.sort((a, b) => a.id - b.id)
 
-    if (value === 'attemptIdAsc') return list.sort((a, b) => (a.quiz_attempt_id ?? 0) - (b.quiz_attempt_id ?? 0))
-    if (value === 'attemptIdDesc') return list.sort((a, b) => (b.quiz_attempt_id ?? 0) - (a.quiz_attempt_id ?? 0))
+        case 'idDesc':
+            return list.sort((a, b) => b.id - a.id)
 
-    if (value === 'questionIdAsc') return list.sort((a, b) => (a.quiz_question_id ?? 0) - (b.quiz_question_id ?? 0))
-    if (value === 'questionIdDesc') return list.sort((a, b) => (b.quiz_question_id ?? 0) - (a.quiz_question_id ?? 0))
+        case 'attemptIdAsc':
+            return list.sort((a, b) =>
+                normalizeNum(a.school_quiz_attempt_id) - normalizeNum(b.school_quiz_attempt_id)
+            )
 
-    if (value === 'scoreAsc') return list.sort((a, b) => normalizeNum(a.score) - normalizeNum(b.score))
-    if (value === 'scoreDesc') return list.sort((a, b) => normalizeNum(b.score) - normalizeNum(a.score))
+        case 'attemptIdDesc':
+            return list.sort((a, b) =>
+                normalizeNum(b.school_quiz_attempt_id) - normalizeNum(a.school_quiz_attempt_id)
+            )
 
-    if (value === 'createdAtAsc' || value === 'createdAtDesc') {
-        return list.sort((a, b) => {
-            const ad = toTs(a.created_at)
-            const bd = toTs(b.created_at)
-            if (ad == null && bd == null) return 0
-            if (ad == null) return 1
-            if (bd == null) return -1
-            return value === 'createdAtAsc' ? (ad - bd) : (bd - ad)
-        })
+        case 'questionIdAsc':
+            return list.sort((a, b) =>
+                normalizeNum(a.school_quiz_question_id) - normalizeNum(b.school_quiz_question_id)
+            )
+
+        case 'questionIdDesc':
+            return list.sort((a, b) =>
+                normalizeNum(b.school_quiz_question_id) - normalizeNum(a.school_quiz_question_id)
+            )
+
+        case 'scoreAsc':
+            return list.sort((a, b) => normalizeNum(a.score) - normalizeNum(b.score))
+
+        case 'scoreDesc':
+            return list.sort((a, b) => normalizeNum(b.score) - normalizeNum(a.score))
+
+        case 'maxScoreAsc':
+            return list.sort((a, b) => normalizeNum(a.max_score) - normalizeNum(b.max_score))
+
+        case 'maxScoreDesc':
+            return list.sort((a, b) => normalizeNum(b.max_score) - normalizeNum(a.max_score))
+
+        case 'createdAtAsc':
+            return list.sort((a, b) => toTime(a.created_at) - toTime(b.created_at))
+
+        case 'createdAtDesc':
+            return list.sort((a, b) => toTime(b.created_at) - toTime(a.created_at))
+
+        case 'correctFirst':
+            return list.sort((a, b) => Number(!!b.is_correct) - Number(!!a.is_correct))
+
+        case 'wrongFirst':
+            return list.sort((a, b) => Number(!!a.is_correct) - Number(!!b.is_correct))
+
+        case 'questionTextAsc':
+            return list.sort((a, b) =>
+                normalize(a.question?.question_text).localeCompare(normalize(b.question?.question_text))
+            )
+
+        case 'questionTextDesc':
+            return list.sort((a, b) =>
+                normalize(b.question?.question_text).localeCompare(normalize(a.question?.question_text))
+            )
+
+        default:
+            return list
     }
-
-    if (value === 'correctFirst' || value === 'wrongFirst') {
-        return list.sort((a, b) => {
-            const av = a.is_correct ? 1 : 0
-            const bv = b.is_correct ? 1 : 0
-            return value === 'correctFirst' ? (bv - av) : (av - bv)
-        })
-    }
-
-    return list
 }
 
-/** Фильтрация + сортировка */
+// Фильтрация и поиск ответов попыток
 const filteredItems = computed(() => {
-    let filtered = props.items || []
+    let filtered = Array.isArray(props.items) ? props.items : []
 
     if (searchQuery.value) {
-        const q = searchQuery.value.toLowerCase()
+        const q = normalize(searchQuery.value)
 
-        filtered = filtered.filter(i =>
-            (i.id ?? '').toString().toLowerCase().includes(q) ||
-            (i.quiz_attempt_id ?? '').toString().toLowerCase().includes(q) ||
-            (i.quiz_question_id ?? '').toString().toLowerCase().includes(q) ||
-            (i.selected_answer_id ?? '').toString().toLowerCase().includes(q) ||
-            (i.selected_answer_ids ? JSON.stringify(i.selected_answer_ids) : '').toLowerCase().includes(q) ||
-            (i.free_text_answer ?? '').toString().toLowerCase().includes(q) ||
-            (i.reviewer_comment ?? '').toString().toLowerCase().includes(q) ||
-            (i.score ?? '').toString().toLowerCase().includes(q) ||
-            (i.max_score ?? '').toString().toLowerCase().includes(q) ||
-            (i.question?.text ?? '').toString().toLowerCase().includes(q) ||
-            (i.selected_answer?.text ?? '').toString().toLowerCase().includes(q) ||
-            (i.attempt?.status ?? '').toString().toLowerCase().includes(q) ||
+        filtered = filtered.filter((item) => {
+            const values = [
+                item.id,
+                item.school_quiz_attempt_id,
+                item.school_quiz_question_id,
+                item.selected_answer_id,
+                item.selected_answer_ids ? JSON.stringify(item.selected_answer_ids) : '',
+                item.free_text_answer,
+                item.reviewer_comment,
+                item.score,
+                item.max_score,
 
-            (i.attempt?.user?.name ?? '').toString().toLowerCase().includes(q) ||
-            (i.attempt?.user?.email ?? '').toString().toLowerCase().includes(q) ||
-            (i.attempt?.quiz?.title ?? '').toString().toLowerCase().includes(q) ||
-            (i.attempt?.quiz?.slug ?? '').toString().toLowerCase().includes(q) ||
-            (i.attempt?.quiz?.id ?? '').toString().toLowerCase().includes(q)
-        )
+                item.question?.question_text,
+                item.question?.explanation,
+                item.question?.question_type,
+
+                item.selected_answer?.text,
+                item.selected_answer?.explanation,
+
+                item.selected_answers ? JSON.stringify(item.selected_answers) : '',
+
+                item.attempt?.status,
+                item.attempt?.attempt_number,
+                item.attempt?.user?.name,
+                item.attempt?.user?.email,
+                item.attempt?.quiz?.title,
+                item.attempt?.quiz?.slug,
+                item.attempt?.quiz?.id,
+            ]
+
+            return values.some(value => normalize(value).includes(q))
+        })
     }
 
     return sortItems(filtered)
 })
 
-/** Пагинация */
+// Пагинация списка ответов
 const paginatedItems = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value
+
     return filteredItems.value.slice(start, start + itemsPerPage.value)
 })
 
-/** Общее количество страниц */
-const totalPages = computed(() =>
-    Math.ceil((filteredItems.value.length || 0) / itemsPerPage.value)
-)
+// Общее количество страниц
+const totalPages = computed(() => {
+    if (!itemsPerPage.value) return 1
 
-watch(filteredItems, () => {
-    if (currentPage.value > totalPages.value) currentPage.value = totalPages.value || 1
+    return Math.ceil(filteredItems.value.length / itemsPerPage.value) || 1
 })
 
-/** Массовые действия */
+// Корректировка страницы после фильтрации
+watch([filteredItems, itemsPerPage], () => {
+    if (currentPage.value > totalPages.value) {
+        currentPage.value = totalPages.value
+    }
+})
+
+// Выбранные элементы
 const selectedItems = ref([])
 
+// Выбор/снятие всех элементов
 const toggleAll = ({ ids, checked }) => {
-    if (checked) selectedItems.value = [...ids]
-    else selectedItems.value = []
+    selectedItems.value = checked ? [...ids] : []
 }
 
+// Выбор одного элемента
 const toggleSelectItem = (id) => {
-    const idx = selectedItems.value.indexOf(id)
-    if (idx > -1) selectedItems.value.splice(idx, 1)
-    else selectedItems.value.push(id)
+    const index = selectedItems.value.indexOf(id)
+
+    if (index > -1) {
+        selectedItems.value.splice(index, 1)
+    } else {
+        selectedItems.value.push(id)
+    }
 }
 
-/** Массовое проставление correct */
+// Обновление локальной записи элемента
+const patchItem = (itemId, payload) => {
+    const item = props.items.find(item => item.id === itemId)
+
+    if (item) {
+        Object.assign(item, payload)
+    }
+}
+
+// Массовое обновление правильности
 const bulkUpdateCorrect = (isCorrect) => {
     if (!selectedItems.value.length) {
-        toast.warning('Выберите ответы')
+        toast.warning('Выберите ответы.')
         return
     }
 
-    router.put(
-        route('admin.actions.quizAttemptItems.bulkUpdateCorrect'),
-        { ids: selectedItems.value, is_correct: isCorrect },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.success('Правильность ответов массово обновлена')
-                const updatedIds = [...selectedItems.value]
-                selectedItems.value = []
+    const idsToUpdate = [...selectedItems.value]
 
-                paginatedItems.value.forEach(i => {
-                    if (updatedIds.includes(i.id)) i.is_correct = !!isCorrect
-                })
-            },
-            onError: (errors) => {
-                const msg =
-                    errors?.ids || errors?.is_correct || errors?.general ||
-                    'Не удалось массово обновить правильность'
-                toast.error(msg)
-            },
-        }
-    )
+    router.put(route('admin.actions.schoolQuizAttemptItems.bulkUpdateCorrect'), {
+        ids: idsToUpdate,
+        is_correct: isCorrect,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            idsToUpdate.forEach(id => patchItem(id, { is_correct: isCorrect }))
+
+            selectedItems.value = []
+
+            toast.success('Правильность выбранных текстовых ответов обновлена.')
+        },
+        onError: (errors) => {
+            toast.error(
+                errors?.ids ||
+                errors?.is_correct ||
+                errors?.general ||
+                'Не удалось массово обновить правильность.'
+            )
+        },
+    })
 }
 
-/** Массовое удаление */
+// Массовое удаление ответов попыток
 const bulkDestroy = () => {
     if (!selectedItems.value.length) {
-        toast.warning('Выберите ответы')
+        toast.warning('Выберите ответы для удаления.')
         return
     }
 
-    router.delete(
-        route('admin.actions.quizAttemptItems.bulkDestroy'),
-        {
-            data: { ids: selectedItems.value },
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                toast.success('Ответы успешно удалены')
-                selectedItems.value = []
-            },
-            onError: (errors) => {
-                const msg = errors?.ids || errors?.general || 'Ошибка удаления'
-                toast.error(msg)
-            },
-        }
-    )
+    if (!confirm('Вы уверены, что хотите удалить выбранные ответы?')) return
+
+    router.delete(route('admin.actions.schoolQuizAttemptItems.bulkDestroy'), {
+        data: {
+            ids: selectedItems.value,
+            ...(props.filters?.school_quiz_attempt_id
+                ? { school_quiz_attempt_id: props.filters.school_quiz_attempt_id }
+                : {}),
+        },
+        preserveScroll: true,
+        preserveState: false,
+        onSuccess: () => {
+            selectedItems.value = []
+            toast.success('Выбранные ответы успешно удалены.')
+        },
+        onError: (errors) => {
+            const firstKey = Object.keys(errors || {})[0]
+            toast.error(errors?.[firstKey] || 'Ошибка массового удаления ответов.')
+        },
+    })
 }
 
-/** Обрабатывает выбор действия в селекте массовых действий */
+// Обработка массовых действий
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedItems.value = paginatedItems.value.map(i => i.id)
+        selectedItems.value = paginatedItems.value.map(item => item.id)
     } else if (action === 'deselectAll') {
         selectedItems.value = []
     } else if (action === 'correct:1') {
@@ -309,18 +439,23 @@ const handleBulkAction = (event) => {
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
-                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
-                       bg-opacity-95 dark:bg-opacity-95"
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       overflow-hidden shadow-md shadow-gray-500
+                       dark:shadow-slate-400 bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="flex justify-end items-center mb-2">
-                    <!-- В большинстве случаев attempt items вручную не создают -->
-
-
-                    <BulkActionSelect
-                        v-if="itemsCount"
-                        @change="handleBulkAction"
-                    />
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+<!--                    <DefaultButton :href="route('admin.schoolQuizAttemptItems.create')">-->
+<!--                        <template #icon>-->
+<!--                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0"-->
+<!--                                 viewBox="0 0 16 16">-->
+<!--                                <path-->
+<!--                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"-->
+<!--                                />-->
+<!--                            </svg>-->
+<!--                        </template>-->
+<!--                        {{ t('addQuizAttemptItem') }}-->
+<!--                    </DefaultButton>-->
                 </div>
 
                 <SearchInput
@@ -329,38 +464,45 @@ const handleBulkAction = (event) => {
                     :placeholder="t('search')"
                 />
 
-                <div v-if="itemsCount" class="flex items-center justify-end my-2">
+                <div
+                    v-if="itemsCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val"
+                    />
+                </div>
+
+                <div
+                    v-if="itemsCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
                     <CountTable>{{ itemsCount }}</CountTable>
+
+                    <BulkActionSelect @change="handleBulkAction" />
+
                     <ToggleViewButton v-model:viewMode="viewMode" />
                 </div>
 
-                <!-- Один общий чекбокс выбрать всё -->
-                <div v-if="itemsCount"
-                     class="flex items-center justify-between px-3 py-2
-                            border-b border-slate-400 dark:border-slate-500">
-
-                    <div class="text-xs text-slate-600 dark:text-slate-200">
-                        {{ t('selected') }}: {{ selectedItems.length }}
-                    </div>
-
-                    <label
-                        class="flex items-center text-xs text-slate-600
-                               dark:text-slate-200 cursor-pointer">
-                        <span>{{ t('selectAll') }}</span>
-                        <input
-                            type="checkbox"
-                            class="rounded-sm border-slate-400 mx-2"
-                            :checked="paginatedItems.length &&
-                            paginatedItems.every(i => selectedItems.includes(i.id))"
-                            @change="toggleAll({
-                                ids: paginatedItems.map(i => i.id),
-                                checked: $event.target.checked
-                            })"
-                        />
-                    </label>
+                <div
+                    v-if="itemsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mb-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredItems.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
                 </div>
 
-                <!-- Табличный вид -->
                 <QuizAttemptItemTable
                     v-if="viewMode === 'table'"
                     :items="paginatedItems"
@@ -370,7 +512,6 @@ const handleBulkAction = (event) => {
                     @delete="confirmDelete"
                 />
 
-                <!-- Карточный вид -->
                 <QuizAttemptItemCardGrid
                     v-else
                     :items="paginatedItems"
@@ -381,23 +522,15 @@ const handleBulkAction = (event) => {
                 />
 
                 <div
-                    class="flex justify-between items-center flex-col md:flex-row my-1"
                     v-if="itemsCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
-                    <ItemsPerPageSelect
-                        :items-per-page="itemsPerPage"
-                        @update:itemsPerPage="itemsPerPage = $event"
-                    />
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredItems.length"
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
-                    />
-                    <SortSelect
-                        :sortParam="sortParam"
-                        @update:sortParam="val => (sortParam = val)"
                     />
                 </div>
             </div>

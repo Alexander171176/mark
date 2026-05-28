@@ -82,7 +82,7 @@ const linkInfo = {
     quizQuestions: {label: t('quizQuestions'), route: 'admin.schoolQuizQuestions.index'},
     quizAnswers: {label: t('quizAnswers'), route: 'admin.schoolQuizAnswers.index'},
     quizAttempts: {label: t('quizAttempts'), route: 'admin.schoolQuizAttempts.index'},
-    quizAttemptItems: {label: t('quizAttemptItems'), route: 'admin.quizAttemptItems.index'},
+    quizAttemptItems: {label: t('quizAttemptItems'), route: 'admin.schoolQuizAttemptItems.index'},
     users: {label: t('users'), route: 'admin.users.index'},
     roles: {label: t('roles'), route: 'admin.roles.index'},
     permissions: {label: t('permissions'), route: 'admin.permissions.index'},
@@ -140,17 +140,17 @@ const isActive = computed(() => {
 
 const classes = computed(() => {
     if (isActive.value) {
-        return `flex items-center px-1 text-sm font-medium leading-3
+        return `flex items-center px-1 text-xs font-medium leading-3
         ${colorTextActive.value}
-        hover:${colorTextHover.value}
-        focus:${colorTextHover.value}
+        hover:${colorTextActive.value}
+        focus:${colorTextActive.value}
         focus:outline-none transition duration-150 ease-in-out`;
     }
 
-    return `flex items-center px-1 text-sm font-medium leading-3
+    return `flex items-center px-1 text-xs font-medium leading-3
     ${colorText.value}
-    hover:${colorTextActive.value}
-    focus:${colorTextActive.value}
+    hover:${colorTextHover.value}
+    focus:${colorTextHover.value}
     focus:outline-none transition duration-150 ease-in-out`;
 })
 
@@ -167,7 +167,7 @@ const textClasses = computed(() => {
     <li class="mt-0" :class="containerClasses">
         <Link :href="route(link.route, link.params || {})" :class="classes">
             <span v-html="svgContent"></span>
-            <span class="text-sm font-medium transition-opacity duration-200 max-w-full"
+            <span class="text-xs font-medium transition-opacity duration-200 max-w-full"
                   :class="textClasses">
                 {{ link.label }}
             </span>

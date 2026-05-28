@@ -36,6 +36,7 @@ const localeTitles = {
     ru: 'Русский',
     en: 'English',
     kk: 'Қазақ',
+    zh: '中国人',
 }
 
 /**

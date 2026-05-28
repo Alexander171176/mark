@@ -34,7 +34,7 @@ class SchoolQuizAttemptItemRequest extends FormRequest
                 }
             }
 
-            if ($this->filled('is_correct')) {
+            if ($this->has('is_correct')) {
                 $data['is_correct'] = filter_var(
                     $this->input('is_correct'),
                     FILTER_VALIDATE_BOOL,
@@ -56,7 +56,7 @@ class SchoolQuizAttemptItemRequest extends FormRequest
                 }
             }
 
-            if ($this->filled('is_correct')) {
+            if ($this->has('is_correct')) {
                 $data['is_correct'] = filter_var(
                     $this->input('is_correct'),
                     FILTER_VALIDATE_BOOL,

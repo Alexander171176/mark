@@ -10,8 +10,11 @@ const props = defineProps({
 
 const classes = computed(() => {
     return props.active
-        ? 'flex items-center px-1 pt-1 text-sm font-medium leading-5 text-yellow-100 focus:outline-none transition duration-150 ease-in-out'
-        : 'flex items-center px-1 pt-1 text-sm font-medium leading-5 text-slate-300 hover:text-yellow-100 focus:outline-none focus:text-yellow-100 transition duration-150 ease-in-out'
+        ? 'flex items-center px-1 pt-1 text-sm font-medium leading-5 ' +
+        'text-yellow-100 focus:outline-none transition duration-150 ease-in-out'
+        : 'flex items-center px-1 pt-1 text-sm font-medium leading-5 ' +
+        'text-slate-300 hover:text-yellow-100 focus:outline-none focus:text-yellow-100 ' +
+        'transition duration-150 ease-in-out'
 })
 
 const containerClasses = computed(() => {
@@ -27,7 +30,8 @@ const textClasses = computed(() => {
     <li :class="containerClasses">
         <Link :href="href" :class="classes">
             <slot />
-            <span class="text-lg font-medium transition-opacity duration-200 max-w-full" :class="textClasses">
+            <span class="text-lg font-medium transition-opacity duration-200 max-w-full"
+                  :class="textClasses">
                 <slot name="text" />
             </span>
         </Link>

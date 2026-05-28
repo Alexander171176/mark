@@ -130,8 +130,8 @@ const { t } = useI18n();
             {{ t('quizAttempts') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
-            :href="route('admin.quizAttemptItems.index')"
-            :active="route().current('admin.quizAttemptItems.*')">
+            :href="route('admin.schoolQuizAttemptItems.index')"
+            :active="route().current('admin.schoolQuizAttemptItems.*')">
             {{ t('quizAttemptItems') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink

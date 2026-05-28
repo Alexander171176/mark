@@ -52,6 +52,9 @@ Route::prefix('actions')->name('actions.')->group(function () { // Группи�
     // массовое обновление/удаление статусов прохождений викторин
     require __DIR__ . '/quiz-attempts-bulk-status.php';
 
+    // массовое обновление/удаление статусов прохождений викторин
+    require __DIR__ . '/school-quiz-attempt-items-bulk-correct.php';
+
     // --- Currencies actions ---
     require __DIR__ . '/currencies.php';
 

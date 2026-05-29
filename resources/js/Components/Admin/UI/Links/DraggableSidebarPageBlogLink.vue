@@ -39,9 +39,9 @@ const pageLinks = ref(JSON.parse(localStorage.getItem('pageLinks')) || [
     'rubrics',
     'articles',
     'tags',
-    'comments',
     'banners',
     'videos',
+    'comments',
 ]);
 
 const handleDragEnd = () => {

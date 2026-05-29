@@ -33,11 +33,32 @@ const updateSort = (event) => {
         >
             <option value="idDesc">{{ t('idDesc') }}</option>
             <option value="idAsc">{{ t('idAsc') }}</option>
-            <option value="sort">{{ t('sortNumber') }}</option>
+
+            <option value="sortAsc">{{ t('sortNumber') }} ↑</option>
+            <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
             <option disabled>──────────────────</option>
 
-            <option value="title">{{ t('title') }}</option>
-            <option value="published_at">{{ t('publishedAt') }}</option>
+            <option value="titleAsc">{{ t('title') }} ↑</option>
+            <option value="titleDesc">{{ t('title') }} ↓</option>
+            <option disabled>──────────────────</option>
+
+            <option value="passScoreAsc">{{ t('passScore') }} ↑</option>
+            <option value="passScoreDesc">{{ t('passScore') }} ↓</option>
+
+            <option value="attemptsLimitAsc">{{ t('attemptsLimit') }} ↑</option>
+            <option value="attemptsLimitDesc">{{ t('attemptsLimit') }} ↓</option>
+
+            <option value="timeLimitAsc">{{ t('limitMinutes') }} ↑</option>
+            <option value="timeLimitDesc">{{ t('limitMinutes') }} ↓</option>
+            <option disabled>──────────────────</option>
+
+            <option value="questions_count">{{ t('sortQuestionIdAsc') }}</option>
+            <option value="attempts_count">{{ t('sortAttemptIdAsc') }}</option>
+            <option value="images_count">{{ t('images') }}</option>
+            <option disabled>──────────────────</option>
+
+            <option value="graded">{{ t('quizTypeGraded') }}</option>
+            <option value="practice">{{ t('quizTypePractice') }}</option>
             <option disabled>──────────────────</option>
 
             <option value="activity">{{ t('active') }}</option>

@@ -66,6 +66,42 @@ class SchoolCourseController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
+    /** Расширение сортировки для курсов. */
+    protected function extendedSortMap(): array
+    {
+        return [
+            'students_count' => 'students_count_desc',
+
+            'is_new' => 'is_new',
+            'is_hit' => 'is_hit',
+            'is_sale' => 'is_sale',
+
+            'level' => 'level_asc',
+            'status' => 'status_asc',
+            'availability' => 'availability_asc',
+
+            'difficulty' => 'difficulty_desc',
+            'duration' => 'duration_desc',
+
+            'popularity' => 'popularity_desc',
+            'rating_count' => 'rating_count_desc',
+            'rating_avg' => 'rating_avg_desc',
+
+            'views' => 'views_desc',
+            'likes' => 'likes_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+
+            'left' => 'left',
+            'noLeft' => 'no_left',
+            'main' => 'main',
+            'noMain' => 'no_main',
+            'right' => 'right',
+            'noRight' => 'no_right',
+        ];
+    }
+
     /** Список курсов. */
     public function index(Request $request): Response
     {
@@ -73,6 +109,7 @@ class SchoolCourseController extends BaseSchoolAdminController
 
         $adminSchoolCoursesPerPage = (int) config('site_settings.adminSchoolCoursesPerPage', 10);
         $adminSchoolCoursesDefaultSort = (string) config('site_settings.adminSchoolCoursesDefaultSort', 'idDesc');
+        $sort = $this->normalizeSortParam($adminSchoolCoursesDefaultSort);
 
         try {
             $courses = $this->baseQuery()
@@ -99,6 +136,39 @@ class SchoolCourseController extends BaseSchoolAdminController
                     'quizzes',
                     'likes',
                 ])
+                ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
+                ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
+
+                ->when($sort === 'left', fn ($query) => $query->where('left', true))
+                ->when($sort === 'no_left', fn ($query) => $query->where('left', false))
+                ->when($sort === 'main', fn ($query) => $query->where('main', true))
+                ->when($sort === 'no_main', fn ($query) => $query->where('main', false))
+                ->when($sort === 'right', fn ($query) => $query->where('right', true))
+                ->when($sort === 'no_right', fn ($query) => $query->where('right', false))
+
+                ->when($sort === 'is_new', fn ($query) => $query->where('is_new', true))
+                ->when($sort === 'is_hit', fn ($query) => $query->where('is_hit', true))
+                ->when($sort === 'is_sale', fn ($query) => $query->where('is_sale', true))
+
+                ->when($sort === 'views_desc', fn ($query) => $query->orderByDesc('views')->orderByDesc('id'))
+                ->when($sort === 'likes_desc', fn ($query) => $query->orderByDesc('likes')->orderByDesc('id'))
+
+                ->when($sort === 'students_count_desc', fn ($query) => $query->orderByDesc('enrollments_count')->orderByDesc('id'))
+                ->when($sort === 'popularity_desc', fn ($query) => $query->orderByDesc('popularity')->orderByDesc('id'))
+                ->when($sort === 'rating_count_desc', fn ($query) => $query->orderByDesc('rating_count')->orderByDesc('id'))
+                ->when($sort === 'rating_avg_desc', fn ($query) => $query->orderByDesc('rating_avg')->orderByDesc('id'))
+
+                ->when($sort === 'difficulty_desc', fn ($query) => $query->orderByDesc('difficulty')->orderByDesc('id'))
+                ->when($sort === 'duration_desc', fn ($query) => $query->orderByDesc('duration')->orderByDesc('id'))
+
+                ->when($sort === 'level_asc', fn ($query) => $query->orderBy('level')->orderByDesc('id'))
+                ->when($sort === 'status_asc', fn ($query) => $query->orderBy('status')->orderByDesc('id'))
+                ->when($sort === 'availability_asc', fn ($query) => $query->orderBy('availability')->orderByDesc('id'))
+
+                ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
+                ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
+                ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
+                ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
                 ->get();
 
             return Inertia::render('Admin/School/Courses/Index', [

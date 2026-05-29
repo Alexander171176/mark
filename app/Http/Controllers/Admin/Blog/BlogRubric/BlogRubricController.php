@@ -36,14 +36,19 @@ use Throwable;
  */
 class BlogRubricController extends BaseBlogAdminController
 {
+    /** Основная модель */
     protected string $modelClass = BlogRubric::class;
 
+    /** Модель изображений */
     protected string $imageModelClass = BlogRubricImage::class;
 
+    /** Коллекция изображений */
     protected string $imageMediaCollection = 'images';
 
+    /** Название сущности для уведомлений */
     protected string $entityLabel = 'рубрик';
 
+    /** Поля переводов */
     protected array $translationFields = [
         'title',
         'subtitle',
@@ -54,20 +59,34 @@ class BlogRubricController extends BaseBlogAdminController
         'meta_desc',
     ];
 
-    /**
-     * Дополнительные варианты сортировки рубрик
-     */
+    /** Дополнительные варианты сортировки рубрик */
     protected function extendedSortMap(): array
     {
         return [
+            'ownerNameAsc' => 'owner_name_asc',
+            'ownerNameDesc' => 'owner_name_desc',
+
+            'ownerEmailAsc' => 'owner_email_asc',
+            'ownerEmailDesc' => 'owner_email_desc',
+
+            'locale' => 'locale_asc',
+
             'viewsAsc' => 'views_asc',
             'viewsDesc' => 'views_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+
+            'moderation_pending' => 'moderation_pending',
+            'moderation_approved' => 'moderation_approved',
+            'moderation_rejected' => 'moderation_rejected',
+
+            'moderation_statusAsc' => 'moderation_status_asc',
+            'moderation_statusDesc' => 'moderation_status_desc',
         ];
     }
 
-    /**
-     * Определение уровня вложенности
-     */
+    /** Определение уровня вложенности */
     private function resolveLevel(?int $parentId): int
     {
         if (!$parentId) {
@@ -81,9 +100,7 @@ class BlogRubricController extends BaseBlogAdminController
         return $parent ? ((int) $parent->level) + 1 : 1;
     }
 
-    /**
-     * Проверка максимальной глубины
-     */
+    /** Проверка максимальной глубины */
     private function ensureAllowedLevel(?int $parentId): void
     {
         if ($this->resolveLevel($parentId) > 3) {
@@ -91,9 +108,7 @@ class BlogRubricController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Подготовка childrenRecursive для Vue
-     */
+    /** Подготовка childrenRecursive для Vue */
     private function prepareTreeChildren($nodes): void
     {
         $nodes->each(function ($node) {
@@ -106,17 +121,16 @@ class BlogRubricController extends BaseBlogAdminController
         });
     }
 
-    /**
-     * Список рубрик
-     */
+    /** Список рубрик */
     public function index(Request $request): Response
     {
+        $currentLocale = $this->resolveLocale($request);
+
         $adminBlogRubricsPerPage = (int) config('site_settings.adminBlogRubricsPerPage', 20);
         $adminBlogRubricsDefaultSort = (string) config('site_settings.adminBlogRubricsDefaultSort', 'idDesc');
 
-        $currentLocale = $this->resolveLocale($request);
-        $search = trim((string) $request->query('search', ''));
-        $sortParam = $this->normalizeSortParam($request->query('sort', $adminBlogRubricsDefaultSort));
+        $sortParam = (string) $request->query('sort', $adminBlogRubricsDefaultSort);
+        $normalizedSort = $this->normalizeSortParam($sortParam);
 
         try {
             $rubricsTree = $this->baseQuery()
@@ -142,8 +156,7 @@ class BlogRubricController extends BaseBlogAdminController
                     'translations',
                 ])
                 ->withCount(['articles', 'images'])
-                ->search($search, $currentLocale)
-                ->sortByParam($sortParam, $currentLocale)
+                ->sortByParam($normalizedSort, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/Blog/BlogRubrics/Index', [
@@ -156,7 +169,6 @@ class BlogRubricController extends BaseBlogAdminController
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
-                'search' => $search,
                 'sortParam' => $sortParam,
             ]);
         } catch (Throwable $e) {
@@ -174,16 +186,13 @@ class BlogRubricController extends BaseBlogAdminController
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
-                'search' => $search,
                 'sortParam' => $sortParam,
                 'error' => 'Ошибка загрузки рубрик.',
             ]);
         }
     }
 
-    /**
-     * Страница создания рубрики
-     */
+    /** Страница создания рубрики */
     public function create(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
@@ -200,9 +209,7 @@ class BlogRubricController extends BaseBlogAdminController
         ]);
     }
 
-    /**
-     * Создание рубрики
-     */
+    /** Создание рубрики */
     public function store(BlogRubricRequest $request): RedirectResponse
     {
         $data = $request->validated();
@@ -261,17 +268,13 @@ class BlogRubricController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Редирект на страницу редактирования
-     */
+    /** Редирект на страницу редактирования */
     public function show(string $id): RedirectResponse
     {
         return redirect()->route('admin.blogRubrics.edit', $id);
     }
 
-    /**
-     * Страница редактирования рубрики
-     */
+    /** Страница редактирования рубрики */
     public function edit(int $blogRubric, Request $request): Response
     {
         $rubric = $this->baseQuery()
@@ -300,9 +303,7 @@ class BlogRubricController extends BaseBlogAdminController
         ]);
     }
 
-    /**
-     * Обновление рубрики
-     */
+    /** Обновление рубрики */
     public function update(BlogRubricRequest $request, int $blogRubric): RedirectResponse
     {
         $rubric = $this->baseQuery()
@@ -360,9 +361,7 @@ class BlogRubricController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Удаление рубрики
-     */
+    /** Удаление рубрики */
     public function destroy(int $blogRubric): RedirectResponse
     {
         $rubric = $this->baseQuery()
@@ -398,9 +397,7 @@ class BlogRubricController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Массовое удаление рубрик
-     */
+    /** Массовое удаление рубрик */
     public function bulkDestroy(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -456,9 +453,7 @@ class BlogRubricController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Массовое обновление сортировки дерева
-     */
+    /** Массовое обновление сортировки дерева */
     public function updateSortBulk(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
@@ -526,9 +521,7 @@ class BlogRubricController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Клонирование рубрики
-     */
+    /** Клонирование рубрики */
     public function clone(int $blogRubric): RedirectResponse
     {
         $rubric = $this->baseQuery()

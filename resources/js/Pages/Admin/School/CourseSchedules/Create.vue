@@ -37,8 +37,8 @@ const toast = useToast()
 
 // Props из контроллера
 const props = defineProps({
-    targetLocale: { type: String, default: 'ru' },
-    availableLocales: { type: Array, default: () => ['ru', 'en', 'kk'] },
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
     courses: { type: Array, default: () => [] },
     instructors: { type: Array, default: () => [] },
 })
@@ -55,7 +55,7 @@ const makeTranslation = () => ({
 })
 
 // Локаль по умолчанию
-const defaultLocale = props.targetLocale || 'ru'
+const defaultLocale = props.currentLocale || 'ru'
 
 // Активная локаль вкладки
 const activeLocale = ref(defaultLocale)

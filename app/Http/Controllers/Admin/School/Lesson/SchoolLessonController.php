@@ -65,16 +65,41 @@ class SchoolLessonController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
+    /** Расширение сортировки для уроков. */
+    protected function extendedSortMap(): array
+    {
+        return [
+            'published_at' => 'published_at_desc',
+
+            'status' => 'status_asc',
+            'availability' => 'availability_asc',
+
+            'difficulty' => 'difficulty_desc',
+            'duration' => 'duration_desc',
+
+            'popularity' => 'popularity_desc',
+            'rating_count' => 'rating_count_desc',
+            'rating_avg' => 'rating_avg_desc',
+
+            'views' => 'views_desc',
+            'likes' => 'likes_desc',
+            'likes_count' => 'likes_count_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+        ];
+    }
+
     /** Список уроков */
     public function index(Request $request): Response
     {
-
         // Текущая локаль
         $currentLocale = $this->resolveLocale($request);
 
         // Настройки отображения
         $adminSchoolLessonsPerPage = (int) config('site_settings.adminSchoolLessonsPerPage', 10);
         $adminSchoolLessonsDefaultSort = (string) config('site_settings.adminSchoolLessonsDefaultSort', 'idDesc');
+        $sort = $this->normalizeSortParam($adminSchoolLessonsDefaultSort);
 
         try {
 
@@ -94,6 +119,23 @@ class SchoolLessonController extends BaseSchoolAdminController
                     'likes',
                     'hashtags',
                 ])
+                ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
+                ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
+                ->when($sort === 'published_at_desc', fn ($query) => $query->orderByDesc('published_at')->orderByDesc('id'))
+                ->when($sort === 'views_desc', fn ($query) => $query->orderByDesc('views')->orderByDesc('id'))
+                ->when($sort === 'likes_desc', fn ($query) => $query->orderByDesc('likes')->orderByDesc('id'))
+                ->when($sort === 'likes_count_desc', fn ($query) => $query->orderByDesc('likes_count')->orderByDesc('id'))
+                ->when($sort === 'popularity_desc', fn ($query) => $query->orderByDesc('popularity')->orderByDesc('id'))
+                ->when($sort === 'rating_count_desc', fn ($query) => $query->orderByDesc('rating_count')->orderByDesc('id'))
+                ->when($sort === 'rating_avg_desc', fn ($query) => $query->orderByDesc('rating_avg')->orderByDesc('id'))
+                ->when($sort === 'difficulty_desc', fn ($query) => $query->orderByDesc('difficulty')->orderByDesc('id'))
+                ->when($sort === 'duration_desc', fn ($query) => $query->orderByDesc('duration')->orderByDesc('id'))
+                ->when($sort === 'status_asc', fn ($query) => $query->orderBy('status')->orderByDesc('id'))
+                ->when($sort === 'availability_asc', fn ($query) => $query->orderBy('availability')->orderByDesc('id'))
+                ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
+                ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
+                ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
+                ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
                 ->get();
 
             // Страница списка уроков

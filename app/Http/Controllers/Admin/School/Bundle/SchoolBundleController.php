@@ -19,6 +19,23 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
 
+/**
+ * Контроллер для управления Наборами курсов (SchoolBundle) в административной панели.
+ *
+ * CRUD +:
+ * - обновление активности (одиночное и массовое)
+ * - обновление сортировки (одиночное и массовое)
+ * - удаление (одиночное)
+ * - мультиязычность, изображения
+ * - связи с треками, хештегами и связанными курсами.
+ *
+ * @version 1.1 (мультиязычная архитектура)
+ * @author Александр Косолапов <kosolapov1976@gmail.com>
+ *
+ * @see SchoolBundle
+ * @see SchoolBundleRequest
+ *
+ */
 class SchoolBundleController extends BaseSchoolAdminController
 {
     /** Основная модель */
@@ -44,6 +61,21 @@ class SchoolBundleController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
+    /** Расширение сортировки для наборов курсов. */
+    protected function extendedSortMap(): array
+    {
+        return [
+            'publishedAtAsc' => 'date_asc',
+            'publishedAtDesc' => 'date_desc',
+
+            'views' => 'views_desc',
+            'likes' => 'likes_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+        ];
+    }
+
     /** Список наборов курсов. */
     public function index(Request $request): Response
     {
@@ -51,6 +83,7 @@ class SchoolBundleController extends BaseSchoolAdminController
 
         $adminSchoolBundlesPerPage = (int) config('site_settings.adminSchoolBundlesPerPage', 10);
         $adminSchoolBundlesDefaultSort = (string) config('site_settings.adminSchoolBundlesDefaultSort', 'idDesc');
+        $sort = $this->normalizeSortParam($adminSchoolBundlesDefaultSort);
 
         try {
             $bundles = $this->baseQuery()
@@ -68,6 +101,12 @@ class SchoolBundleController extends BaseSchoolAdminController
                     'prices',
                     'orderItems',
                 ])
+                ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
+                ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
+                ->when(
+                    !in_array($sort, ['activity', 'inactive'], true),
+                    fn ($query) => $query->sortByParam($sort)
+                )
                 ->get();
 
             return Inertia::render('Admin/School/Bundles/Index', [

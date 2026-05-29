@@ -150,16 +150,6 @@ const parentTitle = (track) => {
                                 >
                                     ID: {{ track.id }}
                                 </div>
-
-                                <div
-                                    class="text-[10px] px-1.5 py-0.5 rounded-sm
-                                           border border-gray-400"
-                                    :class="track.activity
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100'"
-                                >
-                                    {{ track.activity ? t('enabled') : t('disabled') }}
-                                </div>
                             </div>
 
                             <div class="flex items-center space-x-2">

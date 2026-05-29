@@ -18,8 +18,7 @@ use Throwable;
  * Контроллер для управления Тегами (Blog) в админке.
  *
  * Паттерн:
- * - локали (табы)
- * - CRUD
+ * - CRUD+ :
  * - owner/ограничение “владелец/админ”
  * - activity (single + bulk)
  * - sort + drag&drop (bulk)
@@ -30,10 +29,13 @@ use Throwable;
  */
 class BlogTagController extends BaseBlogAdminController
 {
+    /** Основная модель */
     protected string $modelClass = BlogTag::class;
 
+    /** Название сущности для уведомлений */
     protected string $entityLabel = 'тегов';
 
+    /** Поля переводов */
     protected array $translationFields = [
         'name',
         'subtitle',
@@ -42,22 +44,45 @@ class BlogTagController extends BaseBlogAdminController
         'meta_title',
         'meta_keywords',
         'meta_desc',
-    ];
+    ];/** Дополнительные варианты сортировки тегов */
 
-    /**
-     * Список тегов:
-     * - поиск
-     * - сортировка
-     * - текущая локаль
-     */
+    /** Расширение сортировки для тегов блога. */
+    protected function extendedSortMap(): array
+    {
+        return [
+            'ownerNameAsc' => 'owner_name_asc',
+            'ownerNameDesc' => 'owner_name_desc',
+
+            'ownerEmailAsc' => 'owner_email_asc',
+            'ownerEmailDesc' => 'owner_email_desc',
+
+            'locale' => 'locale_asc',
+
+            'viewsAsc' => 'views_asc',
+            'viewsDesc' => 'views_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+
+            'moderation_pending' => 'moderation_pending',
+            'moderation_approved' => 'moderation_approved',
+            'moderation_rejected' => 'moderation_rejected',
+
+            'moderation_statusAsc' => 'moderation_status_asc',
+            'moderation_statusDesc' => 'moderation_status_desc',
+        ];
+    }
+
+    /** Список тегов */
     public function index(Request $request): Response
     {
+        $currentLocale = $this->resolveLocale($request);
+
         $adminBlogTagsPerPage = (int) config('site_settings.adminBlogTagsPerPage', 20);
         $adminBlogTagsDefaultSort = (string) config('site_settings.adminBlogTagsDefaultSort', 'idDesc');
 
-        $currentLocale = $this->resolveLocale($request);
-        $search = trim((string) $request->query('search', ''));
-        $sortParam = $this->normalizeSortParam($request->query('sort', $adminBlogTagsDefaultSort));
+        $sortParam = (string) $request->query('sort', $adminBlogTagsDefaultSort);
+        $normalizedSort = $this->normalizeSortParam($sortParam);
 
         try {
             $tags = $this->baseQuery()
@@ -67,8 +92,7 @@ class BlogTagController extends BaseBlogAdminController
                     'translations',
                 ])
                 ->withCount(['articles'])
-                ->search($search, $currentLocale)
-                ->sortByParam($sortParam, $currentLocale)
+                ->sortByParam($normalizedSort, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/Blog/BlogTags/Index', [
@@ -80,7 +104,7 @@ class BlogTagController extends BaseBlogAdminController
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
-                'search' => $search,
+
                 'sortParam' => $sortParam,
             ]);
         } catch (Throwable $e) {
@@ -97,16 +121,14 @@ class BlogTagController extends BaseBlogAdminController
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
-                'search' => $search,
+
                 'sortParam' => $sortParam,
                 'error' => 'Ошибка загрузки тегов.',
             ]);
         }
     }
 
-    /**
-     * Страница создания тега
-     */
+    /** Страница создания тега */
     public function create(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
@@ -117,11 +139,7 @@ class BlogTagController extends BaseBlogAdminController
         ]);
     }
 
-    /**
-     * Создание тега:
-     * - основная запись
-     * - переводы
-     */
+    /** Создание тега */
     public function store(BlogTagRequest $request): RedirectResponse
     {
         $data = $request->validated();
@@ -171,20 +189,13 @@ class BlogTagController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Редирект на страницу редактирования
-     */
+    /** Редирект на страницу редактирования */
     public function show(string $id): RedirectResponse
     {
         return redirect()->route('admin.blogTags.edit', $id);
     }
 
-    /**
-     * Страница редактирования тега:
-     * - основная запись
-     * - переводы
-     * - счётчики
-     */
+    /** Страница редактирования тега */
     public function edit(int $blogTag, Request $request): Response
     {
         $tag = $this->baseQuery()
@@ -205,11 +216,7 @@ class BlogTagController extends BaseBlogAdminController
         ]);
     }
 
-    /**
-     * Обновление тега:
-     * - основная запись
-     * - синхронизация переводов
-     */
+    /** Обновление тега */
     public function update(BlogTagRequest $request, int $blogTag): RedirectResponse
     {
         $tag = $this->baseQuery()->findOrFail($blogTag);
@@ -254,12 +261,7 @@ class BlogTagController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Удаление тега:
-     * - detach статей
-     * - удаление переводов
-     * - удаление основной записи
-     */
+    /** Удаление тега */
     public function destroy(int $blogTag): RedirectResponse
     {
         $tag = $this->baseQuery()->findOrFail($blogTag);
@@ -283,9 +285,7 @@ class BlogTagController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Массовое удаление тегов
-     */
+    /** Массовое удаление тегов */
     public function bulkDestroy(Request $request): RedirectResponse
     {
         $validated = $request->validate([

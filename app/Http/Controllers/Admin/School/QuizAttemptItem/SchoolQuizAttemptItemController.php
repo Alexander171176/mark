@@ -79,10 +79,25 @@ class SchoolQuizAttemptItemController extends Controller
 
             match ($adminSchoolQuizAttemptItemsDefaultSort) {
                 'idAsc' => $query->orderBy('id'),
+
+                'attemptIdAsc' => $query->orderBy('school_quiz_attempt_id')->orderByDesc('id'),
+                'attemptIdDesc' => $query->orderByDesc('school_quiz_attempt_id')->orderByDesc('id'),
+
+                'questionIdAsc' => $query->orderBy('school_quiz_question_id')->orderByDesc('id'),
+                'questionIdDesc' => $query->orderByDesc('school_quiz_question_id')->orderByDesc('id'),
+
                 'scoreAsc' => $query->orderBy('score')->orderByDesc('id'),
                 'scoreDesc' => $query->orderByDesc('score')->orderByDesc('id'),
+
                 'maxScoreAsc' => $query->orderBy('max_score')->orderByDesc('id'),
                 'maxScoreDesc' => $query->orderByDesc('max_score')->orderByDesc('id'),
+
+                'correctFirst' => $query->orderByDesc('is_correct')->orderByDesc('id'),
+                'wrongFirst' => $query->orderBy('is_correct')->orderByDesc('id'),
+
+                'createdAtAsc' => $query->orderBy('created_at')->orderByDesc('id'),
+                'createdAtDesc' => $query->orderByDesc('created_at')->orderByDesc('id'),
+
                 default => $query->orderByDesc('id'),
             };
 

@@ -40,7 +40,6 @@ const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
 
-    search: { type: String, default: '' },
     sortParam: { type: String, default: '' },
     errors: { type: Object, default: () => ({}) },
 })
@@ -63,9 +62,6 @@ const getArticleShort = (article) => getArticleTranslation(article)?.short || ''
 /** Описание статьи в текущей локали */
 const getArticleDescription = (article) => getArticleTranslation(article)?.description || ''
 
-/** Локаль текущего перевода статьи */
-const getArticleLocale = (article) => getArticleTranslation(article)?.locale || props.currentLocale || ''
-
 /** Нормализация строки для поиска/сортировки */
 const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
@@ -76,11 +72,7 @@ const moderationNum = (value) => {
 }
 
 /**
- * Режим отображения:
- * - cards = карточки
- * - table = дерево с drag-and-drop
- * Сохраняем выбор в localStorage.
- */
+ * Режим отображения - Сохраняем выбор в localStorage. */
 const viewMode = ref(localStorage.getItem('admin_view_mode_articles') || 'cards')
 
 watch(viewMode, (value) => {
@@ -302,10 +294,8 @@ const toggleRight = (article) => {
     )
 }
 
-/**
- * Локальный поиск по уже загруженному списку статей
- */
-const searchQuery = ref(props.search || '')
+/** Локальный поиск по уже загруженному списку статей */
+const searchQuery = ref('')
 const currentPage = ref(1)
 
 /**
@@ -342,8 +332,6 @@ const sortArticles = (articles) => {
     if (sortParam.value === 'publishedAtDesc') return list.sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0))
     if (sortParam.value === 'publishedAtAsc') return list.sort((a, b) => new Date(a.published_at || 0) - new Date(b.published_at || 0))
 
-    if (sortParam.value === 'locale') return list.sort((a, b) => getArticleLocale(a).localeCompare(getArticleLocale(b), locale.value))
-
     if (sortParam.value === 'views' || sortParam.value === 'viewsDesc') return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
     if (sortParam.value === 'viewsAsc') return list.sort((a, b) => (a.views ?? 0) - (b.views ?? 0))
 
@@ -363,9 +351,7 @@ const sortArticles = (articles) => {
     return list
 }
 
-/**
- * Фильтрация рубрик по поисковой строке + применение сортировки
- */
+/** Фильтрация рубрик по поисковой строке + применение сортировки */
 const filteredArticles = computed(() => {
     let filtered = localArticles.value || []
     const query = normalize(searchQuery.value)
@@ -393,9 +379,7 @@ const filteredArticles = computed(() => {
     return sortArticles(filtered)
 })
 
-/**
- * Ручная клиентская пагинация для карточек
- */
+/** Ручная клиентская пагинация для карточек */
 const paginatedArticles = computed(() => {
     const perPage = Number(itemsPerPage.value || 10)
     const start = (currentPage.value - 1) * perPage
@@ -407,9 +391,7 @@ watch([itemsPerPage, searchQuery], () => {
     currentPage.value = 1
 })
 
-/**
- * Выбранные статьи для массовых действий
- */
+/** Выбранные статьи для массовых действий */
 const selectedArticles = ref([])
 
 /** Выбрать/снять все статьи в текущем режиме отображения */
@@ -560,9 +542,7 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-/**
- * Одобрение / отклонение статьи администратором
- */
+/** Одобрение / отклонение статьи администратором */
 const approveArticle = (article, status = 1, note = '') => {
     if (!article?.id) return
 

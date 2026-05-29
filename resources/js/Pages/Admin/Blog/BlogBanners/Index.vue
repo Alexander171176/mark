@@ -29,9 +29,7 @@ const { t, locale } = useI18n()
 const toast = useToast()
 const page = usePage()
 
-/**
- * Props от контроллера
- */
+/** Props от контроллера */
 const props = defineProps({
     banners: { type: Array, default: () => [] },
     bannersCount: { type: Number, default: 0 },
@@ -42,82 +40,59 @@ const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
 
-    search: { type: String, default: '' },
     sortParam: { type: String, default: '' },
     errors: { type: Object, default: () => ({}) },
 })
 
-/**
- * Проверка роли администратора
- */
+/** Проверка роли администратора */
 const isAdmin = computed(() => {
     const roles = page.props?.auth?.user?.roles || []
     return roles.some((role) => role?.name === 'admin')
 })
 
-/**
- * Получение текущего перевода баннера
- */
+/** Получение текущего перевода баннера */
 const getBannerTranslation = (banner) => banner?.translation || {}
 
-/**
- * Получение названия баннера
- */
+/** Получение названия баннера */
 const getBannerTitle = (banner) => {
     return getBannerTranslation(banner)?.title || `ID: ${banner?.id}`
 }
 
-/**
- * Короткое описание
- */
+/** Короткое описание */
 const getBannerShort = (banner) => {
     return getBannerTranslation(banner)?.short || ''
 }
 
-/**
- * Ссылка баннера
- */
+/** Ссылка баннера */
 const getBannerLink = (banner) => {
     return getBannerTranslation(banner)?.link || ''
 }
 
-/**
- * Локаль перевода
- */
+/** Локаль перевода */
 const getBannerLocale = (banner) => {
     return getBannerTranslation(banner)?.locale || props.currentLocale || ''
 }
 
-/**
- * Нормализация строки для поиска/сортировки
- */
+/** Нормализация строки для поиска/сортировки */
 const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
-/**
- * Приведение статуса модерации к числу
- */
+/** Приведение статуса модерации к числу */
 const moderationNum = (value) => {
     const number = Number(value)
     return Number.isFinite(number) ? number : 0
 }
 
-/**
- * Режим отображения (таблица/карточки)
- */
+/** Режим отображения (таблица/карточки) */
 const viewMode = ref(localStorage.getItem('admin_view_mode_banners') || 'cards')
 
 watch(viewMode, (value) => {
     localStorage.setItem('admin_view_mode_banners', value)
 })
 
-/**
- * Количество элементов на странице
- */
+/** Количество элементов на странице */
 const itemsPerPage = ref(props.adminBlogBannersPerPage || 20)
 
-/**
- * Обновление количества элементов (сохранение в настройках)
- */
+/** Обновление количества элементов (сохранение в настройках) */
 watch(itemsPerPage, (newVal) => {
     router.put(
         route('admin.settings.updateAdminCountBanners'),
@@ -131,14 +106,10 @@ watch(itemsPerPage, (newVal) => {
     )
 })
 
-/**
- * Текущий параметр сортировки
- */
+/** Текущий параметр сортировки */
 const sortParam = ref(props.sortParam || props.adminBlogBannersDefaultSort || 'idDesc')
 
-/**
- * Обновление сортировки (сохранение в настройках)
- */
+/** Обновление сортировки (сохранение в настройках) */
 watch(sortParam, (newVal) => {
     router.put(
         route('admin.settings.updateAdminSortBanners'),
@@ -152,9 +123,7 @@ watch(sortParam, (newVal) => {
     )
 })
 
-/**
- * Локальный список баннеров (для реактивных изменений)
- */
+/** Локальный список баннеров (для реактивных изменений) */
 const localBanners = ref([])
 
 watch(
@@ -165,16 +134,12 @@ watch(
     { immediate: true, deep: true }
 )
 
-/**
- * ===== УДАЛЕНИЕ =====
- */
+/** УДАЛЕНИЕ */
 const showConfirmDeleteModal = ref(false)
 const bannerToDeleteId = ref(null)
 const bannerToDeleteTitle = ref('')
 
-/**
- * Открыть модалку удаления
- */
+/** Открыть модалку удаления */
 const confirmDelete = (bannerOrId, title = null) => {
     if (typeof bannerOrId === 'object') {
         bannerToDeleteId.value = bannerOrId.id
@@ -187,18 +152,14 @@ const confirmDelete = (bannerOrId, title = null) => {
     showConfirmDeleteModal.value = true
 }
 
-/**
- * Закрыть модалку
- */
+/** Закрыть модалку */
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     bannerToDeleteId.value = null
     bannerToDeleteTitle.value = ''
 }
 
-/**
- * Удаление баннера
- */
+/** Удаление баннера */
 const deleteBanner = () => {
     if (bannerToDeleteId.value === null) return
 
@@ -220,9 +181,7 @@ const deleteBanner = () => {
     })
 }
 
-/**
- * Локальное обновление баннера
- */
+/** Локальное обновление баннера */
 const patchLocalBanner = (bannerId, callback) => {
     const index = localBanners.value.findIndex((banner) => banner.id === bannerId)
 
@@ -231,13 +190,7 @@ const patchLocalBanner = (bannerId, callback) => {
     }
 }
 
-/**
- * ===== TOGGLES =====
- */
-
-/**
- * Переключение активности
- */
+/** Переключение активности */
 const toggleActivity = (banner) => {
     const newActivity = !banner.activity
     const title = getBannerTitle(banner)
@@ -263,9 +216,7 @@ const toggleActivity = (banner) => {
     )
 }
 
-/**
- * Переключение left
- */
+/** Переключение left */
 const toggleLeft = (banner) => {
     const newLeft = !banner.left
     const title = getBannerTitle(banner)
@@ -290,9 +241,7 @@ const toggleLeft = (banner) => {
     )
 }
 
-/**
- * Переключение main
- */
+/** Переключение main */
 const toggleMain = (banner) => {
     const newMain = !banner.main
     const title = getBannerTitle(banner)
@@ -317,9 +266,7 @@ const toggleMain = (banner) => {
     )
 }
 
-/**
- * Переключение right
- */
+/** Переключение right */
 const toggleRight = (banner) => {
     const newRight = !banner.right
     const title = getBannerTitle(banner)
@@ -344,15 +291,11 @@ const toggleRight = (banner) => {
     )
 }
 
-/**
- * ===== ПОИСК И СОРТИРОВКА =====
- */
-const searchQuery = ref(props.search || '')
+/** ПОИСК И СОРТИРОВКА */
+const searchQuery = ref('')
 const currentPage = ref(1)
 
-/**
- * Сортировка баннеров по выбранному параметру
- */
+/** Сортировка баннеров по выбранному параметру */
 const sortBanners = (banners) => {
     const list = (banners || []).slice()
 
@@ -394,10 +337,6 @@ const sortBanners = (banners) => {
 
     if (sortParam.value === 'titleDesc') {
         return list.sort((a, b) => normalize(getBannerTitle(b)).localeCompare(normalize(getBannerTitle(a)), locale.value))
-    }
-
-    if (sortParam.value === 'locale') {
-        return list.sort((a, b) => getBannerLocale(a).localeCompare(getBannerLocale(b), locale.value))
     }
 
     if (sortParam.value === 'activity') {
@@ -463,9 +402,7 @@ const sortBanners = (banners) => {
     return list
 }
 
-/**
- * Фильтрация + сортировка
- */
+/** Фильтрация + сортировка */
 const filteredBanners = computed(() => {
     let filtered = localBanners.value || []
     const query = normalize(searchQuery.value)
@@ -493,9 +430,7 @@ const filteredBanners = computed(() => {
     return sortBanners(filtered)
 })
 
-/**
- * Пагинация
- */
+/** Пагинация */
 const paginatedBanners = computed(() => {
     const perPage = Number(itemsPerPage.value || 10)
     const start = (currentPage.value - 1) * perPage
@@ -507,14 +442,10 @@ watch([itemsPerPage, searchQuery], () => {
     currentPage.value = 1
 })
 
-/**
- * ===== BULK =====
- */
+/** BULK */
 const selectedBanners = ref([])
 
-/**
- * Выбрать / снять выбор всех
- */
+/** Выбрать / снять выбор всех */
 const toggleAll = (payload) => {
     const checked = payload?.checked ?? payload?.target?.checked ?? false
     const ids = payload?.ids ?? paginatedBanners.value.map((banner) => banner.id)
@@ -526,9 +457,7 @@ const toggleAll = (payload) => {
     }
 }
 
-/**
- * Выбор одного баннера
- */
+/** Выбор одного баннера */
 const toggleSelectBanner = (bannerId) => {
     const index = selectedBanners.value.indexOf(bannerId)
 
@@ -539,9 +468,7 @@ const toggleSelectBanner = (bannerId) => {
     }
 }
 
-/**
- * Массовое переключение активности
- */
+/** Массовое переключение активности */
 const bulkToggleActivity = (newActivity) => {
     if (!selectedBanners.value.length) {
         toast.warning('Выберите баннеры для активации/деактивации')
@@ -579,9 +506,7 @@ const bulkToggleActivity = (newActivity) => {
     )
 }
 
-/**
- * Выбор инпутов для маасовых действий
- */
+/** Выбор инпутов для маасовых действий */
 const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
     if (!selectedBanners.value.length) {
         toast.warning('Выберите баннеры для массового действия')
@@ -619,9 +544,7 @@ const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
     )
 }
 
-/**
- * Массовое удаление
- */
+/** Массовое удаление */
 const bulkDelete = () => {
     if (!selectedBanners.value.length) {
         toast.warning('Выберите хотя бы один баннер для удаления.')
@@ -645,9 +568,7 @@ const bulkDelete = () => {
     })
 }
 
-/**
- * Обработчик bulk действий
- */
+/** Обработчик bulk действий */
 const handleBulkAction = (event) => {
     const action = event.target.value
 
@@ -678,9 +599,7 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-/**
- * Модерация баннера
- */
+/** Модерация баннера */
 const approveBanner = (banner, status = 1, note = '') => {
     if (!banner?.id) return
 
@@ -707,9 +626,7 @@ const approveBanner = (banner, status = 1, note = '') => {
     )
 }
 
-/**
- * Сохранение сортировки drag&drop
- */
+/** Сохранение сортировки drag&drop */
 const handleSortOrderUpdate = (newOrderIds) => {
     const items = newOrderIds.map((id, index) => ({
         id,

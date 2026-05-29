@@ -47,6 +47,18 @@ class SchoolHashtagController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
+    /** Расширение сортировки для хештегов. */
+    protected function extendedSortMap(): array
+    {
+        return [
+            'viewsAsc' => 'views_asc',
+            'viewsDesc' => 'views_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+        ];
+    }
+
     /** Список хештегов */
     public function index(Request $request): Response
     {
@@ -54,11 +66,19 @@ class SchoolHashtagController extends BaseSchoolAdminController
 
         $adminSchoolHashtagsPerPage = (int) config('site_settings.adminSchoolHashtagsPerPage', 20);
         $adminSchoolHashtagsDefaultSort = (string) config('site_settings.adminSchoolHashtagsDefaultSort', 'idDesc');
+        $sort = $this->normalizeSortParam($adminSchoolHashtagsDefaultSort);
 
         $hashtags = $this->baseQuery()
             ->with(['translation', 'translations'])
             ->withCount(['courses', 'modules', 'lessons'])
-            ->ordered()
+            ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
+            ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
+            ->when($sort === 'views_asc', fn ($query) => $query->orderBy('views')->orderByDesc('id'))
+            ->when($sort === 'views_desc', fn ($query) => $query->orderByDesc('views')->orderByDesc('id'))
+            ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
+            ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
+            ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
+            ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
             ->get();
 
         return Inertia::render('Admin/School/Hashtags/Index', [

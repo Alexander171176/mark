@@ -61,10 +61,16 @@ class SchoolTrackController extends BaseSchoolAdminController
     protected function extendedSortMap(): array
     {
         return [
+            'views' => 'views_desc',
             'viewsAsc' => 'views_asc',
             'viewsDesc' => 'views_desc',
-            'likesAsc' => 'likes_asc',
-            'likesDesc' => 'likes_desc',
+
+            'courses_count' => 'courses_count_desc',
+            'children_count' => 'children_count_desc',
+            'likes_count' => 'likes_count_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
         ];
     }
 
@@ -114,6 +120,7 @@ class SchoolTrackController extends BaseSchoolAdminController
 
         $adminSchoolTracksPerPage = (int) config('site_settings.adminSchoolTracksPerPage', 10);
         $adminSchoolTracksDefaultSort = (string) config('site_settings.adminSchoolTracksDefaultSort', 'idDesc');
+        $sort = $this->normalizeSortParam($adminSchoolTracksDefaultSort);
 
         try {
             $tracksTree = $this->baseQuery()
@@ -149,7 +156,17 @@ class SchoolTrackController extends BaseSchoolAdminController
                     'images',
                     'likes',
                 ])
-                ->ordered()
+                ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
+                ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
+                ->when($sort === 'views_asc', fn ($query) => $query->orderBy('views')->orderByDesc('id'))
+                ->when($sort === 'views_desc', fn ($query) => $query->orderByDesc('views')->orderByDesc('id'))
+                ->when($sort === 'courses_count_desc', fn ($query) => $query->orderByDesc('courses_count')->orderByDesc('id'))
+                ->when($sort === 'children_count_desc', fn ($query) => $query->orderByDesc('children_count')->orderByDesc('id'))
+                ->when($sort === 'likes_count_desc', fn ($query) => $query->orderByDesc('likes_count')->orderByDesc('id'))
+                ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
+                ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
+                ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
+                ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
                 ->get();
 
             return Inertia::render('Admin/School/Tracks/Index', [

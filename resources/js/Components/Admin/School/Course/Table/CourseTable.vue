@@ -328,7 +328,7 @@ const formatDate = (dateStr) => {
                                 <div
                                     class="text-center text-xs
                                            text-slate-800 dark:text-blue-200"
-                                    :title="`[${course.locale}] : [${course.sort}] ${formatDate(course.published_at)}`">
+                                    :title="`[${course.sort}] ${formatDate(course.published_at)}`">
                                     {{ course.id }}
                                 </div>
                             </td>

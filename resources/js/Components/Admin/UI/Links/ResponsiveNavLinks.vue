@@ -165,11 +165,6 @@ const { t } = useI18n();
             {{ t('tags') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
-            :href="route('admin.comments.index')"
-            :active="route().current('admin.comments.*')">
-            {{ t('comments') }}
-        </ResponsiveNavLink>
-        <ResponsiveNavLink
             :href="route('admin.blogBanners.index')"
             :active="route().current('admin.blogBanners.*')">
             {{ t('banners') }}
@@ -178,6 +173,11 @@ const { t } = useI18n();
             :href="route('admin.blogVideos.index')"
             :active="route().current('admin.blogVideos.*')">
             {{ t('videos') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.comments.index')"
+            :active="route().current('admin.comments.*')">
+            {{ t('comments') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
             :href="route('admin.charts.index')"

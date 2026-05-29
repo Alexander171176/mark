@@ -32,34 +32,71 @@ use Throwable;
  */
 class BlogBannerController extends BaseBlogAdminController
 {
+    /** Основная модель */
     protected string $modelClass = BlogBanner::class;
 
+    /** Модель изображений */
+    protected string $imageModelClass = BlogBannerImage::class;
+
+    /** Коллекция изображений */
+    protected string $imageMediaCollection = 'images';
+
+    /** Название сущности для уведомлений */
     protected string $entityLabel = 'баннеров';
 
+    /** Поля переводов */
     protected array $translationFields = [
         'title',
         'link',
         'short',
     ];
 
-    protected string $imageModelClass = BlogBannerImage::class;
+    /** Дополнительные варианты сортировки баннеров */
+    protected function extendedSortMap(): array
+    {
+        return [
+            'ownerNameAsc' => 'owner_name_asc',
+            'ownerNameDesc' => 'owner_name_desc',
 
-    protected string $imageMediaCollection = 'images';
+            'ownerEmailAsc' => 'owner_email_asc',
+            'ownerEmailDesc' => 'owner_email_desc',
 
-    /**
-     * Список баннеров:
-     * - поиск
-     * - сортировка
-     * - текущая локаль
-     */
+            'locale' => 'locale_asc',
+
+            'imagesAsc' => 'images_count_asc',
+            'imagesDesc' => 'images_count_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+
+            'left' => 'left',
+            'noLeft' => 'no_left',
+
+            'main' => 'main',
+            'noMain' => 'no_main',
+
+            'right' => 'right',
+            'noRight' => 'no_right',
+
+            'moderation_pending' => 'moderation_pending',
+            'moderation_approved' => 'moderation_approved',
+            'moderation_rejected' => 'moderation_rejected',
+
+            'moderation_statusAsc' => 'moderation_status_asc',
+            'moderation_statusDesc' => 'moderation_status_desc',
+        ];
+    }
+
+    /** Список баннеров */
     public function index(Request $request): Response
     {
+        $currentLocale = $this->resolveLocale($request);
+
         $adminBlogBannersPerPage = (int) config('site_settings.adminBlogBannersPerPage', 20);
         $adminBlogBannersDefaultSort = (string) config('site_settings.adminBlogBannersDefaultSort', 'idDesc');
 
-        $currentLocale = $this->resolveLocale($request);
-        $search = trim((string) $request->query('search', ''));
-        $sortParam = $this->normalizeSortParam($request->query('sort', $adminBlogBannersDefaultSort));
+        $sortParam = (string) $request->query('sort', $adminBlogBannersDefaultSort);
+        $normalizedSort = $this->normalizeSortParam($sortParam);
 
         try {
             $banners = $this->baseQuery()
@@ -70,8 +107,7 @@ class BlogBannerController extends BaseBlogAdminController
                     'images',
                 ])
                 ->withCount(['images'])
-                ->search($search, $currentLocale)
-                ->sortByParam($sortParam, $currentLocale)
+                ->sortByParam($normalizedSort, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/Blog/BlogBanners/Index', [
@@ -83,7 +119,7 @@ class BlogBannerController extends BaseBlogAdminController
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
-                'search' => $search,
+
                 'sortParam' => $sortParam,
             ]);
         } catch (Throwable $e) {
@@ -100,16 +136,14 @@ class BlogBannerController extends BaseBlogAdminController
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
-                'search' => $search,
+
                 'sortParam' => $sortParam,
                 'error' => 'Ошибка загрузки баннеров.',
             ]);
         }
     }
 
-    /**
-     * Страница создания баннера
-     */
+    /** Страница создания баннера */
     public function create(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
@@ -120,11 +154,7 @@ class BlogBannerController extends BaseBlogAdminController
         ]);
     }
 
-    /**
-     * Создание баннера:
-     * - основная запись
-     * - переводы
-     */
+    /** Создание баннера */
     public function store(BlogBannerRequest $request): RedirectResponse
     {
         $data = $request->validated();
@@ -176,20 +206,13 @@ class BlogBannerController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Редирект на страницу редактирования
-     */
+    /** Редирект на страницу редактирования */
     public function show(string $id): RedirectResponse
     {
         return redirect()->route('admin.blogBanners.edit', $id);
     }
 
-    /**
-     * Страница редактирования баннера:
-     * - основная запись
-     * - переводы
-     * - счётчики
-     */
+    /** Страница редактирования баннера */
     public function edit(int $blogBanner, Request $request): Response
     {
         $banner = $this->baseQuery()
@@ -211,11 +234,7 @@ class BlogBannerController extends BaseBlogAdminController
         ]);
     }
 
-    /**
-     * Обновление баннера:
-     * - основная запись
-     * - синхронизация переводов
-     */
+    /** Обновление баннера */
     public function update(BlogBannerRequest $request, int $blogBanner): RedirectResponse
     {
         $banner = $this->baseQuery()
@@ -265,12 +284,7 @@ class BlogBannerController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Удаление баннера:
-     * - detach статей
-     * - удаление переводов
-     * - удаление основной записи
-     */
+    /** Удаление баннера */
     public function destroy(int $blogBanner): RedirectResponse
     {
         $banner = $this->baseQuery()
@@ -304,9 +318,7 @@ class BlogBannerController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Массовое удаление баннеров
-     */
+    /** Массовое удаление баннеров */
     public function bulkDestroy(Request $request): RedirectResponse
     {
         $validated = $request->validate([

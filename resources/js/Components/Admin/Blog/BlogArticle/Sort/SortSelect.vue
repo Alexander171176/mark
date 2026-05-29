@@ -39,25 +39,20 @@ const updateSort = (event) => {
 
             <option value="sortAsc">{{ t('sortNumber') }} (0 → 9)</option>
             <option value="sortDesc">{{ t('sortNumber') }} (9 → 0)</option>
-
             <option disabled>─────────────────</option>
 
             <option value="ownerNameAsc">{{ t('owner') }} (A → Z)</option>
             <option value="ownerNameDesc">{{ t('owner') }} (Z → A)</option>
             <option value="ownerEmailAsc">{{ t('ownerEmail') }} (A → Z)</option>
             <option value="ownerEmailDesc">{{ t('ownerEmail') }} (Z → A)</option>
-
             <option disabled>─────────────────</option>
 
             <option value="titleAsc">{{ t('title') }} (A → Z)</option>
             <option value="titleDesc">{{ t('title') }} (Z → A)</option>
-            <option value="locale">{{ t('localization') }}</option>
-
             <option disabled>─────────────────</option>
 
             <option value="publishedAtDesc">{{ t('publishedAt') }} ↓</option>
             <option value="publishedAtAsc">{{ t('publishedAt') }} ↑</option>
-
             <option disabled>─────────────────</option>
 
             <option value="viewsDesc">{{ t('views') }} (9 → 0)</option>
@@ -68,33 +63,27 @@ const updateSort = (event) => {
 
             <option value="commentsDesc">{{ t('comments') }} (9 → 0)</option>
             <option value="commentsAsc">{{ t('comments') }} (0 → 9)</option>
-
             <option disabled>─────────────────</option>
 
             <option value="activity">{{ t('active') }}</option>
             <option value="inactive">{{ t('inactive') }}</option>
-
             <option disabled>─────────────────</option>
 
             <option value="left">{{ t('inLeft') }}</option>
             <option value="noLeft">{{ t('notLeft') }}</option>
-
             <option disabled>─────────────────</option>
 
             <option value="main">{{ t('inMain') }}</option>
             <option value="noMain">{{ t('notMain') }}</option>
-
             <option disabled>─────────────────</option>
 
             <option value="right">{{ t('inRight') }}</option>
             <option value="noRight">{{ t('notRight') }}</option>
-
             <option disabled>─────────────────</option>
 
             <option value="moderation_pending">{{ t('underModeration') }}</option>
             <option value="moderation_approved">{{ t('statusSelectApproved') }}</option>
             <option value="moderation_rejected">{{ t('statusSelectRejected') }}</option>
-
             <option disabled>─────────────────</option>
 
             <option value="moderation_statusAsc">{{ t('moderationStatus') }} (0 → 2)</option>

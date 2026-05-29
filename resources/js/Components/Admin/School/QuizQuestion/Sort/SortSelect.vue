@@ -31,13 +31,31 @@ const updateSort = (event) => {
                    border border-slate-400 dark:border-slate-600
                    rounded-sm shadow-sm"
         >
-
             <option value="idDesc">{{ t('idDesc') }}</option>
             <option value="idAsc">{{ t('idAsc') }}</option>
-            <option value="sort">{{ t('sortNumber') }}</option>
+
+            <option value="sortAsc">{{ t('sortNumber') }} ↑</option>
+            <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
             <option disabled>─────────────</option>
 
-            <option value="title">{{ t('title') }}</option>
+            <option value="questionTextAsc">{{ t('question') }} ↑</option>
+            <option value="questionTextDesc">{{ t('question') }} ↓</option>
+
+            <option value="quizTitleAsc">{{ t('quiz') }} ↑</option>
+            <option value="quizTitleDesc">{{ t('quiz') }} ↓</option>
+            <option disabled>─────────────</option>
+
+            <option value="pointsAsc">{{ t('points') }} ↑</option>
+            <option value="pointsDesc">{{ t('points') }} ↓</option>
+
+            <option value="answersCountAsc">{{ t('answers') }} ↑</option>
+            <option value="answersCountDesc">{{ t('answers') }} ↓</option>
+            <option disabled>─────────────</option>
+
+            <option value="singleChoice">{{ t('questionTypeSingleChoice') }}</option>
+            <option value="multipleChoice">{{ t('questionTypeMultipleChoice') }}</option>
+            <option value="trueFalse">{{ t('questionTypeTrueFalse') }}</option>
+            <option value="openText">{{ t('questionTypeOpenText') }}</option>
             <option disabled>─────────────</option>
 
             <option value="activity">{{ t('active') }}</option>

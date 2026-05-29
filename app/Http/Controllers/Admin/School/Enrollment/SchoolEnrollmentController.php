@@ -82,16 +82,54 @@ class SchoolEnrollmentController extends Controller
             }
 
             match ($adminSchoolEnrollmentsDefaultSort) {
-                'idAsc' => $query->orderBy('id'),
-                'startedAtAsc' => $query->orderBy('started_at'),
-                'startedAtDesc' => $query->orderByDesc('started_at'),
-                'completedAtAsc' => $query->orderBy('completed_at'),
-                'completedAtDesc' => $query->orderByDesc('completed_at'),
-                'progressAsc' => $query->orderBy('progress_percent'),
-                'progressDesc' => $query->orderByDesc('progress_percent'),
-                'statusAsc' => $query->orderBy('status'),
-                'statusDesc' => $query->orderByDesc('status'),
-                default => $query->orderByDesc('id'),
+                'idAsc' => $query->orderBy('school_enrollments.id'),
+
+                'startedAtAsc' => $query->orderBy('started_at')->orderByDesc('school_enrollments.id'),
+                'startedAtDesc' => $query->orderByDesc('started_at')->orderByDesc('school_enrollments.id'),
+
+                'expiresAtAsc' => $query->orderBy('expires_at')->orderByDesc('school_enrollments.id'),
+                'expiresAtDesc' => $query->orderByDesc('expires_at')->orderByDesc('school_enrollments.id'),
+
+                'completedAtAsc' => $query->orderBy('completed_at')->orderByDesc('school_enrollments.id'),
+                'completedAtDesc' => $query->orderByDesc('completed_at')->orderByDesc('school_enrollments.id'),
+
+                'progressAsc' => $query->orderBy('progress_percent')->orderByDesc('school_enrollments.id'),
+                'progressDesc' => $query->orderByDesc('progress_percent')->orderByDesc('school_enrollments.id'),
+
+                'statusAsc' => $query->orderBy('status')->orderByDesc('school_enrollments.id'),
+                'statusDesc' => $query->orderByDesc('status')->orderByDesc('school_enrollments.id'),
+
+                'userNameAsc' => $query
+                    ->join('users', 'school_enrollments.user_id', '=', 'users.id')
+                    ->orderBy('users.name')
+                    ->orderByDesc('school_enrollments.id')
+                    ->select('school_enrollments.*'),
+
+                'userNameDesc' => $query
+                    ->join('users', 'school_enrollments.user_id', '=', 'users.id')
+                    ->orderByDesc('users.name')
+                    ->orderByDesc('school_enrollments.id')
+                    ->select('school_enrollments.*'),
+
+                'courseTitleAsc' => $query
+                    ->leftJoin('school_course_translations as sct', function ($join) {
+                        $join->on('school_enrollments.school_course_id', '=', 'sct.school_course_id')
+                            ->where('sct.locale', app()->getLocale());
+                    })
+                    ->orderBy('sct.title')
+                    ->orderByDesc('school_enrollments.id')
+                    ->select('school_enrollments.*'),
+
+                'courseTitleDesc' => $query
+                    ->leftJoin('school_course_translations as sct', function ($join) {
+                        $join->on('school_enrollments.school_course_id', '=', 'sct.school_course_id')
+                            ->where('sct.locale', app()->getLocale());
+                    })
+                    ->orderByDesc('sct.title')
+                    ->orderByDesc('school_enrollments.id')
+                    ->select('school_enrollments.*'),
+
+                default => $query->orderByDesc('school_enrollments.id'),
             };
 
             $enrollments = $query->get();

@@ -51,6 +51,30 @@ class SchoolQuizAnswerController extends BaseSchoolAdminController
         'explanation',
     ];
 
+    /** Расширение сортировки для ответов квизов. */
+    protected function extendedSortMap(): array
+    {
+        return [
+            'textAsc' => 'text_asc',
+            'textDesc' => 'text_desc',
+
+            'quizTitleAsc' => 'quiz_title_asc',
+            'quizTitleDesc' => 'quiz_title_desc',
+
+            'questionTextAsc' => 'question_text_asc',
+            'questionTextDesc' => 'question_text_desc',
+
+            'weightAsc' => 'weight_asc',
+            'weightDesc' => 'weight_desc',
+
+            'correct' => 'correct',
+            'incorrect' => 'incorrect',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+        ];
+    }
+
     /** Список ответов квизов */
     public function index(Request $request): Response
     {
@@ -61,6 +85,7 @@ class SchoolQuizAnswerController extends BaseSchoolAdminController
 
         $adminSchoolQuizAnswersPerPage = (int) config('site_settings.adminSchoolQuizAnswersPerPage', 10);
         $adminSchoolQuizAnswersDefaultSort = (string) config('site_settings.adminSchoolQuizAnswersDefaultSort', 'idDesc');
+        $sort = $this->normalizeSortParam($adminSchoolQuizAnswersDefaultSort);
 
         try {
             $query = $this->baseQuery()
@@ -85,12 +110,20 @@ class SchoolQuizAnswerController extends BaseSchoolAdminController
                 $query->where('school_quiz_question_id', (int) $questionId);
             }
 
-            match ($adminSchoolQuizAnswersDefaultSort) {
-                'idAsc' => $query->orderBy('id'),
-                'sortAsc' => $query->orderBy('sort')->orderByDesc('id'),
-                'sortDesc' => $query->orderByDesc('sort')->orderByDesc('id'),
-                'weightAsc' => $query->orderBy('weight')->orderByDesc('id'),
-                'weightDesc' => $query->orderByDesc('weight')->orderByDesc('id'),
+            match ($sort) {
+                'sort_asc' => $query->orderBy('sort')->orderByDesc('id'),
+                'sort_desc' => $query->orderByDesc('sort')->orderByDesc('id'),
+
+                'weight_asc' => $query->orderBy('weight')->orderByDesc('id'),
+                'weight_desc' => $query->orderByDesc('weight')->orderByDesc('id'),
+
+                'correct' => $query->where('is_correct', true),
+                'incorrect' => $query->where('is_correct', false),
+
+                'activity' => $query->where('activity', true),
+                'inactive' => $query->where('activity', false),
+
+                'date_asc' => $query->orderBy('id'),
                 default => $query->orderByDesc('id'),
             };
 

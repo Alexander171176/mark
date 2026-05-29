@@ -64,10 +64,43 @@ class SchoolCohortEnrollmentController extends Controller
 
             match ($adminSchoolCohortEnrollmentsDefaultSort) {
                 'idAsc' => $query->orderBy('id'),
-                'enrolledAtAsc' => $query->orderBy('enrolled_at'),
-                'enrolledAtDesc' => $query->orderByDesc('enrolled_at'),
-                'statusAsc' => $query->orderBy('status'),
-                'statusDesc' => $query->orderByDesc('status'),
+
+                'enrolledAtAsc' => $query->orderBy('enrolled_at')->orderByDesc('id'),
+                'enrolledAtDesc' => $query->orderByDesc('enrolled_at')->orderByDesc('id'),
+
+                'statusAsc' => $query->orderBy('status')->orderByDesc('id'),
+                'statusDesc' => $query->orderByDesc('status')->orderByDesc('id'),
+
+                'userNameAsc' => $query
+                    ->join('users', 'school_cohort_enrollments.user_id', '=', 'users.id')
+                    ->orderBy('users.name')
+                    ->orderByDesc('school_cohort_enrollments.id')
+                    ->select('school_cohort_enrollments.*'),
+
+                'userNameDesc' => $query
+                    ->join('users', 'school_cohort_enrollments.user_id', '=', 'users.id')
+                    ->orderByDesc('users.name')
+                    ->orderByDesc('school_cohort_enrollments.id')
+                    ->select('school_cohort_enrollments.*'),
+
+                'scheduleTitleAsc' => $query
+                    ->leftJoin('school_course_schedule_translations as sct', function ($join) {
+                        $join->on('school_cohort_enrollments.school_course_schedule_id', '=', 'sct.school_course_schedule_id')
+                            ->where('sct.locale', app()->getLocale());
+                    })
+                    ->orderBy('sct.title')
+                    ->orderByDesc('school_cohort_enrollments.id')
+                    ->select('school_cohort_enrollments.*'),
+
+                'scheduleTitleDesc' => $query
+                    ->leftJoin('school_course_schedule_translations as sct', function ($join) {
+                        $join->on('school_cohort_enrollments.school_course_schedule_id', '=', 'sct.school_course_schedule_id')
+                            ->where('sct.locale', app()->getLocale());
+                    })
+                    ->orderByDesc('sct.title')
+                    ->orderByDesc('school_cohort_enrollments.id')
+                    ->select('school_cohort_enrollments.*'),
+
                 default => $query->orderByDesc('id'),
             };
 

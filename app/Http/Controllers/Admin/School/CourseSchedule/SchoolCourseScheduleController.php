@@ -60,23 +60,40 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
+    /** Расширение сортировки для расписаний. */
+    protected function extendedSortMap(): array
+    {
+        return [
+            'capacity' => 'capacity_desc',
+            'views' => 'views_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+
+            'online' => 'online',
+            'offline' => 'offline',
+
+            'starts_at' => 'starts_at_desc',
+            'ends_at' => 'ends_at_desc',
+            'enroll_starts_at' => 'enroll_starts_at_desc',
+            'enroll_ends_at' => 'enroll_ends_at_desc',
+        ];
+    }
+
     /** список расписаний */
     public function index(Request $request): Response
     {
-        $currentLocale = $this->normalizeLocale(
-            $request->route('locale')
-            ?? app()->getLocale()
-            ?? $request->query('locale')
-        );
-
-        app()->setLocale($currentLocale);
+        $currentLocale = $this->resolveLocale($request);
 
         $adminSchoolCourseSchedulesPerPage = (int) config('site_settings.adminSchoolCourseSchedulesPerPage', 10);
         $adminSchoolCourseSchedulesDefaultSort = (string) config('site_settings.adminSchoolCourseSchedulesDefaultSort', 'idDesc');
+        $sort = $this->normalizeSortParam($adminSchoolCourseSchedulesDefaultSort);
 
         try {
             $schedules = $this->baseQuery()
                 ->with([
+                    'translation',
+                    'translations',
                     'images',
                     'course.translation',
                     'course.translations',
@@ -88,6 +105,23 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
                     'images',
                     'cohortEnrollments',
                 ])
+                ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
+                ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
+                ->when($sort === 'online', fn ($query) => $query->where('is_online', true))
+                ->when($sort === 'offline', fn ($query) => $query->where('is_online', false))
+
+                ->when($sort === 'capacity_desc', fn ($query) => $query->orderByDesc('capacity')->orderByDesc('id'))
+                ->when($sort === 'views_desc', fn ($query) => $query->orderByDesc('views')->orderByDesc('id'))
+
+                ->when($sort === 'starts_at_desc', fn ($query) => $query->orderByDesc('starts_at')->orderByDesc('id'))
+                ->when($sort === 'ends_at_desc', fn ($query) => $query->orderByDesc('ends_at')->orderByDesc('id'))
+                ->when($sort === 'enroll_starts_at_desc', fn ($query) => $query->orderByDesc('enroll_starts_at')->orderByDesc('id'))
+                ->when($sort === 'enroll_ends_at_desc', fn ($query) => $query->orderByDesc('enroll_ends_at')->orderByDesc('id'))
+
+                ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
+                ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
+                ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
+                ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
                 ->get();
 
             return Inertia::render('Admin/School/CourseSchedules/Index', [
@@ -122,16 +156,10 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
     /** Страница создания расписания */
     public function create(Request $request): Response
     {
-        $targetLocale = $this->normalizeLocale(
-            $request->route('locale')
-            ?? app()->getLocale()
-            ?? $request->query('locale')
-        );
-
-        app()->setLocale($targetLocale);
+        $currentLocale = $this->resolveLocale($request);
 
         return Inertia::render('Admin/School/CourseSchedules/Create', [
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
 
             'courses' => $this->coursesForSelect(),
@@ -194,13 +222,7 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
     /** Страница редактирования расписания */
     public function edit(int $schoolCourseSchedule, Request $request): Response
     {
-        $targetLocale = $this->normalizeLocale(
-            $request->route('locale')
-            ?? app()->getLocale()
-            ?? $request->query('locale')
-        );
-
-        app()->setLocale($targetLocale);
+        $currentLocale = $this->resolveLocale($request);
 
         $schedule = $this->baseQuery()
             ->with([
@@ -222,7 +244,7 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
         return Inertia::render('Admin/School/CourseSchedules/Edit', [
             'schedule' => new SchoolCourseScheduleResource($schedule),
 
-            'targetLocale' => $targetLocale,
+            'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
 
             'courses' => $this->coursesForSelect(),

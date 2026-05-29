@@ -43,7 +43,6 @@ const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
 
-    search: { type: String, default: '' },
     sortParam: { type: String, default: '' },
     errors: { type: Object, default: () => ({}) },
 })
@@ -294,7 +293,7 @@ const toggleRight = (video) => {
 }
 
 /** Поиск */
-const searchQuery = ref(props.search || '')
+const searchQuery = ref('')
 const currentPage = ref(1)
 
 /** Локальная сортировка */

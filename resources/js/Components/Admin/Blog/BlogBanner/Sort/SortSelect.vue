@@ -51,7 +51,6 @@ const updateSort = (event) => {
 
             <option value="titleAsc">{{ t('title') }} (A → Z)</option>
             <option value="titleDesc">{{ t('title') }} (Z → A)</option>
-            <option value="locale">{{ t('localization') }}</option>
 
             <option disabled>─────────────────</option>
 

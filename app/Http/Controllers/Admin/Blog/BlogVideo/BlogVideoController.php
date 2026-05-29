@@ -35,14 +35,19 @@ use Throwable;
  */
 class BlogVideoController extends BaseBlogAdminController
 {
+    /** Основная модель */
     protected string $modelClass = BlogVideo::class;
 
+    /** Модель изображений */
     protected string $imageModelClass = BlogVideoImage::class;
 
+    /** Коллекция изображений */
     protected string $imageMediaCollection = 'images';
 
+    /** Название сущности для уведомлений */
     protected string $entityLabel = 'видео';
 
+    /** Поля переводов */
     protected array $translationFields = [
         'title',
         'short',
@@ -53,12 +58,21 @@ class BlogVideoController extends BaseBlogAdminController
         'meta_desc',
     ];
 
-    /**
-     * Расширенная сортировка от базовой
-     */
+    /** Дополнительные варианты сортировки видео */
     protected function extendedSortMap(): array
     {
         return [
+            'ownerNameAsc' => 'owner_name_asc',
+            'ownerNameDesc' => 'owner_name_desc',
+
+            'ownerEmailAsc' => 'owner_email_asc',
+            'ownerEmailDesc' => 'owner_email_desc',
+
+            'locale' => 'locale_asc',
+
+            'publishedAtAsc' => 'published_at_asc',
+            'publishedAtDesc' => 'published_at_desc',
+
             'viewsAsc' => 'views_asc',
             'viewsDesc' => 'views_desc',
 
@@ -67,12 +81,32 @@ class BlogVideoController extends BaseBlogAdminController
 
             'durationAsc' => 'duration_asc',
             'durationDesc' => 'duration_desc',
+
+            'public' => 'public',
+            'private' => 'private',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+
+            'left' => 'left',
+            'noLeft' => 'no_left',
+
+            'main' => 'main',
+            'noMain' => 'no_main',
+
+            'right' => 'right',
+            'noRight' => 'no_right',
+
+            'moderation_pending' => 'moderation_pending',
+            'moderation_approved' => 'moderation_approved',
+            'moderation_rejected' => 'moderation_rejected',
+
+            'moderation_statusAsc' => 'moderation_status_asc',
+            'moderation_statusDesc' => 'moderation_status_desc',
         ];
     }
 
-    /**
-     * Синхронизация связанных видео
-     */
+    /** Синхронизация связанных видео */
     private function syncRelatedVideos(BlogVideo $video, array $relatedVideos): void
     {
         $syncData = [];
@@ -94,20 +128,16 @@ class BlogVideoController extends BaseBlogAdminController
         $video->relatedVideos()->sync($syncData);
     }
 
-    /**
-     * Список видео:
-     * - поиск
-     * - сортировка
-     * - текущая локаль
-     */
+    /** Список видео */
     public function index(Request $request): Response
     {
-        $adminBlogVideosPerPage = (int) config('site_settings.adminBlogVideosPerPage', 20);
-        $adminBlogVideosDefaultSort = (string) config('site_settings.AdminSortVideos', 'idDesc');
-
         $currentLocale = $this->resolveLocale($request);
-        $search = trim((string) $request->query('search', ''));
-        $sortParam = $this->normalizeSortParam($request->query('sort', $adminBlogVideosDefaultSort));
+
+        $adminBlogVideosPerPage = (int) config('site_settings.adminBlogVideosPerPage', 20);
+        $adminBlogVideosDefaultSort = (string) config('site_settings.adminBlogVideosDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $adminBlogVideosDefaultSort);
+        $normalizedSort = $this->normalizeSortParam($sortParam);
 
         try {
             $videos = $this->baseQuery()
@@ -120,8 +150,7 @@ class BlogVideoController extends BaseBlogAdminController
                     'relatedVideos.images',
                 ])
                 ->withCount(['images', 'comments', 'likes'])
-                ->search($search, $currentLocale)
-                ->sortByParam($sortParam, $currentLocale)
+                ->sortByParam($normalizedSort, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/Blog/BlogVideos/Index', [
@@ -133,7 +162,6 @@ class BlogVideoController extends BaseBlogAdminController
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
-                'search' => $search,
                 'sortParam' => $sortParam,
             ]);
         } catch (Throwable $e) {
@@ -150,16 +178,13 @@ class BlogVideoController extends BaseBlogAdminController
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
-                'search' => $search,
                 'sortParam' => $sortParam,
                 'error' => 'Ошибка загрузки видео.',
             ]);
         }
     }
 
-    /**
-     * Страница создания видео
-     */
+    /** Страница создания видео */
     public function create(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
@@ -178,14 +203,7 @@ class BlogVideoController extends BaseBlogAdminController
         ]);
     }
 
-    /**
-     * Создание видео:
-     * - основная запись
-     * - переводы
-     * - local video file
-     * - превью-изображения
-     * - связанные видео
-     */
+    /** Создание видео */
     public function store(BlogVideoRequest $request): RedirectResponse
     {
         $data = $request->validated();
@@ -244,17 +262,13 @@ class BlogVideoController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Редирект на страницу редактирования
-     */
+    /** Редирект на страницу редактирования */
     public function show(string $id): RedirectResponse
     {
         return redirect()->route('admin.blogVideos.edit', $id);
     }
 
-    /**
-     * Страница редактирования видео
-     */
+    /** Страница редактирования видео */
     public function edit(int $blogVideo, Request $request): Response
     {
         $video = $this->baseQuery()
@@ -288,14 +302,7 @@ class BlogVideoController extends BaseBlogAdminController
         ]);
     }
 
-    /**
-     * Обновление видео:
-     * - основная запись
-     * - переводы
-     * - local video file
-     * - превью-изображения
-     * - связанные видео
-     */
+    /** Обновление видео */
     public function update(BlogVideoRequest $request, int $blogVideo): RedirectResponse
     {
         $video = $this->baseQuery()->findOrFail($blogVideo);
@@ -355,13 +362,7 @@ class BlogVideoController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Удаление видео:
-     * - превью
-     * - видеофайл
-     * - связи
-     * - переводы
-     */
+    /** Удаление видео */
     public function destroy(int $blogVideo): RedirectResponse
     {
         $video = $this->baseQuery()->findOrFail($blogVideo);
@@ -393,9 +394,7 @@ class BlogVideoController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Массовое удаление видео
-     */
+    /** Массовое удаление видео */
     public function bulkDestroy(Request $request): RedirectResponse
     {
         $validated = $request->validate([

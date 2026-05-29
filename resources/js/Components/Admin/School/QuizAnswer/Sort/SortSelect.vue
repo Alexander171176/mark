@@ -30,10 +30,27 @@ const updateSort = (event) => {
 
             <option value="idDesc">{{ t('idDesc') }}</option>
             <option value="idAsc">{{ t('idAsc') }}</option>
-            <option value="sort">{{ t('sortNumber') }}</option>
+
+            <option value="sortAsc">{{ t('sortNumber') }} ↑</option>
+            <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
             <option disabled>─────────────</option>
 
-            <option value="title">{{ t('title') }}</option>
+            <option value="textAsc">{{ t('answer') }} ↑</option>
+            <option value="textDesc">{{ t('answer') }} ↓</option>
+
+            <option value="quizTitleAsc">{{ t('quiz') }} ↑</option>
+            <option value="quizTitleDesc">{{ t('quiz') }} ↓</option>
+
+            <option value="questionTextAsc">{{ t('question') }} ↑</option>
+            <option value="questionTextDesc">{{ t('question') }} ↓</option>
+            <option disabled>─────────────</option>
+
+            <option value="weightAsc">{{ t('weight') }} ↑</option>
+            <option value="weightDesc">{{ t('weight') }} ↓</option>
+            <option disabled>─────────────</option>
+
+            <option value="correct">{{ t('correct') }}</option>
+            <option value="incorrect">{{ t('incorrect') }}</option>
             <option disabled>─────────────</option>
 
             <option value="activity">{{ t('active') }}</option>

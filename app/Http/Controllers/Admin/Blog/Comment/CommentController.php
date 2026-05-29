@@ -50,9 +50,7 @@ class CommentController extends Controller
         // return $q;
     }
 
-    /**
-     * Список комментариев (без серверной пагинации/фильтров/поиска).
-     */
+    /** Список комментариев (без серверной пагинации/фильтров/поиска). */
     public function index(Request $request): Response
     {
         $adminCommentsPerPage = (int) config('site_settings.adminCommentsPerPage', 20);
@@ -104,9 +102,7 @@ class CommentController extends Controller
         }
     }
 
-    /**
-     * Форма редактирования.
-     */
+    /** Форма редактирования. */
     public function edit(Comment $comment): Response
     {
         $comment->load([
@@ -125,9 +121,7 @@ class CommentController extends Controller
         ]);
     }
 
-    /**
-     * Обновление комментария (только управляемые поля).
-     */
+    /** Обновление комментария (только управляемые поля). */
     public function update(CommentRequest $request, Comment $comment): RedirectResponse
     {
         $data = $request->validated();
@@ -163,9 +157,7 @@ class CommentController extends Controller
         }
     }
 
-    /**
-     * Удаление комментария (дочерние удалятся каскадно по FK).
-     */
+    /** Удаление комментария (дочерние удалятся каскадно по FK). */
     public function destroy(Comment $comment): RedirectResponse
     {
         try {
@@ -187,9 +179,7 @@ class CommentController extends Controller
         }
     }
 
-    /**
-     * Массовое удаление (JSON) — оставляем как рабочий метод.
-     */
+    /** Массовое удаление (JSON) — оставляем как рабочий метод. */
     public function bulkDestroy(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -227,9 +217,7 @@ class CommentController extends Controller
         }
     }
 
-    /**
-     * Переключение activity (JSON) — оставляем как рабочий метод.
-     */
+    /** Переключение activity (JSON) — оставляем как рабочий метод. */
     public function updateActivity(UpdateActivityRequest $request, Comment $comment): JsonResponse
     {
         $validated = $request->validated();
@@ -265,9 +253,7 @@ class CommentController extends Controller
         }
     }
 
-    /**
-     * Массовое обновление activity (redirect) — оставляем.
-     */
+    /** Массовое обновление activity (redirect) — оставляем. */
     public function bulkUpdateActivity(Request $request): RedirectResponse
     {
         $validated = $request->validate([

@@ -38,20 +38,30 @@ const updateSort = (event) => {
             <option value="idAsc">{{ t('idAsc') }}</option>
             <option disabled>──────────────</option>
 
-            <option value="attemptIdDesc">{{ t('sortAttemptIdDesc') }}</option>
-            <option value="attemptIdAsc">{{ t('sortAttemptIdAsc') }}</option>
+            <option value="attemptIdDesc">{{ t('attempt') }} ID ↓</option>
+            <option value="attemptIdAsc">{{ t('attempt') }} ID ↑</option>
+
+            <option value="questionIdDesc">{{ t('question') }} ID ↓</option>
+            <option value="questionIdAsc">{{ t('question') }} ID ↑</option>
             <option disabled>──────────────</option>
 
-            <option value="questionIdDesc">{{ t('sortQuestionIdDesc') }}</option>
-            <option value="questionIdAsc">{{ t('sortQuestionIdAsc') }}</option>
+            <option value="scoreAsc">{{ t('score') }} ↑</option>
+            <option value="scoreDesc">{{ t('score') }} ↓</option>
+
+            <option value="maxScoreAsc">{{ t('maxScore') }} ↑</option>
+            <option value="maxScoreDesc">{{ t('maxScore') }} ↓</option>
             <option disabled>──────────────</option>
 
-            <option value="correctFirst">{{ t('sortScoreAsc') }}</option>
-            <option value="wrongFirst">{{ t('sortScoreDesc') }}</option>
+            <option value="correctFirst">{{ t('isCorrect') }}</option>
+            <option value="wrongFirst">{{ t('no') }}</option>
             <option disabled>──────────────</option>
 
-            <option value="createdAtDesc">{{ t('sortOldestFirst') }}</option>
-            <option value="createdAtAsc">{{ t('sortNewestFirst') }}</option>
+            <option value="questionTextAsc">{{ t('question') }} ↑</option>
+            <option value="questionTextDesc">{{ t('question') }} ↓</option>
+            <option disabled>──────────────</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
             <option disabled>──────────────</option>
         </select>
     </div>

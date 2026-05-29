@@ -592,7 +592,7 @@ const handleBulkAction = (event) => {
                 </div>
 
                 <div v-if="tracksCount"
-                     class="flex flex-col lg:flex-row items-center justify-between gap-3"
+                     class="flex flex-col lg:flex-row items-center justify-between gap-3 mb-3"
                 >
                     <CountTable>{{ tracksCount }}</CountTable>
                     <BulkActionSelect @change="handleBulkAction" />

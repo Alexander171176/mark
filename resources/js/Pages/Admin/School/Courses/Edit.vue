@@ -63,9 +63,8 @@ const makeTranslation = () => ({
 
 // Построение переводов курса
 const buildTranslations = () => {
-    const result = {}
-
-    ;(props.course.translations || []).forEach((translation) => {
+    const result = {};
+    (props.course.translations || []).forEach((translation) => {
         result[translation.locale] = {
             title: translation.title || '',
             subtitle: translation.subtitle || '',

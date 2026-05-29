@@ -31,6 +31,32 @@ class SchoolQuizQuestionController extends BaseSchoolAdminController
         'explanation',
     ];
 
+    /** Расширение сортировки для вопросов квизов. */
+    protected function extendedSortMap(): array
+    {
+        return [
+            'questionTextAsc' => 'question_text_asc',
+            'questionTextDesc' => 'question_text_desc',
+
+            'quizTitleAsc' => 'quiz_title_asc',
+            'quizTitleDesc' => 'quiz_title_desc',
+
+            'pointsAsc' => 'points_asc',
+            'pointsDesc' => 'points_desc',
+
+            'answersCountAsc' => 'answers_count_asc',
+            'answersCountDesc' => 'answers_count_desc',
+
+            'singleChoice' => 'single_choice',
+            'multipleChoice' => 'multiple_choice',
+            'trueFalse' => 'true_false',
+            'openText' => 'open_text',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+        ];
+    }
+
     /** Список вопросов квизов. */
     public function index(Request $request): Response
     {
@@ -40,6 +66,7 @@ class SchoolQuizQuestionController extends BaseSchoolAdminController
 
         $adminSchoolQuizQuestionsPerPage = (int) config('site_settings.adminSchoolQuizQuestionsPerPage', 10);
         $adminSchoolQuizQuestionsDefaultSort = (string) config('site_settings.adminSchoolQuizQuestionsDefaultSort', 'idDesc');
+        $sort = $this->normalizeSortParam($adminSchoolQuizQuestionsDefaultSort);
 
         try {
             $query = $this->baseQuery()
@@ -60,14 +87,25 @@ class SchoolQuizQuestionController extends BaseSchoolAdminController
                 $query->where('school_quiz_id', (int) $quizId);
             }
 
-            match ($adminSchoolQuizQuestionsDefaultSort) {
-                'idAsc' => $query->orderBy('id'),
-                'sortAsc' => $query->orderBy('sort')->orderByDesc('id'),
-                'sortDesc' => $query->orderByDesc('sort')->orderByDesc('id'),
-                'pointsAsc' => $query->orderBy('points')->orderByDesc('id'),
-                'pointsDesc' => $query->orderByDesc('points')->orderByDesc('id'),
-                'typeAsc' => $query->orderBy('question_type')->orderByDesc('id'),
-                'typeDesc' => $query->orderByDesc('question_type')->orderByDesc('id'),
+            match ($sort) {
+                'sort_asc' => $query->orderBy('sort')->orderByDesc('id'),
+                'sort_desc' => $query->orderByDesc('sort')->orderByDesc('id'),
+
+                'points_asc' => $query->orderBy('points')->orderByDesc('id'),
+                'points_desc' => $query->orderByDesc('points')->orderByDesc('id'),
+
+                'answers_count_asc' => $query->orderBy('answers_count')->orderByDesc('id'),
+                'answers_count_desc' => $query->orderByDesc('answers_count')->orderByDesc('id'),
+
+                'single_choice' => $query->where('question_type', 'single_choice'),
+                'multiple_choice' => $query->where('question_type', 'multiple_choice'),
+                'true_false' => $query->where('question_type', 'true_false'),
+                'open_text' => $query->where('question_type', 'open_text'),
+
+                'activity' => $query->where('activity', true),
+                'inactive' => $query->where('activity', false),
+
+                'date_asc' => $query->orderBy('id'),
                 default => $query->orderByDesc('id'),
             };
 

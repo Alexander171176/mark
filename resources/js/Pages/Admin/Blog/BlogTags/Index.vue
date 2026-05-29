@@ -45,7 +45,6 @@ const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
 
-    search: { type: String, default: '' },
     sortParam: { type: String, default: '' },
     errors: { type: Object, default: () => ({}) },
 })
@@ -222,7 +221,7 @@ const toggleActivity = (tag) => {
 }
 
 /** Поиск */
-const searchQuery = ref(props.search || '')
+const searchQuery = ref('')
 const currentPage = ref(1)
 
 /** Локальная сортировка */
@@ -267,10 +266,6 @@ const sortTags = (tags) => {
 
     if (sortParam.value === 'inactive') {
         return list.filter((tag) => !tag.activity)
-    }
-
-    if (sortParam.value === 'locale') {
-        return list.sort((a, b) => getTagLocale(a).localeCompare(getTagLocale(b), locale.value))
     }
 
     if (sortParam.value === 'viewsDesc') {

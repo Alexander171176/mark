@@ -90,16 +90,57 @@ class SchoolQuizAttemptController extends Controller
             }
 
             match ($adminSchoolQuizAttemptsDefaultSort) {
-                'idAsc' => $query->orderBy('id'),
-                'attemptAsc' => $query->orderBy('attempt_number')->orderByDesc('id'),
-                'attemptDesc' => $query->orderByDesc('attempt_number')->orderByDesc('id'),
-                'scoreAsc' => $query->orderBy('score')->orderByDesc('id'),
-                'scoreDesc' => $query->orderByDesc('score')->orderByDesc('id'),
-                'percentAsc' => $query->orderBy('percent')->orderByDesc('id'),
-                'percentDesc' => $query->orderByDesc('percent')->orderByDesc('id'),
-                'startedAtAsc' => $query->orderBy('started_at')->orderByDesc('id'),
-                'startedAtDesc' => $query->orderByDesc('started_at')->orderByDesc('id'),
-                default => $query->orderByDesc('id'),
+                'idAsc' => $query->orderBy('school_quiz_attempts.id'),
+
+                'attemptAsc' => $query->orderBy('attempt_number')->orderByDesc('school_quiz_attempts.id'),
+                'attemptDesc' => $query->orderByDesc('attempt_number')->orderByDesc('school_quiz_attempts.id'),
+
+                'scoreAsc' => $query->orderBy('score')->orderByDesc('school_quiz_attempts.id'),
+                'scoreDesc' => $query->orderByDesc('score')->orderByDesc('school_quiz_attempts.id'),
+
+                'percentAsc' => $query->orderBy('percent')->orderByDesc('school_quiz_attempts.id'),
+                'percentDesc' => $query->orderByDesc('percent')->orderByDesc('school_quiz_attempts.id'),
+
+                'startedAtAsc' => $query->orderBy('started_at')->orderByDesc('school_quiz_attempts.id'),
+                'startedAtDesc' => $query->orderByDesc('started_at')->orderByDesc('school_quiz_attempts.id'),
+
+                'finishedAtAsc' => $query->orderBy('finished_at')->orderByDesc('school_quiz_attempts.id'),
+                'finishedAtDesc' => $query->orderByDesc('finished_at')->orderByDesc('school_quiz_attempts.id'),
+
+                'statusAsc' => $query->orderBy('status')->orderByDesc('school_quiz_attempts.id'),
+                'statusDesc' => $query->orderByDesc('status')->orderByDesc('school_quiz_attempts.id'),
+
+                'userNameAsc' => $query
+                    ->join('users', 'school_quiz_attempts.user_id', '=', 'users.id')
+                    ->orderBy('users.name')
+                    ->orderByDesc('school_quiz_attempts.id')
+                    ->select('school_quiz_attempts.*'),
+
+                'userNameDesc' => $query
+                    ->join('users', 'school_quiz_attempts.user_id', '=', 'users.id')
+                    ->orderByDesc('users.name')
+                    ->orderByDesc('school_quiz_attempts.id')
+                    ->select('school_quiz_attempts.*'),
+
+                'quizTitleAsc' => $query
+                    ->leftJoin('school_quiz_translations as sqt', function ($join) {
+                        $join->on('school_quiz_attempts.school_quiz_id', '=', 'sqt.school_quiz_id')
+                            ->where('sqt.locale', app()->getLocale());
+                    })
+                    ->orderBy('sqt.title')
+                    ->orderByDesc('school_quiz_attempts.id')
+                    ->select('school_quiz_attempts.*'),
+
+                'quizTitleDesc' => $query
+                    ->leftJoin('school_quiz_translations as sqt', function ($join) {
+                        $join->on('school_quiz_attempts.school_quiz_id', '=', 'sqt.school_quiz_id')
+                            ->where('sqt.locale', app()->getLocale());
+                    })
+                    ->orderByDesc('sqt.title')
+                    ->orderByDesc('school_quiz_attempts.id')
+                    ->select('school_quiz_attempts.*'),
+
+                default => $query->orderByDesc('school_quiz_attempts.id'),
             };
 
             $attempts = $query->get();

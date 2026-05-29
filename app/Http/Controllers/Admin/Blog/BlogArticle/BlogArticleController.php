@@ -42,12 +42,19 @@ use Throwable;
  */
 class BlogArticleController extends BaseBlogAdminController
 {
+    /** Основная модель */
     protected string $modelClass = BlogArticle::class;
 
+    /** Модель изображений */
     protected string $imageModelClass = BlogArticleImage::class;
+
+    /** Коллекция изображений */
     protected string $imageMediaCollection = 'images';
 
+    /** Название сущности для уведомлений */
     protected string $entityLabel = 'статей';
+
+    /** Поля переводов */
     protected array $translationFields = [
         'title',
         'subtitle',
@@ -59,22 +66,52 @@ class BlogArticleController extends BaseBlogAdminController
         'meta_desc',
     ];
 
-    /**
-     * Дополнительные варианты сортировки статей
-     */
+    /** Дополнительные варианты сортировки статей */
     protected function extendedSortMap(): array
     {
         return [
+            'ownerNameAsc' => 'owner_name_asc',
+            'ownerNameDesc' => 'owner_name_desc',
+
+            'ownerEmailAsc' => 'owner_email_asc',
+            'ownerEmailDesc' => 'owner_email_desc',
+
+            'locale' => 'locale_asc',
+
+            'publishedAtAsc' => 'published_at_asc',
+            'publishedAtDesc' => 'published_at_desc',
+
             'viewsAsc' => 'views_asc',
             'viewsDesc' => 'views_desc',
+
             'likesAsc' => 'likes_asc',
             'likesDesc' => 'likes_desc',
+
+            'commentsAsc' => 'comments_count_asc',
+            'commentsDesc' => 'comments_count_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+
+            'left' => 'left',
+            'noLeft' => 'no_left',
+
+            'main' => 'main',
+            'noMain' => 'no_main',
+
+            'right' => 'right',
+            'noRight' => 'no_right',
+
+            'moderation_pending' => 'moderation_pending',
+            'moderation_approved' => 'moderation_approved',
+            'moderation_rejected' => 'moderation_rejected',
+
+            'moderation_statusAsc' => 'moderation_status_asc',
+            'moderation_statusDesc' => 'moderation_status_desc',
         ];
     }
 
-    /**
-     * Общие данные для create/edit
-     */
+    /** Общие данные для create/edit */
     private function sharedSelects(string $locale, ?int $excludeArticleId = null): array
     {
         $rubrics = BlogRubric::query()
@@ -113,9 +150,7 @@ class BlogArticleController extends BaseBlogAdminController
         ];
     }
 
-    /**
-     * Синхронизация видео статьи
-     */
+    /** Синхронизация видео статьи */
     private function syncVideos(BlogArticle $article, array $videos): void
     {
         $syncData = [];
@@ -141,9 +176,7 @@ class BlogArticleController extends BaseBlogAdminController
         $article->videos()->sync($syncData);
     }
 
-    /**
-     * Синхронизация связанных статей
-     */
+    /** Синхронизация связанных статей */
     private function syncRelatedArticles(BlogArticle $article, array $relatedArticles): void
     {
         $syncData = [];
@@ -165,17 +198,16 @@ class BlogArticleController extends BaseBlogAdminController
         $article->relatedArticles()->sync($syncData);
     }
 
-    /**
-     * Список статей
-     */
+    /** Список статей */
     public function index(Request $request): Response
     {
+        $currentLocale = $this->resolveLocale($request);
+
         $adminBlogArticlesPerPage = (int) config('site_settings.adminBlogArticlesPerPage', 20);
         $adminBlogArticlesDefaultSort = (string) config('site_settings.adminBlogArticlesDefaultSort', 'idDesc');
 
-        $currentLocale = $this->resolveLocale($request);
-        $search = trim((string) $request->query('search', ''));
-        $sortParam = $this->normalizeSortParam($request->query('sort', $adminBlogArticlesDefaultSort));
+        $sortParam = (string) $request->query('sort', $adminBlogArticlesDefaultSort);
+        $normalizedSort = $this->normalizeSortParam($sortParam);
 
         try {
             $articles = $this->baseQuery()
@@ -200,8 +232,7 @@ class BlogArticleController extends BaseBlogAdminController
                     'likes',
                     'relatedArticles',
                 ])
-                ->search($search, $currentLocale)
-                ->sortByParam($sortParam, $currentLocale)
+                ->sortByParam($normalizedSort, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/Blog/BlogArticles/Index', [
@@ -214,7 +245,6 @@ class BlogArticleController extends BaseBlogAdminController
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
 
-                'search' => $search,
                 'sortParam' => $sortParam,
             ]);
         } catch (Throwable $e) {
@@ -232,16 +262,13 @@ class BlogArticleController extends BaseBlogAdminController
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
 
-                'search' => $search,
                 'sortParam' => $sortParam,
                 'error' => 'Ошибка загрузки статей.',
             ]);
         }
     }
 
-    /**
-     * Страница создания статьи
-     */
+    /** Страница создания статьи */
     public function create(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
@@ -252,9 +279,7 @@ class BlogArticleController extends BaseBlogAdminController
         ], $this->sharedSelects($currentLocale)));
     }
 
-    /**
-     * Создание статьи
-     */
+    /** Создание статьи */
     public function store(BlogArticleRequest $request): RedirectResponse
     {
         $data = $request->validated();
@@ -325,17 +350,13 @@ class BlogArticleController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Редирект на страницу редактирования
-     */
+    /** Редирект на страницу редактирования */
     public function show(string $id): RedirectResponse
     {
         return redirect()->route('admin.blogArticles.edit', $id);
     }
 
-    /**
-     * Страница редактирования статьи
-     */
+    /** Страница редактирования статьи */
     public function edit(int $blogArticle, Request $request): Response
     {
         $article = $this->baseQuery()
@@ -371,9 +392,7 @@ class BlogArticleController extends BaseBlogAdminController
         ], $this->sharedSelects($currentLocale, $article->id)));
     }
 
-    /**
-     * Обновление статьи
-     */
+    /** Обновление статьи */
     public function update(BlogArticleRequest $request, int $blogArticle): RedirectResponse
     {
         $article = $this->baseQuery()->findOrFail($blogArticle);
@@ -441,9 +460,7 @@ class BlogArticleController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Удаление статьи
-     */
+    /** Удаление статьи */
     public function destroy(int $blogArticle): RedirectResponse
     {
         $article = $this->baseQuery()->with('images')->findOrFail($blogArticle);
@@ -480,9 +497,7 @@ class BlogArticleController extends BaseBlogAdminController
         }
     }
 
-    /**
-     * Массовое удаление статей
-     */
+    /** Массовое удаление статей */
     public function bulkDestroy(Request $request): RedirectResponse
     {
         $validated = $request->validate([

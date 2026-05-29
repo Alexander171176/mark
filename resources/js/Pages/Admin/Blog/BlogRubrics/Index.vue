@@ -47,7 +47,6 @@ const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
 
-    search: { type: String, default: '' },
     sortParam: { type: String, default: '' },
     errors: { type: Object, default: () => ({}) }
 })
@@ -165,9 +164,7 @@ watch(
     { immediate: true, deep: true }
 )
 
-/**
- * Модальное подтверждение удаления одной рубрики
- */
+/** Модальное подтверждение удаления одной рубрики */
 const showConfirmDeleteModal = ref(false)
 const rubricToDeleteId = ref(null)
 const rubricToDeleteTitle = ref('')
@@ -214,9 +211,7 @@ const deleteRubric = () => {
     })
 }
 
-/**
- * Обновление рубрики внутри дерева без полной перезагрузки страницы
- */
+/** Обновление рубрики внутри дерева без полной перезагрузки страницы */
 const patchRubricInTree = (nodes, rubricId, callback) => {
     for (const node of nodes) {
         if (node.id === rubricId) {
@@ -271,9 +266,7 @@ const toggleActivity = (rubric) => {
     )
 }
 
-/**
- * Клонирование рубрики вместе с переводами и изображениями
- */
+/** Клонирование рубрики вместе с переводами и изображениями */
 const cloneRubric = (rubric) => {
     const rubricId = rubric?.id
     const rubricTitle = getRubricTitle(rubric)
@@ -300,10 +293,8 @@ const cloneRubric = (rubric) => {
     )
 }
 
-/**
- * Локальный поиск по уже загруженному списку рубрик
- */
-const searchQuery = ref(props.search || '')
+/** Локальный поиск по уже загруженному списку рубрик */
+const searchQuery = ref('')
 const currentPage = ref(1)
 
 /**
@@ -397,9 +388,7 @@ const sortRubrics = (rubrics) => {
     return list
 }
 
-/**
- * Фильтрация рубрик по поисковой строке + применение сортировки
- */
+/** Фильтрация рубрик по поисковой строке + применение сортировки */
 const filteredRubrics = computed(() => {
     let filtered = localRubricsFlat.value || []
     const query = normalize(searchQuery.value)
@@ -423,9 +412,7 @@ const filteredRubrics = computed(() => {
     return sortRubrics(filtered)
 })
 
-/**
- * Ручная клиентская пагинация для карточек
- */
+/** Ручная клиентская пагинация для карточек */
 const paginatedRubrics = computed(() => {
     const perPage = Number(itemsPerPage.value || 10)
     const start = (currentPage.value - 1) * perPage
@@ -507,9 +494,7 @@ const handleDragEnd = () => {
     )
 }
 
-/**
- * Выбранные рубрики для массовых действий
- */
+/** Выбранные рубрики для массовых действий */
 const selectedRubrics = ref([])
 
 /** Получаем ID всех рубрик из дерева */
@@ -645,9 +630,7 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-/**
- * Одобрение / отклонение рубрики администратором
- */
+/** Одобрение / отклонение рубрики администратором */
 const approveRubric = (rubric, status = 1, note = '') => {
     if (!rubric?.id) return
 
@@ -680,9 +663,7 @@ const approveRubric = (rubric, status = 1, note = '') => {
     )
 }
 
-/**
- * Обновление сортировки в режиме карточек
- */
+/** Обновление сортировки в режиме карточек */
 const handleSortOrderUpdate = (newOrderIds) => {
     const items = newOrderIds.map((id, index) => ({
         id,

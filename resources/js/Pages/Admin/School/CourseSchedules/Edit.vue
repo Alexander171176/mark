@@ -39,10 +39,9 @@ const toast = useToast()
 
 // Props страницы редактирования
 const props = defineProps({
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
     schedule: { type: Object, required: true },
-    targetLocale: { type: String, default: 'ru' },
-    currentLocale: { type: String, default: 'ru' },
-    availableLocales: { type: Array, default: () => ['ru', 'en', 'kk'] },
     courses: { type: Array, default: () => [] },
     instructors: { type: Array, default: () => [] },
 })
@@ -74,9 +73,9 @@ const buildTranslations = () => {
     })
 
     const defaultLocale =
-        props.targetLocale ||
         props.currentLocale ||
         props.schedule.translation?.locale ||
+        props.availableLocales[0] ||
         'ru'
 
     if (!Object.keys(result).length) {
@@ -92,9 +91,9 @@ const buildTranslations = () => {
 
 // Активная локаль по умолчанию
 const defaultLocale =
-    props.targetLocale ||
     props.currentLocale ||
     props.schedule.translation?.locale ||
+    props.availableLocales[0] ||
     'ru'
 
 // Текущая активная локаль

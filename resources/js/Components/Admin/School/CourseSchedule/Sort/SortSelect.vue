@@ -33,14 +33,17 @@ const updateSort = (event) => {
         >
             <option value="idDesc">{{ t('idDesc') }}</option>
             <option value="idAsc">{{ t('idAsc') }}</option>
-            <option value="sort">{{ t('sortNumber') }}</option>
             <option disabled>──────────────────</option>
 
-            <option value="title">{{ t('title') }}</option>
+            <option value="sortAsc">{{ t('sortNumber') }} ↑</option>
+            <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
+            <option disabled>──────────────────</option>
+
+            <option value="titleAsc">{{ t('title') }} ↑</option>
+            <option value="titleDesc">{{ t('title') }} ↓</option>
+            <option disabled>──────────────────</option>
+
             <option value="capacity">{{ t('capacity') }}</option>
-            <option disabled>──────────────────</option>
-
-            <option value="status">{{ t('status') }}</option>
             <option value="views">{{ t('views') }}</option>
             <option disabled>──────────────────</option>
 
@@ -58,10 +61,6 @@ const updateSort = (event) => {
 
             <option value="enroll_starts_at">{{ t('scheduleEnrollStartsAt') }}</option>
             <option value="enroll_ends_at">{{ t('scheduleEnrollEndsAt') }}</option>
-            <option disabled>──────────────────</option>
-
-            <option value="courseTitle">{{ t('course') }}</option>
-            <option value="instructorUser">{{ t('instructor') }}</option>
             <option disabled>──────────────────</option>
         </select>
     </div>

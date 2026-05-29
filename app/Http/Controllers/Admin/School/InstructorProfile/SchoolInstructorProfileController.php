@@ -33,13 +33,19 @@ use Throwable;
  */
 class SchoolInstructorProfileController extends BaseSchoolAdminController
 {
+    /** Основная модель */
     protected string $modelClass = SchoolInstructorProfile::class;
 
+    /** Модель изображений */
     protected string $imageModelClass = SchoolInstructorProfileImage::class;
+
+    /** Коллекция изображений */
     protected string $imageMediaCollection = 'images';
 
+    /** Название сущности для уведомлений */
     protected string $entityLabel = 'инструктора';
 
+    /** Поля переводов */
     protected array $translationFields = [
         'title',
         'short',
@@ -49,16 +55,44 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
-    /**
-     * Список инструкторов
-     */
+    /** Расширение сортировки для инструкторов. */
+    protected function extendedSortMap(): array
+    {
+        return [
+            'slugAsc' => 'slug_asc',
+            'slugDesc' => 'slug_desc',
+
+            'ratingCountAsc' => 'rating_count_asc',
+            'ratingCountDesc' => 'rating_count_desc',
+
+            'viewsAsc' => 'views_asc',
+            'viewsDesc' => 'views_desc',
+
+            'hourlyRateAsc' => 'hourly_rate_asc',
+            'hourlyRateDesc' => 'hourly_rate_desc',
+
+            'experienceAsc' => 'experience_asc',
+            'experienceDesc' => 'experience_desc',
+
+            'createdAtAsc' => 'created_at_asc',
+            'createdAtDesc' => 'created_at_desc',
+
+            'updatedAtAsc' => 'updated_at_asc',
+            'updatedAtDesc' => 'updated_at_desc',
+
+            'activity' => 'activity',
+            'inactive' => 'inactive',
+        ];
+    }
+
+    /** Список инструкторов */
     public function index(Request $request): Response
     {
-        $currentLocale = $this->normalizeLocale($request->query('locale'));
-        app()->setLocale($currentLocale);
+        $currentLocale = $this->resolveLocale($request);
 
         $adminSchoolInstructorsPerPage = (int) config('site_settings.adminSchoolInstructorsPerPage', 10);
         $adminSchoolInstructorsDefaultSort = (string) config('site_settings.adminSchoolInstructorsDefaultSort', 'idDesc');
+        $sort = $this->normalizeSortParam($adminSchoolInstructorsDefaultSort);
 
         $items = $this->baseQuery()
             ->with([
@@ -69,6 +103,26 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
                 'images',
             ])
             ->withCount('courses')
+            ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
+            ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
+            ->when($sort === 'slug_asc', fn ($query) => $query->orderBy('slug')->orderByDesc('id'))
+            ->when($sort === 'slug_desc', fn ($query) => $query->orderByDesc('slug')->orderByDesc('id'))
+            ->when($sort === 'rating_count_asc', fn ($query) => $query->orderBy('rating_count')->orderByDesc('id'))
+            ->when($sort === 'rating_count_desc', fn ($query) => $query->orderByDesc('rating_count')->orderByDesc('id'))
+            ->when($sort === 'hourly_rate_asc', fn ($query) => $query->orderBy('hourly_rate')->orderByDesc('id'))
+            ->when($sort === 'hourly_rate_desc', fn ($query) => $query->orderByDesc('hourly_rate')->orderByDesc('id'))
+            ->when($sort === 'experience_asc', fn ($query) => $query->orderBy('experience_years')->orderByDesc('id'))
+            ->when($sort === 'experience_desc', fn ($query) => $query->orderByDesc('experience_years')->orderByDesc('id'))
+            ->when($sort === 'views_asc', fn ($query) => $query->orderBy('views')->orderByDesc('id'))
+            ->when($sort === 'views_desc', fn ($query) => $query->orderByDesc('views')->orderByDesc('id'))
+            ->when($sort === 'created_at_asc', fn ($query) => $query->orderBy('created_at')->orderByDesc('id'))
+            ->when($sort === 'created_at_desc', fn ($query) => $query->orderByDesc('created_at')->orderByDesc('id'))
+            ->when($sort === 'updated_at_asc', fn ($query) => $query->orderBy('updated_at')->orderByDesc('id'))
+            ->when($sort === 'updated_at_desc', fn ($query) => $query->orderByDesc('updated_at')->orderByDesc('id'))
+            ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
+            ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
+            ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
+            ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
             ->get();
 
         return Inertia::render('Admin/School/InstructorProfiles/Index', [
@@ -83,13 +137,10 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
         ]);
     }
 
-    /**
-     * Страница создания
-     */
+    /** Страница создания */
     public function create(Request $request): Response
     {
-        $currentLocale = $this->normalizeLocale($request->query('locale'));
-        app()->setLocale($currentLocale);
+        $currentLocale = $this->resolveLocale($request);
 
         $users = User::select('id', 'name')->orderBy('name')->get();
 
@@ -100,9 +151,7 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
         ]);
     }
 
-    /**
-     * Создание
-     */
+    /** Создание */
     public function store(SchoolInstructorProfileRequest $request): RedirectResponse
     {
         $data = $request->validated();
@@ -136,21 +185,16 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
         }
     }
 
-    /**
-     * Редирект на edit
-     */
+    /** Редирект на edit */
     public function show(int $id): RedirectResponse
     {
         return redirect()->route('admin.schoolInstructorProfiles.edit', $id);
     }
 
-    /**
-     * Страница редактирования
-     */
+    /** Страница редактирования */
     public function edit(int $id, Request $request): Response
     {
-        $currentLocale = $this->normalizeLocale($request->query('locale'));
-        app()->setLocale($currentLocale);
+        $currentLocale = $this->resolveLocale($request);
 
         $model = $this->baseQuery()
             ->with(['translation', 'translations', 'images', 'user'])
@@ -166,9 +210,7 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
         ]);
     }
 
-    /**
-     * Обновление
-     */
+    /** Обновление */
     public function update(SchoolInstructorProfileRequest $request, int $id): RedirectResponse
     {
         $model = $this->baseQuery()->findOrFail($id);
@@ -200,9 +242,7 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
         }
     }
 
-    /**
-     * Удаление
-     */
+    /** Удаление */
     public function destroy(int $id): RedirectResponse
     {
         $model = $this->baseQuery()->findOrFail($id);

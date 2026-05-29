@@ -37,22 +37,33 @@ const updateSort = (event) => {
                    border border-slate-400 dark:border-slate-600
                    rounded-sm shadow-sm"
         >
-            <!-- ID -->
             <option value="idDesc">{{ t('idDesc') }}</option>
             <option value="idAsc">{{ t('idAsc') }}</option>
             <option disabled>──────────────────</option>
 
-            <!-- Статус -->
-            <option value="status">{{ t('status') }}</option>
-            <option value="progress_desc">{{ t('progress') }} ↓</option>
+            <option value="statusAsc">{{ t('status') }} ↑</option>
+            <option value="statusDesc">{{ t('status') }} ↓</option>
+
+            <option value="progressAsc">{{ t('progress') }} ↑</option>
+            <option value="progressDesc">{{ t('progress') }} ↓</option>
             <option disabled>──────────────────</option>
 
-            <!-- Даты доступа -->
-            <option value="started_at">{{ t('shortStarted') }}</option>
-            <option value="expires_at">{{ t('shortExpires') }}</option>
-            <option value="completed_at">{{ t('shortCompleted') }}</option>
+            <option value="startedAtAsc">{{ t('shortStarted') }} ↑</option>
+            <option value="startedAtDesc">{{ t('shortStarted') }} ↓</option>
+
+            <option value="expiresAtAsc">{{ t('shortExpires') }} ↑</option>
+            <option value="expiresAtDesc">{{ t('shortExpires') }} ↓</option>
+
+            <option value="completedAtAsc">{{ t('shortCompleted') }} ↑</option>
+            <option value="completedAtDesc">{{ t('shortCompleted') }} ↓</option>
             <option disabled>──────────────────</option>
 
+            <option value="userNameAsc">{{ t('user') }} ↑</option>
+            <option value="userNameDesc">{{ t('user') }} ↓</option>
+
+            <option value="courseTitleAsc">{{ t('course') }} ↑</option>
+            <option value="courseTitleDesc">{{ t('course') }} ↓</option>
+            <option disabled>──────────────────</option>
         </select>
     </div>
 </template>

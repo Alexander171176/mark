@@ -31,17 +31,26 @@ const updateSort = (event) => {
                    border border-slate-400 dark:border-slate-600
                    rounded-sm shadow-sm"
         >
-            <!-- Новые варианты для id -->
             <option value="idDesc">{{ t('idDesc') }}</option>
             <option value="idAsc">{{ t('idAsc') }}</option>
-            <option value="sort">{{ t('sortNumber') }}</option>
+
+            <option value="sortAsc">{{ t('sortNumber') }} ↑</option>
+            <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
+
             <option disabled>─────────────────</option>
 
-            <option value="title">{{ t('title') }}</option>
-            <option value="locale">{{ t('localization') }}</option>
+            <option value="nameAsc">{{ t('title') }} ↑</option>
+            <option value="nameDesc">{{ t('title') }} ↓</option>
+
             <option disabled>─────────────────</option>
 
-            <option value="views">{{ t('views') }}</option>
+            <option value="viewsAsc">{{ t('views') }} ↑</option>
+            <option value="viewsDesc">{{ t('views') }} ↓</option>
+
+            <option value="courses_count">{{ t('courses') }}</option>
+            <option value="children_count">{{ t('children') }}</option>
+            <option value="likes_count">{{ t('likes') }}</option>
+
             <option disabled>─────────────────</option>
 
             <option value="activity">{{ t('active') }}</option>

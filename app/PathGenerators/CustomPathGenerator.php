@@ -12,8 +12,8 @@ use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\BlogVideo\BlogVideoImage;
 use App\Models\Admin\School\Assignment\SchoolAssignment;
 use App\Models\Admin\School\Assignment\SchoolAssignmentImage;
-use App\Models\Admin\School\Bundle\Bundle;
-use App\Models\Admin\School\Bundle\BundleImage;
+use App\Models\Admin\School\Bundle\SchoolBundle;
+use App\Models\Admin\School\Bundle\SchoolBundleImage;
 use App\Models\Admin\School\Course\SchoolCourse;
 use App\Models\Admin\School\Course\SchoolCourseImage;
 use App\Models\Admin\School\CourseSchedule\SchoolCourseSchedule;
@@ -75,8 +75,8 @@ class CustomPathGenerator implements PathGenerator
         if ($media->model_type === SchoolQuiz::class)       return 'school_quizzes/' . $media->model_id . '/';
         if ($media->model_type === SchoolQuizImage::class)  return 'school_quiz_images/' . $media->model_id . '/';
 
-        if ($media->model_type === Bundle::class)       return 'bundles/' . $media->model_id . '/';
-        if ($media->model_type === BundleImage::class)  return 'bundle_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolBundle::class)       return 'school_bundles/' . $media->model_id . '/';
+        if ($media->model_type === SchoolBundleImage::class)  return 'school_bundle_images/' . $media->model_id . '/';
 
         // === финансы ===
         if ($media->model_type === SubscriptionPlan::class)      return 'subscription_plans/' . $media->model_id . '/';

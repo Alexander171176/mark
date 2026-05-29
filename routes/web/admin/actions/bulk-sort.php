@@ -11,7 +11,7 @@ use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
-use App\Http\Controllers\Admin\School\Bundle\BundleController;
+use App\Http\Controllers\Admin\School\Bundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
 use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
@@ -72,9 +72,9 @@ Route::put('/school-quiz-answers/update-sort-bulk',
     [SchoolQuizAnswerController::class, 'updateSortBulk'])
     ->name('schoolQuizAnswers.updateSortBulk');
 
-Route::put('/bundles/update-sort-bulk',
-    [BundleController::class, 'updateSortBulk'])
-    ->name('bundles.updateSortBulk');
+Route::put('/school-bundles/update-sort-bulk',
+    [SchoolBundleController::class, 'updateSortBulk'])
+    ->name('schoolBundles.updateSortBulk');
 
 Route::put('/blog-rubrics/update-sort-bulk',
     [BlogRubricController::class, 'updateSortBulk'])

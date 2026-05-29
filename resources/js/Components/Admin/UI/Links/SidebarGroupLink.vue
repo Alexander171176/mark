@@ -249,8 +249,8 @@ const {t} = useI18n();
             {{ t('learningCategories') }}
         </template>
     </SidebarLink>
-    <SidebarLink :href="route('admin.bundles.index')"
-                 :active="route().current('bundles.*')"
+    <SidebarLink :href="route('admin.schoolBundles.index')"
+                 :active="route().current('schoolBundles.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">

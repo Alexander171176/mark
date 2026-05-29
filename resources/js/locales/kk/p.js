@@ -66,6 +66,7 @@ export default {
     previewPercent: 'Алдын ала қарау (пайызбен)',
     previewValue: 'Көру шектеулерінің мағынасы',
     price: 'Бағасы',
+    prices: 'Бағалар',
     priceEndsAt: 'Бағаның мерзімі аяқталады',
     priceStartsAt: 'Бағаның басталу күні',
     printInMenu: 'мәзірде',

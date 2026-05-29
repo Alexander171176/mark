@@ -70,7 +70,7 @@ const linkInfo = {
     instructors: {label: t('instructors'), route: 'admin.schoolInstructorProfiles.index'},
     hashtags: {label: t('hashtags'), route: 'admin.schoolHashtags.index'},
     learningCategories: {label: t('learningCategories'), route: 'admin.schoolTracks.index'},
-    bundles: {label: t('bundles'), route: 'admin.bundles.index'},
+    bundles: {label: t('bundles'), route: 'admin.schoolBundles.index'},
     courses: {label: t('courses'), route: 'admin.schoolCourses.index'},
     modules: {label: t('modules'), route: 'admin.schoolModules.index'},
     lessons: {label: t('lessons'), route: 'admin.schoolLessons.index'},

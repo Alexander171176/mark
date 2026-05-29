@@ -70,8 +70,8 @@ const { t } = useI18n();
             {{ t('learningCategories') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
-            :href="route('admin.bundles.index')"
-            :active="route().current('admin.bundles.*')">
+            :href="route('admin.schoolBundles.index')"
+            :active="route().current('admin.schoolBundles.*')">
             {{ t('bundles') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink

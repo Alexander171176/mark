@@ -12,7 +12,7 @@ use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
-use App\Http\Controllers\Admin\School\Bundle\BundleController;
+use App\Http\Controllers\Admin\School\Bundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
 use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
@@ -73,9 +73,9 @@ Route::put('/school-quiz-answers/bulk-activity',
     [SchoolQuizAnswerController::class, 'bulkUpdateActivity'])
     ->name('schoolQuizAnswers.bulkUpdateActivity');
 
-Route::put('/bundles/bulk-activity',
-    [BundleController::class, 'bulkUpdateActivity'])
-    ->name('bundles.bulkUpdateActivity');
+Route::put('/school-bundles/bulk-activity',
+    [SchoolBundleController::class, 'bulkUpdateActivity'])
+    ->name('schoolBundles.bulkUpdateActivity');
 
 Route::put('/blog-rubrics/bulk-activity',
     [BlogRubricController::class, 'bulkUpdateActivity'])

@@ -86,7 +86,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.bundles.index')"
+            :href="route('admin.schoolBundles.index')"
             :title="t('bundles')"
             :description="descriptions.bundles"
         >

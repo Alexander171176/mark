@@ -27,7 +27,7 @@ class SchoolBundleResource extends JsonResource
             'meta_keywords' => $this->translation?->meta_keywords,
             'meta_desc' => $this->translation?->meta_desc,
 
-            'published_at' => optional($this->published_at)->toIso8601String(),
+            'published_at' => $this->published_at?->format('Y-m-d'), // YYYY-MM-DD
 
             'views' => (int) $this->views,
             'likes' => (int) $this->likes,

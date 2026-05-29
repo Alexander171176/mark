@@ -34,12 +34,6 @@ onUnmounted(() => {
     if (observer) observer.disconnect();
 });
 
-const colorTextActive = computed(() => {
-    return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkActiveText || 'text-yellow-200')
-        : (siteSettings.AdminSidebarLightActiveText || 'text-yellow-200');
-});
-
 const emit = defineEmits(['update:mainLinks', 'update:hiddenLinks']);
 const { t } = useI18n();
 
@@ -92,13 +86,13 @@ onMounted(() => {
         </template>
     </Draggable>
 
-    <button @click="toggleHiddenLinks" class="flex justify-center items-center w-full pt-3 mb-0">
-        <span :class="[colorTextActive]"
-              class="text-xs uppercase font-semibold opacity-45">
+    <button @click="toggleHiddenLinks"
+            class="w-full">
+        <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
+                     text-indigo-200 pt-1 border-t border-dotted border-gray-50">
             {{ t('systems') }}
         </span>
     </button>
-
     <Draggable v-if="showHiddenLinks"
                v-model="hiddenLinks" @end="handleDragEnd"
                itemKey="id" group="links" tag="ul" class="my-3">
@@ -106,6 +100,4 @@ onMounted(() => {
             <DraggableSidebarLink :id="element" :expanded="expanded" />
         </template>
     </Draggable>
-
-    <br>
 </template>

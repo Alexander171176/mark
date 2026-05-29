@@ -12,7 +12,7 @@ use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
-use App\Http\Controllers\Admin\School\Bundle\BundleController;
+use App\Http\Controllers\Admin\School\Bundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\School\CohortEnrollment\SchoolCohortEnrollmentController;
 use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
@@ -130,7 +130,10 @@ Route::resource('/school-quiz-attempt-items',
     ->parameters(['school-quiz-attempt-items' => 'schoolQuizAttemptItem'])
     ->names('schoolQuizAttemptItems');
 
-Route::resource('/bundles', BundleController::class);
+Route::resource('/school-bundles',
+    SchoolBundleController::class)
+    ->parameters(['school-bundles' => 'schoolBundle'])
+    ->names('schoolBundles');
 
 Route::resource('/bundle-prices', BundlePriceController::class)
     ->parameters(['bundle-prices' => 'bundlePrice'])

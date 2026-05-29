@@ -12,7 +12,7 @@ use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
-use App\Http\Controllers\Admin\School\Bundle\BundleController;
+use App\Http\Controllers\Admin\School\Bundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
 use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
@@ -83,9 +83,10 @@ Route::put('/school-quiz-answers/{schoolQuizAnswer}/activity',
     ->whereNumber('schoolQuizAnswer')
     ->name('schoolQuizAnswers.updateActivity');
 
-Route::put('/bundles/{bundle}/activity',
-    [BundleController::class, 'updateActivity'])
-    ->name('bundles.updateActivity');
+Route::put('/school-bundles/{schoolBundle}/activity',
+    [SchoolBundleController::class, 'updateActivity'])
+    ->whereNumber('schoolBundle')
+    ->name('schoolBundles.updateActivity');
 
 Route::put('/blog-rubrics/{blogRubric}/activity',
     [BlogRubricController::class, 'updateActivity'])

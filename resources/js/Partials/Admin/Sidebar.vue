@@ -57,12 +57,6 @@ const bgColorClass = computed(() => {
         : (siteSettings.AdminSidebarLightColor || 'bg-cyan-900');
 });
 
-const colorTextActive = computed(() => {
-    return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkActiveText || 'text-yellow-200')
-        : (siteSettings.AdminSidebarLightActiveText || 'text-yellow-200');
-});
-
 const emit = defineEmits(['close-sidebar']);
 const trigger = ref(null);
 const sidebar = ref(null);
@@ -126,65 +120,69 @@ watch(sidebarExpanded, (newVal) => {
                 <Link :href="route('admin.index')" v-if="sidebarExpanded">
                     <ApplicationMark class="h-6 w-auto 2xl:block" />
                 </Link>
-                <span class="text-indigo-300 font-semibold text-md hidden 2xl:block" v-if="sidebarExpanded">
+                <span class="text-indigo-300 font-semibold text-md hidden 2xl:block"
+                      v-if="sidebarExpanded">
                     Pulsar CMS {{ sidebarTitle }}
                 </span>
-                <FontAwesomeIcon :icon="['fas', 'sliders']" class="text-white" v-if="sidebarExpanded" />
+                <FontAwesomeIcon
+                    :icon="['fas', 'sliders']"
+                    class="text-white"
+                    v-if="sidebarExpanded" />
             </div>
             <DigitalClock v-if="sidebarExpanded" class="mb-2 relative z-10" />
             <div class="space-y-1">
 
                 <!-- Ссылки администратора -->
-                <span :class="[colorTextActive]"
-                      class="flex justify-center text-xs uppercase font-semibold pl-3 opacity-45"
+                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
+                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
                       v-if="sidebarExpanded">
                     {{ t('pages') }}
                 </span>
                 <DraggableSidebarPageMainLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки страниц онлайн школы -->
-                <span :class="[colorTextActive]"
-                      class="flex justify-center text-xs uppercase font-semibold pl-3 opacity-45"
+                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
+                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
                       v-if="sidebarExpanded">
                     {{ t('store') }}
                 </span>
                 <DraggableSidebarPageMarketLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки страниц онлайн школы -->
-                <span :class="[colorTextActive]"
-                      class="flex justify-center text-xs uppercase font-semibold pl-3 opacity-45"
+                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
+                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
                       v-if="sidebarExpanded">
                     {{ t('finance') }}
                 </span>
                 <DraggableSidebarPageFinanceLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки страниц онлайн школы -->
-                <span :class="[colorTextActive]"
-                      class="flex justify-center text-xs uppercase font-semibold pl-3 opacity-45"
+                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
+                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
                       v-if="sidebarExpanded">
                     {{ t('school') }}
                 </span>
                 <DraggableSidebarPageSchoolLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки страниц блога -->
-                <span :class="[colorTextActive]"
-                      class="flex justify-center text-xs uppercase font-semibold pl-3 opacity-45"
+                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
+                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
                       v-if="sidebarExpanded">
                     {{ t('blog') }}
                 </span>
                 <DraggableSidebarPageBlogLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки страниц статистики -->
-                <span :class="[colorTextActive]"
-                      class="flex justify-center text-xs uppercase font-semibold pl-3 opacity-45"
+                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
+                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
                       v-if="sidebarExpanded">
                     {{ t('statistics') }}
                 </span>
                 <DraggableSidebarPageStatisticLink :expanded="sidebarExpanded" />
 
                 <!-- Ссылки главного ряда -->
-                <span :class="[colorTextActive]"
-                      class="flex justify-center text-xs uppercase font-semibold pl-3 opacity-45"
+                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
+                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
                       v-if="sidebarExpanded">
                     {{ t('administrator') }}
                 </span>

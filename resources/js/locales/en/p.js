@@ -66,6 +66,7 @@ export default {
     previewPercent: 'Preview (in percent)',
     previewValue: 'The meaning of viewing restrictions',
     price: 'Price',
+    prices: 'Prices',
     priceEndsAt: 'Price expiration',
     priceStartsAt: 'Price start date',
     printInMenu: 'in the menu',

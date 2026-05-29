@@ -1,10 +1,6 @@
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineEmits } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-const props = defineProps({
-    handleBulkAction: Function
-})
 
 const emits = defineEmits(['change'])
 
@@ -24,7 +20,7 @@ const { t } = useI18n()
             class="w-auto px-3 py-0.5 form-select rounded-sm shadow-sm
                    bg-white dark:bg-gray-200 text-gray-600 dark:text-gray-900
                    border border-slate-400 dark:border-slate-600"
-            @change="$emit('change', $event)"
+            @change="emits('change', $event)"
         >
             <option value="">
                 — {{ t('selectAction') }} —

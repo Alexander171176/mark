@@ -1,49 +1,70 @@
 <script setup>
 /**
  * @version PulsarCMS 1.0
- * @author Александр Косолапов
- * Список бандлов (паттерн как у курсов)
+ * @author Александр Косолапов <kosolapov1976@gmail.com>
+ *
+ * Список наборов курсов школы
  */
-import { defineProps, ref, computed, watch } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { router, Link } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
 import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
 import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
-import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 
-// 🔹 новые компоненты бандлов
 import BulkActionSelect from '@/Components/Admin/School/Bundle/Select/BulkActionSelect.vue'
 import SortSelect from '@/Components/Admin/School/Bundle/Sort/SortSelect.vue'
 import BundleTable from '@/Components/Admin/School/Bundle/Table/BundleTable.vue'
 import BundleCardGrid from '@/Components/Admin/School/Bundle/View/BundleCardGrid.vue'
 
+// Локализация и Toast уведомления
 const { t } = useI18n()
 const toast = useToast()
 
+// Props из контроллера
 const props = defineProps({
-    bundles: Array,
-    bundlesCount: Number,
-    adminCountBundles: Number,
-    adminSortBundles: String,
-    currentLocale: String,
-    availableLocales: Array,
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
+
+    bundles: { type: Array, default: () => [] },
+    bundlesCount: { type: Number, default: 0 },
+
+    adminSchoolBundlesPerPage: { type: Number, default: 10 },
+    adminSchoolBundlesDefaultSort: { type: String, default: 'idDesc' },
 })
 
-/** Вид: таблица или карточки (общий ключ) */
+// Режим отображения таблица/карточки
 const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
-watch(viewMode, (val) => localStorage.setItem('admin_view_mode', val))
 
-/** Кол-во элементов на странице */
-const itemsPerPage = ref(props.adminCountBundles || 10)
+// Сохранение режима отображения
+watch(viewMode, (val) => {
+    localStorage.setItem('admin_view_mode', val)
+})
 
+// Локальная копия наборов
+const localBundles = ref([])
+
+// Обновление локального списка наборов
+watch(
+    () => props.bundles,
+    (newVal) => {
+        localBundles.value = JSON.parse(JSON.stringify(newVal || []))
+    },
+    { immediate: true, deep: true }
+)
+
+// Количество элементов на странице
+const itemsPerPage = ref(props.adminSchoolBundlesPerPage || 10)
+
+// Сохранение количества элементов
 watch(itemsPerPage, (newVal) => {
     router.put(route('admin.settings.updateAdminCountBundles'), { value: newVal }, {
         preserveScroll: true,
@@ -53,9 +74,10 @@ watch(itemsPerPage, (newVal) => {
     })
 })
 
-/** Параметр сортировки */
-const sortParam = ref(props.adminSortBundles || 'idDesc')
+// Параметр сортировки
+const sortParam = ref(props.adminSchoolBundlesDefaultSort || 'idDesc')
 
+// Сохранение параметра сортировки
 watch(sortParam, (newVal) => {
     router.put(route('admin.settings.updateAdminSortBundles'), { value: newVal }, {
         preserveScroll: true,
@@ -65,194 +87,300 @@ watch(sortParam, (newVal) => {
     })
 })
 
-/** Модалка удаления */
+// Модальное окно удаления
 const showConfirmDeleteModal = ref(false)
+
+// ID удаляемого набора
 const bundleToDeleteId = ref(null)
+
+// Название удаляемого набора
 const bundleToDeleteTitle = ref('')
 
-const confirmDelete = (id, title = '') => {
-    bundleToDeleteId.value = id
-    bundleToDeleteTitle.value = title
+// Открытие модального окна удаления
+const confirmDelete = (bundleOrId, title = null) => {
+    if (typeof bundleOrId === 'object') {
+        bundleToDeleteId.value = bundleOrId.id
+        bundleToDeleteTitle.value = title || bundleOrId.title || `ID: ${bundleOrId.id}`
+    } else {
+        bundleToDeleteId.value = bundleOrId
+        bundleToDeleteTitle.value = title || `ID: ${bundleOrId}`
+    }
+
     showConfirmDeleteModal.value = true
 }
 
+// Закрытие модального окна
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     bundleToDeleteId.value = null
     bundleToDeleteTitle.value = ''
 }
 
+// Удаление набора
 const deleteBundle = () => {
     if (bundleToDeleteId.value === null) return
+
     const idToDelete = bundleToDeleteId.value
     const titleToDelete = bundleToDeleteTitle.value
 
-    router.delete(route('admin.bundles.destroy', { bundle: idToDelete }), {
+    router.delete(route('admin.schoolBundles.destroy', {
+        schoolBundle: idToDelete,
+    }), {
         preserveScroll: true,
         preserveState: false,
+
         onSuccess: () => {
-            closeModal()
-            toast.success(`Бандл "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
+            toast.success(`Набор курсов "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
         },
+
         onError: (errors) => {
-            closeModal()
-            const errorMsg =
-                errors.general ||
-                errors[Object.keys(errors)[0]] ||
-                'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Бандл: ${titleToDelete || 'ID: ' + idToDelete})`)
+            const errorKey = Object.keys(errors || {})[0]
+            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
+
+            toast.error(`${errorMsg} (Набор: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
-        onFinish: () => {
-            bundleToDeleteId.value = null
-            bundleToDeleteTitle.value = ''
-        },
+
+        onFinish: () => closeModal(),
     })
 }
 
-/** Пагинация и поиск */
+// Текущая страница
 const currentPage = ref(1)
+
+// Поисковый запрос
 const searchQuery = ref('')
 
-/** Сортировка массива бандлов */
-const sortBundles = (bundles) => {
-    const value = sortParam.value
-    const list = bundles.slice()
+// Нормализация строки поиска
+const normalize = (value) => {
+    return (value ?? '').toString().trim().toLowerCase()
+}
 
-    if (value === 'idAsc') return list.sort((a, b) => a.id - b.id)
-    if (value === 'idDesc') return list.sort((a, b) => b.id - a.id)
+// Сортировка наборов
+const sortBundles = (items) => {
+    const list = (items || []).slice()
 
-    // Дата публикации — от новых к старым, null в конец
-    if (value === 'published_at') {
+    if (sortParam.value === 'idAsc') {
+        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
+    }
+
+    if (sortParam.value === 'idDesc') {
+        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
+    }
+
+    if (sortParam.value === 'sortAsc') {
+        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+    }
+
+    if (sortParam.value === 'sortDesc') {
+        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
+    }
+
+    if (sortParam.value === 'titleAsc') {
+        return list.sort((a, b) => normalize(a.title).localeCompare(normalize(b.title)))
+    }
+
+    if (sortParam.value === 'titleDesc') {
+        return list.sort((a, b) => normalize(b.title).localeCompare(normalize(a.title)))
+    }
+
+    if (sortParam.value === 'activity') {
+        return list.filter(item => !!item.activity)
+    }
+
+    if (sortParam.value === 'inactive') {
+        return list.filter(item => !item.activity)
+    }
+
+    if (sortParam.value === 'views') {
+        return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
+    }
+
+    if ([
+        'likes',
+        'courses_count',
+        'images_count',
+        'prices_count',
+        'order_items_count',
+    ].includes(sortParam.value)) {
+        return list.sort((a, b) => (b[sortParam.value] ?? 0) - (a[sortParam.value] ?? 0))
+    }
+
+    if (sortParam.value === 'publishedAtAsc') {
         return list.sort((a, b) => {
             const aTime = a.published_at ? new Date(a.published_at).getTime() : 0
             const bTime = b.published_at ? new Date(b.published_at).getTime() : 0
+
+            return aTime - bTime
+        })
+    }
+
+    if (sortParam.value === 'publishedAtDesc') {
+        return list.sort((a, b) => {
+            const aTime = a.published_at ? new Date(a.published_at).getTime() : 0
+            const bTime = b.published_at ? new Date(b.published_at).getTime() : 0
+
             return bTime - aTime
         })
     }
 
-    // Фильтры по активности
-    if (value === 'activity') return bundles.filter(b => b.activity)
-    if (value === 'inactive') return bundles.filter(b => !b.activity)
-
-    // Числовые поля — сортировка по убыванию
-    if (['views', 'likes', 'sort'].includes(value)) {
-        return list.sort((a, b) => (b[value] ?? 0) - (a[value] ?? 0))
-    }
-
-    // title, slug, locale и прочее — обычная сортировка по возрастанию
-    return list.sort((a, b) => {
-        const av = a[value] ?? ''
-        const bv = b[value] ?? ''
-        if (av < bv) return -1
-        if (av > bv) return 1
-        return 0
-    })
+    return list
 }
 
-/** Фильтрация + сортировка (поиск по title/slug/subtitle) */
+// Отфильтрованные наборы
 const filteredBundles = computed(() => {
-    let filtered = props.bundles || []
+    let filtered = localBundles.value || []
+    const q = normalize(searchQuery.value)
 
-    if (searchQuery.value) {
-        const q = searchQuery.value.toLowerCase()
-        filtered = filtered.filter(b =>
-            (b.title || '').toLowerCase().includes(q) ||
-            (b.slug || '').toLowerCase().includes(q) ||
-            (b.subtitle || '').toLowerCase().includes(q)
-        )
+    if (!q) {
+        return sortBundles(filtered)
     }
+
+    filtered = filtered.filter((bundle) => {
+        const title = normalize(bundle?.title)
+        const subtitle = normalize(bundle?.subtitle)
+        const slug = normalize(bundle?.slug)
+        const short = normalize(bundle?.short)
+        const description = normalize(bundle?.description)
+
+        const hasCourse = (bundle?.courses || []).some(course =>
+            normalize(course?.title).includes(q) ||
+            normalize(course?.slug).includes(q)
+        )
+
+        return (
+            title.includes(q) ||
+            subtitle.includes(q) ||
+            slug.includes(q) ||
+            short.includes(q) ||
+            description.includes(q) ||
+            hasCourse
+        )
+    })
 
     return sortBundles(filtered)
 })
 
-/** Пагинация */
+// Наборы текущей страницы
 const paginatedBundles = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage.value
-    return filteredBundles.value.slice(start, start + itemsPerPage.value)
+    const per = Number(itemsPerPage.value || 20)
+    const start = (currentPage.value - 1) * per
+
+    return filteredBundles.value.slice(start, start + per)
 })
 
-const totalPages = computed(() =>
-    Math.ceil((filteredBundles.value.length || 0) / itemsPerPage.value)
-)
+// Сброс страницы при поиске и изменении лимита
+watch([itemsPerPage, searchQuery], () => {
+    currentPage.value = 1
+})
 
-/** Обновление сортировки (drag&drop) */
-const handleSortOrderUpdate = (orderedIds) => {
-    const startSort = (currentPage.value - 1) * itemsPerPage.value
+// Локальное обновление набора
+const patchBundle = (bundleId, payload) => {
+    const index = localBundles.value.findIndex(bundle => bundle.id === bundleId)
 
-    const sortData = orderedIds.map((id, index) => ({
-        id,
-        sort: startSort + index + 1,
-    }))
-
-    router.put(
-        route('admin.actions.bundles.updateSortBulk'),
-        { bundles: sortData },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.success('Порядок бандлов успешно обновлён.'),
-            onError: (errors) => {
-                console.error('Ошибка обновления сортировки бандлов:', errors)
-                toast.error(
-                    errors?.general ||
-                    errors?.bundles ||
-                    'Не удалось обновить порядок бандлов.'
-                )
-                router.reload({ only: ['bundles'], preserveScroll: true })
-            },
+    if (index !== -1) {
+        localBundles.value[index] = {
+            ...localBundles.value[index],
+            ...payload,
         }
-    )
+    }
 }
 
-/** Массовые действия */
+// Выбранные наборы
 const selectedBundles = ref([])
 
+// Выбрать / снять выбор со всех наборов
 const toggleAll = ({ ids, checked }) => {
     selectedBundles.value = checked ? [...ids] : []
 }
 
+// Выбор одного набора
 const toggleSelectBundle = (id) => {
-    const idx = selectedBundles.value.indexOf(id)
-    if (idx > -1) selectedBundles.value.splice(idx, 1)
-    else selectedBundles.value.push(id)
+    const index = selectedBundles.value.indexOf(id)
+
+    if (index > -1) {
+        selectedBundles.value.splice(index, 1)
+    } else {
+        selectedBundles.value.push(id)
+    }
 }
 
+// Обновление порядка сортировки
+const handleSortOrderUpdate = (orderedIds) => {
+    const startSort = (currentPage.value - 1) * itemsPerPage.value
+
+    const items = orderedIds.map((id, index) => ({
+        id,
+        sort: startSort + index + 1,
+    }))
+
+    if (!items.length) return
+
+    router.put(route('admin.actions.schoolBundles.updateSortBulk'), { items }, {
+        preserveScroll: true,
+        preserveState: true,
+
+        onSuccess: () => {
+            toast.success('Порядок наборов курсов успешно обновлён.')
+        },
+
+        onError: (errors) => {
+            console.error('Ошибка обновления сортировки наборов курсов:', errors)
+
+            toast.error(
+                errors?.message ||
+                errors?.general ||
+                'Не удалось обновить порядок наборов курсов.'
+            )
+
+            router.reload({
+                only: ['bundles'],
+                preserveScroll: true,
+            })
+        },
+    })
+}
+
+// Массовое обновление активности
 const bulkToggleActivity = (newActivity) => {
     if (!selectedBundles.value.length) {
-        toast.warning('Выберите бандлы для активации/деактивации')
+        toast.warning('Выберите наборы курсов для активации/деактивации.')
         return
     }
 
-    router.put(
-        route('admin.actions.bundles.bulkUpdateActivity'),
-        { ids: selectedBundles.value, activity: newActivity },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                toast.success('Активность бандлов массово обновлена')
-                const updatedIds = [...selectedBundles.value]
-                selectedBundles.value = []
+    const idsToUpdate = [...selectedBundles.value]
 
-                paginatedBundles.value.forEach(b => {
-                    if (updatedIds.includes(b.id)) b.activity = newActivity
-                })
-            },
-            onError: (errors) => {
-                const msg =
-                    errors?.ids || errors?.activity || errors?.general ||
-                    'Не удалось массово обновить активность бандлов'
-                toast.error(msg)
-            },
-        }
-    )
+    router.put(route('admin.actions.schoolBundles.bulkUpdateActivity'), {
+        ids: idsToUpdate,
+        activity: newActivity,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+
+        onSuccess: () => {
+            idsToUpdate.forEach(id => patchBundle(id, { activity: newActivity }))
+
+            selectedBundles.value = []
+
+            toast.success('Активность выбранных наборов курсов обновлена.')
+        },
+
+        onError: (errors) => {
+            toast.error(
+                errors?.ids ||
+                errors?.activity ||
+                errors?.general ||
+                'Ошибка массового обновления активности.'
+            )
+        },
+    })
 }
 
+// Обработка массовых действий
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedBundles.value = paginatedBundles.value.map(b => b.id)
+        selectedBundles.value = paginatedBundles.value.map(bundle => bundle.id)
     } else if (action === 'deselectAll') {
         selectedBundles.value = []
     } else if (action === 'activate') {
@@ -264,34 +392,36 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-/** Переключение активности одного бандла */
+// Переключение активности набора
 const toggleActivity = (bundle) => {
     const newActivity = !bundle.activity
+    const bundleTitle = bundle.title || `ID: ${bundle.id}`
     const actionText = newActivity ? t('activated') : t('deactivated')
 
-    router.put(
-        route('admin.actions.bundles.updateActivity', { bundle: bundle.id }),
-        { activity: newActivity },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                bundle.activity = newActivity
-                toast.success(`Бандл "${bundle.title}" ${actionText}.`)
-            },
-            onError: (errors) => {
-                toast.error(
-                    errors?.activity ||
-                    errors?.general ||
-                    `Ошибка изменения активности для бандла "${bundle.title}".`
-                )
-            },
-        }
-    )
-}
+    router.put(route('admin.actions.schoolBundles.updateActivity', {
+        schoolBundle: bundle.id,
+    }), {
+        activity: newActivity,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
 
-/** Ссылка для табов локалей */
-const localeLink = (locale) => route('admin.bundles.index', { locale })
+        onSuccess: () => {
+            patchBundle(bundle.id, { activity: newActivity })
+            bundle.activity = newActivity
+
+            toast.success(`Набор курсов "${bundleTitle}" ${actionText}.`)
+        },
+
+        onError: (errors) => {
+            toast.error(
+                errors?.activity ||
+                errors?.general ||
+                `Ошибка изменения активности для набора "${bundleTitle}".`
+            )
+        },
+    })
+}
 </script>
 
 <template>
@@ -302,13 +432,13 @@ const localeLink = (locale) => route('admin.bundles.index', { locale })
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <!-- Добавить бандл -->
-                    <DefaultButton :href="route('admin.bundles.create')">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                    <DefaultButton :href="route('admin.schoolBundles.create')">
                         <template #icon>
                             <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
                                 <path
@@ -318,48 +448,6 @@ const localeLink = (locale) => route('admin.bundles.index', { locale })
                         </template>
                         {{ t('addBundle') }}
                     </DefaultButton>
-
-                    <BulkActionSelect
-                        v-if="bundlesCount"
-                        @change="handleBulkAction"
-                    />
-                </div>
-
-                <!-- Локали + счётчик -->
-                <div class="flex items-center justify-between mt-5">
-                    <div
-                        class="flex items-center justify-end space-x-2 px-3 py-1
-                               border-x border-t border-gray-400 rounded-t-lg
-                               bg-gray-100 dark:bg-gray-900"
-                    >
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {{ t('localization') }}:
-                        </span>
-
-                        <template v-for="locale in availableLocales" :key="locale">
-                            <Link
-                                :href="localeLink(locale)"
-                                :class="[
-                                    'px-3 py-1 text-sm font-medium rounded-sm',
-                                    currentLocale === locale
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600'
-                                ]"
-                                preserve-scroll
-                                preserve-state
-                            >
-                                {{ locale.toUpperCase() }}
-                            </Link>
-                        </template>
-                    </div>
-
-                    <div class="flex items-center space-x-3">
-                        <CountTable v-if="bundlesCount">
-                            {{ bundlesCount }}
-                        </CountTable>
-
-                        <ToggleViewButton v-model:viewMode="viewMode" />
-                    </div>
                 </div>
 
                 <SearchInput
@@ -368,7 +456,45 @@ const localeLink = (locale) => route('admin.bundles.index', { locale })
                     :placeholder="t('searchByName')"
                 />
 
-                <!-- Таблица -->
+                <div
+                    v-if="bundlesCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                >
+                    <ItemsPerPageSelect
+                        :items-per-page="itemsPerPage"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <SortSelect
+                        :sortParam="sortParam"
+                        @update:sortParam="val => sortParam = val"
+                    />
+                </div>
+
+                <div
+                    v-if="bundlesCount"
+                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
+                >
+                    <CountTable>{{ bundlesCount }}</CountTable>
+
+                    <BulkActionSelect @change="handleBulkAction" />
+
+                    <ToggleViewButton v-model:viewMode="viewMode" />
+                </div>
+
+                <div
+                    v-if="bundlesCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                >
+                    <Pagination
+                        :current-page="currentPage"
+                        :items-per-page="itemsPerPage"
+                        :total-items="filteredBundles.length"
+                        @update:currentPage="currentPage = $event"
+                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                </div>
+
                 <BundleTable
                     v-if="viewMode === 'table'"
                     :bundles="paginatedBundles"
@@ -380,7 +506,6 @@ const localeLink = (locale) => route('admin.bundles.index', { locale })
                     @toggle-all="toggleAll"
                 />
 
-                <!-- Карточки -->
                 <BundleCardGrid
                     v-else
                     :bundles="paginatedBundles"
@@ -393,25 +518,15 @@ const localeLink = (locale) => route('admin.bundles.index', { locale })
                 />
 
                 <div
-                    class="flex justify-between items-center flex-col md:flex-row my-1"
                     v-if="bundlesCount"
+                    class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
-                    <ItemsPerPageSelect
-                        :items-per-page="itemsPerPage"
-                        @update:itemsPerPage="itemsPerPage = $event"
-                    />
-
                     <Pagination
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredBundles.length"
                         @update:currentPage="currentPage = $event"
                         @update:itemsPerPage="itemsPerPage = $event"
-                    />
-
-                    <SortSelect
-                        :sortParam="sortParam"
-                        @update:sortParam="val => (sortParam = val)"
                     />
                 </div>
             </div>

@@ -56,7 +56,7 @@ const form = useForm({
  * Фильтрация поля option — разрешаем только латиницу, цифры и дефис
  */
 const handleOptionInput = (event) => {
-    const cleaned = event.target.value.replace(/[^A-Za-z0-9\-]/g, '');
+    const cleaned = event.target.value.replace(/[^A-Za-z0-9\\-]/g, '');
     form.option = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 };
 
@@ -123,7 +123,8 @@ const submitForm = () => {
                     <DefaultButton :href="route('admin.parameters.index')">
                         <template #icon>
                             <!-- SVG -->
-                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2" viewBox="0 0 16 16">
+                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                 viewBox="0 0 16 16">
                                 <path d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"></path>
                             </svg>
                         </template>
@@ -142,15 +143,15 @@ const submitForm = () => {
                         <!-- Активность -->
                         <div class="flex justify-between w-full">
                             <div class="flex flex-row items-center">
-                                <ActivityCheckbox v-model="form.activity"/>
-                                <LabelCheckbox for="activity" :text="t('activity')"/>
+                                <ActivityCheckbox v-model="form.activity" />
+                                <LabelCheckbox for="activity" :text="t('activity')" />
                             </div>
                         </div>
 
                         <!-- Сортировка -->
                         <div class="flex flex-row items-center gap-2">
                             <div class="h-8 flex items-center">
-                                <LabelInput for="sort" :value="t('sort')" class="text-sm"/>
+                                <LabelInput for="sort" :value="t('sort')" class="text-sm" />
                             </div>
                             <InputNumber
                                 id="sort"
@@ -159,7 +160,7 @@ const submitForm = () => {
                                 autocomplete="sort"
                                 class="w-full lg:w-28"
                             />
-                            <InputError class="mt-2 lg:mt-0" :message="form.errors.sort"/>
+                            <InputError class="mt-2 lg:mt-0" :message="form.errors.sort" />
                         </div>
 
                     </div>
@@ -168,21 +169,23 @@ const submitForm = () => {
 
                         <!-- Категория -->
                         <div class="flex flex-row items-center">
-                            <LabelInput for="category" :value="t('parameterCategory')" class="w-full"/>
+                            <LabelInput for="category" :value="t('parameterCategory')"
+                                        class="w-full" />
                             <CategorySelect v-model="form.category" :error="form.errors.category" />
                         </div>
 
                         <!-- Тип -->
                         <div class="flex flex-row items-center gap-2">
-                            <LabelInput for="type" :value="t('type')" class="mr-3"/>
-                            <TypeSelect v-model="form.type" :error="form.errors.type" class="w-full lg:w-64 mr-3" />
+                            <LabelInput for="type" :value="t('type')" class="mr-3" />
+                            <TypeSelect v-model="form.type" :error="form.errors.type"
+                                        class="w-full lg:w-64 mr-3" />
                         </div>
 
                     </div>
 
                     <div class="mb-3 flex flex-col items-start">
                         <div class="flex justify-between w-full">
-                            <LabelInput for="option" :value="t('parameterName')"/>
+                            <LabelInput for="option" :value="t('parameterName')" />
                             <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
                                 {{ form.option.length }} / 255 {{ t('characters') }}
                             </div>
@@ -198,11 +201,11 @@ const submitForm = () => {
                             pattern="[A-Za-z0-9\-]+"
                             :title="t('urlVerification')"
                         />
-                        <InputError class="mt-2" :message="form.errors.option"/>
+                        <InputError class="mt-2" :message="form.errors.option" />
                     </div>
 
                     <div class="mb-3 flex flex-col items-start">
-                        <LabelInput for="constant" :value="t('parameterConstant')"/>
+                        <LabelInput for="constant" :value="t('parameterConstant')" />
                         <InputText
                             id="constant"
                             type="text"
@@ -212,12 +215,12 @@ const submitForm = () => {
                             autocomplete="constant"
                             pattern="[A-Z][A-Z0-9_]*"
                         />
-                        <InputError class="mt-2" :message="form.errors.constant"/>
+                        <InputError class="mt-2" :message="form.errors.constant" />
                     </div>
 
                     <div class="mb-3 flex flex-col items-start">
                         <div class="flex justify-between w-full">
-                            <LabelInput for="value" :value="t('parameterValue')"/>
+                            <LabelInput for="value" :value="t('parameterValue')" />
                             <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
                                 {{ form.value.length }} / 255 {{ t('characters') }}
                             </div>
@@ -231,34 +234,38 @@ const submitForm = () => {
                             pattern="^(https?:\/\/)?[A-Za-z0-9\.\-]+(:[0-9]+)?(\/[A-Za-z0-9\-\/]+)?$"
                             :title="t('urlVerification')"
                         />
-                        <InputError class="mt-2" :message="form.errors.value"/>
+                        <InputError class="mt-2" :message="form.errors.value" />
                     </div>
 
                     <div class="mb-3 flex flex-col items-start">
                         <div class="flex justify-between w-full">
-                            <LabelInput for="description" :value="t('parameterDescription')"/>
+                            <LabelInput for="description" :value="t('parameterDescription')" />
                             <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
                                 {{ form.description.length }} / 255 {{ t('characters') }}
                             </div>
                         </div>
-                        <MetaDescTextarea v-model="form.description" class="w-full"/>
-                        <InputError class="mt-2" :message="form.errors.description"/>
+                        <MetaDescTextarea v-model="form.description" class="w-full" />
+                        <InputError class="mt-2" :message="form.errors.description" />
                     </div>
 
                     <div class="flex items-center justify-center mt-4">
-                        <DefaultButton :href="route('admin.parameters.index')" class="mb-3">
+                        <DefaultButton :href="route('admin.parameters.index')">
                             <template #icon>
                                 <!-- SVG -->
-                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2" viewBox="0 0 16 16">
+                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                     viewBox="0 0 16 16">
                                     <path d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"></path>
                                 </svg>
                             </template>
                             {{ t('back') }}
                         </DefaultButton>
-                        <PrimaryButton class="ms-4 mb-0"
-                                       :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                        <PrimaryButton
+                            class="ms-4 mb-0"
+                            :class="{ 'opacity-25': form.processing }"
+                            :disabled="form.processing">
                             <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100" viewBox="0 0 16 16">
+                                <svg class="w-4 h-4 fill-current text-slate-100"
+                                     viewBox="0 0 16 16">
                                     <path
                                         d="M14.3 2.3L5 11.6 1.7 8.3c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4l4 4c.2.2.4.3.7.3.3 0 .5-.1.7-.3l10-10c.4-.4.4-1 0-1.4-.4-.4-1-.4-1.4 0z"></path>
                                 </svg>

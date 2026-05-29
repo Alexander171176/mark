@@ -66,6 +66,7 @@ export default {
     previewPercent: 'Предварительный просмотр (в процентах)',
     previewValue: 'Значение ограничения просмотра',
     price: 'Стоимость',
+    prices: 'Прайсы',
     priceEndsAt: 'Окончание действия цены',
     priceStartsAt: 'Начало действия цены',
     printInMenu: 'в меню',

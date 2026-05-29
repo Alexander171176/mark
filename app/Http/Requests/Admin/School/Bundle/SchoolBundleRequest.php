@@ -30,7 +30,7 @@ class SchoolBundleRequest extends FormRequest
         }
 
         foreach (['sort', 'views', 'likes'] as $field) {
-            if ($this->has($field) && $this->input($field) !== null && is_numeric($this->input($field))) {
+            if ($this->has($field) && is_numeric($this->input($field))) {
                 $data[$field] = (int) $this->input($field);
             }
         }
@@ -43,18 +43,6 @@ class SchoolBundleRequest extends FormRequest
             }
         }
 
-        if ($this->has('translations') && is_array($this->input('translations'))) {
-            $data['translations'] = collect($this->input('translations'))
-                ->map(function ($translation) {
-                    if (isset($translation['locale']) && is_string($translation['locale'])) {
-                        $translation['locale'] = mb_strtolower(trim($translation['locale']));
-                    }
-
-                    return $translation;
-                })
-                ->toArray();
-        }
-
         if (!empty($data)) {
             $this->merge($data);
         }
@@ -62,14 +50,18 @@ class SchoolBundleRequest extends FormRequest
 
     public function rules(): array
     {
-        $bundleId = $this->route('school_bundle')?->id
-            ?? $this->route('bundle')?->id
-            ?? $this->route('schoolBundle')?->id
-            ?? $this->input('id');
+        $bundle = $this->route('schoolBundle')
+            ?? $this->route('bundle')
+            ?? $this->route('school_bundle')
+            ?? $this->route('id');
+
+        $bundleId = is_object($bundle)
+            ? $bundle->id
+            : ($bundle ? (int) $bundle : null);
 
         return [
             'sort' => ['nullable', 'integer', 'min:0'],
-            'activity' => ['required', 'boolean'],
+            'activity' => ['nullable', 'boolean'],
 
             'slug' => [
                 'required',
@@ -87,7 +79,6 @@ class SchoolBundleRequest extends FormRequest
             'meta' => ['nullable', 'array'],
 
             'translations' => ['required', 'array', 'min:1'],
-            'translations.*.locale' => ['required', 'string', 'max:10', 'distinct'],
             'translations.*.title' => ['required', 'string', 'max:255'],
             'translations.*.subtitle' => ['nullable', 'string', 'max:255'],
             'translations.*.short' => ['nullable', 'string'],
@@ -126,7 +117,6 @@ class SchoolBundleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'activity.required' => 'Укажите активность набора.',
             'activity.boolean' => 'Поле активности должно быть булевым значением.',
 
             'sort.integer' => 'Позиция должна быть целым числом.',
@@ -140,15 +130,34 @@ class SchoolBundleRequest extends FormRequest
 
             'views.integer' => 'Просмотры должны быть целым числом.',
             'views.min' => 'Просмотры не могут быть отрицательными.',
+
             'likes.integer' => 'Лайки должны быть целым числом.',
             'likes.min' => 'Лайки не могут быть отрицательными.',
 
             'meta.array' => 'Meta должен быть объектом JSON.',
 
             'translations.required' => 'Необходимо передать переводы набора.',
-            'translations.*.locale.required' => 'Укажите локаль перевода.',
-            'translations.*.locale.distinct' => 'Локали переводов не должны повторяться.',
+            'translations.array' => 'Переводы набора должны быть массивом.',
+            'translations.min' => 'Необходимо добавить хотя бы один перевод.',
+
             'translations.*.title.required' => 'Укажите название набора.',
+            'translations.*.title.string' => 'Название набора должно быть строкой.',
+            'translations.*.title.max' => 'Название набора не должно превышать 255 символов.',
+
+            'translations.*.subtitle.string' => 'Подзаголовок набора должен быть строкой.',
+            'translations.*.subtitle.max' => 'Подзаголовок набора не должен превышать 255 символов.',
+
+            'translations.*.short.string' => 'Краткое описание должно быть строкой.',
+            'translations.*.description.string' => 'Описание набора должно быть строкой.',
+
+            'translations.*.meta_title.string' => 'SEO заголовок должен быть строкой.',
+            'translations.*.meta_title.max' => 'SEO заголовок не должен превышать 160 символов.',
+
+            'translations.*.meta_keywords.string' => 'SEO ключевые слова должны быть строкой.',
+            'translations.*.meta_keywords.max' => 'SEO ключевые слова не должны превышать 255 символов.',
+
+            'translations.*.meta_desc.string' => 'SEO описание должно быть строкой.',
+            'translations.*.meta_desc.max' => 'SEO описание не должно превышать 255 символов.',
 
             'course_ids.array' => 'Список курсов должен быть массивом.',
             'course_ids.*.exists' => 'Один из указанных курсов не найден.',
@@ -161,6 +170,7 @@ class SchoolBundleRequest extends FormRequest
             'images.*.file.mimes' => 'Разрешённые форматы: jpeg, jpg, png, gif, svg, webp.',
             'images.*.file.max' => 'Максимальный размер изображения — 10 МБ.',
 
+            'deletedImages.array' => 'Неверный формат списка удаляемых изображений.',
             'deletedImages.*.exists' => 'Некоторых изображений для удаления не существует.',
         ];
     }

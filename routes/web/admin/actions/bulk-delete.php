@@ -75,7 +75,8 @@ Route::delete('/school-quiz-attempt-items/bulk-delete',
     [SchoolQuizAttemptItemController::class, 'bulkDestroy'])
     ->name('schoolQuizAttemptItems.bulkDestroy');
 
-Route::delete('/currencies/bulk-delete', [CurrencyController::class, 'bulkDestroy'])
+Route::delete('/currencies/bulk-delete',
+    [CurrencyController::class, 'bulkDestroy'])
     ->name('currencies.bulkDestroy');
 
 Route::delete('course-prices/bulk-destroy', [CoursePriceController::class, 'bulkDestroy'])

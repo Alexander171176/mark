@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizAttempt\SchoolQuizAttemptController;
 use App\Http\Controllers\Admin\School\QuizAttemptItem\SchoolQuizAttemptItemController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
+use App\Http\Controllers\Admin\School\SubscriptionPlan\SchoolSubscriptionPlanController;
 use Illuminate\Support\Facades\Route;
 
 Route::delete('/blog-rubrics/bulk-delete',

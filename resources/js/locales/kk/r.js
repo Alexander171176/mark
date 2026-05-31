@@ -36,6 +36,7 @@ export default {
     resetPasswordButton: 'Құпия сөзді қалпына келтіру',
     resetPasswordLink: 'Құпия сөзді қалпына келтіру сілтемесі',
     resetPasswordTitle: 'Құпия сөзді қалпына келтіру',
+    result: 'Нәтиже',
     reviews: 'Пікірлер',
     reviewerComment: 'Пікір қалдырушының пікірі',
     right: 'Оң жақ бағанда көрсету',

@@ -140,6 +140,7 @@ export default {
     sortStatusAsc: 'Күту күйі ↑',
     sortStatusDesc: 'Күйі ↓',
     sortStudentsCount: 'оқушылар саны бойынша',
+    sourceText: 'Дереккөз',
     sourceType: 'Бейне ресурсты жүктеу түрі',
     stackIcons: 'Стек белгішелері',
     stanceLabel: 'Тірек',

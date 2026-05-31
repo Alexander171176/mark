@@ -140,6 +140,7 @@ export default {
     sortStatusAsc: 'Status ↑',
     sortStatusDesc: 'Status ↓',
     sortStudentsCount: 'by number of students',
+    sourceText: 'Source text',
     sourceType: 'Type of video resource upload',
     stackIcons: 'Stack Icons',
     stanceLabel: 'Rack',

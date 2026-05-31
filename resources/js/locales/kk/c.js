@@ -65,6 +65,8 @@ export default {
     contentId: 'Мазмұн ID',
     contentType: 'Мазмұн түрі',
     context: 'Контекст',
+    copied: 'Көшірілген!',
+    copy: 'Көшіру',
     copyToken: 'Жаңа API токеніңізді көшіріңіз. Қауіпсіздігіңіз үшін ол енді көрсетілмейді.',
     country: 'Ел',
     course: 'Жақсы',

@@ -54,6 +54,7 @@ export default {
     enrollment: 'Зачисление',
     enrollments: 'Зачисления',
     enterText: 'Введите ответ...',
+    enterTextToTranslate: 'Введите текст для перевода...',
     expand: 'развернуть',
     experienceAsc: 'Опыт ↑',
     experienceDesc: 'Опыт ↓',

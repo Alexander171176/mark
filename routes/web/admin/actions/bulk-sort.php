@@ -23,7 +23,7 @@ use App\Http\Controllers\Admin\School\Price\SchoolCoursePriceController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
-use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
+use App\Http\Controllers\Admin\School\SubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
@@ -112,9 +112,9 @@ Route::put('/school-bundle-prices/update-sort-bulk',
     [SchoolBundlePriceController::class, 'updateSortBulk'])
     ->name('schoolBundlePrices.updateSortBulk');
 
-Route::put('subscription-plans/update-sort-bulk',
-    [SubscriptionPlanController::class, 'updateSortBulk'])
-    ->name('subscriptionPlans.updateSortBulk');
+Route::put('/school-subscription-plans/update-sort-bulk',
+    [SchoolSubscriptionPlanController::class, 'updateSortBulk'])
+    ->name('schoolSubscriptionPlans.updateSortBulk');
 
 Route::put('market-companies/update-sort-bulk',
     [MarketCompanyController::class, 'updateSortBulk'])

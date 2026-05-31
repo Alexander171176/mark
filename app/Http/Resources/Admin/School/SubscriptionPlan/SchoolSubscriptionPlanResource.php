@@ -9,7 +9,6 @@ class SchoolSubscriptionPlanResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-
         return [
             'id' => $this->id,
 
@@ -18,14 +17,14 @@ class SchoolSubscriptionPlanResource extends JsonResource
 
             'slug' => $this->slug,
 
-            'title' => $this->title,
-            'subtitle' => $this->subtitle,
-            'short' => $this->short,
-            'description' => $this->description,
+            'title' => $this->translation?->title,
+            'subtitle' => $this->translation?->subtitle,
+            'short' => $this->translation?->short,
+            'description' => $this->translation?->description,
 
-            'meta_title' => $this->meta_title,
-            'meta_keywords' => $this->meta_keywords,
-            'meta_desc' => $this->meta_desc,
+            'meta_title' => $this->translation?->meta_title,
+            'meta_keywords' => $this->translation?->meta_keywords,
+            'meta_desc' => $this->translation?->meta_desc,
 
             'published_at' => optional($this->published_at)->toIso8601String(),
             'available_from' => optional($this->available_from)->toIso8601String(),

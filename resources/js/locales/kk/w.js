@@ -5,4 +5,6 @@ export default {
     weeks: 'апталар',
     weightClassName: 'Салмақ категориясының атауы',
     welcome: 'Қош келдіңіз',
+    whereFrom: 'Қайда',
+    whereTo: 'Және қайдан',
 }

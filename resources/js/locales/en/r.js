@@ -36,6 +36,7 @@ export default {
     resetPasswordButton: 'Reset Password',
     resetPasswordLink: 'Reset Password Link',
     resetPasswordTitle: 'Reset Password',
+    result: 'Result',
     reviews: 'Reviews',
     reviewerComment: 'Reviewer\'s comment',
     right: 'Show in the right column',

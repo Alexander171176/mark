@@ -10,7 +10,6 @@ class SchoolSubscriptionPlanSharedResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-
         $firstImage = $this->whenLoaded('images', fn () => $this->images->first());
 
         $thumbnailUrl = !($firstImage instanceof MissingValue) && $firstImage
@@ -22,9 +21,9 @@ class SchoolSubscriptionPlanSharedResource extends JsonResource
 
             'slug' => $this->slug,
 
-            'title' => $this->title,
-            'subtitle' => $this->subtitle,
-            'short' => $this->short,
+            'title' => $this->translation?->title,
+            'subtitle' => $this->translation?->subtitle,
+            'short' => $this->translation?->short,
 
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,

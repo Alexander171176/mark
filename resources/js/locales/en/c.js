@@ -65,6 +65,8 @@ export default {
     contentId: 'Content ID',
     contentType: 'Content type',
     context: 'Context',
+    copied: 'Copied!',
+    copy: 'Copy',
     copyToken: 'Please copy your new API token. For your security, it will not be shown again.',
     country: 'Country',
     course: 'Course',

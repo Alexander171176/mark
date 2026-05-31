@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, defineEmits, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
@@ -14,7 +14,7 @@ const props = defineProps({
     selectedPlans: { type: Array, default: () => [] },
 })
 
-const emits = defineEmits([
+const emit = defineEmits([
     'toggle-activity',
     'delete',
     'update-sort-order',
@@ -22,44 +22,77 @@ const emits = defineEmits([
     'toggle-all',
 ])
 
-/** Локальная копия для dnd */
 const localPlans = ref([])
 
 watch(
     () => props.subscriptionPlans,
     (newVal) => {
-        localPlans.value = JSON.parse(JSON.stringify(newVal || []))
+        localPlans.value = Array.isArray(newVal)
+            ? newVal.map((plan) => ({ ...plan }))
+            : []
     },
     { immediate: true, deep: true }
 )
 
+const allSelected = computed(() => {
+    return localPlans.value.length > 0
+        && localPlans.value.every((plan) => props.selectedPlans.includes(plan.id))
+})
+
 const handleDragEnd = () => {
-    const newOrderIds = localPlans.value.map(p => p.id)
-    emits('update-sort-order', newOrderIds)
+    emit('update-sort-order', localPlans.value.map((plan) => plan.id))
 }
 
 const toggleAll = (event) => {
-    const checked = event.target.checked
-    const ids = localPlans.value.map(p => p.id)
-    emits('toggle-all', { ids, checked })
+    emit('toggle-all', {
+        ids: localPlans.value.map((plan) => plan.id),
+        checked: event.target.checked,
+    })
 }
 
 const getPrimaryImage = (plan) => {
-    if (plan.images && plan.images.length) {
-        return [...plan.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0]
+    if (!Array.isArray(plan.images) || !plan.images.length) {
+        return null
     }
-    return null
+
+    return [...plan.images].sort((a, b) => {
+        return Number(a.order ?? 0) - Number(b.order ?? 0)
+    })[0]
+}
+
+const imageSrc = (plan) => {
+    const image = getPrimaryImage(plan)
+
+    return image?.webp_url
+        || image?.url
+        || '/storage/subscription_plan_images/default-image.png'
+}
+
+const imageAlt = (plan) => {
+    const image = getPrimaryImage(plan)
+
+    return image?.alt
+        || plan.title
+        || t('defaultImageTitle')
 }
 
 const formatDate = (dateStr) => {
     if (!dateStr) return '—'
-    const d = new Date(dateStr)
-    if (isNaN(d)) return '—'
-    return d.toLocaleDateString('ru-RU', { year: 'numeric', month: 'short', day: 'numeric' })
+
+    const date = new Date(dateStr)
+
+    if (Number.isNaN(date.getTime())) {
+        return '—'
+    }
+
+    return date.toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    })
 }
 
-// Маппинг billing_period -> i18n ключ
-const billingPeriodLabel = (bp) => {
+const billingPeriodLabel = (period) => {
     const map = {
         day: 'days',
         week: 'weeks',
@@ -67,176 +100,161 @@ const billingPeriodLabel = (bp) => {
         year: 'years',
     }
 
-    const key = map[String(bp || '').toLowerCase()]
-    return key ? t(key) : (bp || '—')
+    const key = map[String(period || '').toLowerCase()]
+
+    return key ? t(key) : '—'
 }
 
-// Формат: "<период>: <количество>"  →  "месяцев: 12"
 const periodLabel = (plan) => {
-    const period = billingPeriodLabel(plan.billing_period)
-    const interval = plan.interval ?? '—'
-
-    return `${period}: ${interval}`
+    return `${billingPeriodLabel(plan.billing_period)}: ${plan.interval ?? '—'}`
 }
 
 const priceLabel = (plan) => {
     const price = plan.price ?? '0.00'
     const code = plan.currency?.code || ''
+
     return `${price} ${code}`.trim()
 }
 </script>
 
 <template>
     <div
-        class="bg-white dark:bg-slate-700 shadow-lg rounded-sm
-               border border-slate-400 dark:border-slate-500 relative"
+        class="relative rounded-sm border border-slate-400 bg-white shadow-lg
+               dark:border-slate-500 dark:bg-slate-700"
     >
-        <!-- Верхняя панель -->
-        <div class="flex items-center justify-between px-3 py-2
-                    border-b border-slate-400 dark:border-slate-500">
+        <div
+            class="flex flex-col gap-2 border-b border-slate-400 px-3 py-2
+                   dark:border-slate-500 sm:flex-row sm:items-center sm:justify-between"
+        >
             <div class="text-xs text-slate-600 dark:text-slate-200">
                 {{ t('selected') }}: {{ selectedPlans.length }}
             </div>
 
             <label
                 v-if="localPlans.length"
-                class="flex items-center text-xs text-slate-600 dark:text-slate-200 cursor-pointer"
+                class="inline-flex cursor-pointer items-center gap-2 text-xs
+                       text-slate-600 dark:text-slate-200"
             >
                 <span>{{ t('selectAll') }}</span>
-                <input type="checkbox" class="mx-2" @change="toggleAll" />
+                <input
+                    type="checkbox"
+                    class="rounded border-slate-400"
+                    :checked="allSelected"
+                    @change="toggleAll"
+                >
             </label>
         </div>
 
         <div v-if="localPlans.length" class="p-3">
             <draggable
-                tag="div"
                 v-model="localPlans"
+                tag="div"
                 item-key="id"
-                @end="handleDragEnd"
                 handle=".drag-handle"
-                class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                @end="handleDragEnd"
             >
                 <template #item="{ element: plan }">
                     <div
-                        class="relative flex flex-col h-full rounded-md
-                               border border-slate-400 dark:border-slate-500
-                               bg-slate-50/70 dark:bg-slate-800/80 shadow-sm
-                               hover:shadow-md transition-shadow duration-150"
+                        class="relative flex h-full flex-col overflow-hidden rounded-md
+                               border border-slate-400 bg-slate-50/70 shadow-sm transition-shadow
+                               duration-150 hover:shadow-md dark:border-slate-500 dark:bg-slate-800/80"
                     >
-                        <!-- Header -->
                         <div
-                            class="flex items-center justify-between px-2 py-1
-                                   border-b border-dashed border-slate-400 dark:border-slate-500">
+                            class="flex items-center justify-between border-b border-dashed
+                                   border-slate-400 px-2 py-1 dark:border-slate-500"
+                        >
                             <div class="flex items-center space-x-2">
                                 <button
                                     type="button"
-                                    class="cursor-move drag-handle text-slate-400
+                                    class="drag-handle cursor-move text-slate-400
                                            hover:text-slate-700 dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                                         <path
                                             d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
                                     </svg>
                                 </button>
-
                                 <div
-                                    class="text-[10px] font-semibold px-1.5 py-0.5 rounded-sm
-                                           border border-gray-400 bg-slate-200 dark:bg-slate-700
-                                           text-slate-800 dark:text-blue-100"
-                                    :title="`[${plan.locale}] : [${plan.sort}]`"
+                                    class="rounded-sm border border-gray-400
+                                           bg-slate-200 px-1.5 py-0.5
+                                           text-[10px] font-semibold
+                                           text-slate-800 dark:bg-slate-700
+                                           dark:text-blue-100"
+                                    :title="`Sort: ${plan.sort ?? '—'}`"
                                 >
                                     ID: {{ plan.id }}
                                 </div>
                             </div>
-
                             <div class="flex items-center space-x-2">
                                 <span
-                                    class="text-[10px] px-1.5 py-0.5 rounded-sm
-                                           font-semibold border border-gray-400
-                                           bg-teal-100 dark:bg-teal-900/50
-                                           text-teal-700 dark:text-teal-300"
+                                    class="rounded-sm border border-gray-400
+                                           bg-teal-100 px-1.5 py-0.5
+                                           text-[10px] font-bold text-teal-700
+                                           dark:bg-teal-900/50 dark:text-teal-300"
                                     :title="t('price')"
                                 >
                                     {{ priceLabel(plan) }}
                                 </span>
-
                                 <input
                                     type="checkbox"
+                                    class="rounded border-slate-400"
                                     :checked="selectedPlans.includes(plan.id)"
-                                    @change="$emit('toggle-select', plan.id)"
-                                />
+                                    @change="emit('toggle-select', plan.id)"
+                                >
                             </div>
                         </div>
-
-                        <!-- Image -->
-                        <div class="relative w-full h-32 bg-slate-200 dark:bg-slate-900">
-                            <template v-if="plan.images?.length">
+                        <div class="relative h-32 w-full bg-slate-200 dark:bg-slate-900">
                             <img
-                                :src="getPrimaryImage(plan).webp_url || getPrimaryImage(plan).url"
-                                :alt="getPrimaryImage(plan).alt || t('defaultImageAlt')"
-                                :title="getPrimaryImage(plan).caption || t('image')"
-                                class="w-full h-full object-cover"
-                            />
-                            </template>
-                            <template v-else>
-                                <img
-                                    src="/storage/subscription_plan_images/default-image.png"
-                                    :alt="t('defaultImageTitle')"
-                                    class="w-full h-full object-cover"
-                                />
-                            </template>
+                                :src="imageSrc(plan)"
+                                :alt="imageAlt(plan)"
+                                class="h-full w-full object-cover"
+                            >
                         </div>
-
-                        <!-- Content -->
-                        <div class="flex flex-col flex-1 px-3 py-2">
+                        <div class="flex flex-1 flex-col px-3 py-2">
                             <div
-                                class="text-sm font-semibold text-sky-700 dark:text-sky-200
-                                       text-center line-clamp-2"
+                                class="line-clamp-2 text-center text-sm font-semibold
+                                       text-blue-700 dark:text-blue-200"
                                 :title="plan.subtitle || plan.title"
                             >
-                                {{ plan.title }}
+                                {{ plan.title || '—' }}
                             </div>
-
-                            <div class="text-[9px] text-slate-500 dark:text-slate-300 text-center">
-                                {{ plan.slug }}
+                            <div class="text-center text-[9px] text-slate-500 dark:text-slate-300">
+                                {{ plan.slug || '—' }}
                             </div>
-
-                            <div class="font-semibold text-[11px]
-                                        text-gray-700 dark:text-gray-300 text-center">
+                            <div
+                                v-if="plan.subtitle"
+                                class="text-center text-[11px] font-semibold
+                                       text-gray-700 dark:text-gray-300"
+                            >
                                 {{ plan.subtitle }}
                             </div>
-
-                            <div class="my-1 text-[11px] text-center
-                                        text-gray-500 dark:text-gray-400
-                                        border border-dashed border-gray-400">
+                            <div
+                                v-if="plan.short"
+                                class="my-1 border border-dashed border-gray-400 text-center
+                                       text-[11px] text-gray-500 dark:text-gray-400"
+                            >
                                 {{ plan.short }}
                             </div>
-
-                            <div class="flex flex-wrap justify-center gap-1 mt-1
+                            <div class="mt-1 flex flex-wrap justify-center gap-1
                                         text-[10px] font-semibold">
                                 <span
-                                    class="px-2 py-0.5 rounded-sm
-                                           bg-teal-100 dark:bg-teal-900
-                                           border border-gray-400
+                                    class="rounded-sm border border-gray-400
+                                           bg-teal-100 dark:bg-teal-900 px-2 py-0.5
                                            text-teal-700 dark:text-teal-300"
-                                    :title="t('period')"
                                 >
                                     {{ t('period') }} - {{ periodLabel(plan) }}
                                 </span>
-
                                 <span
-                                    class="px-2 py-0.5 rounded-sm
-                                           bg-fuchsia-100 dark:bg-fuchsia-900
-                                           border border-gray-400
+                                    class="rounded-sm border border-gray-400
+                                           bg-fuchsia-100 dark:bg-fuchsia-900 px-2 py-0.5
                                            text-fuchsia-700 dark:text-fuchsia-300"
-                                    :title="t('trial')"
                                 >
                                     {{ t('trial') }}: {{ plan.trial_days ?? 0 }} {{ t('days') }}
                                 </span>
                             </div>
-
-                            <div class="mt-2 text-[11px] text-center">
+                            <div class="mt-2 text-center text-[11px]">
                                 <div class="font-semibold">
                                     <span class="text-slate-700 dark:text-slate-300">
                                         {{ t('publishedAt') }}:
@@ -249,7 +267,7 @@ const priceLabel = (plan) => {
                                     <span class="text-slate-700 dark:text-slate-300">
                                         {{ t('shortStarted') }}:
                                     </span>
-                                    <span class="text-teal-700 dark:text-teal-300">
+                                    <span class="font-semibold text-teal-700 dark:text-teal-300">
                                         {{ formatDate(plan.available_from) }}
                                     </span>
                                 </div>
@@ -257,26 +275,31 @@ const priceLabel = (plan) => {
                                     <span class="text-slate-700 dark:text-slate-300">
                                         {{ t('shortExpires') }}:
                                     </span>
-                                    <span class="text-sky-700 dark:text-sky-300">
+                                    <span class="font-semibold text-sky-700 dark:text-sky-300">
                                         {{ formatDate(plan.available_until) }}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Actions -->
                         <div
-                            class="flex items-center justify-center px-3 py-2
-                                   border-t border-dashed border-slate-400 dark:border-slate-500">
+                            class="flex items-center justify-center border-t border-dashed
+                                   border-slate-400 px-3 py-2 dark:border-slate-500"
+                        >
                             <div class="flex items-center space-x-1">
                                 <ActivityToggle
-                                    :isActive="plan.activity"
-                                    @toggle-activity="$emit('toggle-activity', plan)"
+                                    :is-active="plan.activity"
                                     :title="plan.activity ? t('enabled') : t('disabled')"
+                                    @toggle-activity="emit('toggle-activity', plan)"
                                 />
-                                <IconEdit :href="route('admin.subscriptionPlans.edit', plan.id)" />
+
+                                <IconEdit
+                                    :href="route('admin.schoolSubscriptionPlans.edit', plan.id)"
+                                />
+
                                 <DeleteIconButton
-                                    @delete="$emit('delete', plan.id, plan.title)" />
+                                    @delete="emit('delete', plan.id, plan.title)"
+                                />
                             </div>
                         </div>
                     </div>

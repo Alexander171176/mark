@@ -5,4 +5,6 @@ export default {
     weeks: 'weeks',
     weightClassName: 'Name of the weight category',
     welcome: 'Welcome',
+    whereFrom: 'Where from',
+    whereTo: 'Where to',
 }

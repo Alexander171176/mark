@@ -54,6 +54,7 @@ export default {
     enrollment: 'Enrollment',
     enrollments: 'Enrollments',
     enterText: 'Enter your answer...',
+    enterTextToTranslate: 'Enter text to translate...',
     expand: 'expand',
     experienceAsc: 'Experience ↑',
     experienceDesc: 'Experience ↓',

@@ -36,6 +36,7 @@ export default {
     resetPasswordButton: 'Сбросить пароль',
     resetPasswordLink: 'Сбросить пароль по ссылке',
     resetPasswordTitle: 'Сброс Пароля',
+    result: 'Результат',
     reviews: 'Отзывы',
     reviewerComment: 'Комментарий проверяющего',
     right: 'Показывать в правой колонке',

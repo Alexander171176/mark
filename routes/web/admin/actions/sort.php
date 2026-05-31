@@ -23,7 +23,7 @@ use App\Http\Controllers\Admin\School\Price\SchoolCoursePriceController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
-use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
+use App\Http\Controllers\Admin\School\SubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
@@ -126,9 +126,10 @@ Route::put('/school-bundle-prices/{schoolBundlePrice}/sort',
     ->whereNumber('schoolBundlePrice')
     ->name('schoolBundlePrices.updateSort');
 
-Route::put('subscription-plans/{subscriptionPlan}/update-sort',
-    [SubscriptionPlanController::class, 'updateSort'])
-    ->name('subscriptionPlans.updateSort');
+Route::put('/school-subscription-plans/{schoolSubscriptionPlan}/sort',
+    [SchoolSubscriptionPlanController::class, 'updateSort'])
+    ->whereNumber('schoolSubscriptionPlan')
+    ->name('schoolSubscriptionPlans.updateSort');
 
 Route::put('market-companies/{marketCompany}/update-sort',
     [MarketCompanyController::class, 'updateSort'])

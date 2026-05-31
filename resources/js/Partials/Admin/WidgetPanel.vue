@@ -2,22 +2,35 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePage } from '@inertiajs/vue3'
+import AdminTranslationWidget from '@/Components/Admin/UI/Widget/AdminTranslationWidget.vue'
 
 const { t } = useI18n()
 const { siteSettings } = usePage().props
 
-// Реф для хранения состояния темного режима (true, если активен)
 const isDarkMode = ref(false)
+const isTranslatorOpen = ref(false)
+
 let observer
 
-// Функция для проверки наличия класса "dark" на <html>
 const checkDarkMode = () => {
     isDarkMode.value = document.documentElement.classList.contains('dark')
 }
 
-// При монтировании компонента запускаем первоначальную проверку и устанавливаем MutationObserver
+const toggleTranslator = () => {
+    isTranslatorOpen.value = !isTranslatorOpen.value
+    localStorage.setItem('adminTranslatorOpen', String(isTranslatorOpen.value))
+}
+
+const closeTranslator = () => {
+    isTranslatorOpen.value = false
+    localStorage.setItem('adminTranslatorOpen', 'false')
+}
+
 onMounted(() => {
     checkDarkMode()
+
+    isTranslatorOpen.value = localStorage.getItem('adminTranslatorOpen') === 'true'
+
     observer = new MutationObserver(checkDarkMode)
     observer.observe(document.documentElement, {
         attributes: true,
@@ -25,12 +38,10 @@ onMounted(() => {
     })
 })
 
-// При размонтировании отключаем наблюдатель
 onUnmounted(() => {
     if (observer) observer.disconnect()
 })
 
-// ✅ 1 в 1 как Sidebar.vue
 const bgColorClass = computed(() => {
     return isDarkMode.value
         ? (siteSettings.AdminSidebarDarkColor || 'bg-cyan-900')
@@ -40,8 +51,8 @@ const bgColorClass = computed(() => {
 const colorText = computed(() => {
     return isDarkMode.value
         ? (siteSettings.AdminSidebarDarkText || 'text-slate-200')
-        : (siteSettings.AdminSidebarLightText || 'text-slate-200');
-});
+        : (siteSettings.AdminSidebarLightText || 'text-slate-200')
+})
 </script>
 
 <template>
@@ -50,12 +61,12 @@ const colorText = computed(() => {
             id="widgetPanel"
             :class="[bgColorClass]"
             class="flex-col items-center
-             h-full w-4 z-20
-             dark:border-l dark:border-gray-600
-             overflow-y-scroll
-             hidden md:flex md:z-auto
-             no-scrollbar
-             transition-all duration-200 ease-in-out"
+                     h-full w-4 z-50
+                     dark:border-l dark:border-gray-600
+                     overflow-y-scroll
+                     hidden md:flex md:z-50
+                     no-scrollbar
+                     transition-all duration-200 ease-in-out"
         >
             <a href="/" target="_blank" class="mt-16 ml-1" :title="t('website')">
                 <svg
@@ -80,8 +91,28 @@ const colorText = computed(() => {
                     />
                 </svg>
             </a>
+            <button
+                type="button"
+                class="mt-3 ml-1"
+                title="Переводчик"
+                @click="toggleTranslator"
+            >
+                <svg
+                    class="w-4 h-4 shrink-0 fill-current mr-2"
+                    :class="[colorText]"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17A15.7 15.7 0 019 11.17 15.16 15.16 0 016.91 8H4.91a17.39 17.39 0 002.77 4.36l-5.09 5.02L4 18.8l5-5 3.11 3.11.76-1.84zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"
+                    />
+                </svg>
+            </button>
         </div>
     </div>
+    <AdminTranslationWidget
+        :is-open="isTranslatorOpen"
+        @close="closeTranslator"
+    />
 </template>
 
 <style scoped>

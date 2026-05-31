@@ -29,7 +29,7 @@ use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizAttempt\SchoolQuizAttemptController;
 use App\Http\Controllers\Admin\School\QuizAttemptItem\SchoolQuizAttemptItemController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
-use App\Http\Controllers\Admin\School\SubscriptionPlan\SubscriptionPlanController;
+use App\Http\Controllers\Admin\School\SubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\Track\SchoolTrackController;
 use App\Http\Controllers\Admin\Statistics\Chart\ChartController;
 use App\Http\Controllers\Admin\System\Component\ComponentController;
@@ -141,9 +141,10 @@ Route::resource('/school-bundle-prices',
     ->parameters(['school-bundle-prices' => 'schoolBundlePrice'])
     ->names('schoolBundlePrices');
 
-Route::resource('/subscription-plans', SubscriptionPlanController::class)
-    ->parameters(['subscription-plans' => 'subscriptionPlan'])
-    ->names('subscriptionPlans');
+Route::resource('/school-subscription-plans',
+    SchoolSubscriptionPlanController::class)
+    ->parameters(['school-subscription-plans' => 'schoolSubscriptionPlan'])
+    ->names('schoolSubscriptionPlans');
 
 Route::resource('/currencies', CurrencyController::class);
 

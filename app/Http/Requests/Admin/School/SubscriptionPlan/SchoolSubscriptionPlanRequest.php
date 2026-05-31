@@ -32,15 +32,17 @@ class SchoolSubscriptionPlanRequest extends FormRequest
         }
 
         foreach (['sort', 'interval', 'trial_days', 'currency_id'] as $field) {
-            if ($this->filled($field)) {
+            if ($this->has($field) && is_numeric($this->input($field))) {
                 $data[$field] = (int) $this->input($field);
             }
         }
 
-        if ($this->filled('price')) {
-            $data['price'] = is_string($this->input('price'))
-                ? str_replace(',', '.', trim($this->input('price')))
-                : $this->input('price');
+        if ($this->has('price')) {
+            $value = $this->input('price');
+
+            $data['price'] = $value === null || $value === ''
+                ? null
+                : (is_string($value) ? str_replace(',', '.', trim($value)) : $value);
         }
 
         foreach (['provider_payload', 'config'] as $jsonField) {
@@ -53,18 +55,6 @@ class SchoolSubscriptionPlanRequest extends FormRequest
             }
         }
 
-        if ($this->has('translations') && is_array($this->input('translations'))) {
-            $data['translations'] = collect($this->input('translations'))
-                ->map(function ($translation) {
-                    if (isset($translation['locale']) && is_string($translation['locale'])) {
-                        $translation['locale'] = mb_strtolower(trim($translation['locale']));
-                    }
-
-                    return $translation;
-                })
-                ->toArray();
-        }
-
         if (!empty($data)) {
             $this->merge($data);
         }
@@ -72,14 +62,18 @@ class SchoolSubscriptionPlanRequest extends FormRequest
 
     public function rules(): array
     {
-        $planId = $this->route('school_subscription_plan')?->id
-            ?? $this->route('subscriptionPlan')?->id
-            ?? $this->route('schoolSubscriptionPlan')?->id
-            ?? $this->input('id');
+        $plan = $this->route('schoolSubscriptionPlan')
+            ?? $this->route('subscriptionPlan')
+            ?? $this->route('school_subscription_plan')
+            ?? $this->route('id');
+
+        $planId = is_object($plan)
+            ? $plan->id
+            : ($plan ? (int) $plan : null);
 
         return [
             'sort' => ['nullable', 'integer', 'min:0'],
-            'activity' => [$this->isMethod('post') ? 'required' : 'sometimes', 'boolean'],
+            'activity' => ['required', 'boolean'],
 
             'slug' => [
                 'required',
@@ -108,7 +102,6 @@ class SchoolSubscriptionPlanRequest extends FormRequest
             'config' => ['nullable', 'array'],
 
             'translations' => ['required', 'array', 'min:1'],
-            'translations.*.locale' => ['required', 'string', 'max:10', 'distinct'],
             'translations.*.title' => ['required', 'string', 'max:255'],
             'translations.*.subtitle' => ['nullable', 'string', 'max:255'],
             'translations.*.short' => ['nullable', 'string', 'max:255'],
@@ -174,14 +167,17 @@ class SchoolSubscriptionPlanRequest extends FormRequest
             'config.array' => 'Поле config должно быть объектом/массивом.',
 
             'translations.required' => 'Необходимо передать переводы тарифа.',
-            'translations.*.locale.required' => 'Укажите локаль перевода.',
-            'translations.*.locale.distinct' => 'Локали переводов не должны повторяться.',
             'translations.*.title.required' => 'Укажите название тарифа.',
 
+            'images.array' => 'Неверный формат поля изображений.',
             'images.*.id.exists' => 'Указанное изображение не найдено.',
+            'images.*.id.prohibited' => 'ID изображения нельзя передавать при создании.',
+            'images.*.file.required_without' => 'Загрузите файл изображения или укажите существующий ID.',
             'images.*.file.image' => 'Файл должен быть изображением.',
             'images.*.file.mimes' => 'Разрешённые форматы: jpeg, jpg, png, gif, svg, webp.',
             'images.*.file.max' => 'Максимальный размер изображения — 10 МБ.',
+
+            'deletedImages.*.exists' => 'Некоторых изображений для удаления не существует.',
         ];
     }
 
@@ -190,12 +186,20 @@ class SchoolSubscriptionPlanRequest extends FormRequest
         return [
             'slug' => 'Slug',
             'activity' => 'Активность',
+            'sort' => 'Сортировка',
+            'published_at' => 'Дата публикации',
+            'available_from' => 'Доступен с',
+            'available_until' => 'Доступен до',
             'billing_period' => 'Период биллинга',
             'interval' => 'Интервал',
             'currency_id' => 'Валюта',
             'price' => 'Цена',
             'trial_days' => 'Пробный период',
             'auto_renew' => 'Автопродление',
+            'provider' => 'Провайдер',
+            'provider_ref' => 'ID тарифа у провайдера',
+            'provider_payload' => 'Данные провайдера',
+            'config' => 'Конфиг тарифа',
             'translations' => 'Переводы',
             'images' => 'Изображения тарифа',
         ];

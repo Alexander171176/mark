@@ -5,4 +5,6 @@ export default {
     weeks: 'недель',
     weightClassName: 'Название весовой категории',
     welcome: 'Добро Пожаловать',
+    whereFrom: 'Откуда',
+    whereTo: 'Куда',
 }

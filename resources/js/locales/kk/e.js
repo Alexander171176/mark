@@ -54,6 +54,7 @@ export default {
     enrollment: 'Тіркеу',
     enrollments: 'Тіркелулер',
     enterText: 'Жауабыңызды енгізіңіз...',
+    enterTextToTranslate: 'Аударылатын мәтінді енгізіңіз...',
     expand: 'развернуть',
     experienceAsc: 'Тәжірибе ↑',
     experienceDesc: 'Тәжірибе ↓',

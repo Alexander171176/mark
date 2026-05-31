@@ -281,7 +281,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.subscriptionPlans.index')"
+            :href="route('admin.schoolSubscriptionPlans.index')"
             :title="t('subscriptionPlans')"
             :description="descriptions.subscriptionPlans">
             <template #icon>

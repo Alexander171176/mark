@@ -38,7 +38,7 @@ Route::prefix('actions')->name('actions.')->group(function () { // Группи�
     require __DIR__ . '/bulk-sort.php';
 
     // Обновление сортировки (1 запись)
-    require __DIR__ . '/sort.php';
+    // require __DIR__ . '/sort.php';
 
     // Одобрение комментария
     require __DIR__ . '/comment-approve.php';

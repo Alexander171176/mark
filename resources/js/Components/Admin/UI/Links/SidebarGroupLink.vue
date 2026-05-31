@@ -144,8 +144,8 @@ const {t} = useI18n();
             {{ t('orders') }}
         </template>
     </SidebarLink>
-    <SidebarLink :href="route('admin.subscriptionPlans.index')"
-                 :active="route().current('subscriptionPlans.*')"
+    <SidebarLink :href="route('admin.schoolSubscriptionPlans.index')"
+                 :active="route().current('schoolSubscriptionPlans.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">

@@ -35,8 +35,8 @@ const { t } = useI18n();
             {{ t('orders') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
-            :href="route('admin.subscriptionPlans.index')"
-            :active="route().current('admin.subscriptionPlans.*')">
+            :href="route('admin.schoolSubscriptionPlans.index')"
+            :active="route().current('admin.schoolSubscriptionPlans.*')">
             {{ t('subscriptionPlans') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink

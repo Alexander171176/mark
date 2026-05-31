@@ -140,6 +140,7 @@ export default {
     sortStatusAsc: 'Статус ↑',
     sortStatusDesc: 'Статус ↓',
     sortStudentsCount: 'по количеству студентов',
+    sourceText: 'Исходный текст',
     sourceType: 'Тип загрузки видеоресурса',
     stackIcons: 'Иконки стека',
     stanceLabel: 'Стойка',

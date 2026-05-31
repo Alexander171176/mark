@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, defineEmits, ref, watch, computed } from 'vue'
+import { defineProps, defineEmits, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
@@ -11,7 +11,7 @@ const { t } = useI18n()
 
 const props = defineProps({
     prices: { type: Array, default: () => [] },
-    selectedPrices: { type: Array, default: () => [] }
+    selectedPrices: { type: Array, default: () => [] },
 })
 
 const emits = defineEmits([
@@ -19,7 +19,7 @@ const emits = defineEmits([
     'delete',
     'update-sort-order',
     'toggle-select',
-    'toggle-all'
+    'toggle-all',
 ])
 
 const localPrices = ref([])
@@ -33,49 +33,69 @@ watch(
 )
 
 const handleDragEnd = () => {
-    const newOrderIds = localPrices.value.map(p => p.id)
-    emits('update-sort-order', newOrderIds)
+    emits('update-sort-order', localPrices.value.map((price) => price.id))
 }
 
 const toggleAll = (event) => {
-    const checked = event.target.checked
-    const ids = localPrices.value.map(p => p.id)
-    emits('toggle-all', { ids, checked })
+    emits('toggle-all', {
+        ids: localPrices.value.map((price) => price.id),
+        checked: event.target.checked,
+    })
 }
 
-const money = (v) => {
-    if (v === null || v === undefined || v === '') return '—'
-    return String(v)
+const money = (value) => {
+    if (value === null || value === undefined || value === '') {
+        return '—'
+    }
+
+    return Number(value).toLocaleString('ru-RU', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })
 }
 
 const dateShort = (iso) => {
-    if (!iso) return ' '
-    const d = new Date(iso)
-    if (isNaN(d)) return ' '
-    return d.toLocaleDateString('ru-RU', { year: 'numeric', month: 'short', day: 'numeric' })
+    if (!iso) return '—'
+
+    const date = new Date(iso)
+
+    if (Number.isNaN(date.getTime())) return '—'
+
+    return date.toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    })
 }
 
-const courseLabel = (p) => p?.course?.title || '—'
-const currencyLabel = (p) => p?.currency?.code || '—'
-
-const currencySuffix = (p) => p?.currency?.symbol || p?.currency?.code || ''
-const moneyWithCurrency = (v, p) => {
-    const val = money(v)
-    if (val === '—') return '—'
-    const suffix = currencySuffix(p)
-    return suffix ? `${val} ${suffix}` : val
+const courseLabel = (price) => {
+    return price?.course?.title
+        || price?.course?.translation?.title
+        || `ID: ${price?.school_course_id || '—'}`
 }
 
+const courseSlug = (price) => {
+    return price?.course?.slug || ''
+}
+
+const currencyLabel = (price) => {
+    return price?.currency?.code || '—'
+}
+
+const currencySuffix = (price) => {
+    return price?.currency?.symbol || price?.currency?.code || ''
+}
 </script>
 
 <template>
     <div
         class="bg-white dark:bg-slate-700 shadow-lg rounded-sm
-               border border-slate-200 dark:border-slate-600 relative">
-
-        <!-- Верхняя панель: кол-во выбранных + чекбокс -->
-        <div class="flex items-center justify-between px-3 py-2
-                    border-b border-slate-400 dark:border-slate-500">
+               border border-slate-200 dark:border-slate-600 relative"
+    >
+        <div
+            class="flex items-center justify-between px-3 py-2
+                   border-b border-slate-400 dark:border-slate-500"
+        >
             <div class="text-xs text-slate-600 dark:text-slate-200">
                 {{ t('selected') }}: {{ selectedPrices.length }}
             </div>
@@ -83,27 +103,30 @@ const moneyWithCurrency = (v, p) => {
             <label
                 v-if="localPrices.length"
                 class="flex items-center text-xs text-slate-600
-                       dark:text-slate-200 cursor-pointer">
+                       dark:text-slate-200 cursor-pointer"
+            >
                 <span>{{ t('selectAll') }}</span>
                 <input type="checkbox" class="mx-2" @change="toggleAll" />
             </label>
         </div>
-
         <div class="overflow-x-auto">
-            <table v-if="localPrices.length"
-                   class="table-auto w-full text-slate-700 dark:text-slate-100">
+            <table
+                v-if="localPrices.length"
+                class="table-auto w-full text-slate-700 dark:text-slate-100"
+            >
                 <thead
                     class="text-sm uppercase bg-slate-200 dark:bg-cyan-900
-                           border border-solid border-gray-300 dark:border-gray-700">
+                           border border-solid border-gray-300 dark:border-gray-700"
+                >
                 <tr>
                     <th class="px-2 py-3 w-px">
-                        <!-- drag handle header -->
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             class="w-4 h-4 fill-current text-slate-800 dark:text-slate-200"
                             height="24"
                             width="24"
-                            viewBox="0 0 24 24">
+                            viewBox="0 0 24 24"
+                        >
                             <path
                                 d="M12.707,2.293a1,1,0,0,0-1.414,0l-5,5A1,1,0,0,0,7.707,8.707L12,4.414l4.293,4.293a1,1,0,0,0,1.414-1.414Z"
                             />
@@ -120,55 +143,44 @@ const moneyWithCurrency = (v, p) => {
                             {{ t('course') }}
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap"
-                        :title="t('currency') ">
+                    <th
+                        class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap"
+                        :title="t('currency')"
+                    >
                         <div class="flex justify-center">
-                            <svg class="shrink-0 h-4 w-4" viewBox="0 0 24 24">
-                            <path class="fill-current text-slate-700 dark:text-slate-100"
-                                  d="M0,5V19H24V5ZM7,9.749a.492.492,0,0,1-.19.392,7.537,7.537,0,0,0-2.795,5.366A.517.517,0,0,1,3.507,16c-.63,0-.992.005-.992.005a.506.506,0,0,1-.5-.52A7.27,7.27,0,0,1,4.431,10H1.5A.5.5,0,0,1,1,9.5v-1A.5.5,0,0,1,1.5,8h5a.5.5,0,0,1,.5.5Zm8,0a.492.492,0,0,1-.19.392,7.537,7.537,0,0,0-2.795,5.366.517.517,0,0,1-.508.488c-.63,0-.992.005-.992.005a.506.506,0,0,1-.5-.52A7.27,7.27,0,0,1,12.431,10H9.5A.5.5,0,0,1,9,9.5v-1A.5.5,0,0,1,9.5,8h5a.5.5,0,0,1,.5.5Zm8,0a.492.492,0,0,1-.19.392,7.537,7.537,0,0,0-2.795,5.366.517.517,0,0,1-.508.488c-.63,0-.992.005-.992.005a.506.506,0,0,1-.5-.52A7.27,7.27,0,0,1,20.431,10H17.5a.5.5,0,0,1-.5-.5v-1a.5.5,0,0,1,.5-.5h5a.5.5,0,0,1,.5.5Z"></path>
-                            <path class="fill-current text-slate-700 dark:text-slate-100"
-                                  d="M1,1H23a1,1,0,0,1,1,1V3a0,0,0,0,1,0,0H0A0,0,0,0,1,0,3V2A1,1,0,0,1,1,1Z"></path>
-                            <path class="fill-current text-slate-700 dark:text-slate-100"
-                                  d="M0,21H24a0,0,0,0,1,0,0v1a1,1,0,0,1-1,1H1a1,1,0,0,1-1-1V21A0,0,0,0,1,0,21Z"></path>
-                        </svg>
+                            <svg class="shrink-0 h-4 w-4" viewBox="0 0 640 512">
+                                <path class="fill-current text-teal-600 dark:text-teal-400"
+                                      d="M352 288h-16v-88c0-4.42-3.58-8-8-8h-13.58c-4.74 0-9.37 1.4-13.31 4.03l-15.33 10.22a7.994 7.994 0 0 0-2.22 11.09l8.88 13.31a7.994 7.994 0 0 0 11.09 2.22l.47-.31V288h-16c-4.42 0-8 3.58-8 8v16c0 4.42 3.58 8 8 8h64c4.42 0 8-3.58 8-8v-16c0-4.42-3.58-8-8-8zM608 64H32C14.33 64 0 78.33 0 96v320c0 17.67 14.33 32 32 32h576c17.67 0 32-14.33 32-32V96c0-17.67-14.33-32-32-32zM48 400v-64c35.35 0 64 28.65 64 64H48zm0-224v-64h64c0 35.35-28.65 64-64 64zm272 192c-53.02 0-96-50.15-96-112 0-61.86 42.98-112 96-112s96 50.14 96 112c0 61.87-43 112-96 112zm272 32h-64c0-35.35 28.65-64 64-64v64zm0-224c-35.35 0-64-28.65-64-64h64v64z" />
+                            </svg>
                         </div>
                     </th>
                     <th class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap">
-                        <div class="font-semibold text-center">
-                            {{ t('price') }}
+                        <div class="font-semibold text-center">{{ t('price') }}</div>
+                    </th>
+                    <th class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap">
+                        <div class="font-semibold text-center">{{ t('salePrice') }}</div>
+                    </th>
+                    <th
+                        class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap"
+                        :title="t('periodValidityPrice')"
+                    >
+                        <div class="flex justify-center">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="w-4 h-4"
+                                height="24"
+                                width="24"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    class="fill-current text-sky-700 dark:text-sky-300"
+                                    d="M22,13a1,1,0,0,1,0-2h1.949A12.006,12.006,0,0,0,13,.051V2a1,1,0,0,1-2,0V.051A12.006,12.006,0,0,0,.051,11H2a1,1,0,0,1,0,2H.051A12.006,12.006,0,0,0,11,23.949V22a1,1,0,0,1,2,0v1.949A12.006,12.006,0,0,0,23.949,13Zm-6,0H12a1,1,0,0,1-.832-.445l-4-6a1,1,0,1,1,1.664-1.11L12.535,11H16a1,1,0,0,1,0,2Z"
+                                />
+                            </svg>
                         </div>
                     </th>
                     <th class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap">
-                        <div class="font-semibold text-center">
-                            {{ t('salePrice') }}
-                        </div>
-                    </th>
-                    <th class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap">
-                        <div class="font-semibold text-center">
-                            {{ t('compareAtPrice') }}
-                        </div>
-                    </th>
-                    <th class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap">
-                        <div class="font-semibold text-left">
-                            {{ t('effectivePrice') }}
-                        </div>
-                    </th>
-                    <th class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap">
-                        <div class="font-semibold text-center"
-                             :title="t('periodValidityPrice')">
-                            <div class="flex justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="w-4 h-4" height="24" width="24" viewBox="0 0 24 24">
-                                    <path class="fill-current text-sky-700 dark:text-sky-300"
-                                          d="M22,13a1,1,0,0,1,0-2h1.949A12.006,12.006,0,0,0,13,.051V2a1,1,0,0,1-2,0V.051A12.006,12.006,0,0,0,.051,11H2a1,1,0,0,1,0,2H.051A12.006,12.006,0,0,0,11,23.949V22a1,1,0,0,1,2,0v1.949A12.006,12.006,0,0,0,23.949,13Zm-6,0H12a1,1,0,0,1-.832-.445l-4-6a1,1,0,1,1,1.664-1.11L12.535,11H16a1,1,0,0,1,0,2Z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </th>
-                    <th class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap">
-                        <div class="font-semibold text-end">
-                            {{ t('actions') }}
-                        </div>
+                        <div class="font-semibold text-end">{{ t('actions') }}</div>
                     </th>
                     <th class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap">
                         <div class="text-center">
@@ -179,153 +191,131 @@ const moneyWithCurrency = (v, p) => {
                 </thead>
 
                 <draggable
-                    tag="tbody"
                     v-model="localPrices"
+                    tag="tbody"
                     item-key="id"
                     handle=".drag-handle"
                     @end="handleDragEnd"
                 >
-                    <template #item="{ element: p }">
+                    <template #item="{ element: price }">
                         <tr
                             class="text-sm font-semibold border-b-2
-                                   hover:bg-slate-100 dark:hover:bg-cyan-800">
-
-                            <!-- drag -->
-                            <td class="px-2 py-1 text-center cursor-move handle">
+                                   hover:bg-slate-100 dark:hover:bg-cyan-800"
+                        >
+                            <td class="px-2 py-1 text-center cursor-move">
                                 <button
                                     type="button"
-                                    class="drag-handle
-                                           text-slate-400 hover:text-slate-700
-                                           dark:hover:text-slate-100"
+                                    class="drag-handle text-slate-400 hover:text-slate-700 dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                         <path
-                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
+                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z"
+                                        />
                                     </svg>
                                 </button>
                             </td>
-
-                            <!-- id -->
                             <td class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap">
                                 <div
-                                    class="text-center text-xs
-                                           text-slate-800 dark:text-blue-200"
-                                    :title="`[${p.sort ?? 0}]`">
-                                    <span class="text-[11px] opacity-90">
-                                        {{ p.id }}
-                                    </span>
+                                    class="text-center text-xs text-slate-800 dark:text-blue-200"
+                                    :title="`[${price.sort ?? 0}]`"
+                                >
+                                    {{ price.id }}
                                 </div>
                             </td>
-
-                            <!-- course -->
                             <td class="px-2 py-3 first:pl-8 last:pr-8">
                                 <div class="flex flex-col">
                                     <span class="text-xs text-sky-700 dark:text-sky-200">
-                                        {{ courseLabel(p) }}
-                                        <span v-if="p.course?.locale"
-                                              class="uppercase text-amber-500 dark:text-amber-400">
-                                            · [{{ p.course.locale }}]
-                                        </span>
+                                        {{ courseLabel(price) }}
                                     </span>
                                     <span class="text-[10px] text-slate-700 dark:text-slate-300">
-                                        {{ p.course?.slug || '—' }}
+                                        {{ courseSlug(price) || '—' }}
                                     </span>
                                 </div>
                             </td>
-
-                            <!-- currency -->
                             <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="font-semibold text-center
-                                             text-amber-700 dark:text-amber-300">
-                                    {{ currencyLabel(p) }}
+                                            text-teal-700 dark:text-teal-300">
+                                    {{ currencyLabel(price) }}
                                 </div>
                             </td>
-
-                            <!-- price -->
                             <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="flex items-baseline justify-center gap-1">
-                                    <div class="text-amber-700 dark:text-amber-300">
-                                        {{ money(p.price) }}
+                                    <div class="text-slate-700 dark:text-slate-300">
+                                        {{ money(price.price) }}
                                     </div>
-                                    <div v-if="money(p.price) !== '—'"
-                                          class="text-[11px] opacity-70
-                                          text-gray-700 dark:text-gray-300">
-                                        {{ p.currency?.symbol || p.currency?.code }}
+                                    <div
+                                        v-if="money(price.price) !== '—'"
+                                        class="text-[13px] opacity-70
+                                               text-gray-700 dark:text-gray-300"
+                                    >
+                                        {{ currencySuffix(price) }}
+                                    </div>
+                                </div>
+                                <div
+                                    v-if="Number(price.compare_at_price) > 0"
+                                    class="flex items-baseline justify-center gap-1"
+                                >
+                                    <div
+                                        class="text-gray-500 dark:text-gray-400
+                                        line-through opacity-75 text-xs"
+                                    >
+                                        {{ money(price.compare_at_price) }}
                                     </div>
                                 </div>
                             </td>
-
-                            <!-- sale -->
                             <td class="px-2 py-3 whitespace-nowrap">
-                                <div class="flex items-baseline justify-center gap-1">
-                                    <div class="text-teal-700 dark:text-teal-300">
-                                        {{ money(p.sale_price) }}
+                                <div class="text-center">
+                                    <div class="text-orange-700 dark:text-orange-300">
+                                        {{ money(price.effective_price) }}
+                                        <span
+                                            v-if="money(price.effective_price) !== '—'"
+                                            class="text-[13px] opacity-70
+                                                   text-gray-700 dark:text-gray-300"
+                                        >
+                                            {{ currencySuffix(price) }}
+                                        </span>
                                     </div>
-                                    <div v-if="money(p.sale_price) !== '—'"
-                                         class="text-[11px] opacity-70
-                                          text-gray-700 dark:text-gray-300">
-                                        {{ p.currency?.symbol || p.currency?.code }}
-                                    </div>
-                                </div>
-                            </td>
-
-                            <!-- compare -->
-                            <td class="px-2 py-3 whitespace-nowrap">
-                                <div class="flex items-baseline justify-center gap-1">
-                                    <div class="text-indigo-700 dark:text-indigo-300">
-                                        {{ money(p.compare_at_price) }}
-                                    </div>
-                                    <div v-if="money(p.compare_at_price) !== '—'"
-                                         class="text-[11px] opacity-70
-                                          text-gray-700 dark:text-gray-300">
-                                        {{ p.currency?.symbol || p.currency?.code }}
+                                    <div
+                                        v-if="price.has_discount && price.discount_percent"
+                                        class="text-[11px] text-rose-600 dark:text-rose-300"
+                                    >
+                                        -{{ price.discount_percent }}%
                                     </div>
                                 </div>
                             </td>
-
-                            <!-- effective -->
                             <td class="px-2 py-3 whitespace-nowrap">
-                                <div v-if="p.has_discount && p.discount_percent"
-                                      class="ml-2 text-center text-[11px]
-                                             text-rose-600 dark:text-rose-300">
-                                    -{{ p.discount_percent }}%
-                                </div>
-                            </td>
-
-                            <!-- period -->
-                            <td class="px-2 py-3 whitespace-nowrap">
-                                <div class="text-[12px] text-center">
-                                    <div class="text-sky-700 dark:text-sky-300">
-                                        {{ dateShort(p.starts_at) }}
+                                <div class="text-xs text-center">
+                                    <div class="text-blue-700 dark:text-blue-300">
+                                        {{ dateShort(price.starts_at) }}
                                     </div>
                                     <div class="text-slate-400">—</div>
-                                    <div class="text-sky-700 dark:text-sky-300">
-                                        {{ dateShort(p.ends_at) }}
+                                    <div class="text-blue-700 dark:text-blue-300">
+                                        {{ dateShort(price.ends_at) }}
                                     </div>
                                 </div>
                             </td>
-
-                            <!-- actions -->
                             <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="flex items-center justify-center space-x-1">
                                     <ActivityToggle
-                                        :isActive="p.activity"
-                                        @toggle-activity="$emit('toggle-activity', p)"
-                                        :title="p.activity ? t('enabled') : t('disabled')"
+                                        :isActive="price.activity"
+                                        :title="price.activity ? t('enabled') : t('disabled')"
+                                        @toggle-activity="$emit('toggle-activity', price)"
                                     />
-                                    <IconEdit :href="route('admin.coursePrices.edit', p.id)" />
-                                    <DeleteIconButton @delete="$emit('delete', p.id)" />
+                                    <IconEdit
+                                        :href="route('admin.schoolCoursePrices.edit', {
+                                            schoolCoursePrice: price.id,
+                                        })"
+                                    />
+                                    <DeleteIconButton @delete="$emit('delete', price)" />
                                 </div>
                             </td>
-
-                            <!-- checkbox -->
                             <td class="px-2 py-3 first:pl-8 last:pr-8 whitespace-nowrap">
                                 <div class="text-center">
                                     <input
                                         type="checkbox"
-                                        :checked="selectedPrices.includes(p.id)"
-                                        @change="$emit('toggle-select', p.id)"
+                                        :checked="selectedPrices.includes(price.id)"
+                                        @change="$emit('toggle-select', price.id)"
                                     />
                                 </div>
                             </td>
@@ -333,7 +323,6 @@ const moneyWithCurrency = (v, p) => {
                     </template>
                 </draggable>
             </table>
-
             <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
                 {{ t('noData') }}
             </div>

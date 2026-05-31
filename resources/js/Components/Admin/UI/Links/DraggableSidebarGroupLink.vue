@@ -1,11 +1,9 @@
 <script setup>
-import {ref, watch, onMounted, onUnmounted, computed} from 'vue';
+import {ref, watch, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Draggable from 'vuedraggable';
 import DraggableSidebarLink from '@/Components/Admin/UI/Links/DraggableSidebarLink.vue';
-import {usePage} from "@inertiajs/vue3";
 
-const { siteSettings } = usePage().props;
 defineProps({
     expanded: Boolean
 });

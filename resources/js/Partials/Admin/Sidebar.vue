@@ -120,10 +120,6 @@ watch(sidebarExpanded, (newVal) => {
                 <Link :href="route('admin.index')" v-if="sidebarExpanded">
                     <ApplicationMark class="h-6 w-auto 2xl:block" />
                 </Link>
-                <span class="text-indigo-300 font-semibold text-md hidden 2xl:block"
-                      v-if="sidebarExpanded">
-                    Pulsar CMS {{ sidebarTitle }}
-                </span>
                 <FontAwesomeIcon
                     :icon="['fas', 'sliders']"
                     class="text-white"

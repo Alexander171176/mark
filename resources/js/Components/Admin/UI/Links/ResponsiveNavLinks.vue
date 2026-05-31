@@ -40,13 +40,13 @@ const { t } = useI18n();
             {{ t('subscriptionPlans') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
-            :href="route('admin.coursePrices.index')"
-            :active="route().current('admin.coursePrices.*')">
+            :href="route('admin.schoolCoursePrices.index')"
+            :active="route().current('admin.schoolCoursePrices.*')">
             {{ t('coursePrices') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
-            :href="route('admin.bundlePrices.index')"
-            :active="route().current('admin.bundlePrices.*')">
+            :href="route('admin.schoolBundlePrices.index')"
+            :active="route().current('admin.schoolBundlePrices.*')">
             {{ t('bundlePrices') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink

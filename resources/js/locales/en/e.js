@@ -41,7 +41,7 @@ export default {
     editTournament: 'Edit the Tournament',
     editUser: 'Edit the User',
     editVideo: 'Edit a video post',
-    effectivePrice: 'Difference',
+    effectivePrice: 'Price',
     email: 'Email',
     emailNotVerified: 'Your email address is not verified.',
     emailVerificationTitle: 'Email Verification',

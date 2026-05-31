@@ -75,21 +75,25 @@ watch(isDarkTheme, (newValue) => {
 <template>
     <div>
         <!-- Переключатель темы -->
-        <div class="flex justify-center items-center mb-2">
+        <div class="flex justify-center items-center my-1">
             <input type="checkbox" id="theme-toggle" v-model="isDarkTheme" class="sr-only" />
             <label for="theme-toggle"
                    class="flex items-center justify-center
-                          w-8 h-8 bg-slate-100 hover:bg-yellow-100 rounded-full
-                          border border-slate-400 cursor-pointer">
+                          w-6 h-6 bg-slate-100 hover:bg-yellow-100 rounded-full
+                          border border-slate-300 cursor-pointer">
                 <!-- Солнце -->
-                <svg v-if="!isDarkTheme" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                <svg v-if="!isDarkTheme" class="w-3 h-3"
+                     viewBox="0 0 16 16"
+                     xmlns="http://www.w3.org/2000/svg">
                     <path class="fill-current text-slate-400"
                           d="M7 0h2v2H7V0Zm5.88 1.637 1.414 1.415-1.415 1.413-1.414-1.414 1.415-1.414ZM14 7h2v2h-2V7Zm-1.05 7.433-1.415-1.414 1.414-1.414 1.415 1.413-1.414 1.415ZM7 14h2v2H7v-2Zm-4.02.363L1.566 12.95l1.415-1.414 1.414 1.415-1.415 1.413ZM0 7h2v2H0V7Zm3.05-5.293L4.465 3.12 3.05 4.535 1.636 3.121 3.05 1.707Z" />
                     <path class="fill-current text-slate-500"
                           d="M8 4C5.8 4 4 5.8 4 8s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4Z" />
                 </svg>
                 <!-- Луна -->
-                <svg v-else class="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                <svg v-else class="w-3 h-3"
+                     viewBox="0 0 16 16"
+                     xmlns="http://www.w3.org/2000/svg">
                     <path class="fill-current text-slate-400"
                           d="M6.2 2C3.2 2.8 1 5.6 1 8.9 1 12.8 4.2 16 8.1 16c3.3 0 6-2.2 6.9-5.2C9.7 12.2 4.8 7.3 6.2 2Z" />
                     <path class="fill-current text-slate-500"

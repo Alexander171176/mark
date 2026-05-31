@@ -12,14 +12,14 @@ use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\SchoolBundleController;
-use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
-use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\School\CourseSchedule\SchoolCourseScheduleController;
 use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
 use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileController;
 use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
 use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
+use App\Http\Controllers\Admin\School\Price\SchoolBundlePriceController;
+use App\Http\Controllers\Admin\School\Price\SchoolCoursePriceController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
@@ -116,13 +116,15 @@ Route::put('/school-bundles/{schoolBundle}/sort',
     ->whereNumber('schoolBundle')
     ->name('schoolBundles.updateSort');
 
-Route::put('course-prices/{coursePrice}/update-sort',
-    [CoursePriceController::class, 'updateSort'])
-    ->name('coursePrices.updateSort');
+Route::put('/school-course-prices/{schoolCoursePrice}/sort',
+    [SchoolCoursePriceController::class, 'updateSort'])
+    ->whereNumber('schoolCoursePrice')
+    ->name('schoolCoursePrices.updateSort');
 
-Route::put('bundle-prices/{bundlePrice}/update-sort',
-    [BundlePriceController::class, 'updateSort'])
-    ->name('bundlePrices.updateSort');
+Route::put('/school-bundle-prices/{schoolBundlePrice}/sort',
+    [SchoolBundlePriceController::class, 'updateSort'])
+    ->whereNumber('schoolBundlePrice')
+    ->name('schoolBundlePrices.updateSort');
 
 Route::put('subscription-plans/{subscriptionPlan}/update-sort',
     [SubscriptionPlanController::class, 'updateSort'])

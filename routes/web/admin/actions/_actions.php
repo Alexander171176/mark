@@ -59,5 +59,5 @@ Route::prefix('actions')->name('actions.')->group(function () { // Группи�
     require __DIR__ . '/currencies.php';
 
     // Массовое удаление
-    require __DIR__ . '/bulk-delete.php';
+    require __DIR__ . '/bulk-destroy.php';
 });

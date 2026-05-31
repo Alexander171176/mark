@@ -1,10 +1,11 @@
 <script setup>
 /**
  * @version PulsarCMS 1.0
- * @author Александр Косолапов
- * Создание прайса курса (CoursePrice)
+ * @author Александр Косолапов <kosolapov1976@gmail.com>
+ *
+ * Создание цены курса школы
  */
-import { ref, computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -20,29 +21,25 @@ import InputMoney from '@/Components/Admin/UI/Input/InputMoney.vue'
 import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
 import InputText from '@/Components/Admin/UI/Input/InputText.vue'
 import InputError from '@/Components/Admin/UI/Input/InputError.vue'
+import SelectEntity from '@/Components/Admin/UI/Select/SelectEntity.vue'
 
-import VueMultiselect from 'vue-multiselect'
-
-// --- i18n / toast
+// Локализация и уведомления
 const { t } = useI18n()
 const toast = useToast()
 
-/**
- * Пропсы из контроллера:
- * return Inertia::render('Admin/CoursePrices/Create', [
- *   'courses' => $courses,
- *   'currencies' => $currencies,
- * ]);
- */
+// Входящие данные страницы
 const props = defineProps({
     courses: { type: Array, default: () => [] },
     currencies: { type: Array, default: () => [] },
+
+    defaultCourseId: { type: Number, default: null },
+    defaultCurrencyId: { type: Number, default: null },
 })
 
-/** Форма создания прайса */
+// Форма создания цены курса
 const form = useForm({
-    course_id: null,
-    currency_id: null,
+    school_course_id: props.defaultCourseId,
+    currency_id: props.defaultCurrencyId,
 
     price: '',
     sale_price: '',
@@ -54,107 +51,78 @@ const form = useForm({
     activity: true,
     sort: 0,
 
-    // meta можно не показывать в UI — но поле оставим
     meta: null,
 })
 
-/** лимит для options */
-const dynamicOptionsLimit = (items) => {
-    if (!items) return 10
-    return items.length + 10
-}
-
-/** options курсов */
+// Список курсов для выпадающего списка
 const courseOptions = computed(() =>
-    (props.courses || []).map(c => {
-        const title = c.title || c.slug || `#${c.id}`
-        const locale = c.locale || '—'
-        const slug = c.slug ? ` — ${c.slug}` : ''
-        return {
-            id: c.id,
-            label: `[ID: ${c.id}] [${locale}] ${title}${slug}`,
-        }
-    })
+    props.courses.map(course => ({
+        id: course.id,
+        label: [
+            `[ID: ${course.id}]`,
+            course.title || course.slug || `#${course.id}`,
+            course.slug ? `(${course.slug})` : null,
+        ].filter(Boolean).join(' '),
+    }))
 )
 
-/** options валют */
+// Список валют для выпадающего списка
 const currencyOptions = computed(() =>
-    (props.currencies || []).map(cur => {
-        const code = cur.code || `#${cur.id}`
-        const name = cur.name ? ` — ${cur.name}` : ''
-        return {
-            id: cur.id,
-            label: `${code}${name}`,
-        }
-    })
+    props.currencies.map(currency => ({
+        id: currency.id,
+        label: [
+            currency.code || `#${currency.id}`,
+            currency.name ? `— ${currency.name}` : null,
+            currency.symbol ? `(${currency.symbol})` : null,
+        ].filter(Boolean).join(' '),
+    }))
 )
 
-/** выбранные значения multiselect */
-const selectedCourse = ref(null)
-const selectedCurrency = ref(null)
+// Преобразование денежного значения в строку для сохранения
+const toMoneyString = (value) => {
+    if (value === null || value === undefined) return null
 
-/** Синхронизируем IDs курсов в форму */
-watch(selectedCourse, (val) => {
-    form.course_id = val?.id ?? null
-})
+    const stringValue = String(value).trim()
 
-/** Синхронизируем IDs валют в форму */
-watch(selectedCurrency, (val) => {
-    form.currency_id = val?.id ?? null
-})
+    if (stringValue === '') return null
 
-/** helpers */
-/** хелпер пунктуации валюты */
-const toMoneyString = (val) => {
-    if (val === null || typeof val === 'undefined') return null
-    if (typeof val === 'string') {
-        const v = val.trim()
-        if (v === '') return null
-        return v.replace(',', '.')
-    }
-    return String(val)
+    return stringValue.replace(',', '.')
 }
 
-/** хелпер дат */
-const toDateTimeStringOrNull = (val) => {
-    // <input type="datetime-local"> даёт "YYYY-MM-DDTHH:mm"
-    if (!val) return null
-    return String(val)
+// Преобразование даты в формат для сохранения
+const toDateTimeStringOrNull = (value) => {
+    if (!value) return null
+
+    return String(value)
 }
 
-/** отправка формы submit */
+// Отправка формы создания цены курса
 const submitForm = () => {
-    form.transform((data) => {
-        return {
-            ...data,
-            course_id: data.course_id ? Number(data.course_id) : null,
-            currency_id: data.currency_id ? Number(data.currency_id) : null,
+    form.transform((data) => ({
+        ...data,
 
-            price: toMoneyString(data.price),
-            sale_price: toMoneyString(data.sale_price),
-            compare_at_price: toMoneyString(data.compare_at_price),
+        school_course_id: data.school_course_id ? Number(data.school_course_id) : null,
+        currency_id: data.currency_id ? Number(data.currency_id) : null,
 
-            starts_at: toDateTimeStringOrNull(data.starts_at),
-            ends_at: toDateTimeStringOrNull(data.ends_at),
+        price: toMoneyString(data.price),
+        sale_price: toMoneyString(data.sale_price),
+        compare_at_price: toMoneyString(data.compare_at_price),
 
-            activity: data.activity ? 1 : 0,
-            sort: Number.isFinite(Number(data.sort)) ? Number(data.sort) : 0,
+        starts_at: toDateTimeStringOrNull(data.starts_at),
+        ends_at: toDateTimeStringOrNull(data.ends_at),
 
-            // meta оставляем как есть (null/объект)
-            meta: data.meta,
-        }
-    })
+        activity: Boolean(data.activity),
+        sort: Number.isFinite(Number(data.sort)) ? Number(data.sort) : 0,
 
-    form.post(route('admin.coursePrices.store'), {
+        meta: data.meta,
+    }))
+
+    form.post(route('admin.schoolCoursePrices.store'), {
         preserveScroll: true,
-        onSuccess: () => {
-            toast.success('Прайс успешно создан!')
-        },
+        onSuccess: () => toast.success('Цена курса успешно создана.'),
         onError: (errors) => {
-            console.error('❌ Ошибка при создании прайса:', errors)
             const firstKey = Object.keys(errors || {})[0]
-            const firstError = firstKey ? errors[firstKey] : null
-            toast.error(firstError || (t('checkForm') || 'Проверьте правильность заполнения полей.'))
+            toast.error(errors?.[firstKey] || 'Проверьте правильность заполнения полей.')
         },
     })
 }
@@ -163,24 +131,25 @@ const submitForm = () => {
 <template>
     <AdminLayout :title="t('addCoursePrice')">
         <template #header>
-            <TitlePage>{{ t('addCoursePrice') }}</TitlePage>
+            <TitlePage>
+                {{ t('addCoursePrice') }}
+            </TitlePage>
         </template>
 
         <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-12xl mx-auto">
             <div
                 class="p-4 bg-slate-50 dark:bg-slate-700
-               border border-blue-400 dark:border-blue-200
-               shadow-lg shadow-gray-500 dark:shadow-slate-400
-               bg-opacity-95 dark:bg-opacity-95"
+                       border border-blue-400 dark:border-blue-200
+                       shadow-lg shadow-gray-500 dark:shadow-slate-400
+                       bg-opacity-95 dark:bg-opacity-95"
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <!-- Назад -->
-                    <DefaultButton :href="route('admin.coursePrices.index')">
+                    <DefaultButton :href="route('admin.schoolCoursePrices.index')">
                         <template #icon>
                             <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
                                  viewBox="0 0 16 16">
                                 <path
-                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
+                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                 />
                             </svg>
                         </template>
@@ -188,8 +157,7 @@ const submitForm = () => {
                     </DefaultButton>
                 </div>
 
-                <form @submit.prevent="submitForm" class="p-3 w-full">
-                    <!-- Активность + sort -->
+                <form @submit.prevent="submitForm" class="p-3 w-full space-y-4">
                     <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
                         <div class="flex flex-row items-center gap-2">
                             <ActivityCheckbox v-model="form.activity" />
@@ -205,68 +173,43 @@ const submitForm = () => {
                             <div class="h-8 flex items-center">
                                 <LabelInput for="sort" :value="t('sort')" class="text-sm" />
                             </div>
+
                             <InputNumber
                                 id="sort"
+                                v-model="form.sort"
                                 type="number"
                                 min="0"
-                                v-model="form.sort"
                                 autocomplete="sort"
                                 class="w-full lg:w-28"
                             />
+
                             <InputError class="mt-2 lg:mt-0" :message="form.errors.sort" />
                         </div>
                     </div>
 
-                    <!-- Курс -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <LabelInput for="course_id">
-                            <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                            {{ t('course') }}
-                        </LabelInput>
-
-                        <VueMultiselect
-                            id="course_id"
-                            v-model="selectedCourse"
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <SelectEntity
+                            id="school_course_id"
+                            v-model="form.school_course_id"
+                            :label="t('course')"
+                            :required="true"
                             :options="courseOptions"
-                            :options-limit="dynamicOptionsLimit(courseOptions)"
-                            :multiple="false"
-                            :close-on-select="true"
-                            :allow-empty="true"
+                            :error-message="form.errors.school_course_id"
                             :placeholder="t('select')"
-                            label="label"
-                            track-by="id"
-                            class="w-full"
                         />
 
-                        <InputError class="mt-2" :message="form.errors.course_id" />
-                    </div>
-
-                    <!-- Валюта -->
-                    <div class="mb-3 flex flex-col items-start">
-                        <LabelInput for="currency_id">
-                            <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                            {{ t('currency') }}
-                        </LabelInput>
-
-                        <VueMultiselect
+                        <SelectEntity
                             id="currency_id"
-                            v-model="selectedCurrency"
+                            v-model="form.currency_id"
+                            :label="t('currency')"
+                            :required="true"
                             :options="currencyOptions"
-                            :options-limit="dynamicOptionsLimit(currencyOptions)"
-                            :multiple="false"
-                            :close-on-select="true"
-                            :allow-empty="true"
+                            :error-message="form.errors.currency_id"
                             :placeholder="t('select')"
-                            label="label"
-                            track-by="id"
-                            class="w-full"
                         />
-
-                        <InputError class="mt-2" :message="form.errors.currency_id" />
                     </div>
 
-                    <!-- Цены -->
-                    <div class="mb-3 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div class="flex flex-col items-start">
                             <LabelInput for="price">
                                 <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
@@ -286,7 +229,9 @@ const submitForm = () => {
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="sale_price">{{ t('salePrice') }}</LabelInput>
+                            <LabelInput for="sale_price">
+                                {{ t('salePrice') }}
+                            </LabelInput>
 
                             <InputMoney
                                 id="sale_price"
@@ -318,39 +263,47 @@ const submitForm = () => {
                         </div>
                     </div>
 
-                    <!-- Период -->
-                    <div class="mb-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div class="flex flex-col items-start">
-                            <LabelInput for="starts_at">{{ t('priceStartsAt') }}</LabelInput>
+                            <LabelInput for="starts_at">
+                                {{ t('priceStartsAt') }}
+                            </LabelInput>
+
                             <InputText
                                 id="starts_at"
-                                type="datetime-local"
                                 v-model="form.starts_at"
+                                type="datetime-local"
+                                autocomplete="off"
                                 class="w-full max-w-xs"
                             />
+
                             <InputError class="mt-2" :message="form.errors.starts_at" />
                         </div>
 
-                        <div class="flex flex-col items-end">
-                            <LabelInput for="ends_at">{{ t('priceEndsAt') }}</LabelInput>
+                        <div class="flex flex-col items-start lg:items-end">
+                            <LabelInput for="ends_at">
+                                {{ t('priceEndsAt') }}
+                            </LabelInput>
+
                             <InputText
                                 id="ends_at"
-                                type="datetime-local"
                                 v-model="form.ends_at"
+                                type="datetime-local"
+                                autocomplete="off"
                                 class="w-full max-w-xs"
                             />
+
                             <InputError class="mt-2" :message="form.errors.ends_at" />
                         </div>
                     </div>
 
-                    <!-- Кнопки -->
                     <div class="flex items-center justify-center mt-4 gap-3">
-                        <DefaultButton :href="route('admin.coursePrices.index')" class="mb-3">
+                        <DefaultButton :href="route('admin.schoolCoursePrices.index')">
                             <template #icon>
                                 <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
                                      viewBox="0 0 16 16">
                                     <path
-                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
+                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                     />
                                 </svg>
                             </template>
@@ -378,5 +331,3 @@ const submitForm = () => {
         </div>
     </AdminLayout>
 </template>
-
-<style src="/resources/css/vue-multiselect.min.css"></style>

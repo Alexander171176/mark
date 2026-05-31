@@ -12,14 +12,14 @@ use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\SchoolBundleController;
-use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
-use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\School\CourseSchedule\SchoolCourseScheduleController;
 use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
 use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileController;
 use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
 use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
+use App\Http\Controllers\Admin\School\Price\SchoolBundlePriceController;
+use App\Http\Controllers\Admin\School\Price\SchoolCoursePriceController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
@@ -104,13 +104,13 @@ Route::put('/currencies/update-sort-bulk',
     [CurrencyController::class, 'updateSortBulk'])
     ->name('currencies.updateSortBulk');
 
-Route::put('course-prices/update-sort-bulk',
-    [CoursePriceController::class, 'updateSortBulk'])
-    ->name('coursePrices.updateSortBulk');
+Route::put('/school-course-prices/update-sort-bulk',
+    [SchoolCoursePriceController::class, 'updateSortBulk'])
+    ->name('schoolCoursePrices.updateSortBulk');
 
-Route::put('bundle-prices/update-sort-bulk',
-    [BundlePriceController::class, 'updateSortBulk'])
-    ->name('bundlePrices.updateSortBulk');
+Route::put('/school-bundle-prices/update-sort-bulk',
+    [SchoolBundlePriceController::class, 'updateSortBulk'])
+    ->name('schoolBundlePrices.updateSortBulk');
 
 Route::put('subscription-plans/update-sort-bulk',
     [SubscriptionPlanController::class, 'updateSortBulk'])

@@ -299,7 +299,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.coursePrices.index')"
+            :href="route('admin.schoolCoursePrices.index')"
             :title="t('coursePrices')"
             :description="descriptions.coursePrices">
             <template #icon>
@@ -317,7 +317,7 @@ const descriptions = computed(() => ({
             </template>
         </WelcomeCard>
         <WelcomeCard
-            :href="route('admin.bundlePrices.index')"
+            :href="route('admin.schoolBundlePrices.index')"
             :title="t('bundlePrices')"
             :description="descriptions.bundlePrices">
             <template #icon>

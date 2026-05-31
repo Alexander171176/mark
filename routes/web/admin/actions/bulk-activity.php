@@ -13,14 +13,14 @@ use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\SchoolBundleController;
-use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
-use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\School\CourseSchedule\SchoolCourseScheduleController;
 use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
 use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileController;
 use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
 use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
+use App\Http\Controllers\Admin\School\Price\SchoolBundlePriceController;
+use App\Http\Controllers\Admin\School\Price\SchoolCoursePriceController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
@@ -109,13 +109,13 @@ Route::put('/currencies/bulk-activity',
     [CurrencyController::class, 'bulkUpdateActivity'])
     ->name('currencies.bulkUpdateActivity');
 
-Route::put('course-prices/bulk-update-activity',
-    [CoursePriceController::class, 'bulkUpdateActivity'])
-    ->name('coursePrices.bulkUpdateActivity');
+Route::put('/school-course-prices/bulk-activity',
+    [SchoolCoursePriceController::class, 'bulkUpdateActivity'])
+    ->name('schoolCoursePrices.bulkUpdateActivity');
 
-Route::put('bundle-prices/bulk-update-activity',
-    [BundlePriceController::class, 'bulkUpdateActivity'])
-    ->name('bundlePrices.bulkUpdateActivity');
+Route::put('/school-bundle-prices/bulk-activity',
+    [SchoolBundlePriceController::class, 'bulkUpdateActivity'])
+    ->name('schoolBundlePrices.bulkUpdateActivity');
 
 Route::put('subscription-plans/bulk-update-activity',
     [SubscriptionPlanController::class, 'bulkUpdateActivity'])

@@ -13,10 +13,8 @@ use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\SchoolBundleController;
-use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\School\CohortEnrollment\SchoolCohortEnrollmentController;
 use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
-use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\School\CourseSchedule\SchoolCourseScheduleController;
 use App\Http\Controllers\Admin\School\Enrollment\SchoolEnrollmentController;
 use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
@@ -24,6 +22,8 @@ use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileC
 use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
 use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
 use App\Http\Controllers\Admin\School\Order\SchoolOrderController;
+use App\Http\Controllers\Admin\School\Price\SchoolBundlePriceController;
+use App\Http\Controllers\Admin\School\Price\SchoolCoursePriceController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizAttempt\SchoolQuizAttemptController;
@@ -70,10 +70,6 @@ Route::resource('/school-courses',
     SchoolCourseController::class)
     ->parameters(['school-courses' => 'schoolCourse'])
     ->names('schoolCourses');
-
-Route::resource('/course-prices', CoursePriceController::class)
-    ->parameters(['course-prices' => 'coursePrice'])
-    ->names('coursePrices');
 
 Route::resource('/school-modules',
     SchoolModuleController::class)
@@ -135,9 +131,15 @@ Route::resource('/school-bundles',
     ->parameters(['school-bundles' => 'schoolBundle'])
     ->names('schoolBundles');
 
-Route::resource('/bundle-prices', BundlePriceController::class)
-    ->parameters(['bundle-prices' => 'bundlePrice'])
-    ->names('bundlePrices');
+Route::resource('/school-course-prices',
+    SchoolCoursePriceController::class)
+    ->parameters(['school-course-prices' => 'schoolCoursePrice'])
+    ->names('schoolCoursePrices');
+
+Route::resource('/school-bundle-prices',
+    SchoolBundlePriceController::class)
+    ->parameters(['school-bundle-prices' => 'schoolBundlePrice'])
+    ->names('schoolBundlePrices');
 
 Route::resource('/subscription-plans', SubscriptionPlanController::class)
     ->parameters(['subscription-plans' => 'subscriptionPlan'])

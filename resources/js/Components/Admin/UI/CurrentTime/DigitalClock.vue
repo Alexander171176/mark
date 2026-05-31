@@ -36,11 +36,11 @@ onUnmounted(() => {
     <div id="clock"
          class="relative h-fit px-1 ml-1
                 hidden lg:block rounded
-                transform -text-center
-                font-mono font-semibold">
+                transform text-center
+                font-mono font-semibold border border-slate-400">
         <p>
-            <span class="date text-sm mr-2 text-cyan-100">{{ date }}</span>
-            <span class="time text-md text-center text-cyan-100">{{ time }}</span>
+            <span class="date text-xs mr-2 text-cyan-100">{{ date }}</span>
+            <span class="time text-xs text-center text-cyan-100">{{ time }}</span>
         </p>
     </div>
 </template>

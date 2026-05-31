@@ -41,7 +41,7 @@ export default {
     editTournament: 'Турнирді Өңдеу',
     editUser: 'Пайдаланушыны өңдеу',
     editVideo: 'Бейне жазбаны өңдеу',
-    effectivePrice: 'Айырмашылық',
+    effectivePrice: 'Бағалар тізімі',
     email: 'Email',
     emailNotVerified: 'Сіздің электрондық пошта мекенжайыңыз расталмаған.',
     emailVerificationTitle: 'Электрондық поштаны тексеру',

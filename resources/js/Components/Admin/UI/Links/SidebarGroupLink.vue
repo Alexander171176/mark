@@ -159,8 +159,8 @@ const {t} = useI18n();
             {{ t('subscriptionPlans') }}
         </template>
     </SidebarLink>
-    <SidebarLink :href="route('admin.coursePrices.index')"
-                 :active="route().current('coursePrices.*')"
+    <SidebarLink :href="route('admin.schoolCoursePrices.index')"
+                 :active="route().current('schoolCoursePrices.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -174,8 +174,8 @@ const {t} = useI18n();
             {{ t('coursePrices') }}
         </template>
     </SidebarLink>
-    <SidebarLink :href="route('admin.bundlePrices.index')"
-                 :active="route().current('bundlePrices.*')"
+    <SidebarLink :href="route('admin.schoolBundlePrices.index')"
+                 :active="route().current('schoolBundlePrices.*')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">

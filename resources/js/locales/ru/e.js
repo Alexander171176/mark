@@ -41,7 +41,7 @@ export default {
     editTournament: 'Редактировать Турнир',
     editUser: 'Редактировать Пользователя',
     editVideo: 'Редактировать видеопост',
-    effectivePrice: 'Разница',
+    effectivePrice: 'Прайс',
     email: 'Email',
     emailNotVerified: 'Ваш адрес электронной почты не подтвержден.',
     emailVerificationTitle: 'Проверка электронной почты',

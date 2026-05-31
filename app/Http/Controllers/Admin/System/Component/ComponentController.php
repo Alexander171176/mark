@@ -15,28 +15,22 @@ use Throwable;
 class ComponentController extends Controller
 {
     protected array $editableDirectories = [
-        'Index'              => 'js/Pages/Public/Default',
-        'Articles'           => 'js/Pages/Public/Default/Articles',
-        'Rubrics'            => 'js/Pages/Public/Default/Rubrics',
-        'Tags'               => 'js/Pages/Public/Default/Tags',
-        'Video'              => 'js/Pages/Public/Default/Videos',
-        'Comp-Articles'      => 'js/Components/Public/Default/Article',
-        'Comp-Rubrics'       => 'js/Components/Public/Default/Rubric',
-        'Comp-Banners'       => 'js/Components/Public/Default/Banner',
-        'ComponentsVideos'   => 'js/Components/Public/Default/Video',
-        'Part'               => 'js/Components/Public/Default/Partials',
+        'Blog'           => 'js/Pages/Public/Default/Blog',
+        'School'           => 'js/Pages/Public/Default/School',
+
+        'Components'      => 'js/Components/Public/Default',
+
         'Partials'           => 'js/Partials/Default',
         'locales'            => 'js/locales',
     ];
 
     protected array $editableFiles = [
+        'js/Pages/Public/Default/Index.vue' => 'js/Pages/Public/Default/Index.vue',
         'js/Layouts/DefaultLayout.vue' => 'js/Layouts/DefaultLayout.vue',
     ];
 
     public function index(): InertiaResponse
     {
-        // TODO: Проверка прав $this->authorize('show-components', Component::class);
-
         $fileContents = $this->getEditableFilesContent();
 
         return Inertia::render('Admin/System/Components/Index', [
@@ -52,47 +46,63 @@ class ComponentController extends Controller
             $fullDirectoryPath = resource_path(ltrim($relativePath, '/'));
             $filesData = [];
 
-            if (File::isDirectory($fullDirectoryPath)) {
-                // Вместо GLOB_BRACE
-                $vueFiles = File::glob($fullDirectoryPath . '/*.vue');
-                $jsFiles  = File::glob($fullDirectoryPath . '/*.js');
-                $files = array_merge($vueFiles ?: [], $jsFiles ?: []);
+            if (! File::isDirectory($fullDirectoryPath)) {
+                Log::warning("Директория компонентов не найдена: {$relativePath}");
+                continue;
+            }
 
-                foreach ($files as $fullFilePath) {
-                    $fileKey = $this->getRelativePath($fullFilePath);
-                    if ($fileKey && str_starts_with(realpath($fullFilePath), realpath($fullDirectoryPath))) {
-                        try {
-                            $filesData[$fileKey] = File::get($fullFilePath);
-                        } catch (Throwable $e) {
-                            Log::error("Ошибка чтения файла компонента: {$fileKey}", ['exception' => $e]);
-                            $filesData[$fileKey] = "Ошибка чтения файла.";
-                        }
-                    }
+            $files = $this->getEditableFilesFromDirectory($fullDirectoryPath);
+
+            foreach ($files as $fullFilePath) {
+                $fileKey = $this->getRelativePath($fullFilePath);
+
+                if (! $fileKey || ! $this->isPathAllowed($fullFilePath)) {
+                    continue;
+                }
+
+                try {
+                    $filesData[$fileKey] = File::get($fullFilePath);
+                } catch (Throwable $e) {
+                    Log::error("Ошибка чтения файла компонента: {$fileKey}", [
+                        'exception' => $e,
+                    ]);
+
+                    $filesData[$fileKey] = 'Ошибка чтения файла.';
                 }
             }
 
-            if (!empty($filesData)) {
+            if (! empty($filesData)) {
+                ksort($filesData);
                 $allFilesData[$displayName] = $filesData;
             }
         }
 
         $singleFilesData = [];
+
         foreach ($this->editableFiles as $fileKey => $relativePath) {
             $fullFilePath = resource_path(ltrim($relativePath, '/'));
-            if (File::isFile($fullFilePath) && $this->isPathAllowed($fullFilePath)) {
-                try {
-                    $singleFilesData[$fileKey] = File::get($fullFilePath);
-                } catch (Throwable $e) {
-                    Log::error("Ошибка чтения файла компонента: {$fileKey}", ['exception' => $e]);
-                    $singleFilesData[$fileKey] = "Ошибка чтения файла.";
-                }
-            } else {
-                $singleFilesData[$fileKey] = "Файл не найден или не разрешен.";
+
+            if (! File::isFile($fullFilePath) || ! $this->isPathAllowed($fullFilePath)) {
+                $singleFilesData[$fileKey] = 'Файл не найден или не разрешен.';
+
                 Log::warning("Попытка доступа к неразрешенному файлу: {$fileKey}");
+
+                continue;
+            }
+
+            try {
+                $singleFilesData[$fileKey] = File::get($fullFilePath);
+            } catch (Throwable $e) {
+                Log::error("Ошибка чтения файла компонента: {$fileKey}", [
+                    'exception' => $e,
+                ]);
+
+                $singleFilesData[$fileKey] = 'Ошибка чтения файла.';
             }
         }
 
-        if (!empty($singleFilesData)) {
+        if (! empty($singleFilesData)) {
+            ksort($singleFilesData);
             $allFilesData['Files'] = $singleFilesData;
         }
 
@@ -101,40 +111,61 @@ class ComponentController extends Controller
 
     public function save(Request $request): RedirectResponse
     {
-        // TODO: Проверка прав $this->authorize('edit-components', Component::class);
+        $allowedFilePaths = $this->getAllAllowedFilePaths();
 
         $validated = $request->validate([
             'fileName' => [
                 'required',
                 'string',
-                Rule::in(array_keys($this->getAllAllowedFilePaths()))
+                Rule::in(array_keys($allowedFilePaths)),
             ],
             'fileContent' => 'nullable|string|max:5242880',
         ]);
 
         $fileKey = $validated['fileName'];
         $newContent = $validated['fileContent'] ?? '';
-        $relativePath = $this->getAllAllowedFilePaths()[$fileKey] ?? null;
+
+        $relativePath = $allowedFilePaths[$fileKey] ?? null;
         $fullFilePath = $relativePath ? resource_path(ltrim($relativePath, '/')) : null;
 
-        if (!$fullFilePath || !File::isWritable(dirname($fullFilePath)) || !$this->isPathAllowed($fullFilePath)) {
-            Log::error("Попытка записи в неразрешенный или несуществующий файл",
-                ['key' => $fileKey, 'path' => $fullFilePath]);
-            return redirect()->route('admin.components.index')
+        if (
+            ! $fullFilePath
+            || ! File::isFile($fullFilePath)
+            || ! File::isWritable($fullFilePath)
+            || ! $this->isPathAllowed($fullFilePath)
+        ) {
+            Log::error('Попытка записи в неразрешенный или несуществующий файл', [
+                'key' => $fileKey,
+                'path' => $fullFilePath,
+            ]);
+
+            return redirect()
+                ->route('admin.components.index')
                 ->with('error', __('admin/controllers.file_not_allowed_error'));
         }
 
         try {
             File::put($fullFilePath, $newContent, true);
-            Log::info("Файл компонента успешно сохранен", ['path' => $fileKey]);
-            return redirect()->route('admin.components.index')
-                ->with('success', __('admin/controllers.file_saved_success',
-                    ['filename' => basename($fileKey)]));
+
+            Log::info('Файл компонента успешно сохранен', [
+                'path' => $fileKey,
+            ]);
+
+            return redirect()
+                ->route('admin.components.index')
+                ->with('success', __('admin/controllers.file_saved_success', [
+                    'filename' => basename($fileKey),
+                ]));
         } catch (Throwable $e) {
-            Log::error("Ошибка сохранения файла компонента: {$fileKey}", ['exception' => $e]);
-            return redirect()->route('admin.components.index')
-                ->with('error', __('admin/controllers.file_save_error',
-                    ['filename' => basename($fileKey)]));
+            Log::error("Ошибка сохранения файла компонента: {$fileKey}", [
+                'exception' => $e,
+            ]);
+
+            return redirect()
+                ->route('admin.components.index')
+                ->with('error', __('admin/controllers.file_save_error', [
+                    'filename' => basename($fileKey),
+                ]));
         }
     }
 
@@ -144,38 +175,66 @@ class ComponentController extends Controller
 
         foreach ($this->editableDirectories as $relativePath) {
             $fullDirectoryPath = resource_path(ltrim($relativePath, '/'));
-            if (File::isDirectory($fullDirectoryPath)) {
-                $vueFiles = File::glob($fullDirectoryPath . '/*.vue');
-                $jsFiles  = File::glob($fullDirectoryPath . '/*.js');
-                $files = array_merge($vueFiles ?: [], $jsFiles ?: []);
 
-                foreach ($files as $fullFilePath) {
-                    $fileKey = $this->getRelativePath($fullFilePath);
-                    if ($fileKey && str_starts_with(realpath($fullFilePath), realpath($fullDirectoryPath))) {
-                        $allowed[$fileKey] = $fileKey;
-                    }
+            if (! File::isDirectory($fullDirectoryPath)) {
+                continue;
+            }
+
+            $files = $this->getEditableFilesFromDirectory($fullDirectoryPath);
+
+            foreach ($files as $fullFilePath) {
+                $fileKey = $this->getRelativePath($fullFilePath);
+
+                if (! $fileKey || ! $this->isPathAllowed($fullFilePath)) {
+                    continue;
                 }
+
+                $allowed[$fileKey] = $fileKey;
             }
         }
 
         return $allowed;
     }
 
+    private function getEditableFilesFromDirectory(string $fullDirectoryPath): array
+    {
+        return collect(File::allFiles($fullDirectoryPath))
+            ->filter(function ($file) {
+                return in_array($file->getExtension(), ['vue', 'js'], true);
+            })
+            ->map(function ($file) {
+                return $file->getRealPath();
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
     private function isPathAllowed(string $fullPath): bool
     {
         $realFullPath = realpath($fullPath);
-        if ($realFullPath === false) return false;
+
+        if ($realFullPath === false) {
+            return false;
+        }
 
         foreach ($this->editableDirectories as $relativePath) {
             $realAllowedDir = realpath(resource_path(ltrim($relativePath, '/')));
-            if ($realAllowedDir !== false && str_starts_with($realFullPath, $realAllowedDir
-                    . DIRECTORY_SEPARATOR)) {
+
+            if (
+                $realAllowedDir !== false
+                && (
+                    $realFullPath === $realAllowedDir
+                    || str_starts_with($realFullPath, $realAllowedDir . DIRECTORY_SEPARATOR)
+                )
+            ) {
                 return true;
             }
         }
 
         foreach ($this->editableFiles as $relativeFilePath) {
             $realAllowedFile = realpath(resource_path(ltrim($relativeFilePath, '/')));
+
             if ($realAllowedFile !== false && $realFullPath === $realAllowedFile) {
                 return true;
             }
@@ -189,7 +248,9 @@ class ComponentController extends Controller
         $resourcePath = realpath(resource_path());
         $realFullPath = realpath($fullPath);
 
-        if ($resourcePath === false || $realFullPath === false) return null;
+        if ($resourcePath === false || $realFullPath === false) {
+            return null;
+        }
 
         if (str_starts_with($realFullPath, $resourcePath)) {
             return ltrim(str_replace($resourcePath, '', $realFullPath), DIRECTORY_SEPARATOR);

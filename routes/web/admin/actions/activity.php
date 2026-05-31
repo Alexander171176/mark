@@ -13,14 +13,14 @@ use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\Bundle\SchoolBundleController;
-use App\Http\Controllers\Admin\School\BundlePrice\BundlePriceController;
 use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
-use App\Http\Controllers\Admin\School\CoursePrice\CoursePriceController;
 use App\Http\Controllers\Admin\School\CourseSchedule\SchoolCourseScheduleController;
 use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
 use App\Http\Controllers\Admin\School\InstructorProfile\SchoolInstructorProfileController;
 use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
 use App\Http\Controllers\Admin\School\Module\SchoolModuleController;
+use App\Http\Controllers\Admin\School\Price\SchoolBundlePriceController;
+use App\Http\Controllers\Admin\School\Price\SchoolCoursePriceController;
 use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
 use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
 use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
@@ -120,13 +120,15 @@ Route::put('/currencies/{currency}/activity',
     [CurrencyController::class, 'updateActivity'])
     ->name('currencies.updateActivity');
 
-Route::put('course-prices/{coursePrice}/update-activity',
-    [CoursePriceController::class, 'updateActivity'])
-    ->name('coursePrices.updateActivity');
+Route::put('/school-course-prices/{schoolCoursePrice}/activity',
+    [SchoolCoursePriceController::class, 'updateActivity'])
+    ->whereNumber('schoolCoursePrice')
+    ->name('schoolCoursePrices.updateActivity');
 
-Route::put('bundle-prices/{bundlePrice}/update-activity',
-    [BundlePriceController::class, 'updateActivity'])
-    ->name('bundlePrices.updateActivity');
+Route::put('/school-bundle-prices/{schoolBundlePrice}/activity',
+    [SchoolBundlePriceController::class, 'updateActivity'])
+    ->whereNumber('schoolBundlePrice')
+    ->name('schoolBundlePrices.updateActivity');
 
 Route::put('subscription-plans/{subscriptionPlan}/update-activity',
     [SubscriptionPlanController::class, 'updateActivity'])

@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\School\Review;
 
-use App\Models\Admin\School\Review\Review;
+use App\Models\Admin\School\SchoolReview\Review;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

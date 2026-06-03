@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\School\CohortEnrollment\SchoolCohortEnrollmentController;
+use App\Http\Controllers\Admin\School\SchoolCohortEnrollment\SchoolCohortEnrollmentController;
 use Illuminate\Support\Facades\Route;
 
 // Обновление статуса одной записи

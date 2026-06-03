@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Admin\School\Order\SchoolOrder;
+use App\Models\Admin\School\SchoolOrder\SchoolOrder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 

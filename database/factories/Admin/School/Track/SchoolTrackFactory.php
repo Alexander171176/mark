@@ -5,7 +5,7 @@ namespace Database\Factories\Admin\School\Track;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\Track\SchoolTrack>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\SchoolTrack\SchoolTrack>
  */
 class SchoolTrackFactory extends Factory
 {

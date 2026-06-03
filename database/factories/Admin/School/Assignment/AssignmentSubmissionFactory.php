@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\School\Assignment;
 
-use App\Models\Admin\School\AssignmentSubmission\AssignmentSubmission;
+use App\Models\Admin\School\SchoolAssignmentSubmission\AssignmentSubmission;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

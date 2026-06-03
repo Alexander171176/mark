@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Finance\UserPaymentMethod;
 
-use App\Models\Admin\School\UserPaymentMethod\UserPaymentMethod;
+use App\Models\Admin\School\SchoolUserPaymentMethod\UserPaymentMethod;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

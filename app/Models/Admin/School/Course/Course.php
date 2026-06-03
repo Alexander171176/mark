@@ -3,17 +3,17 @@
 namespace App\Models\Admin\School\Course;
 
 use App\Models\Admin\Blog\Comment\Comment;
-use App\Models\Admin\School\Bundle\Bundle;
+use App\Models\Admin\School\SchoolBundle\Bundle;
 use App\Models\Admin\School\CoursePrice\CoursePrice;
-use App\Models\Admin\School\CourseSchedule\CourseSchedule;
-use App\Models\Admin\School\Enrollment\Enrollment;
+use App\Models\Admin\School\SchoolCourseSchedule\CourseSchedule;
+use App\Models\Admin\School\SchoolEnrollment\Enrollment;
 use App\Models\Admin\School\Hashtag\Hashtag;
 use App\Models\Admin\School\InstructorProfile\InstructorProfile;
 use App\Models\Admin\School\LearningCategory\LearningCategory;
 use App\Models\Admin\School\Lesson\Lesson;
 use App\Models\Admin\School\Module\Module;
-use App\Models\Admin\School\Quiz\Quiz;
-use App\Models\Admin\School\Review\Review;
+use App\Models\Admin\School\SchoolQuiz\Quiz;
+use App\Models\Admin\School\SchoolReview\Review;
 use App\Models\User\Like\CourseLike;
 use App\Traits\HashtagsTrait;
 use Carbon\Carbon;

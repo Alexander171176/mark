@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Admin\School\Hashtag\SchoolHashtagTranslation;
+use App\Models\Admin\School\SchoolHashtag\SchoolHashtagTranslation;
 use Illuminate\Database\Seeder;
 
 class SchoolHashtagTranslationSeeder extends Seeder

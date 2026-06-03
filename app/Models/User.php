@@ -4,7 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail; // Если используете верификацию email
 use App\Models\Admin\Blog\Comment\Comment;
-use App\Models\Admin\School\InstructorProfile\SchoolInstructorProfile;
+use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\User\Like\BlogArticleLike;
 use App\Models\User\Like\BlogVideoLike;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

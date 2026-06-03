@@ -5,9 +5,9 @@
 use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
-use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
-use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
-use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
+use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
+use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
+use App\Http\Controllers\Admin\School\SchoolQuiz\SchoolQuizController;
 use Illuminate\Support\Facades\Route;
 
 Route::put('/blog-articles/{blogArticle}/right',

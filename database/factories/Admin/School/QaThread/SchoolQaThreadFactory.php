@@ -5,7 +5,7 @@ namespace Database\Factories\Admin\School\QaThread;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\QaThread\SchoolQaThread>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\SchoolQaThread\SchoolQaThread>
  */
 class SchoolQaThreadFactory extends Factory
 {

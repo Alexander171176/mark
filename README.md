@@ -338,479 +338,481 @@
 -------------------------------------------------------------------------------------
 
 1) creating business logic SchoolHashtag - полиморфные хештеги онлайн-школы
-`docker exec mark-php-app php artisan make:model Admin/School/Hashtag/SchoolHashtag -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Hashtag/SchoolHashtagTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolHashtag/SchoolHashtag -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolHashtag/SchoolHashtagTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:migration create_school_hashtaggables_table` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolHashtagSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Hashtag/SchoolHashtagRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Hashtag/SchoolHashtagResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Hashtag/SchoolHashtagSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Hashtag/SchoolHashtagTranslationResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Hashtag/SchoolHashtagController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolHashtagController` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolHashtag/SchoolHashtagRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolHashtag/SchoolHashtagResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolHashtag/SchoolHashtagSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolHashtag/SchoolHashtagTranslationResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolHashtag/SchoolHashtagController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolHashtag/SchoolHashtagController` <br>
 
 2) creating business logic SchoolInstructorProfile - преподаватели онлайн-школы
-`docker exec mark-php-app php artisan make:model Admin/School/InstructorProfile/SchoolInstructorProfile -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/InstructorProfile/SchoolInstructorProfileTranslation -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/InstructorProfile/SchoolInstructorProfileImage -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolInstructorProfile/SchoolInstructorProfile -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolInstructorProfile/SchoolInstructorProfileTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolInstructorProfile/SchoolInstructorProfileImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_school_instructor_profile_has_images_table --create=school_instructor_profile_has_images` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan make:seeder UserSeeder` <br>
 `docker exec mark-php-app php artisan db:seed --class=UserSeeder` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolInstructorProfileSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/InstructorProfile/SchoolInstructorProfileRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/InstructorProfile/SchoolInstructorProfileResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/InstructorProfile/SchoolInstructorProfileSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/InstructorProfile/SchoolInstructorProfileTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/InstructorProfile/SchoolInstructorProfileImageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/InstructorProfile/SchoolInstructorProfileController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolInstructorController` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolInstructorProfile/SchoolInstructorProfileRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolInstructorProfile/SchoolInstructorProfileResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolInstructorProfile/SchoolInstructorProfileSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolInstructorProfile/SchoolInstructorProfileTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolInstructorProfile/SchoolInstructorProfileImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolInstructorProfile/SchoolInstructorProfileController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolInstructorProfile/SchoolInstructorController` <br>
 
 3) creating business logic SchoolTrack - категории курсов обучения
-`docker exec mark-php-app php artisan make:model Admin/School/Track/SchoolTrack -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Track/SchoolTrackTranslation -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Track/SchoolTrackImage -mf` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolTrack/SchoolTrack -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolTrack/SchoolTrackTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolTrack/SchoolTrackImage -mf` <br>
 `docker exec mark-php-app php artisan make:migration create_school_track_has_images_table --create=school_track_has_images` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolTrackSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Track/SchoolTrackRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Track/SchoolTrackResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Track/SchoolTrackSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Track/SchoolTrackTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Track/SchoolTrackImageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Track/SchoolTrackController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolTrackController` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolTrack/SchoolTrackRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolTrack/SchoolTrackResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolTrack/SchoolTrackSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolTrack/SchoolTrackTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolTrack/SchoolTrackImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolTrack/SchoolTrackController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolTrack/SchoolTrackController` <br>
 `docker exec mark-php-app php artisan make:model User/Like/SchoolTrackLike -m` <br>
 
 4) creating business logic SchoolCourse - курсы обучения
-`docker exec mark-php-app php artisan make:model Admin/School/Course/SchoolCourse -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Course/SchoolCourseTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolCourse/SchoolCourse -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolCourse/SchoolCourseTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:migration create_school_course_related_table --create=school_course_related` <br>
 `docker exec mark-php-app php artisan make:migration create_school_course_has_tracks_table --create=school_course_has_tracks` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Course/SchoolCourseImage -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolCourse/SchoolCourseImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_school_course_has_images_table --create=school_course_has_images` <br>
 `docker exec mark-php-app php artisan make:model User/Like/SchoolCourseLike -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolCourseSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Course/SchoolCourseRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Course/SchoolCourseResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Course/SchoolCourseSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Course/SchoolCourseTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Course/SchoolCourseImageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Course/SchoolCourseController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolCourseController` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolCourse/SchoolCourseRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCourse/SchoolCourseResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCourse/SchoolCourseSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCourse/SchoolCourseTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCourse/SchoolCourseImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolCourse/SchoolCourseController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolCourse/SchoolCourseController` <br>
 
 5) creating business logic SchoolModule - модули, подразделы курсов
-`docker exec mark-php-app php artisan make:model Admin/School/Module/SchoolModule -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Module/SchoolModuleTranslation -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Module/SchoolModuleImage -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolModule/SchoolModule -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolModule/SchoolModuleTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolModule/SchoolModuleImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_school_module_has_images_table --create=school_module_has_images` <br>
 `docker exec mark-php-app php artisan make:model User/Like/SchoolModuleLike -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolModuleSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Module/SchoolModuleRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Module/SchoolModuleResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Module/SchoolModuleSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Module/SchoolModuleTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Module/SchoolModuleImageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Module/SchoolModuleController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolModuleController` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolModule/SchoolModuleRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolModule/SchoolModuleResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolModule/SchoolModuleSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolModule/SchoolModuleTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolModule/SchoolModuleImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolModule/SchoolModuleController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolModule/SchoolModuleController` <br>
 
 6) creating business logic SchoolLesson - уроки курсов обучения
-`docker exec mark-php-app php artisan make:model Admin/School/Lesson/SchoolLesson -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Lesson/SchoolLessonTranslation -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Lesson/SchoolLessonImage -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolLesson/SchoolLesson -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolLesson/SchoolLessonTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolLesson/SchoolLessonImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_school_lesson_has_images_table --create=school_lesson_has_images` <br>
 `docker exec mark-php-app php artisan make:model User/Like/SchoolLessonLike -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolLessonSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Lesson/SchoolLessonRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Lesson/SchoolLessonResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Lesson/SchoolLessonSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Lesson/SchoolLessonTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Lesson/SchoolLessonImageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Lesson/SchoolLessonController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolLessonController` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolLesson/SchoolLessonRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolLesson/SchoolLessonResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolLesson/SchoolLessonSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolLesson/SchoolLessonTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolLesson/SchoolLessonImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolLesson/SchoolLessonController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolLesson/SchoolLessonController` <br>
 
 7) creating business logic SchoolAssignment - домашние задания/практика
-`docker exec mark-php-app php artisan make:model Admin/School/Assignment/SchoolAssignment -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Assignment/SchoolAssignmentTranslation -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Assignment/SchoolAssignmentImage -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolAssignment/SchoolAssignment -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolAssignment/SchoolAssignmentTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolAssignment/SchoolAssignmentImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_school_assignment_has_images_table --create=school_assignment_has_images` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolAssignmentSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Assignment/SchoolAssignmentRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Assignment/SchoolAssignmentResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Assignment/SchoolAssignmentSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Assignment/SchoolAssignmentTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Assignment/SchoolAssignmentImageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Assignment/SchoolAssignmentController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolAssignmentController` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolAssignment/SchoolAssignmentRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolAssignment/SchoolAssignmentResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolAssignment/SchoolAssignmentSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolAssignment/SchoolAssignmentTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolAssignment/SchoolAssignmentImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolAssignment/SchoolAssignmentController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolAssignment/SchoolAssignmentController` <br>
 
 8) creating business logic SchoolCourseSchedule - расписание потоков
-`docker exec mark-php-app php artisan make:model Admin/School/CourseSchedule/SchoolCourseSchedule -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/CourseSchedule/SchoolCourseScheduleTranslation -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/CourseSchedule/SchoolCourseScheduleImage -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolCourseSchedule/SchoolCourseSchedule -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolCourseSchedule/SchoolCourseScheduleTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolCourseSchedule/SchoolCourseScheduleImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_school_course_schedule_has_images_table --create=school_course_schedule_has_images` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolCourseScheduleSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/CourseSchedule/SchoolCourseScheduleRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/CourseSchedule/SchoolCourseScheduleResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/CourseSchedule/SchoolCourseScheduleSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/CourseSchedule/SchoolCourseScheduleTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/CourseSchedule/SchoolCourseScheduleImageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/CourseSchedule/SchoolCourseScheduleController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolCourseSchedule/SchoolCourseScheduleRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCourseSchedule/SchoolCourseScheduleResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCourseSchedule/SchoolCourseScheduleSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCourseSchedule/SchoolCourseScheduleTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCourseSchedule/SchoolCourseScheduleImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolCourseSchedule/SchoolCourseScheduleController --resource` <br>
 
 9) creating business logic SchoolCohortEnrollment - запись на потоки курсов
-`docker exec mark-php-app php artisan make:model Admin/School/CohortEnrollment/SchoolCohortEnrollment -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolCohortEnrollment/SchoolCohortEnrollment -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolCohortEnrollmentSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/CohortEnrollment/SchoolCohortEnrollmentRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/CohortEnrollment/SchoolCohortEnrollmentResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/CohortEnrollment/SchoolCohortEnrollmentSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/CohortEnrollment/SchoolCohortEnrollmentController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolCohortEnrollment/SchoolCohortEnrollmentRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCohortEnrollment/SchoolCohortEnrollmentResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCohortEnrollment/SchoolCohortEnrollmentSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolCohortEnrollment/SchoolCohortEnrollmentController --resource` <br>
 
 10) creating business logic SchoolOrder - заказы онлайн-школы
-`docker exec mark-php-app php artisan make:model Admin/School/Order/SchoolOrder -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolOrder/SchoolOrder -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolOrderSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Order/SchoolOrderRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Order/SchoolOrderResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Order/SchoolOrderSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Order/SchoolOrderController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolOrder/SchoolOrderRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolOrder/SchoolOrderResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolOrder/SchoolOrderSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolOrder/SchoolOrderController --resource` <br>
 
 11) creating business logic SchoolEnrollment - зачисление студентов на потоки/курсы
-`docker exec mark-php-app php artisan make:model Admin/School/Enrollment/SchoolEnrollment -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolEnrollment/SchoolEnrollment -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolEnrollmentSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Enrollment/SchoolEnrollmentRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Enrollment/SchoolEnrollmentResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Enrollment/SchoolEnrollmentSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Enrollment/SchoolEnrollmentController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolEnrollment/SchoolEnrollmentRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolEnrollment/SchoolEnrollmentResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolEnrollment/SchoolEnrollmentSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolEnrollment/SchoolEnrollmentController --resource` <br>
 
 12) creating business logic SchoolQuiz - вопросники / викторины
-`docker exec mark-php-app php artisan make:model Admin/School/Quiz/SchoolQuiz -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Quiz/SchoolQuizTranslation -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Quiz/SchoolQuizImage -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQuiz/SchoolQuiz -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQuiz/SchoolQuizTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQuiz/SchoolQuizImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_school_quiz_has_images_table --create=school_quiz_has_images` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolQuizSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Quiz/SchoolQuizRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Quiz/SchoolQuizResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Quiz/SchoolQuizSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Quiz/SchoolQuizTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Quiz/SchoolQuizImageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Quiz/SchoolQuizController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolQuiz/SchoolQuizRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuiz/SchoolQuizResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuiz/SchoolQuizSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuiz/SchoolQuizTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuiz/SchoolQuizImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuiz/SchoolQuizController --resource` <br>
 
 13) creating business logic SchoolQuizQuestion - вопросы викторин
-`docker exec mark-php-app php artisan make:model Admin/School/QuizQuestion/SchoolQuizQuestion -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/QuizQuestion/SchoolQuizQuestionTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizQuestion/SchoolQuizQuestion -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizQuestion/SchoolQuizQuestionTranslation -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolQuizQuestionSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/QuizQuestion/SchoolQuizQuestionRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QuizQuestion/SchoolQuizQuestionResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QuizQuestion/SchoolQuizQuestionSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QuizQuestion/SchoolQuizQuestionTranslationResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/QuizQuestion/SchoolQuizQuestionController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolQuizQuestion/SchoolQuizQuestionRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizQuestion/SchoolQuizQuestionResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizQuestion/SchoolQuizQuestionSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizQuestion/SchoolQuizQuestionTranslationResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuizQuestion/SchoolQuizQuestionController --resource` <br>
 
 14) creating business logic SchoolQuizAnswer - ответы на вопросы викторин
-`docker exec mark-php-app php artisan make:model Admin/School/QuizAnswer/SchoolQuizAnswer -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/QuizAnswer/SchoolQuizAnswerTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizAnswer/SchoolQuizAnswer -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizAnswer/SchoolQuizAnswerTranslation -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolQuizAnswerSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/QuizAnswer/SchoolQuizAnswerRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QuizAnswer/SchoolQuizAnswerResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QuizAnswer/SchoolQuizAnswerSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QuizAnswer/SchoolQuizAnswerTranslationResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/QuizAnswer/SchoolQuizAnswerController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolQuizAnswer/SchoolQuizAnswerRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAnswer/SchoolQuizAnswerResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAnswer/SchoolQuizAnswerSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAnswer/SchoolQuizAnswerTranslationResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuizAnswer/SchoolQuizAnswerController --resource` <br>
 
 15) creating business logic SchoolQuizAttempt - попытка прохождения викторины
-`docker exec mark-php-app php artisan make:model Admin/School/QuizAttempt/SchoolQuizAttempt -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizAttempt/SchoolQuizAttempt -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolQuizAttemptSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/QuizAttempt/SchoolQuizAttemptRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QuizAttempt/SchoolQuizAttemptResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/QuizAttempt/SchoolQuizAttemptController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolQuizAttempt/SchoolQuizAttemptRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAttempt/SchoolQuizAttemptResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuizAttempt/SchoolQuizAttemptController --resource` <br>
 
 16) creating business logic SchoolQuizAttemptItem - ответ на один конкретный вопрос в рамках попытки
-`docker exec mark-php-app php artisan make:model Admin/School/QuizAttemptItem/SchoolQuizAttemptItem -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItem -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolQuizAttemptItemSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/QuizAttemptItem/SchoolQuizAttemptItemRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QuizAttemptItem/SchoolQuizAttemptItemResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/QuizAttemptItem/SchoolQuizAttemptItemController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItemRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItemResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItemController --resource` <br>
 
 17) creating business logic SchoolBundle - набор курсов
-`docker exec mark-php-app php artisan make:model Admin/School/Bundle/SchoolBundle -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Bundle/SchoolBundleTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolBundle/SchoolBundle -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolBundle/SchoolBundleTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:migration create_school_bundle_has_courses_table --create=school_bundle_has_courses` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Bundle/SchoolBundleImage -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolBundle/SchoolBundleImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_school_bundle_has_images_table --create=school_bundle_has_images` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolBundleSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Bundle/SchoolBundleRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Bundle/SchoolBundleResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Bundle/SchoolBundleSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Bundle/SchoolBundleTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Bundle/SchoolBundleImageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Bundle/SchoolBundleController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolBundle/SchoolBundleRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolBundle/SchoolBundleResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolBundle/SchoolBundleSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolBundle/SchoolBundleTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolBundle/SchoolBundleImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolBundle/SchoolBundleController --resource` <br>
 
 18) creating business logic SchoolCoursePrice - прайсы курса
-`docker exec mark-php-app php artisan make:model Admin/School/Price/SchoolCoursePrice -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolCoursePrice/SchoolCoursePrice -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolCoursePriceSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Price/SchoolCoursePriceRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Price/SchoolCoursePriceResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Price/SchoolCoursePriceSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Price/SchoolCoursePriceController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolCoursePrice/SchoolCoursePriceRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCoursePrice/SchoolCoursePriceResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCoursePrice/SchoolCoursePriceSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolCoursePrice/SchoolCoursePriceController --resource` <br>
 
 19) creating business logic SchoolBundlePrice - прайсы набора курсов
-`docker exec mark-php-app php artisan make:model Admin/School/Price/SchoolBundlePrice -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolBundlePrice/SchoolBundlePrice -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolBundlePriceSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Price/SchoolBundlePriceRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Price/SchoolBundlePriceResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Price/SchoolBundlePriceSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Price/SchoolBundlePriceController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolBundlePrice/SchoolBundlePriceRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolBundlePrice/SchoolBundlePriceResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolBundlePrice/SchoolBundlePriceSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolBundlePrice/SchoolBundlePriceController --resource` <br>
 
 20) creating business logic SchoolSubscriptionPlan - тарифные планы
-`docker exec mark-php-app php artisan make:model Admin/School/SubscriptionPlan/SchoolSubscriptionPlan -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/SubscriptionPlan/SchoolSubscriptionPlanTranslation -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/SubscriptionPlan/SchoolSubscriptionPlanImage -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlan -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_school_subscription_plan_has_images_table --create=school_subscription_plan_has_images` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolSubscriptionPlanSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/SubscriptionPlan/SchoolSubscriptionPlanRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/SubscriptionPlan/SchoolSubscriptionPlanResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/SubscriptionPlan/SchoolSubscriptionPlanSharedResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/SubscriptionPlan/SchoolSubscriptionPlanTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/SubscriptionPlan/SchoolSubscriptionPlanImageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/SubscriptionPlan/SchoolSubscriptionPlanController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanImageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanController --resource` <br>
 
 21) creating business logic SchoolOrderItem - позиции заказа онлайн-школы
-`docker exec mark-php-app php artisan make:model Admin/School/Order/SchoolOrderItem -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolOrderItem/SchoolOrderItem -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolOrderItemSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Order/SchoolOrderItemRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Order/SchoolOrderItemResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Order/SchoolOrderItemController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolOrderItem/SchoolOrderItemRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolOrderItem/SchoolOrderItemResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolOrderItem/SchoolOrderItemController --resource` <br>
 
 22) creating business logic SchoolPaymentMethod
-`docker exec mark-php-app php artisan make:model Admin/School/PaymentMethod/SchoolPaymentMethod -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolPaymentMethod/SchoolPaymentMethod -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolPaymentMethodSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/PaymentMethod/SchoolPaymentMethodRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/PaymentMethod/SchoolPaymentMethodResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/PaymentMethod/SchoolPaymentMethodController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolPaymentMethod/SchoolPaymentMethodRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolPaymentMethod/SchoolPaymentMethodResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolPaymentMethod/SchoolPaymentMethodController --resource` <br>
 
 23) creating business logic SchoolUserPaymentMethod
-`docker exec mark-php-app php artisan make:model Admin/School/UserPaymentMethod/SchoolUserPaymentMethod -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolUserPaymentMethod/SchoolUserPaymentMethod -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolUserPaymentMethodSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/UserPaymentMethod/SchoolUserPaymentMethodRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/UserPaymentMethod/SchoolUserPaymentMethodResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/UserPaymentMethod/SchoolUserPaymentMethodController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolUserPaymentMethod/SchoolUserPaymentMethodRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolUserPaymentMethod/SchoolUserPaymentMethodResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolUserPaymentMethod/SchoolUserPaymentMethodController --resource` <br>
 
 24) creating business logic SchoolPayment
-`docker exec mark-php-app php artisan make:model Admin/School/Payment/SchoolPayment -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolPayment/SchoolPayment -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Payment/SchoolPaymentRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Payment/SchoolPaymentResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Payment/SchoolPaymentController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolPayment/SchoolPaymentRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolPayment/SchoolPaymentResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolPayment/SchoolPaymentController --resource` <br>
 
 25) creating business logic SchoolSubscription - подписки пользователей
-`docker exec mark-php-app php artisan make:model Admin/School/Subscription/SchoolSubscription -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolSubscription/SchoolSubscription -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolSubscriptionSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Subscription/SchoolSubscriptionRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Subscription/SchoolSubscriptionResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Subscription/SchoolSubscriptionSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Subscription/SchoolSubscriptionController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolSubscription/SchoolSubscriptionRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolSubscription/SchoolSubscriptionResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolSubscription/SchoolSubscriptionSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolSubscription/SchoolSubscriptionController --resource` <br>
 
 26) creating business logic SchoolRefund - возвраты платежей онлайн-школы
-`docker exec mark-php-app php artisan make:model Admin/School/Refund/SchoolRefund -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolRefund/SchoolRefund -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Refund/SchoolRefundRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Refund/SchoolRefundResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Refund/SchoolRefundSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Refund/SchoolRefundController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolRefund/SchoolRefundRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolRefund/SchoolRefundResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolRefund/SchoolRefundSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolRefund/SchoolRefundController --resource` <br>
 
 27) creating business logic SchoolCoupon - купоны/промокоды онлайн-школы
-`docker exec mark-php-app php artisan make:model Admin/School/Coupon/SchoolCoupon -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolCoupon/SchoolCoupon -mfs` <br>
 `docker exec mark-php-app php artisan make:migration create_school_coupon_has_courses_table --create=school_coupon_has_courses` <br>
 `docker exec mark-php-app php artisan make:migration create_school_coupon_has_bundles_table --create=school_coupon_has_bundles` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolCouponSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Coupon/SchoolCouponRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Coupon/SchoolCouponResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Coupon/SchoolCouponSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Coupon/SchoolCouponController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolCoupon/SchoolCouponRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCoupon/SchoolCouponResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCoupon/SchoolCouponSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolCoupon/SchoolCouponController --resource` <br>
 
 28) creating business logic SchoolInvoice - инвойсы онлайн-школы
-`docker exec mark-php-app php artisan make:model Admin/School/Invoice/SchoolInvoice -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolInvoice/SchoolInvoice -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolInvoiceSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Invoice/SchoolInvoiceRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Invoice/SchoolInvoiceResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Invoice/SchoolInvoiceSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Invoice/SchoolInvoiceController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolInvoice/SchoolInvoiceRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolInvoice/SchoolInvoiceResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolInvoice/SchoolInvoiceSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolInvoice/SchoolInvoiceController --resource` <br>
 
 29) creating business logic SchoolProviderAccount - аккаунты платёжных провайдеров
-`docker exec mark-php-app php artisan make:model Admin/School/ProviderAccount/SchoolProviderAccount -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolProviderAccount/SchoolProviderAccount -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolProviderAccountSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/ProviderAccount/SchoolProviderAccountRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/ProviderAccount/SchoolProviderAccountResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/ProviderAccount/SchoolProviderAccountSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/ProviderAccount/SchoolProviderAccountController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolProviderAccount/SchoolProviderAccountRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolProviderAccount/SchoolProviderAccountResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolProviderAccount/SchoolProviderAccountSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolProviderAccount/SchoolProviderAccountController --resource` <br>
 
 30) creating business logic SchoolPayout - выплаты преподавателям
-`docker exec mark-php-app php artisan make:model Admin/School/Payout/SchoolPayout -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolPayout/SchoolPayout -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolPayoutSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Payout/SchoolPayoutRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Payout/SchoolPayoutResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Payout/SchoolPayoutSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Payout/SchoolPayoutController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolPayout/SchoolPayoutRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolPayout/SchoolPayoutResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolPayout/SchoolPayoutSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolPayout/SchoolPayoutController --resource` <br>
 
 31) creating business logic SchoolPayoutItem - позиции выплат
-`docker exec mark-php-app php artisan make:model Admin/School/PayoutItem/SchoolPayoutItem -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolPayoutItem/SchoolPayoutItem -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolPayoutItemSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/PayoutItem/SchoolPayoutItemRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/PayoutItem/SchoolPayoutItemResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/PayoutItem/SchoolPayoutItemSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/PayoutItem/SchoolPayoutItemController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolPayoutItem/SchoolPayoutItemRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolPayoutItem/SchoolPayoutItemResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolPayoutItem/SchoolPayoutItemSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolPayoutItem/SchoolPayoutItemController --resource` <br>
 
 32) creating business logic SchoolWebhookEvent - события вебхуков
-`docker exec mark-php-app php artisan make:model Admin/School/WebhookEvent/SchoolWebhookEvent -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolWebhookEvent/SchoolWebhookEvent -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolWebhookEventSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/WebhookEvent/SchoolWebhookEventRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/WebhookEvent/SchoolWebhookEventResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/WebhookEvent/SchoolWebhookEventSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/WebhookEvent/SchoolWebhookEventController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolWebhookEvent/SchoolWebhookEventRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolWebhookEvent/SchoolWebhookEventResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolWebhookEvent/SchoolWebhookEventSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolWebhookEvent/SchoolWebhookEventController --resource` <br>
 
 33) creating business logic SchoolAssignmentSubmission - сдачи заданий студентами
-`docker exec mark-php-app php artisan make:model Admin/School/AssignmentSubmission/SchoolAssignmentSubmission -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolAssignmentSubmission/SchoolAssignmentSubmission -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolAssignmentSubmissionSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/AssignmentSubmission/SchoolAssignmentSubmissionRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/AssignmentSubmission/SchoolAssignmentSubmissionResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/AssignmentSubmission/SchoolAssignmentSubmissionSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/AssignmentSubmission/SchoolAssignmentSubmissionController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolAssignmentSubmission/SchoolAssignmentSubmissionRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolAssignmentSubmission/SchoolAssignmentSubmissionResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolAssignmentSubmission/SchoolAssignmentSubmissionSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolAssignmentSubmission/SchoolAssignmentSubmissionController --resource` <br>
 
 34) creating business logic SchoolProgressRecord - прогресс обучения
-`docker exec mark-php-app php artisan make:model Admin/School/ProgressRecord/SchoolProgressRecord -mf` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolProgressRecord/SchoolProgressRecord -mf` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/ProgressRecord/SchoolProgressRecordRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/ProgressRecord/SchoolProgressRecordResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/ProgressRecord/SchoolProgressRecordSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/ProgressRecord/SchoolProgressRecordController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolProgressRecord/SchoolProgressRecordRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolProgressRecord/SchoolProgressRecordResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolProgressRecord/SchoolProgressRecordSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolProgressRecord/SchoolProgressRecordController --resource` <br>
 
 35) creating business logic SchoolReview - отзывы/рейтинги онлайн-школы
-`docker exec mark-php-app php artisan make:model Admin/School/Review/SchoolReview -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolReview/SchoolReview -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolReviewSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Review/SchoolReviewRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Review/SchoolReviewResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Review/SchoolReviewSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Review/SchoolReviewController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolReview/SchoolReviewRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolReview/SchoolReviewResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolReview/SchoolReviewSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolReview/SchoolReviewController --resource` <br>
 
 36) creating business logic QaThread - темы вопросов/обсуждений
-`docker exec mark-php-app php artisan make:model Admin/School/QaThread/SchoolQaThread -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQaThread/SchoolQaThread -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolQaThreadSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/QaThread/SchoolQaThreadRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QaThread/SchoolQaThreadResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QaThread/SchoolQaThreadSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/QaThread/SchoolQaThreadController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolQaThread/SchoolQaThreadRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQaThread/SchoolQaThreadResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQaThread/SchoolQaThreadSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolQaThread/SchoolQaThreadController --resource` <br>
 
 37) creating business logic QaMessage - сообщения в темах
-`docker exec mark-php-app php artisan make:model Admin/School/QaMessage/SchoolQaMessage -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolQaMessage/SchoolQaMessage -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolQaMessageSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/QaMessage/SchoolQaMessageRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/QaMessage/SchoolQaMessageResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/QaMessage/SchoolQaMessageController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolQaMessage/SchoolQaMessageRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQaMessage/SchoolQaMessageResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolQaMessage/SchoolQaMessageController --resource` <br>
 
 38) creating business logic SchoolBookmark - закладки пользователя
-`docker exec mark-php-app php artisan make:model Admin/School/Bookmark/SchoolBookmark -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolBookmark/SchoolBookmark -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolBookmarkSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Bookmark/SchoolBookmarkRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Bookmark/SchoolBookmarkResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Bookmark/SchoolBookmarkSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Bookmark/SchoolBookmarkController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolBookmark/SchoolBookmarkRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolBookmark/SchoolBookmarkResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolBookmark/SchoolBookmarkSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolBookmark/SchoolBookmarkController --resource` <br>
 
 39) creating business logic SchoolCertificate - сертификаты об окончании курса
-`docker exec mark-php-app php artisan make:model Admin/School/Certificate/SchoolCertificate -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolCertificate/SchoolCertificate -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolCertificateSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Certificate/SchoolCertificateRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Certificate/SchoolCertificateResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Certificate/SchoolCertificateSharedResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Certificate/SchoolCertificateController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolCertificate/SchoolCertificateRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCertificate/SchoolCertificateResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolCertificate/SchoolCertificateSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolCertificate/SchoolCertificateController --resource` <br>
 
 40) creating business logic SchoolFaqCategory - категории FAQ
-`docker exec mark-php-app php artisan make:model Admin/School/Faq/SchoolFaqCategory -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Faq/SchoolFaqCategoryTranslation -mfs` <br>
-
-41) creating business logic SchoolFaq - FAQ (вопросы и ответы)
-`docker exec mark-php-app php artisan make:model Admin/School/Faq/SchoolFaq -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/School/Faq/SchoolFaqTranslation -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolFaqCategory/SchoolFaqCategory -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolFaqCategory/SchoolFaqCategoryTranslation -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolFaqCategorySeeder` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolFaqCategory/SchoolFaqCategoryResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolFaqCategory/SchoolFaqCategoryTranslationResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolFaqCategory/SchoolFaqCategoryRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolFaqCategory/SchoolFaqCategoryController --resource` <br>
+
+41) creating business logic SchoolFaq - FAQ (вопросы и ответы)
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolFaq/SchoolFaq -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/School/SchoolFaq/SchoolFaqTranslation -mfs` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=SchoolFaqSeeder` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Faq/SchoolFaqCategoryRequest` <br>
-`docker exec mark-php-app php artisan make:request Admin/School/Faq/SchoolFaqRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Faq/SchoolFaqCategoryResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Faq/SchoolFaqCategoryTranslationResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Faq/SchoolFaqResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/School/Faq/SchoolFaqTranslationResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Faq/SchoolFaqCategoryController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/School/Faq/SchoolFaqController --resource` <br>
+`docker exec mark-php-app php artisan make:request Admin/School/SchoolFaq/SchoolFaqRequest` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolFaq/SchoolFaqResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolFaq/SchoolFaqTranslationResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/School/SchoolFaq/SchoolFaqController --resource` <br>
 -------------------------------------------------------------------------------------
 
 1) Компания 

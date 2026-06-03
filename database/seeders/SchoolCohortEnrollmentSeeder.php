@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Admin\School\CohortEnrollment\SchoolCohortEnrollment;
+use App\Models\Admin\School\SchoolCohortEnrollment\SchoolCohortEnrollment;
 use Illuminate\Database\Seeder;
 
 class SchoolCohortEnrollmentSeeder extends Seeder

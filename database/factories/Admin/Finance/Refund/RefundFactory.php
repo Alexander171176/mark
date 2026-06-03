@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Finance\Refund;
 
-use App\Models\Admin\School\Refund\Refund;
+use App\Models\Admin\School\SchoolRefund\Refund;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

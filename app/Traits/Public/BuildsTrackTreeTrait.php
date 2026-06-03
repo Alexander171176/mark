@@ -2,41 +2,32 @@
 
 namespace App\Traits\Public;
 
-use App\Http\Resources\Admin\School\LearningCategory\LearningCategoryResource;
-use App\Http\Resources\Admin\School\Track\SchoolTrackResource;
-use App\Models\Admin\School\LearningCategory\LearningCategory;
-use App\Models\Admin\School\Track\SchoolTrack;
+use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackResource;
+use App\Models\Admin\School\SchoolTrack\SchoolTrack;
 
 trait BuildsTrackTreeTrait
 {
-    /**
-     * Строит дерево категорий (trackTree).
-     */
+    /** Строит дерево направлений обучения. */
     protected function buildTrackTree(string $locale): array
     {
         $tracks = SchoolTrack::query()
-            ->active()
-            ->byLocale($locale)
+            ->forPublic($locale)
             ->with([
-                'images' => fn ($q) =>
-                $q->orderBy('school_track_has_images.order', 'asc'),
+                'translation',
+                'translations',
+                'images',
             ])
             ->withCount([
-                'children' => fn ($q) => $q
-                    ->active()
-                    ->byLocale($locale),
-
-                'courses' => fn ($q) => $q
-                    ->active()
-                    ->byLocale($locale)
-                    ->published(),
+                'children',
+                'courses',
+                'likes',
+                'images',
             ])
             ->ordered()
             ->get();
 
         $items = SchoolTrackResource::collection($tracks)->resolve();
 
-        // Индексация
         $indexed = [];
 
         foreach ($items as $item) {
@@ -44,7 +35,6 @@ trait BuildsTrackTreeTrait
             $indexed[$item['id']] = $item;
         }
 
-        // Построение дерева
         $tree = [];
 
         foreach ($indexed as $id => &$item) {

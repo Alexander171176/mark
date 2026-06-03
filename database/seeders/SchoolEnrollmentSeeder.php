@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Admin\School\Enrollment\SchoolEnrollment;
-use App\Models\Admin\School\Order\SchoolOrder;
+use App\Models\Admin\School\SchoolEnrollment\SchoolEnrollment;
+use App\Models\Admin\School\SchoolOrder\SchoolOrder;
 use Illuminate\Database\Seeder;
 
 class SchoolEnrollmentSeeder extends Seeder

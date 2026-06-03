@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\School\Bundle;
 
-use App\Models\Admin\School\Bundle\Bundle;
+use App\Models\Admin\School\SchoolBundle\Bundle;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

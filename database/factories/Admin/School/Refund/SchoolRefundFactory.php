@@ -5,7 +5,7 @@ namespace Database\Factories\Admin\School\Refund;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\Refund\SchoolRefund>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\SchoolRefund\SchoolRefund>
  */
 class SchoolRefundFactory extends Factory
 {

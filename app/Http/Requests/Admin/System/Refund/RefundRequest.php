@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Admin\System\Refund;
 
-use App\Models\Admin\School\Payment\Payment;
+use App\Models\Admin\School\SchoolPayment\Payment;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Finance\WebhookEvent;
 
-use App\Models\Admin\School\WebhookEvent\WebhookEvent;
+use App\Models\Admin\School\SchoolWebhookEvent\WebhookEvent;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

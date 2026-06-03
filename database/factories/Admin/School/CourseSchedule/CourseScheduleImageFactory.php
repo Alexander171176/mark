@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\School\CourseSchedule;
 
-use App\Models\Admin\School\CourseSchedule\CourseScheduleImage;
+use App\Models\Admin\School\SchoolCourseSchedule\CourseScheduleImage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

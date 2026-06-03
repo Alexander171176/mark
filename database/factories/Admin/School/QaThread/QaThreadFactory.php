@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\School\QaThread;
 
-use App\Models\Admin\School\QaThread\QaThread;
+use App\Models\Admin\School\SchoolQaThread\QaThread;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

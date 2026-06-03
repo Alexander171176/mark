@@ -5,7 +5,7 @@ namespace Database\Factories\Admin\School\Payment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\Payment\SchoolPayment>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\SchoolPayment\SchoolPayment>
  */
 class SchoolPaymentFactory extends Factory
 {

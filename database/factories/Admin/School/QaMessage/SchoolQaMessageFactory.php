@@ -5,7 +5,7 @@ namespace Database\Factories\Admin\School\QaMessage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\QaMessage\SchoolQaMessage>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\SchoolQaMessage\SchoolQaMessage>
  */
 class SchoolQaMessageFactory extends Factory
 {

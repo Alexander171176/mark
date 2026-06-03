@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\School\Bookmark;
 
-use App\Models\Admin\School\Bookmark\Bookmark;
+use App\Models\Admin\School\SchoolBookmark\Bookmark;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

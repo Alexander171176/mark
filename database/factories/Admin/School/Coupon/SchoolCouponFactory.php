@@ -5,7 +5,7 @@ namespace Database\Factories\Admin\School\Coupon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\Coupon\SchoolCoupon>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\SchoolCoupon\SchoolCoupon>
  */
 class SchoolCouponFactory extends Factory
 {

@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Admin\School\Enrollment\SchoolEnrollment;
-use App\Models\Admin\School\Quiz\SchoolQuiz;
-use App\Models\Admin\School\QuizAttempt\SchoolQuizAttempt;
+use App\Models\Admin\School\SchoolEnrollment\SchoolEnrollment;
+use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
+use App\Models\Admin\School\SchoolQuizAttempt\SchoolQuizAttempt;
 use Illuminate\Database\Seeder;
 
 class SchoolQuizAttemptSeeder extends Seeder

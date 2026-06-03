@@ -12,16 +12,15 @@ use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
-use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
-use App\Http\Controllers\Admin\School\Hashtag\SchoolHashtagController;
-use App\Http\Controllers\Admin\School\Price\SchoolBundlePriceController;
-use App\Http\Controllers\Admin\School\Price\SchoolCoursePriceController;
-use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
-use App\Http\Controllers\Admin\School\QuizAnswer\SchoolQuizAnswerController;
-use App\Http\Controllers\Admin\School\QuizAttempt\SchoolQuizAttemptController;
-use App\Http\Controllers\Admin\School\QuizAttemptItem\SchoolQuizAttemptItemController;
-use App\Http\Controllers\Admin\School\QuizQuestion\SchoolQuizQuestionController;
-use App\Http\Controllers\Admin\School\SubscriptionPlan\SchoolSubscriptionPlanController;
+use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
+use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
+use App\Http\Controllers\Admin\School\SchoolCoursePrice\SchoolCoursePriceController;
+use App\Http\Controllers\Admin\School\SchoolHashtag\SchoolHashtagController;
+use App\Http\Controllers\Admin\School\SchoolQuiz\SchoolQuizController;
+use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerController;
+use App\Http\Controllers\Admin\School\SchoolQuizAttempt\SchoolQuizAttemptController;
+use App\Http\Controllers\Admin\School\SchoolQuizAttemptItem\SchoolQuizAttemptItemController;
+use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use Illuminate\Support\Facades\Route;
 
 Route::delete('/blog-rubrics/bulk-delete',

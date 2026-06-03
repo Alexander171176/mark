@@ -2,11 +2,11 @@
 
 use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
-use App\Http\Controllers\Admin\School\Assignment\SchoolAssignmentController;
-use App\Http\Controllers\Admin\School\CourseSchedule\SchoolCourseScheduleController;
-use App\Http\Controllers\Admin\School\Lesson\SchoolLessonController;
-use App\Http\Controllers\Admin\School\Order\SchoolOrderController;
-use App\Http\Controllers\Admin\School\Quiz\SchoolQuizController;
+use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
+use App\Http\Controllers\Admin\School\SchoolCourseSchedule\SchoolCourseScheduleController;
+use App\Http\Controllers\Admin\School\SchoolLesson\SchoolLessonController;
+use App\Http\Controllers\Admin\School\SchoolOrder\SchoolOrderController;
+use App\Http\Controllers\Admin\School\SchoolQuiz\SchoolQuizController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/blog-rubrics/{blogRubric}/clone',

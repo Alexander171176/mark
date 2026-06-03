@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\School\QuizAttemptItem\SchoolQuizAttemptItemController;
+use App\Http\Controllers\Admin\School\SchoolQuizAttemptItem\SchoolQuizAttemptItemController;
 use Illuminate\Support\Facades\Route;
 
 Route::put('/school-quiz-attempt-items/bulk-correct',

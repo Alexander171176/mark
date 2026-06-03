@@ -5,7 +5,7 @@ namespace Database\Factories\Admin\School\Review;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\Review\SchoolReview>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\SchoolReview\SchoolReview>
  */
 class SchoolReviewFactory extends Factory
 {

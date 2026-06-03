@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\School\Course\SchoolCourseController;
+use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
 use Illuminate\Support\Facades\Route;
 
 Route::put('/school-courses/bulk-is-new',

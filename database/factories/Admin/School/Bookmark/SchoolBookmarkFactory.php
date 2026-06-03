@@ -5,7 +5,7 @@ namespace Database\Factories\Admin\School\Bookmark;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\Bookmark\SchoolBookmark>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\SchoolBookmark\SchoolBookmark>
  */
 class SchoolBookmarkFactory extends Factory
 {

@@ -2,7 +2,7 @@
 
 namespace App\Models\Admin\School\Assignment;
 
-use App\Models\Admin\School\AssignmentSubmission\AssignmentSubmission;
+use App\Models\Admin\School\SchoolAssignmentSubmission\AssignmentSubmission;
 use App\Models\Admin\School\Course\Course;
 use App\Models\Admin\School\InstructorProfile\InstructorProfile;
 use App\Models\Admin\School\Lesson\Lesson;

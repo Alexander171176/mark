@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\Admin\School\Bundle\SchoolBundle;
-use App\Models\Admin\School\Course\SchoolCourse;
-use App\Models\Admin\School\Order\SchoolOrder;
-use App\Models\Admin\School\Order\SchoolOrderItem;
-use App\Models\Admin\School\SubscriptionPlan\SchoolSubscriptionPlan;
+use App\Models\Admin\School\SchoolOrder\SchoolOrder;
+use App\Models\Admin\School\SchoolBundle\SchoolBundle;
+use App\Models\Admin\School\SchoolCourse\SchoolCourse;
+use App\Models\Admin\School\SchoolOrderItem\SchoolOrderItem;
+use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlan;
 use Illuminate\Database\Seeder;
 
 class SchoolOrderItemSeeder extends Seeder

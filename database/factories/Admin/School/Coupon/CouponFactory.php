@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\School\Coupon;
 
-use App\Models\Admin\School\Coupon\Coupon;
+use App\Models\Admin\School\SchoolCoupon\Coupon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Public\Default\School;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\Course\CourseResource;
-use App\Http\Resources\Admin\School\Track\SchoolTrackResource;
-use App\Models\Admin\School\Track\SchoolTrack;
+use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackResource;
+use App\Models\Admin\School\SchoolTrack\SchoolTrack;
 use App\Traits\Public\BuildsTrackTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;

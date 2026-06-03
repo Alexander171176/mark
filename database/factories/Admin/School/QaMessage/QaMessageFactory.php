@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\School\QaMessage;
 
-use App\Models\Admin\School\QaMessage\QaMessage;
+use App\Models\Admin\School\SchoolQaMessage\QaMessage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

@@ -6,14 +6,14 @@ use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleSharedResource;
 use App\Http\Resources\Admin\Blog\BlogBanner\BlogBannerSharedResource;
 use App\Http\Resources\Admin\Blog\BlogTag\BlogTagSharedResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoSharedResource;
-use App\Http\Resources\Admin\School\Course\SchoolCourseSharedResource;
-use App\Http\Resources\Admin\School\Hashtag\SchoolHashtagSharedResource;
+use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
+use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagSharedResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogBanner\BlogBanner;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
-use App\Models\Admin\School\Course\SchoolCourse;
-use App\Models\Admin\School\Hashtag\SchoolHashtag;
+use App\Models\Admin\School\SchoolCourse\SchoolCourse;
+use App\Models\Admin\School\SchoolHashtag\SchoolHashtag;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 

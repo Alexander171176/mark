@@ -5,7 +5,7 @@ namespace Database\Factories\Admin\School\QuizAnswer;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\QuizAnswer\SchoolQuizAnswerTranslation>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerTranslation>
  */
 class SchoolQuizAnswerTranslationFactory extends Factory
 {

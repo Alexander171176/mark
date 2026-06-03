@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\School\Certificate;
 
-use App\Models\Admin\School\Certificate\Certificate;
+use App\Models\Admin\School\SchoolCertificate\Certificate;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

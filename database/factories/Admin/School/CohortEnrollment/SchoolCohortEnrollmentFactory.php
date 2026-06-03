@@ -5,7 +5,7 @@ namespace Database\Factories\Admin\School\CohortEnrollment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\CohortEnrollment\SchoolCohortEnrollment>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Admin\School\SchoolCohortEnrollment\SchoolCohortEnrollment>
  */
 class SchoolCohortEnrollmentFactory extends Factory
 {

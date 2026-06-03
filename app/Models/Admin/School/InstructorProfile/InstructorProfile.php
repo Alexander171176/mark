@@ -3,7 +3,7 @@
 namespace App\Models\Admin\School\InstructorProfile;
 
 use App\Models\Admin\School\Course\Course;
-use App\Models\Admin\School\Payout\Payout;
+use App\Models\Admin\School\SchoolPayout\Payout;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

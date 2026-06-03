@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Admin\School\Lesson\SchoolLesson;
+use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use Illuminate\Database\Seeder;
 
 class SchoolLessonSeeder extends Seeder

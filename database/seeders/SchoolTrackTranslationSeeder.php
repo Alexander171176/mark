@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Admin\School\Track\SchoolTrackTranslation;
+use App\Models\Admin\School\SchoolTrack\SchoolTrackTranslation;
 use Illuminate\Database\Seeder;
 
 class SchoolTrackTranslationSeeder extends Seeder

@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Admin\School\Lesson\SchoolLesson;
-use App\Models\Admin\School\Quiz\SchoolQuiz;
+use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
+use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use Illuminate\Database\Seeder;
 
 class SchoolQuizSeeder extends Seeder

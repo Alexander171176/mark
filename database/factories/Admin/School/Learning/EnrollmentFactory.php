@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\School\Learning;
 
-use App\Models\Admin\School\Enrollment\Enrollment;
+use App\Models\Admin\School\SchoolEnrollment\Enrollment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

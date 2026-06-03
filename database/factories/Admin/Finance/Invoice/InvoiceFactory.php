@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Admin\Finance\Invoice;
 
-use App\Models\Admin\School\Invoice\Invoice;
+use App\Models\Admin\School\SchoolInvoice\Invoice;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\Course\CourseResource;
 use App\Http\Resources\Admin\School\Module\ModuleResource;
 use App\Models\Admin\School\Course\Course;
-use App\Traits\Public\BuildsLearningCategoryTreeTrait;
+use App\Traits\Public\BuildsTrackTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
@@ -34,7 +34,7 @@ class CourseController extends Controller
 {
     use WithUserLikesTrait;
     use HasPublicIndexFiltersTrait;
-    use BuildsLearningCategoryTreeTrait;
+    use BuildsTrackTreeTrait;
     use HasSidebarDataTrait;
 
     /**

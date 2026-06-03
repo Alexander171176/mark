@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import UniversalImageSlider from '@/Components/Public/Default/Images/UniversalImageSlider.vue'
@@ -9,15 +9,34 @@ const { t } = useI18n()
 
 const props = defineProps({
     articles: { type: Array, default: () => [] },
-    intervalMs: { type: Number, default: 4200 },
-    pauseOnHover: { type: Boolean, default: true },
-    pauseOnHidden: { type: Boolean, default: true },
 })
 
 const normalizedArticles = computed(() => {
     return Array.isArray(props.articles) ? props.articles : []
 })
 
+const getTranslation = (article) => {
+    return article?.translation || {}
+}
+
+const getTitle = (article) => {
+    return getTranslation(article).title || article?.title || ''
+}
+
+const getShort = (article) => {
+    return getTranslation(article).short || article?.short || ''
+}
+
+const getAuthorName = (article) => {
+    return getTranslation(article).pseudonym ||
+        article?.pseudonym ||
+        article?.owner?.name ||
+        ''
+}
+
+const getShowRoute = (article) => {
+    return route('public.blogArticles.show', { url: article.url })
+}
 </script>
 
 <template>
@@ -31,7 +50,7 @@ const normalizedArticles = computed(() => {
                    dark:border-gray-700 dark:bg-gray-900"
         >
             <Link
-                :href="route('public.articles.show', article.url)"
+                :href="getShowRoute(article)"
                 class="shrink-0"
             >
                 <UniversalImageSlider
@@ -47,7 +66,7 @@ const normalizedArticles = computed(() => {
             <div class="min-w-0 flex-1 flex flex-col justify-around">
                 <div class="flex items-start justify-center gap-3">
                     <Link
-                        :href="route('public.articles.show', article.url)"
+                        :href="getShowRoute(article)"
                         class="min-w-0 inline-flex items-center gap-2"
                     >
                         <span
@@ -55,32 +74,36 @@ const normalizedArticles = computed(() => {
                                    text-slate-900/85 dark:text-slate-100/85
                                    group-hover:opacity-75"
                         >
-                            {{ article.title }}
+                            {{ getTitle(article) }}
                         </span>
                     </Link>
                 </div>
 
                 <div
-                    v-if="article.short"
+                    v-if="getShort(article)"
                     class="mt-2 line-clamp-2 text-sm text-slate-700 dark:text-slate-300"
                 >
-                    {{ article.short }}
+                    {{ getShort(article) }}
                 </div>
 
-                <div v-if="article?.owner" class="flex items-center gap-2">
+                <div
+                    v-if="article?.owner || getAuthorName(article)"
+                    class="flex items-center gap-2"
+                >
                     <img
                         v-if="article.owner?.profile_photo_url"
                         :src="article.owner.profile_photo_url"
-                        :alt="article.owner.name"
+                        :alt="getAuthorName(article)"
                         loading="lazy"
                         class="h-6 w-6 rounded-full object-cover
-                                   ring-1 ring-gray-200 dark:ring-gray-700"
+                               ring-1 ring-gray-200 dark:ring-gray-700"
                     />
+
                     <div
                         class="text-xs font-semibold
-                                   text-slate-700/85 dark:text-slate-300/85 truncate"
+                               text-slate-700/85 dark:text-slate-300/85 truncate"
                     >
-                        {{ article.owner?.name }}
+                        {{ getAuthorName(article) }}
                     </div>
                 </div>
 
@@ -89,19 +112,27 @@ const normalizedArticles = computed(() => {
                         :views="article.views || 0"
                         :likes-count="article.likes_count || 0"
                         :already-liked="article.already_liked || false"
-                        route-name="articles.like"
-                        :route-params="{ article: article.id }"
+                        route-name="public.blogArticles.like"
+                        :route-params="{ id: article.id }"
                         :show-likes-button="true"
                         compact
                     />
+
                     <div>
                         <Link
-                            :href="route('public.articles.show', article.url)"
+                            :href="getShowRoute(article)"
                             class="flex w-full items-center justify-center gap-2
                                    rounded-sm px-3 py-1 btn-default"
                         >
-                            <span class="text-sm font-semibold">{{ t('readMore') }}</span>
-                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <span class="text-sm font-semibold">
+                                {{ t('readMore') }}
+                            </span>
+
+                            <svg
+                                class="h-4 w-4"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                            >
                                 <path
                                     fill-rule="evenodd"
                                     d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06.02Z"

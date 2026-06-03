@@ -1,9 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\Blog\BlogArticle\ApiBlogArticleController;
+use App\Http\Controllers\Api\Blog\BlogRubric\ApiBlogRubricController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\Article\ApiArticleController;
-use App\Http\Controllers\Api\Rubric\ApiRubricController;
 use App\Http\Resources\Admin\System\User\UserResource;
 
 /*
@@ -16,7 +16,7 @@ use App\Http\Resources\Admin\System\User\UserResource;
 
 // Определение контроллеров публичной части
 $siteLayout = config('site_settings.siteLayout', 'Default');
-$publicRubricControllerClass = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\RubricController";
+$publicRubricControllerClass = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\BlogRubric\\BlogRubricController";
 $publicCommentControllerClass = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\CommentController";
 
 // Рубрики для меню
@@ -52,5 +52,6 @@ Route::middleware([/* 'auth:sanctum', 'role:admin' // TODO: Добавить п�
 
     }); // Конец группы admin API
 
-Route::apiResource('rubrics', ApiRubricController::class);
-Route::apiResource('articles', ApiArticleController::class);
+// --- Swagger / Blog API ---
+Route::apiResource('blog-rubrics', ApiBlogRubricController::class);
+Route::apiResource('blog-articles', ApiBlogArticleController::class);

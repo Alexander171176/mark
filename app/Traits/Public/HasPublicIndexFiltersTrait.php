@@ -6,9 +6,7 @@ use Illuminate\Http\Request;
 
 trait HasPublicIndexFiltersTrait
 {
-    /**
-     * Определяет perPage с ограничениями.
-     */
+    /** Определяет количество элементов на странице с ограничениями. */
     protected function resolvePerPage(
         Request $request,
         int $default = 6,
@@ -20,34 +18,46 @@ trait HasPublicIndexFiltersTrait
         return max($min, min($perPage, $max));
     }
 
-    /**
-     * Получает поисковую строку.
-     */
+    /** Получает поисковую строку. */
     protected function resolveSearch(Request $request, string $key = 'q'): string
     {
         return trim((string) $request->query($key, ''));
     }
 
-    /**
-     * Получает сортировку.
-     */
-    protected function resolveSort(Request $request, string $default = 'sort_asc'): string
+    /** Получает параметр сортировки. */
+    protected function resolveSort(Request $request, string $default = 'sort'): string
     {
-        return (string) $request->query('sort', $default);
+        return trim((string) $request->query('sort', $default));
     }
 
-    /**
-     * Формирует массив фильтров для фронта.
-     */
+    /** Получает режим отображения списка. */
+    protected function resolveView(Request $request, string $default = 'grid'): string
+    {
+        return trim((string) $request->query('view', $default));
+    }
+
+    /** Получает режим обработки данных: server/frontend/auto. */
+    protected function resolveProcessingMode(string $default = 'server'): string
+    {
+        return in_array($default, ['server', 'frontend', 'auto'], true)
+            ? $default
+            : 'server';
+    }
+
+    /** Формирует массив фильтров для передачи на фронт. */
     protected function buildIndexFilters(
         string $search,
         int $perPage,
-        string $sort
+        string $sort,
+        string $view = 'grid',
+        string $processingMode = 'server'
     ): array {
         return [
             'q' => $search,
             'per_page' => $perPage,
             'sort' => $sort,
+            'view' => $view,
+            'processing_mode' => $processingMode,
         ];
     }
 }

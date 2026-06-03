@@ -12,10 +12,11 @@ const props = defineProps({
         default: '',
     },
 
-    /**
-     * bottom-end -> выпадает вниз вправо
-     * top-end    -> выпадает вверх вправо
-     */
+    locales: {
+        type: Array,
+        default: () => [],
+    },
+
     placement: {
         type: String,
         default: 'bottom-end',
@@ -49,21 +50,22 @@ const getLocaleTitle = (code) => {
 }
 
 const localesList = computed(() => {
-    const serverLocales = page.props.availableLocales
+    const sourceLocales = props.locales.length
+        ? props.locales
+        : page.props.availableLocales
 
-    if (Array.isArray(serverLocales) && serverLocales.length) {
-        return serverLocales.map((code) => {
-            const c = String(code).toLowerCase()
-
-            return {
-                code: c,
-                flag: `/storage/flags/${c}.svg`,
-                title: getLocaleTitle(c),
-            }
-        })
+    if (!Array.isArray(sourceLocales) || !sourceLocales.length) {
+        return []
     }
 
-    return []
+    return sourceLocales
+        .map((code) => String(code).trim().toLowerCase())
+        .filter(Boolean)
+        .map((code) => ({
+            code,
+            flag: `/storage/flags/${code}.svg`,
+            title: getLocaleTitle(code),
+        }))
 })
 
 const selectedLocale = computed(() =>

@@ -1,22 +1,23 @@
 <?php
+
 // Лайки пользователей
 
 use Illuminate\Support\Facades\Route;
 
 $siteLayout = config('site_settings.siteLayout', 'Default');
 
-$publicArticleController = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\ArticleController";
-$publicVideoController   = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\VideoController";
+$publicArticleController = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\BlogArticle\\BlogArticleController";
+$publicVideoController   = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\BlogVideo\\BlogVideoController";
 $publicTrackController   = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\TrackController";
-$publicCourseController   = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\CourseController";
-$publicModuleController   = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\ModuleController";
-$publicLessonController   = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\LessonController";
+$publicCourseController  = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\CourseController";
+$publicModuleController  = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\ModuleController";
+$publicLessonController  = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\LessonController";
 
-Route::post('/articles/{article}/like', [$publicArticleController, 'like'])
-    ->name('articles.like');
+Route::post('/blog-articles/{id}/like', [$publicArticleController, 'like'])
+    ->name('public.blogArticles.like');
 
-Route::post('/videos/{video}/like', [$publicVideoController, 'like'])
-    ->name('videos.like');
+Route::post('/blog-videos/{id}/like', [$publicVideoController, 'like'])
+    ->name('public.blogVideos.like');
 
 Route::post('/tracks/{track}/like', [$publicTrackController, 'like'])
     ->name('tracks.like');

@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, defineEmits, ref, watch } from 'vue'
+import { defineEmits, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
@@ -16,7 +16,7 @@ const { t } = useI18n()
 const props = defineProps({
     articles: { type: Array, default: () => [] },
     selectedArticles: { type: Array, default: () => [] },
-    isAdmin: { type: Boolean, default: false },
+    isAdmin: { type: Boolean, default: false }
 })
 
 const emits = defineEmits([
@@ -28,7 +28,7 @@ const emits = defineEmits([
     'update-sort-order',
     'toggle-select',
     'toggle-all',
-    'approve',
+    'approve'
 ])
 
 const localArticles = ref([])
@@ -48,7 +48,7 @@ const handleDragEnd = () => {
 const toggleAll = (event) => {
     emits('toggle-all', {
         ids: localArticles.value.map(article => article.id),
-        checked: event.target.checked,
+        checked: event.target.checked
     })
 }
 
@@ -62,8 +62,6 @@ const articleTranslation = (article) => article?.translation || {}
 const articleTitle = (article) => articleTranslation(article)?.title || `ID: ${article?.id}`
 
 const articleShort = (article) => articleTranslation(article)?.short || ''
-
-const articleLocale = (article) => articleTranslation(article)?.locale || ''
 
 const rubricTitle = (rubric) => {
     return rubric?.title || rubric?.translation?.title || `ID: ${rubric?.id}`
@@ -109,7 +107,7 @@ const formatDate = (dateStr) => {
     return date.toLocaleDateString('ru-RU', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric',
+        day: 'numeric'
     })
 }
 
@@ -142,20 +140,20 @@ const moderationBadge = (status) => {
     if (s === 1) {
         return {
             text: t('statusSelectApproved'),
-            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300',
+            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300'
         }
     }
 
     if (s === 2) {
         return {
             text: t('statusSelectRejected'),
-            class: 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/40 dark:text-rose-300',
+            class: 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/40 dark:text-rose-300'
         }
     }
 
     return {
         text: t('underModeration'),
-        class: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300',
+        class: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300'
     }
 }
 </script>
@@ -226,28 +224,28 @@ const moderationBadge = (status) => {
                                     class="text-[10px] font-semibold px-1.5 py-0.5 rounded-sm
                                            border border-gray-400 bg-slate-200 dark:bg-slate-700
                                            text-slate-800 dark:text-blue-100"
-                                    :title="`[${articleLocale(article)}] : [${article.sort}] ${formatDate(article.published_at)}`"
+                                :title="`[${article.sort}] / ${formatDate(article.published_at)}`"
                                 >
                                     ID: {{ article.id }}
                                 </div>
-
-                                <div
-                                    class="text-[10px] px-1.5 py-0.5 rounded-sm
-                                           border border-gray-400 uppercase"
-                                    :class="article.activity
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100'"
-                                    :title="t('localization')"
-                                >
-                                    {{ articleLocale(article).toUpperCase() }}
-                                </div>
                             </div>
 
-                            <input
-                                type="checkbox"
-                                :checked="selectedArticles.includes(article.id)"
-                                @change="$emit('toggle-select', article.id)"
-                            />
+                            <div class="flex items-center space-x-2">
+                                <span
+                                    class="text-[10px] px-2 py-0.5 rounded-sm border font-semibold"
+                                    :class="moderationBadge(article.moderation_status).class"
+                            :title="article.moderation_note && article.moderated_at
+                                ? `${article.moderation_note} [${formatDate(article.moderated_at)}]`
+                                : null"
+                                >
+                                    {{ moderationBadge(article.moderation_status).text }}
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    :checked="selectedArticles.includes(article.id)"
+                                    @change="$emit('toggle-select', article.id)"
+                                />
+                            </div>
                         </header>
 
                         <div class="relative w-full bg-slate-200 dark:bg-slate-900">
@@ -293,7 +291,7 @@ const moderationBadge = (status) => {
                                 class="flex flex-col items-center justify-center
                                        text-center text-[10px] text-slate-500 dark:text-slate-300"
                             >
-                                {{ t('show') }}: {{ article.show_from_at }} / {{ article.show_to_at }}
+                            {{ t('show') }}: {{ article.show_from_at }} / {{ article.show_to_at }}
                             </div>
 
                             <div
@@ -317,23 +315,39 @@ const moderationBadge = (status) => {
                             </a>
 
                             <div
-                                class="flex items-center justify-between text-[11px]
+                                class="flex items-center justify-center gap-3 text-[11px]
                                        font-semibold text-slate-600 dark:text-slate-200"
                             >
-                                <span
+                                <div
                                     v-if="(article.views ?? 0) > 0"
-                                    class="flex flex-row items-center"
+                                    class="flex items-center justify-center space-x-1"
                                     :title="t('views')"
                                 >
-                                    👁 <span class="ml-1">{{ article.views }}</span>
-                                </span>
+                                    <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 16 16">
+                                        <path
+                                            class="fill-current text-blue-600 dark:text-blue-300"
+                                            d="M8 2C3.246 2 .251 7.29.127 7.515a.998.998 0 0 0 .002.975c.07.125 1.044 1.801 2.695 3.274C4.738 13.582 6.283 14 8 14c4.706 0 7.743-5.284 7.872-5.507a1 1 0 0 0 0-.98A13.292 13.292 0 0 0 8 2zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"
+                                        />
+                                    </svg>
+                                    <span class="text-[12px] text-slate-700 dark:text-slate-200">
+                                        {{ article.views }}
+                                    </span>
+                                </div>
 
-                                <span
+                                <div
                                     v-if="(article.likes_count ?? 0) > 0"
+                                    class="flex items-center justify-center space-x-1"
                                     :title="t('likes')"
                                 >
-                                    ❤ {{ article.likes_count }}
-                                </span>
+                                    <svg class="h-7 w-7 fill-current" viewBox="0 0 32 32">
+                                        <path
+                                            class="fill-current text-red-600 dark:text-red-300"
+                                            d="M22.682 11.318A4.485 4.485 0 0019.5 10a4.377 4.377 0 00-3.5 1.707A4.383 4.383 0 0012.5 10a4.5 4.5 0 00-3.182 7.682L16 24l6.682-6.318a4.5 4.5 0 000-6.364zm-1.4 4.933L16 21.247l-5.285-5A2.5 2.5 0 0112.5 12c1.437 0 2.312.681 3.5 2.625C17.187 12.681 18.062 12 19.5 12a2.5 2.5 0 011.785 4.251h-.003z"></path>
+                                    </svg>
+                                    <span class="text-[12px] text-slate-700 dark:text-slate-200">
+                                        {{ article.likes_count }}
+                                    </span>
+                                </div>
                             </div>
 
                             <div

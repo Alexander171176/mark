@@ -224,7 +224,7 @@ const moderationBadge = (status) => {
                                     class="text-[10px] font-semibold px-1.5 py-0.5 rounded-sm
                                            border border-gray-400 bg-slate-200 dark:bg-slate-700
                                            text-slate-800 dark:text-blue-100"
-                                    :title="`[${bannerLocale(banner)}] : [${banner.sort}]`"
+                                    :title="`[${banner.sort}]`"
                                 >
                                     ID: {{ banner.id }}
                                 </div>

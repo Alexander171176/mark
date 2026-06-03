@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Public\Default\School;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\Assignment\AssignmentResource;
 use App\Models\Admin\School\Assignment\Assignment;
-use App\Traits\Public\BuildsLearningCategoryTreeTrait;
+use App\Traits\Public\BuildsTrackTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use Illuminate\Http\Request;
@@ -27,7 +27,7 @@ use Inertia\Response;
 class AssignmentController extends Controller
 {
     use HasPublicIndexFiltersTrait;
-    use BuildsLearningCategoryTreeTrait;
+    use BuildsTrackTreeTrait;
     use HasSidebarDataTrait;
 
     /**

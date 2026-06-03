@@ -30,9 +30,21 @@ const managesProfilePhotos = computed(() => !!page.props?.jetstream?.managesProf
 
 /** доступные локали */
 const availableLocales = computed(() => {
-    return Array.isArray(page.props?.availableLocales)
-        ? page.props.availableLocales.map(item => String(item).toLowerCase())
-        : ['ru', 'en', 'kk']
+    const locales = page.props?.availableLocales
+
+    if (Array.isArray(locales) && locales.length > 0) {
+        return locales
+            .map(locale => String(locale).trim().toLowerCase())
+            .filter(Boolean)
+    }
+
+    if (Array.isArray(page.props?.locales) && page.props.locales.length > 0) {
+        return page.props.locales
+            .map(locale => String(locale).trim().toLowerCase())
+            .filter(Boolean)
+    }
+
+    return [String(locale.value || 'ru').toLowerCase()]
 })
 
 /** текущая локаль */
@@ -218,6 +230,7 @@ const logout = () => {
                     <!-- Переключатель локали -->
                     <LocaleSelectOption
                         v-model="selectedLocale"
+                        :locales="availableLocales"
                         placement="bottom-end"
                     />
 
@@ -389,11 +402,11 @@ const logout = () => {
             <div class="px-3 py-3 space-y-2">
                 <!-- mobile nav links -->
                 <Link
-                    :href="route('public.rubrics.index')"
+                    :href="route('public.blogRubrics.index')"
                     @click="closeMobileMenu"
                     class="block rounded-sm px-3 py-2 text-sm font-semibold transition"
                     :class="
-                        route().current('public.rubrics.*') ||
+                        route().current('public.blogRubrics.*') ||
                         route().current('public.tags.*')
                             ? 'bg-cyan-400 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300'
                             : 'text-slate-700 hover:bg-slate-200 dark:text-slate-200 dark:hover:bg-slate-800'
@@ -402,10 +415,10 @@ const logout = () => {
                     {{ t('rubrics') }}
                 </Link>
                 <Link
-                    :href="route('public.articles.index')"
+                    :href="route('public.blogArticles.index')"
                     @click="closeMobileMenu"
                     class="block rounded-md px-3 py-2 text-sm font-semibold transition"
-                    :class="route().current('public.articles.*')
+                    :class="route().current('public.blogArticles.*')
                         ? 'bg-cyan-400 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300'
                         : 'text-slate-700 hover:bg-slate-200 ' +
                          'dark:text-slate-200 dark:hover:bg-slate-800'"
@@ -413,10 +426,10 @@ const logout = () => {
                     {{ t('articles') }}
                 </Link>
                 <Link
-                    :href="route('public.videos.index')"
+                    :href="route('public.blogVideos.index')"
                     @click="closeMobileMenu"
                     class="block rounded-md px-3 py-2 text-sm font-semibold transition"
-                    :class="route().current('public.videos.*')
+                    :class="route().current('public.blogVideos.*')
                         ? 'bg-cyan-400 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300'
                         : 'text-slate-700 hover:bg-slate-200 ' +
                          'dark:text-slate-200 dark:hover:bg-slate-800'"

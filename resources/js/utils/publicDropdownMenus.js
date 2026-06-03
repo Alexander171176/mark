@@ -7,20 +7,20 @@ export const publicDropdownMenus = (t) => [
         links: [
             {
                 label: t('rubrics'),
-                route: 'public.rubrics.index',
-                active: ['public.rubrics.*', 'public.tags.*'],
+                route: 'public.blogRubrics.index',
+                active: ['public.blogRubrics.*', 'public.blogTags.*'],
                 icon: publicMenuIcons.rubrics,
             },
             {
                 label: t('articles'),
-                route: 'public.articles.index',
-                active: 'public.articles.*',
+                route: 'public.blogArticles.index',
+                active: 'public.blogArticles.*',
                 icon: publicMenuIcons.articles,
             },
             {
                 label: t('videos'),
-                route: 'public.videos.index',
-                active: 'public.videos.*',
+                route: 'public.blogVideos.index',
+                active: 'public.blogVideos.*',
                 icon: publicMenuIcons.videos,
             },
         ],

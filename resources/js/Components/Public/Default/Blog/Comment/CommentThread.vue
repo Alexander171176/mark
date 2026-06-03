@@ -247,7 +247,7 @@ onMounted(() => {
 
                         <div class="flex flex-wrap gap-1 items-center text-xs">
                             <button @click="startReply(comment.id)"
-                                    class="flex w-full items-center justify-center gap-1
+                                    class="flex w-fit items-center justify-center gap-1
                                            px-3 py-1 transition text-slate-600 dark:text-slate-400
                                            hover:text-blue-700 dark:hover:text-blue-300">
                                 <svg
@@ -260,10 +260,9 @@ onMounted(() => {
                                     {{ t('reply') }}
                                 </span>
                             </button>
-
                             <template v-if="authUser && authUser.id === comment.user?.id">
                                 <button @click="startEdit(comment)"
-                                        class="flex w-full items-center justify-center gap-1
+                                        class="flex w-fit items-center justify-center gap-1
                                                px-3 py-1 transition
                                                text-green-600 dark:text-green-400
                                                hover:text-teal-700 dark:hover:text-teal-300">
@@ -278,7 +277,7 @@ onMounted(() => {
                                     </span>
                                 </button>
                                 <button @click="removeComment(comment.id)"
-                                        class="flex w-full items-center justify-center gap-1
+                                        class="flex w-fit items-center justify-center gap-1
                                                px-3 py-1 transition
                                                text-red-600 dark:text-red-400
                                                hover:text-rose-700 dark:hover:text-rose-300">

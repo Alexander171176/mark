@@ -2,49 +2,27 @@
 
 namespace App\Services\Public\Blog;
 
-use App\Http\Resources\Admin\Blog\Article\ArticleResource;
-use App\Http\Resources\Admin\Blog\Banner\BannerResource;
-use App\Http\Resources\Admin\Blog\Tag\TagSharedResource;
-use App\Http\Resources\Admin\Blog\Video\VideoResource;
-use App\Http\Resources\Admin\School\Course\CourseSharedResource;
-use App\Http\Resources\Admin\School\Hashtag\HashtagSharedResource;
-use App\Models\Admin\Blog\Article\Article;
-use App\Models\Admin\Blog\Banner\Banner;
-use App\Models\Admin\Blog\Tag\Tag;
-use App\Models\Admin\Blog\Video\Video;
-use App\Models\Admin\School\Course\Course;
-use App\Models\Admin\School\Hashtag\Hashtag;
+use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleSharedResource;
+use App\Http\Resources\Admin\Blog\BlogBanner\BlogBannerSharedResource;
+use App\Http\Resources\Admin\Blog\BlogTag\BlogTagSharedResource;
+use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoSharedResource;
+use App\Http\Resources\Admin\School\Course\SchoolCourseSharedResource;
+use App\Http\Resources\Admin\School\Hashtag\SchoolHashtagSharedResource;
+use App\Models\Admin\Blog\BlogArticle\BlogArticle;
+use App\Models\Admin\Blog\BlogBanner\BlogBanner;
+use App\Models\Admin\Blog\BlogTag\BlogTag;
+use App\Models\Admin\Blog\BlogVideo\BlogVideo;
+use App\Models\Admin\School\Course\SchoolCourse;
+use App\Models\Admin\School\Hashtag\SchoolHashtag;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
-/**
- * Сервис отображения левой и правой колонки
- *  - время кэширования
- *  - используемый кэш, ключи
- *  - Строитель блоков:
- *  - Баннеры по флагам left, main, right
- *  - Видео по флагам left, main, right и по популярности
- *  - Иерархия Рубрик (Блог)
- *  - Статьи по флагам left, main, right и по популярности (Блог)
- *  - Облако Тегов (Блог)
- *  - Курсы по флагам left, main, right и по популярности (Школа)
- *  - Иерархия Треков (Школа)
- *  - Облако Хештегов (Школа)
- */
 class BlogSidebarService
 {
-    /**
-     * период кэша
-     * @var int
-     */
+    /** Время жизни кэша sidebar-данных. */
     protected int $ttl = 600;
 
-    /**
-     * Кэширование данных
-     *
-     * @param string $locale
-     * @return array
-     */
+    /** Получить данные для публичных колонок. */
     public function getSidebarData(string $locale): array
     {
         return Cache::remember(
@@ -54,17 +32,13 @@ class BlogSidebarService
         );
     }
 
-    /**
-     * Используемый кэш
-     *
-     * @param string $locale
-     * @return void
-     */
+    /** Очистить кэш одной локали. */
     public function forget(string $locale): void
     {
         Cache::forget($this->getCacheKey($locale));
     }
 
+    /** Очистить кэш всех локалей. */
     public function forgetAll(): void
     {
         foreach (config('app.available_locales', []) as $locale) {
@@ -72,217 +46,163 @@ class BlogSidebarService
         }
     }
 
-    /**
-     * Строитель блоков данных в колонках
-     *
-     * @param string $locale
-     * @return array
-     */
+    /** Собрать данные для левой, центральной и правой колонок. */
     protected function buildSidebarData(string $locale): array
     {
         return [
-            'tags' => TagSharedResource::collection($this->getTags($locale)),
+            'tags' => BlogTagSharedResource::collection($this->getTags($locale)),
 
-            'leftArticles' => ArticleResource::collection($this->getArticlesByFlag($locale, 'left', 3)),
-            'mainArticles' => ArticleResource::collection($this->getArticlesByFlag($locale, 'main', 6)),
-            'rightArticles' => ArticleResource::collection($this->getArticlesByFlag($locale, 'right', 3)),
-            'popularArticles' => ArticleResource::collection($this->getPopularArticles($locale, 6)),
+            'leftArticles' => BlogArticleSharedResource::collection($this->getArticlesByFlag($locale, 'left', 3)),
+            'mainArticles' => BlogArticleSharedResource::collection($this->getArticlesByFlag($locale, 'main', 6)),
+            'rightArticles' => BlogArticleSharedResource::collection($this->getArticlesByFlag($locale, 'right', 3)),
+            'popularArticles' => BlogArticleSharedResource::collection($this->getPopularArticles($locale, 6)),
 
-            'leftBanners' => BannerResource::collection($this->getBannersByFlag($locale, 'left', 3)),
-            'mainBanners' => BannerResource::collection($this->getBannersByFlag($locale, 'main', 6)),
-            'rightBanners' => BannerResource::collection($this->getBannersByFlag($locale, 'right', 3)),
+            'leftBanners' => BlogBannerSharedResource::collection($this->getBannersByFlag($locale, 'left', 3)),
+            'mainBanners' => BlogBannerSharedResource::collection($this->getBannersByFlag($locale, 'main', 6)),
+            'rightBanners' => BlogBannerSharedResource::collection($this->getBannersByFlag($locale, 'right', 3)),
 
-            'leftVideos' => VideoResource::collection($this->getVideosByFlag($locale, 'left', 3)),
-            'mainVideos' => VideoResource::collection($this->getVideosByFlag($locale, 'main', 6)),
-            'rightVideos' => VideoResource::collection($this->getVideosByFlag($locale, 'right', 3)),
-            'popularVideos' => VideoResource::collection($this->getPopularVideos($locale, 6)),
+            'leftVideos' => BlogVideoSharedResource::collection($this->getVideosByFlag($locale, 'left', 3)),
+            'mainVideos' => BlogVideoSharedResource::collection($this->getVideosByFlag($locale, 'main', 6)),
+            'rightVideos' => BlogVideoSharedResource::collection($this->getVideosByFlag($locale, 'right', 3)),
+            'popularVideos' => BlogVideoSharedResource::collection($this->getPopularVideos($locale, 6)),
 
-            'hashtags' => HashtagSharedResource::collection($this->getHashtags($locale)),
+            'hashtags' => SchoolHashtagSharedResource::collection($this->getHashtags($locale)),
 
-            'leftCourses' => CourseSharedResource::collection($this->getCoursesByFlag($locale, 'left', 3)),
-            'mainCourses' => CourseSharedResource::collection($this->getCoursesByFlag($locale, 'main', 6)),
-            'rightCourses' => CourseSharedResource::collection($this->getCoursesByFlag($locale, 'right', 3)),
-            'popularCourses' => CourseSharedResource::collection($this->getPopularCourses($locale, 6)),
+            'leftCourses' => SchoolCourseSharedResource::collection($this->getCoursesByFlag($locale, 'left', 3)),
+            'mainCourses' => SchoolCourseSharedResource::collection($this->getCoursesByFlag($locale, 'main', 6)),
+            'rightCourses' => SchoolCourseSharedResource::collection($this->getCoursesByFlag($locale, 'right', 3)),
+            'popularCourses' => SchoolCourseSharedResource::collection($this->getPopularCourses($locale, 6)),
         ];
     }
 
-    /**
-     * Блок Тегов
-     *
-     * @param string $locale
-     * @return Collection
-     */
+    /** Облако тегов блога. */
     protected function getTags(string $locale): Collection
     {
-        return Tag::query()
-            ->forTagCloud($locale)
+        return BlogTag::query()
+            ->with('translations')
+            ->forTagCloud(0, $locale)
             ->get();
     }
 
-    /**
-     * Статьи по флагам
-     *
-     * @param string $locale
-     * @param string $flag
-     * @param int $limit
-     * @return Collection
-     */
+    /** Статьи блога по флагу left/main/right. */
     protected function getArticlesByFlag(string $locale, string $flag, int $limit): Collection
     {
-        return Article::query()
-            ->forPublic($locale)
+        return BlogArticle::query()
+            ->forPublic()
             ->where($flag, true)
             ->with([
+                'translations',
                 'owner',
-                'images' => fn ($q) => $q->orderBy('order'),
+                'images',
             ])
-            ->sortByParam('sort_desc')
+            ->sortByParam('sort_desc', $locale)
             ->limit($limit)
             ->get();
     }
 
-    /**
-     * Популярные Статьи
-     *
-     * @param string $locale
-     * @param int $limit
-     * @return Collection
-     */
+    /** Популярные статьи блога. */
     protected function getPopularArticles(string $locale, int $limit): Collection
     {
-        return Article::query()
-            ->forPublic($locale)
+        return BlogArticle::query()
+            ->forPublic()
             ->with([
+                'translations',
                 'owner',
-                'images' => fn ($q) => $q->orderBy('order'),
+                'images',
             ])
-            ->sortByParam('views_desc')
+            ->sortByParam('views_desc', $locale)
             ->limit($limit)
             ->get();
     }
 
-    /**
-     * Баннеры по флагам
-     *
-     * @param string $locale
-     * @param string $flag
-     * @param int $limit
-     * @return Collection
-     */
+    /** Баннеры блога по флагу left/main/right. */
     protected function getBannersByFlag(string $locale, string $flag, int $limit): Collection
     {
-        return Banner::query()
-            ->forPublic($locale)
+        return BlogBanner::query()
+            ->forPublic()
             ->wherePosition($flag)
-            ->withImages()
-            ->ordered()
+            ->with([
+                'translations',
+                'images',
+            ])
+            ->sortByParam('sort_asc', $locale)
             ->limit($limit)
             ->get();
     }
 
-    /**
-     * Видео по флагам
-     *
-     * @param string $locale
-     * @param string $flag
-     * @param int $limit
-     * @return Collection
-     */
+    /** Видео блога по флагу left/main/right. */
     protected function getVideosByFlag(string $locale, string $flag, int $limit): Collection
     {
-        return Video::query()
-            ->forPublic($locale)
+        return BlogVideo::query()
+            ->forPublic()
             ->where($flag, true)
             ->with([
+                'translations',
                 'owner',
-                'images' => fn ($q) => $q->orderBy('order'),
+                'images',
             ])
-            ->sortByParam('sort_desc')
+            ->sortByParam('sort_desc', $locale)
             ->limit($limit)
             ->get();
     }
 
-    /**
-     * Популярные видео
-     *
-     * @param string $locale
-     * @param int $limit
-     * @return Collection
-     */
+    /** Популярные видео блога. */
     protected function getPopularVideos(string $locale, int $limit): Collection
     {
-        return Video::query()
-            ->forPublic($locale)
+        return BlogVideo::query()
+            ->forPublic()
             ->with([
+                'translations',
                 'owner',
-                'images' => fn ($q) => $q->orderBy('order'),
+                'images',
             ])
-            ->sortByParam('views_desc')
+            ->sortByParam('views_desc', $locale)
             ->limit($limit)
             ->get();
     }
 
-    /**
-     * Блок Хештегов школы
-     *
-     * @param string $locale
-     * @return Collection
-     */
+    /** Облако хештегов школы. */
     protected function getHashtags(string $locale): Collection
     {
-        return Hashtag::query()
+        return SchoolHashtag::query()
             ->forTagCloud($locale)
             ->get();
     }
 
-    /**
-     * Курсы по флагам
-     *
-     * @param string $locale
-     * @param string $flag
-     * @param int $limit
-     * @return Collection
-     */
+    /** Курсы школы по флагу left/main/right. */
     protected function getCoursesByFlag(string $locale, string $flag, int $limit): Collection
     {
-        return Course::query()
+        return SchoolCourse::query()
             ->forPublic($locale)
             ->where($flag, true)
             ->with([
-                'instructorProfile.images' => fn ($q) => $q->orderBy('instructor_profile_has_images.order', 'asc'),
-                'images' => fn ($q) => $q->orderBy('course_has_images.order', 'asc'),
+                'translation',
+                'translations',
+                'images',
+                'instructorProfile',
             ])
             ->sortByParam('sort_desc')
             ->limit($limit)
             ->get();
     }
 
-    /**
-     * Популярные курсы
-     *
-     * @param string $locale
-     * @param int $limit
-     * @return Collection
-     */
+    /** Популярные курсы школы. */
     protected function getPopularCourses(string $locale, int $limit): Collection
     {
-        return Course::query()
+        return SchoolCourse::query()
             ->forPublic($locale)
             ->with([
-                'instructorProfile.images' => fn ($q) => $q->orderBy('instructor_profile_has_images.order', 'asc'),
-                'images' => fn ($q) => $q->orderBy('course_has_images.order', 'asc'),
+                'translation',
+                'translations',
+                'images',
+                'instructorProfile',
             ])
             ->sortByParam('views_desc')
             ->limit($limit)
             ->get();
     }
 
-    /**
-     * Ключи для кэша
-     *
-     * @param string $locale
-     * @return string
-     */
+    /** Ключ кэша для sidebar-данных. */
     protected function getCacheKey(string $locale): string
     {
         return "blog_sidebar_data_{$locale}";

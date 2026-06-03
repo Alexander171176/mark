@@ -10,9 +10,6 @@ const { t } = useI18n()
 const props = defineProps({
     articles: { type: Array, default: () => [] },
     cols: { type: Number, default: 2 },
-    intervalMs: { type: Number, default: 4200 },
-    pauseOnHover: { type: Boolean, default: true },
-    pauseOnHidden: { type: Boolean, default: true }
 })
 
 const gridClass = computed(() => {
@@ -25,6 +22,28 @@ const normalizedArticles = computed(() => {
     return Array.isArray(props.articles) ? props.articles : []
 })
 
+const getTranslation = (article) => {
+    return article?.translation || {}
+}
+
+const getTitle = (article) => {
+    return getTranslation(article).title || article?.title || ''
+}
+
+const getShort = (article) => {
+    return getTranslation(article).short || article?.short || ''
+}
+
+const getAuthorName = (article) => {
+    return getTranslation(article).pseudonym ||
+        article?.pseudonym ||
+        article?.owner?.name ||
+        ''
+}
+
+const getShowRoute = (article) => {
+    return route('public.blogArticles.show', { url: article.url })
+}
 </script>
 
 <template>
@@ -37,7 +56,7 @@ const normalizedArticles = computed(() => {
                    transition hover:-translate-y-0.5 hover:shadow-md
                    dark:border-gray-700 dark:bg-gray-900"
         >
-            <Link :href="route('public.articles.show', article.url)">
+            <Link :href="getShowRoute(article)">
                 <UniversalImageSlider
                     :entity="article"
                     height-class="h-48"
@@ -51,7 +70,7 @@ const normalizedArticles = computed(() => {
             <div class="flex flex-1 flex-col p-4">
                 <div class="flex items-center justify-center text-center">
                     <Link
-                        :href="route('public.articles.show', article.url)"
+                        :href="getShowRoute(article)"
                         class="inline-flex items-center gap-1"
                     >
                         <span
@@ -59,29 +78,36 @@ const normalizedArticles = computed(() => {
                                    group-hover:opacity-75 dark:text-slate-100/85
                                    dark:group-hover:opacity-75"
                         >
-                            {{ article.title }}
+                            {{ getTitle(article) }}
                         </span>
                     </Link>
                 </div>
 
                 <div
-                    v-if="article.short"
+                    v-if="getShort(article)"
                     class="mt-3 line-clamp-3 text-sm text-slate-700 dark:text-slate-300"
                 >
-                    {{ article.short }}
+                    {{ getShort(article) }}
                 </div>
 
-                <div v-if="article?.owner" class="mt-4 flex items-center justify-center gap-2">
+                <div
+                    v-if="article?.owner || getAuthorName(article)"
+                    class="mt-4 flex items-center justify-center gap-2"
+                >
                     <img
                         v-if="article.owner?.profile_photo_url"
                         :src="article.owner.profile_photo_url"
-                        :alt="article.owner.name"
+                        :alt="getAuthorName(article)"
                         loading="lazy"
                         class="h-6 w-6 rounded-full object-cover
                                ring-1 ring-gray-200 dark:ring-gray-700"
                     />
-                    <div class="min-w-0 text-xs font-semibold text-slate-700/85 dark:text-slate-300/85">
-                        {{ article.owner?.name }}
+
+                    <div
+                        class="min-w-0 text-xs font-semibold
+                               text-slate-700/85 dark:text-slate-300/85"
+                    >
+                        {{ getAuthorName(article) }}
                     </div>
                 </div>
 
@@ -90,20 +116,28 @@ const normalizedArticles = computed(() => {
                         :views="article.views || 0"
                         :likes-count="article.likes_count || 0"
                         :already-liked="article.already_liked || false"
-                        route-name="articles.like"
-                        :route-params="{ article: article.id }"
+                        route-name="public.blogArticles.like"
+                        :route-params="{ id: article.id }"
                         :show-likes-button="true"
                         compact
                     />
                 </div>
+
                 <div class="mt-auto pt-4">
                     <Link
-                        :href="route('public.articles.show', article.url)"
+                        :href="getShowRoute(article)"
                         class="flex w-full items-center justify-center gap-2
                                rounded-sm px-3 py-2 btn-default"
                     >
-                        <span class="text-sm font-semibold">{{ t('readMore') }}</span>
-                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <span class="text-sm font-semibold">
+                            {{ t('readMore') }}
+                        </span>
+
+                        <svg
+                            class="h-4 w-4"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                        >
                             <path
                                 fill-rule="evenodd"
                                 d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06.02Z"

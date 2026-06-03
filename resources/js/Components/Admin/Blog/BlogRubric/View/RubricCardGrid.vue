@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, defineEmits, ref, watch } from 'vue'
+import { defineEmits, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
@@ -45,10 +45,6 @@ const getTitle = (rubric) => {
 
 const getShort = (rubric) => {
     return getTranslation(rubric)?.short || ''
-}
-
-const getLocale = (rubric) => {
-    return getTranslation(rubric)?.locale || ''
 }
 
 const handleDragEnd = () => {
@@ -142,15 +138,18 @@ const moderationBadge = (status) => {
 </script>
 
 <template>
-    <div class="bg-white dark:bg-slate-700 shadow-lg rounded-sm border border-slate-400 dark:border-slate-500 relative">
-        <div class="flex items-center justify-between px-3 py-2 border-b border-slate-400 dark:border-slate-500">
+    <div class="bg-white dark:bg-slate-700 shadow-lg rounded-sm
+                border border-slate-400 dark:border-slate-500 relative">
+        <div class="flex items-center justify-between px-3 py-2
+                    border-b border-slate-400 dark:border-slate-500">
             <div class="text-xs text-slate-600 dark:text-slate-200">
                 {{ t('selected') }}: {{ selectedRubrics.length }}
             </div>
 
             <label
                 v-if="localRubrics.length"
-                class="flex items-center text-xs text-slate-600 dark:text-slate-200 cursor-pointer"
+                class="flex items-center text-xs text-slate-600 dark:text-slate-200
+                       cursor-pointer"
             >
                 <span>{{ t('selectAll') }}</span>
                 <input type="checkbox" class="mx-2" @change="toggleAll" />
@@ -180,7 +179,8 @@ const moderationBadge = (status) => {
                             <div class="flex items-center space-x-2">
                                 <button
                                     type="button"
-                                    class="drag-handle cursor-move text-slate-400 hover:text-slate-700 dark:hover:text-slate-100"
+                                    class="drag-handle cursor-move text-slate-400
+                                           hover:text-slate-700 dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -193,34 +193,22 @@ const moderationBadge = (status) => {
                                     class="text-[10px] font-semibold px-1.5 py-0.5 rounded-sm
                                            border border-gray-400 bg-slate-200 dark:bg-slate-700
                                            text-slate-800 dark:text-blue-100"
-                                    :title="`[${getLocale(rubric)}] : [${rubric.sort}]`"
+                                    :title="`[${rubric.sort}]`"
                                 >
                                     ID: {{ rubric.id }}
-                                </div>
-
-                                <div
-                                    class="text-[10px] px-1.5 py-0.5 rounded-sm border border-gray-400 uppercase"
-                                    :class="rubric.activity
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100'"
-                                    :title="t('localization')"
-                                >
-                                    {{ getLocale(rubric) }}
                                 </div>
                             </div>
 
                             <div class="flex items-center space-x-2">
-                                <div v-if="(rubric.views ?? 0) > 0" class="flex items-center space-x-1">
-                                    <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 16 16">
-                                        <path
-                                            class="fill-current text-blue-600 dark:text-blue-300"
-                                            d="M8 2C3.246 2 .251 7.29.127 7.515a.998.998 0 0 0 .002.975c.07.125 1.044 1.801 2.695 3.274C4.738 13.582 6.283 14 8 14c4.706 0 7.743-5.284 7.872-5.507a1 1 0 0 0 0-.98A13.292 13.292 0 0 0 8 2zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"
-                                        />
-                                    </svg>
-                                    <span class="text-[10px] text-slate-700 dark:text-slate-200" :title="t('views')">
-                                        {{ rubric.views ?? 0 }}
-                                    </span>
-                                </div>
+                                <span
+                                    class="text-[10px] px-2 py-0.5 rounded-sm border font-semibold"
+                                    :class="moderationBadge(rubric.moderation_status).class"
+                            :title="rubric.moderation_note && rubric.moderated_at
+                                ? `${rubric.moderation_note} [${formatDate(rubric.moderated_at)}]`
+                                : null"
+                                >
+                                    {{ moderationBadge(rubric.moderation_status).text }}
+                                </span>
 
                                 <input
                                     type="checkbox"
@@ -232,12 +220,12 @@ const moderationBadge = (status) => {
 
                         <div class="relative w-full bg-slate-200 dark:bg-slate-900">
                             <template v-if="rubric.images && rubric.images.length">
-                                <img
-                                    :src="getPrimaryImage(rubric)?.webp_url || getPrimaryImage(rubric)?.url"
-                                    :alt="getPrimaryImage(rubric)?.alt || t('defaultImageAlt')"
-                                    :title="getPrimaryImage(rubric)?.caption || t('postImage')"
-                                    class="h-32 w-full object-cover"
-                                />
+                        <img
+                            :src="getPrimaryImage(rubric)?.webp_url || getPrimaryImage(rubric)?.url"
+                            :alt="getPrimaryImage(rubric)?.alt || t('defaultImageAlt')"
+                            :title="getPrimaryImage(rubric)?.caption || t('postImage')"
+                            class="h-32 w-full object-cover"
+                        />
                             </template>
 
                             <template v-else>
@@ -321,17 +309,32 @@ const moderationBadge = (status) => {
                                 </div>
                             </div>
 
-                            <div class="font-semibold text-[12px] text-center text-teal-700 dark:text-teal-200">
+                            <div class="font-semibold text-[12px] text-center
+                                        text-teal-700 dark:text-teal-200">
                                 {{ truncateText(getShort(rubric)) }}
+                            </div>
+
+                            <div v-if="(rubric.views ?? 0) > 0"
+                                 class="flex items-center justify-center space-x-1">
+                                <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 16 16">
+                                    <path
+                                        class="fill-current text-blue-600 dark:text-blue-300"
+                                        d="M8 2C3.246 2 .251 7.29.127 7.515a.998.998 0 0 0 .002.975c.07.125 1.044 1.801 2.695 3.274C4.738 13.582 6.283 14 8 14c4.706 0 7.743-5.284 7.872-5.507a1 1 0 0 0 0-.98A13.292 13.292 0 0 0 8 2zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"
+                                    />
+                                </svg>
+                                <span class="text-[10px] text-slate-700 dark:text-slate-200"
+                                      :title="t('views')">
+                                    {{ rubric.views ?? 0 }}
+                                </span>
                             </div>
 
                             <div class="flex justify-center gap-1">
                                 <span
                                     class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
                                     :class="moderationBadge(rubric.moderation_status).class"
-                                    :title="rubric.moderation_note && rubric.moderated_at
-                                        ? `${rubric.moderation_note} [${formatDate(rubric.moderated_at)}]`
-                                        : null"
+                            :title="rubric.moderation_note && rubric.moderated_at
+                                ? `${rubric.moderation_note} [${formatDate(rubric.moderated_at)}]`
+                                : null"
                                 >
                                     {{ moderationBadge(rubric.moderation_status).text }}
                                 </span>
@@ -341,7 +344,8 @@ const moderationBadge = (status) => {
                                     :status="rubric?.moderation_status ?? 0"
                                     :initialNote="rubric?.moderation_note || ''"
                                     mode="toggle"
-                                    @submit="({ status, note }) => $emit('approve', rubric, status, note)"
+                                    @submit="({ status, note }) =>
+                                    $emit('approve', rubric, status, note)"
                                 />
                             </div>
                         </div>
@@ -359,7 +363,9 @@ const moderationBadge = (status) => {
 
                                 <CloneIconButton @clone="$emit('clone', rubric)" />
 
-                                <IconEdit :href="route('admin.blogRubrics.edit', { blogRubric: rubric.id })" />
+                                <IconEdit
+                                    :href="route('admin.blogRubrics.edit',
+                                    { blogRubric: rubric.id })" />
 
                                 <DeleteIconButton @click.stop="$emit('delete', rubric)" />
                             </div>

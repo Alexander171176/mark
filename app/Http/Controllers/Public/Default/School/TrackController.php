@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Public\Default\School;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\Course\CourseResource;
-use App\Http\Resources\Admin\School\LearningCategory\LearningCategoryResource;
-use App\Models\Admin\School\LearningCategory\LearningCategory;
-use App\Traits\Public\BuildsLearningCategoryTreeTrait;
+use App\Http\Resources\Admin\School\Track\SchoolTrackResource;
+use App\Models\Admin\School\Track\SchoolTrack;
+use App\Traits\Public\BuildsTrackTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
@@ -16,7 +16,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Контроллер для показа категорий обучения (Track / LearningCategory)
+ * Контроллер для показа категорий обучения (SchoolTrack)
  * в публичной части.
  *
  * Паттерн:
@@ -36,7 +36,7 @@ class TrackController extends Controller
 {
     use WithUserLikesTrait;
     use HasPublicIndexFiltersTrait;
-    use BuildsLearningCategoryTreeTrait;
+    use BuildsTrackTreeTrait;
     use HasSidebarDataTrait;
 
     /**
@@ -53,13 +53,13 @@ class TrackController extends Controller
         $search = $this->resolveSearch($request);
         $sort = $this->resolveSort($request);
 
-        $tracks = LearningCategory::query()
+        $tracks = SchoolTrack::query()
             ->active()
             ->byLocale($locale)
             ->search($search)
             ->with([
                 'parent:id,name,slug',
-                'images' => fn ($q) => $q->orderBy('learning_category_has_images.order', 'asc'),
+                'images' => fn ($q) => $q->orderBy('school_track_has_images.order', 'asc'),
             ])
             ->withCount([
                 'children' => fn ($q) => $q
@@ -75,14 +75,14 @@ class TrackController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $tracks = $this->appendUserLikes($tracks, LearningCategoryResource::class);
+        $tracks = $this->appendUserLikes($tracks, SchoolTrackResource::class);
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/School/Tracks/Index', [
             'tracks' => $tracks,
-            'tracksCount' => LearningCategory::query()
+            'tracksCount' => SchoolTrack::query()
                 ->active()
                 ->byLocale($locale)
                 ->count(),
@@ -104,18 +104,18 @@ class TrackController extends Controller
     {
         $locale = app()->getLocale();
 
-        $track = LearningCategory::query()
+        $track = SchoolTrack::query()
             ->active()
             ->byLocale($locale)
             ->where('slug', $slug)
             ->with([
                 'parent:id,name,slug',
-                'images' => fn ($q) => $q->orderBy('learning_category_has_images.order', 'asc'),
+                'images' => fn ($q) => $q->orderBy('school_track_has_images.order', 'asc'),
                 'children' => fn ($q) => $q
                     ->active()
                     ->byLocale($locale)
                     ->with([
-                        'images' => fn ($imgQ) => $imgQ->orderBy('learning_category_has_images.order', 'asc'),
+                        'images' => fn ($imgQ) => $imgQ->orderBy('school_track_has_images.order', 'asc'),
                     ])
                     ->withCount([
                         'courses' => fn ($courseQ) => $courseQ
@@ -140,7 +140,7 @@ class TrackController extends Controller
 
         $track->increment('views');
 
-        $trackData = (new LearningCategoryResource($track))->resolve();
+        $trackData = (new SchoolTrackResource($track))->resolve();
 
         $trackData['already_liked'] = auth()->check()
             ? $track->likes()->where('user_id', auth()->id())->exists()
@@ -148,7 +148,7 @@ class TrackController extends Controller
 
         if ($track->relationLoaded('children')) {
             $trackData['children'] = $track->children->map(function ($child) {
-                $resolved = (new LearningCategoryResource($child))->resolve();
+                $resolved = (new SchoolTrackResource($child))->resolve();
 
                 $resolved['already_liked'] = auth()->check()
                     ? $child->likes()->where('user_id', auth()->id())->exists()
@@ -215,7 +215,7 @@ class TrackController extends Controller
             ], 401);
         }
 
-        $track = LearningCategory::findOrFail($id);
+        $track = SchoolTrack::findOrFail($id);
         $user = auth()->user();
 
         if ($track->likes()->where('user_id', $user->id)->exists()) {

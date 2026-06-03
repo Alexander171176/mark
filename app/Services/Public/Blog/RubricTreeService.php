@@ -2,7 +2,7 @@
 
 namespace App\Services\Public\Blog;
 
-use App\Models\Admin\Blog\Rubric\Rubric;
+use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -10,69 +10,72 @@ class RubricTreeService
 {
     /**
      * Получить дерево рубрик с кэшированием.
-     *
-     * @param string $locale
-     * @param int $ttl
-     * @return array
      */
     public function getTree(string $locale, int $ttl = 1800): array
     {
         $cacheKey = "blog:rubric_tree:{$locale}";
 
         return Cache::remember($cacheKey, $ttl, function () use ($locale) {
-            $rubrics = Rubric::query()
-                ->forPublic($locale)
-                ->orderBy('sort', 'asc')
+            $rubrics = BlogRubric::query()
+                ->forPublic()
+                ->with('translations')
+                ->sortByParam('sort_asc', $locale)
                 ->get();
 
-            return $this->buildTree($rubrics);
+            return $this->buildTree($rubrics, $locale);
         });
     }
 
     /**
      * Построение дерева рубрик.
-     *
-     * @param Collection|null $rubrics
-     * @return array
      */
-    public function buildTree(?Collection $rubrics): array
+    public function buildTree(?Collection $rubrics, ?string $locale = null): array
     {
         if (!$rubrics || $rubrics->isEmpty()) {
             return [];
         }
 
-        $items = $rubrics->map(function ($rubric) {
+        $locale = $locale ?: app()->getLocale();
+
+        $items = $rubrics->map(function (BlogRubric $rubric) use ($locale) {
+            $translation = $rubric->translationOrFallback(
+                $locale,
+                config('app.fallback_locale', 'ru')
+            );
+
             return [
                 'id' => $rubric->id,
                 'parent_id' => $rubric->parent_id,
-                'title' => $rubric->title,
+                'title' => $translation?->title,
+                'subtitle' => $translation?->subtitle,
+                'short' => $translation?->short,
                 'url' => $rubric->url,
                 'icon' => $rubric->icon,
-                'sort' => $rubric->sort,
+                'sort' => (int) $rubric->sort,
+                'level' => (int) $rubric->level,
                 'children' => [],
             ];
         })->keyBy('id')->toArray();
 
         $tree = [];
 
-        foreach ($items as $id => $item) {
+        foreach ($items as $id => &$item) {
             $parentId = $item['parent_id'] ?? null;
 
             if ($parentId && isset($items[$parentId])) {
-                $items[$parentId]['children'][] = &$items[$id];
+                $items[$parentId]['children'][] = &$item;
             } else {
-                $tree[] = &$items[$id];
+                $tree[] = &$item;
             }
         }
+
+        unset($item);
 
         return array_values($tree);
     }
 
     /**
-     * Очистка кэша дерева рубрик по локали.
-     *
-     * @param string|null $locale
-     * @return void
+     * Очистка кэша дерева рубрик.
      */
     public function forget(?string $locale = null): void
     {

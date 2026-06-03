@@ -55,10 +55,6 @@ const getRubricShort = (rubric) => {
     return getRubricTranslation(rubric)?.short || ''
 }
 
-const getRubricLocale = (rubric) => {
-    return getRubricTranslation(rubric)?.locale || ''
-}
-
 const handleInnerDragEnd = (event) => {
     emits('request-drag-end', event)
 }
@@ -149,7 +145,8 @@ const moderationBadge = (status) => {
             >
                 <div class="flex items-center space-x-2 flex-grow min-w-0">
                     <span class="handle cursor-move mr-1 flex-shrink-0" :title="t('dragDrop')">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-4 h-4">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             viewBox="0 0 512 512" class="w-4 h-4">
                             <path
                                 class="fill-current text-sky-500 dark:text-sky-200"
                                 d="M278.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-64 64c-9.2 9.2-11.9 22.9-6.9 34.9s16.6 19.8 29.6 19.8l32 0 0 96-96 0 0-32c0-12.9-7.8-24.6-19.8-29.6s-25.7-2.2-34.9 6.9l-64 64c-12.5 12.5-12.5 32.8 0 45.3l64 64c9.2 9.2 22.9 11.9 34.9 6.9s19.8-16.6 19.8-29.6l0-32 96 0 0 96-32 0c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l64 64c12.5 12.5 32.8 12.5 45.3 0l64-64c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8l-32 0 0-96 96 0 0 32c0 12.9 7.8 24.6 19.8 29.6s25.7 2.2 34.9-6.9l64-64c12.5-12.5 12.5-32.8 0-45.3l-64-64c-9.2-9.2-22.9-11.9-34.9-6.9s-19.8 16.6-19.8 29.6l0 32-96 0 0-96 32 0c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-64-64z"
@@ -185,6 +182,7 @@ const moderationBadge = (status) => {
                     <div
                         class="w-8 font-semibold text-sm
                                text-amber-600 dark:text-amber-200 mr-1 flex-shrink-0"
+                        :title="`[${rubric.sort}]`"
                     >
                         {{ rubric.id }}
                     </div>
@@ -256,17 +254,6 @@ const moderationBadge = (status) => {
                         >
                             {{ rubric.views ?? 0 }}
                         </div>
-                    </div>
-
-                    <div
-                        class="text-xs ml-1 px-1.5 py-0.5 rounded-sm
-                               border border-gray-400 flex-shrink-0 uppercase"
-                        :class="rubric.activity
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100'"
-                        :title="t('localization')"
-                    >
-                        {{ getRubricLocale(rubric).toUpperCase() }}
                     </div>
 
                     <div class="flex justify-center">

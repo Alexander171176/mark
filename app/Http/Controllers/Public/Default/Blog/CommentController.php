@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Public\Default\Blog;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\Blog\Comment\CommentResource;
-use App\Models\Admin\Blog\Article\Article;
+use App\Models\Admin\Blog\BlogArticle\BlogArticle;
+use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\Comment\Comment;
-use App\Models\Admin\Blog\Video\Video;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -20,19 +20,17 @@ use Illuminate\Validation\Rule;
  *
  * @see Comment
  * @see CommentResource
- * @see Article
- * @see Video
+ * @see BlogArticle
+ * @see BlogVideo
  */
 class CommentController extends Controller
 {
-    /**
-     * Разрешённые типы commentable (защита).
-     */
+    /** Разрешённые типы commentable (защита). */
     protected function allowedCommentableTypes(): array
     {
         return [
-            Article::class,
-            Video::class,
+            BlogArticle::class,
+            BlogVideo::class,
         ];
     }
 
@@ -137,9 +135,7 @@ class CommentController extends Controller
         }
     }
 
-    /**
-     * Показать конкретный комментарий (только публичный).
-     */
+    /** Показать конкретный комментарий (только публичный). */
     public function show(Comment $comment): JsonResponse
     {
         if (! $comment->isActive() || ! $comment->isApproved()) {
@@ -200,9 +196,7 @@ class CommentController extends Controller
         }
     }
 
-    /**
-     * Удалить свой комментарий.
-     */
+    /** Удалить свой комментарий. */
     public function destroy(Comment $comment): JsonResponse
     {
         if (!auth()->check()) {

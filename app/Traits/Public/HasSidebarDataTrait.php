@@ -6,9 +6,7 @@ use App\Services\Public\Blog\BlogSidebarService;
 
 trait HasSidebarDataTrait
 {
-    /**
-     * Получить sidebar-данные для публичной части.
-     */
+    /** Получить данные для левой, центральной и правой колонок публичной части. */
     protected function getSidebarData(string $locale): array
     {
         /** @var BlogSidebarService $sidebarService */

@@ -20,6 +20,17 @@ const hasChildren = computed(() => {
     return Array.isArray(props.item?.children) && props.item.children.length > 0
 })
 
+/** Показывать только если иконка является SVG */
+const hasSvgIcon = computed(() => {
+    if (!props.item?.icon) {
+        return false
+    }
+
+    return /^\s*<svg[\s\S]*<\/svg>\s*$/i.test(
+        String(props.item.icon)
+    )
+})
+
 const isOpen = ref(false)
 
 const loadState = () => {
@@ -107,7 +118,7 @@ onMounted(() => {
                 <!-- если детей нет — обычная ссылка -->
                 <Link
                     v-else
-                    :href="route('public.rubrics.show', { url: item.url })"
+                    :href="route('public.blogRubrics.show', { url: item.url })"
                     class="min-w-0 flex-1"
                 >
                     <span class="truncate text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -115,7 +126,7 @@ onMounted(() => {
                     </span>
                 </Link>
                 <span
-                    v-if="item.icon"
+                    v-if="hasSvgIcon"
                     class="flex h-4 w-4 items-center justify-center shrink-0"
                     v-html="item.icon"
                 />
@@ -124,7 +135,7 @@ onMounted(() => {
             <!-- отдельная ссылка на саму родительскую рубрику -->
             <Link
                 v-if="hasChildren"
-                :href="route('public.rubrics.show', { url: item.url })"
+                :href="route('public.blogRubrics.show', { url: item.url })"
                 class="mr-2 shrink-0 rounded-sm px-2 py-1 text-[10px]
                        font-semibold hover:text-slate-100 text-indigo-700 dark:text-indigo-300
                        hover:bg-indigo-500 dark:hover:bg-indigo-500"

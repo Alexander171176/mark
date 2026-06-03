@@ -22,8 +22,8 @@ class CommentsSeeder extends Seeder
         $videos = BlogVideo::query()->limit(3)->get();
 
         $commentables = [
-            'article' => $articles,
-            'video' => $videos,
+            BlogArticle::class => $articles,
+            BlogVideo::class => $videos,
         ];
 
         $moderatorId = User::query()->whereKey(1)->exists()

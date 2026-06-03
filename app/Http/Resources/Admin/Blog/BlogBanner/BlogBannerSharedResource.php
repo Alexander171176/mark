@@ -17,6 +17,20 @@ class BlogBannerSharedResource extends JsonResource
                     ?: $this->translations->first();
         });
 
+        $images = $this->whenLoaded('images', function () {
+            return $this->images->map(function ($image) {
+                return [
+                    'id' => $image->id,
+                    'order' => (int) ($image->pivot->order ?? $image->order ?? 0),
+                    'image_url' => $image->image_url,
+                    'webp_url' => $image->webp_url,
+                    'thumb_url' => $image->thumb_url,
+                    'alt' => $image->alt,
+                    'caption' => $image->caption,
+                ];
+            })->values();
+        });
+
         $thumbnailUrl = null;
 
         if ($this->relationLoaded('images') && $this->images?->count()) {
@@ -42,6 +56,7 @@ class BlogBannerSharedResource extends JsonResource
             'right' => (bool) $this->right,
 
             'thumbnail_url' => $thumbnailUrl,
+            'images' => $images,
         ];
     }
 }

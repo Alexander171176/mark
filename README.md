@@ -323,12 +323,8 @@
 1) creating business logic app API <br>
 `composer require "darkaonline/l5-swagger` <br>
 `docker exec mark-php-app php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"` <br>
-`docker exec mark-php-app php artisan make:controller Api/User/ApiUserController --api` <br>
-`docker exec mark-php-app php artisan make:controller Api/Permission/ApiPermissionController --api` <br>
-`docker exec mark-php-app php artisan make:controller Api/Role/ApiRoleController --api` <br>
-`docker exec mark-php-app php artisan make:controller Api/Rubric/ApiRubricController --api` <br>
-`docker exec mark-php-app php artisan make:controller Api/Article/ApiArticleController --api` <br>
-`docker exec mark-php-app php artisan make:controller Api/Parameter/ApiParameterController --api` <br>
+`docker exec mark-php-app php artisan make:controller Api/Blog/BlogRubric/ApiBlogRubricController --api` <br>
+`docker exec mark-php-app php artisan make:controller Api/Blog/BlogArticle/ApiBlogArticleController --api` <br>
 `docker exec mark-php-app php artisan l5-swagger:generate` <br>
 `docker exec -it mark-php-app rm /var/www/public/storage` Удалите текущую символьную ссылку <br>
 `docker exec -it mark-php-app ln -s /var/www/storage /var/www/public/storage` Пересоздайте символьную ссылку <br>

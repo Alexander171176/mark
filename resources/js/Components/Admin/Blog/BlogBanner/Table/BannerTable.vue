@@ -272,7 +272,8 @@ const moderationBadge = (status) => {
                             </td>
 
                             <td class="px-1 py-1 whitespace-nowrap w-px">
-                                <div class="text-center text-blue-600 dark:text-blue-200">
+                                <div class="text-center text-blue-600 dark:text-blue-200"
+                                     :title="`[${banner.sort}]`">
                                     {{ banner.id }}
                                 </div>
                             </td>

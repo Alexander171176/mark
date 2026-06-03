@@ -37,3 +37,8 @@ Homestead.json
 docker-compose.override.yml
 .dockerignore
 docker/tmp/
+
+README.md
+.env
+.env.dev
+.env.example

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Public\Default\Blog\BlogVideo;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
-use App\Traits\Public\BuildsRubricTreeTrait;
+use App\Traits\Public\Blog\BuildsRubricTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
@@ -35,7 +35,7 @@ class BlogVideoController extends Controller
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicBlogVideosDefaultSort', 'sort')
+            (string) config('site_settings.publicBlogVideosDefaultSort', 'sortAsc')
         );
 
         $view = $this->resolveView(
@@ -119,7 +119,7 @@ class BlogVideoController extends Controller
                         'images',
                     ])
                     ->withCount('likes')
-                    ->sortByParam('sort_asc', $locale),
+                    ->sortByParam('sortAsc', $locale),
             ])
             ->firstOrFail();
 

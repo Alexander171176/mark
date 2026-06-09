@@ -38,24 +38,32 @@ const updateSort = (event) => {
             <option value="idAsc">{{ t('idAsc') }}</option>
             <option disabled>─────────────</option>
 
-            <option value="sortAsc">{{ t('sortNumber') }} ↑</option>
-            <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
+            <option value="sortAsc">{{ t('sortNumber') }} 0→9</option>
+            <option value="sortDesc">{{ t('sortNumber') }} 9→0</option>
             <option disabled>─────────────</option>
 
-            <option value="titleAsc">{{ t('title') }} ↑</option>
-            <option value="titleDesc">{{ t('title') }} ↓</option>
+            <option value="titleAsc">{{ t('title') }} A→Z</option>
+            <option value="titleDesc">{{ t('title') }} Z→A</option>
             <option disabled>─────────────</option>
 
             <option value="slugAsc">{{ t('url') }} ↑</option>
             <option value="slugDesc">{{ t('url') }} ↓</option>
             <option disabled>─────────────</option>
 
-            <option value="ratingCountAsc">{{ t('rating') }} ↑</option>
-            <option value="ratingCountDesc">{{ t('rating') }} ↓</option>
+            <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
+            <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
+            <option value="activity">{{ t('active') }}</option>
+            <option value="inactive">{{ t('inactive') }}</option>
             <option disabled>─────────────</option>
 
             <option value="viewsAsc">{{ t('views') }} ↑</option>
             <option value="viewsDesc">{{ t('views') }} ↓</option>
+            <option disabled>─────────────</option>
+
+            <option value="ratingAvgAsc">{{ t('rating') }} AVG 0→9</option>
+            <option value="ratingAvgDesc">{{ t('rating') }} AVG 9→0</option>
+            <option value="ratingCountAsc">{{ t('rating') }} ↑</option>
+            <option value="ratingCountDesc">{{ t('rating') }} ↓</option>
             <option disabled>─────────────</option>
 
             <option value="hourlyRateAsc">{{ t('hourlyRate') }} ↑</option>
@@ -68,14 +76,13 @@ const updateSort = (event) => {
 
             <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
             <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
-            <option disabled>─────────────</option>
 
             <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
             <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
             <option disabled>─────────────</option>
 
-            <option value="activity">{{ t('active') }}</option>
-            <option value="inactive">{{ t('inactive') }}</option>
+            <option value="coursesDesc">{{ t('courses') }} 9→0</option>
+            <option value="coursesAsc">{{ t('courses') }} 0→9</option>
             <option disabled>─────────────</option>
         </select>
     </div>

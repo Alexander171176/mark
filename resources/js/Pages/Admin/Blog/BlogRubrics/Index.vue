@@ -305,22 +305,6 @@ const currentPage = ref(1)
 const sortRubrics = (rubrics) => {
     const list = (rubrics || []).slice()
 
-    if (sortParam.value === 'ownerNameAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
-    }
-
-    if (sortParam.value === 'ownerNameDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
-    }
-
-    if (sortParam.value === 'ownerEmailAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
-    }
-
-    if (sortParam.value === 'ownerEmailDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
-    }
-
     if (sortParam.value === 'idAsc') {
         return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
     }
@@ -345,8 +329,50 @@ const sortRubrics = (rubrics) => {
         return list.filter((rubric) => !rubric.activity)
     }
 
-    if (sortParam.value === 'locale') {
-        return list.sort((a, b) => getRubricLocale(a).localeCompare(getRubricLocale(b), locale.value))
+    if (sortParam.value === 'activityDesc') {
+        return list.sort((a, b) => Number(b.activity) - Number(a.activity))
+    }
+
+    if (sortParam.value === 'activityAsc') {
+        return list.sort((a, b) => Number(a.activity) - Number(b.activity))
+    }
+
+    if (sortParam.value === 'titleAsc') {
+        return list.sort((a, b) =>
+            normalize(getRubricTitle(a)).localeCompare(normalize(getRubricTitle(b)), locale.value))
+    }
+
+    if (sortParam.value === 'titleDesc') {
+        return list.sort((a, b) =>
+            normalize(getRubricTitle(b)).localeCompare(normalize(getRubricTitle(a)), locale.value))
+    }
+
+    if (sortParam.value === 'urlAsc') {
+        return list.sort((a, b) => normalize(a?.url).localeCompare(normalize(b?.url), locale.value))
+    }
+
+    if (sortParam.value === 'urlDesc') {
+        return list.sort((a, b) => normalize(b?.url).localeCompare(normalize(a?.url), locale.value))
+    }
+
+    if (sortParam.value === 'ownerNameAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
+    }
+
+    if (sortParam.value === 'ownerNameDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
+    }
+
+    if (sortParam.value === 'ownerEmailAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
+    }
+
+    if (sortParam.value === 'ownerEmailDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
     }
 
     if (sortParam.value === 'viewsDesc') {
@@ -357,32 +383,93 @@ const sortRubrics = (rubrics) => {
         return list.sort((a, b) => (a.views ?? 0) - (b.views ?? 0))
     }
 
-    if (sortParam.value === 'titleAsc') {
-        return list.sort((a, b) => normalize(getRubricTitle(a)).localeCompare(normalize(getRubricTitle(b)), locale.value))
+    if (sortParam.value === 'levelAsc') {
+        return list.sort((a, b) => (a.level ?? 0) - (b.level ?? 0))
     }
 
-    if (sortParam.value === 'titleDesc') {
-        return list.sort((a, b) => normalize(getRubricTitle(b)).localeCompare(normalize(getRubricTitle(a)), locale.value))
+    if (sortParam.value === 'levelDesc') {
+        return list.sort((a, b) => (b.level ?? 0) - (a.level ?? 0))
     }
 
-    if (sortParam.value === 'moderation_pending') {
-        return list.filter((rubric) => moderationNum(rubric?.moderation_status) === 0)
+    if (sortParam.value === 'parentAsc') {
+        return list.sort((a, b) => (a.parent_id ?? 0) - (b.parent_id ?? 0))
     }
 
-    if (sortParam.value === 'moderation_approved') {
-        return list.filter((rubric) => moderationNum(rubric?.moderation_status) === 1)
+    if (sortParam.value === 'parentDesc') {
+        return list.sort((a, b) => (b.parent_id ?? 0) - (a.parent_id ?? 0))
     }
 
-    if (sortParam.value === 'moderation_rejected') {
-        return list.filter((rubric) => moderationNum(rubric?.moderation_status) === 2)
+    if (sortParam.value === 'articlesDesc') {
+        return list.sort((a, b) => (b.articles_count ?? 0) - (a.articles_count ?? 0))
     }
 
-    if (sortParam.value === 'moderation_statusAsc') {
-        return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
+    if (sortParam.value === 'articlesAsc') {
+        return list.sort((a, b) => (a.articles_count ?? 0) - (b.articles_count ?? 0))
     }
 
-    if (sortParam.value === 'moderation_statusDesc') {
-        return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
+    if (sortParam.value === 'imagesDesc') {
+        return list.sort((a, b) => (b.images_count ?? 0) - (a.images_count ?? 0))
+    }
+
+    if (sortParam.value === 'imagesAsc') {
+        return list.sort((a, b) => (a.images_count ?? 0) - (b.images_count ?? 0))
+    }
+
+    if (sortParam.value === 'createdAtDesc') {
+        return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    }
+
+    if (sortParam.value === 'createdAtAsc') {
+        return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+    }
+
+    if (sortParam.value === 'updatedAtDesc') {
+        return list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
+    }
+
+    if (sortParam.value === 'updatedAtAsc') {
+        return list.sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
+    }
+
+    if (sortParam.value === 'inMenuDesc') {
+        return list.sort((a, b) => Number(b.in_menu) - Number(a.in_menu))
+    }
+
+    if (sortParam.value === 'inMenuAsc') {
+        return list.sort((a, b) => Number(a.in_menu) - Number(b.in_menu))
+    }
+
+    if (sortParam.value === 'inMenu') {
+        return list.filter((rubric) => !!rubric.in_menu)
+    }
+
+    if (sortParam.value === 'notInMenu') {
+        return list.filter((rubric) => !rubric.in_menu)
+    }
+
+    if (sortParam.value === 'moderationPending') {
+        return list.filter((rubric) =>
+            moderationNum(rubric?.moderation_status) === 0)
+    }
+
+    if (sortParam.value === 'moderationApproved') {
+        return list.filter((rubric) =>
+            moderationNum(rubric?.moderation_status) === 1)
+    }
+
+    if (sortParam.value === 'moderationRejected') {
+        return list.filter((rubric) =>
+            moderationNum(rubric?.moderation_status) === 2)
+    }
+
+    if (sortParam.value === 'moderationStatusAsc') {
+        return list.sort((a, b) =>
+            moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
+    }
+
+    if (sortParam.value === 'moderationStatusDesc') {
+        return list.sort((a, b) =>
+            moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
     }
 
     return list

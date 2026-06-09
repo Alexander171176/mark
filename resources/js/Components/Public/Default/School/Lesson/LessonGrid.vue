@@ -25,7 +25,7 @@ const gridClass = computed(() => {
 })
 
 const lessonLink = (lesson) => {
-    return route('public.lessons.show', { slug: lesson.slug })
+    return route('public.schoolLessons.show', { slug: lesson.slug })
 }
 
 const getModule = (lesson) => {
@@ -39,14 +39,14 @@ const getCourse = (lesson) => {
 const moduleLink = (lesson) => {
     const module = getModule(lesson)
     return module?.slug
-        ? route('public.modules.show', { slug: module.slug })
+        ? route('public.schoolModules.show', { slug: module.slug })
         : '#'
 }
 
 const courseLink = (lesson) => {
     const course = getCourse(lesson)
     return course?.slug
-        ? route('public.courses.show', { slug: course.slug })
+        ? route('public.schoolCourses.show', { slug: course.slug })
         : '#'
 }
 
@@ -320,8 +320,8 @@ const getInstructorName = (lesson) => {
                         :views="lesson.views || 0"
                         :likes-count="lesson.likes_count || lesson.likes || 0"
                         :already-liked="lesson.already_liked || false"
-                        route-name="lessons.like"
-                        :route-params="{ lesson: lesson.id }"
+                        route-name="public.schoolLessons.like"
+                        :route-params="lesson.id"
                         :show-likes-button="true"
                         compact
                     />

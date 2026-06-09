@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Blog\BlogRubric;
 
-use App\Http\Controllers\Admin\Blog\Base\BaseBlogAdminController;
+use App\Http\Controllers\Admin\Blog\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogRubric\BlogRubricRequest;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricSharedResource;
@@ -59,33 +59,6 @@ class BlogRubricController extends BaseBlogAdminController
         'meta_desc',
     ];
 
-    /** Дополнительные варианты сортировки рубрик */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'ownerNameAsc' => 'owner_name_asc',
-            'ownerNameDesc' => 'owner_name_desc',
-
-            'ownerEmailAsc' => 'owner_email_asc',
-            'ownerEmailDesc' => 'owner_email_desc',
-
-            'locale' => 'locale_asc',
-
-            'viewsAsc' => 'views_asc',
-            'viewsDesc' => 'views_desc',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-
-            'moderation_pending' => 'moderation_pending',
-            'moderation_approved' => 'moderation_approved',
-            'moderation_rejected' => 'moderation_rejected',
-
-            'moderation_statusAsc' => 'moderation_status_asc',
-            'moderation_statusDesc' => 'moderation_status_desc',
-        ];
-    }
-
     /** Определение уровня вложенности */
     private function resolveLevel(?int $parentId): int
     {
@@ -130,7 +103,6 @@ class BlogRubricController extends BaseBlogAdminController
         $adminBlogRubricsDefaultSort = (string) config('site_settings.adminBlogRubricsDefaultSort', 'idDesc');
 
         $sortParam = (string) $request->query('sort', $adminBlogRubricsDefaultSort);
-        $normalizedSort = $this->normalizeSortParam($sortParam);
 
         try {
             $rubricsTree = $this->baseQuery()
@@ -156,7 +128,7 @@ class BlogRubricController extends BaseBlogAdminController
                     'translations',
                 ])
                 ->withCount(['articles', 'images'])
-                ->sortByParam($normalizedSort, $currentLocale)
+                ->sortByParam($sortParam, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/Blog/BlogRubrics/Index', [

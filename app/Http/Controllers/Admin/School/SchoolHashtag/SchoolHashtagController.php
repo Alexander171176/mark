@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\School\SchoolHashtag;
 
-use App\Http\Controllers\Admin\School\Base\BaseSchoolAdminController;
+use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolHashtag\SchoolHashtagRequest;
 use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagResource;
 use App\Models\Admin\School\SchoolHashtag\SchoolHashtag;
@@ -47,38 +47,19 @@ class SchoolHashtagController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
-    /** Расширение сортировки для хештегов. */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'viewsAsc' => 'views_asc',
-            'viewsDesc' => 'views_desc',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-        ];
-    }
-
     /** Список хештегов */
     public function index(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolHashtagsPerPage = (int) config('site_settings.adminSchoolHashtagsPerPage', 20);
+        $adminSchoolHashtagsPerPage = (int) config('site_settings.adminSchoolHashtagsPerPage', 6);
         $adminSchoolHashtagsDefaultSort = (string) config('site_settings.adminSchoolHashtagsDefaultSort', 'idDesc');
-        $sort = $this->normalizeSortParam($adminSchoolHashtagsDefaultSort);
+        $sort = (string) $request->query('sort', $adminSchoolHashtagsDefaultSort);
 
         $hashtags = $this->baseQuery()
             ->with(['translation', 'translations'])
             ->withCount(['courses', 'modules', 'lessons'])
-            ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
-            ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
-            ->when($sort === 'views_asc', fn ($query) => $query->orderBy('views')->orderByDesc('id'))
-            ->when($sort === 'views_desc', fn ($query) => $query->orderByDesc('views')->orderByDesc('id'))
-            ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
-            ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
-            ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
-            ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
+            ->sortByParam($sort, $currentLocale)
             ->get();
 
         return Inertia::render('Admin/School/Hashtags/Index', [

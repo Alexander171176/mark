@@ -60,9 +60,8 @@ class CommentController extends Controller
         $isAdmin = (bool) ($user && $user->hasRole('admin'));
 
         try {
-            // сортировку оставим минимально (как настройка), без фильтров/поиска
-            $sortField = 'id';
-            $sortDirection = $adminCommentsDefaultSort === 'idAsc' ? 'asc' : 'desc';
+            // Начальная серверная сортировка по сохранённой настройке.
+            $sort = (string) config('site_settings.adminCommentsDefaultSort', 'idDesc');
 
             $comments = $this->baseQuery()
                 ->with([
@@ -72,7 +71,35 @@ class CommentController extends Controller
                     'parent' => fn ($q) => $q->with('user:id,name'),
                 ])
                 ->withCount('replies')
-                ->orderBy($sortField, $sortDirection)
+                ->when($sort === 'idAsc', fn ($q) => $q->orderBy('id', 'asc'))
+                ->when($sort === 'idDesc', fn ($q) => $q->orderBy('id', 'desc'))
+                ->when($sort === 'createdAtAsc', fn ($q) => $q->orderBy('created_at', 'asc')->orderByDesc('id'))
+                ->when($sort === 'createdAtDesc', fn ($q) => $q->orderBy('created_at', 'desc')->orderByDesc('id'))
+                ->when($sort === 'updatedAtAsc', fn ($q) => $q->orderBy('updated_at', 'asc')->orderByDesc('id'))
+                ->when($sort === 'updatedAtDesc', fn ($q) => $q->orderBy('updated_at', 'desc')->orderByDesc('id'))
+                ->when($sort === 'repliesAsc', fn ($q) => $q->orderBy('replies_count', 'asc')->orderByDesc('id'))
+                ->when($sort === 'repliesDesc', fn ($q) => $q->orderBy('replies_count', 'desc')->orderByDesc('id'))
+                ->when($sort === 'moderationStatusAsc', fn ($q) => $q->orderBy('moderation_status', 'asc')->orderByDesc('id'))
+                ->when($sort === 'moderationStatusDesc', fn ($q) => $q->orderBy('moderation_status', 'desc')->orderByDesc('id'))
+                ->when($sort === 'activityAsc', fn ($q) => $q->orderBy('activity', 'asc')->orderByDesc('id'))
+                ->when($sort === 'activityDesc', fn ($q) => $q->orderBy('activity', 'desc')->orderByDesc('id'))
+                ->when(
+                    !in_array($sort, [
+                        'idAsc',
+                        'idDesc',
+                        'createdAtAsc',
+                        'createdAtDesc',
+                        'updatedAtAsc',
+                        'updatedAtDesc',
+                        'repliesAsc',
+                        'repliesDesc',
+                        'moderationStatusAsc',
+                        'moderationStatusDesc',
+                        'activityAsc',
+                        'activityDesc',
+                    ], true),
+                    fn ($q) => $q->orderByDesc('id')
+                )
                 ->get();
 
             return Inertia::render('Admin/Blog/Comments/Index', [

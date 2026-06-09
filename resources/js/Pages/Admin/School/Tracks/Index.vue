@@ -28,7 +28,7 @@ import TrackCardGrid from '@/Components/Admin/School/Track/View/TrackCardGrid.vu
 import SortSelect from '@/Components/Admin/School/Track/Sort/SortSelect.vue'
 
 /** i18n и уведомления */
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const toast = useToast()
 
 /** Props из контроллера */
@@ -69,6 +69,8 @@ watch(itemsPerPage, (newVal) => {
 const sortParam = ref(props.adminSchoolTracksDefaultSort || 'idDesc')
 
 watch(sortParam, (newVal) => {
+    currentPage.value = 1
+
     router.put(route('admin.settings.updateAdminSortTracks'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
@@ -206,69 +208,104 @@ const searchQuery = ref('')
 const currentPage = ref(1)
 
 /** Нормализация строки */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+const normalize = (value) => String(value ?? '').trim().toLowerCase()
 
-/** Сортировка карточек */
+const safeNumber = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : 0
+}
+
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+const getParentSortValue = (track) => {
+    return track?.parent?.name || track?.parent_id || ''
+}
+
+const byNumberAsc = (field) => (a, b) =>
+    safeNumber(a?.[field]) - safeNumber(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byNumberDesc = (field) => (a, b) =>
+    safeNumber(b?.[field]) - safeNumber(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const byStringAsc = (field) => (a, b) =>
+    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byStringDesc = (field) => (a, b) =>
+    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
 const sortTracks = (items) => {
     const list = (items || []).slice()
 
-    if (sortParam.value === 'idAsc') {
-        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    }
-
-    if (sortParam.value === 'idDesc') {
-        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-    }
-
-    if (sortParam.value === 'sortAsc') {
-        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    }
-
-    if (sortParam.value === 'sortDesc') {
-        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
-    }
-
-    if (sortParam.value === 'nameAsc') {
-        return list.sort((a, b) => normalize(a.name).localeCompare(normalize(b.name), locale.value))
-    }
-
-    if (sortParam.value === 'nameDesc') {
-        return list.sort((a, b) => normalize(b.name).localeCompare(normalize(a.name), locale.value))
-    }
-
     if (sortParam.value === 'activity') {
-        return list.filter(item => !!item.activity)
+        return list.filter((item) => item.activity)
     }
 
     if (sortParam.value === 'inactive') {
-        return list.filter(item => !item.activity)
+        return list.filter((item) => !item.activity)
     }
 
-    if (sortParam.value === 'views') {
-        return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
+    const sortMap = {
+        idAsc: byNumberAsc('id'),
+        idDesc: byNumberDesc('id'),
+
+        sortAsc: byNumberAsc('sort'),
+        sortDesc: byNumberDesc('sort'),
+
+        nameAsc: byStringAsc('name'),
+        nameDesc: byStringDesc('name'),
+
+        slugAsc: byStringAsc('slug'),
+        slugDesc: byStringDesc('slug'),
+
+        viewsAsc: byNumberAsc('views'),
+        viewsDesc: byNumberDesc('views'),
+
+        likesAsc: byNumberAsc('likes_count'),
+        likesDesc: byNumberDesc('likes_count'),
+
+        childrenAsc: byNumberAsc('children_count'),
+        childrenDesc: byNumberDesc('children_count'),
+
+        coursesAsc: byNumberAsc('courses_count'),
+        coursesDesc: byNumberDesc('courses_count'),
+
+        imagesAsc: byNumberAsc('images_count'),
+        imagesDesc: byNumberDesc('images_count'),
+
+        activityAsc: byNumberAsc('activity'),
+        activityDesc: byNumberDesc('activity'),
+
+        createdAtAsc: (a, b) => safeDate(a.created_at) - safeDate(b.created_at)
+            || safeNumber(a.id) - safeNumber(b.id),
+
+        createdAtDesc: (a, b) => safeDate(b.created_at) - safeDate(a.created_at)
+            || safeNumber(b.id) - safeNumber(a.id),
+
+        updatedAtAsc: (a, b) => safeDate(a.updated_at) - safeDate(b.updated_at)
+            || safeNumber(a.id) - safeNumber(b.id),
+
+        updatedAtDesc: (a, b) => safeDate(b.updated_at) - safeDate(a.updated_at)
+            || safeNumber(b.id) - safeNumber(a.id),
+
+        parentAsc: (a, b) =>
+            normalize(getParentSortValue(a)).localeCompare(normalize(getParentSortValue(b)), props.currentLocale)
+            || safeNumber(a.id) - safeNumber(b.id),
+
+        parentDesc: (a, b) =>
+            normalize(getParentSortValue(b)).localeCompare(normalize(getParentSortValue(a)), props.currentLocale)
+            || safeNumber(b.id) - safeNumber(a.id),
     }
 
-    if (sortParam.value === 'viewsAsc') {
-        return list.sort((a, b) => (a.views ?? 0) - (b.views ?? 0))
-    }
-
-    if (sortParam.value === 'viewsDesc') {
-        return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
-    }
-
-    if (sortParam.value === 'courses_count') {
-        return list.sort((a, b) => (b.courses_count ?? 0) - (a.courses_count ?? 0))
-    }
-
-    if (sortParam.value === 'children_count') {
-        return list.sort((a, b) => (b.children_count ?? 0) - (a.children_count ?? 0))
-    }
-
-    if (sortParam.value === 'likes_count') {
-        return list.sort((a, b) => (b.likes_count ?? 0) - (a.likes_count ?? 0))
-    }
-
-    return list
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
 }
 
 /** Фильтрация треков */
@@ -377,31 +414,6 @@ const handleDragEnd = () => {
                     only: ['tracksTree', 'tracks'],
                     preserveScroll: true,
                 })
-            },
-        }
-    )
-}
-
-/** Обновление сортировки в режиме карточек */
-const handleSortOrderUpdate = (newOrderIds) => {
-    const items = newOrderIds.map((id, index) => ({
-        id,
-        sort: index,
-        parent_id: null,
-    }))
-
-    if (!items.length) return
-
-    router.put(
-        route('admin.actions.schoolTracks.updateSortBulk'),
-        { items },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.success('Сортировка треков обновлена.'),
-            onError: (errors) => {
-                console.error('Ошибка сортировки карточек:', errors)
-                toast.error(errors.message || 'Ошибка обновления сортировки.')
             },
         }
     )
@@ -686,7 +698,6 @@ const handleBulkAction = (event) => {
                     @delete="confirmDelete"
                     @toggle-select="toggleSelectTrack"
                     @toggle-all="toggleAllCards"
-                    @update-sort-order="handleSortOrderUpdate"
                 />
 
                 <!-- Пагинация -->

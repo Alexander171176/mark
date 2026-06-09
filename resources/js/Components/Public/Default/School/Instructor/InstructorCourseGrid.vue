@@ -89,7 +89,7 @@ const getInstructorName = (course) => {
                    bg-white shadow-sm transition
                    hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-900"
         >
-            <Link :href="route('public.courses.show', { slug: course.slug })">
+            <Link :href="route('public.schoolCourses.show', { slug: course.slug })">
                 <UniversalImageSlider
                     :entity="course"
                     height-class="h-48"
@@ -103,7 +103,7 @@ const getInstructorName = (course) => {
             <div class="flex flex-1 flex-col p-4">
                 <div class="flex items-center justify-center text-center">
                     <Link
-                        :href="route('public.courses.show', { slug: course.slug })"
+                        :href="route('public.schoolCourses.show', { slug: course.slug })"
                         class="inline-flex items-center gap-2"
                     >
                         <span class="text-base font-semibold
@@ -200,10 +200,10 @@ const getInstructorName = (course) => {
                 <div class="mt-3 flex items-center justify-center">
                     <EntityStats
                         :views="course.views || 0"
-                        :likes-count="course.likes_count || 0"
+                        :likes-count="course.likes_count || course.likes || 0"
                         :already-liked="course.already_liked || false"
-                        route-name="courses.like"
-                        :route-params="{ course: course.id }"
+                        route-name="public.schoolCourses.like"
+                        :route-params="course.id"
                         :show-likes-button="true"
                         compact
                     />
@@ -211,7 +211,7 @@ const getInstructorName = (course) => {
 
                 <div class="mt-auto pt-4">
                     <Link
-                        :href="route('public.courses.show', { slug: course.slug })"
+                        :href="route('public.schoolCourses.show', { slug: course.slug })"
                         class="flex w-full items-center justify-center gap-2
                                rounded-sm px-3 py-2 btn-default"
                     >

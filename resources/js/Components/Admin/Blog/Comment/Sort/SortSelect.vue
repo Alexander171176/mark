@@ -32,29 +32,49 @@ const updateSort = (event) => {
                    rounded-sm shadow-sm"
         >
 
-            <option value="idDesc">{{ t('idDesc') }}</option>
-            <option value="idAsc">{{ t('idAsc') }}</option>
+            <option value="idDesc">ID ↓</option>
+            <option value="idAsc">ID ↑</option>
             <option disabled>─────────────────</option>
 
-            <option value="status">{{ t('passedModeration') }}</option>
-            <option value="instatus">{{ t('notPassModeration') }}</option>
+            <option value="userNameAsc">{{ t('user') }} A→Z</option>
+            <option value="userNameDesc">{{ t('user') }} Z→A</option>
+            <option value="userEmailAsc">Email A→Z</option>
+            <option value="userEmailDesc">Email Z→A</option>
             <option disabled>─────────────────</option>
 
+            <option value="contentAsc">{{ t('comment') }} A→Z</option>
+            <option value="contentDesc">{{ t('comment') }} Z→A</option>
+
+            <option value="typeAsc">{{ t('type') }} A→Z</option>
+            <option value="typeDesc">{{ t('type') }} Z→A</option>
+
+            <option value="commentableTitleAsc">{{ t('title') }} A→Z</option>
+            <option value="commentableTitleDesc">{{ t('title') }} Z→A</option>
+            <option disabled>─────────────────</option>
+
+            <option value="repliesDesc">{{ t('answers') }} 9→0</option>
+            <option value="repliesAsc">{{ t('answers') }} 0→9</option>
+            <option disabled>─────────────────</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
+            <option disabled>─────────────────</option>
+
+            <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
+            <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
             <option value="activity">{{ t('active') }}</option>
             <option value="inactive">{{ t('inactive') }}</option>
             <option disabled>─────────────────</option>
 
-            <option value="type">{{ t('type') }}</option><!-- опция сортировки по модели -->
-            <option value="user">{{ t('users') }}</option><!-- опция сортировки по пользователю -->
-            <option disabled>─────────────────</option>
+            <option value="moderationPending">{{ t('underModeration') }}</option>
+            <option value="moderationApproved">{{ t('statusSelectApproved') }}</option>
+            <option value="moderationRejected">{{ t('statusSelectRejected') }}</option>
 
-            <option value="moderation_pending">{{ t('underModeration') }}</option>
-            <option value="moderation_approved">{{ t('statusSelectApproved') }}</option>
-            <option value="moderation_rejected">{{ t('statusSelectRejected') }}</option>
-            <option disabled>─────────────────</option>
-
-            <option value="moderation_statusAsc">{{ t('moderationStatus') }} (0 → 2)</option>
-            <option value="moderation_statusDesc">{{ t('moderationStatus') }} (2 → 0)</option>
+            <option value="moderationStatusAsc">{{ t('moderationStatus') }} 0→2</option>
+            <option value="moderationStatusDesc">{{ t('moderationStatus') }} 2→0</option>
             <option disabled>─────────────────</option>
         </select>
     </div>

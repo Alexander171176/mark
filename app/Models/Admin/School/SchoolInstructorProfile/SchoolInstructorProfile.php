@@ -159,26 +159,66 @@ class SchoolInstructorProfile extends Model
     /** Сортировка по параметру */
     public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
     {
+        $locale = $locale ?: app()->getLocale();
+
         return match ($sort) {
-            'id_asc'          => $q->orderBy('id', 'asc'),
-            'id_desc'         => $q->orderBy('id', 'desc'),
+            'idAsc' => $q->orderBy('id', 'asc'),
+            'idDesc' => $q->orderBy('id', 'desc'),
 
-            'sort_asc'        => $q->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sort_desc'       => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
 
-            'date_asc'        => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'date_desc'       => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
+            'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),
 
-            'views_asc'       => $q->orderBy('views', 'asc')->orderByDesc('id'),
-            'views_desc'      => $q->orderBy('views', 'desc')->orderByDesc('id'),
+            'titleAsc' => $q
+                ->leftJoin('school_instructor_profile_translations as sipt_sort', function ($join) use ($locale) {
+                    $join->on('sipt_sort.school_instructor_profile_id', '=', 'school_instructor_profiles.id')
+                        ->where('sipt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sipt_sort.title', 'asc')
+                ->orderByDesc('school_instructor_profiles.id')
+                ->select('school_instructor_profiles.*'),
 
-            'rating_asc'      => $q->orderBy('rating_avg', 'asc')->orderByDesc('id'),
-            'rating_desc'     => $q->orderBy('rating_avg', 'desc')->orderByDesc('id'),
+            'titleDesc' => $q
+                ->leftJoin('school_instructor_profile_translations as sipt_sort', function ($join) use ($locale) {
+                    $join->on('sipt_sort.school_instructor_profile_id', '=', 'school_instructor_profiles.id')
+                        ->where('sipt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sipt_sort.title', 'desc')
+                ->orderByDesc('school_instructor_profiles.id')
+                ->select('school_instructor_profiles.*'),
 
-            'experience_asc'  => $q->orderBy('experience_years', 'asc')->orderByDesc('id'),
-            'experience_desc' => $q->orderBy('experience_years', 'desc')->orderByDesc('id'),
+            'viewsAsc' => $q->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
 
-            default           => $q->sorted(),
+            'ratingAvgAsc' => $q->orderBy('rating_avg', 'asc')->orderByDesc('id'),
+            'ratingAvgDesc' => $q->orderBy('rating_avg', 'desc')->orderByDesc('id'),
+
+            'ratingCountAsc' => $q->orderBy('rating_count', 'asc')->orderByDesc('id'),
+            'ratingCountDesc' => $q->orderBy('rating_count', 'desc')->orderByDesc('id'),
+
+            'hourlyRateAsc' => $q->orderBy('hourly_rate', 'asc')->orderByDesc('id'),
+            'hourlyRateDesc' => $q->orderBy('hourly_rate', 'desc')->orderByDesc('id'),
+
+            'experienceAsc' => $q->orderBy('experience_years', 'asc')->orderByDesc('id'),
+            'experienceDesc' => $q->orderBy('experience_years', 'desc')->orderByDesc('id'),
+
+            'coursesAsc' => $q->withCount('courses')->orderBy('courses_count', 'asc')->orderByDesc('id'),
+            'coursesDesc' => $q->withCount('courses')->orderBy('courses_count', 'desc')->orderByDesc('id'),
+
+            'createdAtAsc', 'dateAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc', 'dateDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $q->where('activity', true)->orderByDesc('id'),
+            'inactive' => $q->where('activity', false)->orderByDesc('id'),
+
+            default => $q->sorted(),
         };
     }
 

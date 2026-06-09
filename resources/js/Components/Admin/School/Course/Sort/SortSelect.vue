@@ -37,56 +37,76 @@ const updateSort = (event) => {
 
             <option value="sortAsc">{{ t('sortNumber') }} ↑</option>
             <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
-            <option disabled>────────────────</option>
+            <option disabled>───────────────────</option>
 
             <option value="titleAsc">{{ t('title') }} ↑</option>
             <option value="titleDesc">{{ t('title') }} ↓</option>
-            <option value="students_count">{{ t('sortStudentsCount') }}</option>
-            <option disabled>────────────────</option>
-
-            <!-- Новинки / хиты / распродажа -->
-            <option value="is_new">{{ t('sortIsNew') }}</option>
-            <option value="is_hit">{{ t('sortIsHit') }}</option>
-            <option value="is_sale">{{ t('sortIsSale') }}</option>
-            <option disabled>────────────────</option>
-
-            <!-- Уровень / статус / доступность -->
-            <option value="level">{{ t('level') }}</option>
-            <option value="status">{{ t('status') }}</option>
-            <option value="availability">{{ t('availability') }}</option>
-            <option disabled>────────────────</option>
-
-            <!-- Метрики сложности и длительности -->
-            <option value="difficulty">{{ t('sortDifficulty') }}</option>
-            <option value="duration">{{ t('duration') }}</option>
-            <option disabled>────────────────</option>
-
-            <!-- Метрики курса -->
-            <option value="popularity">{{ t('popularity') }}</option>
-            <option value="rating_count">{{ t('ratingCount') }}</option>
-            <option value="rating_avg">{{ t('ratingAvg') }}</option>
-            <option disabled>────────────────</option>
-
-            <!-- Уже существующие -->
-            <option value="views">{{ t('views') }}</option>
-            <option value="likes">{{ t('likes') }}</option>
-            <option disabled>────────────────</option>
+            <option disabled>───────────────────</option>
 
             <option value="activity">{{ t('active') }}</option>
             <option value="inactive">{{ t('inactive') }}</option>
-            <option disabled>────────────────</option>
+            <option disabled>───────────────────</option>
 
             <option value="left">{{ t('inLeft') }}</option>
             <option value="noLeft">{{ t('notLeft') }}</option>
-            <option disabled>────────────────</option>
+            <option disabled>───────────────────</option>
 
             <option value="main">{{ t('inMain') }}</option>
             <option value="noMain">{{ t('notMain') }}</option>
-            <option disabled>────────────────</option>
+            <option disabled>───────────────────</option>
 
             <option value="right">{{ t('inRight') }}</option>
             <option value="noRight">{{ t('notRight') }}</option>
-            <option disabled>────────────────</option>
+            <option disabled>───────────────────</option>
+
+            <!-- Новинки / хиты / распродажа -->
+            <option value="isNew">{{ t('sortIsNew') }}</option>
+            <option value="isHit">{{ t('sortIsHit') }}</option>
+            <option value="isSale">{{ t('sortIsSale') }}</option>
+            <option disabled>───────────────────</option>
+
+            <!-- Просмотры, лайки -->
+            <option value="viewsDesc">{{ t('views') }} 9→0</option>
+            <option value="viewsAsc">{{ t('views') }} 0→9</option>
+
+            <option value="likesDesc">{{ t('likes') }} 9→0</option>
+            <option value="likesAsc">{{ t('likes') }} 0→9</option>
+            <option disabled>───────────────────</option>
+
+            <!-- Метрики курса -->
+            <option value="popularityDesc">{{ t('popularity') }} 9→0</option>
+            <option value="popularityAsc">{{ t('popularity') }} 0→9</option>
+
+            <option value="ratingCountDesc">{{ t('ratingCount') }} 9→0</option>
+            <option value="ratingCountAsc">{{ t('ratingCount') }} 0→9</option>
+
+            <option value="ratingAvgDesc">{{ t('ratingAvg') }} 9→0</option>
+            <option value="ratingAvgAsc">{{ t('ratingAvg') }} 0→9</option>
+            <option disabled>───────────────────</option>
+
+            <!-- Уровень / статус / доступность -->
+            <option value="levelAsc">{{ t('level') }} A→Z</option>
+            <option value="levelDesc">{{ t('level') }} Z→A</option>
+
+            <option value="statusAsc">{{ t('status') }} A→Z</option>
+            <option value="statusDesc">{{ t('status') }} Z→A</option>
+
+            <option value="availabilityAsc">{{ t('availability') }} A→Z</option>
+            <option value="availabilityDesc">{{ t('availability') }} Z→A</option>
+            <option disabled>───────────────────</option>
+
+            <!-- Метрики сложности и длительности -->
+            <option value="difficultyDesc">{{ t('sortDifficulty') }} 9→0</option>
+            <option value="difficultyAsc">{{ t('sortDifficulty') }} 0→9</option>
+
+            <option value="durationDesc">{{ t('duration') }} 9→0</option>
+            <option value="durationAsc">{{ t('duration') }} 0→9</option>
+            <option disabled>───────────────────</option>
+
+            <option value="studentsCountDesc">{{ t('sortStudentsCount') }} 9→0</option>
+            <option value="studentsCountAsc">{{ t('sortStudentsCount') }} 0→9</option>
+            <option disabled>───────────────────</option>
+
         </select>
     </div>
 </template>

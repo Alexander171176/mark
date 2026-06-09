@@ -162,20 +162,40 @@ const moderationBadge = (status) => {
                             </div>
 
                             <!-- Проверка на наличие пользователя и его имени -->
-                            <div v-if="comment?.user"
-                                 class="my-2">
-                                <span class="font-semibold text-sm
-                                             text-gray-900 dark:text-gray-100">
+                            <div
+                                v-if="comment?.user"
+                                class="my-2"
+                            >
+                                <span
+                                    class="font-semibold text-sm
+                                           text-gray-900 dark:text-gray-100"
+                                >
                                     {{ t('userCommented') }}
                                 </span>
-                                <div class="flex flex-row items-center justify-start gap-1
-                                            text-sm font-semibold">
-                                    <div class="text-slate-600 dark:text-slate-400">
-                                        [ID: {{ comment.user_id }}]
+                                <div class="flex flex-col mt-1">
+
+                                    <div class="flex flex-row items-center gap-1
+                                                text-sm font-semibold">
+
+                                        <div class="text-slate-600 dark:text-slate-400">
+                                            [ID: {{ comment.user_id }}]
+                                        </div>
+
+                                        <div class="text-blue-700 dark:text-blue-300">
+                                            {{ comment.user?.name || '—' }}
+                                        </div>
+
                                     </div>
-                                    <div class="text-blue-700 dark:text-blue-300">
-                                        {{ comment.user?.name }}
+
+                                    <div
+                                        v-if="comment.user?.email"
+                                        class="ml-1 text-xs font-semibold
+                                               text-gray-500 dark:text-gray-300
+                                               break-all"
+                                    >
+                                        {{ comment.user.email }}
                                     </div>
+
                                 </div>
                             </div>
 

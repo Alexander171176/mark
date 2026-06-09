@@ -165,11 +165,20 @@ const moderationBadge = (status) => {
                     </td>
 
                     <td class="px-2 first:pl-5 last:pr-5 py-1 whitespace-nowrap">
-                        <div class="font-semibold text-blue-700 dark:text-blue-300">
-                            {{ comment.user?.name }}
-                        </div>
-                        <div class="text-xs text-slate-500 dark:text-slate-300">
-                            ID: {{ comment.user_id }}
+                        <div class="flex flex-col">
+                            <div class="font-semibold text-blue-700 dark:text-blue-300">
+                                {{ comment.user?.name || '—' }}
+                            </div>
+                            <div
+                                v-if="comment.user?.email"
+                                class="text-[10px] text-gray-500 dark:text-gray-300
+                                       break-all font-semibold"
+                            >
+                                {{ comment.user.email }}
+                            </div>
+                            <div class="text-xs text-slate-500 dark:text-slate-300">
+                                ID: {{ comment.user_id }}
+                            </div>
                         </div>
                     </td>
 

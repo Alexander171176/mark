@@ -29,7 +29,7 @@ const gridClass = computed(() => {
                    transition hover:-translate-y-0.5 hover:shadow-md
                    dark:border-gray-700 dark:bg-gray-900"
         >
-            <Link :href="route('public.tracks.show', track.slug)">
+            <Link :href="route('public.schoolTracks.show', track.slug)">
                 <UniversalImageSlider
                     :entity="track"
                     height-class="h-48"
@@ -43,7 +43,7 @@ const gridClass = computed(() => {
             <div class="flex flex-1 flex-col p-4">
                 <div class="flex items-center justify-center">
                     <Link
-                        :href="route('public.tracks.show', track.slug)"
+                        :href="route('public.schoolTracks.show', track.slug)"
                         :title="`${t('courses')}: ${track.courses_count}`"
                         class="inline-flex items-center gap-1"
                     >
@@ -98,10 +98,10 @@ const gridClass = computed(() => {
                 <div class="mt-3 flex items-center justify-center">
                     <EntityStats
                         :views="track.views || 0"
-                        :likes-count="track.likes_count || 0"
+                        :likes-count="track.likes_count || track.likes || 0"
                         :already-liked="track.already_liked || false"
-                        route-name="tracks.like"
-                        :route-params="{ track: track.id }"
+                        route-name="public.schoolTracks.like"
+                        :route-params="track.id"
                         :show-likes-button="true"
                         compact
                     />
@@ -109,7 +109,7 @@ const gridClass = computed(() => {
 
                 <div class="mt-auto pt-4">
                     <Link
-                        :href="route('public.tracks.show', track.slug)"
+                        :href="route('public.schoolTracks.show', track.slug)"
                         class="flex w-full items-center justify-center gap-2
                                rounded-sm px-3 py-2 btn-default"
                     >

@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
-use App\Traits\Public\BuildsTrackTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
+use App\Traits\Public\School\BuildsTrackTreeTrait;
 use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,14 +29,14 @@ class SchoolModuleController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolModulesPerPage', 20)
+            (int) config('site_settings.publicSchoolModulesPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicSchoolModulesDefaultSort', 'id_desc')
+            (string) config('site_settings.publicSchoolModulesDefaultSort', 'idDesc')
         );
 
         $view = $this->resolveView(
@@ -68,7 +68,7 @@ class SchoolModuleController extends Controller
                 'likes',
                 'images',
             ])
-            ->sortByParam($sort)
+            ->sortByParam($sort, $locale)
             ->paginate($perPage)
             ->withQueryString();
 

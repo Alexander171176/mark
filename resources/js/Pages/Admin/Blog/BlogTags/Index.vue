@@ -70,11 +70,6 @@ const getTagShort = (tag) => {
     return getTagTranslation(tag)?.short || ''
 }
 
-/** Локаль текущего перевода тега */
-const getTagLocale = (tag) => {
-    return getTagTranslation(tag)?.locale || props.currentLocale || ''
-}
-
 /** Нормализация строки */
 const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
@@ -228,22 +223,6 @@ const currentPage = ref(1)
 const sortTags = (tags) => {
     const list = (tags || []).slice()
 
-    if (sortParam.value === 'ownerNameAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
-    }
-
-    if (sortParam.value === 'ownerNameDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
-    }
-
-    if (sortParam.value === 'ownerEmailAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
-    }
-
-    if (sortParam.value === 'ownerEmailDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
-    }
-
     if (sortParam.value === 'idAsc') {
         return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
     }
@@ -260,12 +239,40 @@ const sortTags = (tags) => {
         return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
     }
 
+    if (sortParam.value === 'nameAsc') {
+        return list.sort((a, b) =>
+            normalize(getTagName(a)).localeCompare(normalize(getTagName(b)), locale.value))
+    }
+
+    if (sortParam.value === 'nameDesc') {
+        return list.sort((a, b) =>
+            normalize(getTagName(b)).localeCompare(normalize(getTagName(a)), locale.value))
+    }
+
+    if (sortParam.value === 'slugAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.slug).localeCompare(normalize(b?.slug), locale.value))
+    }
+
+    if (sortParam.value === 'slugDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.slug).localeCompare(normalize(a?.slug), locale.value))
+    }
+
     if (sortParam.value === 'activity') {
         return list.filter((tag) => !!tag.activity)
     }
 
     if (sortParam.value === 'inactive') {
         return list.filter((tag) => !tag.activity)
+    }
+
+    if (sortParam.value === 'activityDesc') {
+        return list.sort((a, b) => Number(b.activity) - Number(a.activity))
+    }
+
+    if (sortParam.value === 'activityAsc') {
+        return list.sort((a, b) => Number(a.activity) - Number(b.activity))
     }
 
     if (sortParam.value === 'viewsDesc') {
@@ -276,32 +283,73 @@ const sortTags = (tags) => {
         return list.sort((a, b) => (a.views ?? 0) - (b.views ?? 0))
     }
 
-    if (sortParam.value === 'nameAsc') {
-        return list.sort((a, b) => normalize(getTagName(a)).localeCompare(normalize(getTagName(b)), locale.value))
+    if (sortParam.value === 'articlesDesc') {
+        return list.sort((a, b) => (b.articles_count ?? 0) - (a.articles_count ?? 0))
     }
 
-    if (sortParam.value === 'nameDesc') {
-        return list.sort((a, b) => normalize(getTagName(b)).localeCompare(normalize(getTagName(a)), locale.value))
+    if (sortParam.value === 'articlesAsc') {
+        return list.sort((a, b) => (a.articles_count ?? 0) - (b.articles_count ?? 0))
     }
 
-    if (sortParam.value === 'moderation_pending') {
-        return list.filter((tag) => moderationNum(tag?.moderation_status) === 0)
+    if (sortParam.value === 'createdAtDesc') {
+        return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
     }
 
-    if (sortParam.value === 'moderation_approved') {
-        return list.filter((tag) => moderationNum(tag?.moderation_status) === 1)
+    if (sortParam.value === 'createdAtAsc') {
+        return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
     }
 
-    if (sortParam.value === 'moderation_rejected') {
-        return list.filter((tag) => moderationNum(tag?.moderation_status) === 2)
+    if (sortParam.value === 'updatedAtDesc') {
+        return list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
     }
 
-    if (sortParam.value === 'moderation_statusAsc') {
-        return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
+    if (sortParam.value === 'updatedAtAsc') {
+        return list.sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
     }
 
-    if (sortParam.value === 'moderation_statusDesc') {
-        return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
+    if (sortParam.value === 'moderationPending') {
+        return list.filter((tag) =>
+            moderationNum(tag?.moderation_status) === 0)
+    }
+
+    if (sortParam.value === 'moderationApproved') {
+        return list.filter((tag) =>
+            moderationNum(tag?.moderation_status) === 1)
+    }
+
+    if (sortParam.value === 'moderationRejected') {
+        return list.filter((tag) =>
+            moderationNum(tag?.moderation_status) === 2)
+    }
+
+    if (sortParam.value === 'moderationStatusAsc') {
+        return list.sort((a, b) =>
+            moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
+    }
+
+    if (sortParam.value === 'moderationStatusDesc') {
+        return list.sort((a, b) =>
+            moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
+    }
+
+    if (sortParam.value === 'ownerNameAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
+    }
+
+    if (sortParam.value === 'ownerNameDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
+    }
+
+    if (sortParam.value === 'ownerEmailAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
+    }
+
+    if (sortParam.value === 'ownerEmailDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
     }
 
     return list

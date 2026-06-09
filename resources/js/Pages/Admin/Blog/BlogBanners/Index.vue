@@ -68,11 +68,6 @@ const getBannerLink = (banner) => {
     return getBannerTranslation(banner)?.link || ''
 }
 
-/** Локаль перевода */
-const getBannerLocale = (banner) => {
-    return getBannerTranslation(banner)?.locale || props.currentLocale || ''
-}
-
 /** Нормализация строки для поиска/сортировки */
 const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
@@ -300,19 +295,23 @@ const sortBanners = (banners) => {
     const list = (banners || []).slice()
 
     if (sortParam.value === 'ownerNameAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
+        return list.sort((a, b) =>
+            normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
     }
 
     if (sortParam.value === 'ownerNameDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
+        return list.sort((a, b) =>
+            normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
     }
 
     if (sortParam.value === 'ownerEmailAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
+        return list.sort((a, b) =>
+            normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
     }
 
     if (sortParam.value === 'ownerEmailDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
+        return list.sort((a, b) =>
+            normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
     }
 
     if (sortParam.value === 'idAsc') {
@@ -332,11 +331,13 @@ const sortBanners = (banners) => {
     }
 
     if (sortParam.value === 'titleAsc') {
-        return list.sort((a, b) => normalize(getBannerTitle(a)).localeCompare(normalize(getBannerTitle(b)), locale.value))
+        return list.sort((a, b) =>
+            normalize(getBannerTitle(a)).localeCompare(normalize(getBannerTitle(b)), locale.value))
     }
 
     if (sortParam.value === 'titleDesc') {
-        return list.sort((a, b) => normalize(getBannerTitle(b)).localeCompare(normalize(getBannerTitle(a)), locale.value))
+        return list.sort((a, b) =>
+            normalize(getBannerTitle(b)).localeCompare(normalize(getBannerTitle(a)), locale.value))
     }
 
     if (sortParam.value === 'activity') {
@@ -347,12 +348,28 @@ const sortBanners = (banners) => {
         return list.filter((banner) => !banner.activity)
     }
 
+    if (sortParam.value === 'activityDesc') {
+        return list.sort((a, b) => Number(b.activity) - Number(a.activity))
+    }
+
+    if (sortParam.value === 'activityAsc') {
+        return list.sort((a, b) => Number(a.activity) - Number(b.activity))
+    }
+
     if (sortParam.value === 'left') {
         return list.filter((banner) => !!banner.left)
     }
 
     if (sortParam.value === 'noLeft') {
         return list.filter((banner) => !banner.left)
+    }
+
+    if (sortParam.value === 'leftDesc') {
+        return list.sort((a, b) => Number(b.left) - Number(a.left))
+    }
+
+    if (sortParam.value === 'leftAsc') {
+        return list.sort((a, b) => Number(a.left) - Number(b.left))
     }
 
     if (sortParam.value === 'main') {
@@ -363,12 +380,28 @@ const sortBanners = (banners) => {
         return list.filter((banner) => !banner.main)
     }
 
+    if (sortParam.value === 'mainDesc') {
+        return list.sort((a, b) => Number(b.main) - Number(a.main))
+    }
+
+    if (sortParam.value === 'mainAsc') {
+        return list.sort((a, b) => Number(a.main) - Number(b.main))
+    }
+
     if (sortParam.value === 'right') {
         return list.filter((banner) => !!banner.right)
     }
 
     if (sortParam.value === 'noRight') {
         return list.filter((banner) => !banner.right)
+    }
+
+    if (sortParam.value === 'rightDesc') {
+        return list.sort((a, b) => Number(b.right) - Number(a.right))
+    }
+
+    if (sortParam.value === 'rightAsc') {
+        return list.sort((a, b) => Number(a.right) - Number(b.right))
     }
 
     if (sortParam.value === 'imagesDesc') {
@@ -379,24 +412,46 @@ const sortBanners = (banners) => {
         return list.sort((a, b) => (a.images_count ?? 0) - (b.images_count ?? 0))
     }
 
-    if (sortParam.value === 'moderation_pending') {
+    if (sortParam.value === 'moderationPending') {
         return list.filter((banner) => moderationNum(banner?.moderation_status) === 0)
     }
 
-    if (sortParam.value === 'moderation_approved') {
+    if (sortParam.value === 'moderationApproved') {
         return list.filter((banner) => moderationNum(banner?.moderation_status) === 1)
     }
 
-    if (sortParam.value === 'moderation_rejected') {
+    if (sortParam.value === 'moderationRejected') {
         return list.filter((banner) => moderationNum(banner?.moderation_status) === 2)
     }
 
-    if (sortParam.value === 'moderation_statusAsc') {
-        return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
+    if (sortParam.value === 'moderationStatusAsc') {
+        return list.sort(
+            (a, b) =>
+                moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status)
+        )
     }
 
-    if (sortParam.value === 'moderation_statusDesc') {
-        return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
+    if (sortParam.value === 'moderationStatusDesc') {
+        return list.sort(
+            (a, b) =>
+                moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status)
+        )
+    }
+
+    if (sortParam.value === 'createdAtDesc') {
+        return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    }
+
+    if (sortParam.value === 'createdAtAsc') {
+        return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+    }
+
+    if (sortParam.value === 'updatedAtDesc') {
+        return list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
+    }
+
+    if (sortParam.value === 'updatedAtAsc') {
+        return list.sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
     }
 
     return list

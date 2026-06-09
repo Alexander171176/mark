@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Blog\BlogTag;
 
-use App\Http\Controllers\Admin\Blog\Base\BaseBlogAdminController;
+use App\Http\Controllers\Admin\Blog\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogTag\BlogTagRequest;
 use App\Http\Resources\Admin\Blog\BlogTag\BlogTagResource;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
@@ -46,33 +46,6 @@ class BlogTagController extends BaseBlogAdminController
         'meta_desc',
     ];/** Дополнительные варианты сортировки тегов */
 
-    /** Расширение сортировки для тегов блога. */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'ownerNameAsc' => 'owner_name_asc',
-            'ownerNameDesc' => 'owner_name_desc',
-
-            'ownerEmailAsc' => 'owner_email_asc',
-            'ownerEmailDesc' => 'owner_email_desc',
-
-            'locale' => 'locale_asc',
-
-            'viewsAsc' => 'views_asc',
-            'viewsDesc' => 'views_desc',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-
-            'moderation_pending' => 'moderation_pending',
-            'moderation_approved' => 'moderation_approved',
-            'moderation_rejected' => 'moderation_rejected',
-
-            'moderation_statusAsc' => 'moderation_status_asc',
-            'moderation_statusDesc' => 'moderation_status_desc',
-        ];
-    }
-
     /** Список тегов */
     public function index(Request $request): Response
     {
@@ -82,7 +55,6 @@ class BlogTagController extends BaseBlogAdminController
         $adminBlogTagsDefaultSort = (string) config('site_settings.adminBlogTagsDefaultSort', 'idDesc');
 
         $sortParam = (string) $request->query('sort', $adminBlogTagsDefaultSort);
-        $normalizedSort = $this->normalizeSortParam($sortParam);
 
         try {
             $tags = $this->baseQuery()
@@ -92,7 +64,7 @@ class BlogTagController extends BaseBlogAdminController
                     'translations',
                 ])
                 ->withCount(['articles'])
-                ->sortByParam($normalizedSort, $currentLocale)
+                ->sortByParam($sortParam, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/Blog/BlogTags/Index', [

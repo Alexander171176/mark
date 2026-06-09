@@ -7,9 +7,9 @@ use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseResource;
 use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
-use App\Traits\Public\BuildsTrackTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
+use App\Traits\Public\School\BuildsTrackTreeTrait;
 use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -36,7 +36,7 @@ class SchoolInstructorController extends Controller
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicSchoolInstructorsDefaultSort', 'id_desc')
+            (string) config('site_settings.publicSchoolInstructorsDefaultSort', 'idDesc')
         );
 
         $view = $this->resolveView(
@@ -118,14 +118,14 @@ class SchoolInstructorController extends Controller
 
         $perPageCourses = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolCoursesPerPage', 20),
+            (int) config('site_settings.publicSchoolCoursesPerPage', 6),
             3,
             60
         );
 
         $coursesSort = (string) $request->query(
             'sort_courses',
-            config('site_settings.publicSchoolCoursesDefaultSort', 'sort_asc')
+            config('site_settings.publicSchoolCoursesDefaultSort', 'sortAsc')
         );
 
         $courses = SchoolCourse::query()
@@ -156,7 +156,7 @@ class SchoolInstructorController extends Controller
                 'reviews',
                 'likes',
             ])
-            ->sortByParam($coursesSort)
+            ->sortByParam($coursesSort, $locale)
             ->paginate($perPageCourses, ['*'], 'page_courses')
             ->withQueryString();
 

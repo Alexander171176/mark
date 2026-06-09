@@ -102,39 +102,128 @@ const moderationNum = (v) => {
 }
 const shortType = (fullType) => (fullType ? fullType.split('\\').pop() : '')
 
-/** Сортировка + фильтры (локально, как у тегов) */
+/** Сортировка + фильтры */
 const sortComments = (comments) => {
     const list = (comments || []).slice()
 
-    // id
-    if (sortParam.value === 'idAsc') return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    if (sortParam.value === 'idDesc') return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-
-    // flags/filters
-    if (sortParam.value === 'activity') return list.filter(c => !!c.activity)
-    if (sortParam.value === 'inactive') return list.filter(c => !c.activity)
-
-    // moderation filters
-    if (sortParam.value === 'moderation_pending') return list.filter(c => moderationNum(c?.moderation_status) === 0)
-    if (sortParam.value === 'moderation_approved') return list.filter(c => moderationNum(c?.moderation_status) === 1)
-    if (sortParam.value === 'moderation_rejected') return list.filter(c => moderationNum(c?.moderation_status) === 2)
-
-    // moderation sorting
-    if (sortParam.value === 'moderation_statusAsc') {
-        return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
-    }
-    if (sortParam.value === 'moderation_statusDesc') {
-        return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
+    if (sortParam.value === 'idAsc') {
+        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
     }
 
-    // type
-    if (sortParam.value === 'type') {
-        return list.sort((a, b) => normalize(shortType(a?.commentable_type)).localeCompare(normalize(shortType(b?.commentable_type)), locale.value))
+    if (sortParam.value === 'idDesc') {
+        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
     }
 
-    // user
-    if (sortParam.value === 'user') {
-        return list.sort((a, b) => normalize(a?.user?.name).localeCompare(normalize(b?.user?.name), locale.value))
+    if (sortParam.value === 'userNameAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.user?.name).localeCompare(normalize(b?.user?.name), locale.value))
+    }
+
+    if (sortParam.value === 'userNameDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.user?.name).localeCompare(normalize(a?.user?.name), locale.value))
+    }
+
+    if (sortParam.value === 'userEmailAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.user?.email).localeCompare(normalize(b?.user?.email), locale.value))
+    }
+
+    if (sortParam.value === 'userEmailDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.user?.email).localeCompare(normalize(a?.user?.email), locale.value))
+    }
+
+    if (sortParam.value === 'contentAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.content).localeCompare(normalize(b?.content), locale.value))
+    }
+
+    if (sortParam.value === 'contentDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.content).localeCompare(normalize(a?.content), locale.value))
+    }
+
+    if (sortParam.value === 'typeAsc') {
+        return list.sort((a, b) =>
+            normalize(shortType(a?.commentable_type)).localeCompare(normalize(shortType(b?.commentable_type)), locale.value))
+    }
+
+    if (sortParam.value === 'typeDesc') {
+        return list.sort((a, b) =>
+            normalize(shortType(b?.commentable_type)).localeCompare(normalize(shortType(a?.commentable_type)), locale.value))
+    }
+
+    if (sortParam.value === 'commentableTitleAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.commentable_title).localeCompare(normalize(b?.commentable_title), locale.value))
+    }
+
+    if (sortParam.value === 'commentableTitleDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.commentable_title).localeCompare(normalize(a?.commentable_title), locale.value))
+    }
+
+    if (sortParam.value === 'repliesAsc') {
+        return list.sort((a, b) => (a.replies_count ?? 0) - (b.replies_count ?? 0))
+    }
+
+    if (sortParam.value === 'repliesDesc') {
+        return list.sort((a, b) => (b.replies_count ?? 0) - (a.replies_count ?? 0))
+    }
+
+    if (sortParam.value === 'createdAtAsc') {
+        return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+    }
+
+    if (sortParam.value === 'createdAtDesc') {
+        return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    }
+
+    if (sortParam.value === 'updatedAtAsc') {
+        return list.sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
+    }
+
+    if (sortParam.value === 'updatedAtDesc') {
+        return list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
+    }
+
+    if (sortParam.value === 'activityDesc') {
+        return list.sort((a, b) => Number(b.activity) - Number(a.activity))
+    }
+
+    if (sortParam.value === 'activityAsc') {
+        return list.sort((a, b) => Number(a.activity) - Number(b.activity))
+    }
+
+    if (sortParam.value === 'activity') {
+        return list.filter((comment) => !!comment.activity)
+    }
+
+    if (sortParam.value === 'inactive') {
+        return list.filter((comment) => !comment.activity)
+    }
+
+    if (sortParam.value === 'moderationPending') {
+        return list.filter((comment) => moderationNum(comment?.moderation_status) === 0)
+    }
+
+    if (sortParam.value === 'moderationApproved') {
+        return list.filter((comment) => moderationNum(comment?.moderation_status) === 1)
+    }
+
+    if (sortParam.value === 'moderationRejected') {
+        return list.filter((comment) => moderationNum(comment?.moderation_status) === 2)
+    }
+
+    if (sortParam.value === 'moderationStatusAsc') {
+        return list.sort((a, b) =>
+            moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
+    }
+
+    if (sortParam.value === 'moderationStatusDesc') {
+        return list.sort((a, b) =>
+            moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
     }
 
     return list
@@ -151,7 +240,12 @@ const filteredComments = computed(() => {
             const userName = normalize(c?.user?.name)
             const type = normalize(shortType(c?.commentable_type))
             const title = normalize(c?.commentable_title)
-            return content.includes(q) || userName.includes(q) || type.includes(q) || title.includes(q)
+            const userEmail = normalize(c?.user?.email)
+            return content.includes(q)
+                || userName.includes(q)
+                || userEmail.includes(q)
+                || type.includes(q)
+                || title.includes(q)
         })
     }
 

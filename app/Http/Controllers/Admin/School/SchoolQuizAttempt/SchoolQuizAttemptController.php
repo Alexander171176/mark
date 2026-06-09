@@ -53,7 +53,7 @@ class SchoolQuizAttemptController extends Controller
         $quizId = $request->query('school_quiz_id');
         $enrollmentId = $request->query('school_enrollment_id');
 
-        $adminSchoolQuizAttemptsPerPage = (int) config('site_settings.adminSchoolQuizAttemptsPerPage', 10);
+        $adminSchoolQuizAttemptsPerPage = (int) config('site_settings.adminSchoolQuizAttemptsPerPage', 6);
         $adminSchoolQuizAttemptsDefaultSort = (string) config('site_settings.adminSchoolQuizAttemptsDefaultSort', 'idDesc');
 
         try {

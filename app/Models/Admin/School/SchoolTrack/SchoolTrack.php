@@ -174,36 +174,66 @@ class SchoolTrack extends Model
     }
 
     /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $q, ?string $sort): Builder
+    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
     {
+        $locale = $locale ?: app()->getLocale();
+
         return match ($sort) {
+            'idAsc' => $q->orderBy('id', 'asc'),
+            'idDesc' => $q->orderBy('id', 'desc'),
 
-            // ID
-            'id_asc'     => $q->orderBy('id', 'asc'),
-            'id_desc'    => $q->orderBy('id', 'desc'),
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
 
-            // SORT
-            'sort_asc'   => $q->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sort_desc'  => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+            'parentAsc' => $q->orderBy('parent_id', 'asc')->orderByDesc('id'),
+            'parentDesc' => $q->orderBy('parent_id', 'desc')->orderByDesc('id'),
 
-            // DATE
-            'date_asc'   => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'date_desc'  => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
+            'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),
 
-            // VIEWS
-            'views_asc'  => $q->orderBy('views', 'asc')->orderByDesc('id'),
-            'views_desc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
+            'viewsAsc' => $q->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
 
-            // LIKES
-            'likes_asc'  => $q
-                ->withCount('likes')
-                ->orderBy('likes_count', 'asc')
-                ->orderByDesc('id'),
+            'likesAsc' => $q->withCount('likes')->orderBy('likes_count', 'asc')->orderByDesc('id'),
+            'likesDesc' => $q->withCount('likes')->orderBy('likes_count', 'desc')->orderByDesc('id'),
 
-            'likes_desc' => $q
-                ->withCount('likes')
-                ->orderBy('likes_count', 'desc')
-                ->orderByDesc('id'),
+            'coursesAsc' => $q->withCount('courses')->orderBy('courses_count', 'asc')->orderByDesc('id'),
+            'coursesDesc' => $q->withCount('courses')->orderBy('courses_count', 'desc')->orderByDesc('id'),
+
+            'childrenAsc' => $q->withCount('children')->orderBy('children_count', 'asc')->orderByDesc('id'),
+            'childrenDesc' => $q->withCount('children')->orderBy('children_count', 'desc')->orderByDesc('id'),
+
+            'imagesAsc' => $q->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
+            'imagesDesc' => $q->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $q->where('activity', true)->orderByDesc('id'),
+            'inactive' => $q->where('activity', false)->orderByDesc('id'),
+
+            'createdAtAsc', 'dateAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc', 'dateDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            'nameAsc' => $q
+                ->leftJoin('school_track_translations as stt_sort', function ($join) use ($locale) {
+                    $join->on('stt_sort.school_track_id', '=', 'school_tracks.id')
+                        ->where('stt_sort.locale', '=', $locale);
+                })
+                ->orderBy('stt_sort.name', 'asc')
+                ->orderByDesc('school_tracks.id')
+                ->select('school_tracks.*'),
+
+            'nameDesc' => $q
+                ->leftJoin('school_track_translations as stt_sort', function ($join) use ($locale) {
+                    $join->on('stt_sort.school_track_id', '=', 'school_tracks.id')
+                        ->where('stt_sort.locale', '=', $locale);
+                })
+                ->orderBy('stt_sort.name', 'desc')
+                ->orderByDesc('school_tracks.id')
+                ->select('school_tracks.*'),
 
             default => $q->ordered(),
         };

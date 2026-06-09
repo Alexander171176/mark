@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Public\Default\School\SchoolLesson;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonResource;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
-use App\Traits\Public\BuildsTrackTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
+use App\Traits\Public\School\BuildsTrackTreeTrait;
 use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,14 +28,14 @@ class SchoolLessonController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolLessonsPerPage', 20)
+            (int) config('site_settings.publicSchoolLessonsPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicSchoolLessonsDefaultSort', 'id_desc')
+            (string) config('site_settings.publicSchoolLessonsDefaultSort', 'idDesc')
         );
 
         $view = $this->resolveView(
@@ -75,7 +75,7 @@ class SchoolLessonController extends Controller
                 'hashtags',
                 'images',
             ])
-            ->sortByParam($sort)
+            ->sortByParam($sort, $locale)
             ->paginate($perPage)
             ->withQueryString();
 

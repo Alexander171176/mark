@@ -39,13 +39,13 @@ const moduleLessons = (module) => {
 
 const moduleLink = (module) => {
     return module?.slug
-        ? route('public.modules.show', { slug: module.slug })
+        ? route('public.schoolModules.show', { slug: module.slug })
         : '#'
 }
 
 const courseLink = (module) => {
     return module?.course?.slug
-        ? route('public.courses.show', { slug: module.course.slug })
+        ? route('public.schoolCourses.show', { slug: module.course.slug })
         : '#'
 }
 </script>
@@ -226,10 +226,10 @@ const courseLink = (module) => {
                 <div class="mt-2 flex items-center justify-between gap-3">
                     <EntityStats
                         :views="module.views || 0"
-                        :likes-count="module.likes_count || 0"
+                        :likes-count="module.likes_count || module.likes || 0"
                         :already-liked="module.already_liked || false"
-                        route-name="modules.like"
-                        :route-params="{ module: module.id }"
+                        route-name="public.schoolModules.like"
+                        :route-params="module.id"
                         :show-likes-button="true"
                         compact
                     />

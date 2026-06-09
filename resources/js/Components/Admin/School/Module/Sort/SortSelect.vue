@@ -44,34 +44,64 @@ const updateSort = (event) => {
             <option value="titleDesc">{{ t('title') }} ↓</option>
             <option disabled>─────────────</option>
 
-            <option value="published_at">{{ t('publishedAt') }}</option>
-            <option value="lessons_count">{{ t('lessonsCount') }}</option>
-            <option disabled>─────────────</option>
-
-            <!-- Статус / Доступность -->
-            <option value="status">{{ t('status') }}</option>
-            <option value="availability">{{ t('availability') }}</option>
-            <option disabled>─────────────</option>
-
-            <!-- Метрики сложности и длительности -->
-            <option value="difficulty">{{ t('sortDifficulty') }}</option>
-            <option value="duration">{{ t('duration') }}</option>
-            <option disabled>─────────────</option>
-
-            <!-- Метрики курса -->
-            <option value="popularity">{{ t('popularity') }}</option>
-            <option value="rating_count">{{ t('ratingCount') }}</option>
-            <option value="rating_avg">{{ t('ratingAvg') }}</option>
-            <option disabled>─────────────</option>
-
-            <!-- Уже существующие -->
-            <option value="views">{{ t('views') }}</option>
-            <option value="likes">{{ t('likes') }}</option>
-            <option disabled>─────────────</option>
-
+            <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
+            <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
             <option value="activity">{{ t('active') }}</option>
             <option value="inactive">{{ t('inactive') }}</option>
             <option disabled>─────────────</option>
+
+            <option value="lessonsDesc">{{ t('lessonsCount') }} 9→0</option>
+            <option value="lessonsAsc">{{ t('lessonsCount') }} 0→9</option>
+
+            <option value="imagesDesc">{{ t('images') }} 9→0</option>
+            <option value="imagesAsc">{{ t('images') }} 0→9</option>
+            <option disabled>─────────────</option>
+
+            <!-- просмотры, лайки -->
+            <option value="viewsDesc">{{ t('views') }} 9→0</option>
+            <option value="viewsAsc">{{ t('views') }} 0→9</option>
+
+            <option value="likesDesc">{{ t('likes') }} 9→0</option>
+            <option value="likesAsc">{{ t('likes') }} 0→9</option>
+            <option disabled>─────────────</option>
+
+            <!-- Метрики курса -->
+            <option value="popularityDesc">{{ t('popularity') }} 9→0</option>
+            <option value="popularityAsc">{{ t('popularity') }} 0→9</option>
+
+            <option value="ratingCountDesc">{{ t('ratingCount') }} 9→0</option>
+            <option value="ratingCountAsc">{{ t('ratingCount') }} 0→9</option>
+
+            <option value="ratingAvgDesc">{{ t('ratingAvg') }} 9→0</option>
+            <option value="ratingAvgAsc">{{ t('ratingAvg') }} 0→9</option>
+            <option disabled>─────────────</option>
+
+            <!-- Статус / Доступность -->
+            <option value="statusAsc">{{ t('status') }} A→Z</option>
+            <option value="statusDesc">{{ t('status') }} Z→A</option>
+
+            <option value="availabilityAsc">{{ t('availability') }} A→Z</option>
+            <option value="availabilityDesc">{{ t('availability') }} Z→A</option>
+            <option disabled>─────────────</option>
+
+            <!-- Метрики сложности и длительности -->
+            <option value="difficultyDesc">{{ t('sortDifficulty') }} 9→0</option>
+            <option value="difficultyAsc">{{ t('sortDifficulty') }} 0→9</option>
+
+            <option value="durationDesc">{{ t('duration') }} 9→0</option>
+            <option value="durationAsc">{{ t('duration') }} 0→9</option>
+            <option disabled>─────────────</option>
+
+            <option value="publishedAtDesc">{{ t('publishedAt') }} ↓</option>
+            <option value="publishedAtAsc">{{ t('publishedAt') }} ↑</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
+            <option disabled>─────────────</option>
+
         </select>
     </div>
 </template>

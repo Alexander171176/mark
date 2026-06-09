@@ -12,7 +12,7 @@ const props = defineProps({
 
 const lessonLink = (lesson) => {
     return lesson?.slug
-        ? route('public.lessons.show', { slug: lesson.slug })
+        ? route('public.schoolLessons.show', { slug: lesson.slug })
         : '#'
 }
 
@@ -68,14 +68,22 @@ const getLessonAccessTypeLabel = (accessType) => {
                    p-3 transition hover:shadow-md
                    dark:border-gray-700 dark:bg-gray-900"
         >
-            <Link :href="lessonLink(lesson)" class="shrink-0">
+            <Link
+                v-if="lesson.images?.length"
+                :href="lessonLink(lesson)"
+                class="shrink-0"
+            >
                 <div class="w-full sm:w-[260px]">
                     <UniversalImageSlider
                         :entity="lesson"
                         height-class="h-48"
                         rounded-class="rounded-md"
                         wrapper-class=""
-                        img-class="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                        img-class="
+                w-full h-full object-cover
+                transition duration-300
+                group-hover:scale-105
+            "
                         :autoplay="true"
                         :interval="4000"
                     />
@@ -85,7 +93,8 @@ const getLessonAccessTypeLabel = (accessType) => {
             <div class="min-w-0 flex-1 flex flex-col justify-around">
                 <div class="min-w-0 flex-1 flex flex-col justify-around">
                     <div class="flex items-start justify-start">
-                        <Link :href="lessonLink(lesson)" class="min-w-0 inline-flex items-center gap-2">
+                        <Link :href="lessonLink(lesson)"
+                              class="min-w-0 inline-flex items-center gap-2">
                             <span
                                 class="truncate text-lg font-semibold
                                        text-slate-900/85 dark:text-slate-100/85
@@ -207,8 +216,8 @@ const getLessonAccessTypeLabel = (accessType) => {
                         :views="lesson.views || 0"
                         :likes-count="lesson.likes_count || lesson.likes || 0"
                         :already-liked="lesson.already_liked || false"
-                        route-name="lessons.like"
-                        :route-params="{ lesson: lesson.id }"
+                        route-name="public.schoolLessons.like"
+                        :route-params="lesson.id"
                         :show-likes-button="true"
                         compact
                     />

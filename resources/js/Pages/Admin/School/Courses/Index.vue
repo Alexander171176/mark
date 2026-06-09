@@ -79,6 +79,8 @@ const sortParam = ref(props.adminSchoolCoursesDefaultSort || 'idDesc')
 
 // Сохранение параметра сортировки
 watch(sortParam, (newVal) => {
+    currentPage.value = 1
+
     router.put(route('admin.settings.updateAdminSortCourses'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
@@ -144,32 +146,32 @@ const searchQuery = ref('')
 const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
 // Сортировка курсов
+const safeNumber = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : 0
+}
+
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+const byNumberAsc = (field) => (a, b) =>
+    safeNumber(a?.[field]) - safeNumber(b?.[field]) || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byNumberDesc = (field) => (a, b) =>
+    safeNumber(b?.[field]) - safeNumber(a?.[field]) || safeNumber(b?.id) - safeNumber(a?.id)
+
+const byStringAsc = (field) => (a, b) =>
+    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byStringDesc = (field) => (a, b) =>
+    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
 const sortCourses = (items) => {
     const list = (items || []).slice()
-
-    if (sortParam.value === 'idAsc') {
-        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    }
-
-    if (sortParam.value === 'idDesc') {
-        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-    }
-
-    if (sortParam.value === 'sortAsc') {
-        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    }
-
-    if (sortParam.value === 'sortDesc') {
-        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
-    }
-
-    if (sortParam.value === 'titleAsc') {
-        return list.sort((a, b) => normalize(a.title).localeCompare(normalize(b.title)))
-    }
-
-    if (sortParam.value === 'titleDesc') {
-        return list.sort((a, b) => normalize(b.title).localeCompare(normalize(a.title)))
-    }
 
     if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
     if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
@@ -181,35 +183,114 @@ const sortCourses = (items) => {
     if (sortParam.value === 'right') return list.filter(item => !!item.right)
     if (sortParam.value === 'noRight') return list.filter(item => !item.right)
 
-    if (sortParam.value === 'is_new') return list.filter(item => !!item.is_new)
-    if (sortParam.value === 'is_hit') return list.filter(item => !!item.is_hit)
-    if (sortParam.value === 'is_sale') return list.filter(item => !!item.is_sale)
+    if (sortParam.value === 'isNew') return list.filter(item => !!item.is_new)
+    if (sortParam.value === 'isHit') return list.filter(item => !!item.is_hit)
+    if (sortParam.value === 'isSale') return list.filter(item => !!item.is_sale)
 
-    if (sortParam.value === 'views') {
-        return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
+    const sortMap = {
+        idAsc: byNumberAsc('id'),
+        idDesc: byNumberDesc('id'),
+
+        sortAsc: byNumberAsc('sort'),
+        sortDesc: byNumberDesc('sort'),
+
+        titleAsc: byStringAsc('title'),
+        titleDesc: byStringDesc('title'),
+
+        slugAsc: byStringAsc('slug'),
+        slugDesc: byStringDesc('slug'),
+
+        levelAsc: byStringAsc('level'),
+        levelDesc: byStringDesc('level'),
+
+        statusAsc: byStringAsc('status'),
+        statusDesc: byStringDesc('status'),
+
+        availabilityAsc: byStringAsc('availability'),
+        availabilityDesc: byStringDesc('availability'),
+
+        studentsCountAsc: byNumberAsc('students_count'),
+        studentsCountDesc: byNumberDesc('students_count'),
+
+        viewsAsc: byNumberAsc('views'),
+        viewsDesc: byNumberDesc('views'),
+
+        likesAsc: byNumberAsc('likes'),
+        likesDesc: byNumberDesc('likes'),
+
+        popularityAsc: byNumberAsc('popularity'),
+        popularityDesc: byNumberDesc('popularity'),
+
+        ratingCountAsc: byNumberAsc('rating_count'),
+        ratingCountDesc: byNumberDesc('rating_count'),
+
+        ratingAvgAsc: byNumberAsc('rating_avg'),
+        ratingAvgDesc: byNumberDesc('rating_avg'),
+
+        difficultyAsc: byNumberAsc('difficulty'),
+        difficultyDesc: byNumberDesc('difficulty'),
+
+        durationAsc: byNumberAsc('duration'),
+        durationDesc: byNumberDesc('duration'),
+
+        modulesAsc: byNumberAsc('modules_count'),
+        modulesDesc: byNumberDesc('modules_count'),
+
+        lessonsAsc: byNumberAsc('lessons_count'),
+        lessonsDesc: byNumberDesc('lessons_count'),
+
+        tracksAsc: byNumberAsc('tracks_count'),
+        tracksDesc: byNumberDesc('tracks_count'),
+
+        hashtagsAsc: byNumberAsc('hashtags_count'),
+        hashtagsDesc: byNumberDesc('hashtags_count'),
+
+        imagesAsc: byNumberAsc('images_count'),
+        imagesDesc: byNumberDesc('images_count'),
+
+        pricesAsc: byNumberAsc('prices_count'),
+        pricesDesc: byNumberDesc('prices_count'),
+
+        reviewsAsc: byNumberAsc('reviews_count'),
+        reviewsDesc: byNumberDesc('reviews_count'),
+
+        enrollmentsAsc: byNumberAsc('enrollments_count'),
+        enrollmentsDesc: byNumberDesc('enrollments_count'),
+
+        activityAsc: byNumberAsc('activity'),
+        activityDesc: byNumberDesc('activity'),
+
+        isNewAsc: byNumberAsc('is_new'),
+        isNewDesc: byNumberDesc('is_new'),
+
+        isHitAsc: byNumberAsc('is_hit'),
+        isHitDesc: byNumberDesc('is_hit'),
+
+        isSaleAsc: byNumberAsc('is_sale'),
+        isSaleDesc: byNumberDesc('is_sale'),
+
+        publishedAtAsc: (a, b) => safeDate(a.published_at) - safeDate(b.published_at)
+            || safeNumber(a.id) - safeNumber(b.id),
+
+        publishedAtDesc: (a, b) => safeDate(b.published_at) - safeDate(a.published_at)
+            || safeNumber(b.id) - safeNumber(a.id),
+
+        createdAtAsc: (a, b) => safeDate(a.created_at) - safeDate(b.created_at)
+            || safeNumber(a.id) - safeNumber(b.id),
+
+        createdAtDesc: (a, b) => safeDate(b.created_at) - safeDate(a.created_at)
+            || safeNumber(b.id) - safeNumber(a.id),
+
+        updatedAtAsc: (a, b) => safeDate(a.updated_at) - safeDate(b.updated_at)
+            || safeNumber(a.id) - safeNumber(b.id),
+
+        updatedAtDesc: (a, b) => safeDate(b.updated_at) - safeDate(a.updated_at)
+            || safeNumber(b.id) - safeNumber(a.id),
     }
 
-    if ([
-        'likes',
-        'likes_count',
-        'students_count',
-        'popularity',
-        'rating_count',
-        'rating_avg',
-        'difficulty',
-        'duration',
-        'modules_count',
-        'lessons_count',
-        'tracks_count',
-        'hashtags_count',
-        'images_count',
-        'prices_count',
-        'reviews_count'
-    ].includes(sortParam.value)) {
-        return list.sort((a, b) => (b[sortParam.value] ?? 0) - (a[sortParam.value] ?? 0))
-    }
-
-    return list
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
 }
 
 // Отфильтрованные курсы

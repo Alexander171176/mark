@@ -201,6 +201,14 @@ const sortInstructorProfiles = (instructorProfiles) => {
         case 'slugDesc':
             return items.sort((a, b) => safeString(b.slug).localeCompare(safeString(a.slug)));
 
+        case 'ratingAvgAsc':
+            return items.sort((a, b) => safeNumber(a.rating?.avg ?? a.rating_avg)
+                - safeNumber(b.rating?.avg ?? b.rating_avg));
+
+        case 'ratingAvgDesc':
+            return items.sort((a, b) => safeNumber(b.rating?.avg ?? b.rating_avg)
+                - safeNumber(a.rating?.avg ?? a.rating_avg));
+
         case 'ratingCountAsc':
             return items.sort((a, b) => safeNumber(a.rating?.count ?? a.rating_count)
                 - safeNumber(b.rating?.count ?? b.rating_count));
@@ -254,6 +262,20 @@ const sortInstructorProfiles = (instructorProfiles) => {
 
         case 'inactive':
             return items.filter(i => !i.activity);
+
+        case 'activityAsc':
+            return items.sort((a, b) => Number(a.activity) - Number(b.activity));
+
+        case 'activityDesc':
+            return items.sort((a, b) => Number(b.activity) - Number(a.activity));
+
+        case 'coursesAsc':
+            return items.sort((a, b) => safeNumber(a.courses_count)
+                - safeNumber(b.courses_count));
+
+        case 'coursesDesc':
+            return items.sort((a, b) => safeNumber(b.courses_count)
+                - safeNumber(a.courses_count));
 
         default:
             return items.sort((a, b) => safeNumber(a.sort) - safeNumber(b.sort));
@@ -337,7 +359,6 @@ const selectedInstructorProfiles = ref([]);
 /**
  * Логика выбора всех для массовых действий.
  */
-// Выбрать/снять всех на текущей странице
 const toggleAll = ({ ids, checked }) => {
     if (checked) {
         // Выбрать всех

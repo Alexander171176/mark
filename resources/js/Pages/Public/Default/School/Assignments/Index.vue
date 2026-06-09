@@ -119,7 +119,7 @@ const perPage = computed(() => {
 })
 
 /** Сортировка */
-const DEFAULT_SORT = 'sort_asc'
+const DEFAULT_SORT = 'sortAsc'
 
 const q = ref(String(props.filters?.q ?? ''))
 const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
@@ -140,23 +140,39 @@ watch(
 
 /** Опции сортировки */
 const assignmentSortOptions = [
-    { value: 'sort_asc', label: t('sortDefault') },
-    { value: 'sort_desc', label: t('sortReverse') },
-    { value: 'title_asc', label: t('sortNameAsc') },
-    { value: 'title_desc', label: t('sortNameDesc') },
-    { value: 'score_desc', label: t('sortPopularFirst') },
-    { value: 'score_asc', label: t('sortUnpopularFirst') },
-    { value: 'due_desc', label: t('sortNewestFirst') },
-    { value: 'due_asc', label: t('sortOldestFirst') },
-    { value: 'date_desc', label: t('sortNewestFirst') },
-    { value: 'date_asc', label: t('sortOldestFirst') },
+    { value: 'idDesc', label: t('idDesc') },
+    { value: 'idAsc', label: t('idAsc') },
+
+    { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
+    { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+
+    { value: 'titleAsc', label: `${t('title')} A→Z` },
+    { value: 'titleDesc', label: `${t('title')} Z→A` },
+
+    { value: 'maxScoreDesc', label: `${t('maxScore')} 9→0` },
+    { value: 'maxScoreAsc', label: `${t('maxScore')} 0→9` },
+
+    { value: 'submissionsDesc', label: `${t('submissions')} 9→0` },
+    { value: 'submissionsAsc', label: `${t('submissions')} 0→9` },
+
+    { value: 'imagesDesc', label: `${t('images')} 9→0` },
+    { value: 'imagesAsc', label: `${t('images')} 0→9` },
+
+    { value: 'dueAtDesc', label: `${t('dueAt')} ↓` },
+    { value: 'dueAtAsc', label: `${t('dueAt')} ↑` },
+
+    { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
+    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
+
+    { value: 'dateDesc', label: t('sortNewestFirst') },
+    { value: 'dateAsc', label: t('sortOldestFirst') },
 ]
 
 const onSortChange = (value) => {
     sort.value = value || DEFAULT_SORT
 
     router.get(
-        route('public.assignments.index'),
+        route('public.schoolAssignments.index'),
         {
             q: String(q.value ?? '').trim() || undefined,
             sort: sort.value || undefined,
@@ -172,7 +188,7 @@ const submitSearch = () => {
     const searchValue = String(q.value ?? '').trim()
 
     router.get(
-        route('public.assignments.index'),
+        route('public.schoolAssignments.index'),
         {
             q: searchValue || undefined,
             sort: sort.value || undefined,
@@ -188,7 +204,7 @@ const resetSearch = () => {
     sort.value = DEFAULT_SORT
 
     router.get(
-        route('public.assignments.index'),
+        route('public.schoolAssignments.index'),
         {
             per_page: perPage.value,
             sort: sort.value,
@@ -206,7 +222,7 @@ const goToPage = (page) => {
     const safe = Math.max(1, Math.min(p, lastPage.value))
 
     router.get(
-        route('public.assignments.index'),
+        route('public.schoolAssignments.index'),
         {
             q: q.value || undefined,
             sort: sort.value || undefined,
@@ -285,6 +301,34 @@ const goNext = () => {
                                         class="breadcrumb-link hover:underline"
                                     >
                                         {{ t('home') }}
+                                    </Link>
+                                </li>
+                                <li><span class="mx-2 breadcrumbs">/</span></li>
+                                <li>
+                                    <Link :href="route('public.schoolTracks.index')"
+                                          class="breadcrumb-link hover:underline">
+                                        {{ t('tracks') }}
+                                    </Link>
+                                </li>
+                                <li><span class="mx-2 breadcrumbs">/</span></li>
+                                <li>
+                                    <Link :href="route('public.schoolCourses.index')"
+                                          class="breadcrumb-link hover:underline">
+                                        {{ t('courses') }}
+                                    </Link>
+                                </li>
+                                <li><span class="mx-2 breadcrumbs">/</span></li>
+                                <li>
+                                    <Link :href="route('public.schoolModules.index')"
+                                          class="breadcrumb-link hover:underline">
+                                        {{ t('modules') }}
+                                    </Link>
+                                </li>
+                                <li><span class="mx-2 breadcrumbs">/</span></li>
+                                <li>
+                                    <Link :href="route('public.schoolLessons.index')"
+                                          class="breadcrumb-link hover:underline">
+                                        {{ t('lessons') }}
                                     </Link>
                                 </li>
                                 <li><span class="mx-2 breadcrumbs">/</span></li>

@@ -20,7 +20,7 @@ const gridClass = computed(() => {
 
 const lessonLink = (lesson) => {
     return lesson?.slug
-        ? route('public.lessons.show', { slug: lesson.slug })
+        ? route('public.schoolLessons.show', { slug: lesson.slug })
         : '#'
 }
 
@@ -215,8 +215,8 @@ const getLessonAccessTypeLabel = (accessType) => {
                         :views="lesson.views || 0"
                         :likes-count="lesson.likes_count || lesson.likes || 0"
                         :already-liked="lesson.already_liked || false"
-                        route-name="lessons.like"
-                        :route-params="{ lesson: lesson.id }"
+                        route-name="public.schoolLessons.like"
+                        :route-params="lesson.id"
                         :show-likes-button="true"
                         compact
                     />

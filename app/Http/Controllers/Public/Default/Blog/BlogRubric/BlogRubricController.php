@@ -7,7 +7,7 @@ use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleResource;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogRubric\BlogRubric;
-use App\Traits\Public\BuildsRubricTreeTrait;
+use App\Traits\Public\Blog\BuildsRubricTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
@@ -29,14 +29,14 @@ class BlogRubricController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicBlogRubricsPerPage', 20)
+            (int) config('site_settings.publicBlogRubricsPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicBlogRubricsDefaultSort', 'sort')
+            (string) config('site_settings.publicBlogRubricsDefaultSort', 'sortAsc')
         );
 
         $view = $this->resolveView(
@@ -126,7 +126,7 @@ class BlogRubricController extends Controller
 
         $articlesSort = (string) $request->query(
             'sort_articles',
-            config('site_settings.publicBlogArticlesDefaultSort', 'sort')
+            config('site_settings.publicBlogArticlesDefaultSort', 'sortAsc')
         );
 
         $articles = BlogArticle::query()

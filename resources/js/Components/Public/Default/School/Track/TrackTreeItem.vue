@@ -84,7 +84,8 @@ onMounted(() => {
                     class="flex min-w-0 flex-1 items-center justify-start gap-1 text-left"
                 >
                     <svg
-                        class="h-3.5 w-3.5 shrink-0 text-gray-500 dark:text-gray-400 transition-transform duration-200"
+                        class="h-3.5 w-3.5 shrink-0 text-gray-500 dark:text-gray-400
+                               transition-transform duration-200"
                         :class="{ 'rotate-90': isOpen }"
                         viewBox="0 0 320 512"
                         fill="currentColor"
@@ -99,7 +100,7 @@ onMounted(() => {
 
                 <Link
                     v-else
-                    :href="route('public.tracks.show', { slug: item.slug })"
+                    :href="route('public.schoolTracks.show', { slug: item.slug })"
                     class="min-w-0 flex-1"
                 >
                     <span class="truncate text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -110,7 +111,7 @@ onMounted(() => {
 
             <Link
                 v-if="hasChildren"
-                :href="route('public.tracks.show', { slug: item.slug })"
+                :href="route('public.schoolTracks.show', { slug: item.slug })"
                 class="mr-2 shrink-0 rounded-sm px-2 py-1 text-[10px]
                        font-semibold text-indigo-700 dark:text-indigo-300
                        hover:bg-indigo-500 hover:text-slate-100

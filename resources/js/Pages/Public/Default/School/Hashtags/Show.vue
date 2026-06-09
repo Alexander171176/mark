@@ -82,34 +82,45 @@ const perPageCourses = computed(() => {
 const qCourses = ref(String(props.filters?.q_courses ?? ''))
 
 /** Сортировка */
-const DEFAULT_SORT = 'date_desc'
+const DEFAULT_SORT = 'sortAsc'
 const sortCourses = ref(String(props.filters?.sort_courses ?? DEFAULT_SORT))
 
 const courseSortOptions = [
-    { value: 'sort_asc', label: t('sortDefault') },
-    { value: 'sort_desc', label: t('sortReverse') },
-    { value: 'title_asc', label: t('sortNameAsc') },
-    { value: 'title_desc', label: t('sortNameDesc') },
-    { value: 'views_desc', label: t('sortPopularFirst') },
-    { value: 'views_asc', label: t('sortUnpopularFirst') },
-    { value: 'likes_desc', label: t('sortLikesDesc') },
-    { value: 'likes_asc', label: t('sortLikesAsc') },
-    { value: 'rating_desc', label: t('ratingDesc') },
-    { value: 'rating_asc', label: t('ratingAsc') },
-    { value: 'popularity_desc', label: t('sortPopularFirst') },
-    { value: 'popularity_asc', label: t('sortUnpopularFirst') },
-    { value: 'students_desc', label: t('sortMostStudents') },
-    { value: 'students_asc', label: t('sortLeastStudents') },
-    { value: 'duration_desc', label: t('sortLongest') },
-    { value: 'duration_asc', label: t('sortShortest') },
-    { value: 'date_desc', label: t('sortNewestFirst') },
-    { value: 'date_asc', label: t('sortOldestFirst') },
+    { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
+    { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+
+    { value: 'titleAsc', label: `${t('title')} A→Z` },
+    { value: 'titleDesc', label: `${t('title')} Z→A` },
+
+    { value: 'viewsDesc', label: `${t('views')} 9→0` },
+    { value: 'viewsAsc', label: `${t('views')} 0→9` },
+
+    { value: 'likesDesc', label: `${t('likes')} 9→0` },
+    { value: 'likesAsc', label: `${t('likes')} 0→9` },
+
+    { value: 'ratingAvgDesc', label: `${t('rating')} 9→0` },
+    { value: 'ratingAvgAsc', label: `${t('rating')} 0→9` },
+
+    { value: 'ratingCountDesc', label: `${t('rating')} count 9→0` },
+    { value: 'ratingCountAsc', label: `${t('rating')} count 0→9` },
+
+    { value: 'popularityDesc', label: `${t('sortPopularFirst')}` },
+    { value: 'popularityAsc', label: `${t('sortUnpopularFirst')}` },
+
+    { value: 'studentsCountDesc', label: `${t('students')} 9→0` },
+    { value: 'studentsCountAsc', label: `${t('students')} 0→9` },
+
+    { value: 'durationDesc', label: `${t('duration')} 9→0` },
+    { value: 'durationAsc', label: `${t('duration')} 0→9` },
+
+    { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
+    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
 ]
 
 /** Поиск */
 const submitCourseSearch = () => {
     router.get(
-        route('public.hashtags.show', props.hashtag.slug),
+        route('public.schoolHashtags.show', { slug: props.hashtag.slug }),
         {
             q_courses: qCourses.value || undefined,
             sort_courses: sortCourses.value || undefined,
@@ -125,7 +136,7 @@ const resetCourseSearch = () => {
     sortCourses.value = DEFAULT_SORT
 
     router.get(
-        route('public.hashtags.show', props.hashtag.slug),
+        route('public.schoolHashtags.show', { slug: props.hashtag.slug }),
         {
             per_page_courses: perPageCourses.value,
             sort_courses: sortCourses.value,
@@ -143,7 +154,7 @@ const goToPage = (page) => {
     const safe = Math.max(1, Math.min(p, lastPage.value))
 
     router.get(
-        route('public.hashtags.show', props.hashtag.slug),
+        route('public.schoolHashtags.show', { slug: props.hashtag.slug }),
         {
             q_courses: qCourses.value || undefined,
             sort_courses: sortCourses.value || undefined,
@@ -253,19 +264,22 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                         <nav class="text-sm mb-3" aria-label="Breadcrumb">
                             <ol class="flex items-center font-semibold">
                                 <li>
-                                    <Link :href="route('home')" class="breadcrumb-link hover:underline">
+                                    <Link :href="route('home')"
+                                          class="breadcrumb-link hover:underline">
                                         {{ t('home') }}
                                     </Link>
                                 </li>
                                 <li><span class="mx-2 breadcrumbs">/</span></li>
                                 <li>
-                                    <Link :href="route('public.tracks.index')" class="breadcrumb-link hover:underline">
+                                    <Link :href="route('public.schoolTracks.index')"
+                                          class="breadcrumb-link hover:underline">
                                         {{ t('tracks') }}
                                     </Link>
                                 </li>
                                 <li><span class="mx-2 breadcrumbs">/</span></li>
                                 <li>
-                                    <Link :href="route('public.courses.index')" class="breadcrumb-link hover:underline">
+                                    <Link :href="route('public.schoolCourses.index')"
+                                          class="breadcrumb-link hover:underline">
                                         {{ t('courses') }}
                                     </Link>
                                 </li>

@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseResource;
 use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagResource;
 use App\Models\Admin\School\SchoolHashtag\SchoolHashtag;
-use App\Traits\Public\BuildsTrackTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
+use App\Traits\Public\School\BuildsTrackTreeTrait;
 use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,14 +28,14 @@ class SchoolHashtagController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolHashtagsPerPage', 20)
+            (int) config('site_settings.publicSchoolHashtagsPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicSchoolHashtagsDefaultSort', 'id_desc')
+            (string) config('site_settings.publicSchoolHashtagsDefaultSort', 'idDesc')
         );
 
         $view = $this->resolveView(
@@ -59,7 +59,7 @@ class SchoolHashtagController extends Controller
                 'modules',
                 'lessons',
             ])
-            ->sortByParam($sort)
+            ->sortByParam($sort, $locale)
             ->paginate($perPage)
             ->withQueryString();
 
@@ -122,7 +122,7 @@ class SchoolHashtagController extends Controller
 
         $coursesSort = (string) $request->query(
             'sort_courses',
-            config('site_settings.publicSchoolCoursesDefaultSort', 'sort_asc')
+            config('site_settings.publicSchoolCoursesDefaultSort', 'sortAsc')
         );
 
         $courses = $hashtag->courses()
@@ -152,7 +152,7 @@ class SchoolHashtagController extends Controller
                 'reviews',
                 'likes',
             ])
-            ->sortByParam($coursesSort)
+            ->sortByParam($coursesSort, $locale)
             ->paginate($perPageCourses, ['*'], 'page_courses')
             ->withQueryString();
 

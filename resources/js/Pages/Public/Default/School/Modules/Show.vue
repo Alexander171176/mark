@@ -36,6 +36,8 @@ const { t } = useI18n()
 const page = usePage()
 
 const props = defineProps({
+    lessons: { type: Array, default: () => [] },
+
     title: String,
     canLogin: Boolean,
     canRegister: Boolean,
@@ -69,7 +71,7 @@ const firstModuleImage = computed(() => {
 
 const hasModuleImages = computed(() => moduleImages.value.length > 0)
 
-const lessonsList = computed(() => normalizeList(moduleData.value?.lessons))
+const lessonsList = computed(() => normalizeList(props.lessons))
 const parentCourse = computed(() => moduleData.value?.course || null)
 
 const { siteSettings } = page.props
@@ -167,7 +169,7 @@ const lessonsCount = computed(() => {
 
                                     <li>
                                         <Link
-                                            :href="route('public.courses.index')"
+                                            :href="route('public.schoolCourses.index')"
                                             class="breadcrumb-link hover:underline"
                                         >
                                             {{ t('courses') }}
@@ -178,7 +180,8 @@ const lessonsCount = computed(() => {
 
                                     <li v-if="parentCourse?.slug">
                                         <Link
-                                            :href="route('public.courses.show', { slug: parentCourse.slug })"
+                                            :href="route('public.schoolCourses.show',
+                                            { slug: parentCourse.slug })"
                                             class="breadcrumb-link hover:underline"
                                         >
                                             {{ parentCourse.title }}
@@ -314,10 +317,10 @@ const lessonsCount = computed(() => {
                             <!-- Like -->
                             <div class="my-1 flex items-center justify-center">
                                 <LikeButtonEntity
-                                    :likes-count="moduleData.likes_count || 0"
+                                    :likes-count="moduleData.likes_count || moduleData.likes || 0"
                                     :already-liked="moduleData.already_liked || false"
-                                    route-name="modules.like"
-                                    :route-params="{ module: moduleData.id }"
+                                    route-name="public.schoolModules.like"
+                                    :route-params="moduleData.id"
                                     :title="t('like')"
                                 />
                             </div>
@@ -339,7 +342,8 @@ const lessonsCount = computed(() => {
                                 </span>
 
                                 <Link
-                                    :href="route('public.courses.show', { slug: parentCourse.slug })"
+                                    :href="route('public.schoolCourses.show',
+                                    { slug: parentCourse.slug })"
                                     class="font-semibold text-indigo-700 hover:underline dark:text-indigo-300"
                                 >
                                     {{ parentCourse.title }}

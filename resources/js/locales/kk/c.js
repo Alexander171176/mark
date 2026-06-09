@@ -11,6 +11,7 @@ export default {
     charts: 'Графиктер',
     checkInstructor: 'Тексеру (мұғалім)',
     checkbox: 'Құсбелгі',
+    children: 'Балалар',
     city: 'Қала',
     class: 'Tailwind CSS кластары',
     clearCache: 'Кэшті тазалау',

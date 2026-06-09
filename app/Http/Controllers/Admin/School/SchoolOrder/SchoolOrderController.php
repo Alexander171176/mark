@@ -47,8 +47,8 @@ class SchoolOrderController extends Controller
         $isPaidParam = $request->query('is_paid');
         $search = trim((string) $request->query('search', ''));
 
-        $adminSchoolOrdersPerPage = (int) config('site_settings.adminSchoolOrdersPerPage', 10);
-        $adminSchoolOrdersDefaultSort = (string) config('site_settings.adminSchoolOrdersDefaultSort', 'date_desc');
+        $adminSchoolOrdersPerPage = (int) config('site_settings.adminSchoolOrdersPerPage', 6);
+        $adminSchoolOrdersDefaultSort = (string) config('site_settings.adminSchoolOrdersDefaultSort', 'idDesc');
 
         try {
             $orders = SchoolOrder::query()

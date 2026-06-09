@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Public\Default\School\SchoolAssignment;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\SchoolAssignment\SchoolAssignmentResource;
 use App\Models\Admin\School\SchoolAssignment\SchoolAssignment;
-use App\Traits\Public\BuildsTrackTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
+use App\Traits\Public\School\BuildsTrackTreeTrait;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,14 +25,14 @@ class SchoolAssignmentController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolAssignmentsPerPage', 20)
+            (int) config('site_settings.publicSchoolAssignmentsPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicSchoolAssignmentsDefaultSort', 'id_desc')
+            (string) config('site_settings.publicSchoolAssignmentsDefaultSort', 'idDesc')
         );
 
         $view = $this->resolveView(
@@ -82,7 +82,7 @@ class SchoolAssignmentController extends Controller
                 'submissions',
                 'images',
             ])
-            ->sortByParam($sort)
+            ->sortByParam($sort, $locale)
             ->paginate($perPage)
             ->withQueryString();
 

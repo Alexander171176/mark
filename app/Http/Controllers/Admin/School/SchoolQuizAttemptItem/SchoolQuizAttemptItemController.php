@@ -46,7 +46,7 @@ class SchoolQuizAttemptItemController extends Controller
         $questionId = $request->query('school_quiz_question_id');
         $isCorrect = $request->query('is_correct');
 
-        $adminSchoolQuizAttemptItemsPerPage = (int) config('site_settings.adminSchoolQuizAttemptItemsPerPage', 20);
+        $adminSchoolQuizAttemptItemsPerPage = (int) config('site_settings.adminSchoolQuizAttemptItemsPerPage', 6);
         $adminSchoolQuizAttemptItemsDefaultSort = (string) config('site_settings.adminSchoolQuizAttemptItemsDefaultSort', 'idDesc');
 
         try {

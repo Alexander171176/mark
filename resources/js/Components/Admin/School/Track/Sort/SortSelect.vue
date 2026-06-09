@@ -36,25 +36,48 @@ const updateSort = (event) => {
 
             <option value="sortAsc">{{ t('sortNumber') }} ↑</option>
             <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
-
             <option disabled>─────────────────</option>
 
             <option value="nameAsc">{{ t('title') }} ↑</option>
             <option value="nameDesc">{{ t('title') }} ↓</option>
-
             <option disabled>─────────────────</option>
 
-            <option value="viewsAsc">{{ t('views') }} ↑</option>
-            <option value="viewsDesc">{{ t('views') }} ↓</option>
-
-            <option value="courses_count">{{ t('courses') }}</option>
-            <option value="children_count">{{ t('children') }}</option>
-            <option value="likes_count">{{ t('likes') }}</option>
-
+            <option value="slugAsc">Slug A→Z</option>
+            <option value="slugDesc">Slug Z→A</option>
             <option disabled>─────────────────</option>
 
+            <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
+            <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
             <option value="activity">{{ t('active') }}</option>
             <option value="inactive">{{ t('inactive') }}</option>
+            <option disabled>─────────────────</option>
+
+            <option value="viewsDesc">{{ t('views') }} 9→0</option>
+            <option value="viewsAsc">{{ t('views') }} 0→9</option>
+
+            <option value="likesDesc">{{ t('likes') }} 9→0</option>
+            <option value="likesAsc">{{ t('likes') }} 0→9</option>
+            <option disabled>─────────────────</option>
+
+            <option value="parentAsc">{{ t('parentCategory') }} 0→9</option>
+            <option value="parentDesc">{{ t('parentCategory') }} 9→0</option>
+
+            <option value="childrenDesc">{{ t('children') }} 9→0</option>
+            <option value="childrenAsc">{{ t('children') }} 0→9</option>
+            <option disabled>─────────────────</option>
+
+            <option value="coursesDesc">{{ t('courses') }} 9→0</option>
+            <option value="coursesAsc">{{ t('courses') }} 0→9</option>
+
+            <option value="imagesDesc">{{ t('images') }} 9→0</option>
+            <option value="imagesAsc">{{ t('images') }} 0→9</option>
+            <option disabled>─────────────────</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
             <option disabled>─────────────────</option>
 
         </select>

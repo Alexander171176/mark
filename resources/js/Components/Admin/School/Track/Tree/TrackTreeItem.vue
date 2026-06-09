@@ -123,7 +123,10 @@ const trackName = (track) => {
 
                     <span v-else class="w-4 h-4 inline-block flex-shrink-0"></span>
 
-                    <span class="w-8 font-semibold text-sm text-amber-600 dark:text-amber-200 mr-1 flex-shrink-0">
+                    <span
+                        class="w-8 font-semibold text-sm
+                               text-amber-600 dark:text-amber-200 mr-1 flex-shrink-0"
+                        :title="`ID: ${track.id} / sort: ${track.sort}`">
                         {{ track.id }}
                     </span>
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\School\SchoolAssignment;
 
-use App\Http\Controllers\Admin\School\Base\BaseSchoolAdminController;
+use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolAssignment\SchoolAssignmentRequest;
 use App\Http\Resources\Admin\School\SchoolAssignment\SchoolAssignmentResource;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
@@ -64,44 +64,15 @@ class SchoolAssignmentController extends BaseSchoolAdminController
         'instructions',
     ];
 
-    /** Расширение сортировки для заданий. */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'published_at' => 'published_at_desc',
-            'due_at' => 'due_at_desc',
-
-            'status' => 'status_asc',
-            'visibility' => 'visibility_asc',
-
-            'attempts_limit' => 'attempts_limit_desc',
-            'max_score' => 'max_score_desc',
-            'images_count' => 'images_count_desc',
-            'submissions_count' => 'submissions_count_desc',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-
-            'left' => 'left',
-            'noLeft' => 'no_left',
-
-            'main' => 'main',
-            'noMain' => 'no_main',
-
-            'right' => 'right',
-            'noRight' => 'no_right',
-        ];
-    }
-
     /** Список заданий */
     public function index(Request $request): Response
     {
         // Текущая локаль
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolAssignmentsPerPage = (int) config('site_settings.adminSchoolAssignmentsPerPage', 10);
+        $adminSchoolAssignmentsPerPage = (int) config('site_settings.adminSchoolAssignmentsPerPage', 6);
         $adminSchoolAssignmentsDefaultSort = (string) config('site_settings.adminSchoolAssignmentsDefaultSort', 'idDesc');
-        $sort = $this->normalizeSortParam($adminSchoolAssignmentsDefaultSort);
+        $sort = (string) $request->query('sort', $adminSchoolAssignmentsDefaultSort);
 
         try {
             $assignments = $this->baseQuery()
@@ -118,31 +89,7 @@ class SchoolAssignmentController extends BaseSchoolAdminController
                     'images',
                     'submissions',
                 ])
-                ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
-                ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
-
-                ->when($sort === 'left', fn ($query) => $query->where('left', true))
-                ->when($sort === 'no_left', fn ($query) => $query->where('left', false))
-                ->when($sort === 'main', fn ($query) => $query->where('main', true))
-                ->when($sort === 'no_main', fn ($query) => $query->where('main', false))
-                ->when($sort === 'right', fn ($query) => $query->where('right', true))
-                ->when($sort === 'no_right', fn ($query) => $query->where('right', false))
-
-                ->when($sort === 'published_at_desc', fn ($query) => $query->orderByDesc('published_at')->orderByDesc('id'))
-                ->when($sort === 'due_at_desc', fn ($query) => $query->orderByDesc('due_at')->orderByDesc('id'))
-
-                ->when($sort === 'status_asc', fn ($query) => $query->orderBy('status')->orderByDesc('id'))
-                ->when($sort === 'visibility_asc', fn ($query) => $query->orderBy('visibility')->orderByDesc('id'))
-
-                ->when($sort === 'attempts_limit_desc', fn ($query) => $query->orderByDesc('attempts_limit')->orderByDesc('id'))
-                ->when($sort === 'max_score_desc', fn ($query) => $query->orderByDesc('max_score')->orderByDesc('id'))
-                ->when($sort === 'images_count_desc', fn ($query) => $query->orderByDesc('images_count')->orderByDesc('id'))
-                ->when($sort === 'submissions_count_desc', fn ($query) => $query->orderByDesc('submissions_count')->orderByDesc('id'))
-
-                ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
-                ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
-                ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
-                ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
+                ->sortByParam($sort, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/School/Assignments/Index', [

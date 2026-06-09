@@ -269,14 +269,53 @@ class BlogRubric extends Model
         $locale = $locale ?: app()->getLocale();
 
         return match ($sort) {
-            'sort_asc'   => $query->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sort_desc'  => $query->orderBy('sort', 'desc')->orderByDesc('id'),
-            'date_asc'   => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'date_desc'  => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
-            'views_asc'  => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'views_desc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+            'idAsc' => $query->orderBy('id', 'asc'),
+            'idDesc' => $query->orderBy('id', 'desc'),
 
-            'title_asc' => $query
+            'sortAsc' => $query->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $query->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'parentAsc' => $query->orderBy('parent_id', 'asc')->orderByDesc('id'),
+            'parentDesc' => $query->orderBy('parent_id', 'desc')->orderByDesc('id'),
+
+            'levelAsc' => $query->orderBy('level', 'asc')->orderByDesc('id'),
+            'levelDesc' => $query->orderBy('level', 'desc')->orderByDesc('id'),
+
+            'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
+            'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
+
+            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+
+            'articlesAsc' => $query->withCount('articles')->orderBy('articles_count', 'asc')->orderByDesc('id'),
+            'articlesDesc' => $query->withCount('articles')->orderBy('articles_count', 'desc')->orderByDesc('id'),
+
+            'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
+            'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+
+            'inMenuAsc' => $query->orderBy('in_menu', 'asc')->orderByDesc('id'),
+            'inMenuDesc' => $query->orderBy('in_menu', 'desc')->orderByDesc('id'),
+            'inMenu' => $query->where('in_menu', true)->orderByDesc('id'),
+            'notInMenu' => $query->where('in_menu', false)->orderByDesc('id'),
+
+            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $query->where('activity', true)->orderByDesc('id'),
+            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+
+            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
+            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
+            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
+            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
+            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+
+            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            'titleAsc' => $query
                 ->leftJoin('blog_rubric_translations as brt_sort', function ($join) use ($locale) {
                     $join->on('brt_sort.rubric_id', '=', 'blog_rubrics.id')
                         ->where('brt_sort.locale', '=', $locale);
@@ -285,7 +324,7 @@ class BlogRubric extends Model
                 ->orderByDesc('blog_rubrics.id')
                 ->select('blog_rubrics.*'),
 
-            'title_desc' => $query
+            'titleDesc' => $query
                 ->leftJoin('blog_rubric_translations as brt_sort', function ($join) use ($locale) {
                     $join->on('brt_sort.rubric_id', '=', 'blog_rubrics.id')
                         ->where('brt_sort.locale', '=', $locale);

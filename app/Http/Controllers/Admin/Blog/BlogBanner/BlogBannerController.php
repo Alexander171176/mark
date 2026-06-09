@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Blog\BlogBanner;
 
-use App\Http\Controllers\Admin\Blog\Base\BaseBlogAdminController;
+use App\Http\Controllers\Admin\Blog\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogBanner\BlogBannerRequest;
 use App\Http\Resources\Admin\Blog\BlogBanner\BlogBannerResource;
 use App\Models\Admin\Blog\BlogBanner\BlogBanner;
@@ -51,42 +51,6 @@ class BlogBannerController extends BaseBlogAdminController
         'short',
     ];
 
-    /** Дополнительные варианты сортировки баннеров */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'ownerNameAsc' => 'owner_name_asc',
-            'ownerNameDesc' => 'owner_name_desc',
-
-            'ownerEmailAsc' => 'owner_email_asc',
-            'ownerEmailDesc' => 'owner_email_desc',
-
-            'locale' => 'locale_asc',
-
-            'imagesAsc' => 'images_count_asc',
-            'imagesDesc' => 'images_count_desc',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-
-            'left' => 'left',
-            'noLeft' => 'no_left',
-
-            'main' => 'main',
-            'noMain' => 'no_main',
-
-            'right' => 'right',
-            'noRight' => 'no_right',
-
-            'moderation_pending' => 'moderation_pending',
-            'moderation_approved' => 'moderation_approved',
-            'moderation_rejected' => 'moderation_rejected',
-
-            'moderation_statusAsc' => 'moderation_status_asc',
-            'moderation_statusDesc' => 'moderation_status_desc',
-        ];
-    }
-
     /** Список баннеров */
     public function index(Request $request): Response
     {
@@ -96,7 +60,6 @@ class BlogBannerController extends BaseBlogAdminController
         $adminBlogBannersDefaultSort = (string) config('site_settings.adminBlogBannersDefaultSort', 'idDesc');
 
         $sortParam = (string) $request->query('sort', $adminBlogBannersDefaultSort);
-        $normalizedSort = $this->normalizeSortParam($sortParam);
 
         try {
             $banners = $this->baseQuery()
@@ -107,7 +70,7 @@ class BlogBannerController extends BaseBlogAdminController
                     'images',
                 ])
                 ->withCount(['images'])
-                ->sortByParam($normalizedSort, $currentLocale)
+                ->sortByParam($sortParam, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/Blog/BlogBanners/Index', [

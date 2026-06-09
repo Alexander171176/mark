@@ -7,7 +7,7 @@ use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleResource;
 use App\Http\Resources\Admin\Blog\BlogTag\BlogTagResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
-use App\Traits\Public\BuildsRubricTreeTrait;
+use App\Traits\Public\Blog\BuildsRubricTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
@@ -36,7 +36,7 @@ class BlogTagController extends Controller
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicBlogTagsDefaultSort', 'name_asc')
+            (string) config('site_settings.publicBlogTagsDefaultSort', 'nameAsc')
         );
 
         $view = $this->resolveView(
@@ -115,7 +115,7 @@ class BlogTagController extends Controller
 
         $articlesSort = (string) $request->query(
             'sort_articles',
-            config('site_settings.publicBlogArticlesDefaultSort', 'sort')
+            config('site_settings.publicBlogArticlesDefaultSort', 'sortAsc')
         );
 
         $articles = BlogArticle::query()

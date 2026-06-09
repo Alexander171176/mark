@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseResource;
 use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackResource;
 use App\Models\Admin\School\SchoolTrack\SchoolTrack;
-use App\Traits\Public\BuildsTrackTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
+use App\Traits\Public\School\BuildsTrackTreeTrait;
 use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,14 +29,17 @@ class SchoolTrackController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolTracksPerPage', 20)
+            (int) config('site_settings.publicSchoolTracksPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicSchoolTracksDefaultSort', 'sort_asc')
+            (string) config(
+                'site_settings.publicSchoolTracksDefaultSort',
+                'sortAsc'
+            )
         );
 
         $view = $this->resolveView(
@@ -64,7 +67,7 @@ class SchoolTrackController extends Controller
                 'likes',
                 'images',
             ])
-            ->sortByParam($sort)
+            ->sortByParam($sort, $locale)
             ->paginate($perPage)
             ->withQueryString();
 
@@ -165,14 +168,14 @@ class SchoolTrackController extends Controller
 
         $perPageCourses = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolCoursesPerPage', 20),
+            (int) config('site_settings.publicSchoolCoursesPerPage', 6),
             3,
             60
         );
 
         $coursesSort = (string) $request->query(
             'sort_courses',
-            config('site_settings.publicSchoolCoursesDefaultSort', 'sort_asc')
+            config('site_settings.publicSchoolCoursesDefaultSort', 'sortAsc')
         );
 
         $courses = $track->courses()
@@ -202,7 +205,7 @@ class SchoolTrackController extends Controller
                 'reviews',
                 'likes',
             ])
-            ->sortByParam($coursesSort)
+            ->sortByParam($coursesSort, $locale)
             ->paginate($perPageCourses, ['*'], 'page_courses')
             ->withQueryString();
 

@@ -148,12 +148,23 @@ const moderationBadge = (status) => {
 
                     <!-- Контент карточки -->
                     <div class="flex flex-col flex-1 px-3 py-2 space-y-2">
+
                         <!-- Пользователь -->
                         <div class="flex flex-col items-center justify-center">
-                            <div class="font-semibold text-blue-700 dark:text-blue-300">
-                                {{ comment.user?.name }}
+                            <div
+                                class="font-semibold text-blue-700 dark:text-blue-300
+                                       text-center break-words"
+                            >
+                                {{ comment.user?.name || '—' }}
                             </div>
-                            <div class="text-xs text-slate-500 dark:text-slate-300">
+                            <div
+                                v-if="comment.user?.email"
+                                class="text-[10px] text-gray-500 dark:text-gray-300
+                                       break-all text-center font-semibold"
+                            >
+                                {{ comment.user.email }}
+                            </div>
+                            <div class="text-xs text-slate-700 dark:text-slate-300 font-semibold">
                                 ID: {{ comment.user_id }}
                             </div>
                         </div>

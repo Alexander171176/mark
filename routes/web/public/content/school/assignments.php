@@ -1,14 +1,15 @@
 <?php
-// Инструкторы обучения
+// Задания обучения
 
 use Illuminate\Support\Facades\Route;
 
 $siteLayout = config('site_settings.siteLayout', 'Default');
 
-$publicAssignmentController = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\AssignmentController";
+$publicAssignmentController =
+    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolAssignment\\SchoolAssignmentController";
 
 Route::get('/school/assignments', [$publicAssignmentController, 'index'])
-    ->name('public.assignments.index');
+    ->name('public.schoolAssignments.index');
 
 Route::get('/school/assignments/{slug}', [$publicAssignmentController, 'show'])
-    ->name('public.assignments.show');
+    ->name('public.schoolAssignments.show');

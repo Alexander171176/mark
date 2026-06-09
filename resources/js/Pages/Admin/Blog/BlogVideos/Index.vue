@@ -300,22 +300,6 @@ const currentPage = ref(1)
 const sortVideos = (videos) => {
     const list = (videos || []).slice()
 
-    if (sortParam.value === 'ownerNameAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
-    }
-
-    if (sortParam.value === 'ownerNameDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
-    }
-
-    if (sortParam.value === 'ownerEmailAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
-    }
-
-    if (sortParam.value === 'ownerEmailDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
-    }
-
     if (sortParam.value === 'idAsc') {
         return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
     }
@@ -332,20 +316,22 @@ const sortVideos = (videos) => {
         return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
     }
 
-    if (sortParam.value === 'publishedAtDesc') {
-        return list.sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0))
-    }
-
-    if (sortParam.value === 'publishedAtAsc') {
-        return list.sort((a, b) => new Date(a.published_at || 0) - new Date(b.published_at || 0))
-    }
-
     if (sortParam.value === 'titleAsc') {
         return list.sort((a, b) => normalize(getVideoTitle(a)).localeCompare(normalize(getVideoTitle(b)), locale.value))
     }
 
     if (sortParam.value === 'titleDesc') {
         return list.sort((a, b) => normalize(getVideoTitle(b)).localeCompare(normalize(getVideoTitle(a)), locale.value))
+    }
+
+    if (sortParam.value === 'urlAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.url).localeCompare(normalize(b?.url), locale.value))
+    }
+
+    if (sortParam.value === 'urlDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.url).localeCompare(normalize(a?.url), locale.value))
     }
 
     if (sortParam.value === 'activity') {
@@ -356,8 +342,34 @@ const sortVideos = (videos) => {
         return list.filter((video) => !video.activity)
     }
 
+    if (sortParam.value === 'activityDesc') {
+        return list.sort((a, b) => Number(b.activity) - Number(a.activity))
+    }
+
+    if (sortParam.value === 'activityAsc') {
+        return list.sort((a, b) => Number(a.activity) - Number(b.activity))
+    }
+
+    if (sortParam.value === 'sourceTypeAsc') {
+        return list.sort((a, b) =>
+            normalize(a?.source_type).localeCompare(normalize(b?.source_type), locale.value))
+    }
+
+    if (sortParam.value === 'sourceTypeDesc') {
+        return list.sort((a, b) =>
+            normalize(b?.source_type).localeCompare(normalize(a?.source_type), locale.value))
+    }
+
     if (sortParam.value === 'private') {
         return list.filter((video) => !!video.is_private)
+    }
+
+    if (sortParam.value === 'privateDesc') {
+        return list.sort((a, b) => Number(b.is_private) - Number(a.is_private))
+    }
+
+    if (sortParam.value === 'privateAsc') {
+        return list.sort((a, b) => Number(a.is_private) - Number(b.is_private))
     }
 
     if (sortParam.value === 'public') {
@@ -372,12 +384,28 @@ const sortVideos = (videos) => {
         return list.filter((video) => !video.left)
     }
 
+    if (sortParam.value === 'leftDesc') {
+        return list.sort((a, b) => Number(b.left) - Number(a.left))
+    }
+
+    if (sortParam.value === 'leftAsc') {
+        return list.sort((a, b) => Number(a.left) - Number(b.left))
+    }
+
     if (sortParam.value === 'main') {
         return list.filter((video) => !!video.main)
     }
 
     if (sortParam.value === 'noMain') {
         return list.filter((video) => !video.main)
+    }
+
+    if (sortParam.value === 'mainDesc') {
+        return list.sort((a, b) => Number(b.main) - Number(a.main))
+    }
+
+    if (sortParam.value === 'mainAsc') {
+        return list.sort((a, b) => Number(a.main) - Number(b.main))
     }
 
     if (sortParam.value === 'right') {
@@ -388,8 +416,12 @@ const sortVideos = (videos) => {
         return list.filter((video) => !video.right)
     }
 
-    if (sortParam.value === 'locale') {
-        return list.sort((a, b) => getVideoLocale(a).localeCompare(getVideoLocale(b), locale.value))
+    if (sortParam.value === 'rightDesc') {
+        return list.sort((a, b) => Number(b.right) - Number(a.right))
+    }
+
+    if (sortParam.value === 'rightAsc') {
+        return list.sort((a, b) => Number(a.right) - Number(b.right))
     }
 
     if (sortParam.value === 'views' || sortParam.value === 'viewsDesc') {
@@ -408,6 +440,38 @@ const sortVideos = (videos) => {
         return list.sort((a, b) => (a.likes_count ?? 0) - (b.likes_count ?? 0))
     }
 
+    if (sortParam.value === 'commentsDesc') {
+        return list.sort((a, b) => (b.comments_count ?? 0) - (a.comments_count ?? 0))
+    }
+
+    if (sortParam.value === 'commentsAsc') {
+        return list.sort((a, b) => (a.comments_count ?? 0) - (b.comments_count ?? 0))
+    }
+
+    if (sortParam.value === 'imagesDesc') {
+        return list.sort((a, b) => (b.images_count ?? 0) - (a.images_count ?? 0))
+    }
+
+    if (sortParam.value === 'imagesAsc') {
+        return list.sort((a, b) => (a.images_count ?? 0) - (b.images_count ?? 0))
+    }
+
+    if (sortParam.value === 'articlesDesc') {
+        return list.sort((a, b) => (b.articles_count ?? 0) - (a.articles_count ?? 0))
+    }
+
+    if (sortParam.value === 'articlesAsc') {
+        return list.sort((a, b) => (a.articles_count ?? 0) - (b.articles_count ?? 0))
+    }
+
+    if (sortParam.value === 'relatedVideosDesc') {
+        return list.sort((a, b) => (b.related_videos_count ?? 0) - (a.related_videos_count ?? 0))
+    }
+
+    if (sortParam.value === 'relatedVideosAsc') {
+        return list.sort((a, b) => (a.related_videos_count ?? 0) - (b.related_videos_count ?? 0))
+    }
+
     if (sortParam.value === 'durationDesc') {
         return list.sort((a, b) => (b.duration ?? 0) - (a.duration ?? 0))
     }
@@ -416,24 +480,84 @@ const sortVideos = (videos) => {
         return list.sort((a, b) => (a.duration ?? 0) - (b.duration ?? 0))
     }
 
-    if (sortParam.value === 'moderation_pending') {
+    if (sortParam.value === 'showFromAtDesc') {
+        return list.sort((a, b) =>
+            new Date(b.show_from_at || 0) - new Date(a.show_from_at || 0))
+    }
+
+    if (sortParam.value === 'showFromAtAsc') {
+        return list.sort((a, b) =>
+            new Date(a.show_from_at || 0) - new Date(b.show_from_at || 0))
+    }
+
+    if (sortParam.value === 'showToAtDesc') {
+        return list.sort((a, b) =>
+            new Date(b.show_to_at || 0) - new Date(a.show_to_at || 0))
+    }
+
+    if (sortParam.value === 'showToAtAsc') {
+        return list.sort((a, b) =>
+            new Date(a.show_to_at || 0) - new Date(b.show_to_at || 0))
+    }
+
+    if (sortParam.value === 'publishedAtDesc') {
+        return list.sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0))
+    }
+
+    if (sortParam.value === 'publishedAtAsc') {
+        return list.sort((a, b) => new Date(a.published_at || 0) - new Date(b.published_at || 0))
+    }
+
+    if (sortParam.value === 'createdAtDesc') {
+        return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    }
+
+    if (sortParam.value === 'createdAtAsc') {
+        return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+    }
+
+    if (sortParam.value === 'updatedAtDesc') {
+        return list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
+    }
+
+    if (sortParam.value === 'updatedAtAsc') {
+        return list.sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
+    }
+
+    if (sortParam.value === 'moderationPending') {
         return list.filter((video) => moderationNum(video?.moderation_status) === 0)
     }
 
-    if (sortParam.value === 'moderation_approved') {
+    if (sortParam.value === 'moderationApproved') {
         return list.filter((video) => moderationNum(video?.moderation_status) === 1)
     }
 
-    if (sortParam.value === 'moderation_rejected') {
+    if (sortParam.value === 'moderationRejected') {
         return list.filter((video) => moderationNum(video?.moderation_status) === 2)
     }
 
-    if (sortParam.value === 'moderation_statusAsc') {
+    if (sortParam.value === 'moderationStatusAsc') {
         return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
     }
 
-    if (sortParam.value === 'moderation_statusDesc') {
+    if (sortParam.value === 'moderationStatusDesc') {
         return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
+    }
+
+    if (sortParam.value === 'ownerNameAsc') {
+        return list.sort((a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
+    }
+
+    if (sortParam.value === 'ownerNameDesc') {
+        return list.sort((a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
+    }
+
+    if (sortParam.value === 'ownerEmailAsc') {
+        return list.sort((a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
+    }
+
+    if (sortParam.value === 'ownerEmailDesc') {
+        return list.sort((a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
     }
 
     return list

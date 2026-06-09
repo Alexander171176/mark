@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\School\SchoolQuizAnswer;
 
-use App\Http\Controllers\Admin\School\Base\BaseSchoolAdminController;
+use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerRequest;
 use App\Http\Resources\Admin\School\SchoolQuiz\SchoolQuizSharedResource;
 use App\Http\Resources\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerResource;
@@ -51,30 +51,6 @@ class SchoolQuizAnswerController extends BaseSchoolAdminController
         'explanation',
     ];
 
-    /** Расширение сортировки для ответов квизов. */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'textAsc' => 'text_asc',
-            'textDesc' => 'text_desc',
-
-            'quizTitleAsc' => 'quiz_title_asc',
-            'quizTitleDesc' => 'quiz_title_desc',
-
-            'questionTextAsc' => 'question_text_asc',
-            'questionTextDesc' => 'question_text_desc',
-
-            'weightAsc' => 'weight_asc',
-            'weightDesc' => 'weight_desc',
-
-            'correct' => 'correct',
-            'incorrect' => 'incorrect',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-        ];
-    }
-
     /** Список ответов квизов */
     public function index(Request $request): Response
     {
@@ -83,9 +59,9 @@ class SchoolQuizAnswerController extends BaseSchoolAdminController
         $quizId = $request->query('school_quiz_id');
         $questionId = $request->query('school_quiz_question_id');
 
-        $adminSchoolQuizAnswersPerPage = (int) config('site_settings.adminSchoolQuizAnswersPerPage', 10);
+        $adminSchoolQuizAnswersPerPage = (int) config('site_settings.adminSchoolQuizAnswersPerPage', 6);
         $adminSchoolQuizAnswersDefaultSort = (string) config('site_settings.adminSchoolQuizAnswersDefaultSort', 'idDesc');
-        $sort = $this->normalizeSortParam($adminSchoolQuizAnswersDefaultSort);
+        $sort = (string) $request->query('sort', $adminSchoolQuizAnswersDefaultSort);
 
         try {
             $query = $this->baseQuery()

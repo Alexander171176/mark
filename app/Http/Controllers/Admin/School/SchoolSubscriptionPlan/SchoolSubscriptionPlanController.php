@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\School\SchoolSubscriptionPlan;
 
-use App\Http\Controllers\Admin\School\Base\BaseSchoolAdminController;
+use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanRequest;
 use App\Http\Resources\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanResource;
 use App\Models\Admin\Finance\Currency\Currency;
@@ -56,44 +56,6 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
-    /** Расширение сортировки для тарифных планов */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'availabilityNowFirst' => 'availability_now_first',
-
-            'publishedAtDesc' => 'published_at_desc',
-            'publishedAtAsc' => 'published_at_asc',
-
-            'availableFromDesc' => 'available_from_desc',
-            'availableFromAsc' => 'available_from_asc',
-
-            'availableUntilDesc' => 'available_until_desc',
-            'availableUntilAsc' => 'available_until_asc',
-
-            'billingPeriodAsc' => 'billing_period_asc',
-            'billingPeriodDesc' => 'billing_period_desc',
-
-            'intervalDesc' => 'interval_desc',
-
-            'currencyAsc' => 'currency_asc',
-
-            'priceDesc' => 'price_desc',
-            'priceAsc' => 'price_asc',
-
-            'trialDaysDesc' => 'trial_days_desc',
-            'trialDaysAsc' => 'trial_days_asc',
-
-            'autoRenew' => 'auto_renew',
-            'noAutoRenew' => 'no_auto_renew',
-
-            'providerAsc' => 'provider_asc',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-        ];
-    }
-
     /** Список тарифных планов */
     public function index(Request $request): Response
     {
@@ -101,7 +63,7 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
 
         $adminSchoolSubscriptionPlansPerPage = (int) config(
             'site_settings.adminSchoolSubscriptionPlansPerPage',
-            10
+            6
         );
 
         $adminSchoolSubscriptionPlansDefaultSort = (string) config(
@@ -109,7 +71,7 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
             'idDesc'
         );
 
-        $sort = $this->normalizeSortParam($adminSchoolSubscriptionPlansDefaultSort);
+        $sort = (string) $request->query('sort', $adminSchoolSubscriptionPlansDefaultSort);
 
         try {
             $subscriptionPlans = $this->baseQuery()
@@ -122,52 +84,7 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
                 ->withCount([
                     'images',
                 ])
-                ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
-                ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
-                ->when($sort === 'auto_renew', fn ($query) => $query->where('auto_renew', true))
-                ->when($sort === 'no_auto_renew', fn ($query) => $query->where('auto_renew', false))
-
-                ->when($sort === 'published_at_desc', fn ($query) => $query->orderByDesc('published_at')->orderByDesc('id'))
-                ->when($sort === 'available_from_desc', fn ($query) => $query->orderByDesc('available_from')->orderByDesc('id'))
-                ->when($sort === 'available_until_desc', fn ($query) => $query->orderByDesc('available_until')->orderByDesc('id'))
-
-                ->when($sort === 'billing_period_asc', fn ($query) => $query->orderBy('billing_period')->orderByDesc('id'))
-                ->when($sort === 'interval_desc', fn ($query) => $query->orderByDesc('interval')->orderByDesc('id'))
-                ->when($sort === 'price_desc', fn ($query) => $query->orderByDesc('price')->orderByDesc('id'))
-                ->when($sort === 'trial_days_desc', fn ($query) => $query->orderByDesc('trial_days')->orderByDesc('id'))
-                ->when($sort === 'provider_asc', fn ($query) => $query->orderBy('provider')->orderByDesc('id'))
-
-                ->when($sort === 'currency_asc', fn ($query) => $query
-                    ->leftJoin('currencies', 'school_subscription_plans.currency_id', '=', 'currencies.id')
-                    ->orderBy('currencies.code')
-                    ->orderByDesc('school_subscription_plans.id')
-                    ->select('school_subscription_plans.*')
-                )
-
-                ->when($sort === 'title_asc', fn ($query) => $query
-                    ->leftJoin('school_subscription_plan_translations as spt', function ($join) use ($currentLocale) {
-                        $join->on('school_subscription_plans.id', '=', 'spt.school_subscription_plan_id')
-                            ->where('spt.locale', $currentLocale);
-                    })
-                    ->orderBy('spt.title')
-                    ->orderByDesc('school_subscription_plans.id')
-                    ->select('school_subscription_plans.*')
-                )
-
-                ->when($sort === 'title_desc', fn ($query) => $query
-                    ->leftJoin('school_subscription_plan_translations as spt', function ($join) use ($currentLocale) {
-                        $join->on('school_subscription_plans.id', '=', 'spt.school_subscription_plan_id')
-                            ->where('spt.locale', $currentLocale);
-                    })
-                    ->orderByDesc('spt.title')
-                    ->orderByDesc('school_subscription_plans.id')
-                    ->select('school_subscription_plans.*')
-                )
-
-                ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
-                ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
-                ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id'))
-                ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
+                ->sortByParam($sort, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/School/SubscriptionPlans/Index', [

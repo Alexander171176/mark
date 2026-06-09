@@ -89,31 +89,74 @@ const perPage = computed(() => {
 
 const q = ref(String(props.filters?.q ?? ''))
 
-const DEFAULT_SORT = 'sort_asc'
+const DEFAULT_SORT = 'sortAsc'
 const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
 
 const lessonSortOptions = [
-    { value: 'sort_asc', label: t('sortDefault') },
-    { value: 'sort_desc', label: t('sortReverse') },
-    { value: 'title_asc', label: t('sortNameAsc') },
-    { value: 'title_desc', label: t('sortNameDesc') },
-    { value: 'views_desc', label: t('sortPopularFirst') },
-    { value: 'views_asc', label: t('sortUnpopularFirst') },
-    { value: 'likes_desc', label: t('sortLikesDesc') },
-    { value: 'likes_asc', label: t('sortLikesAsc') },
-    { value: 'rating_desc', label: t('ratingDesc') },
-    { value: 'rating_asc', label: t('ratingAsc') },
-    { value: 'popularity_desc', label: t('sortPopularFirst') },
-    { value: 'popularity_asc', label: t('sortUnpopularFirst') },
-    { value: 'duration_desc', label: t('sortLongest') },
-    { value: 'duration_asc', label: t('sortShortest') },
-    { value: 'date_desc', label: t('sortNewestFirst') },
-    { value: 'date_asc', label: t('sortOldestFirst') },
+    { value: 'idDesc', label: t('idDesc') },
+    { value: 'idAsc', label: t('idAsc') },
+
+    { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
+    { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+
+    { value: 'titleAsc', label: `${t('title')} A→Z` },
+    { value: 'titleDesc', label: `${t('title')} Z→A` },
+
+    { value: 'viewsDesc', label: `${t('views')} 9→0` },
+    { value: 'viewsAsc', label: `${t('views')} 0→9` },
+
+    { value: 'likesCountDesc', label: `${t('likes')} 9→0` },
+    { value: 'likesCountAsc', label: `${t('likes')} 0→9` },
+
+    { value: 'ratingAvgDesc', label: `${t('ratingAvg')} 9→0` },
+    { value: 'ratingAvgAsc', label: `${t('ratingAvg')} 0→9` },
+
+    { value: 'ratingCountDesc', label: `${t('ratingCount')} 9→0` },
+    { value: 'ratingCountAsc', label: `${t('ratingCount')} 0→9` },
+
+    { value: 'popularityDesc', label: `${t('popularity')} 9→0` },
+    { value: 'popularityAsc', label: `${t('popularity')} 0→9` },
+
+    { value: 'durationDesc', label: `${t('duration')} 9→0` },
+    { value: 'durationAsc', label: `${t('duration')} 0→9` },
+
+    { value: 'difficultyDesc', label: `${t('sortDifficulty')} 9→0` },
+    { value: 'difficultyAsc', label: `${t('sortDifficulty')} 0→9` },
+
+    { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
+    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
+
+    { value: 'dateDesc', label: t('sortNewestFirst') },
+    { value: 'dateAsc', label: t('sortOldestFirst') },
+
+    { value: 'moduleDesc', label: `${t('module')} 9→0` },
+    { value: 'moduleAsc', label: `${t('module')} 0→9` },
+
+    { value: 'statusAsc', label: `${t('status')} A→Z` },
+    { value: 'statusDesc', label: `${t('status')} Z→A` },
+
+    { value: 'availabilityAsc', label: `${t('availability')} A→Z` },
+    { value: 'availabilityDesc', label: `${t('availability')} Z→A` },
+
+    { value: 'accessTypeAsc', label: `${t('accessType')} A→Z` },
+    { value: 'accessTypeDesc', label: `${t('accessType')} Z→A` },
+
+    { value: 'imagesDesc', label: `${t('images')} 9→0` },
+    { value: 'imagesAsc', label: `${t('images')} 0→9` },
+
+    { value: 'hashtagsDesc', label: `${t('hashtags')} 9→0` },
+    { value: 'hashtagsAsc', label: `${t('hashtags')} 0→9` },
+
+    { value: 'createdAtDesc', label: `${t('createdAt')} ↓` },
+    { value: 'createdAtAsc', label: `${t('createdAt')} ↑` },
+
+    { value: 'updatedAtDesc', label: `${t('updatedAt')} ↓` },
+    { value: 'updatedAtAsc', label: `${t('updatedAt')} ↑` },
 ]
 
 const submitSearch = () => {
     router.get(
-        route('public.lessons.index'),
+        route('public.schoolLessons.index'),
         {
             q: q.value || undefined,
             sort: sort.value || undefined,
@@ -129,7 +172,7 @@ const resetSearch = () => {
     sort.value = DEFAULT_SORT
 
     router.get(
-        route('public.lessons.index'),
+        route('public.schoolLessons.index'),
         {
             per_page: perPage.value,
             sort: sort.value,
@@ -146,7 +189,7 @@ const goToPage = (page) => {
     const safe = Math.max(1, Math.min(p, lastPage.value))
 
     router.get(
-        route('public.lessons.index'),
+        route('public.schoolLessons.index'),
         {
             q: q.value || undefined,
             sort: sort.value || undefined,

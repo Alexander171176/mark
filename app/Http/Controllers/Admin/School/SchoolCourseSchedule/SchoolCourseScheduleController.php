@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\School\SchoolCourseSchedule;
 
-use App\Http\Controllers\Admin\School\Base\BaseSchoolAdminController;
+use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolCourseSchedule\SchoolCourseScheduleRequest;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
 use App\Http\Resources\Admin\School\SchoolCourseSchedule\SchoolCourseScheduleResource;
@@ -60,34 +60,14 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
-    /** Расширение сортировки для расписаний. */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'capacity' => 'capacity_desc',
-            'views' => 'views_desc',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-
-            'online' => 'online',
-            'offline' => 'offline',
-
-            'starts_at' => 'starts_at_desc',
-            'ends_at' => 'ends_at_desc',
-            'enroll_starts_at' => 'enroll_starts_at_desc',
-            'enroll_ends_at' => 'enroll_ends_at_desc',
-        ];
-    }
-
     /** список расписаний */
     public function index(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolCourseSchedulesPerPage = (int) config('site_settings.adminSchoolCourseSchedulesPerPage', 10);
+        $adminSchoolCourseSchedulesPerPage = (int) config('site_settings.adminSchoolCourseSchedulesPerPage', 6);
         $adminSchoolCourseSchedulesDefaultSort = (string) config('site_settings.adminSchoolCourseSchedulesDefaultSort', 'idDesc');
-        $sort = $this->normalizeSortParam($adminSchoolCourseSchedulesDefaultSort);
+        $sort = (string) $request->query('sort', $adminSchoolCourseSchedulesDefaultSort);
 
         try {
             $schedules = $this->baseQuery()
@@ -105,23 +85,7 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
                     'images',
                     'cohortEnrollments',
                 ])
-                ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
-                ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
-                ->when($sort === 'online', fn ($query) => $query->where('is_online', true))
-                ->when($sort === 'offline', fn ($query) => $query->where('is_online', false))
-
-                ->when($sort === 'capacity_desc', fn ($query) => $query->orderByDesc('capacity')->orderByDesc('id'))
-                ->when($sort === 'views_desc', fn ($query) => $query->orderByDesc('views')->orderByDesc('id'))
-
-                ->when($sort === 'starts_at_desc', fn ($query) => $query->orderByDesc('starts_at')->orderByDesc('id'))
-                ->when($sort === 'ends_at_desc', fn ($query) => $query->orderByDesc('ends_at')->orderByDesc('id'))
-                ->when($sort === 'enroll_starts_at_desc', fn ($query) => $query->orderByDesc('enroll_starts_at')->orderByDesc('id'))
-                ->when($sort === 'enroll_ends_at_desc', fn ($query) => $query->orderByDesc('enroll_ends_at')->orderByDesc('id'))
-
-                ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
-                ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
-                ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
-                ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
+                ->sortByParam($sort, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/School/CourseSchedules/Index', [

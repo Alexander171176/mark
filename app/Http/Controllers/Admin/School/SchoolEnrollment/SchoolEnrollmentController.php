@@ -49,7 +49,7 @@ class SchoolEnrollmentController extends Controller
         $courseId = $request->query('school_course_id');
         $scheduleId = $request->query('school_course_schedule_id');
 
-        $adminSchoolEnrollmentsPerPage = (int) config('site_settings.adminSchoolEnrollmentsPerPage', 10);
+        $adminSchoolEnrollmentsPerPage = (int) config('site_settings.adminSchoolEnrollmentsPerPage', 6);
         $adminSchoolEnrollmentsDefaultSort = (string) config('site_settings.adminSchoolEnrollmentsDefaultSort', 'idDesc');
 
         try {

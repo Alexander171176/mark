@@ -237,20 +237,93 @@ class SchoolAssignment extends Model
     }
 
     /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $q, ?string $sort): Builder
+    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
     {
+        $locale = $locale ?: app()->getLocale();
+
         return match ($sort) {
-            'id_asc'    => $q->orderBy('id', 'asc'),
-            'id_desc'   => $q->orderBy('id', 'desc'),
-            'sort_asc'  => $q->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sort_desc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
-            'date_asc'  => $q->orderBy('published_at', 'asc')->orderByDesc('id'),
-            'date_desc' => $q->orderBy('published_at', 'desc')->orderByDesc('id'),
-            'score_asc' => $q->orderBy('max_score', 'asc')->orderByDesc('id'),
-            'score_desc'=> $q->orderBy('max_score', 'desc')->orderByDesc('id'),
-            'due_asc'   => $q->orderBy('due_at', 'asc')->orderByDesc('id'),
-            'due_desc'  => $q->orderBy('due_at', 'desc')->orderByDesc('id'),
-            default     => $q->sorted(),
+            'idAsc' => $q->orderBy('id', 'asc'),
+            'idDesc' => $q->orderBy('id', 'desc'),
+
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'titleAsc' => $q
+                ->leftJoin('school_assignment_translations as sat_sort', function ($join) use ($locale) {
+                    $join->on('sat_sort.school_assignment_id', '=', 'school_assignments.id')
+                        ->where('sat_sort.locale', '=', $locale);
+                })
+                ->orderBy('sat_sort.title', 'asc')
+                ->orderByDesc('school_assignments.id')
+                ->select('school_assignments.*'),
+
+            'titleDesc' => $q
+                ->leftJoin('school_assignment_translations as sat_sort', function ($join) use ($locale) {
+                    $join->on('sat_sort.school_assignment_id', '=', 'school_assignments.id')
+                        ->where('sat_sort.locale', '=', $locale);
+                })
+                ->orderBy('sat_sort.title', 'desc')
+                ->orderByDesc('school_assignments.id')
+                ->select('school_assignments.*'),
+
+            'courseAsc' => $q->orderBy('school_course_id', 'asc')->orderByDesc('id'),
+            'courseDesc' => $q->orderBy('school_course_id', 'desc')->orderByDesc('id'),
+
+            'moduleAsc' => $q->orderBy('school_module_id', 'asc')->orderByDesc('id'),
+            'moduleDesc' => $q->orderBy('school_module_id', 'desc')->orderByDesc('id'),
+
+            'lessonAsc' => $q->orderBy('school_lesson_id', 'asc')->orderByDesc('id'),
+            'lessonDesc' => $q->orderBy('school_lesson_id', 'desc')->orderByDesc('id'),
+
+            'instructorAsc' => $q->orderBy('school_instructor_profile_id', 'asc')->orderByDesc('id'),
+            'instructorDesc' => $q->orderBy('school_instructor_profile_id', 'desc')->orderByDesc('id'),
+
+            'statusAsc' => $q->orderBy('status', 'asc')->orderByDesc('id'),
+            'statusDesc' => $q->orderBy('status', 'desc')->orderByDesc('id'),
+
+            'visibilityAsc' => $q->orderBy('visibility', 'asc')->orderByDesc('id'),
+            'visibilityDesc' => $q->orderBy('visibility', 'desc')->orderByDesc('id'),
+
+            'gradingTypeAsc' => $q->orderBy('grading_type', 'asc')->orderByDesc('id'),
+            'gradingTypeDesc' => $q->orderBy('grading_type', 'desc')->orderByDesc('id'),
+
+            'attemptsLimitAsc' => $q->orderBy('attempts_limit', 'asc')->orderByDesc('id'),
+            'attemptsLimitDesc' => $q->orderBy('attempts_limit', 'desc')->orderByDesc('id'),
+
+            'maxScoreAsc' => $q->orderBy('max_score', 'asc')->orderByDesc('id'),
+            'maxScoreDesc' => $q->orderBy('max_score', 'desc')->orderByDesc('id'),
+
+            'submissionsAsc' => $q->withCount('submissions')->orderBy('submissions_count', 'asc')->orderByDesc('id'),
+            'submissionsDesc' => $q->withCount('submissions')->orderBy('submissions_count', 'desc')->orderByDesc('id'),
+
+            'imagesAsc' => $q->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
+            'imagesDesc' => $q->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+
+            'publishedAtAsc', 'dateAsc' => $q->orderBy('published_at', 'asc')->orderByDesc('id'),
+            'publishedAtDesc', 'dateDesc' => $q->orderBy('published_at', 'desc')->orderByDesc('id'),
+
+            'dueAtAsc' => $q->orderBy('due_at', 'asc')->orderByDesc('id'),
+            'dueAtDesc' => $q->orderBy('due_at', 'desc')->orderByDesc('id'),
+
+            'createdAtAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $q->where('activity', true)->orderByDesc('id'),
+            'inactive' => $q->where('activity', false)->orderByDesc('id'),
+
+            'left' => $q->where('left', true)->orderByDesc('id'),
+            'noLeft' => $q->where('left', false)->orderByDesc('id'),
+            'main' => $q->where('main', true)->orderByDesc('id'),
+            'noMain' => $q->where('main', false)->orderByDesc('id'),
+            'right' => $q->where('right', true)->orderByDesc('id'),
+            'noRight' => $q->where('right', false)->orderByDesc('id'),
+
+            default => $q->sorted(),
         };
     }
 

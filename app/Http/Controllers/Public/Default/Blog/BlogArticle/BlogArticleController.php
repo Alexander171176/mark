@@ -7,7 +7,7 @@ use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleResource;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
-use App\Traits\Public\BuildsRubricTreeTrait;
+use App\Traits\Public\Blog\BuildsRubricTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
@@ -121,7 +121,7 @@ class BlogArticleController extends Controller
                         'translations',
                         'images',
                     ])
-                    ->sortByParam('sort_asc', $locale),
+                    ->sortByParam('sortAsc', $locale),
 
                 'relatedArticles' => fn ($query) => $query
                     ->forPublic()
@@ -131,7 +131,7 @@ class BlogArticleController extends Controller
                         'images',
                     ])
                     ->withCount('likes')
-                    ->sortByParam('sort_asc', $locale),
+                    ->sortByParam('sortAsc', $locale),
             ])
             ->firstOrFail();
 

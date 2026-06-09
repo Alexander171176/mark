@@ -36,21 +36,18 @@ const updateSort = (event) => {
             <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
             <option disabled>──────────────</option>
 
+            <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
+            <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
+            <option value="activity">{{ t('active') }}</option>
+            <option value="inactive">{{ t('inactive') }}</option>
+            <option disabled>──────────────</option>
+
             <option value="titleAsc">{{ t('title') }} ↑</option>
             <option value="titleDesc">{{ t('title') }} ↓</option>
             <option disabled>──────────────</option>
 
-            <option value="published_at">{{ t('publishedAt') }}</option>
-            <option value="due_at">{{ t('dueAt') }}</option>
-            <option disabled>──────────────</option>
-
-            <!-- Статус / Доступность -->
-            <option value="status">{{ t('status') }}</option>
-            <option value="visibility">{{ t('visibility') }}</option>
-            <option disabled>──────────────</option>
-
-            <option value="activity">{{ t('active') }}</option>
-            <option value="inactive">{{ t('inactive') }}</option>
+            <option value="slugAsc">Slug A→Z</option>
+            <option value="slugDesc">Slug Z→A</option>
             <option disabled>──────────────</option>
 
             <option value="left">{{ t('inLeft') }}</option>
@@ -63,6 +60,74 @@ const updateSort = (event) => {
 
             <option value="right">{{ t('inRight') }}</option>
             <option value="noRight">{{ t('notRight') }}</option>
+            <option disabled>──────────────</option>
+
+            <!-- Статус / Доступность -->
+            <option value="statusAsc">{{ t('status') }} A→Z</option>
+            <option value="statusDesc">{{ t('status') }} Z→A</option>
+
+            <option value="visibilityAsc">{{ t('visibility') }} A→Z</option>
+            <option value="visibilityDesc">{{ t('visibility') }} Z→A</option>
+            <option disabled>──────────────</option>
+
+            <option value="gradingTypeAsc">{{ t('gradingType') }} A→Z</option>
+            <option value="gradingTypeDesc">{{ t('gradingType') }} Z→A</option>
+
+            <option value="attemptsLimitDesc">{{ t('attemptsLimit') }} 9→0</option>
+            <option value="attemptsLimitAsc">{{ t('attemptsLimit') }} 0→9</option>
+            <option disabled>──────────────</option>
+
+            <option value="maxScoreDesc">{{ t('maxScore') }} 9→0</option>
+            <option value="maxScoreAsc">{{ t('maxScore') }} 0→9</option>
+
+            <option value="submissionsDesc">{{ t('submissions') }} 9→0</option>
+            <option value="submissionsAsc">{{ t('submissions') }} 0→9</option>
+            <option disabled>──────────────</option>
+
+            <option value="imagesDesc">{{ t('images') }} 9→0</option>
+            <option value="imagesAsc">{{ t('images') }} 0→9</option>
+            <option disabled>──────────────</option>
+
+            <option value="courseDesc">{{ t('course') }} ID 9→0</option>
+            <option value="courseAsc">{{ t('course') }} ID 0→9</option>
+
+            <option value="courseTitleAsc">{{ t('course') }} A→Z</option>
+            <option value="courseTitleDesc">{{ t('course') }} Z→A</option>
+            <option disabled>──────────────</option>
+
+            <option value="moduleDesc">{{ t('module') }} ID 9→0</option>
+            <option value="moduleAsc">{{ t('module') }} ID 0→9</option>
+
+            <option value="moduleTitleAsc">{{ t('module') }} A→Z</option>
+            <option value="moduleTitleDesc">{{ t('module') }} Z→A</option>
+            <option disabled>──────────────</option>
+
+            <option value="lessonDesc">{{ t('lesson') }} ID 9→0</option>
+            <option value="lessonAsc">{{ t('lesson') }} ID 0→9</option>
+
+            <option value="lessonTitleAsc">{{ t('lesson') }} A→Z</option>
+            <option value="lessonTitleDesc">{{ t('lesson') }} Z→A</option>
+            <option disabled>──────────────</option>
+
+            <option value="instructorDesc">{{ t('instructor') }} ID 9→0</option>
+            <option value="instructorAsc">{{ t('instructor') }} ID 0→9</option>
+
+            <option value="instructorTitleAsc">{{ t('instructor') }} A→Z</option>
+            <option value="instructorTitleDesc">{{ t('instructor') }} Z→A</option>
+            <option disabled>──────────────</option>
+
+            <option value="publishedAtDesc">{{ t('publishedAt') }} ↓</option>
+            <option value="publishedAtAsc">{{ t('publishedAt') }} ↑</option>
+
+            <option value="dueAtDesc">{{ t('dueAt') }} ↓</option>
+            <option value="dueAtAsc">{{ t('dueAt') }} ↑</option>
+            <option disabled>──────────────</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
             <option disabled>──────────────</option>
 
         </select>

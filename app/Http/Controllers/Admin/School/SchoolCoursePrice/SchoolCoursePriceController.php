@@ -46,7 +46,7 @@ class SchoolCoursePriceController extends Controller
         $currencyId = $request->query('currency_id');
         $activity = $request->query('activity');
 
-        $adminSchoolCoursePricesPerPage = (int) config('site_settings.adminSchoolCoursePricesPerPage', 10);
+        $adminSchoolCoursePricesPerPage = (int) config('site_settings.adminSchoolCoursePricesPerPage', 6);
         $adminSchoolCoursePricesDefaultSort = (string) config('site_settings.adminSchoolCoursePricesDefaultSort', 'idDesc');
 
         try {

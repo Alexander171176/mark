@@ -55,6 +55,9 @@ class SchoolTrackSharedResource extends JsonResource
                 isset($this->images_count),
                 fn () => (int) $this->images_count
             ),
+
+            'created_at' => optional($this->created_at)->toIso8601String(),
+            'updated_at' => optional($this->updated_at)->toIso8601String(),
         ];
     }
 }

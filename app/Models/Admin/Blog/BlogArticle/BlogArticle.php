@@ -44,12 +44,10 @@ class BlogArticle extends Model
         'show_from_at',
         'show_to_at',
 
-        'views',
-    ];
-
-    protected $hidden = [
         'created_at',
         'updated_at',
+
+        'views',
     ];
 
     protected $casts = [
@@ -349,16 +347,13 @@ class BlogArticle extends Model
         $locale = $locale ?: app()->getLocale();
 
         return match ($sort) {
-            'sort_asc'   => $query->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sort_desc'  => $query->orderBy('sort', 'desc')->orderByDesc('id'),
-            'date_asc'   => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'date_desc'  => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
-            'views_asc'  => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'views_desc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
-            'likes_asc'  => $query->withCount('likes')->orderBy('likes_count', 'asc')->orderByDesc('id'),
-            'likes_desc' => $query->withCount('likes')->orderBy('likes_count', 'desc')->orderByDesc('id'),
+            'idAsc' => $query->orderBy('id', 'asc'),
+            'idDesc' => $query->orderBy('id', 'desc'),
 
-            'title_asc' => $query
+            'sortAsc' => $query->orderBy('sort', 'asc')->orderBy('id', 'asc'),
+            'sortDesc' => $query->orderBy('sort', 'desc')->orderBy('id', 'desc'),
+
+            'titleAsc' => $query
                 ->leftJoin('blog_article_translations as bat_sort', function ($join) use ($locale) {
                     $join->on('bat_sort.article_id', '=', 'blog_articles.id')
                         ->where('bat_sort.locale', '=', $locale);
@@ -367,7 +362,7 @@ class BlogArticle extends Model
                 ->orderByDesc('blog_articles.id')
                 ->select('blog_articles.*'),
 
-            'title_desc' => $query
+            'titleDesc' => $query
                 ->leftJoin('blog_article_translations as bat_sort', function ($join) use ($locale) {
                     $join->on('bat_sort.article_id', '=', 'blog_articles.id')
                         ->where('bat_sort.locale', '=', $locale);
@@ -375,6 +370,54 @@ class BlogArticle extends Model
                 ->orderBy('bat_sort.title', 'desc')
                 ->orderByDesc('blog_articles.id')
                 ->select('blog_articles.*'),
+
+            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+
+            'likesAsc' => $query
+                ->withCount('likes')
+                ->orderBy('likes_count', 'asc')
+                ->orderByDesc('id'),
+
+            'likesDesc' => $query
+                ->withCount('likes')
+                ->orderBy('likes_count', 'desc')
+                ->orderByDesc('id'),
+
+            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
+            'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $query->where('activity', true)->orderByDesc('id'),
+            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+
+            'leftAsc' => $query->orderBy('left', 'asc')->orderByDesc('id'),
+            'leftDesc' => $query->orderBy('left', 'desc')->orderByDesc('id'),
+            'left' => $query->where('left', true)->orderByDesc('id'),
+            'noLeft' => $query->where('left', false)->orderByDesc('id'),
+
+            'mainAsc' => $query->orderBy('main', 'asc')->orderByDesc('id'),
+            'mainDesc' => $query->orderBy('main', 'desc')->orderByDesc('id'),
+            'main' => $query->where('main', true)->orderByDesc('id'),
+            'noMain' => $query->where('main', false)->orderByDesc('id'),
+
+            'rightAsc' => $query->orderBy('right', 'asc')->orderByDesc('id'),
+            'rightDesc' => $query->orderBy('right', 'desc')->orderByDesc('id'),
+            'right' => $query->where('right', true)->orderByDesc('id'),
+            'noRight' => $query->where('right', false)->orderByDesc('id'),
+
+            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
+            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
+            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
+            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
+            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
 
             default => $query->ordered(),
         };

@@ -341,12 +341,12 @@ const sortArticles = (articles) => {
     if (sortParam.value === 'commentsDesc') return list.sort((a, b) => (b.comments_count ?? 0) - (a.comments_count ?? 0))
     if (sortParam.value === 'commentsAsc') return list.sort((a, b) => (a.comments_count ?? 0) - (b.comments_count ?? 0))
 
-    if (sortParam.value === 'moderation_pending') return list.filter((article) => moderationNum(article?.moderation_status) === 0)
-    if (sortParam.value === 'moderation_approved') return list.filter((article) => moderationNum(article?.moderation_status) === 1)
-    if (sortParam.value === 'moderation_rejected') return list.filter((article) => moderationNum(article?.moderation_status) === 2)
+    if (sortParam.value === 'moderationPending') return list.filter((article) => moderationNum(article?.moderation_status) === 0)
+    if (sortParam.value === 'moderationApproved') return list.filter((article) => moderationNum(article?.moderation_status) === 1)
+    if (sortParam.value === 'moderationRejected') return list.filter((article) => moderationNum(article?.moderation_status) === 2)
 
-    if (sortParam.value === 'moderation_statusAsc') return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
-    if (sortParam.value === 'moderation_statusDesc') return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
+    if (sortParam.value === 'moderationStatusAsc') return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
+    if (sortParam.value === 'moderationStatusDesc') return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
 
     return list
 }

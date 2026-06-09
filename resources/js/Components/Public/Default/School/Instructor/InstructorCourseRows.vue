@@ -82,7 +82,7 @@ const getInstructorName = (course) => {
                    dark:border-gray-700 dark:bg-gray-900"
         >
             <Link
-                :href="route('public.courses.show', { slug: course.slug })"
+                :href="route('public.schoolCourses.show', { slug: course.slug })"
                 class="shrink-0">
                 <UniversalImageSlider
                     :entity="course"
@@ -97,7 +97,7 @@ const getInstructorName = (course) => {
                 <div class="min-w-0 flex-1 flex flex-col justify-around">
                     <div class="flex items-start justify-center gap-3">
 
-                        <Link :href="route('public.courses.show', { slug: course.slug })"
+                        <Link :href="route('public.schoolCourses.show', { slug: course.slug })"
                               class="min-w-0 inline-flex items-center gap-2">
                             <span class="truncate text-lg font-semibold
                                           text-slate-900/85 dark:text-slate-100/85
@@ -191,15 +191,15 @@ const getInstructorName = (course) => {
                     <div class="mt-2 flex items-center justify-between gap-3">
                         <EntityStats
                             :views="course.views || 0"
-                            :likes-count="course.likes_count || 0"
+                            :likes-count="course.likes_count || course.likes || 0"
                             :already-liked="course.already_liked || false"
-                            route-name="courses.like"
-                            :route-params="{ course: course.id }"
+                            route-name="public.schoolCourses.like"
+                            :route-params="course.id"
                             :show-likes-button="true"
                             compact
                         />
                         <Link
-                            :href="route('public.courses.show', { slug: course.slug })"
+                            :href="route('public.schoolCourses.show', { slug: course.slug })"
                             class="flex w-full items-center justify-center gap-2
                                    rounded-sm px-3 py-1 btn-default"
                         >

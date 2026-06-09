@@ -11,6 +11,7 @@ export default {
     charts: 'Charts',
     checkInstructor: 'Check (instructor)',
     checkbox: 'The flag',
+    children: 'Children',
     city: 'City',
     class: 'tailwind css classes',
     clearCache: 'Clear the cache',

@@ -137,7 +137,7 @@ const instructorName = computed(() => {
 /**
  * Categories / hashtags / reviews
  */
-const learningCategories = computed(() => normalizeList(courseData.value?.learning_categories))
+const tracks = computed(() => normalizeList(courseData.value?.tracks))
 const hashtags = computed(() => normalizeList(courseData.value?.hashtags))
 const reviews = computed(() => normalizeList(courseData.value?.reviews))
 const modulesList = computed(() => normalizeList(props.modules))
@@ -238,7 +238,7 @@ const gridCols = computed(() => {
                                     <li><span class="mx-2 breadcrumbs">/</span></li>
                                     <li>
                                         <Link
-                                            :href="route('public.courses.index')"
+                                            :href="route('public.schoolCourses.index')"
                                             class="breadcrumb-link hover:underline"
                                         >
                                             {{ t('courses') }}
@@ -374,10 +374,10 @@ const gridCols = computed(() => {
                             <!-- Like -->
                             <div class="my-1 flex items-center justify-center">
                                 <LikeButtonEntity
-                                    :likes-count="courseData.likes_count || 0"
+                                    :likes-count="courseData.likes_count || courseData.likes || 0"
                                     :already-liked="courseData.already_liked || false"
-                                    route-name="courses.like"
-                                    :route-params="{ course: courseData.id }"
+                                    route-name="public.schoolCourses.like"
+                                    :route-params="courseData.id"
                                     :title="t('like')"
                                 />
                             </div>
@@ -387,15 +387,17 @@ const gridCols = computed(() => {
                                 v-if="hashtags.length"
                                 class="mt-4 flex flex-wrap items-center justify-center gap-2"
                             >
-                                <span
+                                <Link
                                     v-for="hashtag in hashtags"
                                     :key="hashtag.id"
+                                    :href="route('public.schoolHashtags.show',
+                                    { slug: hashtag.slug })"
                                     class="rounded-sm px-2 py-1 text-xs font-semibold
                                            text-indigo-700 bg-indigo-50 dark:text-indigo-300
                                            dark:bg-indigo-950/50 border border-indigo-400"
                                 >
                                     #{{ hashtag.name }}
-                                </span>
+                                </Link>
                             </div>
 
                             <!-- Instructor -->
@@ -467,7 +469,7 @@ const gridCols = computed(() => {
                             />
 
                             <!-- Related courses -->
-                            <div v-if="courseData.related_courses.length" class="mt-8">
+                            <div v-if="courseData.related_courses?.length" class="mt-8">
                                 <h2 class="mb-4 tracking-wide text-center
                                            font-semibold text-lg text-gray-700 dark:text-gray-300">
                                     {{ t('relatedCourses') }}

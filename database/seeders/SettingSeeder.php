@@ -216,7 +216,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSystemSettingsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SYSTEM_SETTINGS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество параметров в панели администратора',
@@ -226,7 +226,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSystemSettingsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SYSTEM_SETTINGS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка параметров по умолчанию в панели администратора',
@@ -266,7 +266,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminBlogRubricsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_BLOG_RUBRICS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество рубрик в панели администратора',
@@ -276,7 +276,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicBlogRubricsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_BLOG_RUBRICS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество рубрик в публичной части',
@@ -286,7 +286,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminBlogRubricsDefaultSort',
-                'value' => 'sort',
+                'value' => 'sortAsc',
                 'constant' => 'ADMIN_BLOG_RUBRICS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка по полю у Рубрик по умолчанию в таблице Панели Администратора',
@@ -296,7 +296,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicBlogRubricsDefaultSort',
-                'value' => 'sort',
+                'value' => 'sortAsc',
                 'constant' => 'PUBLIC_BLOG_RUBRICS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка рубрик по умолчанию в публичной части',
@@ -346,7 +346,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminBlogArticlesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_BLOG_ARTICLES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество статей в панели администратора',
@@ -366,7 +366,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminBlogArticlesDefaultSort',
-                'value' => 'sort',
+                'value' => 'sortAsc',
                 'constant' => 'ADMIN_BLOG_ARTICLES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка статей по умолчанию в панели администратора',
@@ -376,7 +376,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicBlogArticlesDefaultSort',
-                'value' => 'sort',
+                'value' => 'sortAsc',
                 'constant' => 'PUBLIC_BLOG_ARTICLES_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка статей по умолчанию в публичной части',
@@ -426,7 +426,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminBlogTagsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_BLOG_TAGS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество тегов в панели администратора',
@@ -436,7 +436,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicBlogTagsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_BLOG_TAGS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество тегов в публичной части',
@@ -446,7 +446,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminBlogTagsDefaultSort',
-                'value' => 'name',
+                'value' => 'nameAsc',
                 'constant' => 'ADMIN_BLOG_TAGS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка тегов по умолчанию в панели администратора',
@@ -456,7 +456,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicBlogTagsDefaultSort',
-                'value' => 'name',
+                'value' => 'nameAsc',
                 'constant' => 'PUBLIC_BLOG_TAGS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка тегов по умолчанию в публичной части',
@@ -496,7 +496,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminBlogBannersPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_BLOG_BANNERS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество баннеров в панели администратора',
@@ -506,7 +506,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminBlogBannersDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_BLOG_BANNERS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка баннеров по умолчанию в панели администратора',
@@ -536,7 +536,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminBlogVideosPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_BLOG_VIDEOS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество видео в панели администратора',
@@ -546,7 +546,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicBlogVideosPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_BLOG_VIDEOS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество видео в публичной части',
@@ -556,7 +556,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminBlogVideosDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_BLOG_VIDEOS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка видео по умолчанию в панели администратора',
@@ -566,7 +566,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicBlogVideosDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_BLOG_VIDEOS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка видео по умолчанию в публичной части',
@@ -586,7 +586,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminCommentsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_COMMENTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество комментариев в панели администратора',
@@ -596,7 +596,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminCommentsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_COMMENTS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка комментариев по умолчанию в панели администратора',
@@ -616,7 +616,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminFinanceCurrenciesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_FINANCE_CURRENCIES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество Валют в таблице Панели Администратора',
@@ -626,7 +626,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminFinanceCurrenciesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_FINANCE_CURRENCIES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка по полю у Валют по умолчанию в таблице Панели Администратора',
@@ -656,7 +656,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolHashtagsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_HASHTAGS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество хештегов в панели администратора',
@@ -666,7 +666,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolHashtagsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_HASHTAGS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество хештегов в публичной части',
@@ -676,7 +676,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolHashtagsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_HASHTAGS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка хештегов по умолчанию в панели администратора',
@@ -686,7 +686,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolHashtagsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_HASHTAGS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка хештегов по умолчанию в публичной части',
@@ -736,7 +736,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolInstructorsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_INSTRUCTORS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество преподавателей в панели администратора',
@@ -746,7 +746,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolInstructorsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_INSTRUCTORS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество преподавателей в публичной части',
@@ -756,7 +756,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolInstructorsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_INSTRUCTORS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка преподавателей по умолчанию в панели администратора',
@@ -766,7 +766,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolInstructorsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_INSTRUCTORS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка преподавателей по умолчанию в панели администратора',
@@ -816,7 +816,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolTracksPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_TRACKS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество треков в панели администратора',
@@ -826,7 +826,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolTracksPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_TRACKS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество треков в публичной части',
@@ -836,7 +836,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolTracksDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_TRACKS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка треков по умолчанию в панели администратора',
@@ -846,7 +846,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolTracksDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_TRACKS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка треков по умолчанию в публичной части',
@@ -896,7 +896,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolCoursesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_COURSES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество курсов в панели администратора',
@@ -906,7 +906,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolCoursesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_COURSES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество курсов в публичной части',
@@ -916,7 +916,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolCoursesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_COURSES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка курсов по умолчанию в панели администратора',
@@ -926,7 +926,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolCoursesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_COURSES_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка курсов по умолчанию в публичной части',
@@ -976,7 +976,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolModulesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_MODULES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество модулей обучения в панели администратора',
@@ -986,7 +986,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolModulesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_MODULES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество модулей обучения в публичной части',
@@ -996,7 +996,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolModulesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_MODULES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка модулей обучения по умолчанию в панели администратора',
@@ -1006,7 +1006,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolModulesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_MODULES_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка модулей обучения по умолчанию в публичной части',
@@ -1056,7 +1056,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolLessonsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_LESSONS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество уроков в панели администратора',
@@ -1066,7 +1066,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolLessonsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_LESSONS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество уроков в публичной части',
@@ -1076,7 +1076,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolLessonsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_LESSONS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка уроков по умолчанию в панели администратора',
@@ -1086,7 +1086,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolLessonsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_LESSONS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка уроков по умолчанию в публичной части',
@@ -1136,7 +1136,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolAssignmentsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_ASSIGNMENTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество заданий в панели администратора',
@@ -1146,7 +1146,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolAssignmentsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_ASSIGNMENTS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество заданий в публичной части',
@@ -1156,7 +1156,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolAssignmentsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_ASSIGNMENTS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка заданий по умолчанию в панели администратора',
@@ -1166,7 +1166,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolAssignmentsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_ASSIGNMENTS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка заданий по умолчанию в публичной части',
@@ -1206,7 +1206,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolCourseSchedulesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_COURSE_SCHEDULES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество расписаний в панели администратора',
@@ -1216,7 +1216,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolCourseSchedulesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_COURSE_SCHEDULES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество расписаний в публичной части',
@@ -1226,7 +1226,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolCourseSchedulesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_COURSE_SCHEDULES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка расписаний по умолчанию в панели администратора',
@@ -1236,7 +1236,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolCourseSchedulesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_COURSE_SCHEDULES_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка расписаний по умолчанию в публичной части',
@@ -1266,7 +1266,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolCohortEnrollmentsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_COHORT_ENROLLMENTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество записей на потоки в панели администратора',
@@ -1276,7 +1276,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolCohortEnrollmentsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_COHORT_ENROLLMENTS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка записей на потоки по умолчанию в панели администратора',
@@ -1306,7 +1306,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolEnrollmentsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_ENROLLMENTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество зачислений на потоки в панели администратора',
@@ -1316,7 +1316,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolEnrollmentsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_ENROLLMENTS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка зачислений на потоки по умолчанию в панели администратора',
@@ -1356,7 +1356,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolQuizzesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_QUIZZES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество викторин в панели администратора',
@@ -1366,7 +1366,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolQuizzesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_QUIZZES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество викторин в публичной части',
@@ -1376,7 +1376,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolQuizzesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_QUIZZES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка викторин по умолчанию в панели администратора',
@@ -1386,7 +1386,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolQuizzesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_QUIZZES_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка викторин по умолчанию в публичной части',
@@ -1426,7 +1426,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolQuizQuestionsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_QUESTIONS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество вопросов викторин в панели администратора',
@@ -1436,7 +1436,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolQuizQuestionsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_QUESTIONS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка вопросов викторин по умолчанию в панели администратора',
@@ -1466,7 +1466,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolQuizAnswersPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_ANSWERS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество ответов викторин в панели администратора',
@@ -1476,7 +1476,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolQuizAnswersDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_ANSWERS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка ответов викторин по умолчанию в панели администратора',
@@ -1516,7 +1516,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolQuizAttemptsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_ATTEMPTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество прохождений викторин в панели администратора',
@@ -1526,7 +1526,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolQuizAttemptsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_QUIZ_ATTEMPTS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество прохождений викторин в публичной части',
@@ -1536,7 +1536,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolQuizAttemptsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_ATTEMPTS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка прохождений викторин по умолчанию в панели администратора',
@@ -1546,7 +1546,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolQuizAttemptsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_QUIZ_ATTEMPTS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка прохождений викторин по умолчанию в публичной части',
@@ -1596,7 +1596,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolQuizAttemptItemsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_ATTEMPT_ITEMS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество попыток ответов в панели администратора',
@@ -1606,7 +1606,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolQuizAttemptItemsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_QUIZ_ATTEMPT_ITEMS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество попыток ответов в публичной части',
@@ -1616,7 +1616,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolQuizAttemptItemsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_ATTEMPT_ITEMS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка попыток ответов по умолчанию в панели администратора',
@@ -1626,7 +1626,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolQuizAttemptItemsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_QUIZ_ATTEMPT_ITEMS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка попыток ответов по умолчанию в публичной части',
@@ -1676,7 +1676,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolBundlesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_BUNDLES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество бандлов в панели администратора',
@@ -1686,7 +1686,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolBundlesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_SCHOOL_BUNDLES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество бандлов в публичной части',
@@ -1696,7 +1696,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolBundlesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_BUNDLES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка бандлов по умолчанию в панели администратора',
@@ -1706,7 +1706,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicSchoolBundlesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_SCHOOL_BUNDLES_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка бандлов по умолчанию в публичной части',
@@ -1746,7 +1746,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolOrdersPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_ORDERS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество заказов школы в панели администратора',
@@ -1756,7 +1756,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolOrdersDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_ORDERS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка заказов школы по умолчанию в панели администратора',
@@ -1786,7 +1786,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolCoursePricesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_COURSE_PRICES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество прайсов курсов в панели администратора',
@@ -1796,7 +1796,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolCoursePricesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_COURSE_PRICES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка прайсов курсов по умолчанию в панели администратора',
@@ -1826,7 +1826,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolBundlePricesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_BUNDLE_PRICES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество прайсов наборов курсов в таблице панели администратора',
@@ -1836,7 +1836,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolBundlePricesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_BUNDLE_PRICES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка прайсов наборов курсов по умолчанию в панели администратора',
@@ -1866,7 +1866,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolSubscriptionPlansPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SCHOOL_SUBSCRIPTION_PLANS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество тарифных планов в панели Администратора',
@@ -1876,7 +1876,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSchoolSubscriptionPlansDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SCHOOL_SUBSCRIPTION_PLANS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка тарифных планов по умолчанию в панели администратора',
@@ -1916,7 +1916,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSystemUsersPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SYSTEM_USERS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество пользователей в панели администратора',
@@ -1926,7 +1926,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSystemUsersDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SYSTEM_USERS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка пользователей по умолчанию в панели администратора',
@@ -1946,7 +1946,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSystemRolesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SYSTEM_ROLES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество ролей в панели администратора',
@@ -1956,7 +1956,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSystemRolesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SYSTEM_ROLES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка ролей по умолчанию в панели администратора',
@@ -1976,7 +1976,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSystemPermissionsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_SYSTEM_PERMISSIONS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество разрешений в панели администратора',
@@ -1986,7 +1986,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminSystemPermissionsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_SYSTEM_PERMISSIONS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка разрешений по умолчанию в панели администратора',
@@ -2016,7 +2016,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketCompaniesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_MARKET_COMPANIES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество фирм в панели администратора',
@@ -2026,7 +2026,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicMarketCompaniesPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_MARKET_COMPANIES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество фирм в публичной части',
@@ -2036,7 +2036,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminMarketCompaniesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_MARKET_COMPANIES_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка фирм по умолчанию в панели администратора',
@@ -2046,7 +2046,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicMarketCompaniesDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_MARKET_COMPANIES_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка фирм по умолчанию в публичной части',
@@ -2096,7 +2096,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketStorefrontsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'ADMIN_MARKET_STOREFRONTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество витрин в панели администратора',
@@ -2106,7 +2106,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicMarketStorefrontsPerPage',
-                'value' => '20',
+                'value' => '6',
                 'constant' => 'PUBLIC_MARKET_STOREFRONTS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество витрин в публичной части',
@@ -2116,7 +2116,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'adminMarketStorefrontsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'ADMIN_MARKET_STOREFRONTS_DEFAULT_SORT',
                 'category' => 'admin',
                 'description' => 'Сортировка витрин по умолчанию в панели администратора',
@@ -2126,7 +2126,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'string',
                 'option' => 'publicMarketStorefrontsDefaultSort',
-                'value' => 'id',
+                'value' => 'idDesc',
                 'constant' => 'PUBLIC_MARKET_STOREFRONTS_DEFAULT_SORT',
                 'category' => 'public',
                 'description' => 'Сортировка витрин по умолчанию в публичной части',

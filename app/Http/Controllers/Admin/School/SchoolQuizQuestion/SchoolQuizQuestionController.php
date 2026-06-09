@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\School\SchoolQuizQuestion;
 
-use App\Http\Controllers\Admin\School\Base\BaseSchoolAdminController;
+use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionRequest;
 use App\Http\Resources\Admin\School\SchoolQuiz\SchoolQuizSharedResource;
 use App\Http\Resources\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionResource;
@@ -31,32 +31,6 @@ class SchoolQuizQuestionController extends BaseSchoolAdminController
         'explanation',
     ];
 
-    /** Расширение сортировки для вопросов квизов. */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'questionTextAsc' => 'question_text_asc',
-            'questionTextDesc' => 'question_text_desc',
-
-            'quizTitleAsc' => 'quiz_title_asc',
-            'quizTitleDesc' => 'quiz_title_desc',
-
-            'pointsAsc' => 'points_asc',
-            'pointsDesc' => 'points_desc',
-
-            'answersCountAsc' => 'answers_count_asc',
-            'answersCountDesc' => 'answers_count_desc',
-
-            'singleChoice' => 'single_choice',
-            'multipleChoice' => 'multiple_choice',
-            'trueFalse' => 'true_false',
-            'openText' => 'open_text',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-        ];
-    }
-
     /** Список вопросов квизов. */
     public function index(Request $request): Response
     {
@@ -64,9 +38,9 @@ class SchoolQuizQuestionController extends BaseSchoolAdminController
 
         $quizId = $request->query('school_quiz_id');
 
-        $adminSchoolQuizQuestionsPerPage = (int) config('site_settings.adminSchoolQuizQuestionsPerPage', 10);
+        $adminSchoolQuizQuestionsPerPage = (int) config('site_settings.adminSchoolQuizQuestionsPerPage', 6);
         $adminSchoolQuizQuestionsDefaultSort = (string) config('site_settings.adminSchoolQuizQuestionsDefaultSort', 'idDesc');
-        $sort = $this->normalizeSortParam($adminSchoolQuizQuestionsDefaultSort);
+        $sort = (string) $request->query('sort', $adminSchoolQuizQuestionsDefaultSort);
 
         try {
             $query = $this->baseQuery()

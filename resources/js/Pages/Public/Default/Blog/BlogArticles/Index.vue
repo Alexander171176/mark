@@ -76,7 +76,7 @@ const perPage = computed(() => {
 const q = ref(String(props.filters?.q ?? ''))
 
 /** Сортировка */
-const DEFAULT_SORT = 'sort'
+const DEFAULT_SORT = 'sortAsc'
 const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
 
 /** Режим отображения: карточки или строки */
@@ -93,17 +93,20 @@ watch(viewMode, (value) => {
 
 /** Опции сортировки статей */
 const articleSortOptions = [
-    { value: 'sort', label: t('sortDefault') },
-    { value: 'sort_asc', label: t('sortAsc') },
-    { value: 'sort_desc', label: t('sortDesc') },
-    { value: 'title_asc', label: t('sortNameAsc') },
-    { value: 'title_desc', label: t('sortNameDesc') },
-    { value: 'views_desc', label: t('sortPopularFirst') },
-    { value: 'views_asc', label: t('sortUnpopularFirst') },
-    { value: 'likes_desc', label: t('sortLikesDesc') },
-    { value: 'likes_asc', label: t('sortLikesAsc') },
-    { value: 'date_desc', label: t('sortNewestFirst') },
-    { value: 'date_asc', label: t('sortOldestFirst') },
+    { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
+    { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+
+    { value: 'titleAsc', label: `${t('title')} A→Z` },
+    { value: 'titleDesc', label: `${t('title')} Z→A` },
+
+    { value: 'viewsDesc', label: `${t('views')} 9→0` },
+    { value: 'viewsAsc', label: `${t('views')} 0→9` },
+
+    { value: 'likesDesc', label: `${t('likes')} 9→0` },
+    { value: 'likesAsc', label: `${t('likes')} 0→9` },
+
+    { value: 'dateDesc', label: `${t('publishedAt')} ↓` },
+    { value: 'dateAsc', label: `${t('publishedAt')} ↑` },
 ]
 
 /** Маршрут списка статей */

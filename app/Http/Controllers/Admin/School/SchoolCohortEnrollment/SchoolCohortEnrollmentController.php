@@ -42,7 +42,7 @@ class SchoolCohortEnrollmentController extends Controller
         $status = $request->query('status');
         $scheduleId = $request->query('school_course_schedule_id');
 
-        $adminSchoolCohortEnrollmentsPerPage = (int) config('site_settings.adminSchoolCohortEnrollmentsPerPage', 10);
+        $adminSchoolCohortEnrollmentsPerPage = (int) config('site_settings.adminSchoolCohortEnrollmentsPerPage', 6);
         $adminSchoolCohortEnrollmentsDefaultSort = (string) config('site_settings.adminSchoolCohortEnrollmentsDefaultSort', 'idDesc');
 
         try {

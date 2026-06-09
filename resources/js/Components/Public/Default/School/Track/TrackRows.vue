@@ -22,7 +22,7 @@ defineProps({
                    dark:border-gray-700 dark:bg-gray-900"
         >
             <Link
-                :href="route('public.tracks.show', track.slug)"
+                :href="route('public.schoolTracks.show', track.slug)"
                 class="shrink-0"
             >
                 <UniversalImageSlider
@@ -38,7 +38,7 @@ defineProps({
             <div class="min-w-0 flex-1 flex flex-col justify-around">
                 <div class="flex items-start justify-between gap-3">
                     <Link
-                        :href="route('public.tracks.show', track.slug)"
+                        :href="route('public.schoolTracks.show', track.slug)"
                         :title="`${t('courses')}: ${track.courses_count}`"
                         class="min-w-0 inline-flex items-center gap-2"
                     >
@@ -95,17 +95,17 @@ defineProps({
 
                     <EntityStats
                         :views="track.views || 0"
-                        :likes-count="track.likes_count || 0"
+                        :likes-count="track.likes_count || track.likes || 0"
                         :already-liked="track.already_liked || false"
-                        route-name="tracks.like"
-                        :route-params="{ track: track.id }"
+                        route-name="public.schoolTracks.like"
+                        :route-params="track.id"
                         :show-likes-button="true"
                         compact
                     />
 
                     <div>
                         <Link
-                            :href="route('public.tracks.show', track.slug)"
+                            :href="route('public.schoolTracks.show', track.slug)"
                             class="flex w-full items-center justify-center gap-2
                                    rounded-sm px-3 py-1 btn-default"
                         >

@@ -46,7 +46,7 @@ class SchoolBundlePriceController extends Controller
         $currencyId = $request->query('currency_id');
         $activity = $request->query('activity');
 
-        $adminSchoolBundlePricesPerPage = (int) config('site_settings.adminSchoolBundlePricesPerPage', 10);
+        $adminSchoolBundlePricesPerPage = (int) config('site_settings.adminSchoolBundlePricesPerPage', 6);
         $adminSchoolBundlePricesDefaultSort = (string) config('site_settings.adminSchoolBundlePricesDefaultSort', 'idDesc');
 
         try {

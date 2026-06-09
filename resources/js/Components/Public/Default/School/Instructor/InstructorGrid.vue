@@ -23,8 +23,12 @@ const gridClass = computed(() => {
         : 'grid grid-cols-1 gap-4 sm:grid-cols-2'
 })
 
+const showRoute = (instructor) => {
+    return route('public.schoolInstructors.show', { slug: instructor.slug })
+}
+
 const getInstructorName = (instructor) => {
-    return instructor?.public_name || instructor?.title || 'Инструктор'
+    return instructor?.public_name || instructor?.title || instructor?.user?.name || t('instructor')
 }
 
 const getInstructorShort = (instructor) => {
@@ -41,6 +45,18 @@ const getRatingText = (instructor) => {
 
     return `${Number(avg).toFixed(1)} (${count})`
 }
+
+const hasExperience = (instructor) => {
+    return Number(instructor?.experience_years ?? 0) > 0
+}
+
+const hasCourses = (instructor) => {
+    return Number(instructor?.courses_count ?? 0) > 0
+}
+
+const hasViews = (instructor) => {
+    return Number(instructor?.views ?? 0) > 0
+}
 </script>
 
 <template>
@@ -54,7 +70,7 @@ const getRatingText = (instructor) => {
                    dark:border-gray-700 dark:bg-gray-900"
         >
             <Link
-                :href="route('public.instructors.show', { slug: instructor.slug })"
+                :href="showRoute(instructor)"
             >
                 <UniversalImageSlider
                     :entity="instructor"
@@ -69,7 +85,7 @@ const getRatingText = (instructor) => {
             <div class="flex flex-1 flex-col p-4">
                 <div class="flex items-center justify-between gap-2">
                     <Link
-                        :href="route('public.instructors.show', { slug: instructor.slug })"
+                        :href="showRoute(instructor)"
                         class="inline-flex items-center gap-1"
                     >
                         <span
@@ -81,7 +97,7 @@ const getRatingText = (instructor) => {
                         </span>
                     </Link>
 
-                    <div v-if="instructor?.views > 0" class="inline-flex items-center gap-2">
+                    <div v-if="hasViews" class="inline-flex items-center gap-2">
                         <svg
                             class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
                             xmlns="http://www.w3.org/2000/svg"
@@ -111,7 +127,7 @@ const getRatingText = (instructor) => {
                            text-xs font-semibold text-slate-500 dark:text-slate-400">
 
                     <div
-                        v-if="instructor.experience_years"
+                        v-if="hasExperience"
                         class="flex items-center justify-center gap-1 px-2 py-1 rounded-sm
                                border border-slate-600 dark:border-slate-400">
                         <svg viewBox="0 0 24 24"
@@ -134,7 +150,7 @@ const getRatingText = (instructor) => {
                         {{ getRatingText(instructor) }}
                     </div>
                     <div
-                        v-if="instructor.courses_count > 0"
+                        v-if="hasCourses"
                         class="flex items-center justify-center gap-1 px-2 py-1 rounded-sm
                                border border-slate-600 dark:border-slate-400">
                         <svg class="shrink-0 h-3 w-3 text-sky-600/85 dark:text-sky-200/85"
@@ -149,7 +165,7 @@ const getRatingText = (instructor) => {
 
                 <div class="mt-auto pt-4">
                     <Link
-                        :href="route('public.instructors.show', { slug: instructor.slug })"
+                        :href="showRoute(instructor)"
                         class="flex w-full items-center justify-center gap-2
                                rounded-sm px-3 py-2 btn-default"
                     >

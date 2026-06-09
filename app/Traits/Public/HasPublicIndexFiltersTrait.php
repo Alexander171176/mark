@@ -25,7 +25,7 @@ trait HasPublicIndexFiltersTrait
     }
 
     /** Получает параметр сортировки. */
-    protected function resolveSort(Request $request, string $default = 'sort'): string
+    protected function resolveSort(Request $request, string $default = 'sortAsc'): string
     {
         return trim((string) $request->query('sort', $default));
     }

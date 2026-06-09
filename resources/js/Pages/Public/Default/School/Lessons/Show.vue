@@ -170,7 +170,7 @@ const translateAccessType = (value) => {
 
                                     <li>
                                         <Link
-                                            :href="route('public.lessons.index')"
+                                            :href="route('public.schoolLessons.index')"
                                             class="breadcrumb-link hover:underline"
                                         >
                                             {{ t('lessons') }}
@@ -181,7 +181,8 @@ const translateAccessType = (value) => {
                                         <li><span class="mx-2 breadcrumbs">/</span></li>
                                         <li>
                                             <Link
-                                                :href="route('public.courses.show', { slug: courseData.slug })"
+                                                :href="route('public.schoolCourses.show',
+                                                { slug: courseData.slug })"
                                                 class="breadcrumb-link hover:underline"
                                             >
                                                 {{ courseData.title }}
@@ -193,7 +194,8 @@ const translateAccessType = (value) => {
                                         <li><span class="mx-2 breadcrumbs">/</span></li>
                                         <li>
                                             <Link
-                                                :href="route('public.modules.show', { slug: moduleData.slug })"
+                                                :href="route('public.schoolModules.show',
+                                                { slug: moduleData.slug })"
                                                 class="breadcrumb-link hover:underline"
                                             >
                                                 {{ moduleData.title }}
@@ -208,7 +210,8 @@ const translateAccessType = (value) => {
                                 </ol>
                             </nav>
 
-                            <div class="flex flex-wrap items-center justify-center gap-3 title my-3">
+                            <div class="flex flex-wrap
+                                        items-center justify-center gap-3 title my-3">
                                 <h1 class="text-2xl font-bold">
                                     {{ lessonData.title }}
                                 </h1>
@@ -250,7 +253,8 @@ const translateAccessType = (value) => {
                                         :images="lessonImages"
                                         :alt="lessonData.title"
                                         rounded-class="rounded-lg"
-                                        shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
+                                        shadow-class="shadow-lg shadow-gray-400
+                                                      dark:shadow-gray-700"
                                         img-class="w-full h-full object-cover"
                                     />
                                 </div>
@@ -260,10 +264,14 @@ const translateAccessType = (value) => {
                                 class="my-4 flex flex-wrap items-center justify-center gap-3
                                        text-sm text-slate-600 dark:text-slate-300"
                             >
-                                <span
-                                    v-if="courseData?.title"
+                                <Link
+                                    v-if="courseData?.slug"
+                                    :href="route('public.schoolCourses.show', {
+                                        slug: courseData.slug,
+                                    })"
                                     class="rounded-sm border border-gray-400
-                                           flex items-center justify-center gap-1 px-3 py-1"
+                                           flex items-center justify-center gap-1 px-3 py-1
+                                           hover:text-blue-600 dark:hover:text-blue-400"
                                 >
                                     <svg class="shrink-0 h-3 w-3
                                                 text-sky-600/85 dark:text-sky-200/85"
@@ -271,26 +279,36 @@ const translateAccessType = (value) => {
                                          viewBox="0 0 448 512">
                                         <path d="M318.38 208h-39.09c-1.49 27.03-6.54 51.35-14.21 70.41 27.71-13.24 48.02-39.19 53.3-70.41zm0-32c-5.29-31.22-25.59-57.17-53.3-70.41 7.68 19.06 12.72 43.38 14.21 70.41h39.09zM224 97.31c-7.69 7.45-20.77 34.42-23.43 78.69h46.87c-2.67-44.26-15.75-71.24-23.44-78.69zm-41.08 8.28c-27.71 13.24-48.02 39.19-53.3 70.41h39.09c1.49-27.03 6.53-51.35 14.21-70.41zm0 172.82c-7.68-19.06-12.72-43.38-14.21-70.41h-39.09c5.28 31.22 25.59 57.17 53.3 70.41zM247.43 208h-46.87c2.66 44.26 15.74 71.24 23.43 78.69 7.7-7.45 20.78-34.43 23.44-78.69zM448 358.4V25.6c0-16-9.6-25.6-25.6-25.6H96C41.6 0 0 41.6 0 96v320c0 54.4 41.6 96 96 96h326.4c12.8 0 25.6-9.6 25.6-25.6v-16c0-6.4-3.2-12.8-9.6-19.2-3.2-16-3.2-60.8 0-73.6 6.4-3.2 9.6-9.6 9.6-19.2zM224 64c70.69 0 128 57.31 128 128s-57.31 128-128 128S96 262.69 96 192 153.31 64 224 64zm160 384H96c-19.2 0-32-12.8-32-32s16-32 32-32h288v64z"></path>
                                     </svg>
-                                    {{ t('course') }}: {{ courseData.title }}
-                                </span>
 
-                                <span
-                                    v-if="moduleData?.title"
+                                    {{ t('course') }}: {{ courseData.title }}
+                                </Link>
+
+                                <Link
+                                    v-if="moduleData?.slug"
+                                    :href="route('public.schoolModules.show', {
+                                        slug: moduleData.slug,
+                                    })"
                                     class="rounded-sm border border-gray-400
-                                           flex items-center justify-center gap-1 px-3 py-1"
+                                           flex items-center justify-center gap-1 px-3 py-1
+                                           hover:text-blue-600 dark:hover:text-blue-400"
                                 >
-                                    <svg class="shrink-0 h-3 w-3 text-teal-600/85
-                                                dark:text-teal-200/85"
-                                         fill="currentColor"
-                                         viewBox="0 0 24 24">
-                                        <rect x="1" y="1" width="10" height="10" rx="2"></rect>
-                                        <path class="fill-current text-teal-400"
-                                              d="M23.428,4.618,19.381.572h0a1.957,1.957,0,0,0-2.762,0L12.572,4.618a1.959,1.959,0,0,0,0,2.764l4.047,4.047a1.957,1.957,0,0,0,2.762,0l4.047-4.046A1.959,1.959,0,0,0,23.428,4.618Z"></path>
-                                        <rect x="13" y="13" width="10" height="10" rx="2"></rect>
-                                        <rect x="1" y="13" width="10" height="10" rx="2"></rect>
+                                    <svg
+                                        class="shrink-0 h-3 w-3
+                                                text-teal-600/85 dark:text-teal-200/85"
+                                        fill="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <rect x="1" y="1" width="10" height="10" rx="2"/>
+                                        <path
+                                            class="fill-current text-teal-400"
+                                            d="M23.428,4.618,19.381,.572a1.957,1.957,0,0,0-2.762,0L12.572,4.618a1.959,1.959,0,0,0,0,2.764l4.047,4.047a1.957,1.957,0,0,0,2.762,0l4.047-4.046A1.959,1.959,0,0,0,23.428,4.618Z"
+                                        />
+                                        <rect x="13" y="13" width="10" height="10" rx="2"/>
+                                        <rect x="1" y="13" width="10" height="10" rx="2"/>
                                     </svg>
+
                                     {{ t('module') }}: {{ moduleData.title }}
-                                </span>
+                                </Link>
 
                                 <span
                                     v-if="lessonData.access_type"
@@ -311,11 +329,12 @@ const translateAccessType = (value) => {
                                     class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1 px-3 py-1"
                                 >
-                                    <svg viewBox="0 0 24 24" class="h-3 w-3 text-red-400 dark:text-red-300">
+                                    <svg viewBox="0 0 24 24"
+                                         class="h-3 w-3 text-red-400 dark:text-red-300">
                                         <path class="fill-current"
                                               d="M12.746,1.464l3.11,6.3L22.81,8.776a.831.831,0,0,1,.461,1.418l-5.033,4.9,1.188,6.926a.832.832,0,0,1-1.207.877L12,19.632,5.78,22.9a.833.833,0,0,1-1.207-.878L5.761,15.1l-5.033-4.9a.831.831,0,0,1,.461-1.418L8.143,7.765l3.11-6.3A.833.833,0,0,1,12.746,1.464Z"></path>
                                     </svg>
-                                    {{ t('rating') }}: {{ Number(lessonData.rating_avg).toFixed(1) }}
+                                {{ t('rating') }}: {{ Number(lessonData.rating_avg).toFixed(1) }}
                                 </span>
 
                                 <span
@@ -323,7 +342,8 @@ const translateAccessType = (value) => {
                                     class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1 px-3 py-1"
                                 >
-                                    <svg class="w-3 h-3 text-blue-700 dark:text-blue-300" viewBox="0 0 24 24">
+                                    <svg class="w-3 h-3 text-blue-700 dark:text-blue-300"
+                                         viewBox="0 0 24 24">
                                         <path class="fill-current"
                                               d="M22,13a1,1,0,0,1,0-2h1.949A12.006,12.006,0,0,0,13,.051V2a1,1,0,0,1-2,0V.051A12.006,12.006,0,0,0,.051,11H2a1,1,0,0,1,0,2H.051A12.006,12.006,0,0,0,11,23.949V22a1,1,0,0,1,2,0v1.949A12.006,12.006,0,0,0,23.949,13Zm-6,0H12a1,1,0,0,1-.832-.445l-4-6a1,1,0,1,1,1.664-1.11L12.535,11H16a1,1,0,0,1,0,2Z"></path>
                                     </svg>
@@ -341,8 +361,8 @@ const translateAccessType = (value) => {
                                 <LikeButtonEntity
                                     :likes-count="lessonData.likes_count || lessonData.likes || 0"
                                     :already-liked="lessonData.already_liked || false"
-                                    route-name="lessons.like"
-                                    :route-params="{ lesson: lessonData.id }"
+                                    route-name="public.schoolLessons.like"
+                                    :route-params="lessonData.id"
                                     :title="t('like')"
                                 />
                             </div>
@@ -351,27 +371,33 @@ const translateAccessType = (value) => {
                                 v-if="hashtags.length"
                                 class="mt-4 flex flex-wrap items-center justify-center gap-2"
                             >
-                                <span
+                                <Link
                                     v-for="hashtag in hashtags"
                                     :key="hashtag.id"
+                                    :href="route('public.schoolHashtags.show',
+                                    { slug: hashtag.slug })"
                                     class="rounded-sm px-2 py-1 text-xs font-semibold
                                            text-indigo-700 bg-indigo-50 dark:text-indigo-300
-                                           dark:bg-indigo-950/50 border border-indigo-400"
+                                           dark:bg-indigo-950/50 border border-indigo-400
+                                           hover:underline"
                                 >
                                     #{{ hashtag.name }}
-                                </span>
+                                </Link>
                             </div>
 
                             <div
                                 v-if="contentData"
-                                class="mt-8 rounded-md border border-gray-200 bg-white p-4 shadow-sm
+                                class="mt-8 rounded-md border border-gray-200
+                                       bg-white p-4 shadow-sm
                                        dark:border-gray-700 dark:bg-gray-900"
                             >
-                                <h2 class="mb-3 text-center text-lg font-semibold text-gray-700 dark:text-gray-300">
+                                <h2 class="mb-3 text-center text-lg font-semibold
+                                           text-gray-700 dark:text-gray-300">
                                     {{ t('content') }}
                                 </h2>
 
-                                <div class="flex flex-wrap items-center justify-center gap-3 text-sm">
+                                <div class="flex flex-wrap
+                                            items-center justify-center gap-3 text-sm">
                                     <span
                                         v-if="contentData.type"
                                         class="rounded-sm border border-gray-400 px-3 py-1"
@@ -382,7 +408,8 @@ const translateAccessType = (value) => {
                                     <Link
                                         v-if="contentData.slug"
                                         :href="`#`"
-                                        class="rounded-sm border border-gray-400 px-3 py-1 hover:underline"
+                                        class="rounded-sm border border-gray-400 px-3 py-1
+                                               hover:underline"
                                     >
                                         {{ contentData.title || t('open') }}
                                     </Link>

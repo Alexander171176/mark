@@ -11,6 +11,7 @@ export default {
     charts: 'Графики',
     checkInstructor: 'Проверка (инструктор)',
     checkbox: 'Флажок',
+    children: 'Дети',
     city: 'Город',
     class: 'классы Tailwind CSS',
     clearCache: 'Очистить кэш',

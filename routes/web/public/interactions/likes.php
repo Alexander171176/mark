@@ -8,10 +8,10 @@ $siteLayout = config('site_settings.siteLayout', 'Default');
 
 $publicArticleController = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\BlogArticle\\BlogArticleController";
 $publicVideoController   = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\BlogVideo\\BlogVideoController";
-$publicTrackController   = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\TrackController";
-$publicCourseController  = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\CourseController";
-$publicModuleController  = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\ModuleController";
-$publicLessonController  = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\LessonController";
+$publicTrackController   = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolTrack\\SchoolTrackController";
+$publicCourseController  = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolCourse\\SchoolCourseController";
+$publicModuleController  = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolModule\\SchoolModuleController";
+$publicLessonController  = "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolLesson\\SchoolLessonController";
 
 Route::post('/blog-articles/{id}/like', [$publicArticleController, 'like'])
     ->name('public.blogArticles.like');
@@ -19,14 +19,14 @@ Route::post('/blog-articles/{id}/like', [$publicArticleController, 'like'])
 Route::post('/blog-videos/{id}/like', [$publicVideoController, 'like'])
     ->name('public.blogVideos.like');
 
-Route::post('/tracks/{track}/like', [$publicTrackController, 'like'])
-    ->name('tracks.like');
+Route::post('/school-tracks/{id}/like', [$publicTrackController, 'like'])
+    ->name('public.schoolTracks.like');
 
-Route::post('/courses/{course}/like', [$publicCourseController, 'like'])
-    ->name('courses.like');
+Route::post('/school-courses/{id}/like', [$publicCourseController, 'like'])
+    ->name('public.schoolCourses.like');
 
-Route::post('/modules/{module}/like', [$publicModuleController, 'like'])
-    ->name('modules.like');
+Route::post('/school-modules/{id}/like', [$publicModuleController, 'like'])
+    ->name('public.schoolModules.like');
 
-Route::post('/lessons/{lesson}/like', [$publicLessonController, 'like'])
-    ->name('lessons.like');
+Route::post('/school-lessons/{id}/like', [$publicLessonController, 'like'])
+    ->name('public.schoolLessons.like');

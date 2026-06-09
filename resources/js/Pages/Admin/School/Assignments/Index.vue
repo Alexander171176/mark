@@ -79,6 +79,8 @@ const sortParam = ref(props.adminSchoolAssignmentsDefaultSort || 'idDesc')
 
 // Сохранение параметра сортировки
 watch(sortParam, (newVal) => {
+    currentPage.value = 1
+
     router.put(route('admin.settings.updateAdminSortAssignments'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
@@ -144,32 +146,44 @@ const searchQuery = ref('')
 const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
 // Сортировка заданий
+const safeNumber = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : 0
+}
+
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+const byNumberAsc = (field) => (a, b) =>
+    safeNumber(a?.[field]) - safeNumber(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byNumberDesc = (field) => (a, b) =>
+    safeNumber(b?.[field]) - safeNumber(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const byStringAsc = (field) => (a, b) =>
+    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byStringDesc = (field) => (a, b) =>
+    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const getNestedTitle = (item, field) => {
+    const entity = item?.[field]
+
+    return entity?.title
+        || entity?.name
+        || entity?.public_name
+        || entity?.user?.name
+        || ''
+}
+
 const sortAssignments = (items) => {
     const list = (items || []).slice()
-
-    if (sortParam.value === 'idAsc') {
-        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    }
-
-    if (sortParam.value === 'idDesc') {
-        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-    }
-
-    if (sortParam.value === 'sortAsc') {
-        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    }
-
-    if (sortParam.value === 'sortDesc') {
-        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
-    }
-
-    if (sortParam.value === 'titleAsc') {
-        return list.sort((a, b) => normalize(a.title).localeCompare(normalize(b.title)))
-    }
-
-    if (sortParam.value === 'titleDesc') {
-        return list.sort((a, b) => normalize(b.title).localeCompare(normalize(a.title)))
-    }
 
     if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
     if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
@@ -183,34 +197,123 @@ const sortAssignments = (items) => {
     if (sortParam.value === 'right') return list.filter(item => !!item.right)
     if (sortParam.value === 'noRight') return list.filter(item => !item.right)
 
-    if (sortParam.value === 'published_at') {
-        return list.sort((a, b) => {
-            const aTime = a.published_at ? new Date(a.published_at).getTime() : 0
-            const bTime = b.published_at ? new Date(b.published_at).getTime() : 0
+    const sortMap = {
+        idAsc: byNumberAsc('id'),
+        idDesc: byNumberDesc('id'),
 
-            return bTime - aTime
-        })
+        sortAsc: byNumberAsc('sort'),
+        sortDesc: byNumberDesc('sort'),
+
+        titleAsc: byStringAsc('title'),
+        titleDesc: byStringDesc('title'),
+
+        slugAsc: byStringAsc('slug'),
+        slugDesc: byStringDesc('slug'),
+
+        courseAsc: byNumberAsc('school_course_id'),
+        courseDesc: byNumberDesc('school_course_id'),
+
+        moduleAsc: byNumberAsc('school_module_id'),
+        moduleDesc: byNumberDesc('school_module_id'),
+
+        lessonAsc: byNumberAsc('school_lesson_id'),
+        lessonDesc: byNumberDesc('school_lesson_id'),
+
+        instructorAsc: byNumberAsc('school_instructor_profile_id'),
+        instructorDesc: byNumberDesc('school_instructor_profile_id'),
+
+        courseTitleAsc: (a, b) =>
+            normalize(getNestedTitle(a, 'course')).localeCompare(normalize(getNestedTitle(b, 'course')), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        courseTitleDesc: (a, b) =>
+            normalize(getNestedTitle(b, 'course')).localeCompare(normalize(getNestedTitle(a, 'course')), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        moduleTitleAsc: (a, b) =>
+            normalize(getNestedTitle(a, 'module')).localeCompare(normalize(getNestedTitle(b, 'module')), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        moduleTitleDesc: (a, b) =>
+            normalize(getNestedTitle(b, 'module')).localeCompare(normalize(getNestedTitle(a, 'module')), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        lessonTitleAsc: (a, b) =>
+            normalize(getNestedTitle(a, 'lesson')).localeCompare(normalize(getNestedTitle(b, 'lesson')), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        lessonTitleDesc: (a, b) =>
+            normalize(getNestedTitle(b, 'lesson')).localeCompare(normalize(getNestedTitle(a, 'lesson')), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        instructorTitleAsc: (a, b) =>
+            normalize(getNestedTitle(a, 'instructor')).localeCompare(normalize(getNestedTitle(b, 'instructor')), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        instructorTitleDesc: (a, b) =>
+            normalize(getNestedTitle(b, 'instructor')).localeCompare(normalize(getNestedTitle(a, 'instructor')), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        statusAsc: byStringAsc('status'),
+        statusDesc: byStringDesc('status'),
+
+        visibilityAsc: byStringAsc('visibility'),
+        visibilityDesc: byStringDesc('visibility'),
+
+        gradingTypeAsc: byStringAsc('grading_type'),
+        gradingTypeDesc: byStringDesc('grading_type'),
+
+        attemptsLimitAsc: byNumberAsc('attempts_limit'),
+        attemptsLimitDesc: byNumberDesc('attempts_limit'),
+
+        maxScoreAsc: byNumberAsc('max_score'),
+        maxScoreDesc: byNumberDesc('max_score'),
+
+        submissionsAsc: byNumberAsc('submissions_count'),
+        submissionsDesc: byNumberDesc('submissions_count'),
+
+        imagesAsc: byNumberAsc('images_count'),
+        imagesDesc: byNumberDesc('images_count'),
+
+        activityAsc: byNumberAsc('activity'),
+        activityDesc: byNumberDesc('activity'),
+
+        publishedAtAsc: (a, b) =>
+            safeDate(a?.published_at) - safeDate(b?.published_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        publishedAtDesc: (a, b) =>
+            safeDate(b?.published_at) - safeDate(a?.published_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        dueAtAsc: (a, b) =>
+            safeDate(a?.due_at) - safeDate(b?.due_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        dueAtDesc: (a, b) =>
+            safeDate(b?.due_at) - safeDate(a?.due_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        createdAtAsc: (a, b) =>
+            safeDate(a?.created_at) - safeDate(b?.created_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        createdAtDesc: (a, b) =>
+            safeDate(b?.created_at) - safeDate(a?.created_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        updatedAtAsc: (a, b) =>
+            safeDate(a?.updated_at) - safeDate(b?.updated_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        updatedAtDesc: (a, b) =>
+            safeDate(b?.updated_at) - safeDate(a?.updated_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
     }
 
-    if (sortParam.value === 'due_at') {
-        return list.sort((a, b) => {
-            const aTime = a.due_at ? new Date(a.due_at).getTime() : 0
-            const bTime = b.due_at ? new Date(b.due_at).getTime() : 0
-
-            return bTime - aTime
-        })
-    }
-
-    if ([
-        'attempts_limit',
-        'max_score',
-        'images_count',
-        'submissions_count',
-    ].includes(sortParam.value)) {
-        return list.sort((a, b) => (b[sortParam.value] ?? 0) - (a[sortParam.value] ?? 0))
-    }
-
-    return list
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
 }
 
 // Отфильтрованные задания

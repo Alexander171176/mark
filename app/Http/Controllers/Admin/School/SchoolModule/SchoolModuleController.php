@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\School\SchoolModule;
 
-use App\Http\Controllers\Admin\School\Base\BaseSchoolAdminController;
+use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolModule\SchoolModuleRequest;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
@@ -59,40 +59,14 @@ class SchoolModuleController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
-    /** Расширение сортировки для модулей. */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'published_at' => 'published_at_desc',
-            'lessons_count' => 'lessons_count_desc',
-
-            'status' => 'status_asc',
-            'availability' => 'availability_asc',
-
-            'difficulty' => 'difficulty_desc',
-            'duration' => 'duration_desc',
-
-            'popularity' => 'popularity_desc',
-            'rating_count' => 'rating_count_desc',
-            'rating_avg' => 'rating_avg_desc',
-
-            'views' => 'views_desc',
-            'likes' => 'likes_desc',
-            'likes_count' => 'likes_count_desc',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-        ];
-    }
-
     /** Список модулей. */
     public function index(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolModulesPerPage = (int) config('site_settings.adminSchoolModulesPerPage', 10);
+        $adminSchoolModulesPerPage = (int) config('site_settings.adminSchoolModulesPerPage', 6);
         $adminSchoolModulesDefaultSort = (string) config('site_settings.adminSchoolModulesDefaultSort', 'idDesc');
-        $sort = $this->normalizeSortParam($adminSchoolModulesDefaultSort);
+        $sort = (string) $request->query('sort', $adminSchoolModulesDefaultSort);
 
         try {
             $modules = $this->baseQuery()
@@ -108,24 +82,7 @@ class SchoolModuleController extends BaseSchoolAdminController
                     'images',
                     'likes',
                 ])
-                ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
-                ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
-                ->when($sort === 'published_at_desc', fn ($query) => $query->orderByDesc('published_at')->orderByDesc('id'))
-                ->when($sort === 'lessons_count_desc', fn ($query) => $query->orderByDesc('lessons_count')->orderByDesc('id'))
-                ->when($sort === 'views_desc', fn ($query) => $query->orderByDesc('views')->orderByDesc('id'))
-                ->when($sort === 'likes_desc', fn ($query) => $query->orderByDesc('likes')->orderByDesc('id'))
-                ->when($sort === 'likes_count_desc', fn ($query) => $query->orderByDesc('likes_count')->orderByDesc('id'))
-                ->when($sort === 'popularity_desc', fn ($query) => $query->orderByDesc('popularity')->orderByDesc('id'))
-                ->when($sort === 'rating_count_desc', fn ($query) => $query->orderByDesc('rating_count')->orderByDesc('id'))
-                ->when($sort === 'rating_avg_desc', fn ($query) => $query->orderByDesc('rating_avg')->orderByDesc('id'))
-                ->when($sort === 'difficulty_desc', fn ($query) => $query->orderByDesc('difficulty')->orderByDesc('id'))
-                ->when($sort === 'duration_desc', fn ($query) => $query->orderByDesc('duration')->orderByDesc('id'))
-                ->when($sort === 'status_asc', fn ($query) => $query->orderBy('status')->orderByDesc('id'))
-                ->when($sort === 'availability_asc', fn ($query) => $query->orderBy('availability')->orderByDesc('id'))
-                ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
-                ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
-                ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
-                ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
+                ->sortByParam($sort, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/School/Modules/Index', [

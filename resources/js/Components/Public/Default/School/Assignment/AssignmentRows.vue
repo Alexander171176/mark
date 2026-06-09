@@ -15,7 +15,7 @@ defineProps({
 
 /** Нормализация ссылки задания */
 const assignmentLink = (assignment) => {
-    return route('public.assignments.show', { slug: assignment.slug })
+    return route('public.schoolAssignments.show', { slug: assignment.slug })
 }
 
 /** показ курса */
@@ -33,19 +33,19 @@ const getInstructor = (assignment) => assignment?.instructor || null
 /** Нормализация ссылки курса */
 const courseLink = (assignment) => {
     const course = getCourse(assignment)
-    return course?.slug ? route('public.courses.show', { slug: course.slug }) : '#'
+    return course?.slug ? route('public.schoolCourses.show', { slug: course.slug }) : '#'
 }
 
 /** Нормализация ссылки модуля */
 const moduleLink = (assignment) => {
     const module = getModule(assignment)
-    return module?.slug ? route('public.modules.show', { slug: module.slug }) : '#'
+    return module?.slug ? route('public.schoolModules.show', { slug: module.slug }) : '#'
 }
 
 /** Нормализация ссылки урока */
 const lessonLink = (assignment) => {
     const lesson = getLesson(assignment)
-    return lesson?.slug ? route('public.lessons.show', { slug: lesson.slug }) : '#'
+    return lesson?.slug ? route('public.schoolLessons.show', { slug: lesson.slug }) : '#'
 }
 
 /** Нормализация названий курса, модуля, урока, инструктора */
@@ -142,7 +142,8 @@ const translateStatus = (value) => {
                     height-class="h-44"
                     rounded-class="rounded-md"
                     wrapper-class="w-full sm:w-60 border border-gray-400 dark:border-gray-600"
-                    img-class="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                    img-class="w-full h-full object-cover transition
+                               duration-300 group-hover:scale-105"
                 />
             </Link>
 
@@ -192,7 +193,8 @@ const translateStatus = (value) => {
                                text-xs font-semibold text-slate-700/85 dark:text-slate-300/85"
                             :title="getInstructorName(assignment)"
                         >
-                            <svg class="shrink-0 h-4 w-4 text-violet-600/85 dark:text-violet-200/85"
+                            <svg class="shrink-0 h-4 w-4
+                                        text-violet-600/85 dark:text-violet-200/85"
                                  fill="currentColor" viewBox="0 0 640 512">
                                 <path
                                     d="M622.34 153.2L343.4 67.5c-15.2-4.67-31.6-4.67-46.79 0L17.66 153.2c-23.54 7.23-23.54 38.36 0 45.59l48.63 14.94c-10.67 13.19-17.23 29.28-17.88 46.9C38.78 266.15 32 276.11 32 288c0 10.78 5.68 19.85 13.86 25.65L20.33 428.53C18.11 438.52 25.71 448 35.94 448h56.11c10.24 0 17.84-9.48 15.62-19.47L82.14 313.65C90.32 307.85 96 298.78 96 288c0-11.57-6.47-21.25-15.66-26.87.76-15.02 8.44-28.3 20.69-36.72L296.6 284.5c9.06 2.78 26.44 6.25 46.79 0l278.95-85.7c23.55-7.24 23.55-38.36 0-45.6zM352.79 315.09c-28.53 8.76-52.84 3.92-65.59 0l-145.02-44.55L128 384c0 35.35 85.96 64 192 64s192-28.65 192-64l-14.18-113.47-145.03 44.56z"></path>
@@ -272,7 +274,8 @@ const translateStatus = (value) => {
                         >
                             <svg class="h-4 w-4 text-sky-600/85 dark:text-sky-300/85"
                                  fill="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path>
                             </svg>
                             <div class="text-slate-500 dark:text-slate-400">{{ t('lesson') }}:</div>
                             <Link

@@ -30,14 +30,12 @@ class BlogTag extends Model
         'moderated_at',
         'moderation_note',
 
+        'created_at',
+        'updated_at',
+
         'icon',
         'slug',
         'views',
-    ];
-
-    protected $hidden = [
-        'created_at',
-        'updated_at',
     ];
 
     protected $casts = [
@@ -235,14 +233,39 @@ class BlogTag extends Model
         $locale = $locale ?: app()->getLocale();
 
         return match ($sort) {
-            'sort_asc'   => $query->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sort_desc'  => $query->orderBy('sort', 'desc')->orderByDesc('id'),
-            'date_asc'   => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'date_desc'  => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
-            'views_asc'  => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'views_desc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+            'idAsc' => $query->orderBy('id', 'asc'),
+            'idDesc' => $query->orderBy('id', 'desc'),
 
-            'name_asc' => $query
+            'sortAsc' => $query->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $query->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'slugAsc' => $query->orderBy('slug', 'asc')->orderByDesc('id'),
+            'slugDesc' => $query->orderBy('slug', 'desc')->orderByDesc('id'),
+
+            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+
+            'articlesAsc' => $query->withCount('articles')->orderBy('articles_count', 'asc')->orderByDesc('id'),
+            'articlesDesc' => $query->withCount('articles')->orderBy('articles_count', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $query->where('activity', true)->orderByDesc('id'),
+            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+
+            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
+            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
+            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
+            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
+            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+
+            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            'nameAsc' => $query
                 ->leftJoin('blog_tag_translations as btt_sort', function ($join) use ($locale) {
                     $join->on('btt_sort.tag_id', '=', 'blog_tags.id')
                         ->where('btt_sort.locale', '=', $locale);
@@ -251,7 +274,7 @@ class BlogTag extends Model
                 ->orderByDesc('blog_tags.id')
                 ->select('blog_tags.*'),
 
-            'name_desc' => $query
+            'nameDesc' => $query
                 ->leftJoin('blog_tag_translations as btt_sort', function ($join) use ($locale) {
                     $join->on('btt_sort.tag_id', '=', 'blog_tags.id')
                         ->where('btt_sort.locale', '=', $locale);

@@ -332,28 +332,126 @@ class SchoolCourse extends Model
     }
 
     /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $q, ?string $sort): Builder
+    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
     {
+        $locale = $locale ?: app()->getLocale();
+
         return match ($sort) {
-            'id_asc'          => $q->orderBy('id', 'asc'),
-            'id_desc'         => $q->orderBy('id', 'desc'),
-            'sort_asc'        => $q->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sort_desc'       => $q->orderBy('sort', 'desc')->orderByDesc('id'),
-            'date_asc'        => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'date_desc'       => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
-            'views_asc'       => $q->orderBy('views', 'asc')->orderByDesc('id'),
-            'views_desc'      => $q->orderBy('views', 'desc')->orderByDesc('id'),
-            'likes_asc'       => $q->withCount('likes')->orderBy('likes_count', 'asc')->orderByDesc('id'),
-            'likes_desc'      => $q->withCount('likes')->orderBy('likes_count', 'desc')->orderByDesc('id'),
-            'rating_asc'      => $q->orderBy('rating_avg', 'asc')->orderByDesc('id'),
-            'rating_desc'     => $q->orderBy('rating_avg', 'desc')->orderByDesc('id'),
-            'popularity_asc'  => $q->orderBy('popularity', 'asc')->orderByDesc('id'),
-            'popularity_desc' => $q->orderBy('popularity', 'desc')->orderByDesc('id'),
-            'students_asc'    => $q->orderBy('students_count', 'asc')->orderByDesc('id'),
-            'students_desc'   => $q->orderBy('students_count', 'desc')->orderByDesc('id'),
-            'duration_asc'    => $q->orderBy('duration', 'asc')->orderByDesc('id'),
-            'duration_desc'   => $q->orderBy('duration', 'desc')->orderByDesc('id'),
-            default           => $q->ordered(),
+            'idAsc' => $q->orderBy('id', 'asc'),
+            'idDesc' => $q->orderBy('id', 'desc'),
+
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'titleAsc' => $q
+                ->leftJoin('school_course_translations as sct_sort', function ($join) use ($locale) {
+                    $join->on('sct_sort.school_course_id', '=', 'school_courses.id')
+                        ->where('sct_sort.locale', '=', $locale);
+                })
+                ->orderBy('sct_sort.title', 'asc')
+                ->orderByDesc('school_courses.id')
+                ->select('school_courses.*'),
+
+            'titleDesc' => $q
+                ->leftJoin('school_course_translations as sct_sort', function ($join) use ($locale) {
+                    $join->on('sct_sort.school_course_id', '=', 'school_courses.id')
+                        ->where('sct_sort.locale', '=', $locale);
+                })
+                ->orderBy('sct_sort.title', 'desc')
+                ->orderByDesc('school_courses.id')
+                ->select('school_courses.*'),
+
+            'studentsCountAsc' => $q->orderBy('students_count', 'asc')->orderByDesc('id'),
+            'studentsCountDesc' => $q->orderBy('students_count', 'desc')->orderByDesc('id'),
+
+            'viewsAsc' => $q->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
+
+            'likesAsc' => $q->orderBy('likes', 'asc')->orderByDesc('id'),
+            'likesDesc' => $q->orderBy('likes', 'desc')->orderByDesc('id'),
+
+            'popularityAsc' => $q->orderBy('popularity', 'asc')->orderByDesc('id'),
+            'popularityDesc' => $q->orderBy('popularity', 'desc')->orderByDesc('id'),
+
+            'ratingCountAsc' => $q->orderBy('rating_count', 'asc')->orderByDesc('id'),
+            'ratingCountDesc' => $q->orderBy('rating_count', 'desc')->orderByDesc('id'),
+
+            'ratingAvgAsc' => $q->orderBy('rating_avg', 'asc')->orderByDesc('id'),
+            'ratingAvgDesc' => $q->orderBy('rating_avg', 'desc')->orderByDesc('id'),
+
+            'difficultyAsc' => $q->orderBy('difficulty', 'asc')->orderByDesc('id'),
+            'difficultyDesc' => $q->orderBy('difficulty', 'desc')->orderByDesc('id'),
+
+            'durationAsc' => $q->orderBy('duration', 'asc')->orderByDesc('id'),
+            'durationDesc' => $q->orderBy('duration', 'desc')->orderByDesc('id'),
+
+            'levelAsc' => $q->orderBy('level', 'asc')->orderByDesc('id'),
+            'levelDesc' => $q->orderBy('level', 'desc')->orderByDesc('id'),
+
+            'statusAsc' => $q->orderBy('status', 'asc')->orderByDesc('id'),
+            'statusDesc' => $q->orderBy('status', 'desc')->orderByDesc('id'),
+
+            'availabilityAsc' => $q->orderBy('availability', 'asc')->orderByDesc('id'),
+            'availabilityDesc' => $q->orderBy('availability', 'desc')->orderByDesc('id'),
+
+            'modulesAsc' => $q->withCount('modules')->orderBy('modules_count', 'asc')->orderByDesc('id'),
+            'modulesDesc' => $q->withCount('modules')->orderBy('modules_count', 'desc')->orderByDesc('id'),
+
+            'lessonsAsc' => $q->withCount('lessons')->orderBy('lessons_count', 'asc')->orderByDesc('id'),
+            'lessonsDesc' => $q->withCount('lessons')->orderBy('lessons_count', 'desc')->orderByDesc('id'),
+
+            'tracksAsc' => $q->withCount('tracks')->orderBy('tracks_count', 'asc')->orderByDesc('id'),
+            'tracksDesc' => $q->withCount('tracks')->orderBy('tracks_count', 'desc')->orderByDesc('id'),
+
+            'hashtagsAsc' => $q->withCount('hashtags')->orderBy('hashtags_count', 'asc')->orderByDesc('id'),
+            'hashtagsDesc' => $q->withCount('hashtags')->orderBy('hashtags_count', 'desc')->orderByDesc('id'),
+
+            'imagesAsc' => $q->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
+            'imagesDesc' => $q->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+
+            'pricesAsc' => $q->withCount('prices')->orderBy('prices_count', 'asc')->orderByDesc('id'),
+            'pricesDesc' => $q->withCount('prices')->orderBy('prices_count', 'desc')->orderByDesc('id'),
+
+            'reviewsAsc' => $q->withCount('reviews')->orderBy('reviews_count', 'asc')->orderByDesc('id'),
+            'reviewsDesc' => $q->withCount('reviews')->orderBy('reviews_count', 'desc')->orderByDesc('id'),
+
+            'enrollmentsAsc' => $q->withCount('enrollments')->orderBy('enrollments_count', 'asc')->orderByDesc('id'),
+            'enrollmentsDesc' => $q->withCount('enrollments')->orderBy('enrollments_count', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $q->where('activity', true)->orderByDesc('id'),
+            'inactive' => $q->where('activity', false)->orderByDesc('id'),
+
+            'isNewAsc' => $q->orderBy('is_new', 'asc')->orderByDesc('id'),
+            'isNewDesc' => $q->orderBy('is_new', 'desc')->orderByDesc('id'),
+            'isNew' => $q->where('is_new', true)->orderByDesc('id'),
+
+            'isHitAsc' => $q->orderBy('is_hit', 'asc')->orderByDesc('id'),
+            'isHitDesc' => $q->orderBy('is_hit', 'desc')->orderByDesc('id'),
+            'isHit' => $q->where('is_hit', true)->orderByDesc('id'),
+
+            'isSaleAsc' => $q->orderBy('is_sale', 'asc')->orderByDesc('id'),
+            'isSaleDesc' => $q->orderBy('is_sale', 'desc')->orderByDesc('id'),
+            'isSale' => $q->where('is_sale', true)->orderByDesc('id'),
+
+            'left' => $q->where('left', true)->orderByDesc('id'),
+            'noLeft' => $q->where('left', false)->orderByDesc('id'),
+            'main' => $q->where('main', true)->orderByDesc('id'),
+            'noMain' => $q->where('main', false)->orderByDesc('id'),
+            'right' => $q->where('right', true)->orderByDesc('id'),
+            'noRight' => $q->where('right', false)->orderByDesc('id'),
+
+            'publishedAtAsc', 'dateAsc' => $q->orderBy('published_at', 'asc')->orderByDesc('id'),
+            'publishedAtDesc', 'dateDesc' => $q->orderBy('published_at', 'desc')->orderByDesc('id'),
+
+            'createdAtAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            default => $q->ordered(),
         };
     }
 

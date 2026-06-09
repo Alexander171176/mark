@@ -49,6 +49,7 @@ const props = defineProps({
     tags: { type: Array, default: () => [] },
     mainVideos: { type: Array, default: () => [] },
     mainBanners: { type: Array, default: () => [] },
+    locale: { type: String, default: 'ru', },
 })
 
 /** Иерархия треков */
@@ -86,25 +87,39 @@ const perPage = computed(() => {
 const q = ref(String(props.filters?.q ?? ''))
 
 /** Сортировка */
-const sort = ref(String(props.filters?.sort ?? 'sort_asc'))
+const DEFAULT_SORT = 'idDesc'
+const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
 
 const instructorSortOptions = [
-    { value: 'sort_asc', label: t('idAsc') },
-    { value: 'sort_desc', label: t('idDesc') },
-    { value: 'date_desc', label: t('sortNewestFirst') },
-    { value: 'date_asc', label: t('sortOldestFirst') },
-    { value: 'views_desc', label: t('sortPopularFirst') },
-    { value: 'views_asc', label: t('sortUnpopularFirst') },
-    { value: 'rating_desc', label: t('ratingDesc') },
-    { value: 'rating_asc', label: t('ratingAsc') },
-    { value: 'experience_desc', label: t('experienceDesc') },
-    { value: 'experience_asc', label: t('experienceAsc') },
+    { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
+    { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+
+    { value: 'titleAsc', label: `${t('title')} A→Z` },
+    { value: 'titleDesc', label: `${t('title')} Z→A` },
+
+    { value: 'viewsDesc', label: `${t('views')} 9→0` },
+    { value: 'viewsAsc', label: `${t('views')} 0→9` },
+
+    { value: 'ratingAvgDesc', label: `${t('rating')} 9→0` },
+    { value: 'ratingAvgAsc', label: `${t('rating')} 0→9` },
+
+    { value: 'ratingCountDesc', label: `${t('rating')} count 9→0` },
+    { value: 'ratingCountAsc', label: `${t('rating')} count 0→9` },
+
+    { value: 'experienceDesc', label: `${t('experienceYears')} 9→0` },
+    { value: 'experienceAsc', label: `${t('experienceYears')} 0→9` },
+
+    { value: 'coursesDesc', label: `${t('courses')} 9→0` },
+    { value: 'coursesAsc', label: `${t('courses')} 0→9` },
+
+    { value: 'dateDesc', label: `${t('createdAt')} ↓` },
+    { value: 'dateAsc', label: `${t('createdAt')} ↑` },
 ]
 
 /** Поисковый запрос */
 const submitSearch = () => {
     router.get(
-        route('instructors.index', { locale: props.currentLocale }),
+        route('public.schoolInstructors.index', { locale: props.locale }),
         {
             q: q.value || undefined,
             sort: sort.value || undefined,
@@ -118,10 +133,10 @@ const submitSearch = () => {
 /** Сброс поиска */
 const resetSearch = () => {
     q.value = ''
-    sort.value = 'sort_asc'
+    sort.value = DEFAULT_SORT
 
     router.get(
-        route('instructors.index', { locale: props.currentLocale }),
+        route('public.schoolInstructors.index', { locale: props.locale }),
         {
             per_page: perPage.value,
             sort: sort.value,
@@ -139,7 +154,7 @@ const goToPage = (page) => {
     const safe = Math.max(1, Math.min(p, lastPage.value))
 
     router.get(
-        route('instructors.index', { locale: props.currentLocale }),
+        route('public.schoolInstructors.index', { locale: props.locale }),
         {
             q: q.value || undefined,
             sort: sort.value || undefined,

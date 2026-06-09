@@ -130,34 +130,130 @@ const searchQuery = ref('')
 
 /** ==================== SORT LOGIC ==================== */
 /** Сортировка списка */
+const normalize = (value) => String(value ?? '').toLowerCase()
+
+const safeNumber = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : 0
+}
+
+/** Сортировка списка */
 const sortHashtags = (hashtags) => {
+    const list = (hashtags || []).slice()
 
     if (sortParam.value === 'idAsc') {
-        return hashtags.slice().sort((a, b) => a.id - b.id)
+        return list.sort((a, b) => safeNumber(a.id) - safeNumber(b.id))
     }
 
     if (sortParam.value === 'idDesc') {
-        return hashtags.slice().sort((a, b) => b.id - a.id)
+        return list.sort((a, b) => safeNumber(b.id) - safeNumber(a.id))
+    }
+
+    if (sortParam.value === 'sortAsc') {
+        return list.sort((a, b) => safeNumber(a.sort) - safeNumber(b.sort))
+    }
+
+    if (sortParam.value === 'sortDesc') {
+        return list.sort((a, b) => safeNumber(b.sort) - safeNumber(a.sort))
+    }
+
+    if (sortParam.value === 'nameAsc') {
+        return list.sort((a, b) => normalize(a.name).localeCompare(normalize(b.name), props.currentLocale))
+    }
+
+    if (sortParam.value === 'nameDesc') {
+        return list.sort((a, b) => normalize(b.name).localeCompare(normalize(a.name), props.currentLocale))
+    }
+
+    if (sortParam.value === 'slugAsc') {
+        return list.sort((a, b) => normalize(a.slug).localeCompare(normalize(b.slug), props.currentLocale))
+    }
+
+    if (sortParam.value === 'slugDesc') {
+        return list.sort((a, b) => normalize(b.slug).localeCompare(normalize(a.slug), props.currentLocale))
+    }
+
+    if (sortParam.value === 'colorAsc') {
+        return list.sort((a, b) => normalize(a.color).localeCompare(normalize(b.color), props.currentLocale))
+    }
+
+    if (sortParam.value === 'colorDesc') {
+        return list.sort((a, b) => normalize(b.color).localeCompare(normalize(a.color), props.currentLocale))
+    }
+
+    if (sortParam.value === 'viewsAsc') {
+        return list.sort((a, b) => safeNumber(a.views) - safeNumber(b.views))
+    }
+
+    if (sortParam.value === 'viewsDesc') {
+        return list.sort((a, b) => safeNumber(b.views) - safeNumber(a.views))
+    }
+
+    if (sortParam.value === 'likesAsc') {
+        return list.sort((a, b) => safeNumber(a.likes) - safeNumber(b.likes))
+    }
+
+    if (sortParam.value === 'likesDesc') {
+        return list.sort((a, b) => safeNumber(b.likes) - safeNumber(a.likes))
+    }
+
+    if (sortParam.value === 'coursesAsc') {
+        return list.sort((a, b) => safeNumber(a.courses_count) - safeNumber(b.courses_count))
+    }
+
+    if (sortParam.value === 'coursesDesc') {
+        return list.sort((a, b) => safeNumber(b.courses_count) - safeNumber(a.courses_count))
+    }
+
+    if (sortParam.value === 'modulesAsc') {
+        return list.sort((a, b) => safeNumber(a.modules_count) - safeNumber(b.modules_count))
+    }
+
+    if (sortParam.value === 'modulesDesc') {
+        return list.sort((a, b) => safeNumber(b.modules_count) - safeNumber(a.modules_count))
+    }
+
+    if (sortParam.value === 'lessonsAsc') {
+        return list.sort((a, b) => safeNumber(a.lessons_count) - safeNumber(b.lessons_count))
+    }
+
+    if (sortParam.value === 'lessonsDesc') {
+        return list.sort((a, b) => safeNumber(b.lessons_count) - safeNumber(a.lessons_count))
+    }
+
+    if (sortParam.value === 'createdAtAsc') {
+        return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+    }
+
+    if (sortParam.value === 'createdAtDesc') {
+        return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    }
+
+    if (sortParam.value === 'updatedAtAsc') {
+        return list.sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
+    }
+
+    if (sortParam.value === 'updatedAtDesc') {
+        return list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
+    }
+
+    if (sortParam.value === 'activityAsc') {
+        return list.sort((a, b) => Number(a.activity) - Number(b.activity))
+    }
+
+    if (sortParam.value === 'activityDesc') {
+        return list.sort((a, b) => Number(b.activity) - Number(a.activity))
     }
 
     if (sortParam.value === 'activity') {
-        return hashtags.filter(i => i.activity)
+        return list.filter((item) => item.activity)
     }
 
     if (sortParam.value === 'inactive') {
-        return hashtags.filter(i => !i.activity)
+        return list.filter((item) => !item.activity)
     }
 
-    if (sortParam.value === 'views') {
-        return hashtags.slice().sort((a, b) => b.views - a.views)
-    }
-
-    /** универсальная сортировка */
-    return hashtags.slice().sort((a, b) => {
-        if (a[sortParam.value] < b[sortParam.value]) return -1
-        if (a[sortParam.value] > b[sortParam.value]) return 1
-        return 0
-    })
+    return list
 }
 
 /** ==================== FILTER ==================== */
@@ -166,8 +262,13 @@ const filteredHashtags = computed(() => {
     let filtered = props.hashtags || []
 
     if (searchQuery.value) {
+        const q = searchQuery.value.toLowerCase()
+
         filtered = filtered.filter(i =>
-            (i.name || '').toLowerCase().includes(searchQuery.value.toLowerCase())
+            normalize(i.name).includes(q)
+            || normalize(i.slug).includes(q)
+            || normalize(i.short).includes(q)
+            || normalize(i.description).includes(q)
         )
     }
 

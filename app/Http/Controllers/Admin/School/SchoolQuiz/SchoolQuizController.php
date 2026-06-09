@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Admin\School\SchoolQuiz;
 
-use App\Http\Controllers\Admin\School\Base\BaseSchoolAdminController;
+use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolQuiz\SchoolQuizRequest;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
 use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
 use App\Http\Resources\Admin\School\SchoolQuiz\SchoolQuizResource;
-use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
-use App\Models\Admin\School\SchoolQuiz\SchoolQuizImage;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
+use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
+use App\Models\Admin\School\SchoolQuiz\SchoolQuizImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -60,48 +60,14 @@ class SchoolQuizController extends BaseSchoolAdminController
         'description',
     ];
 
-    /** Расширение сортировки для квизов. */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'passScoreAsc' => 'pass_score_asc',
-            'passScoreDesc' => 'pass_score_desc',
-
-            'attemptsLimitAsc' => 'attempts_limit_asc',
-            'attemptsLimitDesc' => 'attempts_limit_desc',
-
-            'timeLimitAsc' => 'time_limit_asc',
-            'timeLimitDesc' => 'time_limit_desc',
-
-            'questions_count' => 'questions_count_desc',
-            'attempts_count' => 'attempts_count_desc',
-            'images_count' => 'images_count_desc',
-
-            'graded' => 'graded',
-            'practice' => 'practice',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-
-            'left' => 'left',
-            'noLeft' => 'no_left',
-
-            'main' => 'main',
-            'noMain' => 'no_main',
-
-            'right' => 'right',
-            'noRight' => 'no_right',
-        ];
-    }
-
     /** Список квизов. */
     public function index(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolQuizzesPerPage = (int) config('site_settings.adminSchoolQuizzesPerPage', 10);
+        $adminSchoolQuizzesPerPage = (int) config('site_settings.adminSchoolQuizzesPerPage', 6);
         $adminSchoolQuizzesDefaultSort = (string) config('site_settings.adminSchoolQuizzesDefaultSort', 'idDesc');
-        $sort = $this->normalizeSortParam($adminSchoolQuizzesDefaultSort);
+        $sort = (string) $request->query('sort', $adminSchoolQuizzesDefaultSort);
 
         try {
             $quizzes = $this->baseQuery()
@@ -118,36 +84,7 @@ class SchoolQuizController extends BaseSchoolAdminController
                     'attempts',
                     'images',
                 ])
-                ->when($sort === 'activity', fn ($query) => $query->where('activity', true))
-                ->when($sort === 'inactive', fn ($query) => $query->where('activity', false))
-
-                ->when($sort === 'left', fn ($query) => $query->where('left', true))
-                ->when($sort === 'no_left', fn ($query) => $query->where('left', false))
-                ->when($sort === 'main', fn ($query) => $query->where('main', true))
-                ->when($sort === 'no_main', fn ($query) => $query->where('main', false))
-                ->when($sort === 'right', fn ($query) => $query->where('right', true))
-                ->when($sort === 'no_right', fn ($query) => $query->where('right', false))
-
-                ->when($sort === 'graded', fn ($query) => $query->where('type', 'graded'))
-                ->when($sort === 'practice', fn ($query) => $query->where('type', 'practice'))
-
-                ->when($sort === 'pass_score_asc', fn ($query) => $query->orderBy('pass_score')->orderByDesc('id'))
-                ->when($sort === 'pass_score_desc', fn ($query) => $query->orderByDesc('pass_score')->orderByDesc('id'))
-
-                ->when($sort === 'attempts_limit_asc', fn ($query) => $query->orderBy('attempts_limit')->orderByDesc('id'))
-                ->when($sort === 'attempts_limit_desc', fn ($query) => $query->orderByDesc('attempts_limit')->orderByDesc('id'))
-
-                ->when($sort === 'time_limit_asc', fn ($query) => $query->orderBy('time_limit_minutes')->orderByDesc('id'))
-                ->when($sort === 'time_limit_desc', fn ($query) => $query->orderByDesc('time_limit_minutes')->orderByDesc('id'))
-
-                ->when($sort === 'questions_count_desc', fn ($query) => $query->orderByDesc('questions_count')->orderByDesc('id'))
-                ->when($sort === 'attempts_count_desc', fn ($query) => $query->orderByDesc('attempts_count')->orderByDesc('id'))
-                ->when($sort === 'images_count_desc', fn ($query) => $query->orderByDesc('images_count')->orderByDesc('id'))
-
-                ->when($sort === 'sort_asc', fn ($query) => $query->orderBy('sort')->orderByDesc('id'))
-                ->when($sort === 'sort_desc', fn ($query) => $query->orderByDesc('sort')->orderByDesc('id'))
-                ->when($sort === 'date_asc', fn ($query) => $query->orderBy('id')->orderByDesc('id'))
-                ->when($sort === 'date_desc', fn ($query) => $query->orderByDesc('id'))
+                ->sortByParam($sort, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/School/Quizzes/Index', [

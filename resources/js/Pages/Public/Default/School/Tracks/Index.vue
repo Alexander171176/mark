@@ -1,19 +1,14 @@
 <script setup>
 /**
- * Страница списка категорий обучения
- * - шапка, центральная часть, подвал
- * - светлый, тёмный режим
- * - серверный поиск
- * - серверная пагинация
- * - серверная сортировка
- * - показ карточками, в строку
- * - показ главных видео, баннеров внизу страницы
- * - показ, скрытие колонок
- * - показ дерева треков в левой колонке
- * - показ облако хештегов в правой колонке
+ * Страница списка направлений обучения.
  *
- * @version PulsarCMS 1.0
- * @author Александр
+ * Логика:
+ * - серверный поиск
+ * - серверная сортировка
+ * - серверная пагинация
+ * - переключение вида grid/rows
+ * - сохранение вида в localStorage
+ * - управление колонками через настройки сайта
  */
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
@@ -34,150 +29,196 @@ import TrackRows from '@/Components/Public/Default/School/Track/TrackRows.vue'
 
 const { t } = useI18n()
 
-/** Props */
 const props = defineProps({
-    title: String,
-    canLogin: Boolean,
-    canRegister: Boolean,
+    title: { type: String, default: '' },
+    canLogin: { type: Boolean, default: false },
+    canRegister: { type: Boolean, default: false },
 
     trackTree: { type: Array, default: () => [] },
 
     tracks: { type: Object, default: () => ({}) },
     tracksCount: { type: Number, default: 0 },
     tracksFound: { type: Number, default: 0 },
+
     filters: { type: Object, default: () => ({}) },
 
     mainVideos: { type: Array, default: () => [] },
     mainBanners: { type: Array, default: () => [] },
+
+    locale: { type: String, default: 'ru' },
 })
 
-/** Иерархия треков */
+/** Дерево треков для левого аккордеона */
 const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
 
-/** Режим показа карточками/в строку */
-const VIEW_KEY = 'public_track_view'
-const viewMode = ref(localStorage.getItem(VIEW_KEY) || 'grid')
-
-watch(viewMode, (v) => {
-    localStorage.setItem(VIEW_KEY, v)
-})
-
-/** Данные треков */
+/** Данные треков из пагинатора */
 const tracksData = computed(() => {
     const data = props.tracks?.data
+
     return Array.isArray(data) ? data : []
 })
 
-/** Текущая страница, Количество страниц */
+/** Текущая страница */
 const currentPage = computed(() => {
     return Number(props.tracks?.meta?.current_page ?? props.tracks?.current_page ?? 1) || 1
 })
 
+/** Последняя страница */
 const lastPage = computed(() => {
     return Number(props.tracks?.meta?.last_page ?? props.tracks?.last_page ?? 1) || 1
 })
 
+/** Количество элементов на странице */
 const perPage = computed(() => {
-    const val = Number(props.filters?.per_page ?? 12)
-    return Number.isFinite(val) ? val : 12
+    const value = Number(props.filters?.per_page ?? 20)
+
+    return Number.isFinite(value) ? value : 20
 })
 
-/** Поиск */
+/** Поисковая строка */
 const q = ref(String(props.filters?.q ?? ''))
 
 /** Сортировка */
-const DEFAULT_SORT = 'sort_asc'
+const DEFAULT_SORT = 'sortAsc'
 const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
 
-/** Опции сортировки */
+/** Режим отображения: карточки или строки */
+const VIEW_KEY = 'public_school_tracks_view'
+
+const viewMode = ref(
+    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
+)
+
+/** Сохраняем режим отображения локально */
+watch(viewMode, (value) => {
+    localStorage.setItem(VIEW_KEY, value)
+})
+
+/** Опции сортировки направлений обучения */
 const trackSortOptions = [
-    { value: 'sort_asc', label: t('sortDefault') },
-    { value: 'sort_desc', label: t('sortReverse') },
-    { value: 'name_asc', label: t('sortNameAsc') },
-    { value: 'name_desc', label: t('sortNameDesc') },
-    { value: 'views_desc', label: t('sortPopularFirst') },
-    { value: 'views_asc', label: t('sortUnpopularFirst') },
-    { value: 'likes_desc', label: t('sortLikesDesc') },
-    { value: 'likes_asc', label: t('sortLikesAsc') },
-    { value: 'date_desc', label: t('sortNewestFirst') },
-    { value: 'date_asc', label: t('sortOldestFirst') },
+    { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
+    { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+
+    { value: 'idDesc', label: t('idDesc') },
+    { value: 'idAsc', label: t('idAsc') },
+
+    { value: 'nameAsc', label: `${t('title')} A→Z` },
+    { value: 'nameDesc', label: `${t('title')} Z→A` },
+
+    { value: 'slugAsc', label: 'Slug A→Z' },
+    { value: 'slugDesc', label: 'Slug Z→A' },
+
+    { value: 'viewsDesc', label: `${t('views')} 9→0` },
+    { value: 'viewsAsc', label: `${t('views')} 0→9` },
+
+    { value: 'likesDesc', label: `${t('likes')} 9→0` },
+    { value: 'likesAsc', label: `${t('likes')} 0→9` },
+
+    { value: 'childrenDesc', label: `${t('children')} 9→0` },
+    { value: 'childrenAsc', label: `${t('children')} 0→9` },
+
+    { value: 'coursesDesc', label: `${t('courses')} 9→0` },
+    { value: 'coursesAsc', label: `${t('courses')} 0→9` },
+
+    { value: 'imagesDesc', label: `${t('images')} 9→0` },
+    { value: 'imagesAsc', label: `${t('images')} 0→9` },
+
+    { value: 'dateDesc', label: t('sortNewestFirst') },
+    { value: 'dateAsc', label: t('sortOldestFirst') },
 ]
 
-/** Поисковый запрос */
-const submitSearch = () => {
+/** Маршрут списка направлений обучения */
+const indexRoute = () => route('public.schoolTracks.index')
+
+/** Загрузка треков с текущими фильтрами */
+const reloadTracks = (page = 1) => {
     router.get(
-        route('public.tracks.index'),
+        indexRoute(),
         {
             q: q.value || undefined,
             sort: sort.value || undefined,
+            view: viewMode.value || undefined,
             per_page: perPage.value,
-            page: 1,
+            page,
         },
-        { preserveState: true, replace: true, preserveScroll: true }
+        {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+        }
     )
 }
 
-/** Сброс поиска */
+/** Поиск */
+const submitSearch = () => {
+    reloadTracks(1)
+}
+
+/** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
 
-    router.get(
-        route('public.tracks.index'),
-        {
-            per_page: perPage.value,
-            sort: sort.value,
-            page: 1,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+    reloadTracks(1)
 }
 
-/** Пагинация: prev / input / next */
+/** Изменение сортировки */
+const updateSort = (value) => {
+    sort.value = value || DEFAULT_SORT
+
+    reloadTracks(1)
+}
+
+/** Изменение режима отображения */
+const updateViewMode = (value) => {
+    viewMode.value = value || 'grid'
+
+    reloadTracks(currentPage.value)
+}
+
+/** Переход на страницу */
 const goToPage = (page) => {
-    const p = Number(page)
-    if (!Number.isFinite(p)) return
+    const value = Number(page)
 
-    const safe = Math.max(1, Math.min(p, lastPage.value))
+    if (!Number.isFinite(value)) return
 
-    router.get(
-        route('public.tracks.index'),
-        {
-            q: q.value || undefined,
-            sort: sort.value || undefined,
-            per_page: perPage.value,
-            page: safe,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+    const safePage = Math.max(1, Math.min(value, lastPage.value))
+
+    reloadTracks(safePage)
 }
 
+/** Предыдущая страница */
 const goPrev = () => {
     if (currentPage.value <= 1) return
+
     goToPage(currentPage.value - 1)
 }
 
+/** Следующая страница */
 const goNext = () => {
     if (currentPage.value >= lastPage.value) return
+
     goToPage(currentPage.value + 1)
 }
 
-/** показ/скрытие колонок */
+/** Глобальные настройки сайта */
 const { siteSettings } = usePage().props
 
+/** Показ левой колонки */
 const showLeft = computed(() =>
     !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
 )
 
+/** Показ правой колонки */
 const showRight = computed(() =>
     !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
 )
 
-/** состояние сайдбаров */
+/** Состояние сайдбаров */
 const leftCollapsed = ref(false)
 const rightCollapsed = ref(false)
 
-/** добавление третьей карточки в ряд при свернутой колонке */
+/** Количество колонок сетки с учётом сайдбаров */
 const trackGridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
     const rightExpanded = showRight.value && !rightCollapsed.value
@@ -282,12 +323,12 @@ const trackGridCols = computed(() => {
                             :sort-value="sort"
                             :sort-options="trackSortOptions"
                             :default-sort="DEFAULT_SORT"
-                            :found-label="t('learningCategories')"
+                            :found-label="t('tracks')"
                             :search-placeholder="t('searchByName')"
                             @submit="submitSearch"
                             @reset="resetSearch"
-                            @update:viewMode="viewMode = $event"
-                            @update:sortValue="sort = $event"
+                            @update:viewMode="updateViewMode"
+                            @update:sortValue="updateSort"
                         />
 
                         <!-- Нет данных -->

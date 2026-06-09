@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Blog\BlogVideo;
 
-use App\Http\Controllers\Admin\Blog\Base\BaseBlogAdminController;
+use App\Http\Controllers\Admin\Blog\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogVideo\BlogVideoRequest;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoSharedResource;
@@ -58,54 +58,6 @@ class BlogVideoController extends BaseBlogAdminController
         'meta_desc',
     ];
 
-    /** Дополнительные варианты сортировки видео */
-    protected function extendedSortMap(): array
-    {
-        return [
-            'ownerNameAsc' => 'owner_name_asc',
-            'ownerNameDesc' => 'owner_name_desc',
-
-            'ownerEmailAsc' => 'owner_email_asc',
-            'ownerEmailDesc' => 'owner_email_desc',
-
-            'locale' => 'locale_asc',
-
-            'publishedAtAsc' => 'published_at_asc',
-            'publishedAtDesc' => 'published_at_desc',
-
-            'viewsAsc' => 'views_asc',
-            'viewsDesc' => 'views_desc',
-
-            'likesAsc' => 'likes_asc',
-            'likesDesc' => 'likes_desc',
-
-            'durationAsc' => 'duration_asc',
-            'durationDesc' => 'duration_desc',
-
-            'public' => 'public',
-            'private' => 'private',
-
-            'activity' => 'activity',
-            'inactive' => 'inactive',
-
-            'left' => 'left',
-            'noLeft' => 'no_left',
-
-            'main' => 'main',
-            'noMain' => 'no_main',
-
-            'right' => 'right',
-            'noRight' => 'no_right',
-
-            'moderation_pending' => 'moderation_pending',
-            'moderation_approved' => 'moderation_approved',
-            'moderation_rejected' => 'moderation_rejected',
-
-            'moderation_statusAsc' => 'moderation_status_asc',
-            'moderation_statusDesc' => 'moderation_status_desc',
-        ];
-    }
-
     /** Синхронизация связанных видео */
     private function syncRelatedVideos(BlogVideo $video, array $relatedVideos): void
     {
@@ -137,7 +89,6 @@ class BlogVideoController extends BaseBlogAdminController
         $adminBlogVideosDefaultSort = (string) config('site_settings.adminBlogVideosDefaultSort', 'idDesc');
 
         $sortParam = (string) $request->query('sort', $adminBlogVideosDefaultSort);
-        $normalizedSort = $this->normalizeSortParam($sortParam);
 
         try {
             $videos = $this->baseQuery()
@@ -149,8 +100,14 @@ class BlogVideoController extends BaseBlogAdminController
                     'relatedVideos.translations',
                     'relatedVideos.images',
                 ])
-                ->withCount(['images', 'comments', 'likes'])
-                ->sortByParam($normalizedSort, $currentLocale)
+                ->withCount([
+                    'images',
+                    'comments',
+                    'likes',
+                    'articles',
+                    'relatedVideos',
+                ])
+                ->sortByParam($sortParam, $currentLocale)
                 ->get();
 
             return Inertia::render('Admin/Blog/BlogVideos/Index', [

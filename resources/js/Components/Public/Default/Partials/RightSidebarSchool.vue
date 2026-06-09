@@ -3,10 +3,10 @@ import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
-import HashtagsSidebar from '@/Components/Public/Default/School/Hashtag/HashtagsSidebar.vue'
-import RecentCoursesSidebar from '@/Components/Public/Default/School/Course/RecentCoursesSidebar.vue'
-import RightBannersSidebar from '@/Components/Public/Default/Blog/Banner/RightBannersSidebar.vue'
-import RightVideosSidebar from '@/Components/Public/Default/Blog/Video/RightVideosSidebar.vue'
+import HashtagsSidebar from '@/Components/Public/Default/School/SchoolHashtag/HashtagsSidebar.vue'
+import RecentCoursesSidebar from '@/Components/Public/Default/School/SchoolCourse/RecentCoursesSidebar.vue'
+import RightBannersSidebar from '@/Components/Public/Default/Blog/BlogBanner/RightBannersSidebar.vue'
+import RightVideosSidebar from '@/Components/Public/Default/Blog/BlogVideo/RightVideosSidebar.vue'
 
 const emit = defineEmits(['collapsed'])
 

@@ -103,7 +103,7 @@ class SchoolCourseController extends BaseSchoolAdminController
                 ->sortByParam($sort, $currentLocale)
                 ->get();
 
-            return Inertia::render('Admin/School/Courses/Index', [
+            return Inertia::render('Admin/School/SchoolCourses/Index', [
                 'courses' => SchoolCourseResource::collection($courses),
                 'coursesCount' => $this->baseQuery()->count(),
 
@@ -118,7 +118,7 @@ class SchoolCourseController extends BaseSchoolAdminController
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/Courses/Index', [
+            return Inertia::render('Admin/School/SchoolCourses/Index', [
                 'courses' => [],
                 'coursesCount' => 0,
 
@@ -137,7 +137,7 @@ class SchoolCourseController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        return Inertia::render('Admin/School/Courses/Create', [
+        return Inertia::render('Admin/School/SchoolCourses/Create', [
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
 
@@ -248,7 +248,7 @@ class SchoolCourseController extends BaseSchoolAdminController
             ])
             ->findOrFail($schoolCourse);
 
-        return Inertia::render('Admin/School/Courses/Edit', [
+        return Inertia::render('Admin/School/SchoolCourses/Edit', [
             'course' => new SchoolCourseResource($course),
 
             'currentLocale' => $currentLocale,

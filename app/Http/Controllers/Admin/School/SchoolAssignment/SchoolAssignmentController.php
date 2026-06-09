@@ -92,7 +92,7 @@ class SchoolAssignmentController extends BaseSchoolAdminController
                 ->sortByParam($sort, $currentLocale)
                 ->get();
 
-            return Inertia::render('Admin/School/Assignments/Index', [
+            return Inertia::render('Admin/School/SchoolAssignments/Index', [
                 'assignments' => SchoolAssignmentResource::collection($assignments),
                 'assignmentsCount' => $this->baseQuery()->count(),
 
@@ -107,7 +107,7 @@ class SchoolAssignmentController extends BaseSchoolAdminController
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/Assignments/Index', [
+            return Inertia::render('Admin/School/SchoolAssignments/Index', [
                 'assignments' => [],
                 'assignmentsCount' => 0,
 
@@ -127,7 +127,7 @@ class SchoolAssignmentController extends BaseSchoolAdminController
         // Текущая локаль
         $currentLocale = $this->resolveLocale($request);
 
-        return Inertia::render('Admin/School/Assignments/Create', [
+        return Inertia::render('Admin/School/SchoolAssignments/Create', [
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
 
@@ -212,7 +212,7 @@ class SchoolAssignmentController extends BaseSchoolAdminController
             ])
             ->findOrFail($schoolAssignment);
 
-        return Inertia::render('Admin/School/Assignments/Edit', [
+        return Inertia::render('Admin/School/SchoolAssignments/Edit', [
             'assignment' => new SchoolAssignmentResource($assignment),
 
             'currentLocale' => $currentLocale,

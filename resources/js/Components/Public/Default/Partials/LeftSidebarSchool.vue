@@ -3,10 +3,10 @@ import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
-import TracksSidebar from '@/Components/Public/Default/School/Track/TracksSidebar.vue'
-import RecentCoursesSidebar from '@/Components/Public/Default/School/Course/RecentCoursesSidebar.vue'
-import LeftBannersSidebar from '@/Components/Public/Default/Blog/Banner/LeftBannersSidebar.vue'
-import LeftVideosSidebar from '@/Components/Public/Default/Blog/Video/LeftVideosSidebar.vue'
+import TracksSidebar from '@/Components/Public/Default/School/SchoolTrack/TracksSidebar.vue'
+import RecentCoursesSidebar from '@/Components/Public/Default/School/SchoolCourse/RecentCoursesSidebar.vue'
+import LeftBannersSidebar from '@/Components/Public/Default/Blog/BlogBanner/LeftBannersSidebar.vue'
+import LeftVideosSidebar from '@/Components/Public/Default/Blog/BlogVideo/LeftVideosSidebar.vue'
 
 const props = defineProps({
     trackTree: { type: Array, default: () => [] },

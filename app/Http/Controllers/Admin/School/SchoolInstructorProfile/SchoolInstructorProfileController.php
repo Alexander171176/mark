@@ -87,7 +87,7 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
             ->get();
 
         return Inertia::render(
-            'Admin/School/InstructorProfiles/Index',
+            'Admin/School/SchoolInstructorProfiles/Index',
             [
                 'instructorProfiles' =>
                     SchoolInstructorProfileResource::collection($items),
@@ -119,7 +119,7 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
 
         $users = User::select('id', 'name')->orderBy('name')->get();
 
-        return Inertia::render('Admin/School/InstructorProfiles/Create', [
+        return Inertia::render('Admin/School/SchoolInstructorProfiles/Create', [
             'users' => UserResource::collection($users),
             'targetLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
@@ -177,7 +177,7 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
 
         $users = User::select('id', 'name')->orderBy('name')->get();
 
-        return Inertia::render('Admin/School/InstructorProfiles/Edit', [
+        return Inertia::render('Admin/School/SchoolInstructorProfiles/Edit', [
             'instructorProfile' => new SchoolInstructorProfileResource($model),
             'users' => UserResource::collection($users),
             'targetLocale' => $currentLocale,

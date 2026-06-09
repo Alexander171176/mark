@@ -142,7 +142,7 @@ class SchoolTrackController extends BaseSchoolAdminController
                 ->sortByParam($sort, $currentLocale)
                 ->get();
 
-            return Inertia::render('Admin/School/Tracks/Index', [
+            return Inertia::render('Admin/School/SchoolTracks/Index', [
                 'tracksTree' => SchoolTrackResource::collection($tracksTree),
                 'tracks' => SchoolTrackResource::collection($tracksFlat),
                 'tracksCount' => $this->baseQuery()->count(),
@@ -158,7 +158,7 @@ class SchoolTrackController extends BaseSchoolAdminController
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/Tracks/Index', [
+            return Inertia::render('Admin/School/SchoolTracks/Index', [
                 'tracksTree' => [],
                 'tracks' => [],
                 'tracksCount' => 0,
@@ -184,7 +184,7 @@ class SchoolTrackController extends BaseSchoolAdminController
             ->ordered()
             ->get();
 
-        return Inertia::render('Admin/School/Tracks/Create', [
+        return Inertia::render('Admin/School/SchoolTracks/Create', [
             'currentLocale' => $currentLocale,
             'parents' => SchoolTrackSharedResource::collection($parents),
             'availableLocales' => $this->availableLocales(),
@@ -269,7 +269,7 @@ class SchoolTrackController extends BaseSchoolAdminController
             ->ordered()
             ->get();
 
-        return Inertia::render('Admin/School/Tracks/Edit', [
+        return Inertia::render('Admin/School/SchoolTracks/Edit', [
             'track' => new SchoolTrackResource($track),
             'parents' => SchoolTrackSharedResource::collection($parents),
             'currentLocale' => $currentLocale,

@@ -16,11 +16,11 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebar from '@/Components/Public/Default/Partials/LeftSidebar.vue'
 import RightSidebar from '@/Components/Public/Default/Partials/RightSidebar.vue'
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
-import VideoGrid from '@/Components/Public/Default/Blog/Video/VideoGrid.vue'
-import VideoRows from '@/Components/Public/Default/Blog/Video/VideoRows.vue'
+import VideoGrid from '@/Components/Public/Default/Blog/BlogVideo/VideoGrid.vue'
+import VideoRows from '@/Components/Public/Default/Blog/BlogVideo/VideoRows.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
-import SectionVideoList from '@/Components/Public/Default/Blog/Video/SectionVideoList.vue'
-import SectionBanners from '@/Components/Public/Default/Blog/Banner/SectionBanners.vue'
+import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
+import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
 
 const { t } = useI18n()
 

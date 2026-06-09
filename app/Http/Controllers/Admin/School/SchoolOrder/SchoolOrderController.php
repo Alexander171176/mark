@@ -81,7 +81,7 @@ class SchoolOrderController extends Controller
                 ->sortByParam($adminSchoolOrdersDefaultSort)
                 ->get();
 
-            return Inertia::render('Admin/School/Orders/Index', [
+            return Inertia::render('Admin/School/SchoolOrders/Index', [
                 'orders' => SchoolOrderResource::collection($orders),
                 'ordersCount' => SchoolOrder::query()->count(),
 
@@ -100,7 +100,7 @@ class SchoolOrderController extends Controller
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/Orders/Index', [
+            return Inertia::render('Admin/School/SchoolOrders/Index', [
                 'orders' => [],
                 'ordersCount' => 0,
 
@@ -122,7 +122,7 @@ class SchoolOrderController extends Controller
     /** Страница создания заказа */
     public function create(): Response
     {
-        return Inertia::render('Admin/School/Orders/Create', [
+        return Inertia::render('Admin/School/SchoolOrders/Create', [
             'users' => $this->usersForSelect(),
             'courses' => $this->coursesForSelect(),
             'schedules' => $this->schedulesForSelect(),
@@ -194,7 +194,7 @@ class SchoolOrderController extends Controller
             ])
             ->findOrFail($schoolOrder);
 
-        return Inertia::render('Admin/School/Orders/Edit', [
+        return Inertia::render('Admin/School/SchoolOrders/Edit', [
             'order' => new SchoolOrderResource($order),
 
             'users' => $this->usersForSelect(),

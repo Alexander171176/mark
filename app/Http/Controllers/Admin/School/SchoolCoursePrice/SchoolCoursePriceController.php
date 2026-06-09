@@ -128,7 +128,7 @@ class SchoolCoursePriceController extends Controller
 
             $prices = $query->get();
 
-            return Inertia::render('Admin/School/CoursePrices/Index', [
+            return Inertia::render('Admin/School/SchoolCoursePrices/Index', [
                 'prices' => SchoolCoursePriceResource::collection($prices),
                 'pricesCount' => $prices->count(),
 
@@ -149,7 +149,7 @@ class SchoolCoursePriceController extends Controller
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/CoursePrices/Index', [
+            return Inertia::render('Admin/School/SchoolCoursePrices/Index', [
                 'prices' => [],
                 'pricesCount' => 0,
 
@@ -173,7 +173,7 @@ class SchoolCoursePriceController extends Controller
     /** Страница создания цены курса. */
     public function create(Request $request): Response
     {
-        return Inertia::render('Admin/School/CoursePrices/Create', [
+        return Inertia::render('Admin/School/SchoolCoursePrices/Create', [
             'courses' => $this->coursesForSelect(),
             'currencies' => $this->currenciesForSelect(),
 
@@ -237,7 +237,7 @@ class SchoolCoursePriceController extends Controller
             ])
             ->findOrFail($schoolCoursePrice);
 
-        return Inertia::render('Admin/School/CoursePrices/Edit', [
+        return Inertia::render('Admin/School/SchoolCoursePrices/Edit', [
             'price' => new SchoolCoursePriceResource($price),
 
             'courses' => $this->coursesForSelect(),

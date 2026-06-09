@@ -84,10 +84,10 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
                 ->withCount([
                     'images',
                 ])
-                ->sortByParam($sort, $currentLocale)
+                ->ordered()
                 ->get();
 
-            return Inertia::render('Admin/School/SubscriptionPlans/Index', [
+            return Inertia::render('Admin/School/SchoolSubscriptionPlans/Index', [
                 'subscriptionPlans' => SchoolSubscriptionPlanResource::collection($subscriptionPlans),
                 'plansCount' => $this->baseQuery()->count(),
 
@@ -104,7 +104,7 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/SubscriptionPlans/Index', [
+            return Inertia::render('Admin/School/SchoolSubscriptionPlans/Index', [
                 'subscriptionPlans' => [],
                 'plansCount' => 0,
 
@@ -125,7 +125,7 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        return Inertia::render('Admin/School/SubscriptionPlans/Create', [
+        return Inertia::render('Admin/School/SchoolSubscriptionPlans/Create', [
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
 
@@ -198,7 +198,7 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
             ])
             ->findOrFail($schoolSubscriptionPlan);
 
-        return Inertia::render('Admin/School/SubscriptionPlans/Edit', [
+        return Inertia::render('Admin/School/SchoolSubscriptionPlans/Edit', [
             'subscriptionPlan' => new SchoolSubscriptionPlanResource($subscriptionPlan),
 
             'currentLocale' => $currentLocale,

@@ -18,10 +18,10 @@ import RightSidebar from '@/Components/Public/Default/Partials/RightSidebar.vue'
 import LikeButtonEntity from '@/Components/Public/Like/LikeButtonEntity.vue'
 import ImageGalleryMain from '@/Components/Public/Default/Media/ImageGalleryMain.vue'
 import CommentThread from '@/Components/Public/Default/Blog/Comment/CommentThread.vue'
-import SectionVideoList from '@/Components/Public/Default/Blog/Video/SectionVideoList.vue'
-import SectionBanners from '@/Components/Public/Default/Blog/Banner/SectionBanners.vue'
-import RubricArticleGrid from '@/Components/Public/Default/Blog/Rubric/RubricArticleGrid.vue'
-import RecommendedVideos from '@/Components/Public/Default/Blog/Video/RecommendedVideos.vue'
+import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
+import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
+import RubricArticleGrid from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleGrid.vue'
+import RecommendedVideos from '@/Components/Public/Default/Blog/BlogVideo/RecommendedVideos.vue'
 
 const { t } = useI18n()
 const page = usePage()

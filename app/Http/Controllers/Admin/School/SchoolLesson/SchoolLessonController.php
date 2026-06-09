@@ -98,7 +98,7 @@ class SchoolLessonController extends BaseSchoolAdminController
                 ->get();
 
             // Страница списка уроков
-            return Inertia::render('Admin/School/Lessons/Index', [
+            return Inertia::render('Admin/School/SchoolLessons/Index', [
                 'lessons' => SchoolLessonResource::collection($lessons),
                 'lessonsCount' => $this->baseQuery()->count(),
 
@@ -117,7 +117,7 @@ class SchoolLessonController extends BaseSchoolAdminController
             ]);
 
             // Возврат пустой страницы при ошибке
-            return Inertia::render('Admin/School/Lessons/Index', [
+            return Inertia::render('Admin/School/SchoolLessons/Index', [
                 'lessons' => [],
                 'lessonsCount' => 0,
 
@@ -137,7 +137,7 @@ class SchoolLessonController extends BaseSchoolAdminController
 
         $currentLocale = $this->resolveLocale($request);
 
-        return Inertia::render('Admin/School/Lessons/Create', [
+        return Inertia::render('Admin/School/SchoolLessons/Create', [
 
             // Локали
             'currentLocale' => $currentLocale,
@@ -263,7 +263,7 @@ class SchoolLessonController extends BaseSchoolAdminController
             ])
             ->findOrFail($schoolLesson);
 
-        return Inertia::render('Admin/School/Lessons/Edit', [
+        return Inertia::render('Admin/School/SchoolLessons/Edit', [
 
             // Текущий урок
             'lesson' => new SchoolLessonResource($lesson),

@@ -121,6 +121,72 @@ class SchoolSubscriptionPlan extends Model
         return $q->active()->available();
     }
 
+    /** Сортировка по параметру */
+    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
+    {
+        $locale = $locale ?: app()->getLocale();
+
+        return match ($sort) {
+            'idAsc' => $q->orderBy('id', 'asc'),
+            'idDesc' => $q->orderBy('id', 'desc'),
+
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'titleAsc' => $q
+                ->leftJoin('school_subscription_plan_translations as sspt_sort', function ($join) use ($locale) {
+                    $join->on('sspt_sort.school_subscription_plan_id', '=', 'school_subscription_plans.id')
+                        ->where('sspt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sspt_sort.title', 'asc')
+                ->orderByDesc('school_subscription_plans.id')
+                ->select('school_subscription_plans.*'),
+
+            'titleDesc' => $q
+                ->leftJoin('school_subscription_plan_translations as sspt_sort', function ($join) use ($locale) {
+                    $join->on('sspt_sort.school_subscription_plan_id', '=', 'school_subscription_plans.id')
+                        ->where('sspt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sspt_sort.title', 'desc')
+                ->orderByDesc('school_subscription_plans.id')
+                ->select('school_subscription_plans.*'),
+
+            'priceAsc' => $q->orderBy('price', 'asc')->orderByDesc('id'),
+            'priceDesc' => $q->orderBy('price', 'desc')->orderByDesc('id'),
+
+            'trialDaysAsc' => $q->orderBy('trial_days', 'asc')->orderByDesc('id'),
+            'trialDaysDesc' => $q->orderBy('trial_days', 'desc')->orderByDesc('id'),
+
+            'publishedAtAsc' => $q->orderBy('published_at', 'asc')->orderByDesc('id'),
+            'publishedAtDesc' => $q->orderBy('published_at', 'desc')->orderByDesc('id'),
+
+            'availableFromAsc' => $q->orderBy('available_from', 'asc')->orderByDesc('id'),
+            'availableFromDesc' => $q->orderBy('available_from', 'desc')->orderByDesc('id'),
+
+            'availableUntilAsc' => $q->orderBy('available_until', 'asc')->orderByDesc('id'),
+            'availableUntilDesc' => $q->orderBy('available_until', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $q->where('activity', true)->orderByDesc('id'),
+            'inactive' => $q->where('activity', false)->orderByDesc('id'),
+
+            'autoRenewAsc' => $q->orderBy('auto_renew', 'asc')->orderByDesc('id'),
+            'autoRenewDesc' => $q->orderBy('auto_renew', 'desc')->orderByDesc('id'),
+
+            'imagesAsc' => $q->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
+            'imagesDesc' => $q->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+
+            'createdAtAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            default => $q->ordered(),
+        };
+    }
+
     /* ======================== Accessors ======================== */
 
     /** Главное изображение */

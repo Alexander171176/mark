@@ -88,7 +88,7 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
                 ->sortByParam($sort, $currentLocale)
                 ->get();
 
-            return Inertia::render('Admin/School/CourseSchedules/Index', [
+            return Inertia::render('Admin/School/SchoolCourseSchedules/Index', [
                 'schedules' => SchoolCourseScheduleResource::collection($schedules),
                 'schedulesCount' => $this->baseQuery()->count(),
 
@@ -103,7 +103,7 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/CourseSchedules/Index', [
+            return Inertia::render('Admin/School/SchoolCourseSchedules/Index', [
                 'schedules' => [],
                 'schedulesCount' => 0,
 
@@ -122,7 +122,7 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        return Inertia::render('Admin/School/CourseSchedules/Create', [
+        return Inertia::render('Admin/School/SchoolCourseSchedules/Create', [
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
 
@@ -205,7 +205,7 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
             ])
             ->findOrFail($schoolCourseSchedule);
 
-        return Inertia::render('Admin/School/CourseSchedules/Edit', [
+        return Inertia::render('Admin/School/SchoolCourseSchedules/Edit', [
             'schedule' => new SchoolCourseScheduleResource($schedule),
 
             'currentLocale' => $currentLocale,

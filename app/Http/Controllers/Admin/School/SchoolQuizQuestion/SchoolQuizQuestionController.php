@@ -85,7 +85,7 @@ class SchoolQuizQuestionController extends BaseSchoolAdminController
 
             $questions = $query->get();
 
-            return Inertia::render('Admin/School/QuizQuestions/Index', [
+            return Inertia::render('Admin/School/SchoolQuizQuestions/Index', [
                 'questions' => SchoolQuizQuestionResource::collection($questions),
                 'questionsCount' => $questions->count(),
 
@@ -107,7 +107,7 @@ class SchoolQuizQuestionController extends BaseSchoolAdminController
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/QuizQuestions/Index', [
+            return Inertia::render('Admin/School/SchoolQuizQuestions/Index', [
                 'questions' => [],
                 'questionsCount' => 0,
 
@@ -136,7 +136,7 @@ class SchoolQuizQuestionController extends BaseSchoolAdminController
 
         $quizId = $request->query('school_quiz_id');
 
-        return Inertia::render('Admin/School/QuizQuestions/Create', [
+        return Inertia::render('Admin/School/SchoolQuizQuestions/Create', [
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
 
@@ -211,7 +211,7 @@ class SchoolQuizQuestionController extends BaseSchoolAdminController
             ])
             ->findOrFail($schoolQuizQuestion);
 
-        return Inertia::render('Admin/School/QuizQuestions/Edit', [
+        return Inertia::render('Admin/School/SchoolQuizQuestions/Edit', [
             'question' => new SchoolQuizQuestionResource($question),
 
             'currentLocale' => $currentLocale,

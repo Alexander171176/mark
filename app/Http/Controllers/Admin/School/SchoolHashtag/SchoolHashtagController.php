@@ -62,7 +62,7 @@ class SchoolHashtagController extends BaseSchoolAdminController
             ->sortByParam($sort, $currentLocale)
             ->get();
 
-        return Inertia::render('Admin/School/Hashtags/Index', [
+        return Inertia::render('Admin/School/SchoolHashtags/Index', [
             'hashtags' => SchoolHashtagResource::collection($hashtags),
             'hashtagsCount' => $this->baseQuery()->count(),
 
@@ -79,7 +79,7 @@ class SchoolHashtagController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        return Inertia::render('Admin/School/Hashtags/Create', [
+        return Inertia::render('Admin/School/SchoolHashtags/Create', [
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
         ]);
@@ -125,7 +125,7 @@ class SchoolHashtagController extends BaseSchoolAdminController
             ->withCount(['courses', 'modules', 'lessons'])
             ->findOrFail($schoolHashtag);
 
-        return Inertia::render('Admin/School/Hashtags/Edit', [
+        return Inertia::render('Admin/School/SchoolHashtags/Edit', [
             'hashtag' => new SchoolHashtagResource($hashtag),
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),

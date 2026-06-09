@@ -3,10 +3,10 @@ import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
-import RubricsSidebar from '@/Components/Public/Default/Blog/Rubric/RubricsSidebar.vue'
-import RecentArticlesSidebar from '@/Components/Public/Default/Blog/Rubric/RecentArticlesSidebar.vue'
-import LeftBannersSidebar from '@/Components/Public/Default/Blog/Banner/LeftBannersSidebar.vue'
-import LeftVideosSidebar from '@/Components/Public/Default/Blog/Video/LeftVideosSidebar.vue'
+import RubricsSidebar from '@/Components/Public/Default/Blog/BlogRubric/RubricsSidebar.vue'
+import RecentArticlesSidebar from '@/Components/Public/Default/Blog/BlogRubric/RecentArticlesSidebar.vue'
+import LeftBannersSidebar from '@/Components/Public/Default/Blog/BlogBanner/LeftBannersSidebar.vue'
+import LeftVideosSidebar from '@/Components/Public/Default/Blog/BlogVideo/LeftVideosSidebar.vue'
 
 const props = defineProps({
     rubricTree: { type: Array, default: () => [] },

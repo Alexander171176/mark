@@ -145,7 +145,7 @@ class SchoolQuizAttemptController extends Controller
 
             $attempts = $query->get();
 
-            return Inertia::render('Admin/School/QuizAttempts/Index', [
+            return Inertia::render('Admin/School/SchoolQuizAttempts/Index', [
                 'attempts' => SchoolQuizAttemptResource::collection($attempts),
                 'attemptsCount' => $attempts->count(),
 
@@ -171,7 +171,7 @@ class SchoolQuizAttemptController extends Controller
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/QuizAttempts/Index', [
+            return Inertia::render('Admin/School/SchoolQuizAttempts/Index', [
                 'attempts' => [],
                 'attemptsCount' => 0,
 
@@ -200,7 +200,7 @@ class SchoolQuizAttemptController extends Controller
     /** Страница создания попытки. */
     public function create(Request $request): Response
     {
-        return Inertia::render('Admin/School/QuizAttempts/Create', [
+        return Inertia::render('Admin/School/SchoolQuizAttempts/Create', [
             'users' => $this->usersForSelect(),
             'quizzes' => $this->quizzesForSelect(),
             'enrollments' => $this->enrollmentsForSelect(),
@@ -327,7 +327,7 @@ class SchoolQuizAttemptController extends Controller
             ->withCount(['items'])
             ->findOrFail($schoolQuizAttempt);
 
-        return Inertia::render('Admin/School/QuizAttempts/Edit', [
+        return Inertia::render('Admin/School/SchoolQuizAttempts/Edit', [
             'attempt' => new SchoolQuizAttemptResource($attempt),
 
             'users' => $this->usersForSelect(),

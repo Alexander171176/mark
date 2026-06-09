@@ -79,7 +79,7 @@ class SchoolTrackController extends Controller
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/Tracks/Index', [
+        return Inertia::render('Public/Default/School/SchoolTracks/Index', [
             'tracks' => $tracks,
 
             'tracksCount' => SchoolTrack::query()
@@ -217,7 +217,7 @@ class SchoolTrackController extends Controller
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/Tracks/Show', [
+        return Inertia::render('Public/Default/School/SchoolTracks/Show', [
             'track' => $trackData,
 
             'courses' => $courses,

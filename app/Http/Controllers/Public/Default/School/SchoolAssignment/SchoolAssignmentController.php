@@ -89,7 +89,7 @@ class SchoolAssignmentController extends Controller
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/Assignments/Index', [
+        return Inertia::render('Public/Default/School/SchoolAssignments/Index', [
             'assignments' => SchoolAssignmentResource::collection($assignments),
 
             'assignmentsCount' => SchoolAssignment::query()
@@ -167,7 +167,7 @@ class SchoolAssignmentController extends Controller
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/Assignments/Show', [
+        return Inertia::render('Public/Default/School/SchoolAssignments/Show', [
             'assignment' => new SchoolAssignmentResource($assignment),
 
             'trackTree' => $trackTree,

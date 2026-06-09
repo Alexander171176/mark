@@ -87,7 +87,7 @@ class SchoolLessonController extends Controller
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/Lessons/Index', [
+        return Inertia::render('Public/Default/School/SchoolLessons/Index', [
             'lessons' => $lessons,
 
             'lessonsCount' => SchoolLesson::query()
@@ -161,7 +161,7 @@ class SchoolLessonController extends Controller
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/Lessons/Show', [
+        return Inertia::render('Public/Default/School/SchoolLessons/Show', [
             'lesson' => $lessonData,
 
             'trackTree' => $trackTree,

@@ -157,7 +157,7 @@ class SchoolBundlePriceController extends Controller
 
             $prices = $query->get();
 
-            return Inertia::render('Admin/School/BundlePrices/Index', [
+            return Inertia::render('Admin/School/SchoolBundlePrices/Index', [
                 'prices' => SchoolBundlePriceResource::collection($prices),
                 'pricesCount' => $prices->count(),
 
@@ -178,7 +178,7 @@ class SchoolBundlePriceController extends Controller
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/BundlePrices/Index', [
+            return Inertia::render('Admin/School/SchoolBundlePrices/Index', [
                 'prices' => [],
                 'pricesCount' => 0,
 
@@ -202,7 +202,7 @@ class SchoolBundlePriceController extends Controller
     /** Страница создания цены бандла. */
     public function create(Request $request): Response
     {
-        return Inertia::render('Admin/School/BundlePrices/Create', [
+        return Inertia::render('Admin/School/SchoolBundlePrices/Create', [
             'bundles' => $this->bundlesForSelect(),
             'currencies' => $this->currenciesForSelect(),
 
@@ -266,7 +266,7 @@ class SchoolBundlePriceController extends Controller
             ])
             ->findOrFail($schoolBundlePrice);
 
-        return Inertia::render('Admin/School/BundlePrices/Edit', [
+        return Inertia::render('Admin/School/SchoolBundlePrices/Edit', [
             'price' => new SchoolBundlePriceResource($price),
 
             'bundles' => $this->bundlesForSelect(),

@@ -135,7 +135,7 @@ class SchoolEnrollmentController extends Controller
 
             $enrollments = $query->get();
 
-            return Inertia::render('Admin/School/Enrollments/Index', [
+            return Inertia::render('Admin/School/SchoolEnrollments/Index', [
                 'enrollments' => SchoolEnrollmentResource::collection($enrollments),
                 'enrollmentsCount' => $enrollments->count(),
 
@@ -159,7 +159,7 @@ class SchoolEnrollmentController extends Controller
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/Enrollments/Index', [
+            return Inertia::render('Admin/School/SchoolEnrollments/Index', [
                 'enrollments' => [],
                 'enrollmentsCount' => 0,
 
@@ -186,7 +186,7 @@ class SchoolEnrollmentController extends Controller
     /** Страница создания зачисления. */
     public function create(): Response
     {
-        return Inertia::render('Admin/School/Enrollments/Create', [
+        return Inertia::render('Admin/School/SchoolEnrollments/Create', [
             'users' => $this->usersForSelect(),
             'courses' => $this->coursesForSelect(),
             'schedules' => $this->schedulesForSelect(),
@@ -240,7 +240,7 @@ class SchoolEnrollmentController extends Controller
             ->withCount(['progressRecords'])
             ->findOrFail($schoolEnrollment);
 
-        return Inertia::render('Admin/School/Enrollments/Edit', [
+        return Inertia::render('Admin/School/SchoolEnrollments/Edit', [
             'enrollment' => new SchoolEnrollmentResource($enrollment),
 
             'users' => $this->usersForSelect(),

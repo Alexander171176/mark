@@ -66,7 +66,7 @@ class SchoolHashtagController extends Controller
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/Hashtags/Index', [
+        return Inertia::render('Public/Default/School/SchoolHashtags/Index', [
             'hashtags' => SchoolHashtagResource::collection($hashtags),
 
             'hashtagsCount' => SchoolHashtag::query()
@@ -164,7 +164,7 @@ class SchoolHashtagController extends Controller
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/Hashtags/Show', [
+        return Inertia::render('Public/Default/School/SchoolHashtags/Show', [
             'hashtag' => new SchoolHashtagResource($hashtag),
 
             'courses' => $courses,

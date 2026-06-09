@@ -107,7 +107,7 @@ class SchoolCohortEnrollmentController extends Controller
 
             $enrollments = $query->get();
 
-            return Inertia::render('Admin/School/CohortEnrollments/Index', [
+            return Inertia::render('Admin/School/SchoolCohortEnrollments/Index', [
                 'enrollments' => SchoolCohortEnrollmentResource::collection($enrollments),
                 'enrollmentsCount' => $enrollments->count(),
 
@@ -127,7 +127,7 @@ class SchoolCohortEnrollmentController extends Controller
                 'exception' => $e,
             ]);
 
-            return Inertia::render('Admin/School/CohortEnrollments/Index', [
+            return Inertia::render('Admin/School/SchoolCohortEnrollments/Index', [
                 'enrollments' => [],
                 'enrollmentsCount' => 0,
 
@@ -150,7 +150,7 @@ class SchoolCohortEnrollmentController extends Controller
     /** Страница создания записи */
     public function create(): Response
     {
-        return Inertia::render('Admin/School/CohortEnrollments/Create', [
+        return Inertia::render('Admin/School/SchoolCohortEnrollments/Create', [
             'schedules' => $this->schedulesForSelect(),
             'users' => $this->usersForSelect(),
         ]);
@@ -224,7 +224,7 @@ class SchoolCohortEnrollmentController extends Controller
             ])
             ->findOrFail($schoolCohortEnrollment);
 
-        return Inertia::render('Admin/School/CohortEnrollments/Edit', [
+        return Inertia::render('Admin/School/SchoolCohortEnrollments/Edit', [
             'enrollment' => new SchoolCohortEnrollmentResource($enrollment),
             'schedules' => $this->schedulesForSelect(),
             'users' => $this->usersForSelect(),

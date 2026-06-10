@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Blog\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogTag\BlogTagRequest;
 use App\Http\Resources\Admin\Blog\BlogTag\BlogTagResource;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,8 +52,9 @@ class BlogTagController extends BaseBlogAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminBlogTagsPerPage = (int) config('site_settings.adminBlogTagsPerPage', 20);
-        $adminBlogTagsDefaultSort = (string) config('site_settings.adminBlogTagsDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminBlogTagsPerPage = $settings->int('site_settings.adminBlogTagsPerPage', 6);
+        $adminBlogTagsDefaultSort = $settings->string('site_settings.adminBlogTagsDefaultSort', 'idDesc');
 
         $sortParam = (string) $request->query('sort', $adminBlogTagsDefaultSort);
 

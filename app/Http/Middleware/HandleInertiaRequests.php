@@ -3,7 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Http\Resources\Admin\System\User\UserSharedResource;
-use App\Services\SiteSettings\SiteSettings;
+use App\Services\SiteSettings\AdminSettingsService;
+use App\Services\SiteSettings\PublicSettingsService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
@@ -33,11 +34,11 @@ class HandleInertiaRequests extends Middleware
     {
         $user = auth()->user();
 
-        // ✅ Админка у тебя на /admin..., но есть ещё локаль /ru/admin...
-        $isAdmin = $request->segment(1) === 'admin' || $request->segment(2) === 'admin';
+        $isAdminArea = $request->segment(1) === 'admin' || $request->segment(2) === 'admin';
 
-        // ✅ Подгружаем роли/разрешения ТОЛЬКО для админки (и только если пользователь есть)
-        if ($isAdmin && $user) {
+        $isAdminUser = $user?->hasRole('admin') ?? false;
+
+        if ($isAdminArea && $user) {
             $user->loadMissing(['roles', 'permissions']);
         }
 
@@ -45,6 +46,8 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
 
             'user' => fn () => $user ? (new UserSharedResource($user))->toArray($request) : null,
+
+            'isAdmin' => fn () => $isAdminUser,
 
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
@@ -63,14 +66,15 @@ class HandleInertiaRequests extends Middleware
             ],
         ];
 
-        // ✅ 1) Админка: тоже только snapshot/admin.php
-        if ($isAdmin) {
-            $shared['adminSettings'] = fn () => SiteSettings::all('admin');
+        // Админка
+        if ($isAdminArea) {
+            $shared['adminSettings'] = fn () => app(AdminSettingsService::class)->all();
+
             return $shared;
         }
 
-        // ✅ 2) Публичка: только snapshot/public.php
-        $shared['publicSettings'] = fn () => SiteSettings::all('public');
+        // Публичка
+        $shared['publicSettings'] = fn () => app(PublicSettingsService::class)->all();
 
         return $shared;
     }

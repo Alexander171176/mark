@@ -13,6 +13,7 @@ use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
 use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
 use App\Models\Admin\School\SchoolQuiz\SchoolQuizImage;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -65,8 +66,9 @@ class SchoolQuizController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolQuizzesPerPage = (int) config('site_settings.adminSchoolQuizzesPerPage', 6);
-        $adminSchoolQuizzesDefaultSort = (string) config('site_settings.adminSchoolQuizzesDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolQuizzesPerPage = $settings->int('site_settings.adminSchoolQuizzesPerPage', 6);
+        $adminSchoolQuizzesDefaultSort = $settings->string('site_settings.adminSchoolQuizzesDefaultSort', 'idDesc');
         $sort = (string) $request->query('sort', $adminSchoolQuizzesDefaultSort);
 
         try {

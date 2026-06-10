@@ -10,6 +10,7 @@ use App\Http\Resources\Admin\System\Permission\PermissionResource;
 use App\Http\Resources\Admin\System\Role\RoleResource;
 use App\Http\Resources\Admin\System\User\UserResource;
 use App\Models\User;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -34,9 +35,9 @@ class UserController extends Controller
         $users = User::with(['roles', 'permissions'])->get();
         $usersCount = User::count();
 
-        // Получаем значение параметра из конфигурации (оно загружается через AppServiceProvider)
-        $adminCountUsers = config('site_settings.AdminCountUsers', 10);
-        $adminSortUsers  = config('site_settings.AdminSortUsers', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminCountUsers = $settings->int('site_settings.AdminCountUsers', 6);
+        $adminSortUsers  = $settings->string('site_settings.AdminSortUsers', 'idDesc');
 
         return Inertia::render('Admin/System/Users/Index', [
             'users' => UserResource::collection($users),

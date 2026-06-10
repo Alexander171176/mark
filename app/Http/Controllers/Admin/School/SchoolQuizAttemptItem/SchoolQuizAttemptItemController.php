@@ -12,6 +12,7 @@ use App\Models\Admin\School\SchoolQuizAnswer\SchoolQuizAnswer;
 use App\Models\Admin\School\SchoolQuizAttempt\SchoolQuizAttempt;
 use App\Models\Admin\School\SchoolQuizAttemptItem\SchoolQuizAttemptItem;
 use App\Models\Admin\School\SchoolQuizQuestion\SchoolQuizQuestion;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -46,8 +47,9 @@ class SchoolQuizAttemptItemController extends Controller
         $questionId = $request->query('school_quiz_question_id');
         $isCorrect = $request->query('is_correct');
 
-        $adminSchoolQuizAttemptItemsPerPage = (int) config('site_settings.adminSchoolQuizAttemptItemsPerPage', 6);
-        $adminSchoolQuizAttemptItemsDefaultSort = (string) config('site_settings.adminSchoolQuizAttemptItemsDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolQuizAttemptItemsPerPage = $settings->int('site_settings.adminSchoolQuizAttemptItemsPerPage', 6);
+        $adminSchoolQuizAttemptItemsDefaultSort = $settings->string('site_settings.adminSchoolQuizAttemptItemsDefaultSort', 'idDesc');
 
         try {
             $query = SchoolQuizAttemptItem::query()

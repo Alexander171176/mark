@@ -11,6 +11,7 @@ use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolCourseSchedule\SchoolCourseSchedule;
 use App\Models\Admin\School\SchoolCourseSchedule\SchoolCourseScheduleImage;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -65,8 +66,9 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolCourseSchedulesPerPage = (int) config('site_settings.adminSchoolCourseSchedulesPerPage', 6);
-        $adminSchoolCourseSchedulesDefaultSort = (string) config('site_settings.adminSchoolCourseSchedulesDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolCourseSchedulesPerPage = $settings->int('site_settings.adminSchoolCourseSchedulesPerPage', 6);
+        $adminSchoolCourseSchedulesDefaultSort = $settings->string('site_settings.adminSchoolCourseSchedulesDefaultSort', 'idDesc');
         $sort = (string) $request->query('sort', $adminSchoolCourseSchedulesDefaultSort);
 
         try {

@@ -15,6 +15,7 @@ use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -70,8 +71,9 @@ class SchoolAssignmentController extends BaseSchoolAdminController
         // Текущая локаль
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolAssignmentsPerPage = (int) config('site_settings.adminSchoolAssignmentsPerPage', 6);
-        $adminSchoolAssignmentsDefaultSort = (string) config('site_settings.adminSchoolAssignmentsDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolAssignmentsPerPage = $settings->int('site_settings.adminSchoolAssignmentsPerPage', 6);
+        $adminSchoolAssignmentsDefaultSort = $settings->string('site_settings.adminSchoolAssignmentsDefaultSort', 'idDesc');
         $sort = (string) $request->query('sort', $adminSchoolAssignmentsDefaultSort);
 
         try {

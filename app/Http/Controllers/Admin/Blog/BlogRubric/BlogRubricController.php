@@ -8,6 +8,7 @@ use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricSharedResource;
 use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\Blog\BlogRubric\BlogRubricImage;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -99,8 +100,9 @@ class BlogRubricController extends BaseBlogAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminBlogRubricsPerPage = (int) config('site_settings.adminBlogRubricsPerPage', 20);
-        $adminBlogRubricsDefaultSort = (string) config('site_settings.adminBlogRubricsDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminBlogRubricsPerPage = $settings->int('site_settings.adminBlogRubricsPerPage', 6);
+        $adminBlogRubricsDefaultSort = $settings->string('site_settings.adminBlogRubricsDefaultSort', 'idDesc');
 
         $sortParam = (string) $request->query('sort', $adminBlogRubricsDefaultSort);
 

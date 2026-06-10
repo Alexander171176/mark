@@ -13,7 +13,7 @@ const { t, locale } = useI18n()
 const availableLocales = computed(() => {
     return Array.isArray(page.props?.availableLocales)
         ? page.props.availableLocales.map(item => String(item).toLowerCase())
-        : ['ru', 'en', 'kk']
+        : []
 })
 
 /** количество рубрик на модерации */
@@ -299,6 +299,7 @@ const clearCache = async () => {
                     </span>
                 </Link>
             </div>
+
             <!-- Генерация снапшотов, очиска кэша, смена локали -->
             <div class="flex flex-row items-center justify-end gap-1">
 

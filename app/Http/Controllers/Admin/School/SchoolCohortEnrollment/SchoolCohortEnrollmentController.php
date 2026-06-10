@@ -9,6 +9,7 @@ use App\Http\Resources\Admin\School\SchoolCourseSchedule\SchoolCourseScheduleSha
 use App\Models\Admin\School\SchoolCohortEnrollment\SchoolCohortEnrollment;
 use App\Models\Admin\School\SchoolCourseSchedule\SchoolCourseSchedule;
 use App\Models\User;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -42,8 +43,9 @@ class SchoolCohortEnrollmentController extends Controller
         $status = $request->query('status');
         $scheduleId = $request->query('school_course_schedule_id');
 
-        $adminSchoolCohortEnrollmentsPerPage = (int) config('site_settings.adminSchoolCohortEnrollmentsPerPage', 6);
-        $adminSchoolCohortEnrollmentsDefaultSort = (string) config('site_settings.adminSchoolCohortEnrollmentsDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolCohortEnrollmentsPerPage = $settings->int('site_settings.adminSchoolCohortEnrollmentsPerPage', 6);
+        $adminSchoolCohortEnrollmentsDefaultSort = $settings->string('site_settings.adminSchoolCohortEnrollmentsDefaultSort', 'idDesc');
 
         try {
             $query = SchoolCohortEnrollment::query()

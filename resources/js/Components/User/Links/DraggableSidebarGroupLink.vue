@@ -5,7 +5,10 @@ import Draggable from 'vuedraggable';
 import DraggableSidebarLink from '@/Components/User/Links/DraggableSidebarLink.vue';
 import {usePage} from "@inertiajs/vue3";
 
-const { siteSettings } = usePage().props;
+const page = usePage()
+
+const adminSettings = computed(() => page.props?.adminSettings || {})
+
 defineProps({
     expanded: Boolean
 });
@@ -36,8 +39,8 @@ onUnmounted(() => {
 
 const colorTextActive = computed(() => {
     return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkActiveText || 'text-yellow-200')
-        : (siteSettings.AdminSidebarLightActiveText || 'text-yellow-200');
+        ? (adminSettings.value.AdminSidebarDarkActiveText || 'text-yellow-200')
+        : (adminSettings.value.AdminSidebarLightActiveText || 'text-yellow-200');
 });
 
 const emit = defineEmits(['update:mainLinks', 'update:hiddenLinks']);

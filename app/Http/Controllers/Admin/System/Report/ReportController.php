@@ -3,12 +3,10 @@
 namespace App\Http\Controllers\Admin\System\Report;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\Blog\Article\ArticleResource;
-use App\Http\Resources\Admin\Blog\Rubric\RubricResource;
-use App\Http\Resources\Admin\Blog\Section\SectionResource;
-use App\Models\Admin\Blog\Article\Article;
-use App\Models\Admin\Blog\Rubric\Rubric;
-use App\Models\Admin\Blog\Section\Section;
+use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleResource;
+use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
+use App\Models\Admin\Blog\BlogArticle\BlogArticle;
+use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\System\Setting\Setting;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -72,9 +70,8 @@ class ReportController extends Controller
         // --- Формируем ответ ---
         if ($request->expectsJson() || $type !== 'page') { // Если явно запрошен JSON
             $resource = match ($type) {
-                'rubrics' => RubricResource::collection($data),
-                'sections' => SectionResource::collection($data),
-                'articles', => ArticleResource::collection($data), // По умолчанию статьи
+                'rubrics' => BlogRubricResource::collection($data),
+                'articles', => BlogArticleResource::collection($data), // По умолчанию статьи
                 default => collect(), // Или ошибка, т.к. тип проверен в getBaseReportQuery
             };
             return response()->json(['data' => $resource]);
@@ -84,16 +81,14 @@ class ReportController extends Controller
 
             // Пример: передаем пагинированные статьи и количество рубрик/секций
             $articlesPaginated = $this->getBaseReportQuery('articles', $locale)->paginate(15); // Пагинация статей
-            $rubricsCount = Rubric::where('locale', $locale)->count();
-            $sectionsCount = Section::where('locale', $locale)->where('activity', 1)->count();
-            $activeArticlesCount = Article::where('activity', 1)->where('locale', $locale)->count();
+            $rubricsCount = BlogRubric::where('locale', $locale)->count();
+            $activeArticlesCount = BlogArticle::where('activity', 1)->where('locale', $locale)->count();
 
 
             return Inertia::render('Admin/System/Reports/Index', [
                 // Передаем только необходимые данные для страницы
-                'articles'            => ArticleResource::collection($articlesPaginated),
+                'articles'            => BlogArticleResource::collection($articlesPaginated),
                 'rubricsCount'        => $rubricsCount,
-                'sectionsCount'       => $sectionsCount,
                 'activeArticlesCount' => $activeArticlesCount,
                 // Можно передать данные для графиков, как в ChartController
                 // 'chartData' => [ ... ]
@@ -173,7 +168,7 @@ class ReportController extends Controller
 
         switch ($type) {
             case 'rubrics':
-                return Rubric::with([
+                return BlogRubric::with([
                     // Загружаем только нужные поля секций и считаем активные статьи
                     'sections' => fn($q) => $q->select('sections.id', 'sections.title', 'sections.locale')
                         ->where('activity', 1)
@@ -186,32 +181,14 @@ class ReportController extends Controller
                     ->where('locale', $locale)
                     ->orderBy('sort', 'asc'); // Добавим сортировку для рубрик
 
-            case 'sections':
-                return Section::with([
-                    // Загружаем только нужные поля статей
-                    'articles' => fn($q) => $q
-                        ->select('articles.id', 'articles.title', 'articles.locale', 'articles.views', 'articles.likes')
-                        ->where('activity', 1)
-                        ->where('locale', $locale)
-                        ->orderBy('sort', 'asc'),
-                    // Можно загрузить рубрики, если нужно
-                    'rubrics:id,title'
-                ])
-                    ->withCount(['articles' => fn($q) => $q
-                        ->where('activity', 1)
-                        ->where('locale', $locale)]) // Считаем только активные статьи
-                    ->where('activity', 1)
-                    ->where('locale', $locale)
-                    ->orderBy('sort', 'asc');
-
             case 'articles':
-                return Article::with(['sections:id,title', 'tags:id,name', 'images']) // Загружаем только ID/названия связей + изображения
+                return BlogArticle::with(['sections:id,title', 'tags:id,name', 'images']) // Загружаем только ID/названия связей + изображения
                 ->where('activity', 1)
                     ->where('locale', $locale)
                     ->orderBy('sort', 'asc');
 
             case 'page': // Тип для Inertia view, можно вернуть пустой запрос или базовый
-                return Article::query(); // Или вернуть null/выбросить исключение
+                return BlogArticle::query(); // Или вернуть null/выбросить исключение
 
             default:
                 throw new InvalidArgumentException('Неподдерживаемый тип отчета: ' . $type);

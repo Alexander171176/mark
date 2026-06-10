@@ -4,7 +4,10 @@ import { useI18n } from 'vue-i18n'
 import { usePage } from '@inertiajs/vue3'
 
 const { t } = useI18n()
-const { siteSettings } = usePage().props
+
+const page = usePage()
+
+const adminSettings = computed(() => page.props?.adminSettings || {})
 
 // Реф для хранения состояния темного режима (true, если активен)
 const isDarkMode = ref(false)
@@ -33,14 +36,14 @@ onUnmounted(() => {
 // ✅ 1 в 1 как Sidebar.vue
 const bgColorClass = computed(() => {
     return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkColor || 'bg-cyan-900')
-        : (siteSettings.AdminSidebarLightColor || 'bg-cyan-900')
+        ? (adminSettings.value.AdminSidebarDarkColor || 'bg-cyan-900')
+        : (adminSettings.value.AdminSidebarLightColor || 'bg-cyan-900')
 })
 
 const colorText = computed(() => {
     return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkText || 'text-slate-200')
-        : (siteSettings.AdminSidebarLightText || 'text-slate-200');
+        ? (adminSettings.value.AdminSidebarDarkText || 'text-slate-200')
+        : (adminSettings.value.AdminSidebarLightText || 'text-slate-200');
 });
 </script>
 

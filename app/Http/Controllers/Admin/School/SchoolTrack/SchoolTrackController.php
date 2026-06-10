@@ -8,6 +8,7 @@ use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackResource;
 use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackSharedResource;
 use App\Models\Admin\School\SchoolTrack\SchoolTrack;
 use App\Models\Admin\School\SchoolTrack\SchoolTrackImage;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -101,8 +102,9 @@ class SchoolTrackController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolTracksPerPage = (int) config('site_settings.adminSchoolTracksPerPage', 6);
-        $adminSchoolTracksDefaultSort = (string) config('site_settings.adminSchoolTracksDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolTracksPerPage = $settings->int('site_settings.adminSchoolTracksPerPage', 6);
+        $adminSchoolTracksDefaultSort = $settings->string('site_settings.adminSchoolTracksDefaultSort', 'idDesc');
         $sort = (string) $request->query('sort', $adminSchoolTracksDefaultSort);
 
         try {

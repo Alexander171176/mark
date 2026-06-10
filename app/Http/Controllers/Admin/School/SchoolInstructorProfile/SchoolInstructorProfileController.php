@@ -9,6 +9,7 @@ use App\Http\Resources\Admin\System\User\UserResource;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileImage;
 use App\Models\User;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,11 +61,12 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
+        $settings = app(AdminSettingsService::class);
         $adminSchoolInstructorsPerPage =
-            (int) config('site_settings.adminSchoolInstructorsPerPage', 6);
+            $settings->int('site_settings.adminSchoolInstructorsPerPage', 6);
 
         $adminSchoolInstructorsDefaultSort =
-            (string) config(
+            $settings->string(
                 'site_settings.adminSchoolInstructorsDefaultSort',
                 'idDesc'
             );

@@ -11,6 +11,7 @@ use App\Http\Resources\Admin\School\SchoolBundlePrice\SchoolBundlePriceResource;
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\School\SchoolBundle\SchoolBundle;
 use App\Models\Admin\School\SchoolBundlePrice\SchoolBundlePrice;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -46,8 +47,9 @@ class SchoolBundlePriceController extends Controller
         $currencyId = $request->query('currency_id');
         $activity = $request->query('activity');
 
-        $adminSchoolBundlePricesPerPage = (int) config('site_settings.adminSchoolBundlePricesPerPage', 6);
-        $adminSchoolBundlePricesDefaultSort = (string) config('site_settings.adminSchoolBundlePricesDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolBundlePricesPerPage = $settings->int('site_settings.adminSchoolBundlePricesPerPage', 6);
+        $adminSchoolBundlePricesDefaultSort = $settings->string('site_settings.adminSchoolBundlePricesDefaultSort', 'idDesc');
 
         try {
             $query = SchoolBundlePrice::query()

@@ -9,6 +9,7 @@ use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
 use App\Models\Admin\School\SchoolModule\SchoolModuleImage;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -64,8 +65,9 @@ class SchoolModuleController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolModulesPerPage = (int) config('site_settings.adminSchoolModulesPerPage', 6);
-        $adminSchoolModulesDefaultSort = (string) config('site_settings.adminSchoolModulesDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolModulesPerPage = $settings->int('site_settings.adminSchoolModulesPerPage', 6);
+        $adminSchoolModulesDefaultSort = $settings->string('site_settings.adminSchoolModulesDefaultSort', 'idDesc');
         $sort = (string) $request->query('sort', $adminSchoolModulesDefaultSort);
 
         try {

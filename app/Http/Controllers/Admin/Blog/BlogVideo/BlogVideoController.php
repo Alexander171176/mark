@@ -8,6 +8,7 @@ use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoSharedResource;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\BlogVideo\BlogVideoImage;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -85,8 +86,9 @@ class BlogVideoController extends BaseBlogAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminBlogVideosPerPage = (int) config('site_settings.adminBlogVideosPerPage', 20);
-        $adminBlogVideosDefaultSort = (string) config('site_settings.adminBlogVideosDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminBlogVideosPerPage = $settings->int('site_settings.adminBlogVideosPerPage', 6);
+        $adminBlogVideosDefaultSort = $settings->string('site_settings.adminBlogVideosDefaultSort', 'idDesc');
 
         $sortParam = (string) $request->query('sort', $adminBlogVideosDefaultSort);
 

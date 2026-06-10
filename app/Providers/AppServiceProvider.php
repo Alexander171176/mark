@@ -8,13 +8,12 @@ use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\Comment\Comment;
-use App\Models\Admin\School\SchoolBundle\Bundle;
+use App\Models\Admin\School\SchoolBundle\SchoolBundle;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
-use App\Models\Admin\School\SchoolSubscriptionPlan\SubscriptionPlan;
+use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlan;
 use App\Models\Admin\School\SchoolTrack\SchoolTrack;
-use App\Models\Admin\System\Setting\Setting;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\App;
@@ -27,24 +26,22 @@ use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         JsonResource::withoutWrapping();
 
-        /**
-         * 1) Определение и валидация локали.
-         */
+        $this->bootLocale();
+        $this->bootInertiaSharedData();
+        $this->bootMorphMap();
+    }
+
+    private function bootLocale(): void
+    {
         $availableLocales = config('app.available_locales', ['ru']);
         $locale = LaravelLocalization::getCurrentLocale() ?: config('app.locale');
 
@@ -52,59 +49,16 @@ class AppServiceProvider extends ServiceProvider
             $locale = config('app.fallback_locale', 'ru');
         }
 
-        if ($locale !== App::getLocale()) {
-            App::setLocale($locale);
-        }
+        App::setLocale($locale);
+    }
 
-        /**
-         * 2) Настройки из БД — только если таблица существует.
-         */
-        $settings = [];
-
-        if (Schema::hasTable('settings')) {
-            $settings = Cache::remember('site_settings_all', 3600, function () {
-                return Setting::pluck('value', 'option')->toArray();
-            });
-        }
-
-        config(['site_settings' => $settings]);
-
-        /**
-         * 3) Общие данные для Inertia.
-         */
+    private function bootInertiaSharedData(): void
+    {
         Inertia::share([
-            'siteSettings' => fn () => config('site_settings', []),
-
             'locale' => fn () => App::getLocale(),
-
             'availableLocales' => fn () => config('app.available_locales', ['ru']),
 
-            'admin' => fn () => (
-                Schema::hasTable('blog_rubrics') &&
-                Schema::hasTable('blog_articles') &&
-                Schema::hasTable('blog_tags') &&
-                Schema::hasTable('blog_banners') &&
-                Schema::hasTable('blog_videos') &&
-                Schema::hasTable('comments')
-            )
-                ? Cache::remember('admin_moderation_counts', 60, function () {
-                    return [
-                        'rubrics_under_moderation_count' => BlogRubric::where('moderation_status', 0)->count(),
-                        'articles_under_moderation_count' => BlogArticle::where('moderation_status', 0)->count(),
-                        'tags_under_moderation_count' => BlogTag::where('moderation_status', 0)->count(),
-                        'banners_under_moderation_count' => BlogBanner::where('moderation_status', 0)->count(),
-                        'videos_under_moderation_count' => BlogVideo::where('moderation_status', 0)->count(),
-                        'comments_under_moderation_count' => Comment::where('moderation_status', 0)->count(),
-                    ];
-                })
-                : [
-                    'rubrics_under_moderation_count' => 0,
-                    'articles_under_moderation_count' => 0,
-                    'tags_under_moderation_count' => 0,
-                    'banners_under_moderation_count' => 0,
-                    'videos_under_moderation_count' => 0,
-                    'comments_under_moderation_count' => 0,
-                ],
+            'admin' => fn () => $this->adminModerationCounts(),
 
             'canLogin' => fn () => Route::has('login'),
             'canRegister' => fn () => Route::has('register'),
@@ -115,10 +69,48 @@ class AppServiceProvider extends ServiceProvider
                 ],
             ],
         ]);
+    }
 
-        /**
-         * 4) Morph map для polymorphic relations.
-         */
+    private function adminModerationCounts(): array
+    {
+        if (!$this->blogTablesExist()) {
+            return $this->emptyAdminModerationCounts();
+        }
+
+        return Cache::remember('admin_moderation_counts', 60, fn () => [
+            'rubrics_under_moderation_count' => BlogRubric::where('moderation_status', 0)->count(),
+            'articles_under_moderation_count' => BlogArticle::where('moderation_status', 0)->count(),
+            'tags_under_moderation_count' => BlogTag::where('moderation_status', 0)->count(),
+            'banners_under_moderation_count' => BlogBanner::where('moderation_status', 0)->count(),
+            'videos_under_moderation_count' => BlogVideo::where('moderation_status', 0)->count(),
+            'comments_under_moderation_count' => Comment::where('moderation_status', 0)->count(),
+        ]);
+    }
+
+    private function blogTablesExist(): bool
+    {
+        return Schema::hasTable('blog_rubrics')
+            && Schema::hasTable('blog_articles')
+            && Schema::hasTable('blog_tags')
+            && Schema::hasTable('blog_banners')
+            && Schema::hasTable('blog_videos')
+            && Schema::hasTable('comments');
+    }
+
+    private function emptyAdminModerationCounts(): array
+    {
+        return [
+            'rubrics_under_moderation_count' => 0,
+            'articles_under_moderation_count' => 0,
+            'tags_under_moderation_count' => 0,
+            'banners_under_moderation_count' => 0,
+            'videos_under_moderation_count' => 0,
+            'comments_under_moderation_count' => 0,
+        ];
+    }
+
+    private function bootMorphMap(): void
+    {
         Relation::morphMap([
             'rubric' => BlogRubric::class,
             'article' => BlogArticle::class,
@@ -130,8 +122,8 @@ class AppServiceProvider extends ServiceProvider
             'course' => SchoolCourse::class,
             'module' => SchoolModule::class,
             'lesson' => SchoolLesson::class,
-            'bundle' => Bundle::class,
-            'subscription_plan' => SubscriptionPlan::class,
+            'bundle' => SchoolBundle::class,
+            'subscription_plan' => SchoolSubscriptionPlan::class,
         ]);
     }
 }

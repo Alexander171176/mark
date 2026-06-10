@@ -24,6 +24,10 @@ import BulkActionSelect from '@/Components/Admin/Blog/BlogArticle/Select/BulkAct
 import SortSelect from '@/Components/Admin/Blog/BlogArticle/Sort/SortSelect.vue'
 import ArticleTable from '@/Components/Admin/Blog/BlogArticle/Table/ArticleTable.vue'
 import ArticleCardGrid from '@/Components/Admin/Blog/BlogArticle/View/ArticleCardGrid.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
+import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
+import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
+import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
 
 const { t, locale } = useI18n()
 const toast = useToast()
@@ -31,16 +35,21 @@ const page = usePage()
 
 /** Props приходят из BlogArticleController@index */
 const props = defineProps({
-    articles: { type: Array, default: () => [] },
-    articlesCount: { type: Number, default: 0 },
-
-    adminBlogArticlesPerPage: { type: Number, default: 20 },
-    adminBlogArticlesDefaultSort: { type: String, default: 'idDesc' },
-
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
 
+    adminBlogArticlesProcessingMode: { type: String, default: 'frontend' },
+    useServerProcessing: { type: Boolean, default: false },
+
+    adminBlogArticlesPerPage: { type: Number, default: 6 },
+    adminBlogArticlesDefaultSort: { type: String, default: 'idDesc' },
+
+    articles: { type: [Array, Object], default: () => [] },
+    articlesCount: { type: Number, default: 0 },
+
     sortParam: { type: String, default: '' },
+    search: { type: String, default: '' },
+
     errors: { type: Object, default: () => ({}) },
 })
 
@@ -83,7 +92,7 @@ watch(viewMode, (value) => {
  * Количество элементов на странице.
  * Значение сохраняется в настройках админки.
  */
-const itemsPerPage = ref(props.adminBlogArticlesPerPage || 20)
+const itemsPerPage = ref(props.adminBlogArticlesPerPage || 6)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
@@ -111,8 +120,29 @@ watch(sortParam, (newVal) => {
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.info('Сортировка успешно изменена'),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
+
+            onSuccess: () => {
+                if (props.useServerProcessing) {
+                    router.get(
+                        window.location.pathname,
+                        {
+                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                            sort: newVal || undefined,
+                            page: undefined,
+                        },
+                        {
+                            preserveScroll: true,
+                            preserveState: false,
+                            replace: true,
+                        }
+                    )
+                }
+                toast.info('Сортировка успешно изменена')
+            },
+
+            onError: (errors) => {
+                toast.error(errors.value || 'Ошибка обновления сортировки.')
+            },
         }
     )
 })
@@ -125,8 +155,20 @@ watch(sortParam, (newVal) => {
  */
 const localArticles = ref([])
 
+const articlesList = computed(() => {
+    if (Array.isArray(props.articles)) {
+        return props.articles
+    }
+
+    if (Array.isArray(props.articles?.data)) {
+        return props.articles.data
+    }
+
+    return []
+})
+
 watch(
-    () => props.articles,
+    articlesList,
     (newVal) => {
         localArticles.value = JSON.parse(JSON.stringify(newVal || []))
     },
@@ -295,7 +337,7 @@ const toggleRight = (article) => {
 }
 
 /** Локальный поиск по уже загруженному списку статей */
-const searchQuery = ref('')
+const searchQuery = ref(props.search || '')
 const currentPage = ref(1)
 
 /**
@@ -387,6 +429,12 @@ const paginatedArticles = computed(() => {
     return filteredArticles.value.slice(start, start + perPage)
 })
 
+const displayedArticles = computed(() => {
+    return props.useServerProcessing
+        ? articlesList.value
+        : paginatedArticles.value
+})
+
 watch([itemsPerPage, searchQuery], () => {
     currentPage.value = 1
 })
@@ -397,7 +445,7 @@ const selectedArticles = ref([])
 /** Выбрать/снять все статьи в текущем режиме отображения */
 const toggleAll = (payload) => {
     const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? paginatedArticles.value.map((article) => article.id)
+    const ids = payload?.ids ?? displayedArticles.value.map((article) => article.id)
 
     if (checked) {
         selectedArticles.value = [...new Set([...selectedArticles.value, ...ids])]
@@ -608,18 +656,38 @@ const handleSortOrderUpdate = (newOrderIds) => {
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.blogArticles.create')">
                         {{ t('addArticle') }}
                     </DefaultButton>
+
+                    <ProcessingModeSwitcher
+                        setting-key="adminBlogArticlesProcessingMode"
+                        :mode="adminBlogArticlesProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="articlesCount"
+                    />
                 </div>
 
-                <SearchInput v-if="articlesCount" v-model="searchQuery" />
+                <SearchInput
+                    v-if="articlesCount && !useServerProcessing"
+                    v-model="searchQuery"
+                />
+                <ServerSearchInput
+                    v-if="articlesCount && useServerProcessing"
+                    v-model="searchQuery"
+                />
 
                 <div v-if="articlesCount" class="flex justify-between items-center flex-col md:flex-row my-3">
                     <ItemsPerPageSelect
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                    <ServerItemsPerPageSelect
+                        v-else
+                        :items-per-page="itemsPerPage"
+                        update-route="admin.settings.updateAdminCountArticles"
                     />
 
                     <SortSelect
@@ -639,19 +707,24 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     <ToggleViewButton v-model:viewMode="viewMode" />
                 </div>
 
-                <div v-if="articlesCount" class="flex justify-center items-center flex-col md:flex-row mt-3">
+                <div v-if="articlesCount"
+                     class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredArticles.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                    <AdminServerPagination
+                        v-else
+                        :pagination="articles"
                     />
                 </div>
 
                 <ArticleTable
                     v-if="viewMode === 'table'"
-                    :articles="paginatedArticles"
+                    :articles="displayedArticles"
                     :selected-articles="selectedArticles"
                     :is-admin="isAdmin"
                     @toggle-left="toggleLeft"
@@ -667,7 +740,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
                 <ArticleCardGrid
                     v-else
-                    :articles="paginatedArticles"
+                    :articles="displayedArticles"
                     :selected-articles="selectedArticles"
                     :is-admin="isAdmin"
                     @toggle-left="toggleLeft"
@@ -683,11 +756,15 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
                 <div v-if="articlesCount" class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredArticles.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+                    <AdminServerPagination
+                        v-else
+                        :pagination="articles"
                     />
                 </div>
             </div>

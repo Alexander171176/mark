@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\Blog\BlogBanner\BlogBannerRequest;
 use App\Http\Resources\Admin\Blog\BlogBanner\BlogBannerResource;
 use App\Models\Admin\Blog\BlogBanner\BlogBanner;
 use App\Models\Admin\Blog\BlogBanner\BlogBannerImage;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -56,8 +57,10 @@ class BlogBannerController extends BaseBlogAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminBlogBannersPerPage = (int) config('site_settings.adminBlogBannersPerPage', 20);
-        $adminBlogBannersDefaultSort = (string) config('site_settings.adminBlogBannersDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+
+        $adminBlogBannersPerPage = $settings->int('site_settings.adminBlogBannersPerPage', 6);
+        $adminBlogBannersDefaultSort = $settings->string('site_settings.adminBlogBannersDefaultSort', 'idDesc');
 
         $sortParam = (string) $request->query('sort', $adminBlogBannersDefaultSort);
 

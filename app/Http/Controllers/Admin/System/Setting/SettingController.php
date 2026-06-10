@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\System\Setting\UpdateSettingValueRequest;
 use App\Http\Requests\Admin\System\UpdateActivityRequest;
 use App\Http\Resources\Admin\System\Setting\SettingResource;
 use App\Models\Admin\System\Setting\Setting;
+use App\Services\SiteSettings\AdminSettingsService;
 use App\Traits\Admin\Settings\ClearsSettingsCacheTrait;
 use App\Traits\Admin\Settings\CountSettingsTrait;
 use App\Traits\Admin\Settings\SortSettingsTrait;
@@ -44,8 +45,9 @@ class SettingController extends Controller
         // TODO: Проверка прав $this->authorize('view-settings', Setting::class);
 
         // Получаем настройки для фронтенда (дефолтные значения)
-        $adminSystemSettingsPerPage = config('site_settings.adminSystemSettingsPerPage', 20); // Для ItemsPerPageSelect
-        $adminSystemSettingsDefaultSort = config('site_settings.adminSystemSettingsDefaultSort', 'idDesc'); // Для SortSelect
+        $settings = app(AdminSettingsService::class);
+        $adminSystemSettingsPerPage = $settings->int('site_settings.adminSystemSettingsPerPage', 6); // Для ItemsPerPageSelect
+        $adminSystemSettingsDefaultSort = $settings->string('site_settings.adminSystemSettingsDefaultSort', 'idDesc'); // Для SortSelect
 
         try {
             // Загружаем ВСЕ рубрики с количеством секций (или без, если не нужно в таблице)
@@ -104,6 +106,56 @@ class SettingController extends Controller
 
             return back()
                 ->with('error', __('admin/controllers.value_updated_error'));
+        }
+    }
+
+    /**
+     * Универсальное обновление настройки по option.
+     *
+     * @param Request $request
+     * @return RedirectResponse
+     */
+    public function updateSettingValue(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'key' => ['required', 'string'],
+            'value' => ['nullable'],
+        ]);
+
+        try {
+
+            DB::beginTransaction();
+
+            $setting = Setting::query()
+                ->where('option', $validated['key'])
+                ->firstOrFail();
+
+            $setting->update([
+                'value' => $validated['value'],
+            ]);
+
+            $this->clearSettingsCache();
+
+            DB::commit();
+
+            return back()->with(
+                'success',
+                __('admin/controllers.value_updated_success')
+            );
+
+        } catch (Throwable $e) {
+
+            DB::rollBack();
+
+            Log::error(
+                'Ошибка обновления настройки: ' .
+                $e->getMessage()
+            );
+
+            return back()->with(
+                'error',
+                __('admin/controllers.value_updated_error')
+            );
         }
     }
 

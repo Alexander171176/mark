@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\System\UpdateActivityRequest;
 use App\Http\Requests\Admin\System\UpdateSortEntityRequest;
 use App\Http\Resources\Admin\System\Setting\SettingResource;
 use App\Models\Admin\System\Setting\Setting;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -49,9 +50,9 @@ class ParameterController extends Controller
     {
         // TODO: Проверка прав $this->authorize('show-parameters');
 
-        // Используем тот же конфиг, что и для Settings? Или нужен отдельный?
-        $adminSystemSettingsPerPage = config('site_settings.adminSystemSettingsPerPage', 20); // Используем свой ключ или общий
-        $adminSystemSettingsDefaultSort  = config('site_settings.adminSystemSettingsDefaultSort', 'idDesc'); // Используем свой ключ или общий
+        $settings = app(AdminSettingsService::class);
+        $adminSystemSettingsPerPage = $settings->int('site_settings.adminSystemSettingsPerPage', 6); // Используем свой ключ или общий
+        $adminSystemSettingsDefaultSort  = $settings->string('site_settings.adminSystemSettingsDefaultSort', 'idDesc'); // Используем свой ключ или общий
 
         try {
             $settings = Setting::all();

@@ -4,7 +4,10 @@ import {Link, usePage} from '@inertiajs/vue3';
 import {useI18n} from 'vue-i18n';
 import {sidebarIcons} from '@/utils/sidebarIcons';
 
-const { siteSettings } = usePage().props;
+const page = usePage()
+
+const adminSettings = computed(() => page.props?.adminSettings || {})
+
 const props = defineProps({
     id: String,
     expanded: Boolean
@@ -36,20 +39,20 @@ onUnmounted(() => {
 
 const colorText = computed(() => {
     return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkText || 'text-slate-200')
-        : (siteSettings.AdminSidebarLightText || 'text-slate-200');
+        ? (adminSettings.value.AdminSidebarDarkText || 'text-slate-200')
+        : (adminSettings.value.AdminSidebarLightText || 'text-slate-200');
 });
 
 const colorTextHover = computed(() => {
     return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkHoverText || 'text-orange-300')
-        : (siteSettings.AdminSidebarLightHoverText || 'text-orange-300');
+        ? (adminSettings.value.AdminSidebarDarkHoverText || 'text-orange-300')
+        : (adminSettings.value.AdminSidebarLightHoverText || 'text-orange-300');
 });
 
 const colorTextActive = computed(() => {
     return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkActiveText || 'text-yellow-200')
-        : (siteSettings.AdminSidebarLightActiveText || 'text-yellow-200');
+        ? (adminSettings.value.AdminSidebarDarkActiveText || 'text-yellow-200')
+        : (adminSettings.value.AdminSidebarLightActiveText || 'text-yellow-200');
 });
 
 const {t} = useI18n();

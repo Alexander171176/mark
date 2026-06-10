@@ -14,6 +14,8 @@ use App\Models\Admin\Blog\BlogArticle\BlogArticleImage;
 use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
+use App\Services\Admin\ProcessingModeService;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,7 +29,7 @@ use Throwable;
  * Контроллер для управления Статьями (Blog) в админке.
  *
  * Паттерн:
- * - локали (табы)
+ * - Поиск, Пагинация, сортировка (режимы: frontend | auto | server )
  * - CRUD
  * - owner/ограничение “владелец/админ”
  * - activity/left/main/right (single + bulk)
@@ -158,48 +160,48 @@ class BlogArticleController extends BaseBlogAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminBlogArticlesPerPage = (int) config('site_settings.adminBlogArticlesPerPage', 20);
-        $adminBlogArticlesDefaultSort = (string) config('site_settings.adminBlogArticlesDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
 
-        $sortParam = (string) $request->query('sort', $adminBlogArticlesDefaultSort);
+        $perPage = $settings->int('adminBlogArticlesPerPage', 6);
+        $defaultSort = $settings->string('adminBlogArticlesDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string('adminBlogArticlesProcessingMode', 'frontend');
+
+        $articlesCount = $this->baseQuery()->count();
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $articlesCount,
+                300
+            );
 
         try {
-            $articles = $this->baseQuery()
-                ->with([
-                    'owner',
-                    'moderator',
-                    'translations',
-                    'images',
-                    'rubrics.translations',
-                    'tags.translations',
-                    'videos.translations',
-                    'videos.images',
-                    'relatedArticles.translations',
-                    'relatedArticles.images',
-                ])
-                ->withCount([
-                    'comments',
-                    'rubrics',
-                    'tags',
-                    'images',
-                    'videos',
-                    'likes',
-                    'relatedArticles',
-                ])
-                ->sortByParam($sortParam, $currentLocale)
-                ->get();
+            $articles = $this->getIndexArticles(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/Blog/BlogArticles/Index', [
-                'articles' => BlogArticleResource::collection($articles),
-                'articlesCount' => $this->baseQuery()->count(),
-
-                'adminBlogArticlesPerPage' => $adminBlogArticlesPerPage,
-                'adminBlogArticlesDefaultSort' => $adminBlogArticlesDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
 
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminBlogArticlesPerPage' => $perPage,
+                'adminBlogArticlesDefaultSort' => $defaultSort,
+                'adminBlogArticlesProcessingMode' => $processingMode,
+
+                'articles' => BlogArticleResource::collection($articles),
+                'articlesCount' => $articlesCount,
+
                 'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки списка blog articles: ' . $e->getMessage(), [
@@ -207,16 +209,21 @@ class BlogArticleController extends BaseBlogAdminController
             ]);
 
             return Inertia::render('Admin/Blog/BlogArticles/Index', [
-                'articles' => [],
-                'articlesCount' => 0,
-
-                'adminBlogArticlesPerPage' => $adminBlogArticlesPerPage,
-                'adminBlogArticlesDefaultSort' => $adminBlogArticlesDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
 
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminBlogArticlesPerPage' => $perPage,
+                'adminBlogArticlesDefaultSort' => $defaultSort,
+                'adminBlogArticlesProcessingMode' => $processingMode,
+
+                'articles' => [],
+                'articlesCount' => 0,
+
                 'sortParam' => $sortParam,
+                'search' => $search,
+
                 'error' => 'Ошибка загрузки статей.',
             ]);
         }
@@ -505,5 +512,55 @@ class BlogArticleController extends BaseBlogAdminController
 
             return back()->with('error', 'Ошибка при массовом удалении статей.');
         }
+    }
+
+    /** Базовый запрос для списка статей. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'owner',
+                'moderator',
+                'translations',
+                'images',
+                'rubrics.translations',
+                'tags.translations',
+                'videos.translations',
+                'videos.images',
+                'relatedArticles.translations',
+                'relatedArticles.images',
+            ])
+            ->withCount([
+                'comments',
+                'rubrics',
+                'tags',
+                'images',
+                'videos',
+                'likes',
+                'relatedArticles',
+            ]);
+    }
+
+    /** Получение списка статей по активному режиму обработки. */
+    private function getIndexArticles(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->ordered()
+            ->get();
     }
 }

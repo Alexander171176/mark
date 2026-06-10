@@ -15,4 +15,7 @@ Route::prefix('settings')->name('settings.')->group(function () {
     // Тип сортировки
     require __DIR__ . '/sort.php';
 
+    // Универсальное изменение настройки
+    require __DIR__ . '/setting-value.php';
+
 });

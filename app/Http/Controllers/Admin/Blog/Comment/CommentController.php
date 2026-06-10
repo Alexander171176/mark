@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\Blog\Comment\CommentRequest;
 use App\Http\Requests\Admin\System\UpdateActivityRequest;
 use App\Http\Resources\Admin\Blog\Comment\CommentResource;
 use App\Models\Admin\Blog\Comment\Comment;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -53,8 +54,9 @@ class CommentController extends Controller
     /** Список комментариев (без серверной пагинации/фильтров/поиска). */
     public function index(Request $request): Response
     {
-        $adminCommentsPerPage = (int) config('site_settings.adminCommentsPerPage', 20);
-        $adminCommentsDefaultSort  = (string) config('site_settings.adminCommentsDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminCommentsPerPage = $settings->int('site_settings.adminCommentsPerPage', 6);
+        $adminCommentsDefaultSort  = $settings->string('site_settings.adminCommentsDefaultSort', 'idDesc');
 
         $user = auth()->user();
         $isAdmin = (bool) ($user && $user->hasRole('admin'));

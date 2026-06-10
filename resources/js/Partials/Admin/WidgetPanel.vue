@@ -5,7 +5,10 @@ import { usePage } from '@inertiajs/vue3'
 import AdminTranslationWidget from '@/Components/Admin/UI/Widget/AdminTranslationWidget.vue'
 
 const { t } = useI18n()
-const { siteSettings } = usePage().props
+
+const page = usePage()
+
+const adminSettings = computed(() => page.props?.adminSettings || {})
 
 const isDarkMode = ref(false)
 const isTranslatorOpen = ref(false)
@@ -44,14 +47,14 @@ onUnmounted(() => {
 
 const bgColorClass = computed(() => {
     return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkColor || 'bg-cyan-900')
-        : (siteSettings.AdminSidebarLightColor || 'bg-cyan-900')
+        ? (adminSettings.value.AdminSidebarDarkColor || 'bg-cyan-900')
+        : (adminSettings.value.AdminSidebarLightColor || 'bg-cyan-900')
 })
 
 const colorText = computed(() => {
     return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkText || 'text-slate-200')
-        : (siteSettings.AdminSidebarLightText || 'text-slate-200')
+        ? (adminSettings.value.AdminSidebarDarkText || 'text-slate-200')
+        : (adminSettings.value.AdminSidebarLightText || 'text-slate-200')
 })
 </script>
 

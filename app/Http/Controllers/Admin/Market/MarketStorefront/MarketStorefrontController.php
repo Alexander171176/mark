@@ -10,6 +10,7 @@ use App\Http\Resources\Admin\Market\MarketStorefront\MarketStorefrontResource;
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketStorefront\MarketStorefront;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -65,8 +66,9 @@ class MarketStorefrontController extends Controller
      */
     public function index(Request $request): Response
     {
-        $adminCountMarketStorefronts = (int) config('site_settings.AdminCountMarketStorefronts', 15);
-        $adminSortMarketStorefronts  = (string) config('site_settings.AdminSortMarketStorefronts', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminCountMarketStorefronts = $settings->int('site_settings.AdminCountMarketStorefronts', 6);
+        $adminSortMarketStorefronts  = $settings->string('site_settings.AdminSortMarketStorefronts', 'idDesc');
 
         try {
             $storefronts = $this->baseQuery()

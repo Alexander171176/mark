@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolHashtag\SchoolHashtagRequest;
 use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagResource;
 use App\Models\Admin\School\SchoolHashtag\SchoolHashtag;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,8 +53,9 @@ class SchoolHashtagController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolHashtagsPerPage = (int) config('site_settings.adminSchoolHashtagsPerPage', 6);
-        $adminSchoolHashtagsDefaultSort = (string) config('site_settings.adminSchoolHashtagsDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolHashtagsPerPage = $settings->int('site_settings.adminSchoolHashtagsPerPage', 6);
+        $adminSchoolHashtagsDefaultSort = $settings->string('site_settings.adminSchoolHashtagsDefaultSort', 'idDesc');
         $sort = (string) $request->query('sort', $adminSchoolHashtagsDefaultSort);
 
         $hashtags = $this->baseQuery()

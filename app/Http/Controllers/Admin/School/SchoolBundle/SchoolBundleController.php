@@ -10,6 +10,7 @@ use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
 use App\Models\Admin\School\SchoolBundle\SchoolBundle;
 use App\Models\Admin\School\SchoolBundle\SchoolBundleImage;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -66,8 +67,9 @@ class SchoolBundleController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolBundlesPerPage = (int) config('site_settings.adminSchoolBundlesPerPage', 6);
-        $adminSchoolBundlesDefaultSort = (string) config('site_settings.adminSchoolBundlesDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolBundlesPerPage = $settings->int('site_settings.adminSchoolBundlesPerPage', 6);
+        $adminSchoolBundlesDefaultSort = $settings->string('site_settings.adminSchoolBundlesDefaultSort', 'idDesc');
         $sort = (string) $request->query('sort', $adminSchoolBundlesDefaultSort);
 
         try {

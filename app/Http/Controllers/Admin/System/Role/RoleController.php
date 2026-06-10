@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\System\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\Role\RoleRequest;
 use App\Http\Resources\Admin\System\Role\RoleResource;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +26,7 @@ use Throwable;
  *
  * @version 1.1 (Улучшен с RMB, транзакциями, Form Requests)
  * @author Александр Косолапов <kosolapov1976@gmail.com>
- * @see \Spatie\Permission\Models\Role Модель Роли
+ * @see Role Модель Роли
  * @see RoleRequest Запрос для создания/обновления
  */
 class RoleController extends Controller
@@ -42,8 +43,9 @@ class RoleController extends Controller
     {
         // TODO: Проверка прав $this->authorize('show-roles', Role::class);
 
-        $adminCountRoles = config('site_settings.AdminCountRoles', 15);
-        $adminSortRoles  = config('site_settings.AdminSortRoles', 'nameAsc'); // Сортировка по имени по умолчанию
+        $settings = app(AdminSettingsService::class);
+        $adminCountRoles = $settings->int('site_settings.AdminCountRoles', 6);
+        $adminSortRoles  = $settings->string('site_settings.AdminSortRoles', 'nameAsc'); // Сортировка по имени по умолчанию
 
         try {
             // Загружаем ВСЕ роли с разрешениями

@@ -15,6 +15,7 @@ use App\Models\Admin\School\SchoolHashtag\SchoolHashtag;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolLesson\SchoolLessonImage;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -71,9 +72,9 @@ class SchoolLessonController extends BaseSchoolAdminController
         // Текущая локаль
         $currentLocale = $this->resolveLocale($request);
 
-        // Настройки отображения
-        $adminSchoolLessonsPerPage = (int) config('site_settings.adminSchoolLessonsPerPage', 6);
-        $adminSchoolLessonsDefaultSort = (string) config('site_settings.adminSchoolLessonsDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolLessonsPerPage = $settings->int('site_settings.adminSchoolLessonsPerPage', 6);
+        $adminSchoolLessonsDefaultSort = $settings->string('site_settings.adminSchoolLessonsDefaultSort', 'idDesc');
         $sort = (string) $request->query('sort', $adminSchoolLessonsDefaultSort);
 
         try {

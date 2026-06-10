@@ -371,6 +371,9 @@ class BlogArticle extends Model
                 ->orderByDesc('blog_articles.id')
                 ->select('blog_articles.*'),
 
+            'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
+            'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
+
             'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
             'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
 
@@ -383,6 +386,30 @@ class BlogArticle extends Model
                 ->withCount('likes')
                 ->orderBy('likes_count', 'desc')
                 ->orderByDesc('id'),
+
+            'commentsAsc' => $query->withCount('comments')->orderBy('comments_count', 'asc')->orderByDesc('id'),
+            'commentsDesc' => $query->withCount('comments')->orderBy('comments_count', 'desc')->orderByDesc('id'),
+
+            'rubricsAsc' => $query->withCount('rubrics')->orderBy('rubrics_count', 'asc')->orderByDesc('id'),
+            'rubricsDesc' => $query->withCount('rubrics')->orderBy('rubrics_count', 'desc')->orderByDesc('id'),
+
+            'tagsAsc' => $query->withCount('tags')->orderBy('tags_count', 'asc')->orderByDesc('id'),
+            'tagsDesc' => $query->withCount('tags')->orderBy('tags_count', 'desc')->orderByDesc('id'),
+
+            'videosAsc' => $query->withCount('videos')->orderBy('videos_count', 'asc')->orderByDesc('id'),
+            'videosDesc' => $query->withCount('videos')->orderBy('videos_count', 'desc')->orderByDesc('id'),
+
+            'relatedArticlesAsc' => $query->withCount('relatedArticles')->orderBy('related_articles_count', 'asc')->orderByDesc('id'),
+            'relatedArticlesDesc' => $query->withCount('relatedArticles')->orderBy('related_articles_count', 'desc')->orderByDesc('id'),
+
+            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
+            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
+
+            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
+            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
+
+            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
+            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
 
             'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
             'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
@@ -418,6 +445,30 @@ class BlogArticle extends Model
             'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
             'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
             'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+
+            'ownerNameAsc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
+                ->orderBy('owner_sort.name', 'asc')
+                ->orderByDesc('blog_articles.id')
+                ->select('blog_articles.*'),
+
+            'ownerNameDesc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
+                ->orderBy('owner_sort.name', 'desc')
+                ->orderByDesc('blog_articles.id')
+                ->select('blog_articles.*'),
+
+            'ownerEmailAsc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
+                ->orderBy('owner_sort.email', 'asc')
+                ->orderByDesc('blog_articles.id')
+                ->select('blog_articles.*'),
+
+            'ownerEmailDesc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
+                ->orderBy('owner_sort.email', 'desc')
+                ->orderByDesc('blog_articles.id')
+                ->select('blog_articles.*'),
 
             default => $query->ordered(),
         };

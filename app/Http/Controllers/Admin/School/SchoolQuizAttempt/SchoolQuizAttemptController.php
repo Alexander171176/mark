@@ -17,6 +17,7 @@ use App\Models\Admin\School\SchoolEnrollment\SchoolEnrollment;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
 use App\Models\User;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,8 +54,9 @@ class SchoolQuizAttemptController extends Controller
         $quizId = $request->query('school_quiz_id');
         $enrollmentId = $request->query('school_enrollment_id');
 
-        $adminSchoolQuizAttemptsPerPage = (int) config('site_settings.adminSchoolQuizAttemptsPerPage', 6);
-        $adminSchoolQuizAttemptsDefaultSort = (string) config('site_settings.adminSchoolQuizAttemptsDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolQuizAttemptsPerPage = $settings->int('site_settings.adminSchoolQuizAttemptsPerPage', 6);
+        $adminSchoolQuizAttemptsDefaultSort = $settings->string('site_settings.adminSchoolQuizAttemptsDefaultSort', 'idDesc');
 
         try {
             $query = SchoolQuizAttempt::query()

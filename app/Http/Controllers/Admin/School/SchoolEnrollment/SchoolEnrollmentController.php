@@ -13,6 +13,7 @@ use App\Models\Admin\School\SchoolEnrollment\SchoolEnrollment;
 use App\Models\Admin\School\SchoolOrder\SchoolOrder;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\User;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,8 +50,9 @@ class SchoolEnrollmentController extends Controller
         $courseId = $request->query('school_course_id');
         $scheduleId = $request->query('school_course_schedule_id');
 
-        $adminSchoolEnrollmentsPerPage = (int) config('site_settings.adminSchoolEnrollmentsPerPage', 6);
-        $adminSchoolEnrollmentsDefaultSort = (string) config('site_settings.adminSchoolEnrollmentsDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolEnrollmentsPerPage = $settings->int('site_settings.adminSchoolEnrollmentsPerPage', 6);
+        $adminSchoolEnrollmentsDefaultSort = $settings->string('site_settings.adminSchoolEnrollmentsDefaultSort', 'idDesc');
 
         try {
             $query = SchoolEnrollment::query()

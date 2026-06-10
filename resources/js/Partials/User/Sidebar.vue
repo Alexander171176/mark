@@ -13,7 +13,11 @@ import { useI18n } from 'vue-i18n';
 library.add(fas);
 
 const { t } = useI18n();
-const { siteSettings } = usePage().props;
+
+const page = usePage()
+
+const adminSettings = computed(() => page.props?.adminSettings || {})
+
 const props = defineProps({
     sidebarOpen: Boolean,
     sidebarTitle: String,
@@ -46,14 +50,14 @@ onUnmounted(() => {
 // Вычисляемое свойство для получения класса фона из настроек в зависимости от темы
 const bgColorClass = computed(() => {
     return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkColor || 'bg-cyan-900')
-        : (siteSettings.AdminSidebarLightColor || 'bg-cyan-900');
+        ? (adminSettings.value.AdminSidebarDarkColor || 'bg-cyan-900')
+        : (adminSettings.value.AdminSidebarLightColor || 'bg-cyan-900');
 });
 
 const colorTextActive = computed(() => {
     return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkActiveText || 'text-yellow-200')
-        : (siteSettings.AdminSidebarLightActiveText || 'text-yellow-200');
+        ? (adminSettings.value.AdminSidebarDarkActiveText || 'text-yellow-200')
+        : (adminSettings.value.AdminSidebarLightActiveText || 'text-yellow-200');
 });
 
 const emit = defineEmits(['close-sidebar']);

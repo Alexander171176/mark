@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\System\Permission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\Permission\PermissionRequest;
 use App\Http\Resources\Admin\System\Permission\PermissionResource;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -43,8 +44,9 @@ class PermissionController extends Controller
     {
         // TODO: Проверка прав $this->authorize('show-permissions', Permission::class);
 
-        $adminCountPermissions = config('site_settings.AdminCountPermissions', 25); // Больше на страницу
-        $adminSortPermissions  = config('site_settings.AdminSortPermissions', 'nameAsc'); // Сортировка по имени
+        $settings = app(AdminSettingsService::class);
+        $adminCountPermissions = $settings->int('site_settings.AdminCountPermissions', 6); // Больше на страницу
+        $adminSortPermissions  = $settings->string('site_settings.AdminSortPermissions', 'nameAsc'); // Сортировка по имени
 
         try {
             // Загружаем ВСЕ разрешения

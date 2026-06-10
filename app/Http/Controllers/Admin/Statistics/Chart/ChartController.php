@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\Admin\Statistics\Chart;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin\Blog\Article\Article;
-use App\Models\Admin\Blog\Rubric\Rubric;
+use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -25,14 +24,14 @@ class ChartController extends Controller
          * Важно: leftJoin, чтобы рубрики без статей тоже попадали с value = 0
          */
         $rubrics = DB::table('rubrics')
-            ->leftJoin('article_has_rubric as ahr', 'rubrics.id', '=', 'ahr.rubric_id')
-            ->leftJoin('articles', 'ahr.article_id', '=', 'articles.id')
+            ->leftJoin('blog_article_has_rubric as ahr', 'blog_rubrics.id', '=', 'ahr.rubric_id')
+            ->leftJoin('blog_articles', 'ahr.article_id', '=', 'blog_articles.id')
             ->select([
                 'rubrics.id',
-                DB::raw('rubrics.title as name'),
-                DB::raw('COALESCE(SUM(articles.views), 0) as value'),
+                DB::raw('blog_rubrics.title as name'),
+                DB::raw('COALESCE(SUM(blog_articles.views), 0) as value'),
             ])
-            ->groupBy('rubrics.id', 'rubrics.title')
+            ->groupBy('blog_rubrics.id', 'blog_rubrics.title')
             ->orderByDesc('value')
             ->limit(15)
             ->get();
@@ -42,7 +41,7 @@ class ChartController extends Controller
          * Для ArticleLineChart01 нужны поля: id, views, likes_count
          * (title можно оставить — пригодится в тултипах/позже)
          */
-        $articles = Article::query()
+        $articles = BlogArticle::query()
             ->select(['id', 'title', 'views'])
             ->withCount('likes')            // даст likes_count
             ->orderByDesc('views')

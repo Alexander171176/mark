@@ -10,6 +10,7 @@ use App\Http\Resources\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionResourc
 use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
 use App\Models\Admin\School\SchoolQuizAnswer\SchoolQuizAnswer;
 use App\Models\Admin\School\SchoolQuizQuestion\SchoolQuizQuestion;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -59,8 +60,9 @@ class SchoolQuizAnswerController extends BaseSchoolAdminController
         $quizId = $request->query('school_quiz_id');
         $questionId = $request->query('school_quiz_question_id');
 
-        $adminSchoolQuizAnswersPerPage = (int) config('site_settings.adminSchoolQuizAnswersPerPage', 6);
-        $adminSchoolQuizAnswersDefaultSort = (string) config('site_settings.adminSchoolQuizAnswersDefaultSort', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolQuizAnswersPerPage = $settings->int('site_settings.adminSchoolQuizAnswersPerPage', 6);
+        $adminSchoolQuizAnswersDefaultSort = $settings->string('site_settings.adminSchoolQuizAnswersDefaultSort', 'idDesc');
         $sort = (string) $request->query('sort', $adminSchoolQuizAnswersDefaultSort);
 
         try {

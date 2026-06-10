@@ -8,6 +8,7 @@ use App\Http\Resources\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPla
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlan;
 use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanImage;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -61,15 +62,11 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $adminSchoolSubscriptionPlansPerPage = (int) config(
-            'site_settings.adminSchoolSubscriptionPlansPerPage',
-            6
-        );
+        $settings = app(AdminSettingsService::class);
+        $adminSchoolSubscriptionPlansPerPage = $settings->int('site_settings.adminSchoolSubscriptionPlansPerPage', 6);
 
-        $adminSchoolSubscriptionPlansDefaultSort = (string) config(
-            'site_settings.adminSchoolSubscriptionPlansDefaultSort',
-            'idDesc'
-        );
+        $adminSchoolSubscriptionPlansDefaultSort =
+            $settings->string('site_settings.adminSchoolSubscriptionPlansDefaultSort', 'idDesc');
 
         $sort = (string) $request->query('sort', $adminSchoolSubscriptionPlansDefaultSort);
 

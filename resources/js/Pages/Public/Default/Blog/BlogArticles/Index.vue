@@ -184,7 +184,13 @@ const goNext = () => {
 }
 
 /** Глобальные настройки сайта */
-const { siteSettings } = usePage().props
+const page = usePage()
+const siteSettings = page.props?.siteSettings || {}
+
+/** Панель для admin */
+const isAdmin = computed(() => {
+    return page.props?.isAdmin === true
+})
 
 /** Показ левой колонки */
 const showLeft = computed(() =>
@@ -370,5 +376,31 @@ const articleGridCols = computed(() => {
 
         <FooterBlog />
         <Progress />
+        <!-- Нижняя панель администратора -->
+        <div
+            v-if="isAdmin"
+            class="fixed bottom-0 left-0 right-0 z-[9999] h-8
+               flex items-center justify-between px-3
+               border-t border-slate-400/40
+               bg-slate-300/90 dark:bg-slate-700/90
+               backdrop-blur-md text-[11px] text-slate-100"
+        >
+            <div class="flex items-center gap-2">
+                <Link
+                    :href="route('admin.index')"
+                    class="bg-gray-200 dark:bg-gray-800 rounded-sm px-2 py-0.5
+                       border-2 border-slate-500 hover:border-indigo-500"
+                >
+                <span class="text-slate-700 dark:text-slate-300
+                             hover:text-indigo-700 hover:dark:text-indigo-300">
+                    {{ t('adminPanel') }}
+                </span>
+                </Link>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- сюда потом вставим переключатель режима -->
+            </div>
+        </div>
     </DefaultLayout>
 </template>

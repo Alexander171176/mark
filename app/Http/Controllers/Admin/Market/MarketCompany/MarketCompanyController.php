@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Market\MarketCompany\MarketCompanyRequest;
 use App\Http\Resources\Admin\Market\MarketCompany\MarketCompanyResource;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
+use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -41,8 +42,9 @@ class MarketCompanyController extends Controller
      */
     public function index(Request $request): Response
     {
-        $adminCountMarketCompanies = (int) config('site_settings.AdminCountMarketCompanies', 15);
-        $adminSortMarketCompanies  = (string) config('site_settings.AdminSortMarketCompanies', 'idDesc');
+        $settings = app(AdminSettingsService::class);
+        $adminCountMarketCompanies = $settings->int('site_settings.AdminCountMarketCompanies', 6);
+        $adminSortMarketCompanies  = $settings->string('site_settings.AdminSortMarketCompanies', 'idDesc');
 
         try {
             $companies = $this->baseQuery()

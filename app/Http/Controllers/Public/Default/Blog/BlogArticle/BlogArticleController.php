@@ -7,10 +7,13 @@ use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleResource;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
+use App\Services\Admin\ProcessingModeService;
+use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\Blog\BuildsRubricTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,53 +31,63 @@ class BlogArticleController extends Controller
     {
         $locale = app()->getLocale();
 
-        $perPage = $this->resolvePerPage(
-            $request,
-            (int) config('site_settings.publicBlogArticlesPerPage', 6)
-        );
+        $settings = app(PublicSettingsService::class);
+
+        $perPage = $this->resolvePerPage($request,
+            $settings->int('publicBlogArticlesPerPage', 6));
 
         $search = $this->resolveSearch($request);
 
-        $sort = $this->resolveSort(
-            $request,
-            (string) config('site_settings.publicBlogArticlesDefaultSort', 'sort')
-        );
+        $sort = $this->resolveSort($request,
+            $settings->string('publicBlogArticlesDefaultSort', 'sortAsc'));
 
-        $view = $this->resolveView(
-            $request,
-            (string) config('site_settings.publicBlogArticlesDefaultView', 'grid')
+        $view = $this->resolveView($request,
+            $settings->string('publicBlogArticlesDefaultView', 'grid')
         );
 
         $processingMode = $this->resolveProcessingMode(
-            (string) config('site_settings.publicBlogArticlesProcessingMode', 'server')
+            $settings->string('publicBlogArticlesProcessingMode', 'server')
         );
 
-        $articles = BlogArticle::query()
+        $articlesCount = BlogArticle::query()
             ->forPublic()
-            ->search($search, $locale)
-            ->with([
-                'translations',
-                'owner',
-                'images',
-            ])
-            ->withCount('likes')
-            ->sortByParam($sort, $locale)
-            ->paginate($perPage)
-            ->withQueryString();
+            ->count();
 
-        $articles = $this->appendUserLikes($articles, BlogArticleResource::class);
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $articlesCount,
+                300
+            );
+
+        $articles = $this->getIndexArticles(
+            locale: $locale,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPage,
+            sort: $sort,
+            search: $search,
+        );
+
+        $articlesFound = $useServerProcessing
+            ? $articles->total()
+            : $articles->count();
+
+        $articles = $useServerProcessing
+            ? $this->appendUserLikes($articles, BlogArticleResource::class)
+            : BlogArticleResource::collection($articles);
 
         $rubricTree = $this->getRubricTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/Blog/BlogArticles/Index', [
+
+            'publicBlogArticlesProcessingMode' => $processingMode,
+            'useServerProcessing' => $useServerProcessing,
+
             'articles' => $articles,
 
-            'articlesCount' => BlogArticle::query()
-                ->forPublic()
-                ->count(),
-
-            'articlesFound' => $articles->total(),
+            'articlesCount' => $articlesCount,
+            'articlesFound' => $articlesFound,
 
             'filters' => $this->buildIndexFilters(
                 $search,
@@ -218,5 +231,41 @@ class BlogArticleController extends Controller
             'success' => true,
             'likes' => $article->likes()->count(),
         ]);
+    }
+
+    /** Базовый запрос для списка публичных статей. */
+    private function indexQuery(): Builder
+    {
+        return BlogArticle::query()
+            ->forPublic()
+            ->with([
+                'translations',
+                'owner',
+                'images',
+            ])
+            ->withCount('likes');
+    }
+
+    /** Получение списка публичных статей по активному режиму обработки. */
+    private function getIndexArticles(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

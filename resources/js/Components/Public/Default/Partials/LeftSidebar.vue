@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
@@ -10,6 +10,7 @@ import LeftVideosSidebar from '@/Components/Public/Default/Blog/BlogVideo/LeftVi
 
 const props = defineProps({
     rubricTree: { type: Array, default: () => [] },
+    collapsed: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['collapsed'])
@@ -21,11 +22,10 @@ const leftArticles = computed(() => page.props.leftArticles ?? [])
 const leftBanners = computed(() => page.props.leftBanners ?? [])
 const leftVideos = computed(() => page.props.leftVideos ?? [])
 
-const isCollapsed = ref(false)
+const isCollapsed = computed(() => props.collapsed)
 
 const toggleSidebar = () => {
-    isCollapsed.value = !isCollapsed.value
-    emit('collapsed', isCollapsed.value)
+    emit('collapsed', !props.collapsed)
 }
 </script>
 

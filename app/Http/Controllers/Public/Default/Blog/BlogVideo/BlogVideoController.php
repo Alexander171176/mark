@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Public\Default\Blog\BlogVideo;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
+use App\Services\Admin\ProcessingModeService;
+use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\Blog\BuildsRubricTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,57 +29,67 @@ class BlogVideoController extends Controller
     {
         $locale = app()->getLocale();
 
+        $settings = app(PublicSettingsService::class);
+
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicBlogVideosPerPage', 20)
+            $settings->int('publicBlogVideosPerPage', 20)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicBlogVideosDefaultSort', 'sortAsc')
+            $settings->string('publicBlogVideosDefaultSort', 'sortAsc')
         );
 
         $view = $this->resolveView(
             $request,
-            (string) config('site_settings.publicBlogVideosDefaultView', 'grid')
+            $settings->string('publicBlogVideosDefaultView', 'grid')
         );
 
         $processingMode = $this->resolveProcessingMode(
-            (string) config('site_settings.publicBlogVideosProcessingMode', 'server')
+            $settings->string('publicBlogVideosProcessingMode', 'server')
         );
 
-        $videos = BlogVideo::query()
+        $videosCount = BlogVideo::query()
             ->forPublic()
-            ->search($search, $locale)
-            ->with([
-                'translations',
-                'owner',
-                'images',
-            ])
-            ->withCount([
-                'likes',
-                'comments',
-                'images',
-            ])
-            ->sortByParam($sort, $locale)
-            ->paginate($perPage)
-            ->withQueryString();
+            ->count();
 
-        $videos = $this->appendUserLikes($videos, BlogVideoResource::class);
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $videosCount,
+                300
+            );
+
+        $videos = $this->getIndexVideos(
+            locale: $locale,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPage,
+            sort: $sort,
+            search: $search,
+        );
+
+        $videosFound = $useServerProcessing
+            ? $videos->total()
+            : $videos->count();
+
+        $videos = $useServerProcessing
+            ? $this->appendUserLikes($videos, BlogVideoResource::class)
+            : BlogVideoResource::collection($videos);
 
         $rubricTree = $this->getRubricTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/Blog/BlogVideos/Index', [
+            'publicBlogVideosProcessingMode' => $processingMode,
+            'useServerProcessing' => $useServerProcessing,
+
             'videos' => $videos,
 
-            'videosCount' => BlogVideo::query()
-                ->forPublic()
-                ->count(),
-
-            'videosFound' => $videos->total(),
+            'videosCount' => $videosCount,
+            'videosFound' => $videosFound,
 
             'filters' => $this->buildIndexFilters(
                 $search,
@@ -193,5 +206,45 @@ class BlogVideoController extends Controller
             'success' => true,
             'likes' => $video->likes()->count(),
         ]);
+    }
+
+    /** Базовый запрос для списка публичных видео. */
+    private function indexQuery(): Builder
+    {
+        return BlogVideo::query()
+            ->forPublic()
+            ->with([
+                'translations',
+                'owner',
+                'images',
+            ])
+            ->withCount([
+                'likes',
+                'comments',
+                'images',
+            ]);
+    }
+
+    /** Получение списка публичных видео по активному режиму обработки. */
+    private function getIndexVideos(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

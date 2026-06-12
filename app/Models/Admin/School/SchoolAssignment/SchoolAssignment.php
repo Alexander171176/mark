@@ -215,24 +215,92 @@ class SchoolAssignment extends Model
     /** Поиск */
     public function scopeSearch(Builder $q, ?string $term, ?string $locale = null): Builder
     {
-        if (!$term) {
+        $term = trim((string) $term);
+
+        if ($term === '') {
             return $q;
         }
 
         $locale = $locale ?: app()->getLocale();
 
-        return $q->where(function (Builder $query) use ($term, $locale) {
-            $query->where('slug', 'like', "%{$term}%")
-                ->orWhereHas('translations', function (Builder $qq) use ($term, $locale) {
-                    $qq->where('locale', $locale)
-                        ->where(function (Builder $sub) use ($term) {
-                            $sub->where('title', 'like', "%{$term}%")
-                                ->orWhere('subtitle', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%")
-                                ->orWhere('instructions', 'like', "%{$term}%");
+        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|]+/u', $term))
+            ->map(fn ($word) => trim($word))
+            ->filter(fn ($word) => mb_strlen($word) >= 2)
+            ->values();
+
+        if ($words->isEmpty()) {
+            return $q;
+        }
+
+        return $q->where(function (Builder $query) use ($words, $locale) {
+            foreach ($words as $word) {
+                $query->where(function (Builder $query) use ($word, $locale) {
+                    $query
+                        ->where('school_assignments.slug', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.id', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.sort', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.school_course_id', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.school_module_id', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.school_lesson_id', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.school_instructor_profile_id', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.status', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.visibility', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.grading_type', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.max_score', 'like', "%{$word}%")
+                        ->orWhere('school_assignments.attempts_limit', 'like', "%{$word}%")
+
+                        ->orWhereHas('translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('slug', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%")
+                                        ->orWhere('instructions', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('course.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('slug', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('module.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('slug', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('lesson.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('slug', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('instructor.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('slug', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('instructor.user', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%");
                         });
                 });
+            }
         });
     }
 

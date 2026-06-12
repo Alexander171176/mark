@@ -16,6 +16,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
 import DefaultLayout from '@/Layouts/DefaultLayout.vue'
 import Navbar from '@/Partials/Default/Navbar.vue'
@@ -30,58 +31,46 @@ import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionB
 
 import AssignmentGrid from '@/Components/Public/Default/School/SchoolAssignment/AssignmentGrid.vue'
 import AssignmentRows from '@/Components/Public/Default/School/SchoolAssignment/AssignmentRows.vue'
+import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 const { t } = useI18n()
 
-/** пропсы */
+/** Props страницы */
 const props = defineProps({
-    title: String,
-    canLogin: Boolean,
-    canRegister: Boolean,
+    locale: { type: String, default: 'ru' },
+
+    useServerProcessing: { type: Boolean, default: false },
+    publicSchoolAssignmentsProcessingMode: { type: String, default: 'server' },
+
+    title: { type: String, default: '' },
+    canLogin: { type: Boolean, default: false },
+    canRegister: { type: Boolean, default: false },
 
     trackTree: { type: Array, default: () => [] },
 
-    assignments: { type: Object, default: () => ({}) },
+    assignments: { type: [Array, Object], default: () => [] },
     assignmentsCount: { type: Number, default: 0 },
     assignmentsFound: { type: Number, default: 0 },
+
     filters: { type: Object, default: () => ({}) },
 
     mainVideos: { type: [Array, Object], default: () => [] },
-    mainBanners: { type: [Array, Object], default: () => [] },
+    mainBanners: { type: [Array, Object], default: () => [] }
 })
 
-/** настройки из БД */
-const { siteSettings } = usePage().props
+/** Глобальные данные страницы */
+const page = usePage()
 
-/** показ левой колонки */
-const showLeft = computed(() =>
-    !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
-)
+/** Глобальные настройки сайта */
+const siteSettings = page.props?.siteSettings || {}
 
-/** показ правой колонки */
-const showRight = computed(() =>
-    !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
-)
+/** Роль администратора для нижней служебной панели */
+const isAdmin = computed(() => page.props?.isAdmin === true)
 
-/** состояние левой и правой колонки */
-const leftCollapsed = ref(false)
-const rightCollapsed = ref(false)
-
-/** показ третьей карточки в ряд, если свёрнута колонка */
-const gridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
-
-    return leftExpanded && rightExpanded ? 2 : 3
-})
-
-/** Вид плиткой/строкой */
-const VIEW_KEY = 'public_assignments_view'
-const viewMode = ref(localStorage.getItem(VIEW_KEY) || 'grid')
-
-watch(viewMode, (v) => {
-    localStorage.setItem(VIEW_KEY, v)
-})
+/** Дерево треков для левого аккордеона */
+const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
 
 /** нормализация данных */
 const normalizeList = (value) => {
@@ -90,54 +79,40 @@ const normalizeList = (value) => {
     return []
 }
 
-/** данные задания */
+/** Универсальный список заданий: server paginator data или frontend array */
 const assignmentsData = computed(() => {
-    const data = props.assignments?.data
-    return Array.isArray(data) ? data : []
+    if (Array.isArray(props.assignments)) return props.assignments
+    if (Array.isArray(props.assignments?.data)) return props.assignments.data
+    return []
 })
 
-/** дерево треков */
-const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
-
-/** внизу страницы банеры */
-const mainVideosList = computed(() => normalizeList(props.mainVideos))
-
-/** внизу страницы видео */
-const mainBannersList = computed(() => normalizeList(props.mainBanners))
-
-/** Пагинация */
-const currentPage = computed(() => {
-    return Number(props.assignments?.meta?.current_page ?? props.assignments?.current_page ?? 1) || 1
-})
-
-const lastPage = computed(() => {
-    return Number(props.assignments?.meta?.last_page ?? props.assignments?.last_page ?? 1) || 1
-})
-
+/** Количество элементов на странице для обоих режимов */
 const perPage = computed(() => {
-    const val = Number(props.filters?.per_page ?? 12)
-    return Number.isFinite(val) ? val : 12
+    const value = Number(props.filters?.per_page ?? 6)
+    return Number.isFinite(value) ? value : 6
 })
 
-/** Сортировка */
-const DEFAULT_SORT = 'sortAsc'
-
+/** Поисковая строка для server/frontend */
 const q = ref(String(props.filters?.q ?? ''))
+
+/** Сортировка по умолчанию для server/frontend */
+const DEFAULT_SORT = 'idDesc'
+
+/** Текущая сортировка для server/frontend */
 const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
 
-watch(
-    () => props.filters?.q,
-    (value) => {
-        q.value = String(value ?? '')
-    }
+/** Ключ локального хранения режима отображения */
+const VIEW_KEY = 'public_school_assignments_view'
+
+/** Режим отображения карточки/строки для server/frontend */
+const viewMode = ref(
+    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
 )
 
-watch(
-    () => props.filters?.sort,
-    (value) => {
-        sort.value = String(value ?? DEFAULT_SORT)
-    }
-)
+/** Сохраняем режим отображения локально */
+watch(viewMode, (value) => {
+    localStorage.setItem(VIEW_KEY, value)
+})
 
 /** Опции сортировки */
 const assignmentSortOptions = [
@@ -150,99 +125,436 @@ const assignmentSortOptions = [
     { value: 'titleAsc', label: `${t('title')} A→Z` },
     { value: 'titleDesc', label: `${t('title')} Z→A` },
 
-    { value: 'maxScoreDesc', label: `${t('maxScore')} 9→0` },
+    { value: 'statusAsc', label: `${t('status')} A→Z` },
+    { value: 'statusDesc', label: `${t('status')} Z→A` },
+
+    { value: 'gradingTypeAsc', label: `${t('gradingType')} A→Z` },
+    { value: 'gradingTypeDesc', label: `${t('gradingType')} Z→A` },
+
+    { value: 'attemptsLimitAsc', label: `${t('attemptsLimit')} 0→9` },
+    { value: 'attemptsLimitDesc', label: `${t('attemptsLimit')} 9→0` },
+
     { value: 'maxScoreAsc', label: `${t('maxScore')} 0→9` },
+    { value: 'maxScoreDesc', label: `${t('maxScore')} 9→0` },
 
-    { value: 'submissionsDesc', label: `${t('submissions')} 9→0` },
     { value: 'submissionsAsc', label: `${t('submissions')} 0→9` },
+    { value: 'submissionsDesc', label: `${t('submissions')} 9→0` },
 
-    { value: 'imagesDesc', label: `${t('images')} 9→0` },
     { value: 'imagesAsc', label: `${t('images')} 0→9` },
+    { value: 'imagesDesc', label: `${t('images')} 9→0` },
 
-    { value: 'dueAtDesc', label: `${t('dueAt')} ↓` },
     { value: 'dueAtAsc', label: `${t('dueAt')} ↑` },
+    { value: 'dueAtDesc', label: `${t('dueAt')} ↓` },
 
-    { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
     { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
+    { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
 
-    { value: 'dateDesc', label: t('sortNewestFirst') },
     { value: 'dateAsc', label: t('sortOldestFirst') },
+    { value: 'dateDesc', label: t('sortNewestFirst') },
 ]
 
-const onSortChange = (value) => {
-    sort.value = value || DEFAULT_SORT
+/* ===================== FRONTEND MODE ===================== */
 
-    router.get(
-        route('public.schoolAssignments.index'),
-        {
-            q: String(q.value ?? '').trim() || undefined,
-            sort: sort.value || undefined,
-            per_page: perPage.value,
-            page: 1,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+/** Текущая страница локальной пагинации frontend */
+const frontendCurrentPage = ref(1)
+
+/** Цель плавного скролла при frontend-пагинации */
+const {
+    targetRef: scrollTarget,
+    scrollToTarget
+} = useSmoothScrollTo({
+    offset: 80,
+    duration: 1200
+})
+
+/** Нормализация текста для локального поиска frontend */
+const normalizeText = (value) => String(value ?? '').toLowerCase()
+
+/** Получение названия задания из разных возможных структур ресурса */
+const getAssignmentTitle = (assignment) => {
+    return assignment.title
+        || assignment.name
+        || assignment.translation?.title
+        || assignment.translation?.name
+        || assignment.current_translation?.title
+        || assignment.current_translation?.name
+        || assignment.translations?.[0]?.title
+        || assignment.translations?.[0]?.name
+        || ''
 }
 
-/** Поиск */
-const submitSearch = () => {
-    const searchValue = String(q.value ?? '').trim()
-
-    router.get(
-        route('public.schoolAssignments.index'),
-        {
-            q: searchValue || undefined,
-            sort: sort.value || undefined,
-            per_page: perPage.value,
-            page: 1,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+/** Получение краткого текста задания */
+const getAssignmentShort = (assignment) => {
+    return assignment.short
+        || assignment.description
+        || assignment.translation?.short
+        || assignment.translation?.description
+        || assignment.current_translation?.short
+        || assignment.current_translation?.description
+        || assignment.translations?.[0]?.short
+        || assignment.translations?.[0]?.description
+        || ''
 }
 
-const resetSearch = () => {
-    q.value = ''
-    sort.value = DEFAULT_SORT
-
-    router.get(
-        route('public.schoolAssignments.index'),
-        {
-            per_page: perPage.value,
-            sort: sort.value,
-            page: 1,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+/** Получение slug задания */
+const getAssignmentSlug = (assignment) => {
+    return assignment.slug
+        || assignment.url
+        || assignment.translation?.slug
+        || assignment.current_translation?.slug
+        || assignment.translations?.[0]?.slug
+        || ''
 }
 
-/** Пагинация */
-const goToPage = (page) => {
-    const p = Number(page)
-    if (!Number.isFinite(p)) return
+const getRelationTitle = (item) => {
+    return item?.title
+        || item?.name
+        || item?.translation?.title
+        || item?.translation?.name
+        || item?.translations?.[0]?.title
+        || item?.translations?.[0]?.name
+        || ''
+}
 
-    const safe = Math.max(1, Math.min(p, lastPage.value))
+const splitSearchWords = (value) => {
+    return String(value ?? '')
+        .toLowerCase()
+        .split(/[\s:#№,"'«»(){}\[\].!?/\\|]+/u)
+        .map((word) => word.trim())
+        .filter((word) => word.length >= 2)
+}
 
+/** Локальный поиск frontend */
+const filteredAssignments = computed(() => {
+    const words = splitSearchWords(q.value)
+
+    if (words.length === 0) {
+        return assignmentsData.value
+    }
+
+    return assignmentsData.value.filter((assignment) => {
+        const haystack = normalizeText([
+            assignment.id,
+            assignment.sort,
+            assignment.school_course_id,
+            assignment.school_module_id,
+            assignment.school_lesson_id,
+            assignment.school_instructor_profile_id,
+            assignment.status,
+            assignment.visibility,
+            assignment.grading_type,
+            assignment.attempts_limit,
+            assignment.max_score,
+
+            getAssignmentTitle(assignment),
+            getAssignmentShort(assignment),
+            getAssignmentSlug(assignment),
+
+            getRelationTitle(assignment.course),
+            getRelationTitle(assignment.module),
+            getRelationTitle(assignment.lesson),
+            getRelationTitle(assignment.instructor),
+
+            assignment.instructor?.user?.name,
+            assignment.instructor?.user?.email
+        ].filter(Boolean).join(' '))
+
+        return words.every((word) => haystack.includes(word))
+    })
+})
+
+/** Локальная сортировка frontend */
+const sortedAssignments = computed(() => {
+    const list = [...filteredAssignments.value]
+
+    return list.sort((a, b) => {
+        switch (sort.value) {
+            case 'idAsc':
+                return (a.id ?? 0) - (b.id ?? 0)
+
+            case 'idDesc':
+                return (b.id ?? 0) - (a.id ?? 0)
+
+            case 'sortAsc':
+                return (a.sort ?? 0) - (b.sort ?? 0)
+
+            case 'sortDesc':
+                return (b.sort ?? 0) - (a.sort ?? 0)
+
+            case 'titleAsc':
+                return normalizeText(getAssignmentTitle(a))
+                    .localeCompare(normalizeText(getAssignmentTitle(b)))
+
+            case 'titleDesc':
+                return normalizeText(getAssignmentTitle(b))
+                    .localeCompare(normalizeText(getAssignmentTitle(a)))
+
+            case 'statusAsc':
+                return normalizeText(a.status)
+                    .localeCompare(normalizeText(b.status))
+
+            case 'statusDesc':
+                return normalizeText(b.status)
+                    .localeCompare(normalizeText(a.status))
+
+            case 'gradingTypeAsc':
+                return normalizeText(a.grading_type)
+                    .localeCompare(normalizeText(b.grading_type))
+
+            case 'gradingTypeDesc':
+                return normalizeText(b.grading_type)
+                    .localeCompare(normalizeText(a.grading_type))
+
+            case 'attemptsLimitAsc':
+                return (a.attempts_limit ?? 0) - (b.attempts_limit ?? 0)
+
+            case 'attemptsLimitDesc':
+                return (b.attempts_limit ?? 0) - (a.attempts_limit ?? 0)
+
+            case 'maxScoreAsc':
+                return (a.max_score ?? 0) - (b.max_score ?? 0)
+
+            case 'maxScoreDesc':
+                return (b.max_score ?? 0) - (a.max_score ?? 0)
+
+            case 'submissionsAsc':
+                return (a.submissions_count ?? 0) - (b.submissions_count ?? 0)
+
+            case 'submissionsDesc':
+                return (b.submissions_count ?? 0) - (a.submissions_count ?? 0)
+
+            case 'imagesAsc':
+                return (a.images_count ?? 0) - (b.images_count ?? 0)
+
+            case 'imagesDesc':
+                return (b.images_count ?? 0) - (a.images_count ?? 0)
+
+            case 'dueAtAsc':
+                return new Date(a.due_at ?? 0) - new Date(b.due_at ?? 0)
+
+            case 'dueAtDesc':
+                return new Date(b.due_at ?? 0) - new Date(a.due_at ?? 0)
+
+            case 'publishedAtAsc':
+                return new Date(a.published_at ?? a.created_at ?? 0) -
+                    new Date(b.published_at ?? b.created_at ?? 0)
+
+            case 'publishedAtDesc':
+                return new Date(b.published_at ?? b.created_at ?? 0) -
+                    new Date(a.published_at ?? a.created_at ?? 0)
+
+            case 'dateAsc':
+                return new Date(a.created_at ?? a.published_at ?? 0) -
+                    new Date(b.created_at ?? b.published_at ?? 0)
+
+            case 'dateDesc':
+                return new Date(b.created_at ?? b.published_at ?? 0) -
+                    new Date(a.created_at ?? a.published_at ?? 0)
+
+            default:
+                return 0
+        }
+    })
+})
+
+/** Локальная пагинация frontend */
+const frontendPaginatedAssignments = computed(() => {
+    const start = (frontendCurrentPage.value - 1) * perPage.value
+    return sortedAssignments.value.slice(start, start + perPage.value)
+})
+
+/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+watch([q, sort, viewMode], () => {
+    frontendCurrentPage.value = 1
+})
+
+/** Плавно возвращаемся к началу списка при frontend-пагинации */
+watch(frontendCurrentPage, () => {
+    if (!props.useServerProcessing) {
+        scrollToTarget()
+    }
+})
+
+/* ===================== SERVER MODE ===================== */
+
+/** Текущая страница server-пагинации */
+const currentPage = computed(() => {
+    return Number(
+        props.assignments?.meta?.current_page ?? props.assignments?.current_page ?? 1) || 1
+})
+
+/** Последняя страница server-пагинации */
+const lastPage = computed(() => {
+    return Number(
+        props.assignments?.meta?.last_page ?? props.assignments?.last_page ?? 1) || 1
+})
+
+/** Маршрут списка заданий для server-режима */
+const indexRoute = () => route('public.schoolAssignments.index')
+
+/** Server-загрузка заданий с query-параметрами */
+const reloadAssignments = (page = 1) => {
     router.get(
-        route('public.schoolAssignments.index'),
+        indexRoute(),
         {
             q: q.value || undefined,
             sort: sort.value || undefined,
+            view: viewMode.value || undefined,
             per_page: perPage.value,
-            page: safe,
+            page
         },
-        { preserveState: true, replace: true, preserveScroll: true }
+        {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true
+        }
     )
 }
 
+/** Server-поиск */
+const submitSearch = () => {
+    reloadAssignments(1)
+}
+
+/** Сброс поиска и сортировки для обоих режимов */
+const resetSearch = () => {
+    q.value = ''
+    sort.value = DEFAULT_SORT
+    frontendCurrentPage.value = 1
+
+    if (props.useServerProcessing) {
+        reloadAssignments(1)
+    }
+}
+
+/** Server-изменение сортировки */
+const updateSort = (value) => {
+    sort.value = value || DEFAULT_SORT
+
+    if (props.useServerProcessing) {
+        reloadAssignments(1)
+    }
+}
+
+/** Изменение режима отображения для обоих режимов */
+const updateViewMode = (value) => {
+    viewMode.value = value || 'grid'
+
+    if (props.useServerProcessing) {
+        reloadAssignments(currentPage.value)
+    }
+}
+
+/** Server-переход на страницу */
+const goToPage = (page) => {
+    const value = Number(page)
+
+    if (!Number.isFinite(value)) return
+
+    const safePage = Math.max(1, Math.min(value, lastPage.value))
+
+    reloadAssignments(safePage)
+}
+
+/** Server-предыдущая страница */
 const goPrev = () => {
     if (currentPage.value <= 1) return
     goToPage(currentPage.value - 1)
 }
 
+/** Server-следующая страница */
 const goNext = () => {
     if (currentPage.value >= lastPage.value) return
     goToPage(currentPage.value + 1)
 }
+
+/* ===================== COMMON VIEW ===================== */
+
+/** Итоговый список для отображения: server data или frontend page */
+const displayedAssignments = computed(() => {
+    return props.useServerProcessing
+        ? assignmentsData.value
+        : frontendPaginatedAssignments.value
+})
+
+/** Показ левой колонки */
+const showLeft = computed(() => {
+    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+})
+
+/** Показ правой колонки */
+const showRight = computed(() => {
+    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+})
+
+/** Ключ localStorage для левого сайдбара */
+const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
+
+/** Ключ localStorage для правого сайдбара */
+const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
+
+/** Получение boolean из localStorage */
+const getStoredBoolean = (key, defaultValue = false) => {
+    const value = localStorage.getItem(key)
+
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+/** Состояние левого сайдбара */
+const leftCollapsed = ref(
+    getStoredBoolean(LEFT_SIDEBAR_KEY, false)
+)
+
+/** Состояние правого сайдбара */
+const rightCollapsed = ref(
+    getStoredBoolean(RIGHT_SIDEBAR_KEY, false)
+)
+
+/** Сохраняем состояние левого сайдбара */
+watch(leftCollapsed, (value) => {
+    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
+})
+
+/** Сохраняем состояние правого сайдбара */
+watch(rightCollapsed, (value) => {
+    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
+})
+
+/** показ третьей карточки в ряд, если свёрнута колонка */
+const gridCols = computed(() => {
+    const leftExpanded = showLeft.value && !leftCollapsed.value
+    const rightExpanded = showRight.value && !rightCollapsed.value
+
+    return leftExpanded && rightExpanded ? 2 : 3
+})
+
+/** Ключ localStorage для нижней админ-панели */
+const ADMIN_PANEL_KEY = 'public_admin_panel_collapsed'
+
+/** Состояние нижней админ-панели */
+const adminPanelCollapsed = ref(
+    getStoredBoolean(ADMIN_PANEL_KEY, false)
+)
+
+/** Сохраняем состояние нижней админ-панели */
+watch(adminPanelCollapsed, (value) => {
+    localStorage.setItem(ADMIN_PANEL_KEY, String(value))
+})
+
+/** Переключение нижней админ-панели */
+const toggleAdminPanel = () => {
+    adminPanelCollapsed.value = !adminPanelCollapsed.value
+}
+
+/** внизу страницы банеры */
+const mainVideosList = computed(() => normalizeList(props.mainVideos))
+
+/** внизу страницы видео */
+const mainBannersList = computed(() => normalizeList(props.mainBanners))
 
 </script>
 
@@ -276,17 +588,18 @@ const goNext = () => {
         <!-- Шапка -->
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
+        <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
 
-                <!-- LEFT -->
+                <!-- Левая колонка -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 sm:mt-16 pl-3 transition-all duration-300"
+                    class="shrink-0 mt-12 sm:mt-16 transition-all duration-300"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebarSchool
                         :track-tree="trackTree"
+                        :collapsed="leftCollapsed"
                         @collapsed="leftCollapsed = $event"
                     />
                 </aside>
@@ -294,6 +607,7 @@ const goNext = () => {
                 <!-- CENTER -->
                 <div class="w-full lg:mt-16 pb-6 slate-1">
                     <div class="mx-auto max-w-6xl">
+
                         <nav class="text-sm" aria-label="Breadcrumb">
                             <ol class="flex items-center font-semibold">
                                 <li>
@@ -344,7 +658,8 @@ const goNext = () => {
                                  fill="currentColor"
                                  viewBox="0 0 24 24">
                                 <path d="M15,18v2H9v-2H1v5c0,0.552,0.448,1,1,1h20c0.552,0,1-0.448,1-1v-5H15z"></path>
-                                <path d="M23,4h-6V1c0-0.552-0.448-1-1-1H8C7.448,0,7,0.448,7,1v3H1C0.448,4,0,4.448,0,5v10c0,0.552,0.448,1,1,1h8v-3 h6v3h8c0.552,0,1-0.448,1-1V5C24,4.448,23.552,4,23,4z M15,4H9V2h6V4z"></path>
+                                <path
+                                    d="M23,4h-6V1c0-0.552-0.448-1-1-1H8C7.448,0,7,0.448,7,1v3H1C0.448,4,0,4.448,0,5v10c0,0.552,0.448,1,1,1h8v-3 h6v3h8c0.552,0,1-0.448,1-1V5C24,4.448,23.552,4,23,4z M15,4H9V2h6V4z"></path>
                             </svg>
                             <h1 class="text-2xl font-bold">
                                 {{ t('assignments') }}
@@ -356,6 +671,7 @@ const goNext = () => {
                         </div>
 
                         <EntityPageToolbar
+                            v-if="useServerProcessing"
                             v-model="q"
                             :found="assignmentsFound"
                             :view-mode="viewMode"
@@ -366,12 +682,29 @@ const goNext = () => {
                             :search-placeholder="t('searchByName')"
                             @submit="submitSearch"
                             @reset="resetSearch"
-                            @update:viewMode="viewMode = $event"
-                            @update:sortValue="onSortChange"
+                            @update:viewMode="updateViewMode"
+                            @update:sortValue="updateSort"
                         />
 
+                        <FrontendEntityPageToolbar
+                            v-else
+                            v-model="q"
+                            :found="sortedAssignments.length"
+                            :view-mode="viewMode"
+                            :sort-value="sort"
+                            :sort-options="assignmentSortOptions"
+                            :default-sort="DEFAULT_SORT"
+                            :found-label="t('assignments')"
+                            :search-placeholder="t('searchByName')"
+                            @reset="resetSearch"
+                            @update:viewMode="updateViewMode"
+                            @update:sortValue="updateSort"
+                        />
+
+                        <div ref="scrollTarget"></div>
+
                         <div
-                            v-if="assignmentsData.length === 0"
+                            v-if="displayedAssignments.length === 0"
                             class="mt-6 text-center text-slate-700 dark:text-slate-300"
                         >
                             {{ t('noData') }}
@@ -380,17 +713,18 @@ const goNext = () => {
                         <div v-else>
                             <AssignmentGrid
                                 v-if="viewMode === 'grid'"
-                                :assignments="assignmentsData"
+                                :assignments="displayedAssignments"
                                 :cols="gridCols"
                             />
 
                             <AssignmentRows
                                 v-else
-                                :assignments="assignmentsData"
+                                :assignments="displayedAssignments"
                             />
                         </div>
 
                         <Pagination
+                            v-if="useServerProcessing"
                             :current-page="currentPage"
                             :last-page="lastPage"
                             :found="assignmentsFound"
@@ -399,24 +733,97 @@ const goNext = () => {
                             @go="goToPage"
                         />
 
+                        <FrontendPagination
+                            v-else
+                            v-model:currentPage="frontendCurrentPage"
+                            :items-per-page="perPage"
+                            :total-items="sortedAssignments.length"
+                        />
+
                         <SectionVideoList :videos="mainVideosList" />
                         <SectionBanners :banners="mainBannersList" />
                     </div>
                 </div>
 
-                <!-- RIGHT -->
+                <!-- Правая колонка -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-16 pr-3 transition-all duration-300"
+                    class="shrink-0 lg:mt-16 transition-all duration-300"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
-                    <RightSidebarSchool @collapsed="rightCollapsed = $event" />
+                    <RightSidebarSchool
+                        :collapsed="rightCollapsed"
+                        @collapsed="rightCollapsed = $event"
+                    />
                 </aside>
 
             </main>
         </div>
+
         <!-- Подвал и прогресс -->
         <FooterBlog />
         <Progress />
+
+        <!-- Нижняя панель администратора -->
+        <div
+            v-if="isAdmin"
+            class="fixed bottom-0 left-0 right-0 z-[9999]"
+        >
+            <button
+                type="button"
+                class="absolute left-1/2 -translate-x-1/2
+                       flex h-3 w-6 items-center justify-center
+                       rounded-t-full border border-b-0
+                       border-slate-400/60
+                       bg-slate-300/95 dark:bg-slate-700/95
+                       text-slate-700 dark:text-slate-300
+                       shadow-md backdrop-blur-md
+                       hover:text-indigo-600 dark:hover:text-indigo-300"
+                :class="adminPanelCollapsed ? 'bottom-0' : 'bottom-8'"
+                :title="adminPanelCollapsed ? t('show') : t('hide')"
+                @click="toggleAdminPanel"
+            >
+                <svg
+                    class="h-3 w-3 transition-transform duration-300"
+                    :class="adminPanelCollapsed ? 'rotate-180' : ''"
+                    fill="currentColor"
+                    viewBox="0 0 320 512"
+                >
+                    <path
+                        d="M182.6 137.4c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-9.2 9.2-11.9 22.9-6.9 34.9S19.1 320 32 320h256c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-128-128z"
+                    />
+                </svg>
+            </button>
+
+            <div
+                class="h-8 flex items-center justify-between px-3
+                       border-t border-slate-400/40
+                       bg-slate-300/90 dark:bg-slate-700/90
+                       backdrop-blur-md text-[11px] text-slate-100
+                       transition-transform duration-300"
+                :class="adminPanelCollapsed ? 'translate-y-full' : 'translate-y-0'"
+            >
+                <div class="flex items-center gap-2">
+                    <Link
+                        :href="route('admin.index')"
+                        class="bg-gray-200 dark:bg-gray-800 rounded-sm px-2 py-0.5
+                            border-2 border-slate-500 hover:border-indigo-500"
+                    >
+                    <span class="text-slate-700 dark:text-slate-300">
+                        {{ t('adminPanel') }}
+                    </span>
+                    </Link>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <ProcessingModeSwitcher
+                        setting-key="publicSchoolAssignmentsProcessingMode"
+                        :mode="publicSchoolAssignmentsProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="assignmentsCount"
+                    />
+                </div>
+            </div>
+        </div>
     </DefaultLayout>
 </template>

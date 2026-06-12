@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Public\Default\School\SchoolAssignment;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\SchoolAssignment\SchoolAssignmentResource;
 use App\Models\Admin\School\SchoolAssignment\SchoolAssignment;
+use App\Services\Admin\ProcessingModeService;
+use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,80 +26,65 @@ class SchoolAssignmentController extends Controller
     {
         $locale = app()->getLocale();
 
+        $settings = app(PublicSettingsService::class);
+
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolAssignmentsPerPage', 6)
+            $settings->int('publicSchoolAssignmentsPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicSchoolAssignmentsDefaultSort', 'idDesc')
+            $settings->string('publicSchoolAssignmentsDefaultSort', 'idDesc')
         );
 
         $view = $this->resolveView(
             $request,
-            (string) config('site_settings.publicSchoolAssignmentsDefaultView', 'grid')
+            $settings->string('publicSchoolAssignmentsDefaultView', 'grid')
         );
 
         $processingMode = $this->resolveProcessingMode(
-            (string) config('site_settings.publicSchoolAssignmentsProcessingMode', 'server')
+            $settings->string('publicSchoolAssignmentsProcessingMode', 'server')
         );
 
-        $assignments = SchoolAssignment::query()
+        $assignmentsCount = SchoolAssignment::query()
             ->forPublic($locale)
-            ->search($search, $locale)
-            ->with([
-                'translation',
-                'translations',
-                'images',
+            ->count();
 
-                'course.translation',
-                'course.translations',
-                'course.images',
-                'course.instructorProfile.translation',
-                'course.instructorProfile.translations',
-                'course.instructorProfile.images',
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $assignmentsCount,
+                300
+            );
 
-                'module.translation',
-                'module.translations',
-                'module.images',
-                'module.course.translation',
-                'module.course.translations',
+        $assignments = $this->getIndexAssignments(
+            locale: $locale,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPage,
+            sort: $sort,
+            search: $search,
+        );
 
-                'lesson.translation',
-                'lesson.translations',
-                'lesson.images',
-                'lesson.module.translation',
-                'lesson.module.translations',
-                'lesson.module.course.translation',
-                'lesson.module.course.translations',
+        $assignmentsFound = $useServerProcessing
+            ? $assignments->total()
+            : $assignments->count();
 
-                'instructor.translation',
-                'instructor.translations',
-                'instructor.user:id,name,email',
-                'instructor.images',
-            ])
-            ->withCount([
-                'submissions',
-                'images',
-            ])
-            ->sortByParam($sort, $locale)
-            ->paginate($perPage)
-            ->withQueryString();
+        $assignments = SchoolAssignmentResource::collection($assignments);
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/School/SchoolAssignments/Index', [
-            'assignments' => SchoolAssignmentResource::collection($assignments),
+            'publicSchoolAssignmentsProcessingMode' => $processingMode,
+            'useServerProcessing' => $useServerProcessing,
 
-            'assignmentsCount' => SchoolAssignment::query()
-                ->forPublic($locale)
-                ->count(),
+            'assignments' => $assignments,
 
-            'assignmentsFound' => $assignments->total(),
+            'assignmentsCount' => $assignmentsCount,
+            'assignmentsFound' => $assignmentsFound,
 
             'filters' => $this->buildIndexFilters(
                 $search,
@@ -175,5 +163,70 @@ class SchoolAssignmentController extends Controller
 
             ...$sidebarData,
         ]);
+    }
+
+    /** Базовый запрос для списка публичных заданий. */
+    private function indexQuery(string $locale): Builder
+    {
+        return SchoolAssignment::query()
+            ->forPublic($locale)
+            ->with([
+                'translation',
+                'translations',
+                'images',
+
+                'course.translation',
+                'course.translations',
+                'course.images',
+                'course.instructorProfile.translation',
+                'course.instructorProfile.translations',
+                'course.instructorProfile.images',
+
+                'module.translation',
+                'module.translations',
+                'module.images',
+                'module.course.translation',
+                'module.course.translations',
+
+                'lesson.translation',
+                'lesson.translations',
+                'lesson.images',
+                'lesson.module.translation',
+                'lesson.module.translations',
+                'lesson.module.course.translation',
+                'lesson.module.course.translations',
+
+                'instructor.translation',
+                'instructor.translations',
+                'instructor.user:id,name,email',
+                'instructor.images',
+            ])
+            ->withCount([
+                'submissions',
+                'images',
+            ]);
+    }
+
+    /** Получение списка публичных заданий по активному режиму обработки. */
+    private function getIndexAssignments(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery($locale);
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

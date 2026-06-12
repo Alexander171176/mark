@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
@@ -13,6 +13,10 @@ const emit = defineEmits(['collapsed'])
 const { t } = useI18n()
 const page = usePage()
 
+const props = defineProps({
+    collapsed: { type: Boolean, default: false },
+})
+
 /** данные страницы */
 const hashtags = computed(() => page.props.hashtags ?? [])
 const rightCourses = computed(() => page.props.rightCourses ?? [])
@@ -20,21 +24,11 @@ const rightBanners = computed(() => page.props.rightBanners ?? [])
 const rightVideos = computed(() => page.props.rightVideos ?? [])
 
 /** collapse */
-const isCollapsed = ref(false)
-const toggleSidebar = () => {
-    isCollapsed.value = !isCollapsed.value
-    emit('collapsed', isCollapsed.value)
-}
+const isCollapsed = computed(() => props.collapsed)
 
-/** базовые классы */
-const sidebarClasses = computed(() => {
-    return [
-        'transition-all',
-        'duration-300',
-        'p-2',
-        'w-full',
-    ].join(' ')
-})
+const toggleSidebar = () => {
+    emit('collapsed', !props.collapsed)
+}
 </script>
 
 <template>

@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseResource;
 use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackResource;
 use App\Models\Admin\School\SchoolTrack\SchoolTrack;
+use App\Services\Admin\ProcessingModeService;
+use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
 use App\Traits\Public\WithUserLikesTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -27,66 +30,67 @@ class SchoolTrackController extends Controller
     {
         $locale = app()->getLocale();
 
+        $settings = app(PublicSettingsService::class);
+
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolTracksPerPage', 6)
+            $settings->int('publicSchoolTracksPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config(
-                'site_settings.publicSchoolTracksDefaultSort',
-                'sortAsc'
-            )
+            $settings->string('publicSchoolTracksDefaultSort', 'sortAsc')
         );
 
         $view = $this->resolveView(
             $request,
-            (string) config('site_settings.publicSchoolTracksDefaultView', 'grid')
+            $settings->string('publicSchoolTracksDefaultView', 'grid')
         );
 
         $processingMode = $this->resolveProcessingMode(
-            (string) config('site_settings.publicSchoolTracksProcessingMode', 'server')
+            $settings->string('publicSchoolTracksProcessingMode', 'server')
         );
 
-        $tracks = SchoolTrack::query()
+        $tracksCount = SchoolTrack::query()
             ->forPublic($locale)
-            ->search($search, $locale)
-            ->with([
-                'translation',
-                'translations',
-                'parent.translation',
-                'parent.translations',
-                'images',
-            ])
-            ->withCount([
-                'children',
-                'courses',
-                'likes',
-                'images',
-            ])
-            ->sortByParam($sort, $locale)
-            ->paginate($perPage)
-            ->withQueryString();
+            ->count();
 
-        $tracks = $this->appendUserLikes(
-            $tracks,
-            SchoolTrackResource::class
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $tracksCount,
+                300
+            );
+
+        $tracks = $this->getIndexTracks(
+            locale: $locale,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPage,
+            sort: $sort,
+            search: $search,
         );
+
+        $tracksFound = $useServerProcessing
+            ? $tracks->total()
+            : $tracks->count();
+
+        $tracks = $useServerProcessing
+            ? $this->appendUserLikes($tracks, SchoolTrackResource::class)
+            : SchoolTrackResource::collection($tracks);
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/School/SchoolTracks/Index', [
+            'publicSchoolTracksProcessingMode' => $processingMode,
+            'useServerProcessing' => $useServerProcessing,
+
             'tracks' => $tracks,
 
-            'tracksCount' => SchoolTrack::query()
-                ->forPublic($locale)
-                ->count(),
-
-            'tracksFound' => $tracks->total(),
+            'tracksCount' => $tracksCount,
+            'tracksFound' => $tracksFound,
 
             'filters' => $this->buildIndexFilters(
                 $search,
@@ -268,5 +272,48 @@ class SchoolTrackController extends Controller
             'success' => true,
             'likes' => $track->likes()->count(),
         ]);
+    }
+
+    /** Базовый запрос для списка публичных направлений обучения. */
+    private function indexQuery(string $locale): Builder
+    {
+        return SchoolTrack::query()
+            ->forPublic($locale)
+            ->with([
+                'translation',
+                'translations',
+                'parent.translation',
+                'parent.translations',
+                'images',
+            ])
+            ->withCount([
+                'children',
+                'courses',
+                'likes',
+                'images',
+            ]);
+    }
+
+    /** Получение списка публичных направлений обучения по активному режиму обработки. */
+    private function getIndexTracks(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery($locale);
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

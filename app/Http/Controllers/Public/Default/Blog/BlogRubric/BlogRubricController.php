@@ -7,10 +7,13 @@ use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleResource;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogRubric\BlogRubric;
+use App\Services\Admin\ProcessingModeService;
+use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\Blog\BuildsRubricTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,51 +30,65 @@ class BlogRubricController extends Controller
     {
         $locale = app()->getLocale();
 
+        $settings = app(PublicSettingsService::class);
+
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicBlogRubricsPerPage', 6)
+            $settings->int('publicBlogRubricsPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicBlogRubricsDefaultSort', 'sortAsc')
+            $settings->string('publicBlogRubricsDefaultSort', 'sortAsc')
         );
 
         $view = $this->resolveView(
             $request,
-            (string) config('site_settings.publicBlogRubricsDefaultView', 'grid')
+            $settings->string('publicBlogRubricsDefaultView', 'grid')
         );
 
         $processingMode = $this->resolveProcessingMode(
-            (string) config('site_settings.publicBlogRubricsProcessingMode', 'server')
+            $settings->string('publicBlogRubricsProcessingMode', 'server')
         );
 
-        $rubrics = BlogRubric::query()
+        $rubricsCount = BlogRubric::query()
             ->forPublic()
-            ->search($search, $locale)
-            ->with([
-                'translations',
-                'owner',
-                'images',
-            ])
-            ->withCount('articles')
-            ->sortByParam($sort, $locale)
-            ->paginate($perPage)
-            ->withQueryString();
+            ->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $rubricsCount,
+                300
+            );
+
+        $rubrics = $this->getIndexRubrics(
+            locale: $locale,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPage,
+            sort: $sort,
+            search: $search,
+        );
+
+        $rubricsFound = $useServerProcessing
+            ? $rubrics->total()
+            : $rubrics->count();
+
+        $rubrics = BlogRubricResource::collection($rubrics);
 
         $rubricTree = $this->getRubricTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/Blog/BlogRubrics/Index', [
-            'rubrics' => BlogRubricResource::collection($rubrics),
+            'publicBlogRubricsProcessingMode' => $processingMode,
+            'useServerProcessing' => $useServerProcessing,
 
-            'rubricsCount' => BlogRubric::query()
-                ->forPublic()
-                ->count(),
+            'rubrics' => $rubrics,
 
-            'rubricsFound' => $rubrics->total(),
+            'rubricsCount' => $rubricsCount,
+            'rubricsFound' => $rubricsFound,
 
             'filters' => $this->buildIndexFilters(
                 $search,
@@ -167,5 +184,41 @@ class BlogRubricController extends Controller
 
             ...$sidebarData,
         ]);
+    }
+
+    /** Базовый запрос для списка публичных рубрик. */
+    private function indexQuery(): Builder
+    {
+        return BlogRubric::query()
+            ->forPublic()
+            ->with([
+                'translations',
+                'owner',
+                'images',
+            ])
+            ->withCount('articles');
+    }
+
+    /** Получение списка публичных рубрик по активному режиму обработки. */
+    private function getIndexRubrics(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

@@ -8,6 +8,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
 import DefaultLayout from '@/Layouts/DefaultLayout.vue'
 import Navbar from '@/Partials/Default/Navbar.vue'
@@ -21,66 +22,83 @@ import RubricRows from '@/Components/Public/Default/Blog/BlogRubric/RubricRows.v
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
+import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 const { t } = useI18n()
 
+/** Props страницы */
 const props = defineProps({
+    locale: { type: String, default: 'ru' },
+
+    useServerProcessing: { type: Boolean, default: false },
+    publicBlogRubricsProcessingMode: { type: String, default: 'server' },
+
     title: { type: String, default: '' },
     canLogin: { type: Boolean, default: false },
     canRegister: { type: Boolean, default: false },
 
     rubricTree: { type: Array, default: () => [] },
 
-    rubrics: { type: Object, default: () => ({}) },
+    rubrics: { type: [Array, Object], default: () => [] },
     rubricsCount: { type: Number, default: 0 },
     rubricsFound: { type: Number, default: 0 },
 
     filters: { type: Object, default: () => ({}) },
 
     tags: { type: Array, default: () => [] },
-    mainVideos: { type: Array, default: () => [] },
-    mainBanners: { type: Array, default: () => [] },
-
-    locale: { type: String, default: 'ru' },
+    mainVideos: { type: [Array, Object], default: () => [] },
+    mainBanners: { type: [Array, Object], default: () => [] },
 })
+
+/** Глобальные данные страницы */
+const page = usePage()
+
+/** Глобальные настройки сайта */
+const siteSettings = page.props?.siteSettings || {}
+
+/** Роль администратора для нижней служебной панели */
+const isAdmin = computed(() => page.props?.isAdmin === true)
 
 /** Дерево рубрик для левого аккордеона */
-const rubricTree = computed(() => Array.isArray(props.rubricTree) ? props.rubricTree : [])
+const rubricTree = computed(() => {
+    return Array.isArray(props.rubricTree) ? props.rubricTree : []
+})
 
-/** Данные рубрик из пагинатора */
+/** Универсальный список рубрик: server paginator data или frontend array */
 const rubricsData = computed(() => {
-    const data = props.rubrics?.data
+    if (Array.isArray(props.rubrics)) {
+        return props.rubrics
+    }
 
-    return Array.isArray(data) ? data : []
+    if (Array.isArray(props.rubrics?.data)) {
+        return props.rubrics.data
+    }
+
+    return []
 })
 
-/** Текущая страница */
-const currentPage = computed(() => {
-    return Number(props.rubrics?.meta?.current_page ?? props.rubrics?.current_page ?? 1) || 1
-})
-
-/** Последняя страница */
-const lastPage = computed(() => {
-    return Number(props.rubrics?.meta?.last_page ?? props.rubrics?.last_page ?? 1) || 1
-})
-
-/** Количество элементов на странице */
+/** Количество элементов на странице для обоих режимов */
 const perPage = computed(() => {
-    const value = Number(props.filters?.per_page ?? 20)
+    const value = Number(props.filters?.per_page ?? 6)
 
-    return Number.isFinite(value) ? value : 20
+    return Number.isFinite(value) ? value : 6
 })
 
-/** Поисковая строка */
+/** Поисковая строка для server/frontend */
 const q = ref(String(props.filters?.q ?? ''))
 
-/** Сортировка */
+/** Сортировка по умолчанию для server/frontend */
 const DEFAULT_SORT = 'sortAsc'
+
+/** Текущая сортировка для server/frontend */
 const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
 
-/** Режим отображения: карточки или строки */
+/** Ключ локального хранения режима отображения */
 const VIEW_KEY = 'public_blog_rubrics_view'
 
+/** Режим отображения карточки/строки для server/frontend */
 const viewMode = ref(
     String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
 )
@@ -90,7 +108,7 @@ watch(viewMode, (value) => {
     localStorage.setItem(VIEW_KEY, value)
 })
 
-/** Опции сортировки рубрик */
+/** Опции сортировки для toolbar */
 const rubricSortOptions = [
     { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
     { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
@@ -108,7 +126,149 @@ const rubricSortOptions = [
     { value: 'dateAsc', label: `${t('publishedAt')} ↑` },
 ]
 
-/** Маршрут списка рубрик */
+/* ===================== FRONTEND MODE ===================== */
+
+/** Текущая страница локальной пагинации frontend */
+const frontendCurrentPage = ref(1)
+
+/** Цель плавного скролла при frontend-пагинации */
+const {
+    targetRef: scrollTarget,
+    scrollToTarget,
+} = useSmoothScrollTo({
+    offset: 80,
+    duration: 1200,
+})
+
+/** Нормализация текста для локального поиска frontend */
+const normalizeText = (value) => {
+    return String(value ?? '').toLowerCase()
+}
+
+/** Получение названия рубрики из разных возможных структур ресурса */
+const getRubricTitle = (rubric) => {
+    return rubric.title
+        || rubric.name
+        || rubric.translation?.title
+        || rubric.translation?.name
+        || rubric.current_translation?.title
+        || rubric.current_translation?.name
+        || rubric.translations?.[0]?.title
+        || rubric.translations?.[0]?.name
+        || ''
+}
+
+/** Получение краткого текста рубрики */
+const getRubricShort = (rubric) => {
+    return rubric.short
+        || rubric.description
+        || rubric.translation?.short
+        || rubric.translation?.description
+        || rubric.current_translation?.short
+        || rubric.current_translation?.description
+        || rubric.translations?.[0]?.short
+        || rubric.translations?.[0]?.description
+        || ''
+}
+
+/** Локальный поиск frontend */
+const filteredRubrics = computed(() => {
+    const query = normalizeText(q.value).trim()
+
+    if (!query) {
+        return rubricsData.value
+    }
+
+    return rubricsData.value.filter((rubric) => {
+        return [
+            getRubricTitle(rubric),
+            getRubricShort(rubric),
+            rubric.url,
+            rubric.slug,
+            rubric.owner?.name,
+            rubric.owner?.email,
+        ].some((value) => normalizeText(value).includes(query))
+    })
+})
+
+/** Локальная сортировка frontend */
+const sortedRubrics = computed(() => {
+    const list = [...filteredRubrics.value]
+
+    return list.sort((a, b) => {
+        switch (sort.value) {
+            case 'sortAsc':
+                return (a.sort ?? 0) - (b.sort ?? 0)
+
+            case 'sortDesc':
+                return (b.sort ?? 0) - (a.sort ?? 0)
+
+            case 'titleAsc':
+                return normalizeText(getRubricTitle(a))
+                    .localeCompare(normalizeText(getRubricTitle(b)))
+
+            case 'titleDesc':
+                return normalizeText(getRubricTitle(b))
+                    .localeCompare(normalizeText(getRubricTitle(a)))
+
+            case 'viewsAsc':
+                return (a.views ?? 0) - (b.views ?? 0)
+
+            case 'viewsDesc':
+                return (b.views ?? 0) - (a.views ?? 0)
+
+            case 'articlesAsc':
+                return (a.articles_count ?? 0) - (b.articles_count ?? 0)
+
+            case 'articlesDesc':
+                return (b.articles_count ?? 0) - (a.articles_count ?? 0)
+
+            case 'dateAsc':
+                return new Date(a.published_at ?? a.created_at ?? 0) -
+                    new Date(b.published_at ?? b.created_at ?? 0)
+
+            case 'dateDesc':
+                return new Date(b.published_at ?? b.created_at ?? 0) -
+                    new Date(a.published_at ?? a.created_at ?? 0)
+
+            default:
+                return 0
+        }
+    })
+})
+
+/** Локальная пагинация frontend */
+const frontendPaginatedRubrics = computed(() => {
+    const start = (frontendCurrentPage.value - 1) * perPage.value
+
+    return sortedRubrics.value.slice(start, start + perPage.value)
+})
+
+/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+watch([q, sort, viewMode], () => {
+    frontendCurrentPage.value = 1
+})
+
+/** Плавно возвращаемся к началу списка при frontend-пагинации */
+watch(frontendCurrentPage, () => {
+    if (!props.useServerProcessing) {
+        scrollToTarget()
+    }
+})
+
+/* ===================== SERVER MODE ===================== */
+
+/** Текущая страница server-пагинации */
+const currentPage = computed(() => {
+    return Number(props.rubrics?.meta?.current_page ?? props.rubrics?.current_page ?? 1) || 1
+})
+
+/** Последняя страница server-пагинации */
+const lastPage = computed(() => {
+    return Number(props.rubrics?.meta?.last_page ?? props.rubrics?.last_page ?? 1) || 1
+})
+
+/** Маршрут списка рубрик для server-режима */
 const indexRoute = () => route('public.blogRubrics.index')
 
 /** Загрузка рубрик с текущими фильтрами */
@@ -130,34 +290,41 @@ const reloadRubrics = (page = 1) => {
     )
 }
 
-/** Поиск */
+/** Server-поиск */
 const submitSearch = () => {
     reloadRubrics(1)
 }
 
-/** Сброс поиска и сортировки */
+/** Сброс поиска и сортировки для обоих режимов */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
+    frontendCurrentPage.value = 1
 
-    reloadRubrics(1)
+    if (props.useServerProcessing) {
+        reloadRubrics(1)
+    }
 }
 
-/** Изменение сортировки */
+/** Server-изменение сортировки */
 const updateSort = (value) => {
     sort.value = value || DEFAULT_SORT
 
-    reloadRubrics(1)
+    if (props.useServerProcessing) {
+        reloadRubrics(1)
+    }
 }
 
-/** Изменение режима отображения */
+/** Изменение режима отображения для обоих режимов */
 const updateViewMode = (value) => {
     viewMode.value = value || 'grid'
 
-    reloadRubrics(currentPage.value)
+    if (props.useServerProcessing) {
+        reloadRubrics(currentPage.value)
+    }
 }
 
-/** Переход на страницу */
+/** Server-переход на страницу */
 const goToPage = (page) => {
     const value = Number(page)
 
@@ -168,36 +335,75 @@ const goToPage = (page) => {
     reloadRubrics(safePage)
 }
 
-/** Предыдущая страница */
+/** Server-предыдущая страница */
 const goPrev = () => {
     if (currentPage.value <= 1) return
 
     goToPage(currentPage.value - 1)
 }
 
-/** Следующая страница */
+/** Server-следующая страница */
 const goNext = () => {
     if (currentPage.value >= lastPage.value) return
 
     goToPage(currentPage.value + 1)
 }
 
-/** Глобальные настройки сайта */
-const { siteSettings } = usePage().props
+/* ===================== COMMON VIEW ===================== */
+
+/** Итоговый список для отображения: server data или frontend page */
+const displayedRubrics = computed(() => {
+    return props.useServerProcessing
+        ? rubricsData.value
+        : frontendPaginatedRubrics.value
+})
 
 /** Показ левой колонки */
-const showLeft = computed(() =>
-    !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
-)
+const showLeft = computed(() => {
+    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+})
 
 /** Показ правой колонки */
-const showRight = computed(() =>
-    !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+const showRight = computed(() => {
+    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+})
+
+/** Ключ localStorage для левого сайдбара */
+const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
+
+/** Ключ localStorage для правого сайдбара */
+const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
+
+/** Получение boolean из localStorage */
+const getStoredBoolean = (key, defaultValue = false) => {
+    const value = localStorage.getItem(key)
+
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+/** Состояние левого сайдбара */
+const leftCollapsed = ref(
+    getStoredBoolean(LEFT_SIDEBAR_KEY, false)
 )
 
-/** Состояние сайдбаров */
-const leftCollapsed = ref(false)
-const rightCollapsed = ref(false)
+/** Состояние правого сайдбара */
+const rightCollapsed = ref(
+    getStoredBoolean(RIGHT_SIDEBAR_KEY, false)
+)
+
+/** Сохраняем состояние левого сайдбара */
+watch(leftCollapsed, (value) => {
+    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
+})
+
+/** Сохраняем состояние правого сайдбара */
+watch(rightCollapsed, (value) => {
+    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
+})
 
 /** Количество колонок сетки с учётом сайдбаров */
 const rubricGridCols = computed(() => {
@@ -206,6 +412,24 @@ const rubricGridCols = computed(() => {
 
     return leftExpanded && rightExpanded ? 2 : 3
 })
+
+/** Ключ localStorage для нижней админ-панели */
+const ADMIN_PANEL_KEY = 'public_admin_panel_collapsed'
+
+/** Состояние нижней админ-панели */
+const adminPanelCollapsed = ref(
+    getStoredBoolean(ADMIN_PANEL_KEY, false)
+)
+
+/** Сохраняем состояние нижней админ-панели */
+watch(adminPanelCollapsed, (value) => {
+    localStorage.setItem(ADMIN_PANEL_KEY, String(value))
+})
+
+/** Переключение нижней админ-панели */
+const toggleAdminPanel = () => {
+    adminPanelCollapsed.value = !adminPanelCollapsed.value
+}
 </script>
 
 <template>
@@ -240,15 +464,17 @@ const rubricGridCols = computed(() => {
     >
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
+        <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
+                <!-- LEFT -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 sm:mt-16 pl-3 transition-all duration-300"
+                    class="shrink-0 mt-12 sm:mt-16 transition-all duration-300"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebar
                         :rubric-tree="rubricTree"
+                        :collapsed="leftCollapsed"
                         @collapsed="leftCollapsed = $event"
                     />
                 </aside>
@@ -298,6 +524,7 @@ const rubricGridCols = computed(() => {
                         </div>
 
                         <EntityPageToolbar
+                            v-if="useServerProcessing"
                             v-model="q"
                             :found="rubricsFound"
                             :view-mode="viewMode"
@@ -312,8 +539,25 @@ const rubricGridCols = computed(() => {
                             @update:sortValue="updateSort"
                         />
 
+                        <FrontendEntityPageToolbar
+                            v-else
+                            v-model="q"
+                            :found="sortedRubrics.length"
+                            :view-mode="viewMode"
+                            :sort-value="sort"
+                            :sort-options="rubricSortOptions"
+                            :default-sort="DEFAULT_SORT"
+                            :found-label="t('rubrics')"
+                            :search-placeholder="t('searchByName')"
+                            @reset="resetSearch"
+                            @update:viewMode="updateViewMode"
+                            @update:sortValue="updateSort"
+                        />
+
+                        <div ref="scrollTarget"></div>
+
                         <div
-                            v-if="rubricsData.length === 0"
+                            v-if="displayedRubrics.length === 0"
                             class="mt-6 text-center text-slate-700 dark:text-slate-300"
                         >
                             {{ t('noData') }}
@@ -322,17 +566,18 @@ const rubricGridCols = computed(() => {
                         <div v-else>
                             <RubricGrid
                                 v-if="viewMode === 'grid'"
-                                :rubrics="rubricsData"
+                                :rubrics="displayedRubrics"
                                 :cols="rubricGridCols"
                             />
 
                             <RubricRows
                                 v-else
-                                :rubrics="rubricsData"
+                                :rubrics="displayedRubrics"
                             />
                         </div>
 
                         <Pagination
+                            v-if="useServerProcessing"
                             :current-page="currentPage"
                             :last-page="lastPage"
                             :found="rubricsFound"
@@ -341,22 +586,95 @@ const rubricGridCols = computed(() => {
                             @go="goToPage"
                         />
 
+                        <FrontendPagination
+                            v-else
+                            v-model:currentPage="frontendCurrentPage"
+                            :items-per-page="perPage"
+                            :total-items="sortedRubrics.length"
+                        />
+
                         <SectionVideoList :videos="mainVideos" />
                         <SectionBanners :banners="mainBanners" />
                     </div>
                 </div>
 
+                <!-- RIGHT -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-16 pr-3 transition-all duration-300"
+                    class="shrink-0 lg:mt-16 transition-all duration-300"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
-                    <RightSidebar @collapsed="rightCollapsed = $event" />
+                    <RightSidebar
+                        :collapsed="rightCollapsed"
+                        @collapsed="rightCollapsed = $event"
+                    />
                 </aside>
             </main>
         </div>
 
         <FooterBlog />
         <Progress />
+        <!-- Нижняя панель администратора -->
+        <div
+            v-if="isAdmin"
+            class="fixed bottom-0 left-0 right-0 z-[9999]"
+        >
+            <button
+                type="button"
+                class="absolute left-1/2 -translate-x-1/2
+                       flex h-3 w-6 items-center justify-center
+                       rounded-t-full border border-b-0
+                       border-slate-400/60
+                       bg-slate-300/95 dark:bg-slate-700/95
+                       text-slate-700 dark:text-slate-300
+                       shadow-md backdrop-blur-md
+                       hover:text-indigo-600 dark:hover:text-indigo-300"
+                :class="adminPanelCollapsed ? 'bottom-0' : 'bottom-8'"
+                :title="adminPanelCollapsed ? t('show') : t('hide')"
+                @click="toggleAdminPanel"
+            >
+                <svg
+                    class="h-3 w-3 transition-transform duration-300"
+                    :class="adminPanelCollapsed ? 'rotate-180' : ''"
+                    fill="currentColor"
+                    viewBox="0 0 320 512"
+                >
+                    <path
+                        d="M182.6 137.4c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-9.2 9.2-11.9 22.9-6.9 34.9S19.1 320 32 320h256c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-128-128z"
+                    />
+                </svg>
+            </button>
+
+            <div
+                class="h-8 flex items-center justify-between px-3
+                       border-t border-slate-400/40
+                       bg-slate-300/90 dark:bg-slate-700/90
+                       backdrop-blur-md text-[11px] text-slate-100
+                       transition-transform duration-300"
+                :class="adminPanelCollapsed ? 'translate-y-full' : 'translate-y-0'"
+            >
+                <div class="flex items-center gap-2">
+                    <Link
+                        :href="route('admin.index')"
+                        class="bg-gray-200 dark:bg-gray-800 rounded-sm px-2 py-0.5
+                       border-2 border-slate-500 hover:border-indigo-500"
+                    >
+                <span class="text-slate-700 dark:text-slate-300
+                             hover:text-indigo-700 hover:dark:text-indigo-300">
+                    {{ t('adminPanel') }}
+                </span>
+                    </Link>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <ProcessingModeSwitcher
+                        setting-key="publicBlogRubricsProcessingMode"
+                        :mode="publicBlogRubricsProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="rubricsCount"
+                    />
+                </div>
+            </div>
+        </div>
     </DefaultLayout>
 </template>

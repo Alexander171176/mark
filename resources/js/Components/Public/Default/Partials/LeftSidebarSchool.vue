@@ -10,6 +10,7 @@ import LeftVideosSidebar from '@/Components/Public/Default/Blog/BlogVideo/LeftVi
 
 const props = defineProps({
     trackTree: { type: Array, default: () => [] },
+    collapsed: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['collapsed'])
@@ -21,11 +22,10 @@ const leftCourses = computed(() => page.props.leftCourses ?? [])
 const leftBanners = computed(() => page.props.leftBanners ?? [])
 const leftVideos = computed(() => page.props.leftVideos ?? [])
 
-const isCollapsed = ref(false)
+const isCollapsed = computed(() => props.collapsed)
 
 const toggleSidebar = () => {
-    isCollapsed.value = !isCollapsed.value
-    emit('collapsed', isCollapsed.value)
+    emit('collapsed', !props.collapsed)
 }
 </script>
 

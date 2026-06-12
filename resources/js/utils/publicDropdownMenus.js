@@ -63,7 +63,7 @@ export const publicDropdownMenus = (t) => [
                 label: t('assignments'),
                 route: 'public.schoolAssignments.index',
                 active: 'public.schoolAssignments.*',
-                icon: publicMenuIcons.lessons,
+                icon: publicMenuIcons.assignments,
             },
         ],
     },

@@ -18,6 +18,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
 import DefaultLayout from '@/Layouts/DefaultLayout.vue'
 import Navbar from '@/Partials/Default/Navbar.vue'
@@ -31,66 +32,90 @@ import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/Section
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
 import InstructorCourseGrid from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseGrid.vue'
 import InstructorCourseRows from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseRows.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
+import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 const { t } = useI18n()
 
-/** Props */
+/** Props страницы */
 const props = defineProps({
-    title: String,
-    canLogin: Boolean,
-    canRegister: Boolean,
+    locale: { type: String, default: 'ru' },
+
+    useServerProcessing: { type: Boolean, default: false },
+    publicSchoolCoursesProcessingMode: { type: String, default: 'server' },
+
+    title: { type: String, default: '' },
+    canLogin: { type: Boolean, default: false },
+    canRegister: { type: Boolean, default: false },
 
     trackTree: { type: Array, default: () => [] },
 
-    courses: { type: Object, default: () => ({}) },
+    courses: { type: [Array, Object], default: () => [] },
     coursesCount: { type: Number, default: 0 },
     coursesFound: { type: Number, default: 0 },
+
     filters: { type: Object, default: () => ({}) },
 
     hashtags: { type: Array, default: () => [] },
-    mainVideos: { type: Array, default: () => [] },
-    mainBanners: { type: Array, default: () => [] },
+    mainVideos: { type: [Array, Object], default: () => [] },
+    mainBanners: { type: [Array, Object], default: () => [] },
 })
 
-/** Иерархия треков */
+/** Глобальные данные страницы */
+const page = usePage()
+
+/** Глобальные настройки сайта */
+const siteSettings = page.props?.siteSettings || {}
+
+/** Роль администратора для нижней служебной панели */
+const isAdmin = computed(() => page.props?.isAdmin === true)
+
+/** Дерево треков для левого аккордеона */
 const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
 
-/** Режим показа карточками/в строку */
-const VIEW_KEY = 'public_courses_view'
-const viewMode = ref(localStorage.getItem(VIEW_KEY) || 'grid')
-
-watch(viewMode, (v) => {
-    localStorage.setItem(VIEW_KEY, v)
-})
-
-/** Данные курсов */
+/** Универсальный список курсов: server paginator data или frontend array */
 const coursesData = computed(() => {
-    const data = props.courses?.data
-    return Array.isArray(data) ? data : []
+    if (Array.isArray(props.courses)) {
+        return props.courses
+    }
+
+    if (Array.isArray(props.courses?.data)) {
+        return props.courses.data
+    }
+
+    return []
 })
 
-/** Текущая страница, Количество страниц */
-const currentPage = computed(() => {
-    return Number(props.courses?.meta?.current_page ?? props.courses?.current_page ?? 1) || 1
-})
-
-const lastPage = computed(() => {
-    return Number(props.courses?.meta?.last_page ?? props.courses?.last_page ?? 1) || 1
-})
-
+/** Количество элементов на странице для обоих режимов */
 const perPage = computed(() => {
     const val = Number(props.filters?.per_page ?? 12)
     return Number.isFinite(val) ? val : 12
 })
 
-/** Поиск */
+/** Поисковая строка для server/frontend */
 const q = ref(String(props.filters?.q ?? ''))
 
-/** Сортировка */
+/** Сортировка по умолчанию для server/frontend */
 const DEFAULT_SORT = 'sortAsc'
+
+/** Текущая сортировка для server/frontend */
 const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
 
-/** Опции сортировки */
+/** Ключ локального хранения режима отображения */
+const VIEW_KEY = 'public_school_courses_view'
+
+/** Режим отображения карточки/строки для server/frontend */
+const viewMode = ref(
+    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
+)
+
+/** Сохраняем режим отображения локально */
+watch(viewMode, (value) => {
+    localStorage.setItem(VIEW_KEY, value)
+})
+
+/** Опции сортировки для toolbar */
 const courseSortOptions = [
     { value: 'idDesc', label: t('idDesc') },
     { value: 'idAsc', label: t('idAsc') },
@@ -165,87 +190,447 @@ const courseSortOptions = [
     { value: 'updatedAtAsc', label: `${t('updatedAt')} ↑` },
 ]
 
-/** Поисковый запрос */
-const submitSearch = () => {
+/* ===================== FRONTEND MODE ===================== */
+
+/** Текущая страница локальной пагинации frontend */
+const frontendCurrentPage = ref(1)
+
+/** Цель плавного скролла при frontend-пагинации */
+const {
+    targetRef: scrollTarget,
+    scrollToTarget,
+} = useSmoothScrollTo({
+    offset: 80,
+    duration: 1200,
+})
+
+/** Нормализация текста для локального поиска frontend */
+const normalizeText = (value) => {
+    return String(value ?? '').toLowerCase()
+}
+
+/** Получение названия курса из разных возможных структур ресурса */
+const getCourseTitle = (course) => {
+    return course.title
+        || course.name
+        || course.translation?.title
+        || course.translation?.name
+        || course.current_translation?.title
+        || course.current_translation?.name
+        || course.translations?.[0]?.title
+        || course.translations?.[0]?.name
+        || ''
+}
+
+/** Получение краткого текста курса */
+const getCourseShort = (course) => {
+    return course.short
+        || course.description
+        || course.subtitle
+        || course.translation?.short
+        || course.translation?.description
+        || course.translation?.subtitle
+        || course.current_translation?.short
+        || course.current_translation?.description
+        || course.current_translation?.subtitle
+        || course.translations?.[0]?.short
+        || course.translations?.[0]?.description
+        || course.translations?.[0]?.subtitle
+        || ''
+}
+
+/** Получение slug курса */
+const getCourseSlug = (course) => {
+    return course.slug
+        || course.url
+        || course.translation?.slug
+        || course.current_translation?.slug
+        || course.translations?.[0]?.slug
+        || ''
+}
+
+/** Локальный поиск frontend */
+const filteredCourses = computed(() => {
+    const query = normalizeText(q.value).trim()
+
+    if (!query) {
+        return coursesData.value
+    }
+
+    return coursesData.value.filter((course) => {
+        return [
+            getCourseTitle(course),
+            getCourseShort(course),
+            getCourseSlug(course),
+            course.instructorProfile?.title,
+            course.instructor_profile?.title,
+            course.instructorProfile?.user?.name,
+            course.instructor_profile?.user?.name,
+        ].some((value) => normalizeText(value).includes(query))
+    })
+})
+
+/** Локальная сортировка frontend */
+const sortedCourses = computed(() => {
+    const list = [...filteredCourses.value]
+
+    return list.sort((a, b) => {
+        switch (sort.value) {
+            case 'sortAsc':
+                return (a.sort ?? 0) - (b.sort ?? 0)
+
+            case 'sortDesc':
+                return (b.sort ?? 0) - (a.sort ?? 0)
+
+            case 'idAsc':
+                return (a.id ?? 0) - (b.id ?? 0)
+
+            case 'idDesc':
+                return (b.id ?? 0) - (a.id ?? 0)
+
+            case 'titleAsc':
+                return normalizeText(getCourseTitle(a))
+                    .localeCompare(normalizeText(getCourseTitle(b)))
+
+            case 'titleDesc':
+                return normalizeText(getCourseTitle(b))
+                    .localeCompare(normalizeText(getCourseTitle(a)))
+
+            case 'studentsCountAsc':
+                return (a.students_count ?? 0) - (b.students_count ?? 0)
+
+            case 'studentsCountDesc':
+                return (b.students_count ?? 0) - (a.students_count ?? 0)
+
+            case 'viewsAsc':
+                return (a.views ?? 0) - (b.views ?? 0)
+
+            case 'viewsDesc':
+                return (b.views ?? 0) - (a.views ?? 0)
+
+            case 'likesAsc':
+                return (a.likes_count ?? 0) - (b.likes_count ?? 0)
+
+            case 'likesDesc':
+                return (b.likes_count ?? 0) - (a.likes_count ?? 0)
+
+            case 'popularityAsc':
+                return (a.popularity ?? 0) - (b.popularity ?? 0)
+
+            case 'popularityDesc':
+                return (b.popularity ?? 0) - (a.popularity ?? 0)
+
+            case 'ratingAvgAsc':
+                return (a.rating_avg ?? 0) - (b.rating_avg ?? 0)
+
+            case 'ratingAvgDesc':
+                return (b.rating_avg ?? 0) - (a.rating_avg ?? 0)
+
+            case 'ratingCountAsc':
+                return (a.rating_count ?? 0) - (b.rating_count ?? 0)
+
+            case 'ratingCountDesc':
+                return (b.rating_count ?? 0) - (a.rating_count ?? 0)
+
+            case 'difficultyAsc':
+                return (a.difficulty ?? 0) - (b.difficulty ?? 0)
+
+            case 'difficultyDesc':
+                return (b.difficulty ?? 0) - (a.difficulty ?? 0)
+
+            case 'durationAsc':
+                return (a.duration ?? 0) - (b.duration ?? 0)
+
+            case 'durationDesc':
+                return (b.duration ?? 0) - (a.duration ?? 0)
+
+            case 'levelAsc':
+                return normalizeText(a.level)
+                    .localeCompare(normalizeText(b.level))
+
+            case 'levelDesc':
+                return normalizeText(b.level)
+                    .localeCompare(normalizeText(a.level))
+
+            case 'statusAsc':
+                return normalizeText(a.status)
+                    .localeCompare(normalizeText(b.status))
+
+            case 'statusDesc':
+                return normalizeText(b.status)
+                    .localeCompare(normalizeText(a.status))
+
+            case 'availabilityAsc':
+                return normalizeText(a.availability)
+                    .localeCompare(normalizeText(b.availability))
+
+            case 'availabilityDesc':
+                return normalizeText(b.availability)
+                    .localeCompare(normalizeText(a.availability))
+
+            case 'modulesAsc':
+                return (a.modules_count ?? 0) - (b.modules_count ?? 0)
+
+            case 'modulesDesc':
+                return (b.modules_count ?? 0) - (a.modules_count ?? 0)
+
+            case 'lessonsAsc':
+                return (a.lessons_count ?? 0) - (b.lessons_count ?? 0)
+
+            case 'lessonsDesc':
+                return (b.lessons_count ?? 0) - (a.lessons_count ?? 0)
+
+            case 'tracksAsc':
+                return (a.tracks_count ?? 0) - (b.tracks_count ?? 0)
+
+            case 'tracksDesc':
+                return (b.tracks_count ?? 0) - (a.tracks_count ?? 0)
+
+            case 'hashtagsAsc':
+                return (a.hashtags_count ?? 0) - (b.hashtags_count ?? 0)
+
+            case 'hashtagsDesc':
+                return (b.hashtags_count ?? 0) - (a.hashtags_count ?? 0)
+
+            case 'imagesAsc':
+                return (a.images_count ?? 0) - (b.images_count ?? 0)
+
+            case 'imagesDesc':
+                return (b.images_count ?? 0) - (a.images_count ?? 0)
+
+            case 'pricesAsc':
+                return (a.prices_count ?? 0) - (b.prices_count ?? 0)
+
+            case 'pricesDesc':
+                return (b.prices_count ?? 0) - (a.prices_count ?? 0)
+
+            case 'reviewsAsc':
+                return (a.reviews_count ?? 0) - (b.reviews_count ?? 0)
+
+            case 'reviewsDesc':
+                return (b.reviews_count ?? 0) - (a.reviews_count ?? 0)
+
+            case 'publishedAtAsc':
+                return new Date(a.published_at ?? 0) -
+                    new Date(b.published_at ?? 0)
+
+            case 'publishedAtDesc':
+                return new Date(b.published_at ?? 0) -
+                    new Date(a.published_at ?? 0)
+
+            case 'createdAtAsc':
+                return new Date(a.created_at ?? 0) -
+                    new Date(b.created_at ?? 0)
+
+            case 'createdAtDesc':
+                return new Date(b.created_at ?? 0) -
+                    new Date(a.created_at ?? 0)
+
+            case 'updatedAtAsc':
+                return new Date(a.updated_at ?? 0) -
+                    new Date(b.updated_at ?? 0)
+
+            case 'updatedAtDesc':
+                return new Date(b.updated_at ?? 0) -
+                    new Date(a.updated_at ?? 0)
+
+            default:
+                return 0
+        }
+    })
+})
+
+/** Локальная пагинация frontend */
+const frontendPaginatedCourses = computed(() => {
+    const start = (frontendCurrentPage.value - 1) * perPage.value
+
+    return sortedCourses.value.slice(start, start + perPage.value)
+})
+
+/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+watch([q, sort, viewMode], () => {
+    frontendCurrentPage.value = 1
+})
+
+/** Плавно возвращаемся к началу списка при frontend-пагинации */
+watch(frontendCurrentPage, () => {
+    if (!props.useServerProcessing) {
+        scrollToTarget()
+    }
+})
+
+/* ===================== SERVER MODE ===================== */
+
+/** Текущая страница server-пагинации */
+const currentPage = computed(() => {
+    return Number(props.courses?.meta?.current_page ?? props.courses?.current_page ?? 1) || 1
+})
+
+/** Последняя страница server-пагинации */
+const lastPage = computed(() => {
+    return Number(props.courses?.meta?.last_page ?? props.courses?.last_page ?? 1) || 1
+})
+
+/** Маршрут списка курсов для server-режима */
+const indexRoute = () => route('public.schoolCourses.index')
+
+/** Server-загрузка курсов с query-параметрами */
+const reloadCourses = (page = 1) => {
     router.get(
-        route('public.schoolCourses.index'),
+        indexRoute(),
         {
             q: q.value || undefined,
             sort: sort.value || undefined,
+            view: viewMode.value || undefined,
             per_page: perPage.value,
-            page: 1,
+            page,
         },
-        { preserveState: true, replace: true, preserveScroll: true }
+        {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+        }
     )
 }
 
-/** Сброс поиска */
+/** Server-поиск */
+const submitSearch = () => {
+    reloadCourses(1)
+}
+
+/** Сброс поиска и сортировки для обоих режимов */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
+    frontendCurrentPage.value = 1
 
-    router.get(
-        route('public.schoolCourses.index'),
-        {
-            per_page: perPage.value,
-            sort: sort.value,
-            page: 1,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+    if (props.useServerProcessing) {
+        reloadCourses(1)
+    }
 }
 
-/** Пагинация: prev / input / next */
+/** Server-изменение сортировки */
+const updateSort = (value) => {
+    sort.value = value || DEFAULT_SORT
+
+    if (props.useServerProcessing) {
+        reloadCourses(1)
+    }
+}
+
+/** Изменение режима отображения для обоих режимов */
+const updateViewMode = (value) => {
+    viewMode.value = value || 'grid'
+
+    if (props.useServerProcessing) {
+        reloadCourses(currentPage.value)
+    }
+}
+
+/** Server-переход на страницу */
 const goToPage = (page) => {
-    const p = Number(page)
-    if (!Number.isFinite(p)) return
+    const value = Number(page)
 
-    const safe = Math.max(1, Math.min(p, lastPage.value))
+    if (!Number.isFinite(value)) return
 
-    router.get(
-        route('public.schoolCourses.index'),
-        {
-            q: q.value || undefined,
-            sort: sort.value || undefined,
-            per_page: perPage.value,
-            page: safe,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+    const safePage = Math.max(1, Math.min(value, lastPage.value))
+
+    reloadCourses(safePage)
 }
 
+/** Server-предыдущая страница */
 const goPrev = () => {
     if (currentPage.value <= 1) return
     goToPage(currentPage.value - 1)
 }
 
+/** Server-следующая страница */
 const goNext = () => {
     if (currentPage.value >= lastPage.value) return
     goToPage(currentPage.value + 1)
 }
 
-/** показ/скрытие колонок */
-const { siteSettings } = usePage().props
+/* ===================== COMMON VIEW ===================== */
 
-const showLeft = computed(() =>
-    !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+/** Итоговый список для отображения: server data или frontend page */
+const displayedCourses = computed(() => {
+    return props.useServerProcessing
+        ? coursesData.value
+        : frontendPaginatedCourses.value
+})
+
+/** Показ левой колонки */
+const showLeft = computed(() => {
+    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+})
+
+/** Показ правой колонки */
+const showRight = computed(() => {
+    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+})
+
+/** Ключ localStorage для левого сайдбара */
+const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
+
+/** Ключ localStorage для правого сайдбара */
+const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
+
+/** Получение boolean из localStorage */
+const getStoredBoolean = (key, defaultValue = false) => {
+    const value = localStorage.getItem(key)
+
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+/** Состояние левого сайдбара */
+const leftCollapsed = ref(
+    getStoredBoolean(LEFT_SIDEBAR_KEY, false)
 )
 
-const showRight = computed(() =>
-    !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+/** Состояние правого сайдбара */
+const rightCollapsed = ref(
+    getStoredBoolean(RIGHT_SIDEBAR_KEY, false)
 )
 
-/** состояние сайдбаров */
-const leftCollapsed = ref(false)
-const rightCollapsed = ref(false)
+/** Сохраняем состояние левого сайдбара */
+watch(leftCollapsed, (value) => {
+    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
+})
 
-/** добавление третьей карточки в ряд при свернутой колонке */
+/** Сохраняем состояние правого сайдбара */
+watch(rightCollapsed, (value) => {
+    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
+})
+
+/** Количество колонок сетки с учётом сайдбаров */
 const gridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
     const rightExpanded = showRight.value && !rightCollapsed.value
 
     return leftExpanded && rightExpanded ? 2 : 3
 })
+
+/** Ключ localStorage для нижней админ-панели */
+const ADMIN_PANEL_KEY = 'public_admin_panel_collapsed'
+
+/** Состояние нижней админ-панели */
+const adminPanelCollapsed = ref(
+    getStoredBoolean(ADMIN_PANEL_KEY, false)
+)
+
+/** Сохраняем состояние нижней админ-панели */
+watch(adminPanelCollapsed, (value) => {
+    localStorage.setItem(ADMIN_PANEL_KEY, String(value))
+})
+
+/** Переключение нижней админ-панели */
+const toggleAdminPanel = () => {
+    adminPanelCollapsed.value = !adminPanelCollapsed.value
+}
 </script>
 
 <template>
@@ -278,16 +663,17 @@ const gridCols = computed(() => {
         <!-- Шапка -->
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
+        <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
                 <!-- Левая колонка -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 sm:mt-16 pl-3 transition-all duration-300"
+                    class="shrink-0 mt-12 sm:mt-16 transition-all duration-300"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebarSchool
                         :track-tree="trackTree"
+                        :collapsed="leftCollapsed"
                         @collapsed="leftCollapsed = $event"
                     />
                 </aside>
@@ -333,6 +719,7 @@ const gridCols = computed(() => {
 
                         <!-- Поиск, количество, сортировка, вид -->
                         <EntityPageToolbar
+                            v-if="useServerProcessing"
                             v-model="q"
                             :found="coursesFound"
                             :view-mode="viewMode"
@@ -343,13 +730,30 @@ const gridCols = computed(() => {
                             :search-placeholder="t('searchByName')"
                             @submit="submitSearch"
                             @reset="resetSearch"
-                            @update:viewMode="viewMode = $event"
-                            @update:sortValue="sort = $event"
+                            @update:viewMode="updateViewMode"
+                            @update:sortValue="updateSort"
                         />
+
+                        <FrontendEntityPageToolbar
+                            v-else
+                            v-model="q"
+                            :found="sortedCourses.length"
+                            :view-mode="viewMode"
+                            :sort-value="sort"
+                            :sort-options="courseSortOptions"
+                            :default-sort="DEFAULT_SORT"
+                            :found-label="t('courses')"
+                            :search-placeholder="t('searchByName')"
+                            @reset="resetSearch"
+                            @update:viewMode="updateViewMode"
+                            @update:sortValue="updateSort"
+                        />
+
+                        <div ref="scrollTarget"></div>
 
                         <!-- Нет данных -->
                         <div
-                            v-if="coursesData.length === 0"
+                            v-if="displayedCourses.length === 0"
                             class="mt-6 text-center text-slate-700 dark:text-slate-300"
                         >
                             {{ t('noData') }}
@@ -359,24 +763,32 @@ const gridCols = computed(() => {
                         <div v-else>
                             <InstructorCourseGrid
                                 v-if="viewMode === 'grid'"
-                                :courses="coursesData"
+                                :courses="displayedCourses"
                                 :cols="gridCols"
                             />
 
                             <InstructorCourseRows
                                 v-else
-                                :courses="coursesData"
+                                :courses="displayedCourses"
                             />
                         </div>
 
                         <!-- Пагинация -->
                         <Pagination
+                            v-if="useServerProcessing"
                             :current-page="currentPage"
                             :last-page="lastPage"
                             :found="coursesFound"
                             @prev="goPrev"
                             @next="goNext"
                             @go="goToPage"
+                        />
+
+                        <FrontendPagination
+                            v-else
+                            v-model:currentPage="frontendCurrentPage"
+                            :items-per-page="perPage"
+                            :total-items="sortedCourses.length"
                         />
 
                         <!-- Главные видео, баннеры -->
@@ -388,10 +800,13 @@ const gridCols = computed(() => {
                 <!-- Правая колонка -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-16 pr-3 transition-all duration-300"
+                    class="shrink-0 lg:mt-16 transition-all duration-300"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
-                    <RightSidebarSchool @collapsed="rightCollapsed = $event" />
+                    <RightSidebarSchool
+                        :collapsed="rightCollapsed"
+                        @collapsed="rightCollapsed = $event"
+                    />
                 </aside>
             </main>
         </div>
@@ -399,5 +814,68 @@ const gridCols = computed(() => {
         <!-- Подвал и кнопка с прогрессом -->
         <FooterBlog />
         <Progress />
+
+        <!-- Нижняя панель администратора -->
+        <div
+            v-if="isAdmin"
+            class="fixed bottom-0 left-0 right-0 z-[9999]"
+        >
+            <button
+                type="button"
+                class="absolute left-1/2 -translate-x-1/2
+                       flex h-3 w-6 items-center justify-center
+                       rounded-t-full border border-b-0
+                       border-slate-400/60
+                       bg-slate-300/95 dark:bg-slate-700/95
+                       text-slate-700 dark:text-slate-300
+                       shadow-md backdrop-blur-md
+                       hover:text-indigo-600 dark:hover:text-indigo-300"
+                :class="adminPanelCollapsed ? 'bottom-0' : 'bottom-8'"
+                :title="adminPanelCollapsed ? t('show') : t('hide')"
+                @click="toggleAdminPanel"
+            >
+                <svg
+                    class="h-3 w-3 transition-transform duration-300"
+                    :class="adminPanelCollapsed ? 'rotate-180' : ''"
+                    fill="currentColor"
+                    viewBox="0 0 320 512"
+                >
+                    <path
+                        d="M182.6 137.4c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-9.2 9.2-11.9 22.9-6.9 34.9S19.1 320 32 320h256c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-128-128z"
+                    />
+                </svg>
+            </button>
+
+            <div
+                class="h-8 flex items-center justify-between px-3
+                       border-t border-slate-400/40
+                       bg-slate-300/90 dark:bg-slate-700/90
+                       backdrop-blur-md text-[11px] text-slate-100
+                       transition-transform duration-300"
+                :class="adminPanelCollapsed ? 'translate-y-full' : 'translate-y-0'"
+            >
+                <div class="flex items-center gap-2">
+                    <Link
+                        :href="route('admin.index')"
+                        class="bg-gray-200 dark:bg-gray-800 rounded-sm px-2 py-0.5
+                               border-2 border-slate-500 hover:border-indigo-500"
+                    >
+                <span class="text-slate-700 dark:text-slate-300
+                             hover:text-indigo-700 hover:dark:text-indigo-300">
+                    {{ t('adminPanel') }}
+                </span>
+                    </Link>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <ProcessingModeSwitcher
+                        setting-key="publicSchoolCoursesProcessingMode"
+                        :mode="publicSchoolCoursesProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="coursesCount"
+                    />
+                </div>
+            </div>
+        </div>
     </DefaultLayout>
 </template>

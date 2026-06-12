@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
+use App\Services\Admin\ProcessingModeService;
+use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
 use App\Traits\Public\WithUserLikesTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -27,67 +30,67 @@ class SchoolModuleController extends Controller
     {
         $locale = app()->getLocale();
 
+        $settings = app(PublicSettingsService::class);
+
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolModulesPerPage', 6)
+            $settings->int('publicSchoolModulesPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicSchoolModulesDefaultSort', 'idDesc')
+            $settings->string('publicSchoolModulesDefaultSort', 'idDesc')
         );
 
         $view = $this->resolveView(
             $request,
-            (string) config('site_settings.publicSchoolModulesDefaultView', 'grid')
+            $settings->string('publicSchoolModulesDefaultView', 'grid')
         );
 
         $processingMode = $this->resolveProcessingMode(
-            (string) config('site_settings.publicSchoolModulesProcessingMode', 'server')
+            $settings->string('publicSchoolModulesProcessingMode', 'server')
         );
 
-        $modules = SchoolModule::query()
+        $modulesCount = SchoolModule::query()
             ->forPublic($locale)
-            ->search($search, $locale)
-            ->with([
-                'translation',
-                'translations',
-                'images',
+            ->count();
 
-                'course.translation',
-                'course.translations',
-                'course.images',
-                'course.instructorProfile.translation',
-                'course.instructorProfile.translations',
-                'course.instructorProfile.images',
-            ])
-            ->withCount([
-                'lessons',
-                'likes',
-                'images',
-            ])
-            ->sortByParam($sort, $locale)
-            ->paginate($perPage)
-            ->withQueryString();
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $modulesCount,
+                300
+            );
 
-        $modules = $this->appendUserLikes(
-            $modules,
-            SchoolModuleResource::class
+        $modules = $this->getIndexModules(
+            locale: $locale,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPage,
+            sort: $sort,
+            search: $search,
         );
+
+        $modulesFound = $useServerProcessing
+            ? $modules->total()
+            : $modules->count();
+
+        $modules = $useServerProcessing
+            ? $this->appendUserLikes($modules, SchoolModuleResource::class)
+            : SchoolModuleResource::collection($modules);
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/School/SchoolModules/Index', [
+            'publicSchoolModulesProcessingMode' => $processingMode,
+            'useServerProcessing' => $useServerProcessing,
+
             'modules' => $modules,
 
-            'modulesCount' => SchoolModule::query()
-                ->forPublic($locale)
-                ->count(),
-
-            'modulesFound' => $modules->total(),
+            'modulesCount' => $modulesCount,
+            'modulesFound' => $modulesFound,
 
             'filters' => $this->buildIndexFilters(
                 $search,
@@ -215,5 +218,52 @@ class SchoolModuleController extends Controller
             'success' => true,
             'likes' => $module->likes()->count(),
         ]);
+    }
+
+    /** Базовый запрос для списка публичных модулей. */
+    private function indexQuery(string $locale): Builder
+    {
+        return SchoolModule::query()
+            ->forPublic($locale)
+            ->with([
+                'translation',
+                'translations',
+                'images',
+
+                'course.translation',
+                'course.translations',
+                'course.images',
+                'course.instructorProfile.translation',
+                'course.instructorProfile.translations',
+                'course.instructorProfile.images',
+            ])
+            ->withCount([
+                'lessons',
+                'likes',
+                'images',
+            ]);
+    }
+
+    /** Получение списка публичных модулей по активному режиму обработки. */
+    private function getIndexModules(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery($locale);
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

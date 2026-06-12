@@ -89,8 +89,8 @@ const coursesData = computed(() => {
 
 /** Количество элементов на странице для обоих режимов */
 const perPage = computed(() => {
-    const val = Number(props.filters?.per_page ?? 12)
-    return Number.isFinite(val) ? val : 12
+    const val = Number(props.filters?.per_page ?? 6)
+    return Number.isFinite(val) ? val : 6
 })
 
 /** Поисковая строка для server/frontend */

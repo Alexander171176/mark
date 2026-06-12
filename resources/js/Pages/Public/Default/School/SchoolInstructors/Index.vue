@@ -18,6 +18,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
 import DefaultLayout from '@/Layouts/DefaultLayout.vue'
 import Navbar from '@/Partials/Default/Navbar.vue'
@@ -32,68 +33,97 @@ import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionB
 
 import InstructorGrid from '@/Components/Public/Default/School/SchoolInstructor/InstructorGrid.vue'
 import InstructorRows from '@/Components/Public/Default/School/SchoolInstructor/InstructorRows.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
+import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 
 const { t } = useI18n()
 
+/** Props страницы */
 const props = defineProps({
-    title: String,
-    canLogin: Boolean,
-    canRegister: Boolean,
+    locale: { type: String, default: 'ru' },
+
+    useServerProcessing: { type: Boolean, default: false },
+    publicSchoolInstructorsProcessingMode: { type: String, default: 'server' },
+
+    title: { type: String, default: '' },
+    canLogin: { type: Boolean, default: false },
+    canRegister: { type: Boolean, default: false },
 
     trackTree: { type: Array, default: () => [] },
 
-    instructorProfiles: { type: Object, default: () => ({}) },
+    instructorProfiles: { type: [Array, Object], default: () => [] },
     instructorProfilesCount: { type: Number, default: 0 },
     instructorProfilesFound: { type: Number, default: 0 },
+
     filters: { type: Object, default: () => ({}) },
 
     tags: { type: Array, default: () => [] },
-    mainVideos: { type: Array, default: () => [] },
-    mainBanners: { type: Array, default: () => [] },
-    locale: { type: String, default: 'ru', },
+    mainVideos: { type: [Array, Object], default: () => [] },
+    mainBanners: { type: [Array, Object], default: () => [] },
 })
 
-/** Иерархия треков */
+/** Глобальные данные страницы */
+const page = usePage()
+
+/** Глобальные настройки сайта */
+const siteSettings = page.props?.siteSettings || {}
+
+/** Роль администратора для нижней служебной панели */
+const isAdmin = computed(() => page.props?.isAdmin === true)
+
+/** Дерево треков для левого аккордеона */
 const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
 
-/** Режим показа */
-const VIEW_KEY = 'public_view'
-const viewMode = ref(localStorage.getItem(VIEW_KEY) || 'grid')
+/** Универсальный список инструкторов: server paginator data или frontend array */
+const instructorsData = computed(() => {
+    if (Array.isArray(props.instructorProfiles)) {
+        return props.instructorProfiles
+    }
 
+    if (Array.isArray(props.instructorProfiles?.data)) {
+        return props.instructorProfiles.data
+    }
+
+    return []
+})
+
+/** Количество элементов на странице для обоих режимов */
+const perPage = computed(() => {
+    const value = Number(props.filters?.per_page ?? 6)
+
+    return Number.isFinite(value) ? value : 6
+})
+
+/** Поисковая строка для server/frontend */
+const q = ref(String(props.filters?.q ?? ''))
+
+/** Сортировка по умолчанию для server/frontend */
+const DEFAULT_SORT = 'idDesc'
+
+/** Текущая сортировка для server/frontend */
+const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
+
+/** Ключ локального хранения режима отображения */
+const VIEW_KEY = 'public_school_instructors_view'
+
+/** Режим отображения карточки/строки для server/frontend */
+const viewMode = ref(
+    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
+)
+
+/** Сохраняем режим отображения локально */
 watch(viewMode, (value) => {
     localStorage.setItem(VIEW_KEY, value)
 })
 
-/** Данные */
-const instructorsData = computed(() => {
-    const data = props.instructorProfiles?.data
-    return Array.isArray(data) ? data : []
-})
-
-/** Пагинация */
-const currentPage = computed(() => {
-    return Number(props.instructorProfiles?.meta?.current_page ?? props.instructorProfiles?.current_page ?? 1) || 1
-})
-
-const lastPage = computed(() => {
-    return Number(props.instructorProfiles?.meta?.last_page ?? props.instructorProfiles?.last_page ?? 1) || 1
-})
-
-const perPage = computed(() => {
-    const value = Number(props.filters?.per_page ?? 12)
-    return Number.isFinite(value) ? value : 12
-})
-
-/** Поиск */
-const q = ref(String(props.filters?.q ?? ''))
-
-/** Сортировка */
-const DEFAULT_SORT = 'idDesc'
-const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
-
+/** Опции сортировки для toolbar */
 const instructorSortOptions = [
     { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
     { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+
+    { value: 'idDesc', label: t('idDesc') },
+    { value: 'idAsc', label: t('idAsc') },
 
     { value: 'titleAsc', label: `${t('title')} A→Z` },
     { value: 'titleDesc', label: `${t('title')} Z→A` },
@@ -101,11 +131,11 @@ const instructorSortOptions = [
     { value: 'viewsDesc', label: `${t('views')} 9→0` },
     { value: 'viewsAsc', label: `${t('views')} 0→9` },
 
-    { value: 'ratingAvgDesc', label: `${t('rating')} 9→0` },
-    { value: 'ratingAvgAsc', label: `${t('rating')} 0→9` },
+    { value: 'ratingCountDesc', label: `${t('rating')} 5→0` },
+    { value: 'ratingCountAsc', label: `${t('rating')} 0→5` },
 
-    { value: 'ratingCountDesc', label: `${t('rating')} count 9→0` },
-    { value: 'ratingCountAsc', label: `${t('rating')} count 0→9` },
+    { value: 'ratingAvgDesc', label: `${t('rating')} ${t('instructor')} 9→0` },
+    { value: 'ratingAvgAsc', label: `${t('rating')} ${t('instructor')} 0→9` },
 
     { value: 'experienceDesc', label: `${t('experienceYears')} 9→0` },
     { value: 'experienceAsc', label: `${t('experienceYears')} 0→9` },
@@ -117,81 +147,329 @@ const instructorSortOptions = [
     { value: 'dateAsc', label: `${t('createdAt')} ↑` },
 ]
 
-/** Поисковый запрос */
-const submitSearch = () => {
+/* ===================== FRONTEND MODE ===================== */
+
+/** Текущая страница локальной пагинации frontend */
+const frontendCurrentPage = ref(1)
+
+/** Цель плавного скролла при frontend-пагинации */
+const {
+    targetRef: scrollTarget,
+    scrollToTarget,
+} = useSmoothScrollTo({
+    offset: 80,
+    duration: 1200,
+})
+
+/** Нормализация текста для локального поиска frontend */
+const normalizeText = (value) => {
+    return String(value ?? '').toLowerCase()
+}
+
+/** Получение названия инструктора из разных возможных структур ресурса */
+const getInstructorTitle = (instructor) => {
+    return instructor.title
+        || instructor.name
+        || instructor.full_name
+        || instructor.user?.name
+        || instructor.translation?.title
+        || instructor.translation?.name
+        || instructor.current_translation?.title
+        || instructor.current_translation?.name
+        || instructor.translations?.[0]?.title
+        || instructor.translations?.[0]?.name
+        || ''
+}
+
+/** Получение краткого текста инструктора */
+const getInstructorShort = (instructor) => {
+    return instructor.short
+        || instructor.description
+        || instructor.subtitle
+        || instructor.translation?.short
+        || instructor.translation?.description
+        || instructor.translation?.subtitle
+        || instructor.current_translation?.short
+        || instructor.current_translation?.description
+        || instructor.current_translation?.subtitle
+        || instructor.translations?.[0]?.short
+        || instructor.translations?.[0]?.description
+        || instructor.translations?.[0]?.subtitle
+        || ''
+}
+
+/** Получение slug инструктора */
+const getInstructorSlug = (instructor) => {
+    return instructor.slug
+        || instructor.url
+        || instructor.translation?.slug
+        || instructor.current_translation?.slug
+        || instructor.translations?.[0]?.slug
+        || ''
+}
+
+/** Локальный поиск frontend */
+const filteredInstructors = computed(() => {
+    const query = normalizeText(q.value).trim()
+
+    if (!query) {
+        return instructorsData.value
+    }
+
+    return instructorsData.value.filter((instructor) => {
+        return [
+            getInstructorTitle(instructor),
+            getInstructorShort(instructor),
+            getInstructorSlug(instructor),
+            instructor.user?.name,
+            instructor.user?.email,
+        ].some((value) => normalizeText(value).includes(query))
+    })
+})
+
+/** Локальная сортировка frontend */
+const sortedInstructors = computed(() => {
+    const list = [...filteredInstructors.value]
+
+    return list.sort((a, b) => {
+        switch (sort.value) {
+            case 'sortAsc':
+                return (a.sort ?? 0) - (b.sort ?? 0)
+
+            case 'sortDesc':
+                return (b.sort ?? 0) - (a.sort ?? 0)
+
+            case 'idAsc':
+                return (a.id ?? 0) - (b.id ?? 0)
+
+            case 'idDesc':
+                return (b.id ?? 0) - (a.id ?? 0)
+
+            case 'titleAsc':
+            case 'nameAsc':
+                return normalizeText(getInstructorTitle(a))
+                    .localeCompare(normalizeText(getInstructorTitle(b)))
+
+            case 'titleDesc':
+            case 'nameDesc':
+                return normalizeText(getInstructorTitle(b))
+                    .localeCompare(normalizeText(getInstructorTitle(a)))
+
+            case 'viewsAsc':
+                return (a.views ?? 0) - (b.views ?? 0)
+
+            case 'viewsDesc':
+                return (b.views ?? 0) - (a.views ?? 0)
+
+            case 'ratingAvgAsc':
+                return (a.rating_avg ?? 0) - (b.rating_avg ?? 0)
+
+            case 'ratingAvgDesc':
+                return (b.rating_avg ?? 0) - (a.rating_avg ?? 0)
+
+            case 'ratingCountAsc':
+                return (a.rating_count ?? 0) - (b.rating_count ?? 0)
+
+            case 'ratingCountDesc':
+                return (b.rating_count ?? 0) - (a.rating_count ?? 0)
+
+            case 'experienceAsc':
+                return (a.experience_years ?? 0) - (b.experience_years ?? 0)
+
+            case 'experienceDesc':
+                return (b.experience_years ?? 0) - (a.experience_years ?? 0)
+
+            case 'coursesAsc':
+                return (a.courses_count ?? 0) - (b.courses_count ?? 0)
+
+            case 'coursesDesc':
+                return (b.courses_count ?? 0) - (a.courses_count ?? 0)
+
+            case 'dateAsc':
+                return new Date(a.published_at ?? a.created_at ?? 0) -
+                    new Date(b.published_at ?? b.created_at ?? 0)
+
+            case 'dateDesc':
+                return new Date(b.published_at ?? b.created_at ?? 0) -
+                    new Date(a.published_at ?? a.created_at ?? 0)
+
+            default:
+                return 0
+        }
+    })
+})
+
+/** Локальная пагинация frontend */
+const frontendPaginatedInstructors = computed(() => {
+    const start = (frontendCurrentPage.value - 1) * perPage.value
+
+    return sortedInstructors.value.slice(start, start + perPage.value)
+})
+
+/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+watch([q, sort, viewMode], () => {
+    frontendCurrentPage.value = 1
+})
+
+/** Плавно возвращаемся к началу списка при frontend-пагинации */
+watch(frontendCurrentPage, () => {
+    if (!props.useServerProcessing) {
+        scrollToTarget()
+    }
+})
+
+/* ===================== SERVER MODE ===================== */
+
+/** Текущая страница server-пагинации */
+const currentPage = computed(() => {
+    return Number(
+        props.instructorProfiles?.meta?.current_page ??
+        props.instructorProfiles?.current_page ?? 1) || 1
+})
+
+/** Последняя страница server-пагинации */
+const lastPage = computed(() => {
+    return Number(
+        props.instructorProfiles?.meta?.last_page ??
+        props.instructorProfiles?.last_page ?? 1) || 1
+})
+
+/** Маршрут списка рубрик для server-режима */
+const indexRoute = () => route('public.schoolInstructors.index')
+
+/** Server-загрузка рубрик с query-параметрами */
+const reloadInstructors = (page = 1) => {
     router.get(
-        route('public.schoolInstructors.index', { locale: props.locale }),
+        indexRoute(),
         {
             q: q.value || undefined,
             sort: sort.value || undefined,
+            view: viewMode.value || undefined,
             per_page: perPage.value,
-            page: 1,
+            page,
         },
-        { preserveState: true, replace: true, preserveScroll: true }
+        {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+        }
     )
 }
 
-/** Сброс поиска */
+/** Server-поиск */
+const submitSearch = () => {
+    reloadInstructors(1)
+}
+
+/** Сброс поиска и сортировки для обоих режимов */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
+    frontendCurrentPage.value = 1
 
-    router.get(
-        route('public.schoolInstructors.index', { locale: props.locale }),
-        {
-            per_page: perPage.value,
-            sort: sort.value,
-            page: 1,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+    if (props.useServerProcessing) {
+        reloadInstructors(1)
+    }
 }
 
-/** Пагинация */
+/** Server-изменение сортировки */
+const updateSort = (value) => {
+    sort.value = value || DEFAULT_SORT
+
+    if (props.useServerProcessing) {
+        reloadInstructors(1)
+    }
+}
+
+/** Изменение режима отображения для обоих режимов */
+const updateViewMode = (value) => {
+    viewMode.value = value || 'grid'
+
+    if (props.useServerProcessing) {
+        reloadInstructors(currentPage.value)
+    }
+}
+
+/** Server-переход на страницу */
 const goToPage = (page) => {
-    const p = Number(page)
-    if (!Number.isFinite(p)) return
+    const value = Number(page)
 
-    const safe = Math.max(1, Math.min(p, lastPage.value))
+    if (!Number.isFinite(value)) return
 
-    router.get(
-        route('public.schoolInstructors.index', { locale: props.locale }),
-        {
-            q: q.value || undefined,
-            sort: sort.value || undefined,
-            per_page: perPage.value,
-            page: safe,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+    const safePage = Math.max(1, Math.min(value, lastPage.value))
+
+    reloadInstructors(safePage)
 }
 
+/** Server-предыдущая страница */
 const goPrev = () => {
     if (currentPage.value <= 1) return
     goToPage(currentPage.value - 1)
 }
 
+/** Server-следующая страница */
 const goNext = () => {
     if (currentPage.value >= lastPage.value) return
     goToPage(currentPage.value + 1)
 }
 
-/** Показ/скрытие колонок */
-const { siteSettings } = usePage().props
+/* ===================== COMMON VIEW ===================== */
 
-const showLeft = computed(() =>
-    !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+/** Итоговый список для отображения: server data или frontend page */
+const displayedInstructors = computed(() => {
+    return props.useServerProcessing
+        ? instructorsData.value
+        : frontendPaginatedInstructors.value
+})
+
+/** Показ левой колонки */
+const showLeft = computed(() => {
+    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+})
+
+/** Показ правой колонки */
+const showRight = computed(() => {
+    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+})
+
+/** Ключ localStorage для левого сайдбара */
+const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
+
+/** Ключ localStorage для правого сайдбара */
+const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
+
+/** Получение boolean из localStorage */
+const getStoredBoolean = (key, defaultValue = false) => {
+    const value = localStorage.getItem(key)
+
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+/** Состояние левого сайдбара */
+const leftCollapsed = ref(
+    getStoredBoolean(LEFT_SIDEBAR_KEY, false)
 )
 
-const showRight = computed(() =>
-    !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+/** Состояние правого сайдбара */
+const rightCollapsed = ref(
+    getStoredBoolean(RIGHT_SIDEBAR_KEY, false)
 )
 
-/** Состояние сайдбаров */
-const leftCollapsed = ref(false)
-const rightCollapsed = ref(false)
+/** Сохраняем состояние левого сайдбара */
+watch(leftCollapsed, (value) => {
+    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
+})
 
-/** Колонки сетки */
+/** Сохраняем состояние правого сайдбара */
+watch(rightCollapsed, (value) => {
+    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
+})
+
+/** Количество колонок сетки с учётом сайдбаров */
 const instructorGridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
     const rightExpanded = showRight.value && !rightCollapsed.value
@@ -208,6 +486,24 @@ const normalizeList = (value) => {
 
 const mainVideosList = computed(() => normalizeList(props.mainVideos))
 const mainBannersList = computed(() => normalizeList(props.mainBanners))
+
+/** Ключ localStorage для нижней админ-панели */
+const ADMIN_PANEL_KEY = 'public_admin_panel_collapsed'
+
+/** Состояние нижней админ-панели */
+const adminPanelCollapsed = ref(
+    getStoredBoolean(ADMIN_PANEL_KEY, false)
+)
+
+/** Сохраняем состояние нижней админ-панели */
+watch(adminPanelCollapsed, (value) => {
+    localStorage.setItem(ADMIN_PANEL_KEY, String(value))
+})
+
+/** Переключение нижней админ-панели */
+const toggleAdminPanel = () => {
+    adminPanelCollapsed.value = !adminPanelCollapsed.value
+}
 </script>
 
 <template>
@@ -238,16 +534,17 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
     <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
+        <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
                 <!-- LEFT -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 sm:mt-16 pl-3 transition-all duration-300"
+                    class="shrink-0 mt-12 sm:mt-16 transition-all duration-300"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebarSchool
                         :track-tree="trackTree"
+                        :collapsed="leftCollapsed"
                         @collapsed="leftCollapsed = $event"
                     />
                 </aside>
@@ -293,20 +590,41 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
 
                         <!-- Toolbar -->
                         <EntityPageToolbar
+                            v-if="useServerProcessing"
                             v-model="q"
                             :found="instructorProfilesFound"
                             :view-mode="viewMode"
                             :sort-value="sort"
                             :sort-options="instructorSortOptions"
+                            :default-sort="DEFAULT_SORT"
+                            :found-label="t('instructors')"
+                            :search-placeholder="t('searchByName')"
                             @submit="submitSearch"
                             @reset="resetSearch"
-                            @update:viewMode="viewMode = $event"
-                            @update:sortValue="sort = $event"
+                            @update:viewMode="updateViewMode"
+                            @update:sortValue="updateSort"
                         />
+
+                        <FrontendEntityPageToolbar
+                            v-else
+                            v-model="q"
+                            :found="sortedInstructors.length"
+                            :view-mode="viewMode"
+                            :sort-value="sort"
+                            :sort-options="instructorSortOptions"
+                            :default-sort="DEFAULT_SORT"
+                            :found-label="t('instructors')"
+                            :search-placeholder="t('searchByName')"
+                            @reset="resetSearch"
+                            @update:viewMode="updateViewMode"
+                            @update:sortValue="updateSort"
+                        />
+
+                        <div ref="scrollTarget"></div>
 
                         <!-- Empty -->
                         <div
-                            v-if="instructorsData.length === 0"
+                            v-if="displayedInstructors.length === 0"
                             class="mt-6 text-center text-slate-700 dark:text-slate-300"
                         >
                             {{ t('noData') }}
@@ -316,23 +634,32 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                         <div v-else>
                             <InstructorGrid
                                 v-if="viewMode === 'grid'"
-                                :instructors="instructorsData"
+                                :instructors="displayedInstructors"
                                 :cols="instructorGridCols"
                             />
+
                             <InstructorRows
                                 v-else
-                                :instructors="instructorsData"
+                                :instructors="displayedInstructors"
                             />
                         </div>
 
                         <!-- Пагинация -->
                         <Pagination
+                            v-if="useServerProcessing"
                             :current-page="currentPage"
                             :last-page="lastPage"
                             :found="instructorProfilesFound"
                             @prev="goPrev"
                             @next="goNext"
                             @go="goToPage"
+                        />
+
+                        <FrontendPagination
+                            v-else
+                            v-model:currentPage="frontendCurrentPage"
+                            :items-per-page="perPage"
+                            :total-items="sortedInstructors.length"
                         />
 
                         <SectionVideoList :videos="mainVideosList" />
@@ -343,15 +670,82 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                 <!-- RIGHT -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-16 pr-3 transition-all duration-300"
+                    class="shrink-0 lg:mt-16 transition-all duration-300"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
-                    <RightSidebarSchool @collapsed="rightCollapsed = $event" />
+                    <RightSidebarSchool
+                        :collapsed="rightCollapsed"
+                        @collapsed="rightCollapsed = $event"
+                    />
                 </aside>
             </main>
         </div>
 
+        <!-- Подвал и кнопка с прогрессом -->
         <FooterBlog />
         <Progress />
+
+        <!-- Нижняя панель администратора -->
+        <div
+            v-if="isAdmin"
+            class="fixed bottom-0 left-0 right-0 z-[9999]"
+        >
+            <button
+                type="button"
+                class="absolute left-1/2 -translate-x-1/2
+                       flex h-3 w-6 items-center justify-center
+                       rounded-t-full border border-b-0
+                       border-slate-400/60
+                       bg-slate-300/95 dark:bg-slate-700/95
+                       text-slate-700 dark:text-slate-300
+                       shadow-md backdrop-blur-md
+                       hover:text-indigo-600 dark:hover:text-indigo-300"
+                :class="adminPanelCollapsed ? 'bottom-0' : 'bottom-8'"
+                :title="adminPanelCollapsed ? t('show') : t('hide')"
+                @click="toggleAdminPanel"
+            >
+                <svg
+                    class="h-3 w-3 transition-transform duration-300"
+                    :class="adminPanelCollapsed ? 'rotate-180' : ''"
+                    fill="currentColor"
+                    viewBox="0 0 320 512"
+                >
+                    <path
+                        d="M182.6 137.4c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-9.2 9.2-11.9 22.9-6.9 34.9S19.1 320 32 320h256c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-128-128z"
+                    />
+                </svg>
+            </button>
+
+            <div
+                class="h-8 flex items-center justify-between px-3
+                       border-t border-slate-400/40
+                       bg-slate-300/90 dark:bg-slate-700/90
+                       backdrop-blur-md text-[11px] text-slate-100
+                       transition-transform duration-300"
+                :class="adminPanelCollapsed ? 'translate-y-full' : 'translate-y-0'"
+            >
+                <div class="flex items-center gap-2">
+                    <Link
+                        :href="route('admin.index')"
+                        class="bg-gray-200 dark:bg-gray-800 rounded-sm px-2 py-0.5
+                               border-2 border-slate-500 hover:border-indigo-500"
+                    >
+                <span class="text-slate-700 dark:text-slate-300
+                             hover:text-indigo-700 hover:dark:text-indigo-300">
+                    {{ t('adminPanel') }}
+                </span>
+                    </Link>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <ProcessingModeSwitcher
+                        setting-key="publicSchoolInstructorsProcessingMode"
+                        :mode="publicSchoolInstructorsProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="instructorProfilesCount"
+                    />
+                </div>
+            </div>
+        </div>
     </DefaultLayout>
 </template>

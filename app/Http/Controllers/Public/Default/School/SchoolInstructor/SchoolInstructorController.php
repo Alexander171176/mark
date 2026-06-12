@@ -7,10 +7,13 @@ use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseResource;
 use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
+use App\Services\Admin\ProcessingModeService;
+use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
 use App\Traits\Public\WithUserLikesTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,55 +30,65 @@ class SchoolInstructorController extends Controller
     {
         $locale = app()->getLocale();
 
+        $settings = app(PublicSettingsService::class);
+
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolInstructorsPerPage', 20)
+            $settings->int('publicSchoolInstructorsPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicSchoolInstructorsDefaultSort', 'idDesc')
+            $settings->string('publicSchoolInstructorsDefaultSort', 'idDesc')
         );
 
         $view = $this->resolveView(
             $request,
-            (string) config('site_settings.publicSchoolInstructorsDefaultView', 'grid')
+            $settings->string('publicSchoolInstructorsDefaultView', 'grid')
         );
 
         $processingMode = $this->resolveProcessingMode(
-            (string) config('site_settings.publicSchoolInstructorsProcessingMode', 'server')
+            $settings->string('publicSchoolInstructorsProcessingMode', 'server')
         );
 
-        $instructorProfiles = SchoolInstructorProfile::query()
+        $instructorProfilesCount = SchoolInstructorProfile::query()
             ->forPublic($locale)
-            ->search($search, $locale)
-            ->with([
-                'translation',
-                'translations',
-                'user:id,name,email',
-                'images',
-            ])
-            ->withCount([
-                'courses',
-                'payouts',
-            ])
-            ->sortByParam($sort, $locale)
-            ->paginate($perPage)
-            ->withQueryString();
+            ->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $instructorProfilesCount,
+                300
+            );
+
+        $instructorProfiles = $this->getIndexInstructorProfiles(
+            locale: $locale,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPage,
+            sort: $sort,
+            search: $search,
+        );
+
+        $instructorProfilesFound = $useServerProcessing
+            ? $instructorProfiles->total()
+            : $instructorProfiles->count();
+
+        $instructorProfiles = SchoolInstructorProfileResource::collection($instructorProfiles);
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/School/SchoolInstructors/Index', [
-            'instructorProfiles' => SchoolInstructorProfileResource::collection($instructorProfiles),
+            'publicSchoolInstructorsProcessingMode' => $processingMode,
+            'useServerProcessing' => $useServerProcessing,
 
-            'instructorProfilesCount' => SchoolInstructorProfile::query()
-                ->forPublic($locale)
-                ->count(),
+            'instructorProfiles' => $instructorProfiles,
 
-            'instructorProfilesFound' => $instructorProfiles->total(),
+            'instructorProfilesCount' => $instructorProfilesCount,
+            'instructorProfilesFound' => $instructorProfilesFound,
 
             'filters' => $this->buildIndexFilters(
                 $search,
@@ -185,5 +198,45 @@ class SchoolInstructorController extends Controller
 
             ...$sidebarData,
         ]);
+    }
+
+    /** Базовый запрос для списка публичных инструкторов. */
+    private function indexQuery(string $locale): Builder
+    {
+        return SchoolInstructorProfile::query()
+            ->forPublic($locale)
+            ->with([
+                'translation',
+                'translations',
+                'user:id,name,email',
+                'images',
+            ])
+            ->withCount([
+                'courses',
+                'payouts',
+            ]);
+    }
+
+    /** Получение списка публичных инструкторов по активному режиму обработки. */
+    private function getIndexInstructorProfiles(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery($locale);
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

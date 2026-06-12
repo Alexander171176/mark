@@ -679,6 +679,7 @@ const toggleAdminPanel = () => {
         <!-- Подвал и кнопка с прогрессом -->
         <FooterBlog />
         <Progress />
+
         <!-- Нижняя панель администратора -->
         <div
             v-if="isAdmin"

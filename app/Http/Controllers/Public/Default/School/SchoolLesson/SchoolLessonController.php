@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Public\Default\School\SchoolLesson;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonResource;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
+use App\Services\Admin\ProcessingModeService;
+use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
 use App\Traits\Public\WithUserLikesTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,75 +29,67 @@ class SchoolLessonController extends Controller
     {
         $locale = app()->getLocale();
 
+        $settings = app(PublicSettingsService::class);
+
         $perPage = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicSchoolLessonsPerPage', 6)
+            $settings->int('publicSchoolLessonsPerPage', 6)
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            (string) config('site_settings.publicSchoolLessonsDefaultSort', 'idDesc')
+            $settings->string('publicSchoolLessonsDefaultSort', 'idDesc')
         );
 
         $view = $this->resolveView(
             $request,
-            (string) config('site_settings.publicSchoolLessonsDefaultView', 'grid')
+            $settings->string('publicSchoolLessonsDefaultView', 'grid')
         );
 
         $processingMode = $this->resolveProcessingMode(
-            (string) config('site_settings.publicSchoolLessonsProcessingMode', 'server')
+            $settings->string('publicSchoolLessonsProcessingMode', 'server')
         );
 
-        $lessons = SchoolLesson::query()
+        $lessonsCount = SchoolLesson::query()
             ->forPublic($locale)
-            ->search($search, $locale)
-            ->with([
-                'translation',
-                'translations',
-                'images',
-                'content',
+            ->count();
 
-                'module.translation',
-                'module.translations',
-                'module.images',
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $lessonsCount,
+                300
+            );
 
-                'module.course.translation',
-                'module.course.translations',
-                'module.course.images',
-                'module.course.instructorProfile.translation',
-                'module.course.instructorProfile.translations',
-                'module.course.instructorProfile.images',
-
-                'hashtags.translation',
-                'hashtags.translations',
-            ])
-            ->withCount([
-                'likes',
-                'hashtags',
-                'images',
-            ])
-            ->sortByParam($sort, $locale)
-            ->paginate($perPage)
-            ->withQueryString();
-
-        $lessons = $this->appendUserLikes(
-            $lessons,
-            SchoolLessonResource::class
+        $lessons = $this->getIndexLessons(
+            locale: $locale,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPage,
+            sort: $sort,
+            search: $search,
         );
+
+        $lessonsFound = $useServerProcessing
+            ? $lessons->total()
+            : $lessons->count();
+
+        $lessons = $useServerProcessing
+            ? $this->appendUserLikes($lessons, SchoolLessonResource::class)
+            : SchoolLessonResource::collection($lessons);
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/School/SchoolLessons/Index', [
+            'publicSchoolLessonsProcessingMode' => $processingMode,
+            'useServerProcessing' => $useServerProcessing,
+
             'lessons' => $lessons,
 
-            'lessonsCount' => SchoolLesson::query()
-                ->forPublic($locale)
-                ->count(),
-
-            'lessonsFound' => $lessons->total(),
+            'lessonsCount' => $lessonsCount,
+            'lessonsFound' => $lessonsFound,
 
             'filters' => $this->buildIndexFilters(
                 $search,
@@ -203,5 +198,60 @@ class SchoolLessonController extends Controller
             'success' => true,
             'likes' => $lesson->likes()->count(),
         ]);
+    }
+
+    /** Базовый запрос для списка публичных уроков. */
+    private function indexQuery(string $locale): Builder
+    {
+        return SchoolLesson::query()
+            ->forPublic($locale)
+            ->with([
+                'translation',
+                'translations',
+                'images',
+                'content',
+
+                'module.translation',
+                'module.translations',
+                'module.images',
+
+                'module.course.translation',
+                'module.course.translations',
+                'module.course.images',
+                'module.course.instructorProfile.translation',
+                'module.course.instructorProfile.translations',
+                'module.course.instructorProfile.images',
+
+                'hashtags.translation',
+                'hashtags.translations',
+            ])
+            ->withCount([
+                'likes',
+                'hashtags',
+                'images',
+            ]);
+    }
+
+    /** Получение списка публичных уроков по активному режиму обработки. */
+    private function getIndexLessons(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery($locale);
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

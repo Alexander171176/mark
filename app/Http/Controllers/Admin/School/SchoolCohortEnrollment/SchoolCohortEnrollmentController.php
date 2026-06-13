@@ -9,8 +9,11 @@ use App\Http\Resources\Admin\School\SchoolCourseSchedule\SchoolCourseScheduleSha
 use App\Models\Admin\School\SchoolCohortEnrollment\SchoolCohortEnrollment;
 use App\Models\Admin\School\SchoolCourseSchedule\SchoolCourseSchedule;
 use App\Models\User;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,77 +47,52 @@ class SchoolCohortEnrollmentController extends Controller
         $scheduleId = $request->query('school_course_schedule_id');
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolCohortEnrollmentsPerPage = $settings->int('site_settings.adminSchoolCohortEnrollmentsPerPage', 6);
-        $adminSchoolCohortEnrollmentsDefaultSort = $settings->string('site_settings.adminSchoolCohortEnrollmentsDefaultSort', 'idDesc');
+
+        $perPage = $settings->int('adminSchoolCohortEnrollmentsPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolCohortEnrollmentsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolCohortEnrollmentsProcessingMode',
+            'frontend'
+        );
+
+        $enrollmentsCount = SchoolCohortEnrollment::query()
+            ->when($status !== null && $status !== '', fn (Builder $q) => $q->where('status', $status))
+            ->when($scheduleId, fn (Builder $q) => $q->where('school_course_schedule_id', (int) $scheduleId))
+            ->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $enrollmentsCount,
+                300
+            );
 
         try {
-            $query = SchoolCohortEnrollment::query()
-                ->with([
-                    'schedule.translation',
-                    'schedule.translations',
-                    'schedule.course.translation',
-                    'schedule.course.translations',
-                    'user:id,name,email',
-                ]);
-
-            if ($status !== null && $status !== '') {
-                $query->where('status', $status);
-            }
-
-            if ($scheduleId) {
-                $query->where('school_course_schedule_id', (int) $scheduleId);
-            }
-
-            match ($adminSchoolCohortEnrollmentsDefaultSort) {
-                'idAsc' => $query->orderBy('id'),
-
-                'enrolledAtAsc' => $query->orderBy('enrolled_at')->orderByDesc('id'),
-                'enrolledAtDesc' => $query->orderByDesc('enrolled_at')->orderByDesc('id'),
-
-                'statusAsc' => $query->orderBy('status')->orderByDesc('id'),
-                'statusDesc' => $query->orderByDesc('status')->orderByDesc('id'),
-
-                'userNameAsc' => $query
-                    ->join('users', 'school_cohort_enrollments.user_id', '=', 'users.id')
-                    ->orderBy('users.name')
-                    ->orderByDesc('school_cohort_enrollments.id')
-                    ->select('school_cohort_enrollments.*'),
-
-                'userNameDesc' => $query
-                    ->join('users', 'school_cohort_enrollments.user_id', '=', 'users.id')
-                    ->orderByDesc('users.name')
-                    ->orderByDesc('school_cohort_enrollments.id')
-                    ->select('school_cohort_enrollments.*'),
-
-                'scheduleTitleAsc' => $query
-                    ->leftJoin('school_course_schedule_translations as sct', function ($join) {
-                        $join->on('school_cohort_enrollments.school_course_schedule_id', '=', 'sct.school_course_schedule_id')
-                            ->where('sct.locale', app()->getLocale());
-                    })
-                    ->orderBy('sct.title')
-                    ->orderByDesc('school_cohort_enrollments.id')
-                    ->select('school_cohort_enrollments.*'),
-
-                'scheduleTitleDesc' => $query
-                    ->leftJoin('school_course_schedule_translations as sct', function ($join) {
-                        $join->on('school_cohort_enrollments.school_course_schedule_id', '=', 'sct.school_course_schedule_id')
-                            ->where('sct.locale', app()->getLocale());
-                    })
-                    ->orderByDesc('sct.title')
-                    ->orderByDesc('school_cohort_enrollments.id')
-                    ->select('school_cohort_enrollments.*'),
-
-                default => $query->orderByDesc('id'),
-            };
-
-            $enrollments = $query->get();
+            $enrollments = $this->getIndexEnrollments(
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+                status: $status,
+                scheduleId: $scheduleId,
+            );
 
             return Inertia::render('Admin/School/SchoolCohortEnrollments/Index', [
-                'enrollments' => SchoolCohortEnrollmentResource::collection($enrollments),
-                'enrollmentsCount' => $enrollments->count(),
+                'useServerProcessing' => $useServerProcessing,
 
-                'adminSchoolCohortEnrollmentsPerPage' => $adminSchoolCohortEnrollmentsPerPage,
-                'adminSchoolCohortEnrollmentsDefaultSort' => $adminSchoolCohortEnrollmentsDefaultSort,
+                'adminSchoolCohortEnrollmentsPerPage' => $perPage,
+                'adminSchoolCohortEnrollmentsDefaultSort' => $defaultSort,
+                'adminSchoolCohortEnrollmentsProcessingMode' => $processingMode,
+
+                'enrollments' => SchoolCohortEnrollmentResource::collection($enrollments),
+                'enrollmentsCount' => $enrollmentsCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'status' => $status,
@@ -130,11 +108,17 @@ class SchoolCohortEnrollmentController extends Controller
             ]);
 
             return Inertia::render('Admin/School/SchoolCohortEnrollments/Index', [
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolCohortEnrollmentsPerPage' => $perPage,
+                'adminSchoolCohortEnrollmentsDefaultSort' => $defaultSort,
+                'adminSchoolCohortEnrollmentsProcessingMode' => $processingMode,
+
                 'enrollments' => [],
                 'enrollmentsCount' => 0,
 
-                'adminSchoolCohortEnrollmentsPerPage' => $adminSchoolCohortEnrollmentsPerPage,
-                'adminSchoolCohortEnrollmentsDefaultSort' => $adminSchoolCohortEnrollmentsDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'status' => $status,
@@ -441,5 +425,170 @@ class SchoolCohortEnrollmentController extends Controller
             ->select('id', 'name', 'email')
             ->orderBy('name')
             ->get();
+    }
+
+    /** Базовый запрос для списка записей на потоки. */
+    private function indexQuery(
+        ?string $status = null,
+        mixed $scheduleId = null
+    ): Builder {
+        return SchoolCohortEnrollment::query()
+            ->with([
+                'schedule.translation',
+                'schedule.translations',
+                'schedule.course.translation',
+                'schedule.course.translations',
+                'user:id,name,email',
+            ])
+            ->when($status !== null && $status !== '', function (Builder $query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->when($scheduleId, function (Builder $query) use ($scheduleId) {
+                $query->where('school_course_schedule_id', (int) $scheduleId);
+            });
+    }
+
+    /** Поиск по записям на потоки. */
+    private function applySearch(Builder $query, string $search): Builder
+    {
+        if ($search === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($search) {
+            $q->where('school_cohort_enrollments.status', 'like', "%{$search}%")
+                ->orWhere('school_cohort_enrollments.notes', 'like', "%{$search}%")
+                ->orWhereHas('user', function (Builder $userQuery) use ($search) {
+                    $userQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                })
+                ->orWhereHas('schedule.translations', function (Builder $scheduleQuery) use ($search) {
+                    $scheduleQuery->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                })
+                ->orWhereHas('schedule.course.translations', function (Builder $courseQuery) use ($search) {
+                    $courseQuery->where('title', 'like', "%{$search}%")
+                        ->orWhere('short', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+        });
+    }
+
+    /** Сортировка записей на потоки. */
+    private function applySort(Builder $query, string $sort): Builder
+    {
+        return match ($sort) {
+            'idAsc' => $query->orderBy('school_cohort_enrollments.id', 'asc'),
+            'idDesc' => $query->orderBy('school_cohort_enrollments.id', 'desc'),
+
+            'enrolledAtAsc' => $query
+                ->orderBy('school_cohort_enrollments.enrolled_at', 'asc')
+                ->orderByDesc('school_cohort_enrollments.id'),
+
+            'enrolledAtDesc' => $query
+                ->orderBy('school_cohort_enrollments.enrolled_at', 'desc')
+                ->orderByDesc('school_cohort_enrollments.id'),
+
+            'statusAsc' => $query
+                ->orderBy('school_cohort_enrollments.status', 'asc')
+                ->orderByDesc('school_cohort_enrollments.id'),
+
+            'statusDesc' => $query
+                ->orderBy('school_cohort_enrollments.status', 'desc')
+                ->orderByDesc('school_cohort_enrollments.id'),
+
+            'userNameAsc' => $query
+                ->join('users as users_sort', 'school_cohort_enrollments.user_id', '=', 'users_sort.id')
+                ->orderBy('users_sort.name', 'asc')
+                ->orderByDesc('school_cohort_enrollments.id')
+                ->select('school_cohort_enrollments.*'),
+
+            'userNameDesc' => $query
+                ->join('users as users_sort', 'school_cohort_enrollments.user_id', '=', 'users_sort.id')
+                ->orderBy('users_sort.name', 'desc')
+                ->orderByDesc('school_cohort_enrollments.id')
+                ->select('school_cohort_enrollments.*'),
+
+            'userEmailAsc' => $query
+                ->join('users as users_sort', 'school_cohort_enrollments.user_id', '=', 'users_sort.id')
+                ->orderBy('users_sort.email', 'asc')
+                ->orderByDesc('school_cohort_enrollments.id')
+                ->select('school_cohort_enrollments.*'),
+
+            'userEmailDesc' => $query
+                ->join('users as users_sort', 'school_cohort_enrollments.user_id', '=', 'users_sort.id')
+                ->orderBy('users_sort.email', 'desc')
+                ->orderByDesc('school_cohort_enrollments.id')
+                ->select('school_cohort_enrollments.*'),
+
+            'scheduleTitleAsc' => $query
+                ->leftJoin('school_course_schedule_translations as sct_sort', function ($join) {
+                    $join->on(
+                        'school_cohort_enrollments.school_course_schedule_id',
+                        '=',
+                        'sct_sort.school_course_schedule_id'
+                    )->where('sct_sort.locale', '=', app()->getLocale());
+                })
+                ->orderBy('sct_sort.title', 'asc')
+                ->orderByDesc('school_cohort_enrollments.id')
+                ->select('school_cohort_enrollments.*'),
+
+            'scheduleTitleDesc' => $query
+                ->leftJoin('school_course_schedule_translations as sct_sort', function ($join) {
+                    $join->on(
+                        'school_cohort_enrollments.school_course_schedule_id',
+                        '=',
+                        'sct_sort.school_course_schedule_id'
+                    )->where('sct_sort.locale', '=', app()->getLocale());
+                })
+                ->orderBy('sct_sort.title', 'desc')
+                ->orderByDesc('school_cohort_enrollments.id')
+                ->select('school_cohort_enrollments.*'),
+
+            'createdAtAsc' => $query
+                ->orderBy('school_cohort_enrollments.created_at', 'asc')
+                ->orderByDesc('school_cohort_enrollments.id'),
+
+            'createdAtDesc' => $query
+                ->orderBy('school_cohort_enrollments.created_at', 'desc')
+                ->orderByDesc('school_cohort_enrollments.id'),
+
+            'updatedAtAsc' => $query
+                ->orderBy('school_cohort_enrollments.updated_at', 'asc')
+                ->orderByDesc('school_cohort_enrollments.id'),
+
+            'updatedAtDesc' => $query
+                ->orderBy('school_cohort_enrollments.updated_at', 'desc')
+                ->orderByDesc('school_cohort_enrollments.id'),
+
+            default => $query->orderByDesc('school_cohort_enrollments.id'),
+        };
+    }
+
+    /** Получение списка записей на потоки по активному режиму обработки. */
+    private function getIndexEnrollments(
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+        ?string $status = null,
+        mixed $scheduleId = null,
+    ): Collection|LengthAwarePaginator
+    {
+        $query = $this->indexQuery(
+            status: $status,
+            scheduleId: $scheduleId,
+        );
+
+        if ($useServerProcessing) {
+            return $this->applySort(
+                $this->applySearch($query, $search),
+                $sort
+            )
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $this->applySort($query, $sort)->get();
     }
 }

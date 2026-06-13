@@ -4,7 +4,11 @@
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
  * Список наборов курсов школы
+ * - режимы обработки: frontend | server | auto
+ * - локальный поиск/сортировка/пагинация
+ * - серверный поиск/сортировка/пагинация
  */
+
 import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -13,94 +17,446 @@ import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
 import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
 import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
 import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 import BulkActionSelect from '@/Components/Admin/School/SchoolBundle/Select/BulkActionSelect.vue'
 import SortSelect from '@/Components/Admin/School/SchoolBundle/Sort/SortSelect.vue'
 import BundleTable from '@/Components/Admin/School/SchoolBundle/Table/BundleTable.vue'
 import BundleCardGrid from '@/Components/Admin/School/SchoolBundle/View/BundleCardGrid.vue'
 
-// Локализация и Toast уведомления
+/* ==========================================================
+ * БАЗОВЫЕ СЕРВИСЫ И PROPS
+ * ========================================================== */
+
+/** Локализация интерфейса */
 const { t } = useI18n()
+
+/** Уведомления */
 const toast = useToast()
 
-// Props из контроллера
+/** Данные страницы из Inertia */
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
 
-    bundles: { type: Array, default: () => [] },
+    adminSchoolBundlesProcessingMode: { type: String, default: 'frontend' },
+    useServerProcessing: { type: Boolean, default: false },
+
+    bundles: { type: [Array, Object], default: () => [] },
     bundlesCount: { type: Number, default: 0 },
 
-    adminSchoolBundlesPerPage: { type: Number, default: 10 },
+    adminSchoolBundlesPerPage: { type: Number, default: 6 },
     adminSchoolBundlesDefaultSort: { type: String, default: 'idDesc' },
+
+    sortParam: { type: String, default: '' },
+    search: { type: String, default: '' },
+
+    errors: { type: Object, default: () => ({}) },
 })
 
-// Режим отображения таблица/карточки
-const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
+/* ==========================================================
+ * РЕЖИМ ОТОБРАЖЕНИЯ
+ * ========================================================== */
 
-// Сохранение режима отображения
+/** Текущий режим отображения (таблица / карточки) */
+const viewMode = ref(localStorage.getItem('admin_view_mode_bundles') || 'table')
+
+/** Сохраняем выбранный вид локально */
 watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode', val)
+    localStorage.setItem('admin_view_mode_bundles', val)
 })
 
-// Локальная копия наборов
+/* ==========================================================
+ * ИСТОЧНИК ДАННЫХ
+ * ========================================================== */
+
+/**
+ * Унифицированный список наборов:
+ * frontend → обычный массив
+ * server → bundles.data
+ */
+const bundlesList = computed(() => {
+    if (Array.isArray(props.bundles)) {
+        return props.bundles
+    }
+
+    if (Array.isArray(props.bundles?.data)) {
+        return props.bundles.data
+    }
+
+    return []
+})
+
+/* ==========================================================
+ * ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ДАННЫХ
+ * ========================================================== */
+
+/**
+ * Локальная копия списка.
+ * Используется для:
+ * - локального поиска
+ * - локальной сортировки
+ * - моментального обновления UI
+ */
 const localBundles = ref([])
 
-// Обновление локального списка наборов
 watch(
-    () => props.bundles,
+    bundlesList,
     (newVal) => {
         localBundles.value = JSON.parse(JSON.stringify(newVal || []))
     },
     { immediate: true, deep: true }
 )
 
-// Количество элементов на странице
-const itemsPerPage = ref(props.adminSchoolBundlesPerPage || 10)
+/* ==========================================================
+ * НАСТРОЙКИ ПАГИНАЦИИ И СОРТИРОВКИ
+ * ========================================================== */
 
-// Сохранение количества элементов
+/** Количество элементов на странице */
+const itemsPerPage = ref(props.adminSchoolBundlesPerPage || 6)
+
+/** Сохраняем настройку количества элементов */
 watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountBundles'), { value: newVal }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
-    })
+    router.put(
+        route('admin.settings.updateAdminCountBundles'),
+        { value: newVal },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
+            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+        }
+    )
 })
 
-// Параметр сортировки
-const sortParam = ref(props.adminSchoolBundlesDefaultSort || 'idDesc')
+/** Текущий параметр сортировки */
+const sortParam = ref(props.sortParam || props.adminSchoolBundlesDefaultSort || 'idDesc')
 
-// Сохранение параметра сортировки
+/** Сохраняем сортировку и при server-режиме перезагружаем список */
 watch(sortParam, (newVal) => {
-    router.put(route('admin.settings.updateAdminSortBundles'), { value: newVal }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.info('Сортировка успешно изменена'),
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
-    })
+    currentPage.value = 1
+
+    router.put(
+        route('admin.settings.updateAdminSortBundles'),
+        { value: newVal },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                if (props.useServerProcessing) {
+                    router.get(
+                        window.location.pathname,
+                        {
+                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                            sort: newVal || undefined,
+                            page: undefined,
+                        },
+                        {
+                            preserveScroll: true,
+                            preserveState: false,
+                            replace: true,
+                        }
+                    )
+                }
+
+                toast.info('Сортировка успешно изменена')
+            },
+
+            onError: (errors) => {
+                toast.error(errors.value || 'Ошибка обновления сортировки.')
+            },
+        }
+    )
 })
 
-// Модальное окно удаления
+/* ==========================================================
+ * ПОИСК И ПАГИНАЦИЯ
+ * ========================================================== */
+
+/** Поисковый запрос */
+const searchQuery = ref(props.search || '')
+
+/** Текущая страница frontend-пагинации */
+const currentPage = ref(1)
+
+/* ==========================================================
+ * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+ * ========================================================== */
+
+/** Нормализация строки */
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+
+/** Безопасное преобразование в число */
+const safeNumber = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : 0
+}
+
+/** Безопасное преобразование даты */
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+/* ==========================================================
+ * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ РЕСУРСОВ
+ * ========================================================== */
+
+/** Получение заголовка набора */
+const getBundleTitle = (bundle) => {
+    return bundle?.title
+        || bundle?.translation?.title
+        || bundle?.translations?.[0]?.title
+        || `ID: ${bundle?.id}`
+}
+
+/** Получение подзаголовка набора */
+const getBundleSubtitle = (bundle) => {
+    return bundle?.subtitle
+        || bundle?.translation?.subtitle
+        || bundle?.translations?.[0]?.subtitle
+        || ''
+}
+
+/** Получение краткого описания набора */
+const getBundleShort = (bundle) => {
+    return bundle?.short
+        || bundle?.translation?.short
+        || bundle?.translations?.[0]?.short
+        || ''
+}
+
+/** Получение описания набора */
+const getBundleDescription = (bundle) => {
+    return bundle?.description
+        || bundle?.translation?.description
+        || bundle?.translations?.[0]?.description
+        || ''
+}
+
+/** Получение slug набора */
+const getBundleSlug = (bundle) => {
+    return bundle?.slug
+        || bundle?.translation?.slug
+        || bundle?.translations?.[0]?.slug
+        || ''
+}
+
+/** Получение заголовка связанной сущности */
+const getNestedTitle = (item) => {
+    return item?.title
+        || item?.name
+        || item?.translation?.title
+        || item?.translation?.name
+        || item?.translations?.[0]?.title
+        || item?.translations?.[0]?.name
+        || ''
+}
+
+/** Получение текста курсов внутри набора */
+const getCoursesText = (bundle) => {
+    const courses = Array.isArray(bundle?.courses) ? bundle.courses : []
+
+    return courses.map(getNestedTitle).filter(Boolean).join(' ')
+}
+
+/* ==========================================================
+ * СОРТИРОВКА FRONTEND
+ * ========================================================== */
+
+/** Сортировка чисел ↑ */
+const byNumberAsc = (field) => (a, b) =>
+    safeNumber(a?.[field]) - safeNumber(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+/** Сортировка чисел ↓ */
+const byNumberDesc = (field) => (a, b) =>
+    safeNumber(b?.[field]) - safeNumber(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+/**
+ * Главный обработчик сортировки.
+ * Должен совпадать со scopeSortByParam() модели и SortSelect.vue.
+ */
+const sortBundles = (items) => {
+    const list = (items || []).slice()
+
+    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
+    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
+
+    const sortMap = {
+        idAsc: byNumberAsc('id'),
+        idDesc: byNumberDesc('id'),
+
+        sortAsc: byNumberAsc('sort'),
+        sortDesc: byNumberDesc('sort'),
+
+        titleAsc: (a, b) =>
+            normalize(getBundleTitle(a)).localeCompare(normalize(getBundleTitle(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        titleDesc: (a, b) =>
+            normalize(getBundleTitle(b)).localeCompare(normalize(getBundleTitle(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        slugAsc: (a, b) =>
+            normalize(getBundleSlug(a)).localeCompare(normalize(getBundleSlug(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        slugDesc: (a, b) =>
+            normalize(getBundleSlug(b)).localeCompare(normalize(getBundleSlug(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        viewsAsc: byNumberAsc('views'),
+        viewsDesc: byNumberDesc('views'),
+
+        likesAsc: byNumberAsc('likes'),
+        likesDesc: byNumberDesc('likes'),
+
+        coursesAsc: byNumberAsc('courses_count'),
+        coursesDesc: byNumberDesc('courses_count'),
+
+        imagesAsc: byNumberAsc('images_count'),
+        imagesDesc: byNumberDesc('images_count'),
+
+        pricesAsc: byNumberAsc('prices_count'),
+        pricesDesc: byNumberDesc('prices_count'),
+
+        orderItemsAsc: byNumberAsc('order_items_count'),
+        orderItemsDesc: byNumberDesc('order_items_count'),
+
+        activityAsc: byNumberAsc('activity'),
+        activityDesc: byNumberDesc('activity'),
+
+        publishedAtAsc: (a, b) =>
+            safeDate(a?.published_at) - safeDate(b?.published_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        publishedAtDesc: (a, b) =>
+            safeDate(b?.published_at) - safeDate(a?.published_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        dateAsc: (a, b) =>
+            safeDate(a?.published_at) - safeDate(b?.published_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        dateDesc: (a, b) =>
+            safeDate(b?.published_at) - safeDate(a?.published_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        createdAtAsc: (a, b) =>
+            safeDate(a?.created_at) - safeDate(b?.created_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        createdAtDesc: (a, b) =>
+            safeDate(b?.created_at) - safeDate(a?.created_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        updatedAtAsc: (a, b) =>
+            safeDate(a?.updated_at) - safeDate(b?.updated_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        updatedAtDesc: (a, b) =>
+            safeDate(b?.updated_at) - safeDate(a?.updated_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+    }
+
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
+}
+
+/* ==========================================================
+ * ПОИСК FRONTEND
+ * ========================================================== */
+
+/**
+ * Фильтрация списка.
+ *
+ * frontend:
+ * поиск выполняется здесь
+ *
+ * server:
+ * поиск выполняется контроллером
+ */
+const filteredBundles = computed(() => {
+    let filtered = localBundles.value || []
+    const query = normalize(searchQuery.value)
+
+    if (!query) {
+        return sortBundles(filtered)
+    }
+
+    filtered = filtered.filter((bundle) => {
+        const title = normalize(getBundleTitle(bundle))
+        const subtitle = normalize(getBundleSubtitle(bundle))
+        const slug = normalize(getBundleSlug(bundle))
+        const short = normalize(getBundleShort(bundle))
+        const description = normalize(getBundleDescription(bundle))
+        const courses = normalize(getCoursesText(bundle))
+
+        return title.includes(query)
+            || subtitle.includes(query)
+            || slug.includes(query)
+            || short.includes(query)
+            || description.includes(query)
+            || courses.includes(query)
+    })
+
+    return sortBundles(filtered)
+})
+
+/* ==========================================================
+ * ЛОКАЛЬНАЯ ПАГИНАЦИЯ
+ * ========================================================== */
+
+/** Разбиение списка по страницам */
+const paginatedBundles = computed(() => {
+    const per = Number(itemsPerPage.value || 10)
+    const start = (currentPage.value - 1) * per
+
+    return filteredBundles.value.slice(start, start + per)
+})
+
+/**
+ * Итоговый список:
+ * frontend → локальная пагинация
+ * server → данные сервера
+ */
+const displayedBundles = computed(() => {
+    return props.useServerProcessing
+        ? bundlesList.value
+        : paginatedBundles.value
+})
+
+watch([itemsPerPage, searchQuery], () => {
+    currentPage.value = 1
+})
+
+/* ==========================================================
+ * УДАЛЕНИЕ
+ * ========================================================== */
+
+/** Состояние модального окна удаления */
 const showConfirmDeleteModal = ref(false)
-
-// ID удаляемого набора
 const bundleToDeleteId = ref(null)
-
-// Название удаляемого набора
 const bundleToDeleteTitle = ref('')
 
-// Открытие модального окна удаления
+/** Открыть подтверждение удаления */
 const confirmDelete = (bundleOrId, title = null) => {
     if (typeof bundleOrId === 'object') {
         bundleToDeleteId.value = bundleOrId.id
-        bundleToDeleteTitle.value = title || bundleOrId.title || `ID: ${bundleOrId.id}`
+        bundleToDeleteTitle.value = title || getBundleTitle(bundleOrId)
     } else {
         bundleToDeleteId.value = bundleOrId
         bundleToDeleteTitle.value = title || `ID: ${bundleOrId}`
@@ -109,14 +465,14 @@ const confirmDelete = (bundleOrId, title = null) => {
     showConfirmDeleteModal.value = true
 }
 
-// Закрытие модального окна
+/** Закрыть окно */
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     bundleToDeleteId.value = null
     bundleToDeleteTitle.value = ''
 }
 
-// Удаление набора
+/** Выполнить удаление */
 const deleteBundle = () => {
     if (bundleToDeleteId.value === null) return
 
@@ -144,136 +500,14 @@ const deleteBundle = () => {
     })
 }
 
-// Текущая страница
-const currentPage = ref(1)
+/* ==========================================================
+ * ЛОКАЛЬНОЕ ОБНОВЛЕНИЕ UI
+ * ========================================================== */
 
-// Поисковый запрос
-const searchQuery = ref('')
-
-// Нормализация строки поиска
-const normalize = (value) => {
-    return (value ?? '').toString().trim().toLowerCase()
-}
-
-// Сортировка наборов
-const sortBundles = (items) => {
-    const list = (items || []).slice()
-
-    if (sortParam.value === 'idAsc') {
-        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    }
-
-    if (sortParam.value === 'idDesc') {
-        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-    }
-
-    if (sortParam.value === 'sortAsc') {
-        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    }
-
-    if (sortParam.value === 'sortDesc') {
-        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
-    }
-
-    if (sortParam.value === 'titleAsc') {
-        return list.sort((a, b) => normalize(a.title).localeCompare(normalize(b.title)))
-    }
-
-    if (sortParam.value === 'titleDesc') {
-        return list.sort((a, b) => normalize(b.title).localeCompare(normalize(a.title)))
-    }
-
-    if (sortParam.value === 'activity') {
-        return list.filter(item => !!item.activity)
-    }
-
-    if (sortParam.value === 'inactive') {
-        return list.filter(item => !item.activity)
-    }
-
-    if (sortParam.value === 'views') {
-        return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
-    }
-
-    if ([
-        'likes',
-        'courses_count',
-        'images_count',
-        'prices_count',
-        'order_items_count',
-    ].includes(sortParam.value)) {
-        return list.sort((a, b) => (b[sortParam.value] ?? 0) - (a[sortParam.value] ?? 0))
-    }
-
-    if (sortParam.value === 'publishedAtAsc') {
-        return list.sort((a, b) => {
-            const aTime = a.published_at ? new Date(a.published_at).getTime() : 0
-            const bTime = b.published_at ? new Date(b.published_at).getTime() : 0
-
-            return aTime - bTime
-        })
-    }
-
-    if (sortParam.value === 'publishedAtDesc') {
-        return list.sort((a, b) => {
-            const aTime = a.published_at ? new Date(a.published_at).getTime() : 0
-            const bTime = b.published_at ? new Date(b.published_at).getTime() : 0
-
-            return bTime - aTime
-        })
-    }
-
-    return list
-}
-
-// Отфильтрованные наборы
-const filteredBundles = computed(() => {
-    let filtered = localBundles.value || []
-    const q = normalize(searchQuery.value)
-
-    if (!q) {
-        return sortBundles(filtered)
-    }
-
-    filtered = filtered.filter((bundle) => {
-        const title = normalize(bundle?.title)
-        const subtitle = normalize(bundle?.subtitle)
-        const slug = normalize(bundle?.slug)
-        const short = normalize(bundle?.short)
-        const description = normalize(bundle?.description)
-
-        const hasCourse = (bundle?.courses || []).some(course =>
-            normalize(course?.title).includes(q) ||
-            normalize(course?.slug).includes(q)
-        )
-
-        return (
-            title.includes(q) ||
-            subtitle.includes(q) ||
-            slug.includes(q) ||
-            short.includes(q) ||
-            description.includes(q) ||
-            hasCourse
-        )
-    })
-
-    return sortBundles(filtered)
-})
-
-// Наборы текущей страницы
-const paginatedBundles = computed(() => {
-    const per = Number(itemsPerPage.value || 20)
-    const start = (currentPage.value - 1) * per
-
-    return filteredBundles.value.slice(start, start + per)
-})
-
-// Сброс страницы при поиске и изменении лимита
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
-
-// Локальное обновление набора
+/**
+ * Обновление записи локально
+ * без полной перезагрузки страницы
+ */
 const patchBundle = (bundleId, payload) => {
     const index = localBundles.value.findIndex(bundle => bundle.id === bundleId)
 
@@ -285,15 +519,26 @@ const patchBundle = (bundleId, payload) => {
     }
 }
 
-// Выбранные наборы
+/* ==========================================================
+ * МАССОВЫЕ ОПЕРАЦИИ
+ * ========================================================== */
+
+/** Выбранные элементы */
 const selectedBundles = ref([])
 
-// Выбрать / снять выбор со всех наборов
-const toggleAll = ({ ids, checked }) => {
-    selectedBundles.value = checked ? [...ids] : []
+/** Выбрать все */
+const toggleAll = (payload) => {
+    const checked = payload?.checked ?? payload?.target?.checked ?? false
+    const ids = payload?.ids ?? displayedBundles.value.map((bundle) => bundle.id)
+
+    if (checked) {
+        selectedBundles.value = [...new Set([...selectedBundles.value, ...ids])]
+    } else {
+        selectedBundles.value = selectedBundles.value.filter((id) => !ids.includes(id))
+    }
 }
 
-// Выбор одного набора
+/** Выбрать элемент */
 const toggleSelectBundle = (id) => {
     const index = selectedBundles.value.indexOf(id)
 
@@ -304,7 +549,7 @@ const toggleSelectBundle = (id) => {
     }
 }
 
-// Обновление порядка сортировки
+/** Изменить порядок */
 const handleSortOrderUpdate = (orderedIds) => {
     const startSort = (currentPage.value - 1) * itemsPerPage.value
 
@@ -340,7 +585,7 @@ const handleSortOrderUpdate = (orderedIds) => {
     })
 }
 
-// Массовое обновление активности
+/** Массовая активность */
 const bulkToggleActivity = (newActivity) => {
     if (!selectedBundles.value.length) {
         toast.warning('Выберите наборы курсов для активации/деактивации.')
@@ -358,9 +603,7 @@ const bulkToggleActivity = (newActivity) => {
 
         onSuccess: () => {
             idsToUpdate.forEach(id => patchBundle(id, { activity: newActivity }))
-
             selectedBundles.value = []
-
             toast.success('Активность выбранных наборов курсов обновлена.')
         },
 
@@ -375,14 +618,14 @@ const bulkToggleActivity = (newActivity) => {
     })
 }
 
-// Обработка массовых действий
+/** Обработчик массовых действий */
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedBundles.value = paginatedBundles.value.map(bundle => bundle.id)
+        toggleAll({ target: { checked: true } })
     } else if (action === 'deselectAll') {
-        selectedBundles.value = []
+        toggleAll({ target: { checked: false } })
     } else if (action === 'activate') {
         bulkToggleActivity(true)
     } else if (action === 'deactivate') {
@@ -392,10 +635,14 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-// Переключение активности набора
+/* ==========================================================
+ * ОПЕРАЦИИ НАД ОДНОЙ ЗАПИСЬЮ
+ * ========================================================== */
+
+/** Переключение активности */
 const toggleActivity = (bundle) => {
     const newActivity = !bundle.activity
-    const bundleTitle = bundle.title || `ID: ${bundle.id}`
+    const bundleTitle = getBundleTitle(bundle)
     const actionText = newActivity ? t('activated') : t('deactivated')
 
     router.put(route('admin.actions.schoolBundles.updateActivity', {
@@ -437,7 +684,7 @@ const toggleActivity = (bundle) => {
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.schoolBundles.create')">
                         <template #icon>
                             <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
@@ -448,12 +695,24 @@ const toggleActivity = (bundle) => {
                         </template>
                         {{ t('addBundle') }}
                     </DefaultButton>
+
+                    <ProcessingModeSwitcher
+                        setting-key="adminSchoolBundlesProcessingMode"
+                        :mode="adminSchoolBundlesProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="bundlesCount"
+                    />
                 </div>
 
                 <SearchInput
-                    v-if="bundlesCount"
+                    v-if="bundlesCount && !useServerProcessing"
                     v-model="searchQuery"
                     :placeholder="t('searchByName')"
+                />
+
+                <ServerSearchInput
+                    v-if="bundlesCount && useServerProcessing"
+                    v-model="searchQuery"
                 />
 
                 <div
@@ -461,8 +720,15 @@ const toggleActivity = (bundle) => {
                     class="flex justify-between items-center flex-col md:flex-row my-3"
                 >
                     <ItemsPerPageSelect
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <ServerItemsPerPageSelect
+                        v-else
+                        :items-per-page="itemsPerPage"
+                        update-route="admin.settings.updateAdminCountBundles"
                     />
 
                     <SortSelect
@@ -487,17 +753,22 @@ const toggleActivity = (bundle) => {
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredBundles.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="bundles"
                     />
                 </div>
 
                 <BundleTable
                     v-if="viewMode === 'table'"
-                    :bundles="paginatedBundles"
+                    :bundles="displayedBundles"
                     :selected-bundles="selectedBundles"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"
@@ -508,7 +779,7 @@ const toggleActivity = (bundle) => {
 
                 <BundleCardGrid
                     v-else
-                    :bundles="paginatedBundles"
+                    :bundles="displayedBundles"
                     :selected-bundles="selectedBundles"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"
@@ -522,11 +793,16 @@ const toggleActivity = (bundle) => {
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredBundles.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="bundles"
                     />
                 </div>
             </div>
@@ -534,11 +810,11 @@ const toggleActivity = (bundle) => {
 
         <DangerModal
             :show="showConfirmDeleteModal"
-            @close="closeModal"
             :onCancel="closeModal"
             :onConfirm="deleteBundle"
             :cancelText="t('cancel')"
             :confirmText="t('yesDelete')"
+            @close="closeModal"
         />
     </AdminLayout>
 </template>

@@ -10,7 +10,9 @@ use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
 use App\Models\Admin\School\SchoolBundle\SchoolBundle;
 use App\Models\Admin\School\SchoolBundle\SchoolBundleImage;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -68,38 +70,51 @@ class SchoolBundleController extends BaseSchoolAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolBundlesPerPage = $settings->int('site_settings.adminSchoolBundlesPerPage', 6);
-        $adminSchoolBundlesDefaultSort = $settings->string('site_settings.adminSchoolBundlesDefaultSort', 'idDesc');
-        $sort = (string) $request->query('sort', $adminSchoolBundlesDefaultSort);
+
+        $perPage = $settings->int('adminSchoolBundlesPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolBundlesDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolBundlesProcessingMode',
+            'frontend'
+        );
+
+        $bundlesCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $bundlesCount,
+                300
+            );
 
         try {
-            $bundles = $this->baseQuery()
-                ->with([
-                    'translation',
-                    'translations',
-                    'images',
-                    'courses.translation',
-                    'courses.translations',
-                    'prices',
-                ])
-                ->withCount([
-                    'courses',
-                    'images',
-                    'prices',
-                    'orderItems',
-                ])
-                ->sortByParam($sort, $currentLocale)
-                ->get();
+            $bundles = $this->getIndexBundles(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/School/SchoolBundles/Index', [
-                'bundles' => SchoolBundleResource::collection($bundles),
-                'bundlesCount' => $this->baseQuery()->count(),
-
-                'adminSchoolBundlesPerPage' => $adminSchoolBundlesPerPage,
-                'adminSchoolBundlesDefaultSort' => $adminSchoolBundlesDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolBundlesPerPage' => $perPage,
+                'adminSchoolBundlesDefaultSort' => $defaultSort,
+                'adminSchoolBundlesProcessingMode' => $processingMode,
+
+                'bundles' => SchoolBundleResource::collection($bundles),
+                'bundlesCount' => $bundlesCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки списка school bundles: ' . $e->getMessage(), [
@@ -107,14 +122,21 @@ class SchoolBundleController extends BaseSchoolAdminController
             ]);
 
             return Inertia::render('Admin/School/SchoolBundles/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolBundlesPerPage' => $perPage,
+                'adminSchoolBundlesDefaultSort' => $defaultSort,
+                'adminSchoolBundlesProcessingMode' => $processingMode,
+
                 'bundles' => [],
                 'bundlesCount' => 0,
 
-                'adminSchoolBundlesPerPage' => $adminSchoolBundlesPerPage,
-                'adminSchoolBundlesDefaultSort' => $adminSchoolBundlesDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
                 'error' => 'Ошибка загрузки наборов курсов.',
             ]);
         }
@@ -339,5 +361,48 @@ class SchoolBundleController extends BaseSchoolAdminController
             ->get();
 
         return SchoolCourseSharedResource::collection($courses);
+    }
+
+    /** Базовый запрос для списка наборов курсов. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+                'images',
+                'courses.translation',
+                'courses.translations',
+                'prices',
+            ])
+            ->withCount([
+                'courses',
+                'images',
+                'prices',
+                'orderItems',
+            ]);
+    }
+
+    /** Получение списка наборов курсов по активному режиму обработки. */
+    private function getIndexBundles(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

@@ -161,18 +161,71 @@ class SchoolBundle extends Model
     }
 
     /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $q, ?string $sort): Builder
+    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
     {
+        $locale = $locale ?: app()->getLocale();
+
         return match ($sort) {
-            'sort_asc'   => $q->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sort_desc'  => $q->orderBy('sort', 'desc')->orderByDesc('id'),
-            'date_asc'   => $q->orderBy('published_at', 'asc')->orderByDesc('id'),
-            'date_desc'  => $q->orderBy('published_at', 'desc')->orderByDesc('id'),
-            'views_asc'  => $q->orderBy('views', 'asc')->orderByDesc('id'),
-            'views_desc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
-            'likes_asc'  => $q->orderBy('likes', 'asc')->orderByDesc('id'),
-            'likes_desc' => $q->orderBy('likes', 'desc')->orderByDesc('id'),
-            default      => $q->sorted(),
+            'idAsc' => $q->orderBy('id', 'asc'),
+            'idDesc' => $q->orderBy('id', 'desc'),
+
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'titleAsc' => $q
+                ->leftJoin('school_bundle_translations as sbt_sort', function ($join) use ($locale) {
+                    $join->on('sbt_sort.school_bundle_id', '=', 'school_bundles.id')
+                        ->where('sbt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sbt_sort.title', 'asc')
+                ->orderByDesc('school_bundles.id')
+                ->select('school_bundles.*'),
+
+            'titleDesc' => $q
+                ->leftJoin('school_bundle_translations as sbt_sort', function ($join) use ($locale) {
+                    $join->on('sbt_sort.school_bundle_id', '=', 'school_bundles.id')
+                        ->where('sbt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sbt_sort.title', 'desc')
+                ->orderByDesc('school_bundles.id')
+                ->select('school_bundles.*'),
+
+            'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
+            'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $q->where('activity', true)->orderByDesc('id'),
+            'inactive' => $q->where('activity', false)->orderByDesc('id'),
+
+            'viewsAsc' => $q->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
+
+            'likesAsc' => $q->orderBy('likes', 'asc')->orderByDesc('id'),
+            'likesDesc' => $q->orderBy('likes', 'desc')->orderByDesc('id'),
+
+            'coursesAsc' => $q->withCount('courses')->orderBy('courses_count', 'asc')->orderByDesc('id'),
+            'coursesDesc' => $q->withCount('courses')->orderBy('courses_count', 'desc')->orderByDesc('id'),
+
+            'imagesAsc' => $q->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
+            'imagesDesc' => $q->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+
+            'pricesAsc' => $q->withCount('prices')->orderBy('prices_count', 'asc')->orderByDesc('id'),
+            'pricesDesc' => $q->withCount('prices')->orderBy('prices_count', 'desc')->orderByDesc('id'),
+
+            'orderItemsAsc' => $q->withCount('orderItems')->orderBy('order_items_count', 'asc')->orderByDesc('id'),
+            'orderItemsDesc' => $q->withCount('orderItems')->orderBy('order_items_count', 'desc')->orderByDesc('id'),
+
+            'publishedAtAsc', 'dateAsc' => $q->orderBy('published_at', 'asc')->orderByDesc('id'),
+            'publishedAtDesc', 'dateDesc' => $q->orderBy('published_at', 'desc')->orderByDesc('id'),
+
+            'createdAtAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            default => $q->sorted(),
         };
     }
 

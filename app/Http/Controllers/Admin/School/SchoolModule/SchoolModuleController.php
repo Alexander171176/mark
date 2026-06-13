@@ -9,7 +9,9 @@ use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
 use App\Models\Admin\School\SchoolModule\SchoolModuleImage;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -66,36 +68,51 @@ class SchoolModuleController extends BaseSchoolAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolModulesPerPage = $settings->int('site_settings.adminSchoolModulesPerPage', 6);
-        $adminSchoolModulesDefaultSort = $settings->string('site_settings.adminSchoolModulesDefaultSort', 'idDesc');
-        $sort = (string) $request->query('sort', $adminSchoolModulesDefaultSort);
+
+        $perPage = $settings->int('adminSchoolModulesPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolModulesDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolModulesProcessingMode',
+            'frontend'
+        );
+
+        $modulesCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $modulesCount,
+                300
+            );
 
         try {
-            $modules = $this->baseQuery()
-                ->with([
-                    'translation',
-                    'translations',
-                    'images',
-                    'course.translation',
-                    'lessons.translation',
-                ])
-                ->withCount([
-                    'lessons',
-                    'images',
-                    'likes',
-                ])
-                ->sortByParam($sort, $currentLocale)
-                ->get();
+            $modules = $this->getIndexModules(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/School/SchoolModules/Index', [
-                'modules' => SchoolModuleResource::collection($modules),
-                'modulesCount' => $this->baseQuery()->count(),
-
-                'adminSchoolModulesPerPage' => $adminSchoolModulesPerPage,
-                'adminSchoolModulesDefaultSort' => $adminSchoolModulesDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolModulesPerPage' => $perPage,
+                'adminSchoolModulesDefaultSort' => $defaultSort,
+                'adminSchoolModulesProcessingMode' => $processingMode,
+
+                'modules' => SchoolModuleResource::collection($modules),
+                'modulesCount' => $modulesCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки списка school modules: ' . $e->getMessage(), [
@@ -103,14 +120,21 @@ class SchoolModuleController extends BaseSchoolAdminController
             ]);
 
             return Inertia::render('Admin/School/SchoolModules/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolModulesPerPage' => $perPage,
+                'adminSchoolModulesDefaultSort' => $defaultSort,
+                'adminSchoolModulesProcessingMode' => $processingMode,
+
                 'modules' => [],
                 'modulesCount' => 0,
 
-                'adminSchoolModulesPerPage' => $adminSchoolModulesPerPage,
-                'adminSchoolModulesDefaultSort' => $adminSchoolModulesDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
                 'error' => 'Ошибка загрузки модулей.',
             ]);
         }
@@ -311,5 +335,47 @@ class SchoolModuleController extends BaseSchoolAdminController
             ->get();
 
         return SchoolCourseSharedResource::collection($courses);
+    }
+
+    /** Базовый запрос для списка модулей. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+                'images',
+                'course.translation',
+                'course.translations',
+                'lessons.translation',
+            ])
+            ->withCount([
+                'lessons',
+                'images',
+                'likes',
+            ]);
+    }
+
+    /** Получение списка модулей по активному режиму обработки. */
+    private function getIndexModules(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

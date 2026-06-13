@@ -44,6 +44,10 @@ const updateSort = (event) => {
             <option value="titleDesc">{{ t('title') }} ↓</option>
             <option disabled>─────────────</option>
 
+            <option value="slugAsc">Slug A→Z</option>
+            <option value="slugDesc">Slug Z→A</option>
+            <option disabled>─────────────</option>
+
             <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
             <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
             <option value="activity">{{ t('active') }}</option>
@@ -63,6 +67,9 @@ const updateSort = (event) => {
 
             <option value="likesDesc">{{ t('likes') }} 9→0</option>
             <option value="likesAsc">{{ t('likes') }} 0→9</option>
+
+            <option value="likesCountDesc">{{ t('ratingCount') }} 9→0</option>
+            <option value="likesCountAsc">{{ t('ratingCount') }} 0→9</option>
             <option disabled>─────────────</option>
 
             <!-- Метрики курса -->
@@ -100,6 +107,10 @@ const updateSort = (event) => {
 
             <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
             <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
+            <option disabled>─────────────</option>
+
+            <option value="courseDesc">{{ t('course') }} ID 9→0</option>
+            <option value="courseAsc">{{ t('course') }} ID 0→9</option>
             <option disabled>─────────────</option>
 
         </select>

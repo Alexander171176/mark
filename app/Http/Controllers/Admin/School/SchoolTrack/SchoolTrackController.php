@@ -8,7 +8,9 @@ use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackResource;
 use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackSharedResource;
 use App\Models\Admin\School\SchoolTrack\SchoolTrack;
 use App\Models\Admin\School\SchoolTrack\SchoolTrackImage;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -103,54 +105,53 @@ class SchoolTrackController extends BaseSchoolAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolTracksPerPage = $settings->int('site_settings.adminSchoolTracksPerPage', 6);
-        $adminSchoolTracksDefaultSort = $settings->string('site_settings.adminSchoolTracksDefaultSort', 'idDesc');
-        $sort = (string) $request->query('sort', $adminSchoolTracksDefaultSort);
+
+        $perPage = $settings->int('adminSchoolTracksPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolTracksDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolTracksProcessingMode',
+            'frontend'
+        );
+
+        $tracksCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $tracksCount,
+                300
+            );
 
         try {
-            $tracksTree = $this->baseQuery()
-                ->root()
-                ->with([
-                    'translation',
-                    'translations',
-                    'images',
-                    'childrenRecursive',
-                ])
-                ->withCount([
-                    'children',
-                    'courses',
-                    'images',
-                    'likes',
-                ])
-                ->ordered()
-                ->get();
+            $tracksTree = $this->getIndexTracksTree();
 
             $this->prepareTreeChildren($tracksTree);
 
-            $tracksFlat = $this->baseQuery()
-                ->with([
-                    'translation',
-                    'translations',
-                    'parent.translation',
-                    'images',
-                    'courses.translation',
-                ])
-                ->withCount([
-                    'children',
-                    'courses',
-                    'images',
-                    'likes',
-                ])
-                ->sortByParam($sort, $currentLocale)
-                ->get();
+            $tracksFlat = $this->getIndexTracks(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/School/SchoolTracks/Index', [
                 'tracksTree' => SchoolTrackResource::collection($tracksTree),
                 'tracks' => SchoolTrackResource::collection($tracksFlat),
-                'tracksCount' => $this->baseQuery()->count(),
+                'tracksCount' => $tracksCount,
 
-                'adminSchoolTracksPerPage' => $adminSchoolTracksPerPage,
-                'adminSchoolTracksDefaultSort' => $sort,
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolTracksPerPage' => $perPage,
+                'adminSchoolTracksDefaultSort' => $defaultSort,
+                'adminSchoolTracksProcessingMode' => $processingMode,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
@@ -165,11 +166,18 @@ class SchoolTrackController extends BaseSchoolAdminController
                 'tracks' => [],
                 'tracksCount' => 0,
 
-                'adminSchoolTracksPerPage' => $adminSchoolTracksPerPage,
-                'adminSchoolTracksDefaultSort' => $sort,
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolTracksPerPage' => $perPage,
+                'adminSchoolTracksDefaultSort' => $defaultSort,
+                'adminSchoolTracksProcessingMode' => $processingMode,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
                 'error' => 'Ошибка загрузки треков.',
             ]);
         }
@@ -434,5 +442,76 @@ class SchoolTrackController extends BaseSchoolAdminController
                 ? response()->json(['message' => $message], 500)
                 : back()->with('error', $message);
         }
+    }
+
+    /** Базовый запрос для дерева треков. */
+    private function treeQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->root()
+            ->with([
+                'translation',
+                'translations',
+                'images',
+                'childrenRecursive',
+            ])
+            ->withCount([
+                'children',
+                'courses',
+                'images',
+                'likes',
+            ]);
+    }
+
+    /** Базовый запрос для плоского списка треков. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+                'parent.translation',
+                'parent.translations',
+                'images',
+                'courses.translation',
+                'courses.translations',
+            ])
+            ->withCount([
+                'children',
+                'courses',
+                'images',
+                'likes',
+            ]);
+    }
+
+    /** Получение дерева треков. */
+    private function getIndexTracksTree()
+    {
+        return $this->treeQuery()
+            ->ordered()
+            ->get();
+    }
+
+    /** Получение плоского списка треков по активному режиму обработки. */
+    private function getIndexTracks(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

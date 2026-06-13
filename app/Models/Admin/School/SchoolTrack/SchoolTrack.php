@@ -188,6 +188,30 @@ class SchoolTrack extends Model
             'parentAsc' => $q->orderBy('parent_id', 'asc')->orderByDesc('id'),
             'parentDesc' => $q->orderBy('parent_id', 'desc')->orderByDesc('id'),
 
+            'parentNameAsc' => $q
+                ->leftJoin('school_tracks as parent_tracks_sort', function ($join) {
+                    $join->on('parent_tracks_sort.id', '=', 'school_tracks.parent_id');
+                })
+                ->leftJoin('school_track_translations as parent_stt_sort', function ($join) use ($locale) {
+                    $join->on('parent_stt_sort.school_track_id', '=', 'parent_tracks_sort.id')
+                        ->where('parent_stt_sort.locale', '=', $locale);
+                })
+                ->orderBy('parent_stt_sort.name', 'asc')
+                ->orderByDesc('school_tracks.id')
+                ->select('school_tracks.*'),
+
+            'parentNameDesc' => $q
+                ->leftJoin('school_tracks as parent_tracks_sort', function ($join) {
+                    $join->on('parent_tracks_sort.id', '=', 'school_tracks.parent_id');
+                })
+                ->leftJoin('school_track_translations as parent_stt_sort', function ($join) use ($locale) {
+                    $join->on('parent_stt_sort.school_track_id', '=', 'parent_tracks_sort.id')
+                        ->where('parent_stt_sort.locale', '=', $locale);
+                })
+                ->orderBy('parent_stt_sort.name', 'desc')
+                ->orderByDesc('school_tracks.id')
+                ->select('school_tracks.*'),
+
             'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
             'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),
 

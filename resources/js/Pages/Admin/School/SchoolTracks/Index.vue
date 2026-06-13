@@ -3,9 +3,13 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- *  Страница треков школы (админка)
- *  Режимы: дерево (drag&drop) и карточки (поиск/сортировка/пагинация)
+ * Список треков школы
+ * - дерево треков с drag&drop
+ * - режимы обработки плоского списка: frontend | server | auto
+ * - локальный поиск/сортировка/пагинация
+ * - серверный поиск/сортировка/пагинация
  */
+
 import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -14,70 +18,86 @@ import draggable from 'vuedraggable'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
-import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
-import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
 import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
+import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 import BulkActionSelect from '@/Components/Admin/School/SchoolTrack/Select/BulkActionSelect.vue'
 import TrackTreeItem from '@/Components/Admin/School/SchoolTrack/Tree/TrackTreeItem.vue'
 import TrackCardGrid from '@/Components/Admin/School/SchoolTrack/View/TrackCardGrid.vue'
 import SortSelect from '@/Components/Admin/School/SchoolTrack/Sort/SortSelect.vue'
 
-/** i18n и уведомления */
+/* ==========================================================
+ * БАЗОВЫЕ СЕРВИСЫ И PROPS
+ * ========================================================== */
+
+/** Локализация интерфейса */
 const { t } = useI18n()
+
+/** Уведомления */
 const toast = useToast()
 
-/** Props из контроллера */
+/** Данные страницы из Inertia */
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
 
-    tracksTree: { type: Array, default: () => [] },       // дерево треков
-    tracks: { type: Array, default: () => [] },           // плоский список
-    tracksCount: { type: Number, default: 0 },            // общее количество
+    adminSchoolTracksProcessingMode: { type: String, default: 'frontend' },
+    useServerProcessing: { type: Boolean, default: false },
 
-    adminSchoolTracksPerPage: { type: Number, default: 10 },      // кол-во на страницу
-    adminSchoolTracksDefaultSort: { type: String, default: 'idDesc' }, // текущая сортировка
+    tracksTree: { type: Array, default: () => [] },
+    tracks: { type: [Array, Object], default: () => [] },
+    tracksCount: { type: Number, default: 0 },
+
+    adminSchoolTracksPerPage: { type: Number, default: 6 },
+    adminSchoolTracksDefaultSort: { type: String, default: 'idDesc' },
+
+    sortParam: { type: String, default: '' },
+    search: { type: String, default: '' },
 
     errors: { type: Object, default: () => ({}) },
 })
 
-/** Режим отображения: table = дерево, cards = карточки */
-const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
+/* ==========================================================
+ * РЕЖИМ ОТОБРАЖЕНИЯ
+ * ========================================================== */
 
+/** Текущий вид: table = дерево, cards = плоский список */
+const viewMode = ref(localStorage.getItem('admin_view_mode_tracks') || 'table')
+
+/** Сохраняем выбранный вид локально */
 watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode', val)
+    localStorage.setItem('admin_view_mode_tracks', val)
 })
 
-/** Количество элементов на странице */
-const itemsPerPage = ref(props.adminSchoolTracksPerPage || 10)
+/* ==========================================================
+ * ИСТОЧНИК ДАННЫХ
+ * ========================================================== */
 
-watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountTracks'), { value: newVal }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
-    })
+/** Унифицированный плоский список треков */
+const tracksList = computed(() => {
+    if (Array.isArray(props.tracks)) {
+        return props.tracks
+    }
+
+    if (Array.isArray(props.tracks?.data)) {
+        return props.tracks.data
+    }
+
+    return []
 })
 
-/** Параметр сортировки */
-const sortParam = ref(props.adminSchoolTracksDefaultSort || 'idDesc')
-
-watch(sortParam, (newVal) => {
-    currentPage.value = 1
-
-    router.put(route('admin.settings.updateAdminSortTracks'), { value: newVal }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.info('Сортировка успешно изменена'),
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
-    })
-})
+/* ==========================================================
+ * ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ДАННЫХ
+ * ========================================================== */
 
 /** Локальная копия дерева */
 const localTracksTree = ref([])
@@ -94,162 +114,201 @@ watch(
 const localTracksFlat = ref([])
 
 watch(
-    () => props.tracks,
+    tracksList,
     (newVal) => {
         localTracksFlat.value = JSON.parse(JSON.stringify(newVal || []))
     },
     { immediate: true, deep: true }
 )
 
-/** Модалка удаления */
-const showConfirmDeleteModal = ref(false)
-const trackToDeleteId = ref(null)
-const trackToDeleteName = ref('')
+/* ==========================================================
+ * НАСТРОЙКИ ПАГИНАЦИИ И СОРТИРОВКИ
+ * ========================================================== */
 
-/** Открыть модалку удаления */
-const confirmDelete = (trackOrId, name = null) => {
-    if (typeof trackOrId === 'object') {
-        trackToDeleteId.value = trackOrId.id
-        trackToDeleteName.value = name || trackOrId.name || `ID: ${trackOrId.id}`
-    } else {
-        trackToDeleteId.value = trackOrId
-        trackToDeleteName.value = name || `ID: ${trackOrId}`
-    }
+/** Количество элементов на странице */
+const itemsPerPage = ref(props.adminSchoolTracksPerPage || 6)
 
-    showConfirmDeleteModal.value = true
-}
-
-/** Закрыть модалку удаления */
-const closeModal = () => {
-    showConfirmDeleteModal.value = false
-    trackToDeleteId.value = null
-    trackToDeleteName.value = ''
-}
-
-/** Удалить один трек */
-const deleteTrack = () => {
-    if (trackToDeleteId.value === null) return
-
-    const idToDelete = trackToDeleteId.value
-    const nameToDelete = trackToDeleteName.value
-
-    router.delete(route('admin.schoolTracks.destroy', { schoolTrack: idToDelete }), {
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => {
-            toast.success(`Трек "${nameToDelete || 'ID: ' + idToDelete}" удалён.`)
-        },
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Трек: ${nameToDelete || 'ID: ' + idToDelete})`)
-        },
-        onFinish: () => closeModal(),
-    })
-}
-
-/** Обновить трек внутри дерева */
-const patchTrackInTree = (nodes, trackId, callback) => {
-    for (const node of nodes) {
-        if (node.id === trackId) {
-            callback(node)
-            return true
-        }
-
-        if (node.children?.length && patchTrackInTree(node.children, trackId, callback)) {
-            return true
-        }
-    }
-
-    return false
-}
-
-/** Обновить трек в плоском списке */
-const patchTrackInFlat = (trackId, callback) => {
-    const index = localTracksFlat.value.findIndex((track) => track.id === trackId)
-
-    if (index !== -1) {
-        callback(localTracksFlat.value[index])
-    }
-}
-
-/** Переключить активность одного трека */
-const toggleActivity = (track) => {
-    const newActivity = !track.activity
-    const trackName = track.name || `ID: ${track.id}`
-    const actionText = newActivity ? t('activated') : t('deactivated')
-
+/** Сохраняем количество элементов */
+watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.actions.schoolTracks.updateActivity', { schoolTrack: track.id }),
-        { activity: newActivity },
+        route('admin.settings.updateAdminCountTracks'),
+        { value: newVal },
         {
             preserveScroll: true,
             preserveState: true,
+            onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
+            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+        }
+    )
+})
+
+/** Текущий параметр сортировки */
+const sortParam = ref(props.sortParam || props.adminSchoolTracksDefaultSort || 'idDesc')
+
+/** Сохраняем сортировку и при server-режиме перезагружаем список */
+watch(sortParam, (newVal) => {
+    currentPage.value = 1
+
+    router.put(
+        route('admin.settings.updateAdminSortTracks'),
+        { value: newVal },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
             onSuccess: () => {
-                patchTrackInTree(localTracksTree.value, track.id, (node) => {
-                    node.activity = newActivity
-                })
+                if (props.useServerProcessing && viewMode.value !== 'table') {
+                    router.get(
+                        window.location.pathname,
+                        {
+                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                            sort: newVal || undefined,
+                            page: undefined,
+                        },
+                        {
+                            preserveScroll: true,
+                            preserveState: false,
+                            replace: true,
+                        }
+                    )
+                }
 
-                patchTrackInFlat(track.id, (node) => {
-                    node.activity = newActivity
-                })
-
-                toast.success(`Трек "${trackName}" ${actionText}.`)
+                toast.info('Сортировка успешно изменена')
             },
+
             onError: (errors) => {
-                toast.error(errors.activity || errors.general || `Ошибка изменения активности для "${trackName}".`)
+                toast.error(errors.value || 'Ошибка обновления сортировки.')
             },
         }
     )
-}
+})
 
-/** Поиск и пагинация */
-const searchQuery = ref('')
+/* ==========================================================
+ * ПОИСК И ПАГИНАЦИЯ
+ * ========================================================== */
+
+/** Поисковый запрос */
+const searchQuery = ref(props.search || '')
+
+/** Текущая страница frontend-пагинации */
 const currentPage = ref(1)
 
-/** Нормализация строки */
-const normalize = (value) => String(value ?? '').trim().toLowerCase()
+/* ==========================================================
+ * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+ * ========================================================== */
 
+/** Нормализация строки */
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+
+/** Безопасное число */
 const safeNumber = (value) => {
     const number = Number(value)
     return Number.isFinite(number) ? number : 0
 }
 
+/** Безопасная дата */
 const safeDate = (value) => {
     const time = new Date(value || 0).getTime()
     return Number.isFinite(time) ? time : 0
 }
 
-const getParentSortValue = (track) => {
-    return track?.parent?.name || track?.parent_id || ''
+/* ==========================================================
+ * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ РЕСУРСОВ
+ * ========================================================== */
+
+/** Получение названия трека */
+const getTrackName = (track) => {
+    return track?.name
+        || track?.translation?.name
+        || track?.translations?.[0]?.name
+        || `ID: ${track?.id}`
 }
 
+/** Получение краткого описания */
+const getTrackShort = (track) => {
+    return track?.short
+        || track?.translation?.short
+        || track?.translations?.[0]?.short
+        || ''
+}
+
+/** Получение описания */
+const getTrackDescription = (track) => {
+    return track?.description
+        || track?.translation?.description
+        || track?.translations?.[0]?.description
+        || ''
+}
+
+/** Получение slug */
+const getTrackSlug = (track) => {
+    return track?.slug
+        || track?.translation?.slug
+        || track?.translations?.[0]?.slug
+        || ''
+}
+
+/** Получение названия родителя */
+const getParentName = (track) => {
+    return track?.parent?.name
+        || track?.parent?.translation?.name
+        || track?.parent?.translations?.[0]?.name
+        || ''
+}
+
+/** Значение родителя для сортировки */
+const getParentSortValue = (track) => {
+    return getParentName(track) || track?.parent_id || ''
+}
+
+/** Название связанной сущности */
+const getNestedTitle = (item) => {
+    return item?.title
+        || item?.name
+        || item?.translation?.title
+        || item?.translation?.name
+        || item?.translations?.[0]?.title
+        || item?.translations?.[0]?.name
+        || ''
+}
+
+/** Текст курсов трека */
+const getCoursesText = (track) => {
+    const courses = Array.isArray(track?.courses) ? track.courses : []
+
+    return courses.map(getNestedTitle).filter(Boolean).join(' ')
+}
+
+/* ==========================================================
+ * СОРТИРОВКА FRONTEND
+ * ========================================================== */
+
+/** Сортировка чисел ↑ */
 const byNumberAsc = (field) => (a, b) =>
     safeNumber(a?.[field]) - safeNumber(b?.[field])
     || safeNumber(a?.id) - safeNumber(b?.id)
 
+/** Сортировка чисел ↓ */
 const byNumberDesc = (field) => (a, b) =>
     safeNumber(b?.[field]) - safeNumber(a?.[field])
     || safeNumber(b?.id) - safeNumber(a?.id)
 
+/** Сортировка строк ↑ */
 const byStringAsc = (field) => (a, b) =>
     normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
     || safeNumber(a?.id) - safeNumber(b?.id)
 
+/** Сортировка строк ↓ */
 const byStringDesc = (field) => (a, b) =>
     normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
     || safeNumber(b?.id) - safeNumber(a?.id)
 
+/** Сортировка треков */
 const sortTracks = (items) => {
     const list = (items || []).slice()
 
-    if (sortParam.value === 'activity') {
-        return list.filter((item) => item.activity)
-    }
-
-    if (sortParam.value === 'inactive') {
-        return list.filter((item) => !item.activity)
-    }
+    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
+    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
 
     const sortMap = {
         idAsc: byNumberAsc('id'),
@@ -258,11 +317,24 @@ const sortTracks = (items) => {
         sortAsc: byNumberAsc('sort'),
         sortDesc: byNumberDesc('sort'),
 
-        nameAsc: byStringAsc('name'),
-        nameDesc: byStringDesc('name'),
+        parentAsc: byNumberAsc('parent_id'),
+        parentDesc: byNumberDesc('parent_id'),
 
-        slugAsc: byStringAsc('slug'),
-        slugDesc: byStringDesc('slug'),
+        nameAsc: (a, b) =>
+            normalize(getTrackName(a)).localeCompare(normalize(getTrackName(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        nameDesc: (a, b) =>
+            normalize(getTrackName(b)).localeCompare(normalize(getTrackName(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        slugAsc: (a, b) =>
+            normalize(getTrackSlug(a)).localeCompare(normalize(getTrackSlug(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        slugDesc: (a, b) =>
+            normalize(getTrackSlug(b)).localeCompare(normalize(getTrackSlug(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
 
         viewsAsc: byNumberAsc('views'),
         viewsDesc: byNumberDesc('views'),
@@ -282,25 +354,37 @@ const sortTracks = (items) => {
         activityAsc: byNumberAsc('activity'),
         activityDesc: byNumberDesc('activity'),
 
-        createdAtAsc: (a, b) => safeDate(a.created_at) - safeDate(b.created_at)
-            || safeNumber(a.id) - safeNumber(b.id),
+        dateAsc: (a, b) =>
+            safeDate(a?.created_at) - safeDate(b?.created_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
 
-        createdAtDesc: (a, b) => safeDate(b.created_at) - safeDate(a.created_at)
-            || safeNumber(b.id) - safeNumber(a.id),
+        dateDesc: (a, b) =>
+            safeDate(b?.created_at) - safeDate(a?.created_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
 
-        updatedAtAsc: (a, b) => safeDate(a.updated_at) - safeDate(b.updated_at)
-            || safeNumber(a.id) - safeNumber(b.id),
+        createdAtAsc: (a, b) =>
+            safeDate(a?.created_at) - safeDate(b?.created_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
 
-        updatedAtDesc: (a, b) => safeDate(b.updated_at) - safeDate(a.updated_at)
-            || safeNumber(b.id) - safeNumber(a.id),
+        createdAtDesc: (a, b) =>
+            safeDate(b?.created_at) - safeDate(a?.created_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
 
-        parentAsc: (a, b) =>
+        updatedAtAsc: (a, b) =>
+            safeDate(a?.updated_at) - safeDate(b?.updated_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        updatedAtDesc: (a, b) =>
+            safeDate(b?.updated_at) - safeDate(a?.updated_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        parentNameAsc: (a, b) =>
             normalize(getParentSortValue(a)).localeCompare(normalize(getParentSortValue(b)), props.currentLocale)
-            || safeNumber(a.id) - safeNumber(b.id),
+            || safeNumber(a?.id) - safeNumber(b?.id),
 
-        parentDesc: (a, b) =>
+        parentNameDesc: (a, b) =>
             normalize(getParentSortValue(b)).localeCompare(normalize(getParentSortValue(a)), props.currentLocale)
-            || safeNumber(b.id) - safeNumber(a.id),
+            || safeNumber(b?.id) - safeNumber(a?.id),
     }
 
     return sortMap[sortParam.value]
@@ -308,40 +392,43 @@ const sortTracks = (items) => {
         : list
 }
 
-/** Фильтрация треков */
+/* ==========================================================
+ * ПОИСК FRONTEND
+ * ========================================================== */
+
+/** Фильтрация плоского списка */
 const filteredTracks = computed(() => {
     let filtered = localTracksFlat.value || []
-    const q = normalize(searchQuery.value)
+    const query = normalize(searchQuery.value)
 
-    if (!q) {
+    if (!query) {
         return sortTracks(filtered)
     }
 
     filtered = filtered.filter((track) => {
-        const name = normalize(track?.name)
-        const slug = normalize(track?.slug)
-        const short = normalize(track?.short)
-        const description = normalize(track?.description)
-        const parentName = normalize(track?.parent?.name)
+        const name = normalize(getTrackName(track))
+        const slug = normalize(getTrackSlug(track))
+        const short = normalize(getTrackShort(track))
+        const description = normalize(getTrackDescription(track))
+        const parentName = normalize(getParentName(track))
+        const courses = normalize(getCoursesText(track))
 
-        const hasCourse = (track?.courses || []).some(course =>
-            normalize(course?.title).includes(q)
-        )
-
-        return (
-            name.includes(q) ||
-            slug.includes(q) ||
-            short.includes(q) ||
-            description.includes(q) ||
-            parentName.includes(q) ||
-            hasCourse
-        )
+        return name.includes(query)
+            || slug.includes(query)
+            || short.includes(query)
+            || description.includes(query)
+            || parentName.includes(query)
+            || courses.includes(query)
     })
 
     return sortTracks(filtered)
 })
 
-/** Пагинированные карточки */
+/* ==========================================================
+ * ЛОКАЛЬНАЯ ПАГИНАЦИЯ
+ * ========================================================== */
+
+/** Пагинация frontend-режима */
 const paginatedTracks = computed(() => {
     const per = Number(itemsPerPage.value || 10)
     const start = (currentPage.value - 1) * per
@@ -349,13 +436,96 @@ const paginatedTracks = computed(() => {
     return filteredTracks.value.slice(start, start + per)
 })
 
+/** Итоговый плоский список */
+const displayedTracks = computed(() => {
+    return props.useServerProcessing
+        ? tracksList.value
+        : paginatedTracks.value
+})
+
 watch([itemsPerPage, searchQuery], () => {
     currentPage.value = 1
 })
 
-/** Drag-and-drop дерева */
+/* ==========================================================
+ * УДАЛЕНИЕ
+ * ========================================================== */
+
+const showConfirmDeleteModal = ref(false)
+const trackToDeleteId = ref(null)
+const trackToDeleteName = ref('')
+
+const confirmDelete = (trackOrId, name = null) => {
+    if (typeof trackOrId === 'object') {
+        trackToDeleteId.value = trackOrId.id
+        trackToDeleteName.value = name || getTrackName(trackOrId)
+    } else {
+        trackToDeleteId.value = trackOrId
+        trackToDeleteName.value = name || `ID: ${trackOrId}`
+    }
+
+    showConfirmDeleteModal.value = true
+}
+
+const closeModal = () => {
+    showConfirmDeleteModal.value = false
+    trackToDeleteId.value = null
+    trackToDeleteName.value = ''
+}
+
+const deleteTrack = () => {
+    if (trackToDeleteId.value === null) return
+
+    const idToDelete = trackToDeleteId.value
+    const nameToDelete = trackToDeleteName.value
+
+    router.delete(route('admin.schoolTracks.destroy', { schoolTrack: idToDelete }), {
+        preserveScroll: true,
+        preserveState: false,
+        onSuccess: () => toast.success(`Трек "${nameToDelete || 'ID: ' + idToDelete}" удалён.`),
+        onError: (errors) => {
+            const errorKey = Object.keys(errors || {})[0]
+            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
+            toast.error(`${errorMsg} (Трек: ${nameToDelete || 'ID: ' + idToDelete})`)
+        },
+        onFinish: () => closeModal(),
+    })
+}
+
+/* ==========================================================
+ * ЛОКАЛЬНОЕ ОБНОВЛЕНИЕ UI
+ * ========================================================== */
+
+const patchTrackInTree = (nodes, trackId, callback) => {
+    for (const node of nodes) {
+        if (node.id === trackId) {
+            callback(node)
+            return true
+        }
+
+        if (node.children?.length && patchTrackInTree(node.children, trackId, callback)) {
+            return true
+        }
+    }
+
+    return false
+}
+
+const patchTrackInFlat = (trackId, callback) => {
+    const index = localTracksFlat.value.findIndex(track => track.id === trackId)
+
+    if (index !== -1) {
+        callback(localTracksFlat.value[index])
+    }
+}
+
+/* ==========================================================
+ * DRAG & DROP ДЕРЕВА
+ * ========================================================== */
+
 const handleDragEnd = () => {
     const changes = []
+
     const updateSortAndCollectChanges = (nodes, parentId) => {
         nodes.forEach((node, index) => {
             let changed = false
@@ -386,22 +556,11 @@ const handleDragEnd = () => {
 
     updateSortAndCollectChanges(localTracksTree.value, null)
 
-    const uniqueChanges = changes.reduce((acc, current) => {
-        const existing = acc.find(item => item.id === current.id)
-
-        if (!existing) {
-            return acc.concat([current])
-        }
-
-        Object.assign(existing, current)
-        return acc
-    }, [])
-
-    if (!uniqueChanges.length) return
+    if (!changes.length) return
 
     router.put(
         route('admin.actions.schoolTracks.updateSortBulk'),
-        { items: uniqueChanges },
+        { items: changes },
         {
             preserveScroll: true,
             preserveState: true,
@@ -419,10 +578,12 @@ const handleDragEnd = () => {
     )
 }
 
-/** Выбранные треки */
+/* ==========================================================
+ * МАССОВЫЕ ОПЕРАЦИИ
+ * ========================================================== */
+
 const selectedTracks = ref([])
 
-/** Получить ID всех треков из дерева */
 const getAllIds = (nodes) => {
     let ids = []
 
@@ -437,23 +598,20 @@ const getAllIds = (nodes) => {
     return ids
 }
 
-/** Выбрать/снять все */
-const toggleAll = (event) => {
-    const checked = event?.target?.checked
+const toggleAll = (payload) => {
+    const checked = payload?.checked ?? payload?.target?.checked ?? false
 
-    const allIds = viewMode.value === 'table'
+    const ids = viewMode.value === 'table'
         ? getAllIds(localTracksTree.value)
-        : paginatedTracks.value.map(track => track.id)
+        : displayedTracks.value.map(track => track.id)
 
-    selectedTracks.value = checked ? allIds : []
+    selectedTracks.value = checked ? ids : []
 }
 
-/** Выбрать/снять все в карточках */
 const toggleAllCards = ({ ids, checked }) => {
     selectedTracks.value = checked ? [...ids] : []
 }
 
-/** Выбрать один трек */
 const toggleSelectTrack = (trackId) => {
     const index = selectedTracks.value.indexOf(trackId)
 
@@ -464,7 +622,6 @@ const toggleSelectTrack = (trackId) => {
     }
 }
 
-/** Локальное обновление activity в дереве */
 const updateActivityByIds = (nodes, ids, activity) => {
     nodes.forEach((node) => {
         if (ids.includes(node.id)) {
@@ -477,7 +634,6 @@ const updateActivityByIds = (nodes, ids, activity) => {
     })
 }
 
-/** Массовое изменение активности */
 const bulkToggleActivity = (newActivity) => {
     if (!selectedTracks.value.length) {
         toast.warning('Выберите треки для активации/деактивации.')
@@ -496,24 +652,20 @@ const bulkToggleActivity = (newActivity) => {
             updateActivityByIds(localTracksTree.value, idsToUpdate, newActivity)
 
             localTracksFlat.value = localTracksFlat.value.map(item => {
-                if (idsToUpdate.includes(item.id)) {
-                    return { ...item, activity: newActivity }
-                }
-
-                return item
+                return idsToUpdate.includes(item.id)
+                    ? { ...item, activity: newActivity }
+                    : item
             })
 
             selectedTracks.value = []
             toast.success('Активность выбранных треков обновлена.')
         },
         onError: (errors) => {
-            const msg = errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.'
-            toast.error(msg)
+            toast.error(errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.')
         },
     })
 }
 
-/** Массовое удаление */
 const bulkDelete = () => {
     if (!selectedTracks.value.length) {
         toast.warning('Выберите хотя бы один трек для удаления.')
@@ -531,14 +683,12 @@ const bulkDelete = () => {
             toast.success('Выбранные треки успешно удалены.')
         },
         onError: (errors) => {
-            console.error('Ошибка массового удаления:', errors)
             const errorKey = Object.keys(errors || {})[0]
             toast.error(errors[errorKey] || 'Ошибка при массовом удалении треков.')
         },
     })
 }
 
-/** Обработка массовых действий */
 const handleBulkAction = (event) => {
     const action = event.target.value
 
@@ -557,6 +707,39 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
+/* ==========================================================
+ * ОДИНОЧНЫЕ ОПЕРАЦИИ
+ * ========================================================== */
+
+const toggleActivity = (track) => {
+    const newActivity = !track.activity
+    const trackName = getTrackName(track)
+    const actionText = newActivity ? t('activated') : t('deactivated')
+
+    router.put(
+        route('admin.actions.schoolTracks.updateActivity', { schoolTrack: track.id }),
+        { activity: newActivity },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                patchTrackInTree(localTracksTree.value, track.id, node => {
+                    node.activity = newActivity
+                })
+
+                patchTrackInFlat(track.id, node => {
+                    node.activity = newActivity
+                })
+
+                track.activity = newActivity
+                toast.success(`Трек "${trackName}" ${actionText}.`)
+            },
+            onError: (errors) => {
+                toast.error(errors.activity || errors.general || `Ошибка изменения активности для "${trackName}".`)
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -567,92 +750,85 @@ const handleBulkAction = (event) => {
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700
-                       border border-blue-400 dark:border-blue-200
-                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
-                       bg-opacity-95 dark:bg-opacity-95"
-            >
-                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200 overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400 bg-opacity-95 dark:bg-opacity-95">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.schoolTracks.create')">
-                        <template #icon>
-                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
-                                <path
-                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z" />
-                            </svg>
-                        </template>
                         {{ t('addLearningCategory') }}
                     </DefaultButton>
+
+                    <ProcessingModeSwitcher
+                        v-if="viewMode !== 'table'"
+                        setting-key="adminSchoolTracksProcessingMode"
+                        :mode="adminSchoolTracksProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="tracksCount"
+                    />
                 </div>
 
                 <SearchInput
-                    v-if="tracksCount && viewMode !== 'table'"
+                    v-if="tracksCount && viewMode !== 'table' && !useServerProcessing"
                     v-model="searchQuery"
                     :placeholder="t('searchByName')"
                 />
 
-                <div v-if="tracksCount && viewMode !== 'table'"
-                     class="flex justify-between items-center flex-col md:flex-row my-3"
+                <ServerSearchInput
+                    v-if="tracksCount && viewMode !== 'table' && useServerProcessing"
+                    v-model="searchQuery"
+                />
+
+                <div
+                    v-if="tracksCount && viewMode !== 'table'"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
                 >
                     <ItemsPerPageSelect
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
                     />
+
+                    <ServerItemsPerPageSelect
+                        v-else
+                        :items-per-page="itemsPerPage"
+                        update-route="admin.settings.updateAdminCountTracks"
+                    />
+
                     <SortSelect
                         :sortParam="sortParam"
                         @update:sortParam="val => sortParam = val"
                     />
                 </div>
 
-                <div v-if="tracksCount"
-                     class="flex flex-col lg:flex-row items-center justify-between gap-3 mb-3"
+                <div
+                    v-if="tracksCount"
+                    class="flex flex-col lg:flex-row items-center justify-between gap-3 mb-3"
                 >
                     <CountTable>{{ tracksCount }}</CountTable>
                     <BulkActionSelect @change="handleBulkAction" />
                     <ToggleViewButton v-model:viewMode="viewMode" />
                 </div>
 
-                <!-- Пагинация -->
                 <div
                     v-if="tracksCount && viewMode !== 'table'"
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredTracks.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="tracks"
                     />
                 </div>
 
-                <!-- Дерево -->
                 <div
                     v-if="viewMode === 'table'"
                     class="border border-gray-400 bg-white dark:bg-slate-800"
                 >
-                    <div
-                        v-if="tracksCount"
-                        class="flex justify-between items-center px-3 py-2
-                               border-b border-gray-400 bg-gray-100 dark:bg-slate-900"
-                    >
-                        <div class="text-xs text-slate-600 dark:text-slate-200">
-                            {{ t('selected') }}: {{ selectedTracks.length }}
-                        </div>
-
-                        <label
-                            class="flex items-center text-xs
-                                   text-slate-600 dark:text-slate-200 cursor-pointer"
-                        >
-                            <span>{{ t('selectAll') }}</span>
-                            <input
-                                type="checkbox"
-                                @change="toggleAll"
-                                class="form-checkbox rounded-sm text-indigo-500 ml-2"
-                                :title="t('selectAll')"
-                            />
-                        </label>
-                    </div>
-
                     <draggable
                         v-model="localTracksTree"
                         tag="div"
@@ -674,25 +850,12 @@ const handleBulkAction = (event) => {
                                 @request-drag-end="handleDragEnd"
                             />
                         </template>
-
-                        <template #header v-if="localTracksTree.length === 0 && tracksCount > 0">
-                            <div class="p-4 text-center text-slate-500 dark:text-slate-400">
-                                {{ t('loading') }}
-                            </div>
-                        </template>
-
-                        <template #footer v-if="localTracksTree.length === 0 && tracksCount === 0">
-                            <div class="p-4 text-center text-slate-900 dark:text-slate-100">
-                                {{ t('noData') }}
-                            </div>
-                        </template>
                     </draggable>
                 </div>
 
-                <!-- Карточки -->
                 <TrackCardGrid
                     v-else
-                    :tracks="paginatedTracks"
+                    :tracks="displayedTracks"
                     :selected-tracks="selectedTracks"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"
@@ -700,17 +863,21 @@ const handleBulkAction = (event) => {
                     @toggle-all="toggleAllCards"
                 />
 
-                <!-- Пагинация -->
                 <div
                     v-if="tracksCount && viewMode !== 'table'"
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredTracks.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="tracks"
                     />
                 </div>
             </div>

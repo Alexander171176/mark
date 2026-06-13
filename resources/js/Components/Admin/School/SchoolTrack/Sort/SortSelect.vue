@@ -62,6 +62,9 @@ const updateSort = (event) => {
             <option value="parentAsc">{{ t('parentCategory') }} 0→9</option>
             <option value="parentDesc">{{ t('parentCategory') }} 9→0</option>
 
+            <option value="parentNameAsc">{{ t('parentCategory') }} A→Z</option>
+            <option value="parentNameDesc">{{ t('parentCategory') }} Z→A</option>
+
             <option value="childrenDesc">{{ t('children') }} 9→0</option>
             <option value="childrenAsc">{{ t('children') }} 0→9</option>
             <option disabled>─────────────────</option>

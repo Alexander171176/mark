@@ -274,6 +274,9 @@ class SchoolLesson extends Model
             'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
             'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
 
+            'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
+            'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),
+
             'moduleAsc' => $q->orderBy('school_module_id', 'asc')->orderByDesc('id'),
             'moduleDesc' => $q->orderBy('school_module_id', 'desc')->orderByDesc('id'),
 
@@ -303,6 +306,12 @@ class SchoolLesson extends Model
 
             'accessTypeAsc' => $q->orderBy('access_type', 'asc')->orderByDesc('id'),
             'accessTypeDesc' => $q->orderBy('access_type', 'desc')->orderByDesc('id'),
+
+            'contentTypeAsc' => $q->orderBy('content_type', 'asc')->orderByDesc('id'),
+            'contentTypeDesc' => $q->orderBy('content_type', 'desc')->orderByDesc('id'),
+
+            'contentIdAsc' => $q->orderBy('content_id', 'asc')->orderByDesc('id'),
+            'contentIdDesc' => $q->orderBy('content_id', 'desc')->orderByDesc('id'),
 
             'difficultyAsc' => $q->orderBy('difficulty', 'asc')->orderByDesc('id'),
             'difficultyDesc' => $q->orderBy('difficulty', 'desc')->orderByDesc('id'),

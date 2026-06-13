@@ -15,7 +15,9 @@ use App\Models\Admin\School\SchoolHashtag\SchoolHashtag;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolLesson\SchoolLessonImage;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -69,64 +71,76 @@ class SchoolLessonController extends BaseSchoolAdminController
     /** Список уроков */
     public function index(Request $request): Response
     {
-        // Текущая локаль
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolLessonsPerPage = $settings->int('site_settings.adminSchoolLessonsPerPage', 6);
-        $adminSchoolLessonsDefaultSort = $settings->string('site_settings.adminSchoolLessonsDefaultSort', 'idDesc');
-        $sort = (string) $request->query('sort', $adminSchoolLessonsDefaultSort);
+
+        $perPage = $settings->int('adminSchoolLessonsPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolLessonsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolLessonsProcessingMode',
+            'frontend'
+        );
+
+        $lessonsCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $lessonsCount,
+                300
+            );
 
         try {
+            $lessons = $this->getIndexLessons(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
-            // Получение уроков
-            $lessons = $this->baseQuery()
-                ->with([
-                    'translation',
-                    'translations',
-                    'images',
-                    'module.translation',
-                    'module.course.translation',
-                    'hashtags.translation',
-                    'content',
-                ])
-                ->withCount([
-                    'images',
-                    'likes',
-                    'hashtags',
-                ])
-                ->sortByParam($sort, $currentLocale)
-                ->get();
-
-            // Страница списка уроков
             return Inertia::render('Admin/School/SchoolLessons/Index', [
-                'lessons' => SchoolLessonResource::collection($lessons),
-                'lessonsCount' => $this->baseQuery()->count(),
-
-                'adminSchoolLessonsPerPage' => $adminSchoolLessonsPerPage,
-                'adminSchoolLessonsDefaultSort' => $adminSchoolLessonsDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolLessonsPerPage' => $perPage,
+                'adminSchoolLessonsDefaultSort' => $defaultSort,
+                'adminSchoolLessonsProcessingMode' => $processingMode,
+
+                'lessons' => SchoolLessonResource::collection($lessons),
+                'lessonsCount' => $lessonsCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
             ]);
-
         } catch (Throwable $e) {
-
-            // Логирование ошибок
             Log::error('Ошибка загрузки списка school lessons: ' . $e->getMessage(), [
                 'exception' => $e,
             ]);
 
-            // Возврат пустой страницы при ошибке
             return Inertia::render('Admin/School/SchoolLessons/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolLessonsPerPage' => $perPage,
+                'adminSchoolLessonsDefaultSort' => $defaultSort,
+                'adminSchoolLessonsProcessingMode' => $processingMode,
+
                 'lessons' => [],
                 'lessonsCount' => 0,
 
-                'adminSchoolLessonsPerPage' => $adminSchoolLessonsPerPage,
-                'adminSchoolLessonsDefaultSort' => $adminSchoolLessonsDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
                 'error' => 'Ошибка загрузки уроков.',
             ]);
         }
@@ -549,5 +563,51 @@ class SchoolLessonController extends BaseSchoolAdminController
 
             return back()->with('error', 'Ошибка при клонировании урока.');
         }
+    }
+
+    /** Базовый запрос для списка уроков. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+                'images',
+                'module.translation',
+                'module.translations',
+                'module.course.translation',
+                'module.course.translations',
+                'hashtags.translation',
+                'hashtags.translations',
+                'content',
+            ])
+            ->withCount([
+                'images',
+                'likes',
+                'hashtags',
+            ]);
+    }
+
+    /** Получение списка уроков по активному режиму обработки. */
+    private function getIndexLessons(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

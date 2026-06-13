@@ -779,7 +779,7 @@ const toggleActivity = (module) => {
 
                 <ModuleTable
                     v-if="viewMode === 'table'"
-                    :modules="paginatedModules"
+                    :modules="displayedModules"
                     :selected-modules="selectedModules"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"
@@ -790,7 +790,7 @@ const toggleActivity = (module) => {
 
                 <ModuleCardGrid
                     v-else
-                    :modules="paginatedModules"
+                    :modules="displayedModules"
                     :selected-modules="selectedModules"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"

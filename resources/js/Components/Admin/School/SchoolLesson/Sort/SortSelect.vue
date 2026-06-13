@@ -16,7 +16,7 @@ const updateSort = (event) => {
 </script>
 
 <template>
-    <div class="flex justify-center items-center h-fit sm:mr-4 mt-2 mb-2">
+    <div class="flex justify-center items-center h-fit my-2">
         <label for="sortParam"
                class="hidden lg:block sm:mr-2 tracking-wider
                       text-sm font-semibold text-slate-600 dark:text-slate-100">
@@ -43,6 +43,10 @@ const updateSort = (event) => {
             <option value="titleDesc">{{ t('title') }} ↓</option>
             <option disabled>──────────────────────────────</option>
 
+            <option value="slugAsc">Slug A→Z</option>
+            <option value="slugDesc">Slug Z→A</option>
+            <option disabled>──────────────────────────────</option>
+
             <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
             <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
             <option value="activity">{{ t('active') }}</option>
@@ -57,8 +61,11 @@ const updateSort = (event) => {
             <option value="viewsDesc">{{ t('views') }} 9→0</option>
             <option value="viewsAsc">{{ t('views') }} 0→9</option>
 
-            <option value="likesCountDesc">{{ t('likes') }} 9→0</option>
-            <option value="likesCountAsc">{{ t('likes') }} 0→9</option>
+            <option value="likesDesc">{{ t('likes') }} 9→0</option>
+            <option value="likesAsc">{{ t('likes') }} 0→9</option>
+
+            <option value="likesCountDesc">{{ t('ratingCount') }} 9→0</option>
+            <option value="likesCountAsc">{{ t('ratingCount') }} 0→9</option>
             <option disabled>──────────────────────────────</option>
 
             <!-- Метрики курса -->
@@ -109,6 +116,13 @@ const updateSort = (event) => {
 
             <option value="previewValueDesc">{{ t('previewPercent') }} 9→0</option>
             <option value="previewValueAsc">{{ t('previewPercent') }} 0→9</option>
+            <option disabled>──────────────────────────────</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
             <option disabled>──────────────────────────────</option>
 
         </select>

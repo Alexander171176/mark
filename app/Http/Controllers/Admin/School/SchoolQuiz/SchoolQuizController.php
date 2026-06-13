@@ -13,7 +13,9 @@ use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
 use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
 use App\Models\Admin\School\SchoolQuiz\SchoolQuizImage;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -67,52 +69,73 @@ class SchoolQuizController extends BaseSchoolAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolQuizzesPerPage = $settings->int('site_settings.adminSchoolQuizzesPerPage', 6);
-        $adminSchoolQuizzesDefaultSort = $settings->string('site_settings.adminSchoolQuizzesDefaultSort', 'idDesc');
-        $sort = (string) $request->query('sort', $adminSchoolQuizzesDefaultSort);
+
+        $perPage = $settings->int('adminSchoolQuizzesPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolQuizzesDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolQuizzesProcessingMode',
+            'frontend'
+        );
+
+        $quizzesCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $quizzesCount,
+                300
+            );
 
         try {
-            $quizzes = $this->baseQuery()
-                ->with([
-                    'translation',
-                    'translations',
-                    'images',
-                    'course.translation',
-                    'module.translation',
-                    'lesson.translation',
-                ])
-                ->withCount([
-                    'questions',
-                    'attempts',
-                    'images',
-                ])
-                ->sortByParam($sort, $currentLocale)
-                ->get();
+            $quizzes = $this->getIndexQuizzes(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/School/SchoolQuizzes/Index', [
-                'quizzes' => SchoolQuizResource::collection($quizzes),
-                'quizzesCount' => $this->baseQuery()->count(),
-
-                'adminSchoolQuizzesPerPage' => $adminSchoolQuizzesPerPage,
-                'adminSchoolQuizzesDefaultSort' => $adminSchoolQuizzesDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolQuizzesPerPage' => $perPage,
+                'adminSchoolQuizzesDefaultSort' => $defaultSort,
+                'adminSchoolQuizzesProcessingMode' => $processingMode,
+
+                'quizzes' => SchoolQuizResource::collection($quizzes),
+                'quizzesCount' => $quizzesCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки school quizzes: ' . $e->getMessage(), [
+            Log::error('Ошибка загрузки списка school quizzes: ' . $e->getMessage(), [
                 'exception' => $e,
             ]);
 
             return Inertia::render('Admin/School/SchoolQuizzes/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolQuizzesPerPage' => $perPage,
+                'adminSchoolQuizzesDefaultSort' => $defaultSort,
+                'adminSchoolQuizzesProcessingMode' => $processingMode,
+
                 'quizzes' => [],
                 'quizzesCount' => 0,
 
-                'adminSchoolQuizzesPerPage' => $adminSchoolQuizzesPerPage,
-                'adminSchoolQuizzesDefaultSort' => $adminSchoolQuizzesDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
                 'error' => 'Ошибка загрузки квизов.',
             ]);
         }
@@ -460,5 +483,53 @@ class SchoolQuizController extends BaseSchoolAdminController
             ->get();
 
         return SchoolLessonResource::collection($lessons);
+    }
+
+    /** Базовый запрос для списка квизов. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+                'images',
+
+                'course.translation',
+                'course.translations',
+
+                'module.translation',
+                'module.translations',
+
+                'lesson.translation',
+                'lesson.translations',
+            ])
+            ->withCount([
+                'questions',
+                'attempts',
+                'images',
+            ]);
+    }
+
+    /** Получение списка квизов по активному режиму обработки. */
+    private function getIndexQuizzes(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

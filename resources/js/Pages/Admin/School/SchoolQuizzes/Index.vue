@@ -1,10 +1,11 @@
 <script setup>
 /**
- * @version PulsarCMS 1.0
- * @author Александр Косолапов <kosolapov1976@gmail.com>
- *
  * Список квизов школы
+ * - режимы обработки: frontend | server | auto
+ * - локальный поиск/сортировка/пагинация
+ * - серверный поиск/сортировка/пагинация
  */
+
 import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -13,94 +14,342 @@ import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
 import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
 import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
 import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 import BulkActionSelect from '@/Components/Admin/School/SchoolQuiz/Select/BulkActionSelect.vue'
 import SortSelect from '@/Components/Admin/School/SchoolQuiz/Sort/SortSelect.vue'
 import QuizTable from '@/Components/Admin/School/SchoolQuiz/Table/QuizTable.vue'
 import QuizCardGrid from '@/Components/Admin/School/SchoolQuiz/View/QuizCardGrid.vue'
 
-// Локализация интерфейса
 const { t } = useI18n()
-
-// Уведомления
 const toast = useToast()
 
-// Входящие данные страницы
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
-    quizzes: { type: Array, default: () => [] },
+
+    adminSchoolQuizzesProcessingMode: { type: String, default: 'frontend' },
+    useServerProcessing: { type: Boolean, default: false },
+
+    quizzes: { type: [Array, Object], default: () => [] },
     quizzesCount: { type: Number, default: 0 },
-    adminSchoolQuizzesPerPage: { type: Number, default: 10 },
+
+    adminSchoolQuizzesPerPage: { type: Number, default: 6 },
     adminSchoolQuizzesDefaultSort: { type: String, default: 'idDesc' },
+
+    sortParam: { type: String, default: '' },
+    search: { type: String, default: '' },
+
+    errors: { type: Object, default: () => ({}) },
 })
 
-// Режим отображения (таблица/карточки)
-const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
+const viewMode = ref(localStorage.getItem('admin_view_mode_quizzes') || 'table')
 
-// Сохранение режима отображения
 watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode', val)
+    localStorage.setItem('admin_view_mode_quizzes', val)
 })
 
-// Локальный список квизов
+const quizzesList = computed(() => {
+    if (Array.isArray(props.quizzes)) return props.quizzes
+    if (Array.isArray(props.quizzes?.data)) return props.quizzes.data
+    return []
+})
+
 const localQuizzes = ref([])
 
-// Синхронизация локального списка
 watch(
-    () => props.quizzes,
+    quizzesList,
     (newVal) => {
         localQuizzes.value = JSON.parse(JSON.stringify(newVal || []))
     },
     { immediate: true, deep: true }
 )
 
-// Количество элементов на странице
-const itemsPerPage = ref(props.adminSchoolQuizzesPerPage || 10)
+const itemsPerPage = ref(props.adminSchoolQuizzesPerPage || 6)
 
-// Обновление количества элементов
 watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountQuizzes'), { value: newVal }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
-    })
+    router.put(
+        route('admin.settings.updateAdminCountQuizzes'),
+        { value: newVal },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
+            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+        }
+    )
 })
 
-// Параметр сортировки
-const sortParam = ref(props.adminSchoolQuizzesDefaultSort || 'idDesc')
+const sortParam = ref(props.sortParam || props.adminSchoolQuizzesDefaultSort || 'idDesc')
 
-// Обновление сортировки
 watch(sortParam, (newVal) => {
-    router.put(route('admin.settings.updateAdminSortQuizzes'), { value: newVal }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.info('Сортировка успешно изменена'),
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
-    })
+    currentPage.value = 1
+
+    router.put(
+        route('admin.settings.updateAdminSortQuizzes'),
+        { value: newVal },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                if (props.useServerProcessing) {
+                    router.get(
+                        window.location.pathname,
+                        {
+                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                            sort: newVal || undefined,
+                            page: undefined,
+                        },
+                        {
+                            preserveScroll: true,
+                            preserveState: false,
+                            replace: true,
+                        }
+                    )
+                }
+
+                toast.info('Сортировка успешно изменена')
+            },
+            onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
+        }
+    )
 })
 
-// Модальное окно удаления
+const searchQuery = ref(props.search || '')
+const currentPage = ref(1)
+
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+
+const safeNumber = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : 0
+}
+
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+const getQuizTitle = (quiz) => {
+    return quiz?.title
+        || quiz?.translation?.title
+        || quiz?.translations?.[0]?.title
+        || `ID: ${quiz?.id}`
+}
+
+const getQuizShort = (quiz) => {
+    return quiz?.short
+        || quiz?.translation?.short
+        || quiz?.translations?.[0]?.short
+        || ''
+}
+
+const getQuizDescription = (quiz) => {
+    return quiz?.description
+        || quiz?.translation?.description
+        || quiz?.translations?.[0]?.description
+        || ''
+}
+
+const getNestedTitle = (item) => {
+    return item?.title
+        || item?.name
+        || item?.translation?.title
+        || item?.translation?.name
+        || item?.translations?.[0]?.title
+        || item?.translations?.[0]?.name
+        || ''
+}
+
+const byNumberAsc = (field) => (a, b) =>
+    safeNumber(a?.[field]) - safeNumber(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byNumberDesc = (field) => (a, b) =>
+    safeNumber(b?.[field]) - safeNumber(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const byDateAsc = (field) => (a, b) =>
+    safeDate(a?.[field]) - safeDate(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byDateDesc = (field) => (a, b) =>
+    safeDate(b?.[field]) - safeDate(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const byStringAsc = (field) => (a, b) =>
+    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byStringDesc = (field) => (a, b) =>
+    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const sortQuizzes = (items) => {
+    const list = (items || []).slice()
+
+    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
+    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
+
+    if (sortParam.value === 'left') return list.filter(item => !!item.left)
+    if (sortParam.value === 'noLeft') return list.filter(item => !item.left)
+
+    if (sortParam.value === 'main') return list.filter(item => !!item.main)
+    if (sortParam.value === 'noMain') return list.filter(item => !item.main)
+
+    if (sortParam.value === 'right') return list.filter(item => !!item.right)
+    if (sortParam.value === 'noRight') return list.filter(item => !item.right)
+
+    if (sortParam.value === 'graded') return list.filter(item => item.type === 'graded')
+    if (sortParam.value === 'practice') return list.filter(item => item.type === 'practice')
+
+    const sortMap = {
+        idAsc: byNumberAsc('id'),
+        idDesc: byNumberDesc('id'),
+
+        sortAsc: byNumberAsc('sort'),
+        sortDesc: byNumberDesc('sort'),
+
+        titleAsc: (a, b) =>
+            normalize(getQuizTitle(a)).localeCompare(normalize(getQuizTitle(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        titleDesc: (a, b) =>
+            normalize(getQuizTitle(b)).localeCompare(normalize(getQuizTitle(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        slugAsc: byStringAsc('slug'),
+        slugDesc: byStringDesc('slug'),
+
+        typeAsc: byStringAsc('type'),
+        typeDesc: byStringDesc('type'),
+
+        passScoreAsc: byNumberAsc('pass_score'),
+        passScoreDesc: byNumberDesc('pass_score'),
+
+        attemptsLimitAsc: byNumberAsc('attempts_limit'),
+        attemptsLimitDesc: byNumberDesc('attempts_limit'),
+
+        timeLimitAsc: byNumberAsc('time_limit_minutes'),
+        timeLimitDesc: byNumberDesc('time_limit_minutes'),
+
+        questionsAsc: byNumberAsc('questions_count'),
+        questionsDesc: byNumberDesc('questions_count'),
+
+        attemptsAsc: byNumberAsc('attempts_count'),
+        attemptsDesc: byNumberDesc('attempts_count'),
+
+        imagesAsc: byNumberAsc('images_count'),
+        imagesDesc: byNumberDesc('images_count'),
+
+        activityAsc: byNumberAsc('activity'),
+        activityDesc: byNumberDesc('activity'),
+
+        publishedAtAsc: byDateAsc('published_at'),
+        publishedAtDesc: byDateDesc('published_at'),
+
+        createdAtAsc: byDateAsc('created_at'),
+        createdAtDesc: byDateDesc('created_at'),
+
+        updatedAtAsc: byDateAsc('updated_at'),
+        updatedAtDesc: byDateDesc('updated_at'),
+
+        courseTitleAsc: (a, b) =>
+            normalize(getNestedTitle(a?.course)).localeCompare(normalize(getNestedTitle(b?.course)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        courseTitleDesc: (a, b) =>
+            normalize(getNestedTitle(b?.course)).localeCompare(normalize(getNestedTitle(a?.course)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        moduleTitleAsc: (a, b) =>
+            normalize(getNestedTitle(a?.module)).localeCompare(normalize(getNestedTitle(b?.module)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        moduleTitleDesc: (a, b) =>
+            normalize(getNestedTitle(b?.module)).localeCompare(normalize(getNestedTitle(a?.module)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        lessonTitleAsc: (a, b) =>
+            normalize(getNestedTitle(a?.lesson)).localeCompare(normalize(getNestedTitle(b?.lesson)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        lessonTitleDesc: (a, b) =>
+            normalize(getNestedTitle(b?.lesson)).localeCompare(normalize(getNestedTitle(a?.lesson)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+    }
+
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
+}
+
+const filteredQuizzes = computed(() => {
+    let filtered = localQuizzes.value || []
+    const query = normalize(searchQuery.value)
+
+    if (!query) {
+        return sortQuizzes(filtered)
+    }
+
+    filtered = filtered.filter((quiz) => {
+        const values = [
+            getQuizTitle(quiz),
+            getQuizShort(quiz),
+            getQuizDescription(quiz),
+            quiz?.slug,
+            quiz?.type,
+
+            getNestedTitle(quiz?.course),
+            quiz?.course?.slug,
+
+            getNestedTitle(quiz?.module),
+            quiz?.module?.slug,
+
+            getNestedTitle(quiz?.lesson),
+            quiz?.lesson?.slug,
+        ]
+
+        return values.some(value => normalize(value).includes(query))
+    })
+
+    return sortQuizzes(filtered)
+})
+
+const paginatedQuizzes = computed(() => {
+    const per = Number(itemsPerPage.value || 10)
+    const start = (currentPage.value - 1) * per
+
+    return filteredQuizzes.value.slice(start, start + per)
+})
+
+const displayedQuizzes = computed(() => {
+    return props.useServerProcessing
+        ? quizzesList.value
+        : paginatedQuizzes.value
+})
+
+watch([itemsPerPage, searchQuery], () => {
+    currentPage.value = 1
+})
+
 const showConfirmDeleteModal = ref(false)
-
-// ID удаляемого квиза
 const quizToDeleteId = ref(null)
-
-// Название удаляемого квиза
 const quizToDeleteTitle = ref('')
 
-// Подтверждение удаления квиза
 const confirmDelete = (quizOrId, title = null) => {
     if (typeof quizOrId === 'object') {
         quizToDeleteId.value = quizOrId.id
-        quizToDeleteTitle.value = title || quizOrId.title || `ID: ${quizOrId.id}`
+        quizToDeleteTitle.value = title || getQuizTitle(quizOrId)
     } else {
         quizToDeleteId.value = quizOrId
         quizToDeleteTitle.value = title || `ID: ${quizOrId}`
@@ -109,14 +358,12 @@ const confirmDelete = (quizOrId, title = null) => {
     showConfirmDeleteModal.value = true
 }
 
-// Закрытие модального окна
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     quizToDeleteId.value = null
     quizToDeleteTitle.value = ''
 }
 
-// Удаление квиза
 const deleteQuiz = () => {
     if (quizToDeleteId.value === null) return
 
@@ -128,151 +375,16 @@ const deleteQuiz = () => {
     }), {
         preserveScroll: true,
         preserveState: false,
-        onSuccess: () => {
-            toast.success(`Квиз "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
-        },
+        onSuccess: () => toast.success(`Квиз "${titleToDelete || 'ID: ' + idToDelete}" удалён.`),
         onError: (errors) => {
             const errorKey = Object.keys(errors || {})[0]
             const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
-
             toast.error(`${errorMsg} (Квиз: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
         onFinish: () => closeModal(),
     })
 }
 
-// Текущая страница пагинации
-const currentPage = ref(1)
-
-// Поисковый запрос
-const searchQuery = ref('')
-
-// Нормализация строк поиска
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
-
-// Сортировка и фильтрация квизов
-const sortQuizzes = (items) => {
-    const list = (items || []).slice()
-
-    if (sortParam.value === 'idAsc') {
-        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    }
-
-    if (sortParam.value === 'idDesc') {
-        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-    }
-
-    if (sortParam.value === 'sortAsc') {
-        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    }
-
-    if (sortParam.value === 'sortDesc') {
-        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
-    }
-
-    if (sortParam.value === 'titleAsc') {
-        return list.sort((a, b) => normalize(a.title).localeCompare(normalize(b.title)))
-    }
-
-    if (sortParam.value === 'titleDesc') {
-        return list.sort((a, b) => normalize(b.title).localeCompare(normalize(a.title)))
-    }
-
-    if (sortParam.value === 'passScoreAsc') {
-        return list.sort((a, b) => (a.pass_score ?? 0) - (b.pass_score ?? 0))
-    }
-
-    if (sortParam.value === 'passScoreDesc') {
-        return list.sort((a, b) => (b.pass_score ?? 0) - (a.pass_score ?? 0))
-    }
-
-    if (sortParam.value === 'attemptsLimitAsc') {
-        return list.sort((a, b) => (a.attempts_limit ?? 0) - (b.attempts_limit ?? 0))
-    }
-
-    if (sortParam.value === 'attemptsLimitDesc') {
-        return list.sort((a, b) => (b.attempts_limit ?? 0) - (a.attempts_limit ?? 0))
-    }
-
-    if (sortParam.value === 'timeLimitAsc') {
-        return list.sort((a, b) => (a.time_limit_minutes ?? 0) - (b.time_limit_minutes ?? 0))
-    }
-
-    if (sortParam.value === 'timeLimitDesc') {
-        return list.sort((a, b) => (b.time_limit_minutes ?? 0) - (a.time_limit_minutes ?? 0))
-    }
-
-    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
-    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
-
-    if (sortParam.value === 'left') return list.filter(item => !!item.left)
-    if (sortParam.value === 'noLeft') return list.filter(item => !item.left)
-    if (sortParam.value === 'main') return list.filter(item => !!item.main)
-    if (sortParam.value === 'noMain') return list.filter(item => !item.main)
-    if (sortParam.value === 'right') return list.filter(item => !!item.right)
-    if (sortParam.value === 'noRight') return list.filter(item => !item.right)
-
-    if (sortParam.value === 'graded') return list.filter(item => item.type === 'graded')
-    if (sortParam.value === 'practice') return list.filter(item => item.type === 'practice')
-
-    if ([
-        'questions_count',
-        'attempts_count',
-        'images_count',
-    ].includes(sortParam.value)) {
-        return list.sort((a, b) => (b[sortParam.value] ?? 0) - (a[sortParam.value] ?? 0))
-    }
-
-    return list
-}
-
-// Отфильтрованные квизы
-const filteredQuizzes = computed(() => {
-    let filtered = localQuizzes.value || []
-    const q = normalize(searchQuery.value)
-
-    if (!q) {
-        return sortQuizzes(filtered)
-    }
-
-    filtered = filtered.filter((quiz) => {
-        const values = [
-            quiz.title,
-            quiz.short,
-            quiz.description,
-            quiz.slug,
-            quiz.type,
-
-            quiz.course?.title,
-            quiz.course?.slug,
-
-            quiz.module?.title,
-            quiz.module?.slug,
-
-            quiz.lesson?.title,
-            quiz.lesson?.slug,
-        ]
-
-        return values.some(value => normalize(value).includes(q))
-    })
-
-    return sortQuizzes(filtered)
-})
-
-// Квизы текущей страницы
-const paginatedQuizzes = computed(() => {
-    const per = Number(itemsPerPage.value || 20)
-    const start = (currentPage.value - 1) * per
-
-    return filteredQuizzes.value.slice(start, start + per)
-})
-
-// Сброс страницы при изменении поиска или лимита
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
-
-// Локальное обновление данных квиза
 const patchQuiz = (quizId, payload) => {
     const index = localQuizzes.value.findIndex(quiz => quiz.id === quizId)
 
@@ -284,15 +396,19 @@ const patchQuiz = (quizId, payload) => {
     }
 }
 
-// Выбранные квизы
 const selectedQuizzes = ref([])
 
-// Выбор или снятие выбора всех квизов
-const toggleAll = ({ ids, checked }) => {
-    selectedQuizzes.value = checked ? [...ids] : []
+const toggleAll = (payload) => {
+    const checked = payload?.checked ?? payload?.target?.checked ?? false
+    const ids = payload?.ids ?? displayedQuizzes.value.map((quiz) => quiz.id)
+
+    if (checked) {
+        selectedQuizzes.value = [...new Set([...selectedQuizzes.value, ...ids])]
+    } else {
+        selectedQuizzes.value = selectedQuizzes.value.filter((id) => !ids.includes(id))
+    }
 }
 
-// Переключение выбора квиза
 const toggleSelectQuiz = (id) => {
     const index = selectedQuizzes.value.indexOf(id)
 
@@ -303,7 +419,6 @@ const toggleSelectQuiz = (id) => {
     }
 }
 
-// Обновление сортировки drag-and-drop
 const handleSortOrderUpdate = (orderedIds) => {
     const startSort = (currentPage.value - 1) * itemsPerPage.value
 
@@ -319,7 +434,6 @@ const handleSortOrderUpdate = (orderedIds) => {
         preserveState: true,
         onSuccess: () => toast.success('Порядок квизов успешно обновлён.'),
         onError: (errors) => {
-            console.error('Ошибка обновления сортировки квизов:', errors)
             toast.error(errors?.message || errors?.general || 'Не удалось обновить порядок квизов.')
 
             router.reload({
@@ -330,7 +444,6 @@ const handleSortOrderUpdate = (orderedIds) => {
     })
 }
 
-// Массовое обновление активности
 const bulkToggleActivity = (newActivity) => {
     if (!selectedQuizzes.value.length) {
         toast.warning('Выберите квизы для активации/деактивации.')
@@ -356,7 +469,6 @@ const bulkToggleActivity = (newActivity) => {
     })
 }
 
-// Массовое обновление флагов left/main/right
 const bulkToggleFlag = (field, routeName, value) => {
     if (!selectedQuizzes.value.length) {
         toast.warning('Выберите квизы.')
@@ -382,16 +494,13 @@ const bulkToggleFlag = (field, routeName, value) => {
     })
 }
 
-// Массовое удаление квизов
 const bulkDelete = () => {
     if (!selectedQuizzes.value.length) {
         toast.warning('Выберите хотя бы один квиз для удаления.')
         return
     }
 
-    if (!confirm('Вы уверены, что хотите удалить выбранные квизы?')) {
-        return
-    }
+    if (!confirm('Вы уверены, что хотите удалить выбранные квизы?')) return
 
     router.delete(route('admin.actions.schoolQuizzes.bulkDestroy'), {
         data: { ids: selectedQuizzes.value },
@@ -403,21 +512,18 @@ const bulkDelete = () => {
         },
         onError: (errors) => {
             const errorKey = Object.keys(errors || {})[0]
-            const errorMessage = errors[errorKey] || 'Произошла ошибка при удалении квизов.'
-
-            toast.error(errorMessage)
+            toast.error(errors[errorKey] || 'Произошла ошибка при удалении квизов.')
         },
     })
 }
 
-// Обработка массовых действий
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedQuizzes.value = paginatedQuizzes.value.map(quiz => quiz.id)
+        toggleAll({ target: { checked: true } })
     } else if (action === 'deselectAll') {
-        selectedQuizzes.value = []
+        toggleAll({ target: { checked: false } })
     } else if (action === 'activate') {
         bulkToggleActivity(true)
     } else if (action === 'deactivate') {
@@ -441,10 +547,9 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-// Переключение активности квиза
 const toggleActivity = (quiz) => {
     const newActivity = !quiz.activity
-    const quizTitle = quiz.title || `ID: ${quiz.id}`
+    const quizTitle = getQuizTitle(quiz)
     const actionText = newActivity ? t('activated') : t('deactivated')
 
     router.put(route('admin.actions.schoolQuizzes.updateActivity', {
@@ -465,10 +570,9 @@ const toggleActivity = (quiz) => {
     })
 }
 
-// Универсальное переключение флагов
 const togglePlacement = (quiz, field, routeName) => {
     const newValue = !quiz[field]
-    const quizTitle = quiz.title || `ID: ${quiz.id}`
+    const quizTitle = getQuizTitle(quiz)
 
     router.put(route(routeName, {
         schoolQuiz: quiz.id,
@@ -488,31 +592,25 @@ const togglePlacement = (quiz, field, routeName) => {
     })
 }
 
-// Переключение левой колонки
 const toggleLeft = (quiz) =>
     togglePlacement(quiz, 'left', 'admin.actions.schoolQuizzes.updateLeft')
 
-// Переключение центральной колонки
 const toggleMain = (quiz) =>
     togglePlacement(quiz, 'main', 'admin.actions.schoolQuizzes.updateMain')
 
-// Переключение правой колонки
 const toggleRight = (quiz) =>
     togglePlacement(quiz, 'right', 'admin.actions.schoolQuizzes.updateRight')
 
-// Клонирование квиза
 const cloneQuiz = (quiz) => {
     const quizId = quiz?.id
-    const quizTitle = quiz?.title || `ID: ${quizId}`
+    const quizTitle = getQuizTitle(quiz)
 
     if (!quizId) {
         toast.error('Не удалось определить квиз для клонирования.')
         return
     }
 
-    if (!confirm(`Вы уверены, что хотите клонировать квиз "${quizTitle}"?`)) {
-        return
-    }
+    if (!confirm(`Вы уверены, что хотите клонировать квиз "${quizTitle}"?`)) return
 
     router.post(route('admin.actions.schoolQuizzes.clone', {
         schoolQuiz: quizId,
@@ -522,9 +620,7 @@ const cloneQuiz = (quiz) => {
         onSuccess: () => toast.success(`Квиз "${quizTitle}" успешно клонирован.`),
         onError: (errors) => {
             const errorKey = Object.keys(errors || {})[0]
-            const errorMessage = errors[errorKey] || `Ошибка клонирования квиза "${quizTitle}".`
-
-            toast.error(errorMessage)
+            toast.error(errors[errorKey] || `Ошибка клонирования квиза "${quizTitle}".`)
         },
     })
 }
@@ -543,57 +639,82 @@ const cloneQuiz = (quiz) => {
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.schoolQuizzes.create')">
-                        <template #icon>
-                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
-                                <path
-                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
-                                />
-                            </svg>
-                        </template>
                         {{ t('addQuiz') }}
                     </DefaultButton>
+
+                    <ProcessingModeSwitcher
+                        setting-key="adminSchoolQuizzesProcessingMode"
+                        :mode="adminSchoolQuizzesProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="quizzesCount"
+                    />
                 </div>
+
                 <SearchInput
-                    v-if="quizzesCount"
+                    v-if="quizzesCount && !useServerProcessing"
                     v-model="searchQuery"
                     :placeholder="t('searchByName')"
                 />
-                <div v-if="quizzesCount"
-                     class="flex justify-between items-center flex-col md:flex-row my-3"
+
+                <ServerSearchInput
+                    v-if="quizzesCount && useServerProcessing"
+                    v-model="searchQuery"
+                />
+
+                <div
+                    v-if="quizzesCount"
+                    class="flex justify-between items-center flex-col md:flex-row my-3"
                 >
                     <ItemsPerPageSelect
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
                     />
+
+                    <ServerItemsPerPageSelect
+                        v-else
+                        :items-per-page="itemsPerPage"
+                        update-route="admin.settings.updateAdminCountQuizzes"
+                    />
+
                     <SortSelect
                         :sortParam="sortParam"
                         @update:sortParam="val => sortParam = val"
                     />
                 </div>
-                <div v-if="quizzesCount"
-                     class="flex flex-col lg:flex-row items-center justify-between gap-3"
+
+                <div
+                    v-if="quizzesCount"
+                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
                 >
                     <CountTable>{{ quizzesCount }}</CountTable>
                     <BulkActionSelect @change="handleBulkAction" />
                     <ToggleViewButton v-model:viewMode="viewMode" />
                 </div>
+
                 <div
                     v-if="quizzesCount"
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredQuizzes.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="quizzes"
                     />
                 </div>
+
                 <QuizTable
                     v-if="viewMode === 'table'"
-                    :quizzes="paginatedQuizzes"
+                    :quizzes="displayedQuizzes"
                     :selected-quizzes="selectedQuizzes"
                     @toggle-activity="toggleActivity"
                     @toggle-left="toggleLeft"
@@ -605,9 +726,10 @@ const cloneQuiz = (quiz) => {
                     @toggle-select="toggleSelectQuiz"
                     @toggle-all="toggleAll"
                 />
+
                 <QuizCardGrid
                     v-else
-                    :quizzes="paginatedQuizzes"
+                    :quizzes="displayedQuizzes"
                     :selected-quizzes="selectedQuizzes"
                     @toggle-activity="toggleActivity"
                     @toggle-left="toggleLeft"
@@ -619,27 +741,34 @@ const cloneQuiz = (quiz) => {
                     @toggle-select="toggleSelectQuiz"
                     @toggle-all="toggleAll"
                 />
+
                 <div
                     v-if="quizzesCount"
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredQuizzes.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="quizzes"
                     />
                 </div>
             </div>
         </div>
+
         <DangerModal
             :show="showConfirmDeleteModal"
-            @close="closeModal"
             :onCancel="closeModal"
             :onConfirm="deleteQuiz"
             :cancelText="t('cancel')"
             :confirmText="t('yesDelete')"
+            @close="closeModal"
         />
     </AdminLayout>
 </template>

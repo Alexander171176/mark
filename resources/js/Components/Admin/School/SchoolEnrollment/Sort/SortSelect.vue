@@ -41,28 +41,46 @@ const updateSort = (event) => {
             <option value="idAsc">{{ t('idAsc') }}</option>
             <option disabled>──────────────────</option>
 
-            <option value="statusAsc">{{ t('status') }} ↑</option>
-            <option value="statusDesc">{{ t('status') }} ↓</option>
+            <option value="statusAsc">{{ t('status') }} A→Z</option>
+            <option value="statusDesc">{{ t('status') }} Z→A</option>
 
-            <option value="progressAsc">{{ t('progress') }} ↑</option>
-            <option value="progressDesc">{{ t('progress') }} ↓</option>
+            <option value="progressDesc">{{ t('progress') }} 9→0</option>
+            <option value="progressAsc">{{ t('progress') }} 0→9</option>
             <option disabled>──────────────────</option>
 
-            <option value="startedAtAsc">{{ t('shortStarted') }} ↑</option>
             <option value="startedAtDesc">{{ t('shortStarted') }} ↓</option>
+            <option value="startedAtAsc">{{ t('shortStarted') }} ↑</option>
 
-            <option value="expiresAtAsc">{{ t('shortExpires') }} ↑</option>
             <option value="expiresAtDesc">{{ t('shortExpires') }} ↓</option>
+            <option value="expiresAtAsc">{{ t('shortExpires') }} ↑</option>
 
-            <option value="completedAtAsc">{{ t('shortCompleted') }} ↑</option>
             <option value="completedAtDesc">{{ t('shortCompleted') }} ↓</option>
+            <option value="completedAtAsc">{{ t('shortCompleted') }} ↑</option>
             <option disabled>──────────────────</option>
 
-            <option value="userNameAsc">{{ t('user') }} ↑</option>
-            <option value="userNameDesc">{{ t('user') }} ↓</option>
+            <option value="userNameAsc">{{ t('user') }} A→Z</option>
+            <option value="userNameDesc">{{ t('user') }} Z→A</option>
 
-            <option value="courseTitleAsc">{{ t('course') }} ↑</option>
-            <option value="courseTitleDesc">{{ t('course') }} ↓</option>
+            <option value="userEmailAsc">{{ t('email') }} A→Z</option>
+            <option value="userEmailDesc">{{ t('email') }} Z→A</option>
+            <option disabled>──────────────────</option>
+
+            <option value="courseTitleAsc">{{ t('course') }} A→Z</option>
+            <option value="courseTitleDesc">{{ t('course') }} Z→A</option>
+
+            <option value="scheduleTitleAsc">{{ t('schedule') }} A→Z</option>
+            <option value="scheduleTitleDesc">{{ t('schedule') }} Z→A</option>
+            <option disabled>──────────────────</option>
+
+            <option value="progressRecordsDesc">{{ t('progressRecords') }} 9→0</option>
+            <option value="progressRecordsAsc">{{ t('progressRecords') }} 0→9</option>
+            <option disabled>──────────────────</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
             <option disabled>──────────────────</option>
         </select>
     </div>

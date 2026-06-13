@@ -13,8 +13,11 @@ use App\Models\Admin\School\SchoolEnrollment\SchoolEnrollment;
 use App\Models\Admin\School\SchoolOrder\SchoolOrder;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\User;
+use App\Services\Admin\ProcessingModeService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use App\Services\SiteSettings\AdminSettingsService;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -43,6 +46,7 @@ use Throwable;
 class SchoolEnrollmentController extends Controller
 {
     /** Список зачислений учеников. */
+    /** Список зачислений учеников. */
     public function index(Request $request): Response
     {
         $status = $request->query('status');
@@ -51,98 +55,56 @@ class SchoolEnrollmentController extends Controller
         $scheduleId = $request->query('school_course_schedule_id');
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolEnrollmentsPerPage = $settings->int('site_settings.adminSchoolEnrollmentsPerPage', 6);
-        $adminSchoolEnrollmentsDefaultSort = $settings->string('site_settings.adminSchoolEnrollmentsDefaultSort', 'idDesc');
+
+        $perPage = $settings->int('adminSchoolEnrollmentsPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolEnrollmentsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolEnrollmentsProcessingMode',
+            'frontend'
+        );
+
+        $enrollmentsCount = $this->indexQuery(
+            status: $status,
+            userId: $userId,
+            courseId: $courseId,
+            scheduleId: $scheduleId,
+        )->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $enrollmentsCount,
+                300
+            );
 
         try {
-            $query = SchoolEnrollment::query()
-                ->with([
-                    'user:id,name,email',
-                    'course.translation',
-                    'course.translations',
-                    'schedule.translation',
-                    'schedule.translations',
-                    'schedule.course.translation',
-                    'order',
-                    'certificate',
-                ])
-                ->withCount(['progressRecords']);
-
-            if ($status) {
-                $query->where('status', $status);
-            }
-
-            if ($userId) {
-                $query->where('user_id', (int) $userId);
-            }
-
-            if ($courseId) {
-                $query->where('school_course_id', (int) $courseId);
-            }
-
-            if ($scheduleId) {
-                $query->where('school_course_schedule_id', (int) $scheduleId);
-            }
-
-            match ($adminSchoolEnrollmentsDefaultSort) {
-                'idAsc' => $query->orderBy('school_enrollments.id'),
-
-                'startedAtAsc' => $query->orderBy('started_at')->orderByDesc('school_enrollments.id'),
-                'startedAtDesc' => $query->orderByDesc('started_at')->orderByDesc('school_enrollments.id'),
-
-                'expiresAtAsc' => $query->orderBy('expires_at')->orderByDesc('school_enrollments.id'),
-                'expiresAtDesc' => $query->orderByDesc('expires_at')->orderByDesc('school_enrollments.id'),
-
-                'completedAtAsc' => $query->orderBy('completed_at')->orderByDesc('school_enrollments.id'),
-                'completedAtDesc' => $query->orderByDesc('completed_at')->orderByDesc('school_enrollments.id'),
-
-                'progressAsc' => $query->orderBy('progress_percent')->orderByDesc('school_enrollments.id'),
-                'progressDesc' => $query->orderByDesc('progress_percent')->orderByDesc('school_enrollments.id'),
-
-                'statusAsc' => $query->orderBy('status')->orderByDesc('school_enrollments.id'),
-                'statusDesc' => $query->orderByDesc('status')->orderByDesc('school_enrollments.id'),
-
-                'userNameAsc' => $query
-                    ->join('users', 'school_enrollments.user_id', '=', 'users.id')
-                    ->orderBy('users.name')
-                    ->orderByDesc('school_enrollments.id')
-                    ->select('school_enrollments.*'),
-
-                'userNameDesc' => $query
-                    ->join('users', 'school_enrollments.user_id', '=', 'users.id')
-                    ->orderByDesc('users.name')
-                    ->orderByDesc('school_enrollments.id')
-                    ->select('school_enrollments.*'),
-
-                'courseTitleAsc' => $query
-                    ->leftJoin('school_course_translations as sct', function ($join) {
-                        $join->on('school_enrollments.school_course_id', '=', 'sct.school_course_id')
-                            ->where('sct.locale', app()->getLocale());
-                    })
-                    ->orderBy('sct.title')
-                    ->orderByDesc('school_enrollments.id')
-                    ->select('school_enrollments.*'),
-
-                'courseTitleDesc' => $query
-                    ->leftJoin('school_course_translations as sct', function ($join) {
-                        $join->on('school_enrollments.school_course_id', '=', 'sct.school_course_id')
-                            ->where('sct.locale', app()->getLocale());
-                    })
-                    ->orderByDesc('sct.title')
-                    ->orderByDesc('school_enrollments.id')
-                    ->select('school_enrollments.*'),
-
-                default => $query->orderByDesc('school_enrollments.id'),
-            };
-
-            $enrollments = $query->get();
+            $enrollments = $this->getIndexEnrollments(
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+                status: $status,
+                userId: $userId,
+                courseId: $courseId,
+                scheduleId: $scheduleId,
+            );
 
             return Inertia::render('Admin/School/SchoolEnrollments/Index', [
-                'enrollments' => SchoolEnrollmentResource::collection($enrollments),
-                'enrollmentsCount' => $enrollments->count(),
+                'useServerProcessing' => $useServerProcessing,
 
-                'adminSchoolEnrollmentsPerPage' => $adminSchoolEnrollmentsPerPage,
-                'adminSchoolEnrollmentsDefaultSort' => $adminSchoolEnrollmentsDefaultSort,
+                'adminSchoolEnrollmentsPerPage' => $perPage,
+                'adminSchoolEnrollmentsDefaultSort' => $defaultSort,
+                'adminSchoolEnrollmentsProcessingMode' => $processingMode,
+
+                'enrollments' => SchoolEnrollmentResource::collection($enrollments),
+                'enrollmentsCount' => $enrollmentsCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'status' => $status,
@@ -162,11 +124,17 @@ class SchoolEnrollmentController extends Controller
             ]);
 
             return Inertia::render('Admin/School/SchoolEnrollments/Index', [
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolEnrollmentsPerPage' => $perPage,
+                'adminSchoolEnrollmentsDefaultSort' => $defaultSort,
+                'adminSchoolEnrollmentsProcessingMode' => $processingMode,
+
                 'enrollments' => [],
                 'enrollmentsCount' => 0,
 
-                'adminSchoolEnrollmentsPerPage' => $adminSchoolEnrollmentsPerPage,
-                'adminSchoolEnrollmentsDefaultSort' => $adminSchoolEnrollmentsDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'status' => $status,
@@ -448,5 +416,187 @@ class SchoolEnrollmentController extends Controller
             ->get();
 
         return SchoolOrderSharedResource::collection($orders);
+    }
+
+    /** Базовый запрос для списка зачислений. */
+    private function indexQuery(
+        ?string $status = null,
+        mixed $userId = null,
+        mixed $courseId = null,
+        mixed $scheduleId = null,
+    ): Builder {
+        return SchoolEnrollment::query()
+            ->with([
+                'user:id,name,email',
+                'course.translation',
+                'course.translations',
+                'schedule.translation',
+                'schedule.translations',
+                'schedule.course.translation',
+                'order',
+                'certificate',
+            ])
+            ->withCount(['progressRecords'])
+            ->when($status, fn (Builder $q) => $q->where('status', $status))
+            ->when($userId, fn (Builder $q) => $q->where('user_id', (int) $userId))
+            ->when($courseId, fn (Builder $q) => $q->where('school_course_id', (int) $courseId))
+            ->when($scheduleId, fn (Builder $q) => $q->where('school_course_schedule_id', (int) $scheduleId));
+    }
+
+    /** Поиск по зачислениям. */
+    private function applySearch(Builder $query, string $search): Builder
+    {
+        if ($search === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($search) {
+            $q->where('school_enrollments.status', 'like', "%{$search}%")
+                ->orWhere('school_enrollments.notes', 'like', "%{$search}%")
+                ->orWhereHas('user', function (Builder $userQuery) use ($search) {
+                    $userQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                })
+                ->orWhereHas('course.translations', function (Builder $courseQuery) use ($search) {
+                    $courseQuery->where('title', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%")
+                        ->orWhere('short', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                })
+                ->orWhereHas('schedule.translations', function (Builder $scheduleQuery) use ($search) {
+                    $scheduleQuery->where('title', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                })
+                ->orWhereHas('order', function (Builder $orderQuery) use ($search) {
+                    $orderQuery->where('id', 'like', "%{$search}%")
+                        ->orWhere('number', 'like', "%{$search}%");
+                });
+        });
+    }
+
+    /** Сортировка зачислений. */
+    private function applySort(Builder $query, string $sort): Builder
+    {
+        return match ($sort) {
+            'idAsc' => $query->orderBy('school_enrollments.id', 'asc'),
+            'idDesc' => $query->orderBy('school_enrollments.id', 'desc'),
+
+            'startedAtAsc' => $query->orderBy('started_at', 'asc')->orderByDesc('school_enrollments.id'),
+            'startedAtDesc' => $query->orderBy('started_at', 'desc')->orderByDesc('school_enrollments.id'),
+
+            'expiresAtAsc' => $query->orderBy('expires_at', 'asc')->orderByDesc('school_enrollments.id'),
+            'expiresAtDesc' => $query->orderBy('expires_at', 'desc')->orderByDesc('school_enrollments.id'),
+
+            'completedAtAsc' => $query->orderBy('completed_at', 'asc')->orderByDesc('school_enrollments.id'),
+            'completedAtDesc' => $query->orderBy('completed_at', 'desc')->orderByDesc('school_enrollments.id'),
+
+            'progressAsc' => $query->orderBy('progress_percent', 'asc')->orderByDesc('school_enrollments.id'),
+            'progressDesc' => $query->orderBy('progress_percent', 'desc')->orderByDesc('school_enrollments.id'),
+
+            'statusAsc' => $query->orderBy('status', 'asc')->orderByDesc('school_enrollments.id'),
+            'statusDesc' => $query->orderBy('status', 'desc')->orderByDesc('school_enrollments.id'),
+
+            'userNameAsc' => $query
+                ->join('users as users_sort', 'school_enrollments.user_id', '=', 'users_sort.id')
+                ->orderBy('users_sort.name', 'asc')
+                ->orderByDesc('school_enrollments.id')
+                ->select('school_enrollments.*'),
+
+            'userNameDesc' => $query
+                ->join('users as users_sort', 'school_enrollments.user_id', '=', 'users_sort.id')
+                ->orderBy('users_sort.name', 'desc')
+                ->orderByDesc('school_enrollments.id')
+                ->select('school_enrollments.*'),
+
+            'userEmailAsc' => $query
+                ->join('users as users_sort', 'school_enrollments.user_id', '=', 'users_sort.id')
+                ->orderBy('users_sort.email', 'asc')
+                ->orderByDesc('school_enrollments.id')
+                ->select('school_enrollments.*'),
+
+            'userEmailDesc' => $query
+                ->join('users as users_sort', 'school_enrollments.user_id', '=', 'users_sort.id')
+                ->orderBy('users_sort.email', 'desc')
+                ->orderByDesc('school_enrollments.id')
+                ->select('school_enrollments.*'),
+
+            'courseTitleAsc' => $query
+                ->leftJoin('school_course_translations as sct_sort', function ($join) {
+                    $join->on('school_enrollments.school_course_id', '=', 'sct_sort.school_course_id')
+                        ->where('sct_sort.locale', '=', app()->getLocale());
+                })
+                ->orderBy('sct_sort.title', 'asc')
+                ->orderByDesc('school_enrollments.id')
+                ->select('school_enrollments.*'),
+
+            'courseTitleDesc' => $query
+                ->leftJoin('school_course_translations as sct_sort', function ($join) {
+                    $join->on('school_enrollments.school_course_id', '=', 'sct_sort.school_course_id')
+                        ->where('sct_sort.locale', '=', app()->getLocale());
+                })
+                ->orderBy('sct_sort.title', 'desc')
+                ->orderByDesc('school_enrollments.id')
+                ->select('school_enrollments.*'),
+
+            'scheduleTitleAsc' => $query
+                ->leftJoin('school_course_schedule_translations as scst_sort', function ($join) {
+                    $join->on('school_enrollments.school_course_schedule_id', '=', 'scst_sort.school_course_schedule_id')
+                        ->where('scst_sort.locale', '=', app()->getLocale());
+                })
+                ->orderBy('scst_sort.title', 'asc')
+                ->orderByDesc('school_enrollments.id')
+                ->select('school_enrollments.*'),
+
+            'scheduleTitleDesc' => $query
+                ->leftJoin('school_course_schedule_translations as scst_sort', function ($join) {
+                    $join->on('school_enrollments.school_course_schedule_id', '=', 'scst_sort.school_course_schedule_id')
+                        ->where('scst_sort.locale', '=', app()->getLocale());
+                })
+                ->orderBy('scst_sort.title', 'desc')
+                ->orderByDesc('school_enrollments.id')
+                ->select('school_enrollments.*'),
+
+            'progressRecordsAsc' => $query->orderBy('progress_records_count', 'asc')->orderByDesc('school_enrollments.id'),
+            'progressRecordsDesc' => $query->orderBy('progress_records_count', 'desc')->orderByDesc('school_enrollments.id'),
+
+            'createdAtAsc' => $query->orderBy('school_enrollments.created_at', 'asc')->orderByDesc('school_enrollments.id'),
+            'createdAtDesc' => $query->orderBy('school_enrollments.created_at', 'desc')->orderByDesc('school_enrollments.id'),
+
+            'updatedAtAsc' => $query->orderBy('school_enrollments.updated_at', 'asc')->orderByDesc('school_enrollments.id'),
+            'updatedAtDesc' => $query->orderBy('school_enrollments.updated_at', 'desc')->orderByDesc('school_enrollments.id'),
+
+            default => $query->orderByDesc('school_enrollments.id'),
+        };
+    }
+
+    /** Получение списка зачислений по активному режиму обработки. */
+    private function getIndexEnrollments(
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+        ?string $status = null,
+        mixed $userId = null,
+        mixed $courseId = null,
+        mixed $scheduleId = null,
+    ): Collection|LengthAwarePaginator {
+        $query = $this->indexQuery(
+            status: $status,
+            userId: $userId,
+            courseId: $courseId,
+            scheduleId: $scheduleId,
+        );
+
+        if ($useServerProcessing) {
+            return $this->applySort(
+                $this->applySearch($query, $search),
+                $sort
+            )
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $this->applySort($query, $sort)->get();
     }
 }

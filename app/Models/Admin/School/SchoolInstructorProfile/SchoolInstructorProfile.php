@@ -204,8 +204,20 @@ class SchoolInstructorProfile extends Model
             'experienceAsc' => $q->orderBy('experience_years', 'asc')->orderByDesc('id'),
             'experienceDesc' => $q->orderBy('experience_years', 'desc')->orderByDesc('id'),
 
-            'coursesAsc' => $q->withCount('courses')->orderBy('courses_count', 'asc')->orderByDesc('id'),
-            'coursesDesc' => $q->withCount('courses')->orderBy('courses_count', 'desc')->orderByDesc('id'),
+            'coursesAsc' => $q->withCount('courses')
+                ->orderBy('courses_count', 'asc')->orderByDesc('id'),
+            'coursesDesc' => $q->withCount('courses')
+                ->orderBy('courses_count', 'desc')->orderByDesc('id'),
+
+            'payoutsAsc' => $q->withCount('payouts')
+                ->orderBy('payouts_count', 'asc')->orderByDesc('id'),
+            'payoutsDesc' => $q->withCount('payouts')
+                ->orderBy('payouts_count', 'desc')->orderByDesc('id'),
+
+            'imagesAsc' => $q->withCount('images')
+                ->orderBy('images_count', 'asc')->orderByDesc('id'),
+            'imagesDesc' => $q->withCount('images')
+                ->orderBy('images_count', 'desc')->orderByDesc('id'),
 
             'createdAtAsc', 'dateAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
             'createdAtDesc', 'dateDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),

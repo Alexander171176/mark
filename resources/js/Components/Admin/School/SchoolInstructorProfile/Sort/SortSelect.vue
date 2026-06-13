@@ -74,6 +74,9 @@ const updateSort = (event) => {
             <option value="experienceDesc">{{ t('experienceYears') }} ↓</option>
             <option disabled>─────────────</option>
 
+            <option value="dateAsc">{{ t('sortOldestFirst') }}</option>
+            <option value="dateDesc">{{ t('sortNewestFirst') }}</option>
+
             <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
             <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
 
@@ -83,6 +86,13 @@ const updateSort = (event) => {
 
             <option value="coursesDesc">{{ t('courses') }} 9→0</option>
             <option value="coursesAsc">{{ t('courses') }} 0→9</option>
+            <option disabled>─────────────</option>
+
+            <option value="payoutsDesc">{{ t('payouts') }} 9→0</option>
+            <option value="payoutsAsc">{{ t('payouts') }} 0→9</option>
+
+            <option value="imagesDesc">{{ t('images') }} 9→0</option>
+            <option value="imagesAsc">{{ t('images') }} 0→9</option>
             <option disabled>─────────────</option>
         </select>
     </div>

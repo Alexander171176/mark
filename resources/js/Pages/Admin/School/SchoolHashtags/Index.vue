@@ -3,102 +3,450 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Список хештегов (паттерн)
+ * Список хештегов школы
+ * - режимы обработки: frontend | server | auto
+ * - локальный поиск/сортировка/пагинация
+ * - серверный поиск/сортировка/пагинация
  */
-import { defineProps, ref, computed, watch } from 'vue'
+
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { router } from '@inertiajs/vue3'
 
-/** UI компоненты */
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
 import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
 import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
-import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
-/** Компоненты хештегов */
 import BulkActionSelect from '@/Components/Admin/School/SchoolHashtag/Select/BulkActionSelect.vue'
+import SortSelect from '@/Components/Admin/School/SchoolHashtag/Sort/SortSelect.vue'
 import HashtagTable from '@/Components/Admin/School/SchoolHashtag/Table/HashtagTable.vue'
 import HashtagCardGrid from '@/Components/Admin/School/SchoolHashtag/View/HashtagCardGrid.vue'
-import SortSelect from '@/Components/Admin/School/SchoolHashtag/Sort/SortSelect.vue'
 
-/** ==================== INIT ==================== */
-const { t } = useI18n()           // перевод
-const toast = useToast()          // уведомления
+/* ==========================================================
+ * БАЗОВЫЕ СЕРВИСЫ И PROPS
+ * ========================================================== */
 
-/** ==================== VIEW MODE ==================== */
-/** Режим отображения (таблица / карточки) */
-const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
+/** Локализация интерфейса */
+const { t } = useI18n()
 
-/** Сохраняем режим отображения в localStorage */
-watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode', val)
-})
+/** Уведомления */
+const toast = useToast()
 
-/** ==================== PROPS ==================== */
+/** Данные страницы из Inertia */
 const props = defineProps({
-    hashtags: Array,              // список хештегов
-    hashtagsCount: Number,        // общее количество
-    adminSchoolHashtagsPerPage: Number,   // кол-во на страницу
-    adminSchoolHashtagsDefaultSort: String,    // сортировка
-    currentLocale: String,
-    availableLocales: Array,
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
+
+    adminSchoolHashtagsProcessingMode: { type: String, default: 'frontend' },
+    useServerProcessing: { type: Boolean, default: false },
+
+    hashtags: { type: [Array, Object], default: () => [] },
+    hashtagsCount: { type: Number, default: 0 },
+
+    adminSchoolHashtagsPerPage: { type: Number, default: 6 },
+    adminSchoolHashtagsDefaultSort: { type: String, default: 'idDesc' },
+
+    sortParam: { type: String, default: '' },
+    search: { type: String, default: '' },
+
+    errors: { type: Object, default: () => ({}) },
 })
 
-/** ==================== PAGINATION SETTINGS ==================== */
+/* ==========================================================
+ * РЕЖИМ ОТОБРАЖЕНИЯ
+ * ========================================================== */
+
+/** Текущий режим отображения (таблица / карточки) */
+const viewMode = ref(localStorage.getItem('admin_view_mode_hashtags') || 'table')
+
+/** Сохраняем выбранный вид локально */
+watch(viewMode, (val) => {
+    localStorage.setItem('admin_view_mode_hashtags', val)
+})
+
+/* ==========================================================
+ * ИСТОЧНИК ДАННЫХ
+ * ========================================================== */
+
+/**
+ * Унифицированный список хештегов:
+ * frontend → обычный массив
+ * server → hashtags.data
+ */
+const hashtagsList = computed(() => {
+    if (Array.isArray(props.hashtags)) {
+        return props.hashtags
+    }
+
+    if (Array.isArray(props.hashtags?.data)) {
+        return props.hashtags.data
+    }
+
+    return []
+})
+
+/* ==========================================================
+ * ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ДАННЫХ
+ * ========================================================== */
+
+/**
+ * Локальная копия списка.
+ * Используется для:
+ * - локального поиска
+ * - локальной сортировки
+ * - моментального обновления UI
+ */
+const localHashtags = ref([])
+
+watch(
+    hashtagsList,
+    (newVal) => {
+        localHashtags.value = JSON.parse(JSON.stringify(newVal || []))
+    },
+    { immediate: true, deep: true }
+)
+
+/* ==========================================================
+ * НАСТРОЙКИ ПАГИНАЦИИ И СОРТИРОВКИ
+ * ========================================================== */
+
 /** Количество элементов на странице */
-const itemsPerPage = ref(props.adminSchoolHashtagsPerPage)
+const itemsPerPage = ref(props.adminSchoolHashtagsPerPage || 6)
 
-/** Обновление количества элементов */
+/** Сохраняем настройку количества элементов */
 watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountHashtags'), { value: newVal }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
-    })
+    router.put(
+        route('admin.settings.updateAdminCountHashtags'),
+        { value: newVal },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
+            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+        }
+    )
 })
 
-/** ==================== SORT ==================== */
-/** Параметр сортировки */
-const sortParam = ref(props.adminSchoolHashtagsDefaultSort)
+/** Текущий параметр сортировки */
+const sortParam = ref(props.sortParam || props.adminSchoolHashtagsDefaultSort || 'idDesc')
 
-/** Обновление сортировки */
+/** Сохраняем сортировку и при server-режиме перезагружаем список */
 watch(sortParam, (newVal) => {
-    router.put(route('admin.settings.updateAdminSortHashtags'), { value: newVal }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.info('Сортировка успешно изменена'),
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
-    })
+    currentPage.value = 1
+
+    router.put(
+        route('admin.settings.updateAdminSortHashtags'),
+        { value: newVal },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                if (props.useServerProcessing) {
+                    router.get(
+                        window.location.pathname,
+                        {
+                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                            sort: newVal || undefined,
+                            page: undefined,
+                        },
+                        {
+                            preserveScroll: true,
+                            preserveState: false,
+                            replace: true,
+                        }
+                    )
+                }
+
+                toast.info('Сортировка успешно изменена')
+            },
+
+            onError: (errors) => {
+                toast.error(errors.value || 'Ошибка обновления сортировки.')
+            },
+        }
+    )
 })
 
-/** ==================== DELETE ==================== */
-/** Модалка удаления */
+/* ==========================================================
+ * ПОИСК И ПАГИНАЦИЯ
+ * ========================================================== */
+
+/** Поисковый запрос */
+const searchQuery = ref(props.search || '')
+
+/** Текущая страница frontend-пагинации */
+const currentPage = ref(1)
+
+/* ==========================================================
+ * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+ * ========================================================== */
+
+/** Нормализация строки */
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+
+/** Безопасное преобразование в число */
+const safeNumber = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : 0
+}
+
+/** Безопасное преобразование даты */
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+/* ==========================================================
+ * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ РЕСУРСОВ
+ * ========================================================== */
+
+/** Получение названия хештега */
+const getHashtagName = (hashtag) => {
+    return hashtag?.name
+        || hashtag?.translation?.name
+        || hashtag?.translations?.[0]?.name
+        || `ID: ${hashtag?.id}`
+}
+
+/** Получение краткого описания хештега */
+const getHashtagShort = (hashtag) => {
+    return hashtag?.short
+        || hashtag?.translation?.short
+        || hashtag?.translations?.[0]?.short
+        || ''
+}
+
+/** Получение описания хештега */
+const getHashtagDescription = (hashtag) => {
+    return hashtag?.description
+        || hashtag?.translation?.description
+        || hashtag?.translations?.[0]?.description
+        || ''
+}
+
+/** Получение slug хештега */
+const getHashtagSlug = (hashtag) => {
+    return hashtag?.slug
+        || hashtag?.translation?.slug
+        || hashtag?.translations?.[0]?.slug
+        || ''
+}
+
+/* ==========================================================
+ * СОРТИРОВКА FRONTEND
+ * ========================================================== */
+
+/** Сортировка чисел ↑ */
+const byNumberAsc = (field) => (a, b) =>
+    safeNumber(a?.[field]) - safeNumber(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+/** Сортировка чисел ↓ */
+const byNumberDesc = (field) => (a, b) =>
+    safeNumber(b?.[field]) - safeNumber(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+/** Сортировка строк ↑ */
+const byStringAsc = (field) => (a, b) =>
+    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+/** Сортировка строк ↓ */
+const byStringDesc = (field) => (a, b) =>
+    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+/**
+ * Главный обработчик сортировки.
+ * Должен совпадать со scopeSortByParam() модели и SortSelect.vue.
+ */
+const sortHashtags = (items) => {
+    const list = (items || []).slice()
+
+    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
+    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
+
+    const sortMap = {
+        idAsc: byNumberAsc('id'),
+        idDesc: byNumberDesc('id'),
+
+        sortAsc: byNumberAsc('sort'),
+        sortDesc: byNumberDesc('sort'),
+
+        nameAsc: (a, b) =>
+            normalize(getHashtagName(a)).localeCompare(normalize(getHashtagName(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        nameDesc: (a, b) =>
+            normalize(getHashtagName(b)).localeCompare(normalize(getHashtagName(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        slugAsc: (a, b) =>
+            normalize(getHashtagSlug(a)).localeCompare(normalize(getHashtagSlug(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        slugDesc: (a, b) =>
+            normalize(getHashtagSlug(b)).localeCompare(normalize(getHashtagSlug(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        colorAsc: byStringAsc('color'),
+        colorDesc: byStringDesc('color'),
+
+        viewsAsc: byNumberAsc('views'),
+        viewsDesc: byNumberDesc('views'),
+
+        likesAsc: byNumberAsc('likes'),
+        likesDesc: byNumberDesc('likes'),
+
+        coursesAsc: byNumberAsc('courses_count'),
+        coursesDesc: byNumberDesc('courses_count'),
+
+        modulesAsc: byNumberAsc('modules_count'),
+        modulesDesc: byNumberDesc('modules_count'),
+
+        lessonsAsc: byNumberAsc('lessons_count'),
+        lessonsDesc: byNumberDesc('lessons_count'),
+
+        activityAsc: byNumberAsc('activity'),
+        activityDesc: byNumberDesc('activity'),
+
+        dateAsc: (a, b) =>
+            safeDate(a?.created_at) - safeDate(b?.created_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        dateDesc: (a, b) =>
+            safeDate(b?.created_at) - safeDate(a?.created_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        createdAtAsc: (a, b) =>
+            safeDate(a?.created_at) - safeDate(b?.created_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        createdAtDesc: (a, b) =>
+            safeDate(b?.created_at) - safeDate(a?.created_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        updatedAtAsc: (a, b) =>
+            safeDate(a?.updated_at) - safeDate(b?.updated_at)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        updatedAtDesc: (a, b) =>
+            safeDate(b?.updated_at) - safeDate(a?.updated_at)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+    }
+
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
+}
+
+/* ==========================================================
+ * ПОИСК FRONTEND
+ * ========================================================== */
+
+/**
+ * Фильтрация списка.
+ *
+ * frontend:
+ * поиск выполняется здесь
+ *
+ * server:
+ * поиск выполняется контроллером
+ */
+const filteredHashtags = computed(() => {
+    let filtered = localHashtags.value || []
+    const query = normalize(searchQuery.value)
+
+    if (!query) {
+        return sortHashtags(filtered)
+    }
+
+    filtered = filtered.filter((hashtag) => {
+        const name = normalize(getHashtagName(hashtag))
+        const slug = normalize(getHashtagSlug(hashtag))
+        const short = normalize(getHashtagShort(hashtag))
+        const description = normalize(getHashtagDescription(hashtag))
+        const color = normalize(hashtag?.color)
+
+        return name.includes(query)
+            || slug.includes(query)
+            || short.includes(query)
+            || description.includes(query)
+            || color.includes(query)
+    })
+
+    return sortHashtags(filtered)
+})
+
+/* ==========================================================
+ * ЛОКАЛЬНАЯ ПАГИНАЦИЯ
+ * ========================================================== */
+
+/** Разбиение списка по страницам */
+const paginatedHashtags = computed(() => {
+    const per = Number(itemsPerPage.value || 10)
+    const start = (currentPage.value - 1) * per
+
+    return filteredHashtags.value.slice(start, start + per)
+})
+
+/**
+ * Итоговый список:
+ * frontend → локальная пагинация
+ * server → данные сервера
+ */
+const displayedHashtags = computed(() => {
+    return props.useServerProcessing
+        ? hashtagsList.value
+        : paginatedHashtags.value
+})
+
+watch([itemsPerPage, searchQuery], () => {
+    currentPage.value = 1
+})
+
+/* ==========================================================
+ * УДАЛЕНИЕ
+ * ========================================================== */
+
+/** Состояние модального окна удаления */
 const showConfirmDeleteModal = ref(false)
 const hashtagToDeleteId = ref(null)
 const hashtagToDeleteName = ref('')
 
-/** Открыть модалку удаления */
-const confirmDelete = (id, name) => {
-    hashtagToDeleteId.value = id
-    hashtagToDeleteName.value = name
+/** Открыть подтверждение удаления */
+const confirmDelete = (hashtagOrId, name = null) => {
+    if (typeof hashtagOrId === 'object') {
+        hashtagToDeleteId.value = hashtagOrId.id
+        hashtagToDeleteName.value = name || getHashtagName(hashtagOrId)
+    } else {
+        hashtagToDeleteId.value = hashtagOrId
+        hashtagToDeleteName.value = name || `ID: ${hashtagOrId}`
+    }
+
     showConfirmDeleteModal.value = true
 }
 
-/** Закрыть модалку */
+/** Закрыть окно */
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     hashtagToDeleteId.value = null
     hashtagToDeleteName.value = ''
 }
 
-/** Удаление хештега */
+/** Выполнить удаление */
 const deleteHashtag = () => {
     if (hashtagToDeleteId.value === null) return
 
@@ -109,283 +457,189 @@ const deleteHashtag = () => {
         preserveScroll: true,
         preserveState: false,
         onSuccess: () => {
-            closeModal()
             toast.success(`Хештег "${nameToDelete || 'ID: ' + idToDelete}" удалён.`)
         },
         onError: (errors) => {
-            closeModal()
-            const errorMsg = errors.general || errors[Object.keys(errors)[0]]
-                || 'Произошла ошибка при удалении.'
-            toast.error(errorMsg)
+            const errorKey = Object.keys(errors || {})[0]
+            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
+            toast.error(`${errorMsg} (Хештег: ${nameToDelete || 'ID: ' + idToDelete})`)
         },
+        onFinish: () => closeModal(),
     })
 }
 
-/** ==================== SEARCH ==================== */
-/** Текущая страница */
-const currentPage = ref(1)
+/* ==========================================================
+ * ЛОКАЛЬНОЕ ОБНОВЛЕНИЕ UI
+ * ========================================================== */
 
-/** Поисковый запрос */
-const searchQuery = ref('')
+/**
+ * Обновление записи локально
+ * без полной перезагрузки страницы
+ */
+const patchHashtag = (hashtagId, payload) => {
+    const index = localHashtags.value.findIndex(hashtag => hashtag.id === hashtagId)
 
-/** ==================== SORT LOGIC ==================== */
-/** Сортировка списка */
-const normalize = (value) => String(value ?? '').toLowerCase()
-
-const safeNumber = (value) => {
-    const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+    if (index !== -1) {
+        localHashtags.value[index] = {
+            ...localHashtags.value[index],
+            ...payload,
+        }
+    }
 }
 
-/** Сортировка списка */
-const sortHashtags = (hashtags) => {
-    const list = (hashtags || []).slice()
+/* ==========================================================
+ * МАССОВЫЕ ОПЕРАЦИИ
+ * ========================================================== */
 
-    if (sortParam.value === 'idAsc') {
-        return list.sort((a, b) => safeNumber(a.id) - safeNumber(b.id))
+/** Выбранные элементы */
+const selectedHashtags = ref([])
+
+/** Выбрать все */
+const toggleAll = (payload) => {
+    const checked = payload?.checked ?? payload?.target?.checked ?? false
+    const ids = payload?.ids ?? displayedHashtags.value.map((hashtag) => hashtag.id)
+
+    if (checked) {
+        selectedHashtags.value = [...new Set([...selectedHashtags.value, ...ids])]
+    } else {
+        selectedHashtags.value = selectedHashtags.value.filter((id) => !ids.includes(id))
     }
-
-    if (sortParam.value === 'idDesc') {
-        return list.sort((a, b) => safeNumber(b.id) - safeNumber(a.id))
-    }
-
-    if (sortParam.value === 'sortAsc') {
-        return list.sort((a, b) => safeNumber(a.sort) - safeNumber(b.sort))
-    }
-
-    if (sortParam.value === 'sortDesc') {
-        return list.sort((a, b) => safeNumber(b.sort) - safeNumber(a.sort))
-    }
-
-    if (sortParam.value === 'nameAsc') {
-        return list.sort((a, b) => normalize(a.name).localeCompare(normalize(b.name), props.currentLocale))
-    }
-
-    if (sortParam.value === 'nameDesc') {
-        return list.sort((a, b) => normalize(b.name).localeCompare(normalize(a.name), props.currentLocale))
-    }
-
-    if (sortParam.value === 'slugAsc') {
-        return list.sort((a, b) => normalize(a.slug).localeCompare(normalize(b.slug), props.currentLocale))
-    }
-
-    if (sortParam.value === 'slugDesc') {
-        return list.sort((a, b) => normalize(b.slug).localeCompare(normalize(a.slug), props.currentLocale))
-    }
-
-    if (sortParam.value === 'colorAsc') {
-        return list.sort((a, b) => normalize(a.color).localeCompare(normalize(b.color), props.currentLocale))
-    }
-
-    if (sortParam.value === 'colorDesc') {
-        return list.sort((a, b) => normalize(b.color).localeCompare(normalize(a.color), props.currentLocale))
-    }
-
-    if (sortParam.value === 'viewsAsc') {
-        return list.sort((a, b) => safeNumber(a.views) - safeNumber(b.views))
-    }
-
-    if (sortParam.value === 'viewsDesc') {
-        return list.sort((a, b) => safeNumber(b.views) - safeNumber(a.views))
-    }
-
-    if (sortParam.value === 'likesAsc') {
-        return list.sort((a, b) => safeNumber(a.likes) - safeNumber(b.likes))
-    }
-
-    if (sortParam.value === 'likesDesc') {
-        return list.sort((a, b) => safeNumber(b.likes) - safeNumber(a.likes))
-    }
-
-    if (sortParam.value === 'coursesAsc') {
-        return list.sort((a, b) => safeNumber(a.courses_count) - safeNumber(b.courses_count))
-    }
-
-    if (sortParam.value === 'coursesDesc') {
-        return list.sort((a, b) => safeNumber(b.courses_count) - safeNumber(a.courses_count))
-    }
-
-    if (sortParam.value === 'modulesAsc') {
-        return list.sort((a, b) => safeNumber(a.modules_count) - safeNumber(b.modules_count))
-    }
-
-    if (sortParam.value === 'modulesDesc') {
-        return list.sort((a, b) => safeNumber(b.modules_count) - safeNumber(a.modules_count))
-    }
-
-    if (sortParam.value === 'lessonsAsc') {
-        return list.sort((a, b) => safeNumber(a.lessons_count) - safeNumber(b.lessons_count))
-    }
-
-    if (sortParam.value === 'lessonsDesc') {
-        return list.sort((a, b) => safeNumber(b.lessons_count) - safeNumber(a.lessons_count))
-    }
-
-    if (sortParam.value === 'createdAtAsc') {
-        return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
-    }
-
-    if (sortParam.value === 'createdAtDesc') {
-        return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-    }
-
-    if (sortParam.value === 'updatedAtAsc') {
-        return list.sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
-    }
-
-    if (sortParam.value === 'updatedAtDesc') {
-        return list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
-    }
-
-    if (sortParam.value === 'activityAsc') {
-        return list.sort((a, b) => Number(a.activity) - Number(b.activity))
-    }
-
-    if (sortParam.value === 'activityDesc') {
-        return list.sort((a, b) => Number(b.activity) - Number(a.activity))
-    }
-
-    if (sortParam.value === 'activity') {
-        return list.filter((item) => item.activity)
-    }
-
-    if (sortParam.value === 'inactive') {
-        return list.filter((item) => !item.activity)
-    }
-
-    return list
 }
 
-/** ==================== FILTER ==================== */
-/** Фильтрация + поиск */
-const filteredHashtags = computed(() => {
-    let filtered = props.hashtags || []
+/** Выбрать элемент */
+const toggleSelectHashtag = (id) => {
+    const index = selectedHashtags.value.indexOf(id)
 
-    if (searchQuery.value) {
-        const q = searchQuery.value.toLowerCase()
-
-        filtered = filtered.filter(i =>
-            normalize(i.name).includes(q)
-            || normalize(i.slug).includes(q)
-            || normalize(i.short).includes(q)
-            || normalize(i.description).includes(q)
-        )
+    if (index > -1) {
+        selectedHashtags.value.splice(index, 1)
+    } else {
+        selectedHashtags.value.push(id)
     }
+}
 
-    return sortHashtags(filtered)
-})
-
-/** ==================== PAGINATION ==================== */
-/** Пагинированный список */
-const paginatedHashtags = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage.value
-    return filteredHashtags.value.slice(start, start + itemsPerPage.value)
-})
-
-/** ==================== SORT DRAG ==================== */
-/** Обновление сортировки drag&drop */
+/** Изменить порядок */
 const handleSortOrderUpdate = (orderedIds) => {
     const startSort = (currentPage.value - 1) * itemsPerPage.value
 
-    const sortData = orderedIds.map((id, index) => ({
+    const items = orderedIds.map((id, index) => ({
         id,
         sort: startSort + index + 1,
     }))
 
-    router.put(route('admin.actions.schoolHashtags.updateSortBulk'), { items: sortData }, {
+    if (!items.length) return
+
+    router.put(route('admin.actions.schoolHashtags.updateSortBulk'), { items }, {
         preserveScroll: true,
         preserveState: true,
-        onSuccess: () => toast.success('Порядок обновлён'),
+        onSuccess: () => toast.success('Порядок хештегов успешно обновлён.'),
+        onError: (errors) => {
+            console.error('Ошибка обновления сортировки хештегов:', errors)
+            toast.error(errors?.message || errors?.general || 'Не удалось обновить порядок хештегов.')
+
+            router.reload({
+                only: ['hashtags'],
+                preserveScroll: true,
+            })
+        },
     })
 }
 
-/** ==================== SELECTION ==================== */
-/** Выбранные хештеги */
-const selectedHashtags = ref([])
-
-/** Выбрать все */
-const toggleAll = ({ ids, checked }) => {
-    selectedHashtags.value = checked ? [...ids] : []
-}
-
-/** Выбрать один */
-const toggleSelectHashtag = (id) => {
-    const idx = selectedHashtags.value.indexOf(id)
-    idx > -1
-        ? selectedHashtags.value.splice(idx, 1)
-        : selectedHashtags.value.push(id)
-}
-
-/** ==================== BULK ==================== */
-/** Массовое изменение активности */
+/** Массовая активность */
 const bulkToggleActivity = (newActivity) => {
-
     if (!selectedHashtags.value.length) {
-        toast.warning('Выберите элементы')
+        toast.warning('Выберите хештеги для активации/деактивации.')
         return
     }
 
+    const idsToUpdate = [...selectedHashtags.value]
+
     router.put(route('admin.actions.schoolHashtags.bulkUpdateActivity'), {
-        ids: selectedHashtags.value,
-        activity: newActivity
+        ids: idsToUpdate,
+        activity: newActivity,
     }, {
+        preserveScroll: true,
+        preserveState: true,
         onSuccess: () => {
-            toast.success('Активность обновлена')
+            idsToUpdate.forEach(id => patchHashtag(id, { activity: newActivity }))
             selectedHashtags.value = []
-        }
+            toast.success('Активность выбранных хештегов обновлена.')
+        },
+        onError: (errors) => {
+            toast.error(errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.')
+        },
     })
 }
 
 /** Массовое удаление */
 const bulkDelete = () => {
-
     if (!selectedHashtags.value.length) {
-        toast.warning('Выберите элементы')
+        toast.warning('Выберите хештеги для удаления.')
         return
     }
 
-    if (!confirm('Удалить выбранные?')) return
+    if (!confirm('Вы уверены, что хотите удалить выбранные хештеги?')) return
 
     router.delete(route('admin.actions.schoolHashtags.bulkDestroy'), {
         data: { ids: selectedHashtags.value },
+        preserveScroll: true,
+        preserveState: false,
         onSuccess: () => {
             selectedHashtags.value = []
-            toast.success('Удалено')
-        }
+            toast.success('Выбранные хештеги успешно удалены.')
+        },
+        onError: (errors) => {
+            const errorKey = Object.keys(errors || {})[0]
+            toast.error(errors[errorKey] || 'Ошибка массового удаления хештегов.')
+        },
     })
 }
 
-/** Обработка массовых действий */
+/** Обработчик массовых действий */
 const handleBulkAction = (event) => {
     const action = event.target.value
 
-    if (action === 'selectAll') selectedHashtags.value = paginatedHashtags.value.map(r => r.id)
-    else if (action === 'deselectAll') selectedHashtags.value = []
-    else if (action === 'activate') bulkToggleActivity(true)
-    else if (action === 'deactivate') bulkToggleActivity(false)
-    else if (action === 'delete') bulkDelete()
+    if (action === 'selectAll') {
+        toggleAll({ target: { checked: true } })
+    } else if (action === 'deselectAll') {
+        toggleAll({ target: { checked: false } })
+    } else if (action === 'activate') {
+        bulkToggleActivity(true)
+    } else if (action === 'deactivate') {
+        bulkToggleActivity(false)
+    } else if (action === 'delete') {
+        bulkDelete()
+    }
 
     event.target.value = ''
 }
 
-/** ==================== SINGLE ACTIVITY ==================== */
+/* ==========================================================
+ * ОПЕРАЦИИ НАД ОДНОЙ ЗАПИСЬЮ
+ * ========================================================== */
+
 /** Переключение активности */
 const toggleActivity = (hashtag) => {
-
     const newActivity = !hashtag.activity
+    const hashtagName = getHashtagName(hashtag)
+    const actionText = newActivity ? t('activated') : t('deactivated')
 
     router.put(route('admin.actions.schoolHashtags.updateActivity', {
-        schoolHashtag: hashtag.id
+        schoolHashtag: hashtag.id,
     }), {
-        activity: newActivity
+        activity: newActivity,
     }, {
+        preserveScroll: true,
+        preserveState: true,
         onSuccess: () => {
+            patchHashtag(hashtag.id, { activity: newActivity })
             hashtag.activity = newActivity
-            toast.success('Активность изменена')
-        }
+            toast.success(`Хештег "${hashtagName}" ${actionText}.`)
+        },
+        onError: (errors) => {
+            toast.error(errors?.activity || errors?.general || `Ошибка изменения активности для хештега "${hashtagName}".`)
+        },
     })
 }
-
 </script>
 
 <template>
@@ -404,7 +658,7 @@ const toggleActivity = (hashtag) => {
                        bg-opacity-95 dark:bg-opacity-95"
             >
 
-                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <!-- Кнопка добавить -->
                     <DefaultButton :href="route('admin.schoolHashtags.create')">
                         <template #icon>
@@ -416,20 +670,40 @@ const toggleActivity = (hashtag) => {
                         </template>
                         {{ t('addLearningTag') }}
                     </DefaultButton>
+
+                    <ProcessingModeSwitcher
+                        setting-key="adminSchoolHashtagsProcessingMode"
+                        :mode="adminSchoolHashtagsProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="hashtagsCount"
+                    />
                 </div>
 
                 <SearchInput
-                    v-if="hashtagsCount"
+                    v-if="hashtagsCount && !useServerProcessing"
                     v-model="searchQuery"
-                    :placeholder="t('searchByName')" />
+                    :placeholder="t('searchByName')"
+                />
+
+                <ServerSearchInput
+                    v-if="hashtagsCount && useServerProcessing"
+                    v-model="searchQuery"
+                />
 
                 <div
                     v-if="hashtagsCount"
                     class="flex justify-between items-center flex-col md:flex-row my-3"
                 >
                     <ItemsPerPageSelect
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <ServerItemsPerPageSelect
+                        v-else
+                        :items-per-page="itemsPerPage"
+                        update-route="admin.settings.updateAdminCountHashtags"
                     />
 
                     <SortSelect
@@ -456,18 +730,23 @@ const toggleActivity = (hashtag) => {
                     v-if="hashtagsCount"
                     class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredHashtags.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="hashtags"
                     />
                 </div>
 
                 <!-- Таблица -->
                 <HashtagTable
                     v-if="viewMode === 'table'"
-                    :hashtags="paginatedHashtags"
+                    :hashtags="displayedHashtags"
                     :selected-hashtags="selectedHashtags"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"
@@ -479,7 +758,7 @@ const toggleActivity = (hashtag) => {
                 <!-- Карточки -->
                 <HashtagCardGrid
                     v-else
-                    :hashtags="paginatedHashtags"
+                    :hashtags="displayedHashtags"
                     :selected-hashtags="selectedHashtags"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"
@@ -492,11 +771,16 @@ const toggleActivity = (hashtag) => {
                     v-if="hashtagsCount"
                     class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredHashtags.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="hashtags"
                     />
                 </div>
             </div>

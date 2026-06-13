@@ -33,6 +33,7 @@ export default {
     paymentProvider: 'Провайдер оплаты',
     paymentReference: 'ID транзакции',
     paymentStatus: 'Статус оплаты',
+    payouts: 'Выплаты',
     pendingInvitations: 'Ожидающие приглашения в группу',
     pendingInvitationsDescription: 'Эти люди были приглашены в вашу группу, и им было отправлено электронное письмо с приглашением. Они могут присоединиться к команде, приняв приглашение по электронной почте.',
     period: 'Период',

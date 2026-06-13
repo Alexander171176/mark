@@ -33,6 +33,7 @@ export default {
     paymentProvider: 'Payment provider',
     paymentReference: 'Transaction ID',
     paymentStatus: 'Payment status',
+    payouts: 'Payouts',
     pendingInvitations: 'Pending Team Invitations',
     pendingInvitationsDescription: 'These people have been invited to your team and have been sent an invitation email. They may join the team by accepting the email invitation.',
     period: 'Period',

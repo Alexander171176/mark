@@ -9,7 +9,9 @@ use App\Http\Resources\Admin\System\User\UserResource;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileImage;
 use App\Models\User;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,56 +64,76 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolInstructorsPerPage =
-            $settings->int('site_settings.adminSchoolInstructorsPerPage', 6);
 
-        $adminSchoolInstructorsDefaultSort =
-            $settings->string(
-                'site_settings.adminSchoolInstructorsDefaultSort',
-                'idDesc'
+        $perPage = $settings->int('adminSchoolInstructorsPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolInstructorsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolInstructorsProcessingMode',
+            'frontend'
+        );
+
+        $instructorProfilesCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $instructorProfilesCount,
+                300
             );
 
-        $sort = (string) $request->query(
-            'sort',
-            $adminSchoolInstructorsDefaultSort
-        );
+        try {
+            $instructorProfiles = $this->getIndexInstructorProfiles(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
-        $items = $this->baseQuery()
-            ->with([
-                'translation',
-                'translations',
-                'user:id,name',
-                'courses.translation',
-                'images',
-            ])
-            ->withCount('courses')
-            ->sortByParam($sort, $currentLocale)
-            ->get();
+            return Inertia::render('Admin/School/SchoolInstructorProfiles/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
 
-        return Inertia::render(
-            'Admin/School/SchoolInstructorProfiles/Index',
-            [
-                'instructorProfiles' =>
-                    SchoolInstructorProfileResource::collection($items),
+                'useServerProcessing' => $useServerProcessing,
 
-                'instructorProfilesCount' =>
-                    $this->baseQuery()->count(),
+                'adminSchoolInstructorsPerPage' => $perPage,
+                'adminSchoolInstructorsDefaultSort' => $defaultSort,
+                'adminSchoolInstructorsProcessingMode' => $processingMode,
 
-                'adminSchoolInstructorsPerPage' =>
-                    $adminSchoolInstructorsPerPage,
+                'instructorProfiles' => SchoolInstructorProfileResource::collection($instructorProfiles),
+                'instructorProfilesCount' => $instructorProfilesCount,
 
-                'adminSchoolInstructorsDefaultSort' =>
-                    $adminSchoolInstructorsDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
+            ]);
+        } catch (Throwable $e) {
+            Log::error('Ошибка загрузки списка school instructor profiles: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
 
-                'sortParam' => $sort,
+            return Inertia::render('Admin/School/SchoolInstructorProfiles/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
 
-                'currentLocale' =>
-                    $currentLocale,
+                'useServerProcessing' => $useServerProcessing,
 
-                'availableLocales' =>
-                    $this->availableLocales(),
-            ]
-        );
+                'adminSchoolInstructorsPerPage' => $perPage,
+                'adminSchoolInstructorsDefaultSort' => $defaultSort,
+                'adminSchoolInstructorsProcessingMode' => $processingMode,
+
+                'instructorProfiles' => [],
+                'instructorProfilesCount' => 0,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+
+                'error' => 'Ошибка загрузки инструкторов.',
+            ]);
+        }
     }
 
     /** Страница создания */
@@ -237,5 +259,47 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
             Log::error('Ошибка удаления инструктора: ' . $e->getMessage());
             return back()->with('error', 'Ошибка удаления.');
         }
+    }
+
+    /** Базовый запрос для списка инструкторов. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+                'user:id,name,email',
+                'courses.translation',
+                'courses.translations',
+                'images',
+            ])
+            ->withCount([
+                'courses',
+                'payouts',
+                'images',
+            ]);
+    }
+
+    /** Получение списка инструкторов по активному режиму обработки. */
+    private function getIndexInstructorProfiles(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

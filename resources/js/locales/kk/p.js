@@ -33,6 +33,7 @@ export default {
     paymentProvider: 'Төлем провайдері',
     paymentReference: 'Транзакция ID',
     paymentStatus: 'Төлем мәртебесі',
+    payouts: 'Төлемдер',
     pendingInvitations: 'Топқа күтілетін шақырулар',
     pendingInvitationsDescription: 'Бұл адамдар сіздің тобыңызға шақырылды және олар электрондық пошта арқылы шақыру алды. Олар шақыруды қабылдау арқылы топқа қосыла алады.',
     period: 'Кезең',

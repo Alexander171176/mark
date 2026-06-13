@@ -6,7 +6,9 @@ use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolHashtag\SchoolHashtagRequest;
 use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagResource;
 use App\Models\Admin\School\SchoolHashtag\SchoolHashtag;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -54,26 +56,76 @@ class SchoolHashtagController extends BaseSchoolAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolHashtagsPerPage = $settings->int('site_settings.adminSchoolHashtagsPerPage', 6);
-        $adminSchoolHashtagsDefaultSort = $settings->string('site_settings.adminSchoolHashtagsDefaultSort', 'idDesc');
-        $sort = (string) $request->query('sort', $adminSchoolHashtagsDefaultSort);
 
-        $hashtags = $this->baseQuery()
-            ->with(['translation', 'translations'])
-            ->withCount(['courses', 'modules', 'lessons'])
-            ->sortByParam($sort, $currentLocale)
-            ->get();
+        $perPage = $settings->int('adminSchoolHashtagsPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolHashtagsDefaultSort', 'idDesc');
 
-        return Inertia::render('Admin/School/SchoolHashtags/Index', [
-            'hashtags' => SchoolHashtagResource::collection($hashtags),
-            'hashtagsCount' => $this->baseQuery()->count(),
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
 
-            'adminSchoolHashtagsPerPage' => $adminSchoolHashtagsPerPage,
-            'adminSchoolHashtagsDefaultSort' => $adminSchoolHashtagsDefaultSort,
+        $processingMode = $settings->string(
+            'adminSchoolHashtagsProcessingMode',
+            'frontend'
+        );
 
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+        $hashtagsCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $hashtagsCount,
+                300
+            );
+
+        try {
+            $hashtags = $this->getIndexHashtags(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
+
+            return Inertia::render('Admin/School/SchoolHashtags/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolHashtagsPerPage' => $perPage,
+                'adminSchoolHashtagsDefaultSort' => $defaultSort,
+                'adminSchoolHashtagsProcessingMode' => $processingMode,
+
+                'hashtags' => SchoolHashtagResource::collection($hashtags),
+                'hashtagsCount' => $hashtagsCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+            ]);
+        } catch (Throwable $e) {
+            Log::error('Ошибка загрузки списка school hashtags: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
+            return Inertia::render('Admin/School/SchoolHashtags/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolHashtagsPerPage' => $perPage,
+                'adminSchoolHashtagsDefaultSort' => $defaultSort,
+                'adminSchoolHashtagsProcessingMode' => $processingMode,
+
+                'hashtags' => [],
+                'hashtagsCount' => 0,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+
+                'error' => 'Ошибка загрузки хештегов.',
+            ]);
+        }
     }
 
     /** Страница создания хештега */
@@ -217,5 +269,43 @@ class SchoolHashtagController extends BaseSchoolAdminController
 
             return back()->with('error', 'Ошибка при массовом удалении хештегов.');
         }
+    }
+
+    /** Базовый запрос для списка хештегов. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+            ])
+            ->withCount([
+                'courses',
+                'modules',
+                'lessons',
+            ]);
+    }
+
+    /** Получение списка хештегов по активному режиму обработки. */
+    private function getIndexHashtags(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

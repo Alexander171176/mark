@@ -80,20 +80,18 @@ const moderationNum = (value) => {
     return Number.isFinite(number) ? number : 0
 }
 
-/**
- * Режим отображения - Сохраняем выбор в localStorage. */
+/** Режим отображения */
 const viewMode = ref(localStorage.getItem('admin_view_mode_articles') || 'cards')
 
+/** Сохраняем режим отображения -  в localStorage. */
 watch(viewMode, (value) => {
     localStorage.setItem('admin_view_mode_articles', value)
 })
 
-/**
- * Количество элементов на странице.
- * Значение сохраняется в настройках админки.
- */
+/** Количество элементов на странице. */
 const itemsPerPage = ref(props.adminBlogArticlesPerPage || 6)
 
+/** Сохраняем Количество элементов в БД */
 watch(itemsPerPage, (newVal) => {
     router.put(
         route('admin.settings.updateAdminCountArticles'),
@@ -107,12 +105,10 @@ watch(itemsPerPage, (newVal) => {
     )
 })
 
-/**
- * Параметр сортировки.
- * Значение также сохраняется в настройках админки.
- */
+/** Параметр сортировки. */
 const sortParam = ref(props.sortParam || props.adminBlogArticlesDefaultSort || 'idDesc')
 
+/** Сохраняем значение параметра сортировки в БД */
 watch(sortParam, (newVal) => {
     router.put(
         route('admin.settings.updateAdminSortArticles'),
@@ -147,12 +143,7 @@ watch(sortParam, (newVal) => {
     )
 })
 
-/**
- * Локальные копии данных нужны, чтобы:
- * - менять активность без полной перезагрузки;
- * - обновлять drag-and-drop;
- * - работать с карточками и массовыми действиями.
- */
+/** Локальные копии данных нужны, для действий без перезагрузки страницы */
 const localArticles = ref([])
 
 const articlesList = computed(() => {
@@ -175,9 +166,7 @@ watch(
     { immediate: true, deep: true }
 )
 
-/**
- * Модальное подтверждение удаления одной статьи
- */
+/** Модальное подтверждение удаления одной статьи */
 const showConfirmDeleteModal = ref(false)
 const articleToDeleteId = ref(null)
 const articleToDeleteTitle = ref('')
@@ -224,9 +213,7 @@ const deleteArticle = () => {
     })
 }
 
-/**
- * Обновление статьи без полной перезагрузки страницы
- */
+/** Обновление статьи без полной перезагрузки страницы */
 const patchLocalArticle = (articleId, callback) => {
     const index = localArticles.value.findIndex((article) => article.id === articleId)
 
@@ -340,11 +327,7 @@ const toggleRight = (article) => {
 const searchQuery = ref(props.search || '')
 const currentPage = ref(1)
 
-/**
- * Локальная сортировка списка карточек.
- * Backend уже отдаёт отсортированный список, но здесь нужна быстрая
- * клиентская пересортировка при смене select.
- */
+/** Локальная сортировка списка карточек. */
 const sortArticles = (articles) => {
     const list = (articles || []).slice()
 
@@ -614,11 +597,7 @@ const approveArticle = (article, status = 1, note = '') => {
     )
 }
 
-/**
- * После drag-and-drop собираем только изменённые элементы:
- * id, sort, parent_id.
- * Затем отправляем их на updateSortBulk.
- */
+/** drag-and-drop - updateSortBulk. */
 const handleSortOrderUpdate = (newOrderIds) => {
     const items = newOrderIds.map((id, index) => ({
         id,
@@ -678,7 +657,8 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     v-model="searchQuery"
                 />
 
-                <div v-if="articlesCount" class="flex justify-between items-center flex-col md:flex-row my-3">
+                <div v-if="articlesCount"
+                     class="flex justify-between items-center flex-col md:flex-row my-3">
                     <ItemsPerPageSelect
                         v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
@@ -696,7 +676,8 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     />
                 </div>
 
-                <div v-if="articlesCount" class="flex flex-col lg:flex-row items-center justify-between gap-3">
+                <div v-if="articlesCount"
+                     class="flex flex-col lg:flex-row items-center justify-between gap-3">
                     <CountTable>{{ articlesCount }}</CountTable>
 
                     <BulkActionSelect
@@ -754,7 +735,8 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     @approve="approveArticle"
                 />
 
-                <div v-if="articlesCount" class="flex justify-center items-center flex-col md:flex-row mt-3">
+                <div v-if="articlesCount"
+                     class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
                         v-if="!useServerProcessing"
                         :current-page="currentPage"

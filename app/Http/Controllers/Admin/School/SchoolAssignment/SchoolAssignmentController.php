@@ -15,7 +15,9 @@ use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -68,41 +70,54 @@ class SchoolAssignmentController extends BaseSchoolAdminController
     /** Список заданий */
     public function index(Request $request): Response
     {
-        // Текущая локаль
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolAssignmentsPerPage = $settings->int('site_settings.adminSchoolAssignmentsPerPage', 6);
-        $adminSchoolAssignmentsDefaultSort = $settings->string('site_settings.adminSchoolAssignmentsDefaultSort', 'idDesc');
-        $sort = (string) $request->query('sort', $adminSchoolAssignmentsDefaultSort);
+
+        $perPage = $settings->int('adminSchoolAssignmentsPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolAssignmentsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolAssignmentsProcessingMode',
+            'frontend'
+        );
+
+        $assignmentsCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $assignmentsCount,
+                300
+            );
 
         try {
-            $assignments = $this->baseQuery()
-                ->with([
-                    'translation',
-                    'translations',
-                    'images',
-                    'course.translation',
-                    'module.translation',
-                    'lesson.translation',
-                    'instructor.translation',
-                ])
-                ->withCount([
-                    'images',
-                    'submissions',
-                ])
-                ->sortByParam($sort, $currentLocale)
-                ->get();
+            $assignments = $this->getIndexAssignments(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/School/SchoolAssignments/Index', [
-                'assignments' => SchoolAssignmentResource::collection($assignments),
-                'assignmentsCount' => $this->baseQuery()->count(),
-
-                'adminSchoolAssignmentsPerPage' => $adminSchoolAssignmentsPerPage,
-                'adminSchoolAssignmentsDefaultSort' => $adminSchoolAssignmentsDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolAssignmentsPerPage' => $perPage,
+                'adminSchoolAssignmentsDefaultSort' => $defaultSort,
+                'adminSchoolAssignmentsProcessingMode' => $processingMode,
+
+                'assignments' => SchoolAssignmentResource::collection($assignments),
+                'assignmentsCount' => $assignmentsCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки списка school assignments: ' . $e->getMessage(), [
@@ -110,14 +125,21 @@ class SchoolAssignmentController extends BaseSchoolAdminController
             ]);
 
             return Inertia::render('Admin/School/SchoolAssignments/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolAssignmentsPerPage' => $perPage,
+                'adminSchoolAssignmentsDefaultSort' => $defaultSort,
+                'adminSchoolAssignmentsProcessingMode' => $processingMode,
+
                 'assignments' => [],
                 'assignmentsCount' => 0,
 
-                'adminSchoolAssignmentsPerPage' => $adminSchoolAssignmentsPerPage,
-                'adminSchoolAssignmentsDefaultSort' => $adminSchoolAssignmentsDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
                 'error' => 'Ошибка загрузки заданий.',
             ]);
         }
@@ -514,5 +536,47 @@ class SchoolAssignmentController extends BaseSchoolAdminController
             ->get();
 
         return SchoolInstructorProfileResource::collection($instructors);
+    }
+
+    /** Базовый запрос для списка заданий. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+                'images',
+                'course.translation',
+                'module.translation',
+                'lesson.translation',
+                'instructor.translation',
+            ])
+            ->withCount([
+                'images',
+                'submissions',
+            ]);
+    }
+
+    /** Получение списка заданий по активному режиму обработки. */
+    private function getIndexAssignments(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

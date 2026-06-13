@@ -316,6 +316,11 @@ class SchoolAssignment extends Model
             'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
             'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
 
+            'slugAsc' => $q->orderBy('school_assignments.slug', 'asc')
+                ->orderByDesc('school_assignments.id'),
+            'slugDesc' => $q->orderBy('school_assignments.slug', 'desc')
+                ->orderByDesc('school_assignments.id'),
+
             'titleAsc' => $q
                 ->leftJoin('school_assignment_translations as sat_sort', function ($join) use ($locale) {
                     $join->on('sat_sort.school_assignment_id', '=', 'school_assignments.id')
@@ -337,14 +342,88 @@ class SchoolAssignment extends Model
             'courseAsc' => $q->orderBy('school_course_id', 'asc')->orderByDesc('id'),
             'courseDesc' => $q->orderBy('school_course_id', 'desc')->orderByDesc('id'),
 
+            'courseTitleAsc' => $q
+                ->leftJoin('school_course_translations as sct_sort', function ($join) use ($locale) {
+                    $join->on('sct_sort.course_id', '=', 'school_assignments.school_course_id')
+                        ->where('sct_sort.locale', '=', $locale);
+                })
+                ->orderBy('sct_sort.title', 'asc')
+                ->orderByDesc('school_assignments.id')
+                ->select('school_assignments.*'),
+
+            'courseTitleDesc' => $q
+                ->leftJoin('school_course_translations as sct_sort', function ($join) use ($locale) {
+                    $join->on('sct_sort.course_id', '=', 'school_assignments.school_course_id')
+                        ->where('sct_sort.locale', '=', $locale);
+                })
+                ->orderBy('sct_sort.title', 'desc')
+                ->orderByDesc('school_assignments.id')
+                ->select('school_assignments.*'),
+
             'moduleAsc' => $q->orderBy('school_module_id', 'asc')->orderByDesc('id'),
             'moduleDesc' => $q->orderBy('school_module_id', 'desc')->orderByDesc('id'),
+
+            'moduleTitleAsc' => $q
+                ->leftJoin('school_module_translations as smt_sort', function ($join) use ($locale) {
+                    $join->on('smt_sort.module_id', '=', 'school_assignments.school_module_id')
+                        ->where('smt_sort.locale', '=', $locale);
+                })
+                ->orderBy('smt_sort.title', 'asc')
+                ->orderByDesc('school_assignments.id')
+                ->select('school_assignments.*'),
+
+            'moduleTitleDesc' => $q
+                ->leftJoin('school_module_translations as smt_sort', function ($join) use ($locale) {
+                    $join->on('smt_sort.module_id', '=', 'school_assignments.school_module_id')
+                        ->where('smt_sort.locale', '=', $locale);
+                })
+                ->orderBy('smt_sort.title', 'desc')
+                ->orderByDesc('school_assignments.id')
+                ->select('school_assignments.*'),
 
             'lessonAsc' => $q->orderBy('school_lesson_id', 'asc')->orderByDesc('id'),
             'lessonDesc' => $q->orderBy('school_lesson_id', 'desc')->orderByDesc('id'),
 
-            'instructorAsc' => $q->orderBy('school_instructor_profile_id', 'asc')->orderByDesc('id'),
-            'instructorDesc' => $q->orderBy('school_instructor_profile_id', 'desc')->orderByDesc('id'),
+            'lessonTitleAsc' => $q
+                ->leftJoin('school_lesson_translations as slt_sort', function ($join) use ($locale) {
+                    $join->on('slt_sort.lesson_id', '=', 'school_assignments.school_lesson_id')
+                        ->where('slt_sort.locale', '=', $locale);
+                })
+                ->orderBy('slt_sort.title', 'asc')
+                ->orderByDesc('school_assignments.id')
+                ->select('school_assignments.*'),
+
+            'lessonTitleDesc' => $q
+                ->leftJoin('school_lesson_translations as slt_sort', function ($join) use ($locale) {
+                    $join->on('slt_sort.lesson_id', '=', 'school_assignments.school_lesson_id')
+                        ->where('slt_sort.locale', '=', $locale);
+                })
+                ->orderBy('slt_sort.title', 'desc')
+                ->orderByDesc('school_assignments.id')
+                ->select('school_assignments.*'),
+
+            'instructorAsc' => $q->orderBy('school_instructor_profile_id', 'asc')
+                ->orderByDesc('id'),
+            'instructorDesc' => $q->orderBy('school_instructor_profile_id', 'desc')
+                ->orderByDesc('id'),
+
+            'instructorTitleAsc' => $q
+                ->leftJoin('school_instructor_profile_translations as sipt_sort', function ($join) use ($locale) {
+                    $join->on('sipt_sort.instructor_profile_id', '=', 'school_assignments.school_instructor_profile_id')
+                        ->where('sipt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sipt_sort.title', 'asc')
+                ->orderByDesc('school_assignments.id')
+                ->select('school_assignments.*'),
+
+            'instructorTitleDesc' => $q
+                ->leftJoin('school_instructor_profile_translations as sipt_sort', function ($join) use ($locale) {
+                    $join->on('sipt_sort.instructor_profile_id', '=', 'school_assignments.school_instructor_profile_id')
+                        ->where('sipt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sipt_sort.title', 'desc')
+                ->orderByDesc('school_assignments.id')
+                ->select('school_assignments.*'),
 
             'statusAsc' => $q->orderBy('status', 'asc')->orderByDesc('id'),
             'statusDesc' => $q->orderBy('status', 'desc')->orderByDesc('id'),
@@ -361,14 +440,20 @@ class SchoolAssignment extends Model
             'maxScoreAsc' => $q->orderBy('max_score', 'asc')->orderByDesc('id'),
             'maxScoreDesc' => $q->orderBy('max_score', 'desc')->orderByDesc('id'),
 
-            'submissionsAsc' => $q->withCount('submissions')->orderBy('submissions_count', 'asc')->orderByDesc('id'),
-            'submissionsDesc' => $q->withCount('submissions')->orderBy('submissions_count', 'desc')->orderByDesc('id'),
+            'submissionsAsc' => $q->withCount('submissions')
+                ->orderBy('submissions_count', 'asc')->orderByDesc('id'),
+            'submissionsDesc' => $q->withCount('submissions')
+                ->orderBy('submissions_count', 'desc')->orderByDesc('id'),
 
-            'imagesAsc' => $q->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
-            'imagesDesc' => $q->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+            'imagesAsc' => $q->withCount('images')
+                ->orderBy('images_count', 'asc')->orderByDesc('id'),
+            'imagesDesc' => $q->withCount('images')
+                ->orderBy('images_count', 'desc')->orderByDesc('id'),
 
-            'publishedAtAsc', 'dateAsc' => $q->orderBy('published_at', 'asc')->orderByDesc('id'),
-            'publishedAtDesc', 'dateDesc' => $q->orderBy('published_at', 'desc')->orderByDesc('id'),
+            'publishedAtAsc', 'dateAsc' => $q->orderBy('published_at', 'asc')
+                ->orderByDesc('id'),
+            'publishedAtDesc', 'dateDesc' => $q->orderBy('published_at', 'desc')
+                ->orderByDesc('id'),
 
             'dueAtAsc' => $q->orderBy('due_at', 'asc')->orderByDesc('id'),
             'dueAtDesc' => $q->orderBy('due_at', 'desc')->orderByDesc('id'),

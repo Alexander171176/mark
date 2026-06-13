@@ -14,7 +14,9 @@ use App\Models\Admin\School\SchoolCourse\SchoolCourseImage;
 use App\Models\Admin\School\SchoolHashtag\SchoolHashtag;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\Admin\School\SchoolTrack\SchoolTrack;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -73,47 +75,51 @@ class SchoolCourseController extends BaseSchoolAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolCoursesPerPage = $settings->int('site_settings.adminSchoolCoursesPerPage', 6);
-        $adminSchoolCoursesDefaultSort = $settings->string('site_settings.adminSchoolCoursesDefaultSort', 'idDesc');
-        $sort = (string) $request->query('sort', $adminSchoolCoursesDefaultSort);
+
+        $perPage = $settings->int('adminSchoolCoursesPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolCoursesDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolCoursesProcessingMode',
+            'frontend'
+        );
+
+        $coursesCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $coursesCount,
+                300
+            );
 
         try {
-            $courses = $this->baseQuery()
-                ->with([
-                    'translation',
-                    'translations',
-                    'images',
-                    'instructorProfile.translation',
-                    'tracks.translation',
-                    'hashtags.translation',
-                    'relatedCourses.translation',
-                    'prices',
-                ])
-                ->withCount([
-                    'modules',
-                    'lessons',
-                    'tracks',
-                    'hashtags',
-                    'images',
-                    'prices',
-                    'reviews',
-                    'enrollments',
-                    'schedules',
-                    'quizzes',
-                    'likes',
-                ])
-                ->sortByParam($sort, $currentLocale)
-                ->get();
+            $courses = $this->getIndexCourses(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/School/SchoolCourses/Index', [
-                'courses' => SchoolCourseResource::collection($courses),
-                'coursesCount' => $this->baseQuery()->count(),
-
-                'adminSchoolCoursesPerPage' => $adminSchoolCoursesPerPage,
-                'adminSchoolCoursesDefaultSort' => $adminSchoolCoursesDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolCoursesPerPage' => $perPage,
+                'adminSchoolCoursesDefaultSort' => $defaultSort,
+                'adminSchoolCoursesProcessingMode' => $processingMode,
+
+                'courses' => SchoolCourseResource::collection($courses),
+                'coursesCount' => $coursesCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки списка school courses: ' . $e->getMessage(), [
@@ -121,14 +127,21 @@ class SchoolCourseController extends BaseSchoolAdminController
             ]);
 
             return Inertia::render('Admin/School/SchoolCourses/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolCoursesPerPage' => $perPage,
+                'adminSchoolCoursesDefaultSort' => $defaultSort,
+                'adminSchoolCoursesProcessingMode' => $processingMode,
+
                 'courses' => [],
                 'coursesCount' => 0,
 
-                'adminSchoolCoursesPerPage' => $adminSchoolCoursesPerPage,
-                'adminSchoolCoursesDefaultSort' => $adminSchoolCoursesDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
                 'error' => 'Ошибка загрузки курсов.',
             ]);
         }
@@ -509,5 +522,61 @@ class SchoolCourseController extends BaseSchoolAdminController
             ->get();
 
         return SchoolCourseSharedResource::collection($courses);
+    }
+
+    /** Базовый запрос для списка курсов. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+                'images',
+                'instructorProfile.translation',
+                'instructorProfile.translations',
+                'instructorProfile.images',
+                'tracks.translation',
+                'tracks.translations',
+                'hashtags.translation',
+                'hashtags.translations',
+                'relatedCourses.translation',
+                'prices',
+            ])
+            ->withCount([
+                'modules',
+                'lessons',
+                'tracks',
+                'hashtags',
+                'images',
+                'prices',
+                'reviews',
+                'enrollments',
+                'schedules',
+                'quizzes',
+                'likes',
+            ]);
+    }
+
+    /** Получение списка курсов по активному режиму обработки. */
+    private function getIndexCourses(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

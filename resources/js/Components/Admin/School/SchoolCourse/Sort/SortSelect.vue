@@ -107,6 +107,42 @@ const updateSort = (event) => {
             <option value="studentsCountAsc">{{ t('sortStudentsCount') }} 0→9</option>
             <option disabled>───────────────────</option>
 
+            <option value="modulesDesc">{{ t('modules') }} 9→0</option>
+            <option value="modulesAsc">{{ t('modules') }} 0→9</option>
+
+            <option value="lessonsDesc">{{ t('lessons') }} 9→0</option>
+            <option value="lessonsAsc">{{ t('lessons') }} 0→9</option>
+
+            <option value="tracksDesc">{{ t('tracks') }} 9→0</option>
+            <option value="tracksAsc">{{ t('tracks') }} 0→9</option>
+
+            <option value="hashtagsDesc">{{ t('hashtags') }} 9→0</option>
+            <option value="hashtagsAsc">{{ t('hashtags') }} 0→9</option>
+            <option disabled>───────────────────</option>
+
+            <option value="reviewsDesc">{{ t('reviews') }} 9→0</option>
+            <option value="reviewsAsc">{{ t('reviews') }} 0→9</option>
+
+            <option value="enrollmentsDesc">{{ t('enrollments') }} 9→0</option>
+            <option value="enrollmentsAsc">{{ t('enrollments') }} 0→9</option>
+
+            <option value="imagesDesc">{{ t('images') }} 9→0</option>
+            <option value="imagesAsc">{{ t('images') }} 0→9</option>
+
+            <option value="pricesDesc">{{ t('prices') }} 9→0</option>
+            <option value="pricesAsc">{{ t('prices') }} 0→9</option>
+            <option disabled>───────────────────</option>
+
+            <option value="publishedAtDesc">{{ t('publishedAt') }} ↓</option>
+            <option value="publishedAtAsc">{{ t('publishedAt') }} ↑</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
+            <option disabled>───────────────────</option>
+
         </select>
     </div>
 </template>

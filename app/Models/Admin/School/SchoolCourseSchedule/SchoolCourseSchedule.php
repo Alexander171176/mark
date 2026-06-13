@@ -212,16 +212,91 @@ class SchoolCourseSchedule extends Model
     }
 
     /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $q, ?string $sort): Builder
+    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
     {
+        $locale = $locale ?: app()->getLocale();
+
         return match ($sort) {
-            'sort_asc'   => $q->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sort_desc'  => $q->orderBy('sort', 'desc')->orderByDesc('id'),
-            'date_asc'   => $q->orderBy('starts_at', 'asc')->orderByDesc('id'),
-            'date_desc'  => $q->orderBy('starts_at', 'desc')->orderByDesc('id'),
-            'views_asc'  => $q->orderBy('views', 'asc')->orderByDesc('id'),
-            'views_desc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
-            default      => $q->sorted(),
+            'idAsc' => $q->orderBy('id', 'asc'),
+            'idDesc' => $q->orderBy('id', 'desc'),
+
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'titleAsc' => $q
+                ->leftJoin('school_course_schedule_translations as scst_sort', function ($join) use ($locale) {
+                    $join->on('scst_sort.school_course_schedule_id', '=', 'school_course_schedules.id')
+                        ->where('scst_sort.locale', '=', $locale);
+                })
+                ->orderBy('scst_sort.title', 'asc')
+                ->orderByDesc('school_course_schedules.id')
+                ->select('school_course_schedules.*'),
+
+            'titleDesc' => $q
+                ->leftJoin('school_course_schedule_translations as scst_sort', function ($join) use ($locale) {
+                    $join->on('scst_sort.school_course_schedule_id', '=', 'school_course_schedules.id')
+                        ->where('scst_sort.locale', '=', $locale);
+                })
+                ->orderBy('scst_sort.title', 'desc')
+                ->orderByDesc('school_course_schedules.id')
+                ->select('school_course_schedules.*'),
+
+            'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
+            'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),
+
+            'statusAsc' => $q->orderBy('status', 'asc')->orderByDesc('id'),
+            'statusDesc' => $q->orderBy('status', 'desc')->orderByDesc('id'),
+
+            'timezoneAsc' => $q->orderBy('timezone', 'asc')->orderByDesc('id'),
+            'timezoneDesc' => $q->orderBy('timezone', 'desc')->orderByDesc('id'),
+
+            'locationAsc' => $q->orderBy('location', 'asc')->orderByDesc('id'),
+            'locationDesc' => $q->orderBy('location', 'desc')->orderByDesc('id'),
+
+            'meetingUrlAsc' => $q->orderBy('meeting_url', 'asc')->orderByDesc('id'),
+            'meetingUrlDesc' => $q->orderBy('meeting_url', 'desc')->orderByDesc('id'),
+
+            'capacityAsc' => $q->orderBy('capacity', 'asc')->orderByDesc('id'),
+            'capacityDesc' => $q->orderBy('capacity', 'desc')->orderByDesc('id'),
+
+            'viewsAsc' => $q->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
+
+            'imagesAsc' => $q->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
+            'imagesDesc' => $q->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+
+            'cohortEnrollmentsAsc' => $q->withCount('cohortEnrollments')->orderBy('cohort_enrollments_count', 'asc')->orderByDesc('id'),
+            'cohortEnrollmentsDesc' => $q->withCount('cohortEnrollments')->orderBy('cohort_enrollments_count', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $q->where('activity', true)->orderByDesc('id'),
+            'inactive' => $q->where('activity', false)->orderByDesc('id'),
+
+            'onlineAsc' => $q->orderBy('is_online', 'asc')->orderByDesc('id'),
+            'onlineDesc' => $q->orderBy('is_online', 'desc')->orderByDesc('id'),
+            'online' => $q->where('is_online', true)->orderByDesc('id'),
+            'offline' => $q->where('is_online', false)->orderByDesc('id'),
+
+            'startsAtAsc', 'dateAsc' => $q->orderBy('starts_at', 'asc')->orderByDesc('id'),
+            'startsAtDesc', 'dateDesc' => $q->orderBy('starts_at', 'desc')->orderByDesc('id'),
+
+            'endsAtAsc' => $q->orderBy('ends_at', 'asc')->orderByDesc('id'),
+            'endsAtDesc' => $q->orderBy('ends_at', 'desc')->orderByDesc('id'),
+
+            'enrollStartsAtAsc' => $q->orderBy('enroll_starts_at', 'asc')->orderByDesc('id'),
+            'enrollStartsAtDesc' => $q->orderBy('enroll_starts_at', 'desc')->orderByDesc('id'),
+
+            'enrollEndsAtAsc' => $q->orderBy('enroll_ends_at', 'asc')->orderByDesc('id'),
+            'enrollEndsAtDesc' => $q->orderBy('enroll_ends_at', 'desc')->orderByDesc('id'),
+
+            'createdAtAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            default => $q->sorted(),
         };
     }
 

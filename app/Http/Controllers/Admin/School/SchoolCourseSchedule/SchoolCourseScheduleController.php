@@ -11,7 +11,9 @@ use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolCourseSchedule\SchoolCourseSchedule;
 use App\Models\Admin\School\SchoolCourseSchedule\SchoolCourseScheduleImage;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -62,43 +64,57 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
     ];
 
     /** список расписаний */
+    /** Список расписаний. */
     public function index(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolCourseSchedulesPerPage = $settings->int('site_settings.adminSchoolCourseSchedulesPerPage', 6);
-        $adminSchoolCourseSchedulesDefaultSort = $settings->string('site_settings.adminSchoolCourseSchedulesDefaultSort', 'idDesc');
-        $sort = (string) $request->query('sort', $adminSchoolCourseSchedulesDefaultSort);
+
+        $perPage = $settings->int('adminSchoolCourseSchedulesPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolCourseSchedulesDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolCourseSchedulesProcessingMode',
+            'frontend'
+        );
+
+        $schedulesCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $schedulesCount,
+                300
+            );
 
         try {
-            $schedules = $this->baseQuery()
-                ->with([
-                    'translation',
-                    'translations',
-                    'images',
-                    'course.translation',
-                    'course.translations',
-                    'instructor.translation',
-                    'instructor.translations',
-                    'instructor.user',
-                ])
-                ->withCount([
-                    'images',
-                    'cohortEnrollments',
-                ])
-                ->sortByParam($sort, $currentLocale)
-                ->get();
+            $schedules = $this->getIndexSchedules(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/School/SchoolCourseSchedules/Index', [
-                'schedules' => SchoolCourseScheduleResource::collection($schedules),
-                'schedulesCount' => $this->baseQuery()->count(),
-
-                'adminSchoolCourseSchedulesPerPage' => $adminSchoolCourseSchedulesPerPage,
-                'adminSchoolCourseSchedulesDefaultSort' => $adminSchoolCourseSchedulesDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolCourseSchedulesPerPage' => $perPage,
+                'adminSchoolCourseSchedulesDefaultSort' => $defaultSort,
+                'adminSchoolCourseSchedulesProcessingMode' => $processingMode,
+
+                'schedules' => SchoolCourseScheduleResource::collection($schedules),
+                'schedulesCount' => $schedulesCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки списка school course schedules: ' . $e->getMessage(), [
@@ -106,14 +122,21 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
             ]);
 
             return Inertia::render('Admin/School/SchoolCourseSchedules/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolCourseSchedulesPerPage' => $perPage,
+                'adminSchoolCourseSchedulesDefaultSort' => $defaultSort,
+                'adminSchoolCourseSchedulesProcessingMode' => $processingMode,
+
                 'schedules' => [],
                 'schedulesCount' => 0,
 
-                'adminSchoolCourseSchedulesPerPage' => $adminSchoolCourseSchedulesPerPage,
-                'adminSchoolCourseSchedulesDefaultSort' => $adminSchoolCourseSchedulesDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
                 'error' => 'Ошибка загрузки расписаний.',
             ]);
         }
@@ -369,5 +392,50 @@ class SchoolCourseScheduleController extends BaseSchoolAdminController
             ->get();
 
         return SchoolInstructorProfileResource::collection($instructors);
+    }
+
+    /** Базовый запрос для списка расписаний. */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+                'images',
+
+                'course.translation',
+                'course.translations',
+
+                'instructor.translation',
+                'instructor.translations',
+                'instructor.user:id,name,email',
+            ])
+            ->withCount([
+                'images',
+                'cohortEnrollments',
+            ]);
+    }
+
+    /** Получение списка расписаний по активному режиму обработки. */
+    private function getIndexSchedules(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

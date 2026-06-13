@@ -46,7 +46,6 @@ use Throwable;
 class SchoolEnrollmentController extends Controller
 {
     /** Список зачислений учеников. */
-    /** Список зачислений учеников. */
     public function index(Request $request): Response
     {
         $status = $request->query('status');

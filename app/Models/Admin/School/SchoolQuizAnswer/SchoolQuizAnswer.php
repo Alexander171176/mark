@@ -123,19 +123,154 @@ class SchoolQuizAnswer extends Model
     /** Поиск */
     public function scopeSearch(Builder $q, ?string $term, ?string $locale = null): Builder
     {
-        if (!$term) {
+        $term = trim((string) $term);
+
+        if ($term === '') {
             return $q;
         }
 
         $locale = $locale ?: app()->getLocale();
 
-        return $q->whereHas('translations', function (Builder $qq) use ($term, $locale) {
-            $qq->where('locale', $locale)
-                ->where(function (Builder $sub) use ($term) {
-                    $sub->where('text', 'like', "%{$term}%")
-                        ->orWhere('explanation', 'like', "%{$term}%");
+        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term))
+            ->map(fn ($word) => trim($word))
+            ->filter(fn ($word) => mb_strlen($word) >= 2)
+            ->values();
+
+        if ($words->isEmpty()) {
+            return $q;
+        }
+
+        return $q->where(function (Builder $query) use ($words, $locale) {
+            foreach ($words as $word) {
+                $query->where(function (Builder $query) use ($word, $locale) {
+                    $query
+                        ->where('school_quiz_answers.weight', 'like', "%{$word}%")
+
+                        ->orWhereHas('translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('text', 'like', "%{$word}%")
+                                        ->orWhere('explanation', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('question.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('question_text', 'like', "%{$word}%")
+                                        ->orWhere('explanation', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('quiz.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('slug', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%")
+                                        ->orWhere('description', 'like', "%{$word}%");
+                                });
+                        });
                 });
+            }
         });
+    }
+
+    /** Сортировка по параметру */
+    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
+    {
+        $locale = $locale ?: app()->getLocale();
+
+        return match ($sort) {
+            'idAsc' => $q->orderBy('id', 'asc'),
+            'idDesc' => $q->orderBy('id', 'desc'),
+
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderBy('id', 'asc'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'textAsc' => $q
+                ->leftJoin('school_quiz_answer_translations as sqat_sort', function ($join) use ($locale) {
+                    $join->on('sqat_sort.school_quiz_answer_id', '=', 'school_quiz_answers.id')
+                        ->where('sqat_sort.locale', '=', $locale);
+                })
+                ->orderBy('sqat_sort.text', 'asc')
+                ->orderBy('school_quiz_answers.id', 'asc')
+                ->select('school_quiz_answers.*'),
+
+            'textDesc' => $q
+                ->leftJoin('school_quiz_answer_translations as sqat_sort', function ($join) use ($locale) {
+                    $join->on('sqat_sort.school_quiz_answer_id', '=', 'school_quiz_answers.id')
+                        ->where('sqat_sort.locale', '=', $locale);
+                })
+                ->orderBy('sqat_sort.text', 'desc')
+                ->orderByDesc('school_quiz_answers.id')
+                ->select('school_quiz_answers.*'),
+
+            'quizTitleAsc' => $q
+                ->leftJoin('school_quizzes as sq_sort', 'sq_sort.id', '=', 'school_quiz_answers.school_quiz_id')
+                ->leftJoin('school_quiz_translations as sqt_sort', function ($join) use ($locale) {
+                    $join->on('sqt_sort.school_quiz_id', '=', 'sq_sort.id')
+                        ->where('sqt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sqt_sort.title', 'asc')
+                ->orderBy('school_quiz_answers.id', 'asc')
+                ->select('school_quiz_answers.*'),
+
+            'quizTitleDesc' => $q
+                ->leftJoin('school_quizzes as sq_sort', 'sq_sort.id', '=', 'school_quiz_answers.school_quiz_id')
+                ->leftJoin('school_quiz_translations as sqt_sort', function ($join) use ($locale) {
+                    $join->on('sqt_sort.school_quiz_id', '=', 'sq_sort.id')
+                        ->where('sqt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sqt_sort.title', 'desc')
+                ->orderByDesc('school_quiz_answers.id')
+                ->select('school_quiz_answers.*'),
+
+            'questionTextAsc' => $q
+                ->leftJoin('school_quiz_questions as sqq_sort', 'sqq_sort.id', '=', 'school_quiz_answers.school_quiz_question_id')
+                ->leftJoin('school_quiz_question_translations as sqqt_sort', function ($join) use ($locale) {
+                    $join->on('sqqt_sort.school_quiz_question_id', '=', 'sqq_sort.id')
+                        ->where('sqqt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sqqt_sort.question_text', 'asc')
+                ->orderBy('school_quiz_answers.id', 'asc')
+                ->select('school_quiz_answers.*'),
+
+            'questionTextDesc' => $q
+                ->leftJoin('school_quiz_questions as sqq_sort', 'sqq_sort.id', '=', 'school_quiz_answers.school_quiz_question_id')
+                ->leftJoin('school_quiz_question_translations as sqqt_sort', function ($join) use ($locale) {
+                    $join->on('sqqt_sort.school_quiz_question_id', '=', 'sqq_sort.id')
+                        ->where('sqqt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sqqt_sort.question_text', 'desc')
+                ->orderByDesc('school_quiz_answers.id')
+                ->select('school_quiz_answers.*'),
+
+            'weightAsc' => $q->orderBy('weight', 'asc')->orderBy('id', 'asc'),
+            'weightDesc' => $q->orderBy('weight', 'desc')->orderByDesc('id'),
+
+            'attemptItemsAsc' => $q->withCount('attemptItems')->orderBy('attempt_items_count', 'asc')->orderBy('id', 'asc'),
+            'attemptItemsDesc' => $q->withCount('attemptItems')->orderBy('attempt_items_count', 'desc')->orderByDesc('id'),
+
+            'correct' => $q->where('is_correct', true)->orderByDesc('id'),
+            'incorrect' => $q->where('is_correct', false)->orderByDesc('id'),
+
+            'correctAsc' => $q->orderBy('is_correct', 'asc')->orderByDesc('id'),
+            'correctDesc' => $q->orderBy('is_correct', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $q->where('activity', true)->orderByDesc('id'),
+            'inactive' => $q->where('activity', false)->orderByDesc('id'),
+
+            'createdAtAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            default => $q->ordered(),
+        };
     }
 
     /** Список для админки */

@@ -1,10 +1,12 @@
 <script setup>
 /**
- * @version PulsarCMS 1.0
- * @autor Александр Косолапов <kosolapov1976@gmail.com>
- *
- * Список ответов вопросов викторин (SchoolQuizAnswer)
+ * Список ответов вопросов викторин
+ * - режимы обработки: frontend | server | auto
+ * - фильтр по квизу и вопросу
+ * - локальный/серверный поиск
+ * - локальная/серверная пагинация
  */
+
 import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -13,34 +15,40 @@ import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
 import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
 import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
 import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 import BulkActionSelect from '@/Components/Admin/School/SchoolQuizAnswer/Select/BulkActionSelect.vue'
 import SortSelect from '@/Components/Admin/School/SchoolQuizAnswer/Sort/SortSelect.vue'
 import QuizAnswerTable from '@/Components/Admin/School/SchoolQuizAnswer/Table/QuizAnswerTable.vue'
 import QuizAnswerCardGrid from '@/Components/Admin/School/SchoolQuizAnswer/View/QuizAnswerCardGrid.vue'
 
-// Локализация
 const { t } = useI18n()
-
-// Toast уведомления
 const toast = useToast()
 
-// Props страницы списка ответов
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
 
-    answers: { type: Array, default: () => [] },
+    adminSchoolQuizAnswersProcessingMode: { type: String, default: 'frontend' },
+    useServerProcessing: { type: Boolean, default: false },
+
+    answers: { type: [Array, Object], default: () => [] },
     answersCount: { type: Number, default: 0 },
 
     adminSchoolQuizAnswersPerPage: { type: Number, default: 10 },
     adminSchoolQuizAnswersDefaultSort: { type: String, default: 'idDesc' },
+
+    sortParam: { type: String, default: '' },
+    search: { type: String, default: '' },
 
     filters: { type: Object, default: () => ({}) },
 
@@ -49,42 +57,39 @@ const props = defineProps({
 
     currentQuizId: { type: Number, default: null },
     currentQuestionId: { type: Number, default: null },
+
+    errors: { type: Object, default: () => ({}) },
 })
 
-// Режим отображения (таблица / карточки)
-const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
+const viewMode = ref(localStorage.getItem('admin_view_mode_quiz_answers') || 'table')
 
-// Сохранение режима отображения
 watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode', val)
+    localStorage.setItem('admin_view_mode_quiz_answers', val)
 })
 
-// Локальная копия ответов
+const answersList = computed(() => {
+    if (Array.isArray(props.answers)) return props.answers
+    if (Array.isArray(props.answers?.data)) return props.answers.data
+
+    return []
+})
+
 const localAnswers = ref([])
 
-// Синхронизация локальных данных
 watch(
-    () => props.answers,
+    answersList,
     (newVal) => {
         localAnswers.value = JSON.parse(JSON.stringify(newVal || []))
     },
     { immediate: true, deep: true }
 )
 
-// Выбранный квиз для фильтра
 const selectedQuizId = ref(props.currentQuizId ?? props.filters?.school_quiz_id ?? null)
+const selectedQuestionId = ref(props.currentQuestionId ?? props.filters?.school_quiz_question_id ?? null)
 
-// Выбранный вопрос для фильтра
-const selectedQuestionId = ref(
-    props.currentQuestionId ?? props.filters?.school_quiz_question_id ?? null)
-
-// Список квизов
 const quizOptions = computed(() => props.quizzes || [])
-
-// Список вопросов
 const questionOptions = computed(() => props.questions || [])
 
-// Очистка HTML тегов
 const stripHtml = (html = '') => {
     return (html || '')
         .replace(/<\/p>/gi, ' ')
@@ -95,14 +100,12 @@ const stripHtml = (html = '') => {
         .trim()
 }
 
-// Сокращение текста
 const shortText = (html, limit = 100) => {
     const clean = stripHtml(html)
 
-    return clean.length > limit ? clean.slice(0, limit) + '…' : clean
+    return clean.length > limit ? `${clean.slice(0, limit)}…` : clean
 }
 
-// Подпись квиза в select
 const quizOptionLabel = (quiz) => {
     if (!quiz) return ''
 
@@ -115,12 +118,9 @@ const quizOptionLabel = (quiz) => {
         quiz.lesson?.title ? `Урок: ${quiz.lesson.title}` : null,
     ].filter(Boolean).join(' / ')
 
-    return context
-        ? `${idPart} ${titlePart} — ${context}`
-        : `${idPart} ${titlePart}`
+    return context ? `${idPart} ${titlePart} — ${context}` : `${idPart} ${titlePart}`
 }
 
-// Подпись вопроса в select
 const questionOptionLabel = (question) => {
     if (!question) return ''
 
@@ -128,53 +128,48 @@ const questionOptionLabel = (question) => {
     const textPart = question.question_text
         ? shortText(question.question_text, 120)
         : `#${question.id}`
-    const quizPart = question.school_quiz_id
-        ? `Quiz ID: ${question.school_quiz_id}`
-        : null
 
-    return quizPart
-        ? `${idPart} ${textPart} — ${quizPart}`
+    return question.school_quiz_id
+        ? `${idPart} ${textPart} — Quiz ID: ${question.school_quiz_id}`
         : `${idPart} ${textPart}`
 }
 
-// Фильтр по квизу
-const handleQuizFilterChange = () => {
-    const data = {}
-
-    if (selectedQuizId.value) {
-        data.school_quiz_id = selectedQuizId.value
+const reloadWithFilters = () => {
+    const params = {
+        ...Object.fromEntries(new URLSearchParams(window.location.search)),
+        page: undefined,
     }
 
-    selectedQuestionId.value = null
-
-    router.get(route('admin.schoolQuizAnswers.index'), data, {
-        preserveScroll: true,
-        preserveState: true,
-    })
-}
-
-// Фильтр по вопросу
-const handleQuestionFilterChange = () => {
-    const data = {}
-
     if (selectedQuizId.value) {
-        data.school_quiz_id = selectedQuizId.value
+        params.school_quiz_id = selectedQuizId.value
+    } else {
+        delete params.school_quiz_id
     }
 
     if (selectedQuestionId.value) {
-        data.school_quiz_question_id = selectedQuestionId.value
+        params.school_quiz_question_id = selectedQuestionId.value
+    } else {
+        delete params.school_quiz_question_id
     }
 
-    router.get(route('admin.schoolQuizAnswers.index'), data, {
+    router.get(route('admin.schoolQuizAnswers.index'), params, {
         preserveScroll: true,
-        preserveState: true,
+        preserveState: false,
+        replace: true,
     })
 }
 
-// Количество элементов на странице
+const handleQuizFilterChange = () => {
+    selectedQuestionId.value = null
+    reloadWithFilters()
+}
+
+const handleQuestionFilterChange = () => {
+    reloadWithFilters()
+}
+
 const itemsPerPage = ref(props.adminSchoolQuizAnswersPerPage || 10)
 
-// Обновление количества элементов
 watch(itemsPerPage, (newVal) => {
     router.put(route('admin.settings.updateAdminCountQuizAnswers'), { value: newVal }, {
         preserveScroll: true,
@@ -184,33 +179,231 @@ watch(itemsPerPage, (newVal) => {
     })
 })
 
-// Текущая сортировка
-const sortParam = ref(props.adminSchoolQuizAnswersDefaultSort || 'idDesc')
+const sortParam = ref(
+    props.sortParam ||
+    props.adminSchoolQuizAnswersDefaultSort ||
+    'idDesc'
+)
 
-// Обновление сортировки
 watch(sortParam, (newVal) => {
+    currentPage.value = 1
+
     router.put(route('admin.settings.updateAdminSortQuizAnswers'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
-        onSuccess: () => toast.info('Сортировка успешно изменена'),
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
+
+        onSuccess: () => {
+            if (props.useServerProcessing) {
+                router.get(
+                    window.location.pathname,
+                    {
+                        ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                        sort: newVal || undefined,
+                        page: undefined,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: false,
+                        replace: true,
+                    }
+                )
+            }
+
+            toast.info('Сортировка успешно изменена')
+        },
+
+        onError: (errors) => {
+            toast.error(errors.value || 'Ошибка обновления сортировки.')
+        },
     })
 })
 
-// Модальное окно удаления
+const currentPage = ref(1)
+const searchQuery = ref(props.search || '')
+
+const normalize = (value) => stripHtml(value ?? '').toString().trim().toLowerCase()
+
+const safeNumber = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : 0
+}
+
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+const getAnswerText = (answer) => {
+    return answer?.text
+        || answer?.translation?.text
+        || answer?.translations?.[0]?.text
+        || `ID: ${answer?.id}`
+}
+
+const getAnswerExplanation = (answer) => {
+    return answer?.explanation
+        || answer?.translation?.explanation
+        || answer?.translations?.[0]?.explanation
+        || ''
+}
+
+const getNestedTitle = (item) => {
+    return item?.title
+        || item?.name
+        || item?.question_text
+        || item?.translation?.title
+        || item?.translation?.name
+        || item?.translation?.question_text
+        || item?.translations?.[0]?.title
+        || item?.translations?.[0]?.name
+        || item?.translations?.[0]?.question_text
+        || ''
+}
+
+const getQuizTitle = (answer) => getNestedTitle(answer?.quiz)
+const getQuestionText = (answer) => getNestedTitle(answer?.question)
+
+const byNumberAsc = (field) => (a, b) =>
+    safeNumber(a?.[field]) - safeNumber(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byNumberDesc = (field) => (a, b) =>
+    safeNumber(b?.[field]) - safeNumber(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const byDateAsc = (field) => (a, b) =>
+    safeDate(a?.[field]) - safeDate(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byDateDesc = (field) => (a, b) =>
+    safeDate(b?.[field]) - safeDate(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const sortAnswers = (items) => {
+    const list = (items || []).slice()
+
+    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
+    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
+
+    if (sortParam.value === 'correct') return list.filter(item => !!item.is_correct)
+    if (sortParam.value === 'incorrect') return list.filter(item => !item.is_correct)
+
+    const sortMap = {
+        idAsc: byNumberAsc('id'),
+        idDesc: byNumberDesc('id'),
+
+        sortAsc: byNumberAsc('sort'),
+        sortDesc: byNumberDesc('sort'),
+
+        textAsc: (a, b) =>
+            normalize(getAnswerText(a)).localeCompare(normalize(getAnswerText(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        textDesc: (a, b) =>
+            normalize(getAnswerText(b)).localeCompare(normalize(getAnswerText(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        quizTitleAsc: (a, b) =>
+            normalize(getQuizTitle(a)).localeCompare(normalize(getQuizTitle(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        quizTitleDesc: (a, b) =>
+            normalize(getQuizTitle(b)).localeCompare(normalize(getQuizTitle(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        questionTextAsc: (a, b) =>
+            normalize(getQuestionText(a)).localeCompare(normalize(getQuestionText(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        questionTextDesc: (a, b) =>
+            normalize(getQuestionText(b)).localeCompare(normalize(getQuestionText(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        weightAsc: byNumberAsc('weight'),
+        weightDesc: byNumberDesc('weight'),
+
+        attemptItemsAsc: byNumberAsc('attempt_items_count'),
+        attemptItemsDesc: byNumberDesc('attempt_items_count'),
+
+        correctAsc: byNumberAsc('is_correct'),
+        correctDesc: byNumberDesc('is_correct'),
+
+        activityAsc: byNumberAsc('activity'),
+        activityDesc: byNumberDesc('activity'),
+
+        createdAtAsc: byDateAsc('created_at'),
+        createdAtDesc: byDateDesc('created_at'),
+
+        updatedAtAsc: byDateAsc('updated_at'),
+        updatedAtDesc: byDateDesc('updated_at'),
+    }
+
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
+}
+
+const filteredAnswers = computed(() => {
+    let filtered = localAnswers.value || []
+    const query = normalize(searchQuery.value)
+
+    if (selectedQuizId.value && !props.useServerProcessing) {
+        filtered = filtered.filter(answer =>
+            Number(answer.school_quiz_id) === Number(selectedQuizId.value)
+        )
+    }
+
+    if (selectedQuestionId.value && !props.useServerProcessing) {
+        filtered = filtered.filter(answer =>
+            Number(answer.school_quiz_question_id) === Number(selectedQuestionId.value)
+        )
+    }
+
+    if (!query) {
+        return sortAnswers(filtered)
+    }
+
+    filtered = filtered.filter((answer) => {
+        const values = [
+            getAnswerText(answer),
+            getAnswerExplanation(answer),
+            getQuizTitle(answer),
+            answer?.quiz?.slug,
+            getQuestionText(answer),
+            answer?.question?.explanation,
+        ]
+
+        return values.some(value => normalize(value).includes(query))
+    })
+
+    return sortAnswers(filtered)
+})
+
+const paginatedAnswers = computed(() => {
+    const per = Number(itemsPerPage.value || 10)
+    const start = (currentPage.value - 1) * per
+
+    return filteredAnswers.value.slice(start, start + per)
+})
+
+const displayedAnswers = computed(() => {
+    return props.useServerProcessing
+        ? answersList.value
+        : paginatedAnswers.value
+})
+
+watch([itemsPerPage, searchQuery, selectedQuizId, selectedQuestionId], () => {
+    currentPage.value = 1
+})
+
 const showConfirmDeleteModal = ref(false)
-
-// ID удаляемого ответа
 const answerToDeleteId = ref(null)
-
-// Заголовок удаляемого ответа
 const answerToDeleteTitle = ref('')
 
-// Подтверждение удаления
 const confirmDelete = (answerOrId, title = null) => {
     if (typeof answerOrId === 'object') {
         answerToDeleteId.value = answerOrId.id
-        answerToDeleteTitle.value = title || stripHtml(answerOrId.text) || `ID: ${answerOrId.id}`
+        answerToDeleteTitle.value = title || stripHtml(getAnswerText(answerOrId)) || `ID: ${answerOrId.id}`
     } else {
         answerToDeleteId.value = answerOrId
         answerToDeleteTitle.value = title || `ID: ${answerOrId}`
@@ -219,14 +412,12 @@ const confirmDelete = (answerOrId, title = null) => {
     showConfirmDeleteModal.value = true
 }
 
-// Закрытие модального окна
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     answerToDeleteId.value = null
     answerToDeleteTitle.value = ''
 }
 
-// Удаление ответа
 const deleteAnswer = () => {
     if (answerToDeleteId.value === null) return
 
@@ -238,125 +429,22 @@ const deleteAnswer = () => {
     }), {
         preserveScroll: true,
         preserveState: false,
+
         onSuccess: () => {
             toast.success(`Ответ "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
         },
+
         onError: (errors) => {
             const errorKey = Object.keys(errors || {})[0]
             const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
 
             toast.error(`${errorMsg} (Ответ: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
+
         onFinish: () => closeModal(),
     })
 }
 
-// Текущая страница пагинации
-const currentPage = ref(1)
-
-// Поисковый запрос
-const searchQuery = ref('')
-
-// Нормализация текста
-const normalize = (value) => stripHtml(value ?? '').toString().trim().toLowerCase()
-
-// Сортировка ответов
-const sortAnswers = (items) => {
-    const list = (items || []).slice()
-
-    if (sortParam.value === 'idAsc') return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    if (sortParam.value === 'idDesc') return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-
-    if (sortParam.value === 'sortAsc') return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    if (sortParam.value === 'sortDesc') return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
-
-    if (sortParam.value === 'textAsc') {
-        return list.sort((a, b) => normalize(a.text).localeCompare(normalize(b.text)))
-    }
-
-    if (sortParam.value === 'textDesc') {
-        return list.sort((a, b) => normalize(b.text).localeCompare(normalize(a.text)))
-    }
-
-    if (sortParam.value === 'weightAsc') return list.sort((a, b) => (a.weight ?? 0) - (b.weight ?? 0))
-    if (sortParam.value === 'weightDesc') return list.sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))
-
-    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
-    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
-
-    if (sortParam.value === 'correct') return list.filter(item => !!item.is_correct)
-    if (sortParam.value === 'incorrect') return list.filter(item => !item.is_correct)
-
-    if (sortParam.value === 'quizTitleAsc') {
-        return list.sort((a, b) => normalize(a.quiz?.title).localeCompare(normalize(b.quiz?.title)))
-    }
-
-    if (sortParam.value === 'quizTitleDesc') {
-        return list.sort((a, b) => normalize(b.quiz?.title).localeCompare(normalize(a.quiz?.title)))
-    }
-
-    if (sortParam.value === 'questionTextAsc') {
-        return list.sort((a, b) => normalize(a.question?.question_text).localeCompare(normalize(b.question?.question_text)))
-    }
-
-    if (sortParam.value === 'questionTextDesc') {
-        return list.sort((a, b) => normalize(b.question?.question_text).localeCompare(normalize(a.question?.question_text)))
-    }
-
-    return list
-}
-
-// Отфильтрованные ответы
-const filteredAnswers = computed(() => {
-    let filtered = localAnswers.value || []
-    const q = normalize(searchQuery.value)
-
-    if (selectedQuizId.value) {
-        filtered = filtered.filter(answer =>
-            Number(answer.school_quiz_id) === Number(selectedQuizId.value)
-        )
-    }
-
-    if (selectedQuestionId.value) {
-        filtered = filtered.filter(answer =>
-            Number(answer.school_quiz_question_id) === Number(selectedQuestionId.value)
-        )
-    }
-
-    if (!q) {
-        return sortAnswers(filtered)
-    }
-
-    filtered = filtered.filter((answer) => {
-        const values = [
-            answer.text,
-            answer.explanation,
-            answer.quiz?.title,
-            answer.quiz?.slug,
-            answer.question?.question_text,
-            answer.question?.explanation,
-        ]
-
-        return values.some(value => normalize(value).includes(q))
-    })
-
-    return sortAnswers(filtered)
-})
-
-// Ответы текущей страницы
-const paginatedAnswers = computed(() => {
-    const per = Number(itemsPerPage.value || 20)
-    const start = (currentPage.value - 1) * per
-
-    return filteredAnswers.value.slice(start, start + per)
-})
-
-// Сброс страницы при поиске и изменении лимита и условий
-watch([itemsPerPage, searchQuery, selectedQuizId, selectedQuestionId], () => {
-    currentPage.value = 1
-})
-
-// Локальное обновление ответа
 const patchAnswer = (answerId, payload) => {
     const index = localAnswers.value.findIndex(answer => answer.id === answerId)
 
@@ -368,15 +456,19 @@ const patchAnswer = (answerId, payload) => {
     }
 }
 
-// Выбранные ответы
 const selectedAnswers = ref([])
 
-// Выбрать / снять выбор со всех ответов
-const toggleAll = ({ ids, checked }) => {
-    selectedAnswers.value = checked ? [...ids] : []
+const toggleAll = (payload) => {
+    const checked = payload?.checked ?? payload?.target?.checked ?? false
+    const ids = payload?.ids ?? displayedAnswers.value.map(answer => answer.id)
+
+    if (checked) {
+        selectedAnswers.value = [...new Set([...selectedAnswers.value, ...ids])]
+    } else {
+        selectedAnswers.value = selectedAnswers.value.filter(id => !ids.includes(id))
+    }
 }
 
-// Выбор одного ответа
 const toggleSelectAnswer = (id) => {
     const index = selectedAnswers.value.indexOf(id)
 
@@ -387,7 +479,6 @@ const toggleSelectAnswer = (id) => {
     }
 }
 
-// Обновление порядка сортировки
 const handleSortOrderUpdate = (orderedIds) => {
     const startSort = (currentPage.value - 1) * itemsPerPage.value
 
@@ -401,9 +492,10 @@ const handleSortOrderUpdate = (orderedIds) => {
     router.put(route('admin.actions.schoolQuizAnswers.updateSortBulk'), { items }, {
         preserveScroll: true,
         preserveState: true,
+
         onSuccess: () => toast.success('Порядок ответов успешно обновлён.'),
+
         onError: (errors) => {
-            console.error('Ошибка обновления сортировки ответов:', errors)
             toast.error(errors?.message || errors?.general || 'Не удалось обновить порядок ответов.')
 
             router.reload({
@@ -414,7 +506,6 @@ const handleSortOrderUpdate = (orderedIds) => {
     })
 }
 
-// Массовое обновление активности
 const bulkToggleActivity = (newActivity) => {
     if (!selectedAnswers.value.length) {
         toast.warning('Выберите ответы для активации/деактивации.')
@@ -429,18 +520,19 @@ const bulkToggleActivity = (newActivity) => {
     }, {
         preserveScroll: true,
         preserveState: true,
+
         onSuccess: () => {
             idsToUpdate.forEach(id => patchAnswer(id, { activity: newActivity }))
             selectedAnswers.value = []
             toast.success('Активность выбранных ответов обновлена.')
         },
+
         onError: (errors) => {
             toast.error(errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.')
         },
     })
 }
 
-// Массовое удаление
 const bulkDelete = () => {
     if (!selectedAnswers.value.length) {
         toast.warning('Выберите ответы для удаления.')
@@ -457,10 +549,12 @@ const bulkDelete = () => {
         },
         preserveScroll: true,
         preserveState: false,
+
         onSuccess: () => {
             selectedAnswers.value = []
             toast.success('Выбранные ответы успешно удалены.')
         },
+
         onError: (errors) => {
             const errorKey = Object.keys(errors || {})[0]
             toast.error(errors[errorKey] || 'Ошибка массового удаления ответов.')
@@ -468,14 +562,13 @@ const bulkDelete = () => {
     })
 }
 
-// Обработка массовых действий
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedAnswers.value = paginatedAnswers.value.map(answer => answer.id)
+        toggleAll({ target: { checked: true } })
     } else if (action === 'deselectAll') {
-        selectedAnswers.value = []
+        toggleAll({ target: { checked: false } })
     } else if (action === 'activate') {
         bulkToggleActivity(true)
     } else if (action === 'deactivate') {
@@ -487,10 +580,9 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-// Переключение активности ответов
 const toggleActivity = (answer) => {
     const newActivity = !answer.activity
-    const answerTitle = stripHtml(answer.text) || `ID: ${answer.id}`
+    const answerTitle = stripHtml(getAnswerText(answer)) || `ID: ${answer.id}`
     const actionText = newActivity ? t('activated') : t('deactivated')
 
     router.put(route('admin.actions.schoolQuizAnswers.updateActivity', {
@@ -500,11 +592,13 @@ const toggleActivity = (answer) => {
     }, {
         preserveScroll: true,
         preserveState: true,
+
         onSuccess: () => {
             patchAnswer(answer.id, { activity: newActivity })
             answer.activity = newActivity
             toast.success(`Ответ "${answerTitle}" ${actionText}.`)
         },
+
         onError: (errors) => {
             toast.error(errors?.activity || errors?.general || `Ошибка изменения активности для ответа "${answerTitle}".`)
         },
@@ -525,7 +619,7 @@ const toggleActivity = (answer) => {
                        overflow-hidden shadow-md shadow-gray-500
                        dark:shadow-slate-400 bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.schoolQuizAnswers.create')">
                         <template #icon>
                         <svg class="w-4 h-4 fill-current opacity-50 shrink-0"
@@ -535,12 +629,24 @@ const toggleActivity = (answer) => {
                     </template>
                         {{ t('addQuizAnswer') }}
                     </DefaultButton>
+
+                    <ProcessingModeSwitcher
+                        setting-key="adminSchoolQuizAnswersProcessingMode"
+                        :mode="adminSchoolQuizAnswersProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="answersCount"
+                    />
                 </div>
 
                 <SearchInput
-                    v-if="answersCount"
+                    v-if="answersCount && !useServerProcessing"
                     v-model="searchQuery"
                     :placeholder="t('searchByName')"
+                />
+
+                <ServerSearchInput
+                    v-if="answersCount && useServerProcessing"
+                    v-model="searchQuery"
                 />
 
                 <div class="mb-3 flex flex-col gap-3">
@@ -574,8 +680,15 @@ const toggleActivity = (answer) => {
                 <div v-if="answersCount"
                      class="flex justify-between items-center flex-col md:flex-row my-3">
                     <ItemsPerPageSelect
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <ServerItemsPerPageSelect
+                        v-else
+                        :items-per-page="itemsPerPage"
+                        update-route="admin.settings.updateAdminCountQuizAnswers"
                     />
 
                     <SortSelect
@@ -594,17 +707,22 @@ const toggleActivity = (answer) => {
                 <div v-if="answersCount"
                      class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredAnswers.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="answers"
                     />
                 </div>
 
                 <QuizAnswerTable
                     v-if="viewMode === 'table'"
-                    :answers="paginatedAnswers"
+                    :answers="displayedAnswers"
                     :selected-answers="selectedAnswers"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"
@@ -615,7 +733,7 @@ const toggleActivity = (answer) => {
 
                 <QuizAnswerCardGrid
                     v-else
-                    :answers="paginatedAnswers"
+                    :answers="displayedAnswers"
                     :selected-answers="selectedAnswers"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"
@@ -627,11 +745,16 @@ const toggleActivity = (answer) => {
                 <div v-if="answersCount"
                      class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredAnswers.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="answers"
                     />
                 </div>
             </div>

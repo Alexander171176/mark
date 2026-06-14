@@ -30,31 +30,46 @@ const updateSort = (event) => {
 
             <option value="idDesc">{{ t('idDesc') }}</option>
             <option value="idAsc">{{ t('idAsc') }}</option>
-
-            <option value="sortAsc">{{ t('sortNumber') }} ↑</option>
-            <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
             <option disabled>─────────────</option>
 
-            <option value="textAsc">{{ t('answer') }} ↑</option>
-            <option value="textDesc">{{ t('answer') }} ↓</option>
-
-            <option value="quizTitleAsc">{{ t('quiz') }} ↑</option>
-            <option value="quizTitleDesc">{{ t('quiz') }} ↓</option>
-
-            <option value="questionTextAsc">{{ t('question') }} ↑</option>
-            <option value="questionTextDesc">{{ t('question') }} ↓</option>
+            <option value="sortAsc">{{ t('sortNumber') }} 0→9</option>
+            <option value="sortDesc">{{ t('sortNumber') }} 9→0</option>
             <option disabled>─────────────</option>
 
-            <option value="weightAsc">{{ t('weight') }} ↑</option>
-            <option value="weightDesc">{{ t('weight') }} ↓</option>
+            <option value="textAsc">{{ t('answer') }} A→Z</option>
+            <option value="textDesc">{{ t('answer') }} Z→A</option>
+
+            <option value="quizTitleAsc">{{ t('quiz') }} A→Z</option>
+            <option value="quizTitleDesc">{{ t('quiz') }} Z→A</option>
+
+            <option value="questionTextAsc">{{ t('question') }} A→Z</option>
+            <option value="questionTextDesc">{{ t('question') }} Z→A</option>
+            <option disabled>─────────────</option>
+
+            <option value="weightDesc">{{ t('weight') }} 9→0</option>
+            <option value="weightAsc">{{ t('weight') }} 0→9</option>
+
+            <option value="attemptItemsDesc">{{ t('attempts') }} 9→0</option>
+            <option value="attemptItemsAsc">{{ t('attempts') }} 0→9</option>
             <option disabled>─────────────</option>
 
             <option value="correct">{{ t('correct') }}</option>
             <option value="incorrect">{{ t('incorrect') }}</option>
+            <option value="correctDesc">{{ t('correct') }} ON→OFF</option>
+            <option value="correctAsc">{{ t('correct') }} OFF→ON</option>
             <option disabled>─────────────</option>
 
+            <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
+            <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
             <option value="activity">{{ t('active') }}</option>
             <option value="inactive">{{ t('inactive') }}</option>
+            <option disabled>─────────────</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
             <option disabled>─────────────</option>
         </select>
     </div>

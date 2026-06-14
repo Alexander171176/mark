@@ -51,8 +51,8 @@ const colorTextHover = computed(() => {
 
 const colorTextActive = computed(() => {
     return isDarkMode.value
-        ? (adminSettings.value.AdminSidebarDarkActiveText || 'text-yellow-200')
-        : (adminSettings.value.AdminSidebarLightActiveText || 'text-yellow-200');
+        ? (adminSettings.value.adminSidebarDarkActiveText || 'text-yellow-200')
+        : (adminSettings.value.adminSidebarLightActiveText || 'text-yellow-200');
 });
 
 const {t} = useI18n();

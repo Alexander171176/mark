@@ -12,7 +12,9 @@ use App\Models\Admin\School\SchoolQuizAnswer\SchoolQuizAnswer;
 use App\Models\Admin\School\SchoolQuizAttempt\SchoolQuizAttempt;
 use App\Models\Admin\School\SchoolQuizAttemptItem\SchoolQuizAttemptItem;
 use App\Models\Admin\School\SchoolQuizQuestion\SchoolQuizQuestion;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -43,74 +45,56 @@ class SchoolQuizAttemptItemController extends Controller
     /** Список ответов в попытках квиза. */
     public function index(Request $request): Response
     {
+        $currentLocale = app()->getLocale();
+
         $attemptId = $request->query('school_quiz_attempt_id');
         $questionId = $request->query('school_quiz_question_id');
         $isCorrect = $request->query('is_correct');
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolQuizAttemptItemsPerPage = $settings->int('site_settings.adminSchoolQuizAttemptItemsPerPage', 6);
-        $adminSchoolQuizAttemptItemsDefaultSort = $settings->string('site_settings.adminSchoolQuizAttemptItemsDefaultSort', 'idDesc');
+
+        $perPage = $settings->int('adminSchoolQuizAttemptItemsPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolQuizAttemptItemsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolQuizAttemptItemsProcessingMode',
+            'frontend'
+        );
+
+        $itemsCount = $this->indexQuery($attemptId, $questionId, $isCorrect)->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer($processingMode, $itemsCount, 300);
 
         try {
-            $query = SchoolQuizAttemptItem::query()
-                ->with([
-                    'attempt.user:id,name,email',
-                    'attempt.quiz.translation',
-                    'attempt.quiz.translations',
-
-                    'question.translation',
-                    'question.translations',
-                    'question.answers.translation',
-                    'question.answers.translations',
-
-                    'selectedAnswer.translation',
-                    'selectedAnswer.translations',
-                ]);
-
-            if ($attemptId) {
-                $query->where('school_quiz_attempt_id', (int) $attemptId);
-            }
-
-            if ($questionId) {
-                $query->where('school_quiz_question_id', (int) $questionId);
-            }
-
-            if ($isCorrect !== null && $isCorrect !== '') {
-                $query->where('is_correct', filter_var($isCorrect, FILTER_VALIDATE_BOOL));
-            }
-
-            match ($adminSchoolQuizAttemptItemsDefaultSort) {
-                'idAsc' => $query->orderBy('id'),
-
-                'attemptIdAsc' => $query->orderBy('school_quiz_attempt_id')->orderByDesc('id'),
-                'attemptIdDesc' => $query->orderByDesc('school_quiz_attempt_id')->orderByDesc('id'),
-
-                'questionIdAsc' => $query->orderBy('school_quiz_question_id')->orderByDesc('id'),
-                'questionIdDesc' => $query->orderByDesc('school_quiz_question_id')->orderByDesc('id'),
-
-                'scoreAsc' => $query->orderBy('score')->orderByDesc('id'),
-                'scoreDesc' => $query->orderByDesc('score')->orderByDesc('id'),
-
-                'maxScoreAsc' => $query->orderBy('max_score')->orderByDesc('id'),
-                'maxScoreDesc' => $query->orderByDesc('max_score')->orderByDesc('id'),
-
-                'correctFirst' => $query->orderByDesc('is_correct')->orderByDesc('id'),
-                'wrongFirst' => $query->orderBy('is_correct')->orderByDesc('id'),
-
-                'createdAtAsc' => $query->orderBy('created_at')->orderByDesc('id'),
-                'createdAtDesc' => $query->orderByDesc('created_at')->orderByDesc('id'),
-
-                default => $query->orderByDesc('id'),
-            };
-
-            $items = $query->get();
+            $items = $this->getIndexItems(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+                attemptId: $attemptId,
+                questionId: $questionId,
+                isCorrect: $isCorrect,
+            );
 
             return Inertia::render('Admin/School/SchoolQuizAttemptItems/Index', [
-                'items' => SchoolQuizAttemptItemResource::collection($items),
-                'itemsCount' => $items->count(),
+                'currentLocale' => $currentLocale,
 
-                'adminSchoolQuizAttemptItemsPerPage' => $adminSchoolQuizAttemptItemsPerPage,
-                'adminSchoolQuizAttemptItemsDefaultSort' => $adminSchoolQuizAttemptItemsDefaultSort,
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolQuizAttemptItemsPerPage' => $perPage,
+                'adminSchoolQuizAttemptItemsDefaultSort' => $defaultSort,
+                'adminSchoolQuizAttemptItemsProcessingMode' => $processingMode,
+
+                'items' => SchoolQuizAttemptItemResource::collection($items),
+                'itemsCount' => $itemsCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'school_quiz_attempt_id' => $attemptId,
@@ -128,11 +112,19 @@ class SchoolQuizAttemptItemController extends Controller
             ]);
 
             return Inertia::render('Admin/School/SchoolQuizAttemptItems/Index', [
+                'currentLocale' => $currentLocale,
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolQuizAttemptItemsPerPage' => $perPage,
+                'adminSchoolQuizAttemptItemsDefaultSort' => $defaultSort,
+                'adminSchoolQuizAttemptItemsProcessingMode' => $processingMode,
+
                 'items' => [],
                 'itemsCount' => 0,
 
-                'adminSchoolQuizAttemptItemsPerPage' => $adminSchoolQuizAttemptItemsPerPage,
-                'adminSchoolQuizAttemptItemsDefaultSort' => $adminSchoolQuizAttemptItemsDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'school_quiz_attempt_id' => $attemptId,
@@ -453,5 +445,62 @@ class SchoolQuizAttemptItemController extends Controller
 
         $attempt->recalcPercent();
         $attempt->save();
+    }
+
+    /** Базовый запрос для списка ответов попыток квиза. */
+    private function indexQuery(
+        null|string|int $attemptId = null,
+        null|string|int $questionId = null,
+        null|string|bool $isCorrect = null,
+    ): Builder {
+        return SchoolQuizAttemptItem::query()
+            ->when($attemptId, fn (Builder $query) => $query
+                ->where('school_quiz_attempt_id', (int) $attemptId)
+            )
+            ->when($questionId, fn (Builder $query) => $query
+                ->where('school_quiz_question_id', (int) $questionId)
+            )
+            ->when($isCorrect !== null && $isCorrect !== '', fn (Builder $query) => $query
+                ->where('is_correct', filter_var($isCorrect, FILTER_VALIDATE_BOOL))
+            )
+            ->with([
+                'attempt.user:id,name,email',
+                'attempt.quiz.translation',
+                'attempt.quiz.translations',
+
+                'question.translation',
+                'question.translations',
+                'question.answers.translation',
+                'question.answers.translations',
+
+                'selectedAnswer.translation',
+                'selectedAnswer.translations',
+            ]);
+    }
+
+    /** Получение списка ответов попыток по активному режиму обработки. */
+    private function getIndexItems(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+        null|string|int $attemptId = null,
+        null|string|int $questionId = null,
+        null|string|bool $isCorrect = null,
+    ) {
+        $query = $this->indexQuery($attemptId, $questionId, $isCorrect);
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

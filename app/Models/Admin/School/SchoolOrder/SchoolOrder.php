@@ -173,17 +173,42 @@ class SchoolOrder extends Model
     /** Поиск */
     public function scopeSearch(Builder $q, ?string $term): Builder
     {
-        if (!$term) {
+        $term = trim((string) $term);
+
+        if ($term === '') {
             return $q;
         }
 
-        return $q->where(function (Builder $query) use ($term) {
-            $query->where('number', 'like', "%{$term}%")
-                ->orWhere('buyer_name', 'like', "%{$term}%")
-                ->orWhere('buyer_email', 'like', "%{$term}%")
-                ->orWhere('buyer_phone', 'like', "%{$term}%")
-                ->orWhere('payment_reference', 'like', "%{$term}%")
-                ->orWhere('external_id', 'like', "%{$term}%");
+        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term))
+            ->map(fn ($word) => trim($word))
+            ->filter(fn ($word) => mb_strlen($word) >= 2)
+            ->values();
+
+        if ($words->isEmpty()) {
+            return $q;
+        }
+
+        return $q->where(function (Builder $query) use ($words) {
+            foreach ($words as $word) {
+                $query->where(function (Builder $query) use ($word) {
+                    $query
+                        ->where('school_orders.number', 'like', "%{$word}%")
+                        ->orWhere('school_orders.buyer_name', 'like', "%{$word}%")
+                        ->orWhere('school_orders.buyer_email', 'like', "%{$word}%")
+                        ->orWhere('school_orders.buyer_phone', 'like', "%{$word}%")
+                        ->orWhere('school_orders.status', 'like', "%{$word}%")
+                        ->orWhere('school_orders.payment_status', 'like', "%{$word}%")
+                        ->orWhere('school_orders.payment_method', 'like', "%{$word}%")
+                        ->orWhere('school_orders.payment_provider', 'like', "%{$word}%")
+                        ->orWhere('school_orders.payment_reference', 'like', "%{$word}%")
+                        ->orWhere('school_orders.external_id', 'like', "%{$word}%")
+                        ->orWhere('school_orders.client_ip', 'like', "%{$word}%")
+                        ->orWhereHas('user', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%");
+                        });
+                });
+            }
         });
     }
 
@@ -191,13 +216,43 @@ class SchoolOrder extends Model
     public function scopeSortByParam(Builder $q, ?string $sort): Builder
     {
         return match ($sort) {
-            'date_asc'   => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'date_desc'  => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
-            'total_asc'  => $q->orderBy('total', 'asc')->orderByDesc('id'),
-            'total_desc' => $q->orderBy('total', 'desc')->orderByDesc('id'),
-            'paid_asc'   => $q->orderBy('paid_at', 'asc')->orderByDesc('id'),
-            'paid_desc'  => $q->orderBy('paid_at', 'desc')->orderByDesc('id'),
-            default      => $q->orderByDesc('id'),
+            'idAsc' => $q->orderBy('school_orders.id', 'asc'),
+            'idDesc' => $q->orderBy('school_orders.id', 'desc'),
+
+            'numberAsc' => $q->orderBy('number', 'asc')->orderByDesc('school_orders.id'),
+            'numberDesc' => $q->orderBy('number', 'desc')->orderByDesc('school_orders.id'),
+
+            'createdAsc', 'date_asc' => $q->orderBy('created_at', 'asc')->orderByDesc('school_orders.id'),
+            'createdDesc', 'date_desc' => $q->orderBy('created_at', 'desc')->orderByDesc('school_orders.id'),
+
+            'totalAsc', 'total_asc' => $q->orderBy('total', 'asc')->orderByDesc('school_orders.id'),
+            'totalDesc', 'total_desc' => $q->orderBy('total', 'desc')->orderByDesc('school_orders.id'),
+
+            'paidAtAsc', 'paid_asc' => $q->orderBy('paid_at', 'asc')->orderByDesc('school_orders.id'),
+            'paidAtDesc', 'paid_desc' => $q->orderBy('paid_at', 'desc')->orderByDesc('school_orders.id'),
+
+            'buyerAsc' => $q
+                ->leftJoin('users as u_sort', 'u_sort.id', '=', 'school_orders.user_id')
+                ->orderByRaw('COALESCE(school_orders.buyer_name, u_sort.name) asc')
+                ->orderByDesc('school_orders.id')
+                ->select('school_orders.*'),
+
+            'buyerDesc' => $q
+                ->leftJoin('users as u_sort', 'u_sort.id', '=', 'school_orders.user_id')
+                ->orderByRaw('COALESCE(school_orders.buyer_name, u_sort.name) desc')
+                ->orderByDesc('school_orders.id')
+                ->select('school_orders.*'),
+
+            'statusAsc' => $q->orderBy('status', 'asc')->orderByDesc('school_orders.id'),
+            'statusDesc' => $q->orderBy('status', 'desc')->orderByDesc('school_orders.id'),
+
+            'paymentStatusAsc' => $q->orderBy('payment_status', 'asc')->orderByDesc('school_orders.id'),
+            'paymentStatusDesc' => $q->orderBy('payment_status', 'desc')->orderByDesc('school_orders.id'),
+
+            'paidFirst' => $q->orderBy('is_paid', 'desc')->orderByDesc('school_orders.id'),
+            'paidLast' => $q->orderBy('is_paid', 'asc')->orderByDesc('school_orders.id'),
+
+            default => $q->orderByDesc('school_orders.id'),
         };
     }
 }

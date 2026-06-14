@@ -57,8 +57,8 @@ onUnmounted(() => {
 // Вычисляемое свойство для получения класса фона из настроек в зависимости от темы
 const bgColorClass = computed(() => {
     return isDarkMode.value
-        ? (adminSettings.value.AdminSidebarDarkColor || 'bg-cyan-900')
-        : (adminSettings.value.AdminSidebarLightColor || 'bg-cyan-900');
+        ? (adminSettings.value.adminSidebarDarkColor || 'bg-gray-700')
+        : (adminSettings.value.adminSidebarLightColor || 'bg-cyan-800');
 });
 
 const emit = defineEmits(['close-sidebar']);
@@ -97,7 +97,7 @@ watch(sidebarExpanded, (newVal) => {
 <template>
     <div>
         <div
-            class="fixed inset-0 z-20 bg-cyan-800 dark:bg-gray-700
+            class="fixed inset-0 z-20
                    dark:border-r dark:border-gray-600 bg-opacity-30
                    md:hidden md:z-auto transition-opacity duration-200"
             :class="sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'"

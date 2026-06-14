@@ -50,14 +50,8 @@ onUnmounted(() => {
 // Вычисляемое свойство для получения класса фона из настроек в зависимости от темы
 const bgColorClass = computed(() => {
     return isDarkMode.value
-        ? (adminSettings.value.AdminSidebarDarkColor || 'bg-cyan-900')
-        : (adminSettings.value.AdminSidebarLightColor || 'bg-cyan-900');
-});
-
-const colorTextActive = computed(() => {
-    return isDarkMode.value
-        ? (adminSettings.value.AdminSidebarDarkActiveText || 'text-yellow-200')
-        : (adminSettings.value.AdminSidebarLightActiveText || 'text-yellow-200');
+        ? (adminSettings.value.adminSidebarDarkColor || 'bg-gray-700')
+        : (adminSettings.value.adminSidebarLightColor || 'bg-cyan-800');
 });
 
 const emit = defineEmits(['close-sidebar']);
@@ -96,7 +90,7 @@ watch(sidebarExpanded, (newVal) => {
 <template>
     <div>
         <div
-            class="fixed inset-0 z-20 bg-cyan-800 dark:bg-gray-700
+            class="fixed inset-0 z-20
                    dark:border-r dark:border-gray-600 bg-opacity-30
                    md:hidden md:z-auto transition-opacity duration-200"
             :class="sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'"
@@ -120,23 +114,20 @@ watch(sidebarExpanded, (newVal) => {
                         <path class="text-slate-600" d="M3 23H1V1h2z" />
                     </svg>
                 </button>
-                <Link :href="route('dashboard')" v-if="sidebarExpanded">
+                <Link :href="route('admin.index')" v-if="sidebarExpanded">
                     <ApplicationMark class="h-6 w-auto 2xl:block" />
                 </Link>
-                <span class="text-indigo-300 font-semibold text-md hidden 2xl:block"
-                      v-if="sidebarExpanded">
-                    Pulsar CMS {{ sidebarTitle }}
-                </span>
                 <FontAwesomeIcon
-                    v-if="sidebarExpanded"
                     :icon="['fas', 'sliders']"
-                    class="text-white" />
+                    class="text-white"
+                    v-if="sidebarExpanded" />
             </div>
             <DigitalClock v-if="sidebarExpanded" class="mb-2 relative z-10" />
             <div class="space-y-1">
+
                 <!-- Ссылки главного ряда -->
-                <span :class="[colorTextActive]"
-                      class="flex justify-center text-xs uppercase font-semibold pl-3"
+                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
+                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
                       v-if="sidebarExpanded">
                     {{ t('pages') }}
                 </span>

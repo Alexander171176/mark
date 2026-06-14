@@ -10,7 +10,9 @@ use App\Models\Admin\School\SchoolCourseSchedule\SchoolCourseSchedule;
 use App\Models\Admin\School\SchoolOrder\SchoolOrder;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\User;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -43,49 +45,63 @@ class SchoolOrderController extends Controller
     /** Список заказов */
     public function index(Request $request): Response
     {
+        $currentLocale = app()->getLocale();
+
         $status = $request->query('status');
         $paymentStatus = $request->query('payment_status');
         $isPaidParam = $request->query('is_paid');
-        $search = trim((string) $request->query('search', ''));
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolOrdersPerPage = $settings->int('site_settings.adminSchoolOrdersPerPage', 6);
-        $adminSchoolOrdersDefaultSort = $settings->string('site_settings.adminSchoolOrdersDefaultSort', 'idDesc');
+
+        $perPage = $settings->int('adminSchoolOrdersPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolOrdersDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolOrdersProcessingMode',
+            'frontend'
+        );
+
+        $ordersCount = $this->indexQuery(
+            status: $status,
+            paymentStatus: $paymentStatus,
+            isPaidParam: $isPaidParam,
+        )->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $ordersCount,
+                300
+            );
 
         try {
-            $orders = SchoolOrder::query()
-                ->with([
-                    'user:id,name,email',
-                    'course.translation',
-                    'course.translations',
-                    'schedule.translation',
-                    'schedule.translations',
-                    'schedule.course.translation',
-                ])
-                ->withCount([
-                    'orderItems',
-                    'payments',
-                    'refunds',
-                    'invoices',
-                    'enrollments',
-                    'subscriptions',
-                ])
-                ->when($status, fn ($query) => $query->where('status', $status))
-                ->when($paymentStatus, fn ($query) => $query->where('payment_status', $paymentStatus))
-                ->when($isPaidParam !== null && $isPaidParam !== '', function ($query) use ($isPaidParam) {
-                    $isPaid = filter_var($isPaidParam, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
-
-                    if ($isPaid !== null) {
-                        $query->where('is_paid', $isPaid);
-                    }
-                })
-                ->search($search)
-                ->sortByParam($adminSchoolOrdersDefaultSort)
-                ->get();
+            $orders = $this->getIndexOrders(
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+                status: $status,
+                paymentStatus: $paymentStatus,
+                isPaidParam: $isPaidParam,
+            );
 
             return Inertia::render('Admin/School/SchoolOrders/Index', [
+                'currentLocale' => $currentLocale,
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolOrdersPerPage' => $perPage,
+                'adminSchoolOrdersDefaultSort' => $defaultSort,
+                'adminSchoolOrdersProcessingMode' => $processingMode,
+
                 'orders' => SchoolOrderResource::collection($orders),
-                'ordersCount' => SchoolOrder::query()->count(),
+                'ordersCount' => $ordersCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'status' => $status,
@@ -93,9 +109,6 @@ class SchoolOrderController extends Controller
                     'is_paid' => $isPaidParam,
                     'search' => $search,
                 ],
-
-                'adminSchoolOrdersPerPage' => $adminSchoolOrdersPerPage,
-                'adminSchoolOrdersDefaultSort' => $adminSchoolOrdersDefaultSort,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки school orders: ' . $e->getMessage(), [
@@ -103,8 +116,19 @@ class SchoolOrderController extends Controller
             ]);
 
             return Inertia::render('Admin/School/SchoolOrders/Index', [
+                'currentLocale' => $currentLocale,
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolOrdersPerPage' => $perPage,
+                'adminSchoolOrdersDefaultSort' => $defaultSort,
+                'adminSchoolOrdersProcessingMode' => $processingMode,
+
                 'orders' => [],
                 'ordersCount' => 0,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'status' => $status,
@@ -112,9 +136,6 @@ class SchoolOrderController extends Controller
                     'is_paid' => $isPaidParam,
                     'search' => $search,
                 ],
-
-                'adminSchoolOrdersPerPage' => $adminSchoolOrdersPerPage,
-                'adminSchoolOrdersDefaultSort' => $adminSchoolOrdersDefaultSort,
 
                 'error' => 'Ошибка загрузки заказов.',
             ]);
@@ -447,5 +468,75 @@ class SchoolOrderController extends Controller
             ->get();
 
         return SchoolCourseScheduleSharedResource::collection($schedules);
+    }
+
+    /** Базовый запрос для списка заказов. */
+    private function indexQuery(
+        null|string|int $status = null,
+        null|string|int $paymentStatus = null,
+        null|string|bool $isPaidParam = null,
+    ): Builder {
+        return SchoolOrder::query()
+            ->with([
+                'user:id,name,email',
+
+                'course.translation',
+                'course.translations',
+
+                'schedule.translation',
+                'schedule.translations',
+                'schedule.course.translation',
+                'schedule.course.translations',
+            ])
+            ->withCount([
+                'orderItems',
+                'payments',
+                'refunds',
+                'invoices',
+                'enrollments',
+                'subscriptions',
+            ])
+            ->when($status, fn (Builder $query) => $query
+                ->where('status', $status)
+            )
+            ->when($paymentStatus, fn (Builder $query) => $query
+                ->where('payment_status', $paymentStatus)
+            )
+            ->when($isPaidParam !== null && $isPaidParam !== '', function (Builder $query) use ($isPaidParam) {
+                $isPaid = filter_var($isPaidParam, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+
+                if ($isPaid !== null) {
+                    $query->where('is_paid', $isPaid);
+                }
+            });
+    }
+
+    /** Получение списка заказов по активному режиму обработки. */
+    private function getIndexOrders(
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+        null|string|int $status = null,
+        null|string|int $paymentStatus = null,
+        null|string|bool $isPaidParam = null,
+    ) {
+        $query = $this->indexQuery(
+            status: $status,
+            paymentStatus: $paymentStatus,
+            isPaidParam: $isPaidParam,
+        );
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search)
+                ->sortByParam($sort)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort)
+            ->get();
     }
 }

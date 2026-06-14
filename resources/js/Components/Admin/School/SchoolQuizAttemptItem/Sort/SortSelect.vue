@@ -62,6 +62,9 @@ const updateSort = (event) => {
 
             <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
             <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
             <option disabled>──────────────</option>
         </select>
     </div>

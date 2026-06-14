@@ -29,42 +29,130 @@ const updateSort = (event) => {
             id="sortParam"
             :value="sortParam"
             @change="updateSort"
-            class="w-50 px-3 py-0.5 form-select bg-white dark:bg-gray-200
+            class="w-56 px-3 py-0.5 form-select
+                   bg-white dark:bg-gray-200
                    text-gray-600 dark:text-gray-900
                    border border-slate-400 dark:border-slate-600
                    rounded-sm shadow-sm"
         >
+            <!-- ID -->
             <option value="idDesc">{{ t('idDesc') }}</option>
             <option value="idAsc">{{ t('idAsc') }}</option>
+
             <option disabled>──────────</option>
 
-            <option value="attemptAsc">{{ t('attemptNumber') }} ↑</option>
-            <option value="attemptDesc">{{ t('attemptNumber') }} ↓</option>
+            <!-- Попытка -->
+            <option value="attemptAsc">
+                {{ t('attemptNumber') }} ↑
+            </option>
 
-            <option value="scoreAsc">{{ t('score') }} ↑</option>
-            <option value="scoreDesc">{{ t('score') }} ↓</option>
+            <option value="attemptDesc">
+                {{ t('attemptNumber') }} ↓
+            </option>
 
-            <option value="percentAsc">{{ t('percent') }} ↑</option>
-            <option value="percentDesc">{{ t('percent') }} ↓</option>
             <option disabled>──────────</option>
 
-            <option value="startedAtAsc">{{ t('shortStarted') }} ↑</option>
-            <option value="startedAtDesc">{{ t('shortStarted') }} ↓</option>
+            <!-- Баллы -->
+            <option value="scoreAsc">
+                {{ t('score') }} ↑
+            </option>
 
-            <option value="finishedAtAsc">{{ t('finishedAt') }} ↑</option>
-            <option value="finishedAtDesc">{{ t('finishedAt') }} ↓</option>
+            <option value="scoreDesc">
+                {{ t('score') }} ↓
+            </option>
+
+            <option value="maxScoreAsc">
+                {{ t('maxScore') }} ↑
+            </option>
+
+            <option value="maxScoreDesc">
+                {{ t('maxScore') }} ↓
+            </option>
+
+            <option value="percentAsc">
+                {{ t('percent') }} ↑
+            </option>
+
+            <option value="percentDesc">
+                {{ t('percent') }} ↓
+            </option>
+
             <option disabled>──────────</option>
 
-            <option value="statusAsc">{{ t('status') }} ↑</option>
-            <option value="statusDesc">{{ t('status') }} ↓</option>
+            <!-- Время -->
+            <option value="durationAsc">
+                {{ t('duration') }} ↑
+            </option>
+
+            <option value="durationDesc">
+                {{ t('duration') }} ↓
+            </option>
+
+            <option value="startedAtAsc">
+                {{ t('shortStarted') }} ↑
+            </option>
+
+            <option value="startedAtDesc">
+                {{ t('shortStarted') }} ↓
+            </option>
+
+            <option value="finishedAtAsc">
+                {{ t('shortExpires') }} ↑
+            </option>
+
+            <option value="finishedAtDesc">
+                {{ t('shortExpires') }} ↓
+            </option>
+
             <option disabled>──────────</option>
 
-            <option value="userNameAsc">{{ t('user') }} ↑</option>
-            <option value="userNameDesc">{{ t('user') }} ↓</option>
+            <!-- Статус -->
+            <option value="statusAsc">
+                {{ t('status') }} ↑
+            </option>
 
-            <option value="quizTitleAsc">{{ t('quiz') }} ↑</option>
-            <option value="quizTitleDesc">{{ t('quiz') }} ↓</option>
+            <option value="statusDesc">
+                {{ t('status') }} ↓
+            </option>
+
+            <option value="inProgress">
+                {{ t('setStatusInProgress') }}
+            </option>
+
+            <option value="completed">
+                {{ t('setStatusCompleted') }}
+            </option>
+
+            <option value="graded">
+                {{ t('setStatusGraded') }}
+            </option>
+
             <option disabled>──────────</option>
+
+            <!-- Связи -->
+            <option value="itemsAsc">
+                {{ t('answers') }} ↑
+            </option>
+
+            <option value="itemsDesc">
+                {{ t('answers') }} ↓
+            </option>
+
+            <option value="userNameAsc">
+                {{ t('user') }} ↑
+            </option>
+
+            <option value="userNameDesc">
+                {{ t('user') }} ↓
+            </option>
+
+            <option value="quizTitleAsc">
+                {{ t('quiz') }} ↑
+            </option>
+
+            <option value="quizTitleDesc">
+                {{ t('quiz') }} ↓
+            </option>
         </select>
     </div>
 </template>

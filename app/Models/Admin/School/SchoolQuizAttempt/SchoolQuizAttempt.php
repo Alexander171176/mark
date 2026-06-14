@@ -182,4 +182,156 @@ class SchoolQuizAttempt extends Model
             ])
             ->orderByDesc('id');
     }
+
+    /** Поиск */
+    public function scopeSearch(Builder $q, ?string $term, ?string $locale = null): Builder
+    {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return $q;
+        }
+
+        $locale = $locale ?: app()->getLocale();
+
+        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term))
+            ->map(fn ($word) => trim($word))
+            ->filter(fn ($word) => mb_strlen($word) >= 2)
+            ->values();
+
+        if ($words->isEmpty()) {
+            return $q;
+        }
+
+        return $q->where(function (Builder $query) use ($words, $locale) {
+            foreach ($words as $word) {
+                $query->where(function (Builder $query) use ($word, $locale) {
+                    $query
+                        ->where('school_quiz_attempts.status', 'like', "%{$word}%")
+                        ->orWhere('school_quiz_attempts.ip_address', 'like', "%{$word}%")
+                        ->orWhere('school_quiz_attempts.user_agent', 'like', "%{$word}%")
+                        ->orWhere('school_quiz_attempts.attempt_number', 'like', "%{$word}%")
+                        ->orWhere('school_quiz_attempts.score', 'like', "%{$word}%")
+                        ->orWhere('school_quiz_attempts.max_score', 'like', "%{$word}%")
+                        ->orWhere('school_quiz_attempts.percent', 'like', "%{$word}%")
+
+                        ->orWhereHas('user', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%");
+                        })
+
+                        ->orWhereHas('quiz.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%")
+                                        ->orWhere('description', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('course.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('subtitle', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%")
+                                        ->orWhere('description', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('module.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%")
+                                        ->orWhere('description', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('lesson.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%")
+                                        ->orWhere('description', 'like', "%{$word}%");
+                                });
+                        });
+                });
+            }
+        });
+    }
+
+    /** Сортировка по параметру */
+    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
+    {
+        $locale = $locale ?: app()->getLocale();
+
+        return match ($sort) {
+            'idAsc' => $q->orderBy('school_quiz_attempts.id', 'asc'),
+            'idDesc' => $q->orderBy('school_quiz_attempts.id', 'desc'),
+
+            'attemptAsc' => $q->orderBy('attempt_number', 'asc')->orderByDesc('school_quiz_attempts.id'),
+            'attemptDesc' => $q->orderBy('attempt_number', 'desc')->orderByDesc('school_quiz_attempts.id'),
+
+            'scoreAsc' => $q->orderBy('score', 'asc')->orderByDesc('school_quiz_attempts.id'),
+            'scoreDesc' => $q->orderBy('score', 'desc')->orderByDesc('school_quiz_attempts.id'),
+
+            'maxScoreAsc' => $q->orderBy('max_score', 'asc')->orderByDesc('school_quiz_attempts.id'),
+            'maxScoreDesc' => $q->orderBy('max_score', 'desc')->orderByDesc('school_quiz_attempts.id'),
+
+            'percentAsc' => $q->orderBy('percent', 'asc')->orderByDesc('school_quiz_attempts.id'),
+            'percentDesc' => $q->orderBy('percent', 'desc')->orderByDesc('school_quiz_attempts.id'),
+
+            'durationAsc' => $q->orderBy('duration_seconds', 'asc')->orderByDesc('school_quiz_attempts.id'),
+            'durationDesc' => $q->orderBy('duration_seconds', 'desc')->orderByDesc('school_quiz_attempts.id'),
+
+            'startedAtAsc' => $q->orderBy('started_at', 'asc')->orderByDesc('school_quiz_attempts.id'),
+            'startedAtDesc' => $q->orderBy('started_at', 'desc')->orderByDesc('school_quiz_attempts.id'),
+
+            'finishedAtAsc' => $q->orderBy('finished_at', 'asc')->orderByDesc('school_quiz_attempts.id'),
+            'finishedAtDesc' => $q->orderBy('finished_at', 'desc')->orderByDesc('school_quiz_attempts.id'),
+
+            'statusAsc' => $q->orderBy('status', 'asc')->orderByDesc('school_quiz_attempts.id'),
+            'statusDesc' => $q->orderBy('status', 'desc')->orderByDesc('school_quiz_attempts.id'),
+
+            'inProgress' => $q->where('status', 'in_progress')->orderByDesc('school_quiz_attempts.id'),
+            'completed' => $q->where('status', 'completed')->orderByDesc('school_quiz_attempts.id'),
+            'graded' => $q->where('status', 'graded')->orderByDesc('school_quiz_attempts.id'),
+
+            'itemsAsc' => $q->withCount('items')->orderBy('items_count', 'asc')->orderByDesc('school_quiz_attempts.id'),
+            'itemsDesc' => $q->withCount('items')->orderBy('items_count', 'desc')->orderByDesc('school_quiz_attempts.id'),
+
+            'userNameAsc' => $q
+                ->leftJoin('users as u_sort', 'u_sort.id', '=', 'school_quiz_attempts.user_id')
+                ->orderBy('u_sort.name', 'asc')
+                ->orderByDesc('school_quiz_attempts.id')
+                ->select('school_quiz_attempts.*'),
+
+            'userNameDesc' => $q
+                ->leftJoin('users as u_sort', 'u_sort.id', '=', 'school_quiz_attempts.user_id')
+                ->orderBy('u_sort.name', 'desc')
+                ->orderByDesc('school_quiz_attempts.id')
+                ->select('school_quiz_attempts.*'),
+
+            'quizTitleAsc' => $q
+                ->leftJoin('school_quiz_translations as sqt_sort', function ($join) use ($locale) {
+                    $join->on('sqt_sort.school_quiz_id', '=', 'school_quiz_attempts.school_quiz_id')
+                        ->where('sqt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sqt_sort.title', 'asc')
+                ->orderByDesc('school_quiz_attempts.id')
+                ->select('school_quiz_attempts.*'),
+
+            'quizTitleDesc' => $q
+                ->leftJoin('school_quiz_translations as sqt_sort', function ($join) use ($locale) {
+                    $join->on('sqt_sort.school_quiz_id', '=', 'school_quiz_attempts.school_quiz_id')
+                        ->where('sqt_sort.locale', '=', $locale);
+                })
+                ->orderBy('sqt_sort.title', 'desc')
+                ->orderByDesc('school_quiz_attempts.id')
+                ->select('school_quiz_attempts.*'),
+
+            default => $q->orderByDesc('school_quiz_attempts.id'),
+        };
+    }
 }

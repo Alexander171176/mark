@@ -17,7 +17,9 @@ use App\Models\Admin\School\SchoolEnrollment\SchoolEnrollment;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
 use App\Models\User;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,110 +51,61 @@ class SchoolQuizAttemptController extends Controller
     /** Список попыток квиза. */
     public function index(Request $request): Response
     {
+        $locale = app()->getLocale();
+
         $status = $request->query('status');
         $userId = $request->query('user_id');
         $quizId = $request->query('school_quiz_id');
         $enrollmentId = $request->query('school_enrollment_id');
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolQuizAttemptsPerPage = $settings->int('site_settings.adminSchoolQuizAttemptsPerPage', 6);
-        $adminSchoolQuizAttemptsDefaultSort = $settings->string('site_settings.adminSchoolQuizAttemptsDefaultSort', 'idDesc');
+
+        $perPage = $settings->int('adminSchoolQuizAttemptsPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolQuizAttemptsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolQuizAttemptsProcessingMode',
+            'frontend'
+        );
+
+        $attemptsCount = $this->indexQuery(
+            status: $status,
+            userId: $userId,
+            quizId: $quizId,
+            enrollmentId: $enrollmentId,
+        )->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer($processingMode, $attemptsCount, 300);
 
         try {
-            $query = SchoolQuizAttempt::query()
-                ->with([
-                    'user:id,name,email',
-                    'quiz.translation',
-                    'quiz.translations',
-                    'enrollment.user:id,name,email',
-                    'enrollment.course.translation',
-                    'course.translation',
-                    'course.translations',
-                    'module.translation',
-                    'module.translations',
-                    'lesson.translation',
-                    'lesson.translations',
-                ])
-                ->withCount(['items']);
-
-            if ($status) {
-                $query->where('status', $status);
-            }
-
-            if ($userId) {
-                $query->where('user_id', (int) $userId);
-            }
-
-            if ($quizId) {
-                $query->where('school_quiz_id', (int) $quizId);
-            }
-
-            if ($enrollmentId) {
-                $query->where('school_enrollment_id', (int) $enrollmentId);
-            }
-
-            match ($adminSchoolQuizAttemptsDefaultSort) {
-                'idAsc' => $query->orderBy('school_quiz_attempts.id'),
-
-                'attemptAsc' => $query->orderBy('attempt_number')->orderByDesc('school_quiz_attempts.id'),
-                'attemptDesc' => $query->orderByDesc('attempt_number')->orderByDesc('school_quiz_attempts.id'),
-
-                'scoreAsc' => $query->orderBy('score')->orderByDesc('school_quiz_attempts.id'),
-                'scoreDesc' => $query->orderByDesc('score')->orderByDesc('school_quiz_attempts.id'),
-
-                'percentAsc' => $query->orderBy('percent')->orderByDesc('school_quiz_attempts.id'),
-                'percentDesc' => $query->orderByDesc('percent')->orderByDesc('school_quiz_attempts.id'),
-
-                'startedAtAsc' => $query->orderBy('started_at')->orderByDesc('school_quiz_attempts.id'),
-                'startedAtDesc' => $query->orderByDesc('started_at')->orderByDesc('school_quiz_attempts.id'),
-
-                'finishedAtAsc' => $query->orderBy('finished_at')->orderByDesc('school_quiz_attempts.id'),
-                'finishedAtDesc' => $query->orderByDesc('finished_at')->orderByDesc('school_quiz_attempts.id'),
-
-                'statusAsc' => $query->orderBy('status')->orderByDesc('school_quiz_attempts.id'),
-                'statusDesc' => $query->orderByDesc('status')->orderByDesc('school_quiz_attempts.id'),
-
-                'userNameAsc' => $query
-                    ->join('users', 'school_quiz_attempts.user_id', '=', 'users.id')
-                    ->orderBy('users.name')
-                    ->orderByDesc('school_quiz_attempts.id')
-                    ->select('school_quiz_attempts.*'),
-
-                'userNameDesc' => $query
-                    ->join('users', 'school_quiz_attempts.user_id', '=', 'users.id')
-                    ->orderByDesc('users.name')
-                    ->orderByDesc('school_quiz_attempts.id')
-                    ->select('school_quiz_attempts.*'),
-
-                'quizTitleAsc' => $query
-                    ->leftJoin('school_quiz_translations as sqt', function ($join) {
-                        $join->on('school_quiz_attempts.school_quiz_id', '=', 'sqt.school_quiz_id')
-                            ->where('sqt.locale', app()->getLocale());
-                    })
-                    ->orderBy('sqt.title')
-                    ->orderByDesc('school_quiz_attempts.id')
-                    ->select('school_quiz_attempts.*'),
-
-                'quizTitleDesc' => $query
-                    ->leftJoin('school_quiz_translations as sqt', function ($join) {
-                        $join->on('school_quiz_attempts.school_quiz_id', '=', 'sqt.school_quiz_id')
-                            ->where('sqt.locale', app()->getLocale());
-                    })
-                    ->orderByDesc('sqt.title')
-                    ->orderByDesc('school_quiz_attempts.id')
-                    ->select('school_quiz_attempts.*'),
-
-                default => $query->orderByDesc('school_quiz_attempts.id'),
-            };
-
-            $attempts = $query->get();
+            $attempts = $this->getIndexAttempts(
+                locale: $locale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+                status: $status,
+                userId: $userId,
+                quizId: $quizId,
+                enrollmentId: $enrollmentId,
+            );
 
             return Inertia::render('Admin/School/SchoolQuizAttempts/Index', [
-                'attempts' => SchoolQuizAttemptResource::collection($attempts),
-                'attemptsCount' => $attempts->count(),
+                'useServerProcessing' => $useServerProcessing,
 
-                'adminSchoolQuizAttemptsPerPage' => $adminSchoolQuizAttemptsPerPage,
-                'adminSchoolQuizAttemptsDefaultSort' => $adminSchoolQuizAttemptsDefaultSort,
+                'adminSchoolQuizAttemptsPerPage' => $perPage,
+                'adminSchoolQuizAttemptsDefaultSort' => $defaultSort,
+                'adminSchoolQuizAttemptsProcessingMode' => $processingMode,
+
+                'attempts' => SchoolQuizAttemptResource::collection($attempts),
+                'attemptsCount' => $attemptsCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'status' => $status,
@@ -174,11 +127,17 @@ class SchoolQuizAttemptController extends Controller
             ]);
 
             return Inertia::render('Admin/School/SchoolQuizAttempts/Index', [
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolQuizAttemptsPerPage' => $perPage,
+                'adminSchoolQuizAttemptsDefaultSort' => $defaultSort,
+                'adminSchoolQuizAttemptsProcessingMode' => $processingMode,
+
                 'attempts' => [],
                 'attemptsCount' => 0,
 
-                'adminSchoolQuizAttemptsPerPage' => $adminSchoolQuizAttemptsPerPage,
-                'adminSchoolQuizAttemptsDefaultSort' => $adminSchoolQuizAttemptsDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'status' => $status,
@@ -544,5 +503,81 @@ class SchoolQuizAttemptController extends Controller
             ->get();
 
         return SchoolLessonSharedResource::collection($lessons);
+    }
+
+    /** Базовый запрос для списка попыток квиза. */
+    private function indexQuery(
+        null|string|int $status = null,
+        null|string|int $userId = null,
+        null|string|int $quizId = null,
+        null|string|int $enrollmentId = null,
+    ): Builder {
+        return SchoolQuizAttempt::query()
+            ->when($status, fn (Builder $query) => $query
+                ->where('status', $status)
+            )
+            ->when($userId, fn (Builder $query) => $query
+                ->where('user_id', (int) $userId)
+            )
+            ->when($quizId, fn (Builder $query) => $query
+                ->where('school_quiz_id', (int) $quizId)
+            )
+            ->when($enrollmentId, fn (Builder $query) => $query
+                ->where('school_enrollment_id', (int) $enrollmentId)
+            )
+            ->with([
+                'user:id,name,email',
+
+                'quiz.translation',
+                'quiz.translations',
+
+                'enrollment.user:id,name,email',
+                'enrollment.course.translation',
+                'enrollment.course.translations',
+
+                'course.translation',
+                'course.translations',
+
+                'module.translation',
+                'module.translations',
+
+                'lesson.translation',
+                'lesson.translations',
+            ])
+            ->withCount([
+                'items',
+            ]);
+    }
+
+    /** Получение списка попыток по активному режиму обработки. */
+    private function getIndexAttempts(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+        null|string|int $status = null,
+        null|string|int $userId = null,
+        null|string|int $quizId = null,
+        null|string|int $enrollmentId = null,
+    ) {
+        $query = $this->indexQuery(
+            status: $status,
+            userId: $userId,
+            quizId: $quizId,
+            enrollmentId: $enrollmentId,
+        );
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

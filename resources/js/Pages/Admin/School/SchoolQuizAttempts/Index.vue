@@ -1,10 +1,11 @@
 <script setup>
 /**
- * @version PulsarCMS 1.0
- * @author Александр Косолапов <kosolapov1976@gmail.com>
- *
- * список попыток прохождения викторин
+ * Список попыток прохождения викторин
+ * - режимы обработки: frontend | server | auto
+ * - локальный/серверный поиск
+ * - локальная/серверная пагинация
  */
+
 import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -13,30 +14,38 @@ import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
-// import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
 import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
 import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 import SortSelect from '@/Components/Admin/School/SchoolQuizAttempt/Sort/SortSelect.vue'
 import QuizAttemptTable from '@/Components/Admin/School/SchoolQuizAttempt/Table/QuizAttemptTable.vue'
 import QuizAttemptCardGrid from '@/Components/Admin/School/SchoolQuizAttempt/View/QuizAttemptCardGrid.vue'
 import BulkActionSelect from '@/Components/Admin/School/SchoolQuizAttempt/Select/BulkActionSelect.vue'
 
-// Локализация и уведомления
 const { t } = useI18n()
 const toast = useToast()
 
-// Пропсы страницы списка попыток квизов
 const props = defineProps({
-    attempts: { type: Array, default: () => [] },
+    useServerProcessing: { type: Boolean, default: false },
+    adminSchoolQuizAttemptsProcessingMode: { type: String, default: 'frontend' },
+
+    attempts: { type: [Array, Object], default: () => [] },
     attemptsCount: { type: Number, default: 0 },
+
     filters: { type: Object, default: () => ({}) },
 
     adminSchoolQuizAttemptsPerPage: { type: Number, default: 10 },
     adminSchoolQuizAttemptsDefaultSort: { type: String, default: 'idDesc' },
+
+    sortParam: { type: String, default: '' },
+    search: { type: String, default: '' },
 
     users: { type: Array, default: () => [] },
     quizzes: { type: Array, default: () => [] },
@@ -46,18 +55,31 @@ const props = defineProps({
     lessons: { type: Array, default: () => [] },
 })
 
-// Режим отображения таблица/карточки
-const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
+const viewMode = ref(localStorage.getItem('admin_view_mode_quiz_attempts') || 'table')
 
-// Сохранение режима отображения в localStorage
 watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode', val)
+    localStorage.setItem('admin_view_mode_quiz_attempts', val)
 })
 
-// Количество элементов на странице
-const itemsPerPage = ref(props.adminSchoolQuizAttemptsPerPage ?? 10)
+const attemptsList = computed(() => {
+    if (Array.isArray(props.attempts)) return props.attempts
+    if (Array.isArray(props.attempts?.data)) return props.attempts.data
 
-// Обновление настройки количества элементов
+    return []
+})
+
+const localAttempts = ref([])
+
+watch(
+    attemptsList,
+    (newVal) => {
+        localAttempts.value = JSON.parse(JSON.stringify(newVal || []))
+    },
+    { immediate: true, deep: true }
+)
+
+const itemsPerPage = ref(props.adminSchoolQuizAttemptsPerPage || 10)
+
 watch(itemsPerPage, (newVal) => {
     router.put(route('admin.settings.updateAdminCountQuizAttempts'), { value: newVal }, {
         preserveScroll: true,
@@ -67,44 +89,231 @@ watch(itemsPerPage, (newVal) => {
     })
 })
 
-// Параметр сортировки
-const sortParam = ref(props.adminSchoolQuizAttemptsDefaultSort ?? 'idDesc')
+const sortParam = ref(
+    props.sortParam ||
+    props.adminSchoolQuizAttemptsDefaultSort ||
+    'idDesc'
+)
 
-// Обновление настройки сортировки
 watch(sortParam, (newVal) => {
+    currentPage.value = 1
+
     router.put(route('admin.settings.updateAdminSortQuizAttempts'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
-        onSuccess: () => toast.info('Сортировка успешно изменена'),
+        onSuccess: () => {
+            if (props.useServerProcessing) {
+                router.get(
+                    window.location.pathname,
+                    {
+                        ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                        sort: newVal || undefined,
+                        page: undefined,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: false,
+                        replace: true,
+                    }
+                )
+            }
+
+            toast.info('Сортировка успешно изменена')
+        },
         onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
     })
 })
 
-// Текущая страница пагинации
 const currentPage = ref(1)
+const searchQuery = ref(props.search || '')
 
-// Поисковый запрос
-const searchQuery = ref('')
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
-// Модальное окно удаления
+const safeNumber = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : 0
+}
+
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+const getNestedTitle = (item) => {
+    return item?.title
+        || item?.name
+        || item?.translation?.title
+        || item?.translation?.name
+        || item?.translations?.[0]?.title
+        || item?.translations?.[0]?.name
+        || ''
+}
+
+const getUserName = (attempt) => {
+    return attempt?.user?.name || ''
+}
+
+const getQuizTitle = (attempt) => {
+    return getNestedTitle(attempt?.quiz)
+}
+
+const byNumberAsc = (field) => (a, b) =>
+    safeNumber(a?.[field]) - safeNumber(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byNumberDesc = (field) => (a, b) =>
+    safeNumber(b?.[field]) - safeNumber(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const byStringAsc = (field) => (a, b) =>
+    normalize(a?.[field]).localeCompare(normalize(b?.[field]))
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byStringDesc = (field) => (a, b) =>
+    normalize(b?.[field]).localeCompare(normalize(a?.[field]))
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const byDateAsc = (field) => (a, b) =>
+    safeDate(a?.[field]) - safeDate(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byDateDesc = (field) => (a, b) =>
+    safeDate(b?.[field]) - safeDate(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const sortAttempts = (items) => {
+    const list = (items || []).slice()
+
+    if (sortParam.value === 'inProgress') return list.filter(item => item.status === 'in_progress')
+    if (sortParam.value === 'completed') return list.filter(item => item.status === 'completed')
+    if (sortParam.value === 'graded') return list.filter(item => item.status === 'graded')
+
+    const sortMap = {
+        idAsc: byNumberAsc('id'),
+        idDesc: byNumberDesc('id'),
+
+        attemptAsc: byNumberAsc('attempt_number'),
+        attemptDesc: byNumberDesc('attempt_number'),
+
+        scoreAsc: byNumberAsc('score'),
+        scoreDesc: byNumberDesc('score'),
+
+        maxScoreAsc: byNumberAsc('max_score'),
+        maxScoreDesc: byNumberDesc('max_score'),
+
+        percentAsc: byNumberAsc('percent'),
+        percentDesc: byNumberDesc('percent'),
+
+        durationAsc: byNumberAsc('duration_seconds'),
+        durationDesc: byNumberDesc('duration_seconds'),
+
+        startedAtAsc: byDateAsc('started_at'),
+        startedAtDesc: byDateDesc('started_at'),
+
+        finishedAtAsc: byDateAsc('finished_at'),
+        finishedAtDesc: byDateDesc('finished_at'),
+
+        statusAsc: byStringAsc('status'),
+        statusDesc: byStringDesc('status'),
+
+        itemsAsc: byNumberAsc('items_count'),
+        itemsDesc: byNumberDesc('items_count'),
+
+        userNameAsc: (a, b) =>
+            normalize(getUserName(a)).localeCompare(normalize(getUserName(b)))
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        userNameDesc: (a, b) =>
+            normalize(getUserName(b)).localeCompare(normalize(getUserName(a)))
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        quizTitleAsc: (a, b) =>
+            normalize(getQuizTitle(a)).localeCompare(normalize(getQuizTitle(b)))
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        quizTitleDesc: (a, b) =>
+            normalize(getQuizTitle(b)).localeCompare(normalize(getQuizTitle(a)))
+            || safeNumber(b?.id) - safeNumber(a?.id),
+    }
+
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
+}
+
+const filteredAttempts = computed(() => {
+    let filtered = localAttempts.value || []
+    const query = normalize(searchQuery.value)
+
+    if (!query) {
+        return sortAttempts(filtered)
+    }
+
+    filtered = filtered.filter((attempt) => {
+        const values = [
+            attempt?.id,
+            attempt?.status,
+            attempt?.attempt_number,
+            attempt?.score,
+            attempt?.max_score,
+            attempt?.percent,
+            attempt?.duration_seconds,
+
+            attempt?.user?.name,
+            attempt?.user?.email,
+
+            getQuizTitle(attempt),
+            attempt?.quiz?.slug,
+
+            attempt?.course?.title,
+            attempt?.course?.slug,
+
+            attempt?.module?.title,
+            attempt?.module?.slug,
+
+            attempt?.lesson?.title,
+            attempt?.lesson?.slug,
+
+            attempt?.ip_address,
+            attempt?.user_agent,
+        ]
+
+        return values.some(value => normalize(value).includes(query))
+    })
+
+    return sortAttempts(filtered)
+})
+
+const paginatedAttempts = computed(() => {
+    const per = Number(itemsPerPage.value || 10)
+    const start = (currentPage.value - 1) * per
+
+    return filteredAttempts.value.slice(start, start + per)
+})
+
+const displayedAttempts = computed(() => {
+    return props.useServerProcessing
+        ? attemptsList.value
+        : paginatedAttempts.value
+})
+
+watch([itemsPerPage, searchQuery], () => {
+    currentPage.value = 1
+})
+
 const showConfirmDeleteModal = ref(false)
-
-// Попытка для удаления
 const attemptToDelete = ref(null)
 
-// Открытие модального окна удаления
 const confirmDelete = (attempt) => {
     attemptToDelete.value = attempt
     showConfirmDeleteModal.value = true
 }
 
-// Закрытие модального окна удаления
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     attemptToDelete.value = null
 }
 
-// Удаление попытки
 const deleteAttempt = () => {
     if (!attemptToDelete.value?.id) return
 
@@ -128,156 +337,30 @@ const deleteAttempt = () => {
     })
 }
 
-// Нормализация строк для поиска и сортировки
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+const patchAttempt = (attemptId, payload) => {
+    const index = localAttempts.value.findIndex(item => item.id === attemptId)
 
-// Преобразование даты во временную метку
-const toTime = (value) => {
-    if (!value) return 0
-
-    const time = new Date(value).getTime()
-
-    return Number.isNaN(time) ? 0 : time
-}
-
-// Сортировка попыток
-const sortAttempts = (items) => {
-    const list = items.slice()
-
-    switch (sortParam.value) {
-        case 'idAsc':
-            return list.sort((a, b) => a.id - b.id)
-
-        case 'idDesc':
-            return list.sort((a, b) => b.id - a.id)
-
-        case 'attemptAsc':
-            return list.sort((a, b) => (a.attempt_number ?? 0) - (b.attempt_number ?? 0))
-
-        case 'attemptDesc':
-            return list.sort((a, b) => (b.attempt_number ?? 0) - (a.attempt_number ?? 0))
-
-        case 'scoreAsc':
-            return list.sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
-
-        case 'scoreDesc':
-            return list.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-
-        case 'percentAsc':
-            return list.sort((a, b) => (a.percent ?? 0) - (b.percent ?? 0))
-
-        case 'percentDesc':
-            return list.sort((a, b) => (b.percent ?? 0) - (a.percent ?? 0))
-
-        case 'startedAtAsc':
-            return list.sort((a, b) => toTime(a.started_at) - toTime(b.started_at))
-
-        case 'startedAtDesc':
-            return list.sort((a, b) => toTime(b.started_at) - toTime(a.started_at))
-
-        case 'finishedAtAsc':
-            return list.sort((a, b) => toTime(a.finished_at) - toTime(b.finished_at))
-
-        case 'finishedAtDesc':
-            return list.sort((a, b) => toTime(b.finished_at) - toTime(a.finished_at))
-
-        case 'statusAsc':
-            return list.sort((a, b) => normalize(a.status).localeCompare(normalize(b.status)))
-
-        case 'statusDesc':
-            return list.sort((a, b) => normalize(b.status).localeCompare(normalize(a.status)))
-
-        case 'userNameAsc':
-            return list.sort((a, b) => normalize(a.user?.name).localeCompare(normalize(b.user?.name)))
-
-        case 'userNameDesc':
-            return list.sort((a, b) => normalize(b.user?.name).localeCompare(normalize(a.user?.name)))
-
-        case 'quizTitleAsc':
-            return list.sort((a, b) => normalize(a.quiz?.title).localeCompare(normalize(b.quiz?.title)))
-
-        case 'quizTitleDesc':
-            return list.sort((a, b) => normalize(b.quiz?.title).localeCompare(normalize(a.quiz?.title)))
-
-        default:
-            return list
+    if (index !== -1) {
+        localAttempts.value[index] = {
+            ...localAttempts.value[index],
+            ...payload,
+        }
     }
 }
 
-// Фильтрация и поиск попыток
-const filteredAttempts = computed(() => {
-    let filtered = Array.isArray(props.attempts) ? props.attempts : []
-
-    if (searchQuery.value) {
-        const q = normalize(searchQuery.value)
-
-        filtered = filtered.filter((attempt) => {
-            const values = [
-                attempt.id,
-                attempt.status,
-                attempt.attempt_number,
-                attempt.score,
-                attempt.max_score,
-                attempt.percent,
-
-                attempt.user?.name,
-                attempt.user?.email,
-
-                attempt.quiz?.title,
-                attempt.quiz?.slug,
-
-                attempt.enrollment?.id,
-
-                attempt.course?.title,
-                attempt.course?.slug,
-
-                attempt.module?.title,
-                attempt.module?.slug,
-
-                attempt.lesson?.title,
-                attempt.lesson?.slug,
-
-                attempt.ip_address,
-                attempt.user_agent,
-            ]
-
-            return values.some(value => normalize(value).includes(q))
-        })
-    }
-
-    return sortAttempts(filtered)
-})
-
-// Пагинация списка попыток
-const paginatedAttempts = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage.value
-
-    return filteredAttempts.value.slice(start, start + itemsPerPage.value)
-})
-
-// Общее количество страниц
-const totalPages = computed(() => {
-    if (!itemsPerPage.value) return 1
-
-    return Math.ceil(filteredAttempts.value.length / itemsPerPage.value) || 1
-})
-
-// Корректировка страницы после фильтрации
-watch([filteredAttempts, itemsPerPage], () => {
-    if (currentPage.value > totalPages.value) {
-        currentPage.value = totalPages.value
-    }
-})
-
-// Выбранные попытки
 const selectedAttempts = ref([])
 
-// Выбор/снятие всех попыток
-const toggleAll = ({ ids, checked }) => {
-    selectedAttempts.value = checked ? [...ids] : []
+const toggleAll = (payload) => {
+    const checked = payload?.checked ?? payload?.target?.checked ?? false
+    const ids = payload?.ids ?? displayedAttempts.value.map(attempt => attempt.id)
+
+    if (checked) {
+        selectedAttempts.value = [...new Set([...selectedAttempts.value, ...ids])]
+    } else {
+        selectedAttempts.value = selectedAttempts.value.filter(id => !ids.includes(id))
+    }
 }
 
-// Выбор одной попытки
 const toggleSelectAttempt = (id) => {
     const index = selectedAttempts.value.indexOf(id)
 
@@ -288,16 +371,6 @@ const toggleSelectAttempt = (id) => {
     }
 }
 
-// Обновление локальной записи попытки
-const patchAttempt = (attemptId, payload) => {
-    const attempt = props.attempts.find(item => item.id === attemptId)
-
-    if (attempt) {
-        Object.assign(attempt, payload)
-    }
-}
-
-// Массовое обновление статуса
 const bulkUpdateStatus = (status) => {
     if (!selectedAttempts.value.length) {
         toast.warning('Выберите попытки.')
@@ -323,7 +396,6 @@ const bulkUpdateStatus = (status) => {
     })
 }
 
-// Массовое удаление попыток
 const bulkDestroy = () => {
     if (!selectedAttempts.value.length) {
         toast.warning('Выберите попытки для удаления.')
@@ -352,14 +424,13 @@ const bulkDestroy = () => {
     })
 }
 
-// Обработка массовых действий
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedAttempts.value = paginatedAttempts.value.map(attempt => attempt.id)
+        toggleAll({ target: { checked: true } })
     } else if (action === 'deselectAll') {
-        selectedAttempts.value = []
+        toggleAll({ target: { checked: false } })
     } else if (action.startsWith('status:')) {
         bulkUpdateStatus(action.split(':')[1])
     } else if (action === 'delete') {
@@ -383,24 +454,24 @@ const handleBulkAction = (event) => {
                        overflow-hidden shadow-md shadow-gray-500
                        dark:shadow-slate-400 bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-3">
-<!--                    <DefaultButton :href="route('admin.schoolQuizAttempts.create')">-->
-<!--                        <template #icon>-->
-<!--                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0"-->
-<!--                                 viewBox="0 0 16 16">-->
-<!--                                <path-->
-<!--                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"-->
-<!--                                />-->
-<!--                            </svg>-->
-<!--                        </template>-->
-<!--                        {{ t('addQuizAttempt') }}-->
-<!--                    </DefaultButton>-->
+                <div class="sm:flex sm:justify-end sm:items-center mb-3">
+                    <ProcessingModeSwitcher
+                        setting-key="adminSchoolQuizAttemptsProcessingMode"
+                        :mode="adminSchoolQuizAttemptsProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="attemptsCount"
+                    />
                 </div>
 
                 <SearchInput
-                    v-if="attemptsCount"
+                    v-if="attemptsCount && !useServerProcessing"
                     v-model="searchQuery"
                     :placeholder="t('search')"
+                />
+
+                <ServerSearchInput
+                    v-if="attemptsCount && useServerProcessing"
+                    v-model="searchQuery"
                 />
 
                 <div
@@ -408,8 +479,15 @@ const handleBulkAction = (event) => {
                     class="flex justify-between items-center flex-col md:flex-row my-3"
                 >
                     <ItemsPerPageSelect
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <ServerItemsPerPageSelect
+                        v-else
+                        :items-per-page="itemsPerPage"
+                        update-route="admin.settings.updateAdminCountQuizAttempts"
                     />
 
                     <SortSelect
@@ -434,17 +512,22 @@ const handleBulkAction = (event) => {
                     class="flex justify-center items-center flex-col md:flex-row mb-3"
                 >
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredAttempts.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="attempts"
                     />
                 </div>
 
                 <QuizAttemptTable
                     v-if="viewMode === 'table'"
-                    :attempts="paginatedAttempts"
+                    :attempts="displayedAttempts"
                     :selected-attempts="selectedAttempts"
                     @toggle-select="toggleSelectAttempt"
                     @toggle-all="toggleAll"
@@ -453,7 +536,7 @@ const handleBulkAction = (event) => {
 
                 <QuizAttemptCardGrid
                     v-else
-                    :attempts="paginatedAttempts"
+                    :attempts="displayedAttempts"
                     :selected-attempts="selectedAttempts"
                     @toggle-select="toggleSelectAttempt"
                     @toggle-all="toggleAll"
@@ -465,11 +548,16 @@ const handleBulkAction = (event) => {
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredAttempts.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="attempts"
                     />
                 </div>
             </div>

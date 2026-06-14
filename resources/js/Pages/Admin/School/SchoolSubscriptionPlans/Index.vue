@@ -1,10 +1,4 @@
 <script setup>
-/**
- * @version PulsarCMS 1.0
- * @author Александр Косолапов <kosolapov1976@gmail.com>
- *
- * Список тарифов подписок школы
- */
 import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -13,58 +7,70 @@ import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
 import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
 import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
 import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 import BulkActionSelect from '@/Components/Admin/School/SchoolSubscriptionPlan/Select/BulkActionSelect.vue'
 import SortSelect from '@/Components/Admin/School/SchoolSubscriptionPlan/Sort/SortSelect.vue'
 import SubscriptionPlanTable from '@/Components/Admin/School/SchoolSubscriptionPlan/Table/SubscriptionPlanTable.vue'
-import SubscriptionPlanCardGrid from '@/Components/Admin/School/SchoolSubscriptionPlan/View/SubscriptionPlanCardGrid.vue'
+import SubscriptionPlanCardGrid
+    from '@/Components/Admin/School/SchoolSubscriptionPlan/View/SubscriptionPlanCardGrid.vue'
 
-// Настройки локализации и уведомлений
 const { t } = useI18n()
 const toast = useToast()
 
-// Входящие данные страницы
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
 
-    subscriptionPlans: { type: Array, default: () => [] },
+    adminSchoolSubscriptionPlansProcessingMode: { type: String, default: 'frontend' },
+    useServerProcessing: { type: Boolean, default: false },
+
+    subscriptionPlans: { type: [Array, Object], default: () => [] },
     plansCount: { type: Number, default: 0 },
 
     adminSchoolSubscriptionPlansPerPage: { type: Number, default: 10 },
     adminSchoolSubscriptionPlansDefaultSort: { type: String, default: 'idDesc' },
+
+    sortParam: { type: String, default: '' },
+    search: { type: String, default: '' },
+
+    currencies: { type: Array, default: () => [] },
+    errors: { type: Object, default: () => ({}) },
 })
 
-// Режим отображения: таблица или карточки
-const viewMode = ref(localStorage.getItem('admin_view_mode') || 'table')
+const viewMode = ref(localStorage.getItem('admin_view_mode_subscription_plans') || 'table')
 
-// Сохраняем выбранный режим отображения
 watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode', val)
+    localStorage.setItem('admin_view_mode_subscription_plans', val)
 })
 
-// Локальная копия тарифов для работы без перезагрузки страницы
+const plansList = computed(() => {
+    if (Array.isArray(props.subscriptionPlans)) return props.subscriptionPlans
+    if (Array.isArray(props.subscriptionPlans?.data)) return props.subscriptionPlans.data
+    return []
+})
+
 const localPlans = ref([])
 
-// Синхронизация тарифов из props
 watch(
-    () => props.subscriptionPlans,
+    plansList,
     (newVal) => {
         localPlans.value = JSON.parse(JSON.stringify(newVal || []))
     },
     { immediate: true, deep: true }
 )
 
-// Количество элементов на странице
 const itemsPerPage = ref(props.adminSchoolSubscriptionPlansPerPage || 10)
 
-// Сохраняем выбранное количество элементов
 watch(itemsPerPage, (newVal) => {
     router.put(route('admin.settings.updateAdminCountSubscriptionPlans'), { value: newVal }, {
         preserveScroll: true,
@@ -74,29 +80,240 @@ watch(itemsPerPage, (newVal) => {
     })
 })
 
-// Текущая сортировка списка
-const sortParam = ref(props.adminSchoolSubscriptionPlansDefaultSort || 'idDesc')
+const sortParam = ref(
+    props.sortParam ||
+    props.adminSchoolSubscriptionPlansDefaultSort ||
+    'idDesc'
+)
 
-// Сохраняем выбранную сортировку
 watch(sortParam, (newVal) => {
+    currentPage.value = 1
+
     router.put(route('admin.settings.updateAdminSortSubscriptionPlans'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
-        onSuccess: () => toast.info('Сортировка успешно изменена'),
+        onSuccess: () => {
+            if (props.useServerProcessing) {
+                router.get(
+                    window.location.pathname,
+                    {
+                        ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                        sort: newVal || undefined,
+                        page: undefined,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: false,
+                        replace: true,
+                    }
+                )
+            }
+
+            toast.info('Сортировка успешно изменена')
+        },
         onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
     })
 })
 
-// Модальное окно удаления тарифа
+const currentPage = ref(1)
+const searchQuery = ref(props.search || '')
+
+const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+
+const safeNumber = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : 0
+}
+
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+const getPlanTitle = (plan) => {
+    return plan?.title
+        || plan?.translation?.title
+        || plan?.translations?.[0]?.title
+        || `ID: ${plan?.id}`
+}
+
+const getPlanSubtitle = (plan) => {
+    return plan?.subtitle
+        || plan?.translation?.subtitle
+        || plan?.translations?.[0]?.subtitle
+        || ''
+}
+
+const getPlanShort = (plan) => {
+    return plan?.short
+        || plan?.translation?.short
+        || plan?.translations?.[0]?.short
+        || ''
+}
+
+const getPlanDescription = (plan) => {
+    return plan?.description
+        || plan?.translation?.description
+        || plan?.translations?.[0]?.description
+        || ''
+}
+
+const isAvailableNow = (plan) => {
+    const now = Date.now()
+    const publishedAt = safeDate(plan?.published_at)
+    const availableFrom = safeDate(plan?.available_from)
+    const availableUntil = safeDate(plan?.available_until)
+
+    return publishedAt > 0
+        && (!availableFrom || availableFrom <= now)
+        && (!availableUntil || availableUntil >= now)
+}
+
+const byNumberAsc = (field) => (a, b) =>
+    safeNumber(a?.[field]) - safeNumber(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byNumberDesc = (field) => (a, b) =>
+    safeNumber(b?.[field]) - safeNumber(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const byStringAsc = (field) => (a, b) =>
+    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byStringDesc = (field) => (a, b) =>
+    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const byDateAsc = (field) => (a, b) =>
+    safeDate(a?.[field]) - safeDate(b?.[field])
+    || safeNumber(a?.id) - safeNumber(b?.id)
+
+const byDateDesc = (field) => (a, b) =>
+    safeDate(b?.[field]) - safeDate(a?.[field])
+    || safeNumber(b?.id) - safeNumber(a?.id)
+
+const sortPlans = (items) => {
+    const list = (items || []).slice()
+
+    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
+    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
+
+    const sortMap = {
+        idAsc: byNumberAsc('id'),
+        idDesc: byNumberDesc('id'),
+
+        sortAsc: byNumberAsc('sort'),
+        sortDesc: byNumberDesc('sort'),
+
+        titleAsc: (a, b) =>
+            normalize(getPlanTitle(a)).localeCompare(normalize(getPlanTitle(b)), props.currentLocale)
+            || safeNumber(a?.id) - safeNumber(b?.id),
+
+        titleDesc: (a, b) =>
+            normalize(getPlanTitle(b)).localeCompare(normalize(getPlanTitle(a)), props.currentLocale)
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        publishedAtAsc: byDateAsc('published_at'),
+        publishedAtDesc: byDateDesc('published_at'),
+
+        availabilityNowFirst: (a, b) =>
+            Number(isAvailableNow(b)) - Number(isAvailableNow(a))
+            || safeNumber(b?.id) - safeNumber(a?.id),
+
+        availableFromAsc: byDateAsc('available_from'),
+        availableFromDesc: byDateDesc('available_from'),
+
+        availableUntilAsc: byDateAsc('available_until'),
+        availableUntilDesc: byDateDesc('available_until'),
+
+        priceAsc: byNumberAsc('price'),
+        priceDesc: byNumberDesc('price'),
+
+        trialDaysAsc: byNumberAsc('trial_days'),
+        trialDaysDesc: byNumberDesc('trial_days'),
+
+        billingPeriodAsc: byStringAsc('billing_period'),
+        billingPeriodDesc: byStringDesc('billing_period'),
+
+        activityAsc: byNumberAsc('activity'),
+        activityDesc: byNumberDesc('activity'),
+
+        autoRenewAsc: byNumberAsc('auto_renew'),
+        autoRenewDesc: byNumberDesc('auto_renew'),
+
+        imagesAsc: byNumberAsc('images_count'),
+        imagesDesc: byNumberDesc('images_count'),
+
+        createdAtAsc: byDateAsc('created_at'),
+        createdAtDesc: byDateDesc('created_at'),
+
+        updatedAtAsc: byDateAsc('updated_at'),
+        updatedAtDesc: byDateDesc('updated_at'),
+    }
+
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
+}
+
+const filteredPlans = computed(() => {
+    let filtered = localPlans.value || []
+    const query = normalize(searchQuery.value)
+
+    if (!query) {
+        return sortPlans(filtered)
+    }
+
+    filtered = filtered.filter((plan) => {
+        const values = [
+            plan?.id,
+            getPlanTitle(plan),
+            getPlanSubtitle(plan),
+            plan?.slug,
+            getPlanShort(plan),
+            getPlanDescription(plan),
+            plan?.billing_period,
+            plan?.provider,
+            plan?.provider_ref,
+            plan?.price,
+            plan?.trial_days,
+            plan?.currency?.code,
+            plan?.currency?.name,
+            plan?.currency?.symbol,
+        ]
+
+        return values.some(value => normalize(value).includes(query))
+    })
+
+    return sortPlans(filtered)
+})
+
+const paginatedPlans = computed(() => {
+    const per = Number(itemsPerPage.value || 10)
+    const start = (currentPage.value - 1) * per
+
+    return filteredPlans.value.slice(start, start + per)
+})
+
+const displayedPlans = computed(() => {
+    return props.useServerProcessing
+        ? plansList.value
+        : paginatedPlans.value
+})
+
+watch([itemsPerPage, searchQuery], () => {
+    currentPage.value = 1
+})
+
 const showConfirmDeleteModal = ref(false)
 const planToDeleteId = ref(null)
 const planToDeleteTitle = ref('')
 
-// Открытие окна подтверждения удаления
 const confirmDelete = (planOrId, title = null) => {
     if (typeof planOrId === 'object') {
         planToDeleteId.value = planOrId.id
-        planToDeleteTitle.value = title || planOrId.title || `ID: ${planOrId.id}`
+        planToDeleteTitle.value = title || getPlanTitle(planOrId)
     } else {
         planToDeleteId.value = planOrId
         planToDeleteTitle.value = title || `ID: ${planOrId}`
@@ -105,14 +322,12 @@ const confirmDelete = (planOrId, title = null) => {
     showConfirmDeleteModal.value = true
 }
 
-// Закрытие окна удаления
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     planToDeleteId.value = null
     planToDeleteTitle.value = ''
 }
 
-// Удаление тарифного плана
 const deletePlan = () => {
     if (planToDeleteId.value === null) return
 
@@ -124,174 +339,17 @@ const deletePlan = () => {
     }), {
         preserveScroll: true,
         preserveState: false,
-        onSuccess: () => {
-            toast.success(`Тариф "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
-        },
+        onSuccess: () => toast.success(`Тариф "${titleToDelete || 'ID: ' + idToDelete}" удалён.`),
         onError: (errors) => {
             const errorKey = Object.keys(errors || {})[0]
             const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
+
             toast.error(`${errorMsg} (Тариф: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
         onFinish: () => closeModal(),
     })
 }
 
-// Текущая страница пагинации
-const currentPage = ref(1)
-
-// Поисковая строка
-const searchQuery = ref('')
-
-// Нормализация строк для поиска и сортировки
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
-
-// Сортировка тарифных планов
-const sortPlans = (items) => {
-    const list = (items || []).slice()
-
-    const dateValue = (value) => {
-        if (!value) return null
-
-        const time = new Date(value).getTime()
-
-        return Number.isFinite(time) ? time : null
-    }
-
-    const sortByNumber = (field, direction = 'desc') => {
-        return list.sort((a, b) => {
-            const av = Number(a[field] ?? 0)
-            const bv = Number(b[field] ?? 0)
-
-            return direction === 'asc' ? av - bv : bv - av
-        })
-    }
-
-    const sortByString = (field, direction = 'asc') => {
-        return list.sort((a, b) => {
-            const av = normalize(a[field])
-            const bv = normalize(b[field])
-
-            return direction === 'asc'
-                ? av.localeCompare(bv)
-                : bv.localeCompare(av)
-        })
-    }
-
-    const sortByDate = (field, direction = 'desc') => {
-        return list.sort((a, b) => {
-            const av = dateValue(a[field])
-            const bv = dateValue(b[field])
-
-            if (av === null && bv === null) return 0
-            if (av === null) return 1
-            if (bv === null) return -1
-
-            return direction === 'asc' ? av - bv : bv - av
-        })
-    }
-
-    if (sortParam.value === 'idAsc') return sortByNumber('id', 'asc')
-    if (sortParam.value === 'idDesc') return sortByNumber('id', 'desc')
-
-    if (sortParam.value === 'sortAsc') return sortByNumber('sort', 'asc')
-    if (sortParam.value === 'sortDesc') return sortByNumber('sort', 'desc')
-
-    if (sortParam.value === 'titleAsc') return sortByString('title', 'asc')
-    if (sortParam.value === 'titleDesc') return sortByString('title', 'desc')
-
-    if (sortParam.value === 'publishedAtAsc') return sortByDate('published_at', 'asc')
-    if (sortParam.value === 'publishedAtDesc') return sortByDate('published_at', 'desc')
-
-    if (sortParam.value === 'availableFromAsc') return sortByDate('available_from', 'asc')
-    if (sortParam.value === 'availableFromDesc') return sortByDate('available_from', 'desc')
-
-    if (sortParam.value === 'availableUntilAsc') return sortByDate('available_until', 'asc')
-    if (sortParam.value === 'availableUntilDesc') return sortByDate('available_until', 'desc')
-
-    if (sortParam.value === 'priceAsc') return sortByNumber('price', 'asc')
-    if (sortParam.value === 'priceDesc') return sortByNumber('price', 'desc')
-
-    if (sortParam.value === 'trialDaysAsc') return sortByNumber('trial_days', 'asc')
-    if (sortParam.value === 'trialDaysDesc') return sortByNumber('trial_days', 'desc')
-
-    if (sortParam.value === 'billingPeriodAsc') return sortByString('billing_period', 'asc')
-    if (sortParam.value === 'billingPeriodDesc') return sortByString('billing_period', 'desc')
-
-    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
-    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
-
-    if (sortParam.value === 'availabilityNowFirst') {
-        const now = Date.now()
-
-        return list.sort((a, b) => {
-            const aFrom = dateValue(a.available_from)
-            const aUntil = dateValue(a.available_until)
-            const bFrom = dateValue(b.available_from)
-            const bUntil = dateValue(b.available_until)
-
-            const aAvailable =
-                (!aFrom || aFrom <= now) &&
-                (!aUntil || aUntil >= now)
-
-            const bAvailable =
-                (!bFrom || bFrom <= now) &&
-                (!bUntil || bUntil >= now)
-
-            if (aAvailable === bAvailable) return 0
-
-            return aAvailable ? -1 : 1
-        })
-    }
-
-    return list
-}
-
-// Поиск и фильтрация тарифов
-const filteredPlans = computed(() => {
-    let filtered = localPlans.value || []
-    const q = normalize(searchQuery.value)
-
-    if (!q) {
-        return sortPlans(filtered)
-    }
-
-    filtered = filtered.filter((plan) => {
-        const title = normalize(plan?.title)
-        const subtitle = normalize(plan?.subtitle)
-        const slug = normalize(plan?.slug)
-        const short = normalize(plan?.short)
-        const description = normalize(plan?.description)
-        const price = normalize(plan?.price)
-        const currencyCode = normalize(plan?.currency?.code)
-
-        return (
-            title.includes(q) ||
-            subtitle.includes(q) ||
-            slug.includes(q) ||
-            short.includes(q) ||
-            description.includes(q) ||
-            price.includes(q) ||
-            currencyCode.includes(q)
-        )
-    })
-
-    return sortPlans(filtered)
-})
-
-// Пагинация тарифов
-const paginatedPlans = computed(() => {
-    const per = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * per
-
-    return filteredPlans.value.slice(start, start + per)
-})
-
-// Сбрасываем страницу при изменении поиска или количества элементов
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
-
-// Локальное обновление тарифа без перезагрузки
 const patchPlan = (planId, payload) => {
     const index = localPlans.value.findIndex(plan => plan.id === planId)
 
@@ -303,15 +361,19 @@ const patchPlan = (planId, payload) => {
     }
 }
 
-// Выбранные тарифы для массовых действий
 const selectedPlans = ref([])
 
-// Выбрать или снять выбор со всех тарифов
-const toggleAll = ({ ids, checked }) => {
-    selectedPlans.value = checked ? [...ids] : []
+const toggleAll = (payload) => {
+    const checked = payload?.checked ?? payload?.target?.checked ?? false
+    const ids = payload?.ids ?? displayedPlans.value.map(plan => plan.id)
+
+    if (checked) {
+        selectedPlans.value = [...new Set([...selectedPlans.value, ...ids])]
+    } else {
+        selectedPlans.value = selectedPlans.value.filter(id => !ids.includes(id))
+    }
 }
 
-// Выбор отдельного тарифа
 const toggleSelectPlan = (id) => {
     const index = selectedPlans.value.indexOf(id)
 
@@ -322,7 +384,6 @@ const toggleSelectPlan = (id) => {
     }
 }
 
-// Массовое обновление порядка сортировки
 const handleSortOrderUpdate = (orderedIds) => {
     const startSort = (currentPage.value - 1) * itemsPerPage.value
 
@@ -338,7 +399,6 @@ const handleSortOrderUpdate = (orderedIds) => {
         preserveState: true,
         onSuccess: () => toast.success('Порядок тарифов успешно обновлён.'),
         onError: (errors) => {
-            console.error('Ошибка обновления сортировки тарифов:', errors)
             toast.error(errors?.message || errors?.general || 'Не удалось обновить порядок тарифов.')
 
             router.reload({
@@ -349,7 +409,6 @@ const handleSortOrderUpdate = (orderedIds) => {
     })
 }
 
-// Массовое изменение активности тарифов
 const bulkToggleActivity = (newActivity) => {
     if (!selectedPlans.value.length) {
         toast.warning('Выберите тарифы для активации/деактивации.')
@@ -376,14 +435,13 @@ const bulkToggleActivity = (newActivity) => {
     })
 }
 
-// Обработка массовых действий
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        selectedPlans.value = paginatedPlans.value.map(plan => plan.id)
+        toggleAll({ checked: true })
     } else if (action === 'deselectAll') {
-        selectedPlans.value = []
+        toggleAll({ checked: false })
     } else if (action === 'activate') {
         bulkToggleActivity(true)
     } else if (action === 'deactivate') {
@@ -393,10 +451,9 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-// Переключение активности одного тарифа
 const toggleActivity = (plan) => {
     const newActivity = !plan.activity
-    const planTitle = plan.title || `ID: ${plan.id}`
+    const planTitle = getPlanTitle(plan)
     const actionText = newActivity ? t('activated') : t('deactivated')
 
     router.put(route('admin.actions.schoolSubscriptionPlans.updateActivity', {
@@ -431,35 +488,47 @@ const toggleActivity = (plan) => {
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.schoolSubscriptionPlans.create')">
                         <template #icon>
-                            <svg
-                                class="w-4 h-4 fill-current opacity-50 shrink-0"
-                                viewBox="0 0 16 16"
-                            >
+                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0" viewBox="0 0 16 16">
                                 <path
-                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
-                                />
+                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z" />
                             </svg>
                         </template>
                         {{ t('addSubscriptionPlan') }}
                     </DefaultButton>
+
+                    <ProcessingModeSwitcher
+                        setting-key="adminSchoolSubscriptionPlansProcessingMode"
+                        :mode="adminSchoolSubscriptionPlansProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="plansCount"
+                    />
                 </div>
 
                 <SearchInput
-                    v-if="plansCount"
+                    v-if="plansCount && !useServerProcessing"
                     v-model="searchQuery"
                     :placeholder="t('searchByName')"
                 />
 
-                <div
-                    v-if="plansCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3 gap-3"
-                >
+                <ServerSearchInput
+                    v-if="plansCount && useServerProcessing"
+                    v-model="searchQuery"
+                />
+
+                <div v-if="plansCount" class="flex justify-between items-center flex-col md:flex-row my-3 gap-3">
                     <ItemsPerPageSelect
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <ServerItemsPerPageSelect
+                        v-else
+                        :items-per-page="itemsPerPage"
+                        update-route="admin.settings.updateAdminCountSubscriptionPlans"
                     />
 
                     <SortSelect
@@ -468,10 +537,7 @@ const toggleActivity = (plan) => {
                     />
                 </div>
 
-                <div
-                    v-if="plansCount"
-                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
-                >
+                <div v-if="plansCount" class="flex flex-col lg:flex-row items-center justify-between gap-3">
                     <CountTable>{{ plansCount }}</CountTable>
 
                     <BulkActionSelect @change="handleBulkAction" />
@@ -479,22 +545,24 @@ const toggleActivity = (plan) => {
                     <ToggleViewButton v-model:viewMode="viewMode" />
                 </div>
 
-                <div
-                    v-if="plansCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
-                >
+                <div v-if="plansCount" class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredPlans.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="subscriptionPlans"
                     />
                 </div>
 
                 <SubscriptionPlanTable
                     v-if="viewMode === 'table'"
-                    :subscription-plans="paginatedPlans"
+                    :subscription-plans="displayedPlans"
                     :selected-plans="selectedPlans"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"
@@ -505,7 +573,7 @@ const toggleActivity = (plan) => {
 
                 <SubscriptionPlanCardGrid
                     v-else
-                    :subscription-plans="paginatedPlans"
+                    :subscription-plans="displayedPlans"
                     :selected-plans="selectedPlans"
                     @toggle-activity="toggleActivity"
                     @delete="confirmDelete"
@@ -514,16 +582,18 @@ const toggleActivity = (plan) => {
                     @toggle-all="toggleAll"
                 />
 
-                <div
-                    v-if="plansCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
-                >
+                <div v-if="plansCount" class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredPlans.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="subscriptionPlans"
                     />
                 </div>
             </div>
@@ -531,11 +601,11 @@ const toggleActivity = (plan) => {
 
         <DangerModal
             :show="showConfirmDeleteModal"
-            @close="closeModal"
             :onCancel="closeModal"
             :onConfirm="deletePlan"
             :cancelText="t('cancel')"
             :confirmText="t('yesDelete')"
+            @close="closeModal"
         />
     </AdminLayout>
 </template>

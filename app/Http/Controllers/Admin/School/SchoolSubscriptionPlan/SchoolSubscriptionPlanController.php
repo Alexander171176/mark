@@ -8,7 +8,9 @@ use App\Http\Resources\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPla
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlan;
 use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanImage;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,36 +65,51 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminSchoolSubscriptionPlansPerPage = $settings->int('site_settings.adminSchoolSubscriptionPlansPerPage', 6);
 
-        $adminSchoolSubscriptionPlansDefaultSort =
-            $settings->string('site_settings.adminSchoolSubscriptionPlansDefaultSort', 'idDesc');
+        $perPage = $settings->int('adminSchoolSubscriptionPlansPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolSubscriptionPlansDefaultSort', 'idDesc');
 
-        $sort = (string) $request->query('sort', $adminSchoolSubscriptionPlansDefaultSort);
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolSubscriptionPlansProcessingMode',
+            'frontend'
+        );
+
+        $plansCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $plansCount,
+                300
+            );
 
         try {
-            $subscriptionPlans = $this->baseQuery()
-                ->with([
-                    'translation',
-                    'translations',
-                    'images',
-                    'currency:id,code,name,symbol',
-                ])
-                ->withCount([
-                    'images',
-                ])
-                ->ordered()
-                ->get();
+            $subscriptionPlans = $this->getIndexSubscriptionPlans(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/School/SchoolSubscriptionPlans/Index', [
-                'subscriptionPlans' => SchoolSubscriptionPlanResource::collection($subscriptionPlans),
-                'plansCount' => $this->baseQuery()->count(),
-
-                'adminSchoolSubscriptionPlansPerPage' => $adminSchoolSubscriptionPlansPerPage,
-                'adminSchoolSubscriptionPlansDefaultSort' => $adminSchoolSubscriptionPlansDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolSubscriptionPlansPerPage' => $perPage,
+                'adminSchoolSubscriptionPlansDefaultSort' => $defaultSort,
+                'adminSchoolSubscriptionPlansProcessingMode' => $processingMode,
+
+                'subscriptionPlans' => SchoolSubscriptionPlanResource::collection($subscriptionPlans),
+                'plansCount' => $plansCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'currencies' => $this->currenciesForSelect(),
             ]);
@@ -102,14 +119,20 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
             ]);
 
             return Inertia::render('Admin/School/SchoolSubscriptionPlans/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolSubscriptionPlansPerPage' => $perPage,
+                'adminSchoolSubscriptionPlansDefaultSort' => $defaultSort,
+                'adminSchoolSubscriptionPlansProcessingMode' => $processingMode,
+
                 'subscriptionPlans' => [],
                 'plansCount' => 0,
 
-                'adminSchoolSubscriptionPlansPerPage' => $adminSchoolSubscriptionPlansPerPage,
-                'adminSchoolSubscriptionPlansDefaultSort' => $adminSchoolSubscriptionPlansDefaultSort,
-
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'currencies' => [],
                 'error' => 'Ошибка загрузки тарифных планов.',
@@ -299,6 +322,44 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
         return Currency::query()
             ->select('id', 'code', 'name', 'symbol')
             ->orderBy('code')
+            ->get();
+    }
+
+    /** Базовый запрос для списка тарифных планов */
+    private function indexQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'translation',
+                'translations',
+                'images',
+                'currency:id,code,name,symbol',
+            ])
+            ->withCount([
+                'images',
+            ]);
+    }
+
+    /** Получение списка тарифных планов по активному режиму обработки */
+    private function getIndexSubscriptionPlans(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
             ->get();
     }
 }

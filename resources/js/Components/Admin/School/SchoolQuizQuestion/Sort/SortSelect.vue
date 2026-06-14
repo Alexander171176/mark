@@ -38,6 +38,12 @@ const updateSort = (event) => {
             <option value="sortDesc">{{ t('sortNumber') }} ↓</option>
             <option disabled>─────────────</option>
 
+            <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
+            <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
+            <option value="activity">{{ t('active') }}</option>
+            <option value="inactive">{{ t('inactive') }}</option>
+            <option disabled>─────────────</option>
+
             <option value="questionTextAsc">{{ t('question') }} ↑</option>
             <option value="questionTextDesc">{{ t('question') }} ↓</option>
 
@@ -52,14 +58,21 @@ const updateSort = (event) => {
             <option value="answersCountDesc">{{ t('answers') }} ↓</option>
             <option disabled>─────────────</option>
 
+            <option value="attemptItemsCountDesc">{{ t('attempts') }} 9→0</option>
+            <option value="attemptItemsCountAsc">{{ t('attempts') }} 0→9</option>
+            <option disabled>─────────────</option>
+
             <option value="singleChoice">{{ t('questionTypeSingleChoice') }}</option>
             <option value="multipleChoice">{{ t('questionTypeMultipleChoice') }}</option>
             <option value="trueFalse">{{ t('questionTypeTrueFalse') }}</option>
             <option value="openText">{{ t('questionTypeOpenText') }}</option>
             <option disabled>─────────────</option>
 
-            <option value="activity">{{ t('active') }}</option>
-            <option value="inactive">{{ t('inactive') }}</option>
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
             <option disabled>─────────────</option>
         </select>
     </div>

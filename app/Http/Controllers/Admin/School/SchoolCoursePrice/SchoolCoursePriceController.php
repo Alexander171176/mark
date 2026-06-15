@@ -11,7 +11,9 @@ use App\Http\Resources\Admin\School\SchoolCoursePrice\SchoolCoursePriceResource;
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\School\SchoolCoursePrice\SchoolCoursePrice;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -47,100 +49,66 @@ class SchoolCoursePriceController extends Controller
         $currencyId = $request->query('currency_id');
         $activity = $request->query('activity');
 
+        $currentLocale = app()->getLocale();
+
         $settings = app(AdminSettingsService::class);
-        $adminSchoolCoursePricesPerPage = $settings->int('site_settings.adminSchoolCoursePricesPerPage', 6);
-        $adminSchoolCoursePricesDefaultSort = $settings->string('site_settings.adminSchoolCoursePricesDefaultSort', 'idDesc');
+
+        $perPage = $settings->int('adminSchoolCoursePricesPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolCoursePricesDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolCoursePricesProcessingMode',
+            'frontend'
+        );
+
+        $pricesCount = $this->indexQuery(
+            courseId: $courseId,
+            currencyId: $currencyId,
+            activity: $activity,
+        )->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $pricesCount,
+                300
+            );
 
         try {
-            $query = SchoolCoursePrice::query()
-                ->with([
-                    'course.translation',
-                    'course.translations',
-                    'currency:id,code,name,symbol',
-                ]);
-
-            if ($courseId) {
-                $query->where('school_course_id', (int) $courseId);
-            }
-
-            if ($currencyId) {
-                $query->where('currency_id', (int) $currencyId);
-            }
-
-            if ($activity !== null && $activity !== '') {
-                $query->where('activity', filter_var($activity, FILTER_VALIDATE_BOOL));
-            }
-
-            match ($adminSchoolCoursePricesDefaultSort) {
-                'idAsc' => $query->orderBy('school_course_prices.id'),
-
-                'sortAsc' => $query->orderBy('sort')->orderByDesc('school_course_prices.id'),
-                'sortDesc' => $query->orderByDesc('sort')->orderByDesc('school_course_prices.id'),
-
-                'priceAsc' => $query->orderBy('price')->orderByDesc('school_course_prices.id'),
-                'priceDesc' => $query->orderByDesc('price')->orderByDesc('school_course_prices.id'),
-
-                'salePriceAsc' => $query->orderBy('sale_price')->orderByDesc('school_course_prices.id'),
-                'salePriceDesc' => $query->orderByDesc('sale_price')->orderByDesc('school_course_prices.id'),
-
-                'compareAtPriceAsc' => $query->orderBy('compare_at_price')->orderByDesc('school_course_prices.id'),
-                'compareAtPriceDesc' => $query->orderByDesc('compare_at_price')->orderByDesc('school_course_prices.id'),
-
-                'startsAtAsc' => $query->orderBy('starts_at')->orderByDesc('school_course_prices.id'),
-                'startsAtDesc' => $query->orderByDesc('starts_at')->orderByDesc('school_course_prices.id'),
-
-                'endsAtAsc' => $query->orderBy('ends_at')->orderByDesc('school_course_prices.id'),
-                'endsAtDesc' => $query->orderByDesc('ends_at')->orderByDesc('school_course_prices.id'),
-
-                'activity' => $query->where('activity', true)->orderByDesc('school_course_prices.id'),
-                'inactive' => $query->where('activity', false)->orderByDesc('school_course_prices.id'),
-
-                'courseTitleAsc' => $query
-                    ->leftJoin('school_course_translations as sct', function ($join) {
-                        $join->on('school_course_prices.school_course_id', '=', 'sct.school_course_id')
-                            ->where('sct.locale', app()->getLocale());
-                    })
-                    ->orderBy('sct.title')
-                    ->orderByDesc('school_course_prices.id')
-                    ->select('school_course_prices.*'),
-
-                'courseTitleDesc' => $query
-                    ->leftJoin('school_course_translations as sct', function ($join) {
-                        $join->on('school_course_prices.school_course_id', '=', 'sct.school_course_id')
-                            ->where('sct.locale', app()->getLocale());
-                    })
-                    ->orderByDesc('sct.title')
-                    ->orderByDesc('school_course_prices.id')
-                    ->select('school_course_prices.*'),
-
-                'currencyCodeAsc' => $query
-                    ->join('currencies', 'school_course_prices.currency_id', '=', 'currencies.id')
-                    ->orderBy('currencies.code')
-                    ->orderByDesc('school_course_prices.id')
-                    ->select('school_course_prices.*'),
-
-                'currencyCodeDesc' => $query
-                    ->join('currencies', 'school_course_prices.currency_id', '=', 'currencies.id')
-                    ->orderByDesc('currencies.code')
-                    ->orderByDesc('school_course_prices.id')
-                    ->select('school_course_prices.*'),
-
-                default => $query->orderByDesc('school_course_prices.id'),
-            };
-
-            $prices = $query->get();
+            $prices = $this->getIndexCoursePrices(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+                courseId: $courseId,
+                currencyId: $currencyId,
+                activity: $activity,
+            );
 
             return Inertia::render('Admin/School/SchoolCoursePrices/Index', [
-                'prices' => SchoolCoursePriceResource::collection($prices),
-                'pricesCount' => $prices->count(),
+                'currentLocale' => $currentLocale,
 
-                'adminSchoolCoursePricesPerPage' => $adminSchoolCoursePricesPerPage,
-                'adminSchoolCoursePricesDefaultSort' => $adminSchoolCoursePricesDefaultSort,
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolCoursePricesPerPage' => $perPage,
+                'adminSchoolCoursePricesDefaultSort' => $defaultSort,
+                'adminSchoolCoursePricesProcessingMode' => $processingMode,
+
+                'prices' => SchoolCoursePriceResource::collection($prices),
+                'pricesCount' => $pricesCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'school_course_id' => $courseId,
                     'currency_id' => $currencyId,
                     'activity' => $activity,
+                    'search' => $search,
                 ],
 
                 'courses' => $this->coursesForSelect(),
@@ -152,16 +120,25 @@ class SchoolCoursePriceController extends Controller
             ]);
 
             return Inertia::render('Admin/School/SchoolCoursePrices/Index', [
+                'currentLocale' => $currentLocale,
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolCoursePricesPerPage' => $perPage,
+                'adminSchoolCoursePricesDefaultSort' => $defaultSort,
+                'adminSchoolCoursePricesProcessingMode' => $processingMode,
+
                 'prices' => [],
                 'pricesCount' => 0,
 
-                'adminSchoolCoursePricesPerPage' => $adminSchoolCoursePricesPerPage,
-                'adminSchoolCoursePricesDefaultSort' => $adminSchoolCoursePricesDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'school_course_id' => $courseId,
                     'currency_id' => $currencyId,
                     'activity' => $activity,
+                    'search' => $search,
                 ],
 
                 'courses' => [],
@@ -454,6 +431,62 @@ class SchoolCoursePriceController extends Controller
         return Currency::query()
             ->select('id', 'code', 'name', 'symbol')
             ->orderBy('code')
+            ->get();
+    }
+
+    /** Базовый запрос для списка цен курсов. */
+    private function indexQuery(
+        null|string|int $courseId = null,
+        null|string|int $currencyId = null,
+        null|string|bool $activity = null,
+    ): Builder {
+        return SchoolCoursePrice::query()
+            ->with([
+                'course.translation',
+                'course.translations',
+                'currency:id,code,name,symbol',
+            ])
+            ->when($courseId, fn (Builder $query) => $query
+                ->where('school_course_id', (int) $courseId)
+            )
+            ->when($currencyId, fn (Builder $query) => $query
+                ->where('currency_id', (int) $currencyId)
+            )
+            ->when($activity !== null && $activity !== '', function (Builder $query) use ($activity) {
+                $query->where(
+                    'activity',
+                    filter_var($activity, FILTER_VALIDATE_BOOL)
+                );
+            });
+    }
+
+    /** Получение списка цен курсов по активному режиму обработки. */
+    private function getIndexCoursePrices(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+        null|string|int $courseId = null,
+        null|string|int $currencyId = null,
+        null|string|bool $activity = null,
+    ) {
+        $query = $this->indexQuery(
+            courseId: $courseId,
+            currencyId: $currencyId,
+            activity: $activity,
+        );
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
             ->get();
     }
 }

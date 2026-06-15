@@ -116,6 +116,156 @@ class SchoolCoursePrice extends Model
         return $q->orderBy('sort')->orderBy('id');
     }
 
+    /** Поиск */
+    public function scopeSearch(Builder $q, ?string $term, ?string $locale = null): Builder
+    {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return $q;
+        }
+
+        $locale = $locale ?: app()->getLocale();
+
+        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term))
+            ->map(fn ($word) => trim($word))
+            ->filter(fn ($word) => mb_strlen($word) >= 2)
+            ->values();
+
+        if ($words->isEmpty()) {
+            return $q;
+        }
+
+        return $q->where(function (Builder $query) use ($words, $locale) {
+            foreach ($words as $word) {
+                $query->where(function (Builder $query) use ($word, $locale) {
+                    $query
+                        ->where('school_course_prices.price', 'like', "%{$word}%")
+                        ->orWhere('school_course_prices.sale_price', 'like', "%{$word}%")
+                        ->orWhere('school_course_prices.compare_at_price', 'like', "%{$word}%")
+                        ->orWhereHas('currency', function (Builder $qq) use ($word) {
+                            $qq->where('code', 'like', "%{$word}%")
+                                ->orWhere('name', 'like', "%{$word}%")
+                                ->orWhere('symbol', 'like', "%{$word}%");
+                        })
+                        ->orWhereHas('course.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('subtitle', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%")
+                                        ->orWhere('description', 'like', "%{$word}%");
+                                });
+                        });
+                });
+            }
+        });
+    }
+
+    /** Сортировка по параметру */
+    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
+    {
+        $locale = $locale ?: app()->getLocale();
+
+        return match ($sort) {
+            'idAsc' => $q->orderBy('school_course_prices.id', 'asc'),
+            'idDesc' => $q->orderBy('school_course_prices.id', 'desc'),
+
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('school_course_prices.id'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('school_course_prices.id'),
+
+            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('school_course_prices.id'),
+            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('school_course_prices.id'),
+            'activity' => $q->where('activity', true)->orderByDesc('school_course_prices.id'),
+            'inactive' => $q->where('activity', false)->orderByDesc('school_course_prices.id'),
+
+            'courseTitleAsc' => $q
+                ->leftJoin('school_course_translations as sct_sort', function ($join) use ($locale) {
+                    $join->on('sct_sort.school_course_id', '=', 'school_course_prices.school_course_id')
+                        ->where('sct_sort.locale', '=', $locale);
+                })
+                ->orderBy('sct_sort.title', 'asc')
+                ->orderByDesc('school_course_prices.id')
+                ->select('school_course_prices.*'),
+
+            'courseTitleDesc' => $q
+                ->leftJoin('school_course_translations as sct_sort', function ($join) use ($locale) {
+                    $join->on('sct_sort.school_course_id', '=', 'school_course_prices.school_course_id')
+                        ->where('sct_sort.locale', '=', $locale);
+                })
+                ->orderBy('sct_sort.title', 'desc')
+                ->orderByDesc('school_course_prices.id')
+                ->select('school_course_prices.*'),
+
+            'currencyCodeAsc' => $q
+                ->leftJoin('currencies as c_sort', 'c_sort.id', '=', 'school_course_prices.currency_id')
+                ->orderBy('c_sort.code', 'asc')
+                ->orderByDesc('school_course_prices.id')
+                ->select('school_course_prices.*'),
+
+            'currencyCodeDesc' => $q
+                ->leftJoin('currencies as c_sort', 'c_sort.id', '=', 'school_course_prices.currency_id')
+                ->orderBy('c_sort.code', 'desc')
+                ->orderByDesc('school_course_prices.id')
+                ->select('school_course_prices.*'),
+
+            'effectivePriceAsc' => $q
+                ->orderByRaw('COALESCE(NULLIF(sale_price, 0), price) asc')
+                ->orderByDesc('school_course_prices.id'),
+
+            'effectivePriceDesc' => $q
+                ->orderByRaw('COALESCE(NULLIF(sale_price, 0), price) desc')
+                ->orderByDesc('school_course_prices.id'),
+
+            'priceAsc' => $q->orderBy('price', 'asc')->orderByDesc('school_course_prices.id'),
+            'priceDesc' => $q->orderBy('price', 'desc')->orderByDesc('school_course_prices.id'),
+
+            'salePriceAsc' => $q->orderBy('sale_price', 'asc')->orderByDesc('school_course_prices.id'),
+            'salePriceDesc' => $q->orderBy('sale_price', 'desc')->orderByDesc('school_course_prices.id'),
+
+            'compareAtPriceAsc' => $q->orderBy('compare_at_price', 'asc')->orderByDesc('school_course_prices.id'),
+            'compareAtPriceDesc' => $q->orderBy('compare_at_price', 'desc')->orderByDesc('school_course_prices.id'),
+
+            'discountPercentAsc' => $q
+                ->orderByRaw("
+                CASE
+                    WHEN compare_at_price IS NOT NULL
+                     AND compare_at_price > 0
+                     AND compare_at_price > COALESCE(NULLIF(sale_price, 0), price)
+                    THEN ((compare_at_price - COALESCE(NULLIF(sale_price, 0), price)) / compare_at_price) * 100
+                    ELSE 0
+                END asc
+            ")
+                ->orderByDesc('school_course_prices.id'),
+
+            'discountPercentDesc' => $q
+                ->orderByRaw("
+                CASE
+                    WHEN compare_at_price IS NOT NULL
+                     AND compare_at_price > 0
+                     AND compare_at_price > COALESCE(NULLIF(sale_price, 0), price)
+                    THEN ((compare_at_price - COALESCE(NULLIF(sale_price, 0), price)) / compare_at_price) * 100
+                    ELSE 0
+                END desc
+            ")
+                ->orderByDesc('school_course_prices.id'),
+
+            'startsAtAsc' => $q->orderBy('starts_at', 'asc')->orderByDesc('school_course_prices.id'),
+            'startsAtDesc' => $q->orderBy('starts_at', 'desc')->orderByDesc('school_course_prices.id'),
+
+            'endsAtAsc' => $q->orderBy('ends_at', 'asc')->orderByDesc('school_course_prices.id'),
+            'endsAtDesc' => $q->orderBy('ends_at', 'desc')->orderByDesc('school_course_prices.id'),
+
+            'createdAtAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('school_course_prices.id'),
+            'createdAtDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('school_course_prices.id'),
+
+            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('school_course_prices.id'),
+            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('school_course_prices.id'),
+
+            default => $q->ordered(),
+        };
+    }
+
     /* ======================== Accessors ======================== */
 
     /** Итоговая цена */

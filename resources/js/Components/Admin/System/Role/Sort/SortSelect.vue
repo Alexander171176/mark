@@ -17,11 +17,14 @@ const updateSort = (event) => {
 
 <template>
     <div class="flex justify-center items-center h-fit my-2">
-        <label for="sortParam"
-               class="hidden lg:block sm:mr-2 tracking-wider
-                      text-sm font-semibold text-slate-600 dark:text-slate-100">
+        <label
+            for="sortParam"
+            class="hidden lg:block sm:mr-2 tracking-wider
+                   text-sm font-semibold text-slate-600 dark:text-slate-100"
+        >
             {{ t('sort') }}
         </label>
+
         <select
             id="sortParam"
             :value="sortParam"
@@ -31,12 +34,27 @@ const updateSort = (event) => {
                    border border-slate-400 dark:border-slate-600
                    rounded-sm shadow-sm"
         >
-            <!-- Новые варианты для id -->
             <option value="idDesc">{{ t('idDesc') }}</option>
             <option value="idAsc">{{ t('idAsc') }}</option>
             <option disabled>─────────────</option>
-            <option value="name">{{ t('name') }}</option>
+
+            <option value="nameAsc">{{ t('name') }} A→Z</option>
+            <option value="nameDesc">{{ t('name') }} Z→A</option>
             <option disabled>─────────────</option>
+
+            <option value="guardNameAsc">Guard A→Z</option>
+            <option value="guardNameDesc">Guard Z→A</option>
+            <option disabled>─────────────</option>
+
+            <option value="permissionsDesc">{{ t('permissions') }} 9→0</option>
+            <option value="permissionsAsc">{{ t('permissions') }} 0→9</option>
+            <option disabled>─────────────</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
         </select>
     </div>
 </template>

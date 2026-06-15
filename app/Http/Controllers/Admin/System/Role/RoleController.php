@@ -5,14 +5,17 @@ namespace App\Http\Controllers\Admin\System\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\Role\RoleRequest;
 use App\Http\Resources\Admin\System\Role\RoleResource;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use App\Models\Admin\System\Role\AdminRole as Role;
 use Spatie\Permission\PermissionRegistrar;
 use Throwable;
 
@@ -37,34 +40,89 @@ class RoleController extends Controller
      * Передает данные для отображения и настройки пагинации/сортировки.
      * Пагинация и сортировка выполняются на фронтенде.
      *
+     * @param Request $request
      * @return Response
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        // TODO: Проверка прав $this->authorize('show-roles', Role::class);
-
         $settings = app(AdminSettingsService::class);
-        $adminCountRoles = $settings->int('site_settings.AdminCountRoles', 6);
-        $adminSortRoles  = $settings->string('site_settings.AdminSortRoles', 'nameAsc'); // Сортировка по имени по умолчанию
+
+        $perPage = $settings->int(
+            'adminSystemRolesPerPage',
+            $settings->int('site_settings.AdminCountRoles', 6)
+        );
+
+        $defaultSort = $settings->string(
+            'adminSystemRolesDefaultSort',
+            $settings->string('site_settings.AdminSortRoles', 'nameAsc')
+        );
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSystemRolesProcessingMode',
+            'frontend'
+        );
+
+        $rolesCount = $this->indexQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $rolesCount,
+                300
+            );
 
         try {
-            // Загружаем ВСЕ роли с разрешениями
-            $roles = Role::with('permissions')->get();
-            $rolesCount = $roles->count(); // Считаем из загруженной коллекции
+            $roles = $this->getIndexRoles(
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
+            return Inertia::render('Admin/System/Roles/Index', [
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSystemRolesProcessingMode' => $processingMode,
+                'adminSystemRolesPerPage' => $perPage,
+                'adminSystemRolesDefaultSort' => $defaultSort,
+
+                // старые props оставляем для совместимости
+                'adminCountRoles' => $perPage,
+                'adminSortRoles' => $sortParam,
+
+                'roles' => RoleResource::collection($roles),
+                'rolesCount' => $rolesCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+            ]);
         } catch (Throwable $e) {
-            Log::error("Ошибка загрузки ролей для Index: " . $e->getMessage());
-            $roles = collect(); // Пустая коллекция в случае ошибки
-            $rolesCount = 0;
-            session()->flash('error', __('admin/controllers.index_error'));
-        }
+            Log::error('Ошибка загрузки ролей для Index: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
 
-        return Inertia::render('Admin/System/Roles/Index', [
-            'roles' => RoleResource::collection($roles),
-            'rolesCount' => $rolesCount,
-            'adminCountRoles' => (int)$adminCountRoles,
-            'adminSortRoles' => $adminSortRoles,
-        ]);
+            return Inertia::render('Admin/System/Roles/Index', [
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSystemRolesProcessingMode' => $processingMode,
+                'adminSystemRolesPerPage' => $perPage,
+                'adminSystemRolesDefaultSort' => $defaultSort,
+
+                'adminCountRoles' => $perPage,
+                'adminSortRoles' => $sortParam,
+
+                'roles' => [],
+                'rolesCount' => 0,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+
+                'error' => 'Ошибка загрузки ролей.',
+            ]);
+        }
     }
 
     /**
@@ -221,4 +279,33 @@ class RoleController extends Controller
         }
     }
 
+    /** Базовый запрос для списка ролей. */
+    private function indexQuery(): Builder
+    {
+        return Role::query()
+            ->with('permissions')
+            ->withCount('permissions');
+    }
+
+    /** Получение ролей по активному режиму обработки. */
+    private function getIndexRoles(
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search)
+                ->sortByParam($sort)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort)
+            ->get();
+    }
 }

@@ -1,13 +1,11 @@
 <script setup>
 /**
- * @version PulsarCMS 1.0
- * @author Александр Косолапов
- *
  * Видео блога — Index
- * Новая мультиязычная архитектура:
- * - blog_videos
- * - blog_video_translations
+ * - frontend/server/auto режимы обработки
+ * - локальный поиск/сортировка/пагинация
+ * - серверный поиск/сортировка/пагинация
  */
+
 import { defineProps, ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -20,8 +18,12 @@ import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 import BulkActionSelect from '@/Components/Admin/Blog/BlogVideo/Select/BulkActionSelect.vue'
 import SortSelect from '@/Components/Admin/Blog/BlogVideo/Sort/SortSelect.vue'
@@ -32,10 +34,12 @@ const { t, locale } = useI18n()
 const toast = useToast()
 const page = usePage()
 
-/** Props приходят из BlogVideoController@index */
 const props = defineProps({
-    videos: { type: Array, default: () => [] },
+    videos: { type: [Array, Object], default: () => [] },
     videosCount: { type: Number, default: 0 },
+
+    adminBlogVideosProcessingMode: { type: String, default: 'frontend' },
+    useServerProcessing: { type: Boolean, default: false },
 
     adminBlogVideosPerPage: { type: Number, default: 20 },
     adminBlogVideosDefaultSort: { type: String, default: 'idDesc' },
@@ -44,55 +48,39 @@ const props = defineProps({
     availableLocales: { type: Array, default: () => [] },
 
     sortParam: { type: String, default: '' },
+    search: { type: String, default: '' },
+
     errors: { type: Object, default: () => ({}) },
 })
 
-/** Проверяем, является ли текущий пользователь администратором */
 const isAdmin = computed(() => {
     const roles = page.props?.auth?.user?.roles || []
     return roles.some((role) => role?.name === 'admin')
 })
 
-/** Текущий перевод видео */
 const getVideoTranslation = (video) => video?.translation || {}
+const getVideoTitle = (video) => getVideoTranslation(video)?.title || `ID: ${video?.id}`
+const getVideoShort = (video) => getVideoTranslation(video)?.short || ''
+const getVideoDescription = (video) => getVideoTranslation(video)?.description || ''
 
-/** Заголовок видео */
-const getVideoTitle = (video) => {
-    return getVideoTranslation(video)?.title || `ID: ${video?.id}`
-}
-
-/** Краткое описание видео */
-const getVideoShort = (video) => {
-    return getVideoTranslation(video)?.short || ''
-}
-
-/** Описание видео */
-const getVideoDescription = (video) => {
-    return getVideoTranslation(video)?.description || ''
-}
-
-/** Локаль текущего перевода */
-const getVideoLocale = (video) => {
-    return getVideoTranslation(video)?.locale || props.currentLocale || ''
-}
-
-/** Нормализация строки */
 const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
-/** Безопасное число статуса модерации */
 const moderationNum = (value) => {
     const number = Number(value)
     return Number.isFinite(number) ? number : 0
 }
 
-/** Режим отображения */
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
 const viewMode = ref(localStorage.getItem('admin_view_mode_videos') || 'cards')
 
 watch(viewMode, (value) => {
     localStorage.setItem('admin_view_mode_videos', value)
 })
 
-/** Количество элементов на странице */
 const itemsPerPage = ref(props.adminBlogVideosPerPage || 20)
 
 watch(itemsPerPage, (newVal) => {
@@ -108,39 +96,71 @@ watch(itemsPerPage, (newVal) => {
     )
 })
 
-/** Параметр сортировки */
 const sortParam = ref(props.sortParam || props.adminBlogVideosDefaultSort || 'idDesc')
 
 watch(sortParam, (newVal) => {
+    currentPage.value = 1
+
     router.put(
         route('admin.settings.updateAdminSortVideos'),
         { value: newVal },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.info('Сортировка успешно изменена'),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
+
+            onSuccess: () => {
+                if (props.useServerProcessing) {
+                    router.get(
+                        window.location.pathname,
+                        {
+                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                            sort: newVal || undefined,
+                            page: undefined,
+                        },
+                        {
+                            preserveScroll: true,
+                            preserveState: false,
+                            replace: true,
+                        }
+                    )
+                }
+
+                toast.info('Сортировка успешно изменена')
+            },
+
+            onError: (errors) => {
+                toast.error(errors.value || 'Ошибка обновления сортировки.')
+            },
         }
     )
 })
 
-/** Локальная копия видео */
+const videosList = computed(() => {
+    if (Array.isArray(props.videos)) {
+        return props.videos
+    }
+
+    if (Array.isArray(props.videos?.data)) {
+        return props.videos.data
+    }
+
+    return []
+})
+
 const localVideos = ref([])
 
 watch(
-    () => props.videos,
+    videosList,
     (newVal) => {
         localVideos.value = JSON.parse(JSON.stringify(newVal || []))
     },
     { immediate: true, deep: true }
 )
 
-/** Модалка удаления */
 const showConfirmDeleteModal = ref(false)
 const videoToDeleteId = ref(null)
 const videoToDeleteTitle = ref('')
 
-/** Открыть модалку удаления */
 const confirmDelete = (videoOrId, title = null) => {
     if (typeof videoOrId === 'object') {
         videoToDeleteId.value = videoOrId.id
@@ -153,14 +173,12 @@ const confirmDelete = (videoOrId, title = null) => {
     showConfirmDeleteModal.value = true
 }
 
-/** Закрыть модалку */
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     videoToDeleteId.value = null
     videoToDeleteTitle.value = ''
 }
 
-/** Удалить видео */
 const deleteVideo = () => {
     if (videoToDeleteId.value === null) return
 
@@ -174,7 +192,7 @@ const deleteVideo = () => {
             toast.success(`Видео "${titleToDelete || 'ID: ' + idToDelete}" удалено.`)
         },
         onError: (errors) => {
-            const errorKey = Object.keys(errors)[0]
+            const errorKey = Object.keys(errors || {})[0]
             const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
             toast.error(`${errorMsg} (Видео: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
@@ -182,7 +200,6 @@ const deleteVideo = () => {
     })
 }
 
-/** Локальный patch */
 const patchLocalVideo = (videoId, callback) => {
     const index = localVideos.value.findIndex((video) => video.id === videoId)
 
@@ -191,7 +208,6 @@ const patchLocalVideo = (videoId, callback) => {
     }
 }
 
-/** Переключение активности */
 const toggleActivity = (video) => {
     const newActivity = !video.activity
     const title = getVideoTitle(video)
@@ -217,7 +233,6 @@ const toggleActivity = (video) => {
     )
 }
 
-/** Переключение left */
 const toggleLeft = (video) => {
     const newLeft = !video.left
     const title = getVideoTitle(video)
@@ -242,7 +257,6 @@ const toggleLeft = (video) => {
     )
 }
 
-/** Переключение main */
 const toggleMain = (video) => {
     const newMain = !video.main
     const title = getVideoTitle(video)
@@ -267,7 +281,6 @@ const toggleMain = (video) => {
     )
 }
 
-/** Переключение right */
 const toggleRight = (video) => {
     const newRight = !video.right
     const title = getVideoTitle(video)
@@ -292,278 +305,110 @@ const toggleRight = (video) => {
     )
 }
 
-/** Поиск */
-const searchQuery = ref('')
+const searchQuery = ref(props.search || '')
 const currentPage = ref(1)
 
-/** Локальная сортировка */
 const sortVideos = (videos) => {
     const list = (videos || []).slice()
 
-    if (sortParam.value === 'idAsc') {
-        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
+    if (sortParam.value === 'activity') return list.filter((video) => !!video.activity)
+    if (sortParam.value === 'inactive') return list.filter((video) => !video.activity)
+
+    if (sortParam.value === 'public') return list.filter((video) => !video.is_private)
+    if (sortParam.value === 'private') return list.filter((video) => !!video.is_private)
+
+    if (sortParam.value === 'left') return list.filter((video) => !!video.left)
+    if (sortParam.value === 'noLeft') return list.filter((video) => !video.left)
+    if (sortParam.value === 'main') return list.filter((video) => !!video.main)
+    if (sortParam.value === 'noMain') return list.filter((video) => !video.main)
+    if (sortParam.value === 'right') return list.filter((video) => !!video.right)
+    if (sortParam.value === 'noRight') return list.filter((video) => !video.right)
+
+    if (sortParam.value === 'moderationPending') return list.filter((video) => moderationNum(video?.moderation_status) === 0)
+    if (sortParam.value === 'moderationApproved') return list.filter((video) => moderationNum(video?.moderation_status) === 1)
+    if (sortParam.value === 'moderationRejected') return list.filter((video) => moderationNum(video?.moderation_status) === 2)
+
+    const sortMap = {
+        idAsc: (a, b) => (a.id ?? 0) - (b.id ?? 0),
+        idDesc: (a, b) => (b.id ?? 0) - (a.id ?? 0),
+
+        sortAsc: (a, b) => (a.sort ?? 0) - (b.sort ?? 0),
+        sortDesc: (a, b) => (b.sort ?? 0) - (a.sort ?? 0),
+
+        titleAsc: (a, b) => normalize(getVideoTitle(a)).localeCompare(normalize(getVideoTitle(b)), locale.value),
+        titleDesc: (a, b) => normalize(getVideoTitle(b)).localeCompare(normalize(getVideoTitle(a)), locale.value),
+
+        urlAsc: (a, b) => normalize(a?.url).localeCompare(normalize(b?.url), locale.value),
+        urlDesc: (a, b) => normalize(b?.url).localeCompare(normalize(a?.url), locale.value),
+
+        activityAsc: (a, b) => Number(a.activity) - Number(b.activity),
+        activityDesc: (a, b) => Number(b.activity) - Number(a.activity),
+
+        privateAsc: (a, b) => Number(a.is_private) - Number(b.is_private),
+        privateDesc: (a, b) => Number(b.is_private) - Number(a.is_private),
+
+        viewsAsc: (a, b) => (a.views ?? 0) - (b.views ?? 0),
+        viewsDesc: (a, b) => (b.views ?? 0) - (a.views ?? 0),
+
+        likesAsc: (a, b) => (a.likes_count ?? 0) - (b.likes_count ?? 0),
+        likesDesc: (a, b) => (b.likes_count ?? 0) - (a.likes_count ?? 0),
+
+        commentsAsc: (a, b) => (a.comments_count ?? 0) - (b.comments_count ?? 0),
+        commentsDesc: (a, b) => (b.comments_count ?? 0) - (a.comments_count ?? 0),
+
+        sourceTypeAsc: (a, b) => normalize(a?.source_type).localeCompare(normalize(b?.source_type), locale.value),
+        sourceTypeDesc: (a, b) => normalize(b?.source_type).localeCompare(normalize(a?.source_type), locale.value),
+
+        durationAsc: (a, b) => (a.duration ?? 0) - (b.duration ?? 0),
+        durationDesc: (a, b) => (b.duration ?? 0) - (a.duration ?? 0),
+
+        leftAsc: (a, b) => Number(a.left) - Number(b.left),
+        leftDesc: (a, b) => Number(b.left) - Number(a.left),
+
+        mainAsc: (a, b) => Number(a.main) - Number(b.main),
+        mainDesc: (a, b) => Number(b.main) - Number(a.main),
+
+        rightAsc: (a, b) => Number(a.right) - Number(b.right),
+        rightDesc: (a, b) => Number(b.right) - Number(a.right),
+
+        imagesAsc: (a, b) => (a.images_count ?? 0) - (b.images_count ?? 0),
+        imagesDesc: (a, b) => (b.images_count ?? 0) - (a.images_count ?? 0),
+
+        articlesAsc: (a, b) => (a.articles_count ?? 0) - (b.articles_count ?? 0),
+        articlesDesc: (a, b) => (b.articles_count ?? 0) - (a.articles_count ?? 0),
+
+        relatedVideosAsc: (a, b) => (a.related_videos_count ?? 0) - (b.related_videos_count ?? 0),
+        relatedVideosDesc: (a, b) => (b.related_videos_count ?? 0) - (a.related_videos_count ?? 0),
+
+        showFromAtAsc: (a, b) => safeDate(a.show_from_at) - safeDate(b.show_from_at),
+        showFromAtDesc: (a, b) => safeDate(b.show_from_at) - safeDate(a.show_from_at),
+
+        showToAtAsc: (a, b) => safeDate(a.show_to_at) - safeDate(b.show_to_at),
+        showToAtDesc: (a, b) => safeDate(b.show_to_at) - safeDate(a.show_to_at),
+
+        publishedAtAsc: (a, b) => safeDate(a.published_at) - safeDate(b.published_at),
+        publishedAtDesc: (a, b) => safeDate(b.published_at) - safeDate(a.published_at),
+
+        createdAtAsc: (a, b) => safeDate(a.created_at) - safeDate(b.created_at),
+        createdAtDesc: (a, b) => safeDate(b.created_at) - safeDate(a.created_at),
+
+        updatedAtAsc: (a, b) => safeDate(a.updated_at) - safeDate(b.updated_at),
+        updatedAtDesc: (a, b) => safeDate(b.updated_at) - safeDate(a.updated_at),
+
+        moderationStatusAsc: (a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status),
+        moderationStatusDesc: (a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status),
+
+        ownerNameAsc: (a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value),
+        ownerNameDesc: (a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value),
+        ownerEmailAsc: (a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value),
+        ownerEmailDesc: (a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value),
     }
 
-    if (sortParam.value === 'idDesc') {
-        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-    }
-
-    if (sortParam.value === 'sortAsc') {
-        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    }
-
-    if (sortParam.value === 'sortDesc') {
-        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
-    }
-
-    if (sortParam.value === 'titleAsc') {
-        return list.sort((a, b) => normalize(getVideoTitle(a)).localeCompare(normalize(getVideoTitle(b)), locale.value))
-    }
-
-    if (sortParam.value === 'titleDesc') {
-        return list.sort((a, b) => normalize(getVideoTitle(b)).localeCompare(normalize(getVideoTitle(a)), locale.value))
-    }
-
-    if (sortParam.value === 'urlAsc') {
-        return list.sort((a, b) =>
-            normalize(a?.url).localeCompare(normalize(b?.url), locale.value))
-    }
-
-    if (sortParam.value === 'urlDesc') {
-        return list.sort((a, b) =>
-            normalize(b?.url).localeCompare(normalize(a?.url), locale.value))
-    }
-
-    if (sortParam.value === 'activity') {
-        return list.filter((video) => !!video.activity)
-    }
-
-    if (sortParam.value === 'inactive') {
-        return list.filter((video) => !video.activity)
-    }
-
-    if (sortParam.value === 'activityDesc') {
-        return list.sort((a, b) => Number(b.activity) - Number(a.activity))
-    }
-
-    if (sortParam.value === 'activityAsc') {
-        return list.sort((a, b) => Number(a.activity) - Number(b.activity))
-    }
-
-    if (sortParam.value === 'sourceTypeAsc') {
-        return list.sort((a, b) =>
-            normalize(a?.source_type).localeCompare(normalize(b?.source_type), locale.value))
-    }
-
-    if (sortParam.value === 'sourceTypeDesc') {
-        return list.sort((a, b) =>
-            normalize(b?.source_type).localeCompare(normalize(a?.source_type), locale.value))
-    }
-
-    if (sortParam.value === 'private') {
-        return list.filter((video) => !!video.is_private)
-    }
-
-    if (sortParam.value === 'privateDesc') {
-        return list.sort((a, b) => Number(b.is_private) - Number(a.is_private))
-    }
-
-    if (sortParam.value === 'privateAsc') {
-        return list.sort((a, b) => Number(a.is_private) - Number(b.is_private))
-    }
-
-    if (sortParam.value === 'public') {
-        return list.filter((video) => !video.is_private)
-    }
-
-    if (sortParam.value === 'left') {
-        return list.filter((video) => !!video.left)
-    }
-
-    if (sortParam.value === 'noLeft') {
-        return list.filter((video) => !video.left)
-    }
-
-    if (sortParam.value === 'leftDesc') {
-        return list.sort((a, b) => Number(b.left) - Number(a.left))
-    }
-
-    if (sortParam.value === 'leftAsc') {
-        return list.sort((a, b) => Number(a.left) - Number(b.left))
-    }
-
-    if (sortParam.value === 'main') {
-        return list.filter((video) => !!video.main)
-    }
-
-    if (sortParam.value === 'noMain') {
-        return list.filter((video) => !video.main)
-    }
-
-    if (sortParam.value === 'mainDesc') {
-        return list.sort((a, b) => Number(b.main) - Number(a.main))
-    }
-
-    if (sortParam.value === 'mainAsc') {
-        return list.sort((a, b) => Number(a.main) - Number(b.main))
-    }
-
-    if (sortParam.value === 'right') {
-        return list.filter((video) => !!video.right)
-    }
-
-    if (sortParam.value === 'noRight') {
-        return list.filter((video) => !video.right)
-    }
-
-    if (sortParam.value === 'rightDesc') {
-        return list.sort((a, b) => Number(b.right) - Number(a.right))
-    }
-
-    if (sortParam.value === 'rightAsc') {
-        return list.sort((a, b) => Number(a.right) - Number(b.right))
-    }
-
-    if (sortParam.value === 'views' || sortParam.value === 'viewsDesc') {
-        return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
-    }
-
-    if (sortParam.value === 'viewsAsc') {
-        return list.sort((a, b) => (a.views ?? 0) - (b.views ?? 0))
-    }
-
-    if (sortParam.value === 'likes' || sortParam.value === 'likesDesc') {
-        return list.sort((a, b) => (b.likes_count ?? 0) - (a.likes_count ?? 0))
-    }
-
-    if (sortParam.value === 'likesAsc') {
-        return list.sort((a, b) => (a.likes_count ?? 0) - (b.likes_count ?? 0))
-    }
-
-    if (sortParam.value === 'commentsDesc') {
-        return list.sort((a, b) => (b.comments_count ?? 0) - (a.comments_count ?? 0))
-    }
-
-    if (sortParam.value === 'commentsAsc') {
-        return list.sort((a, b) => (a.comments_count ?? 0) - (b.comments_count ?? 0))
-    }
-
-    if (sortParam.value === 'imagesDesc') {
-        return list.sort((a, b) => (b.images_count ?? 0) - (a.images_count ?? 0))
-    }
-
-    if (sortParam.value === 'imagesAsc') {
-        return list.sort((a, b) => (a.images_count ?? 0) - (b.images_count ?? 0))
-    }
-
-    if (sortParam.value === 'articlesDesc') {
-        return list.sort((a, b) => (b.articles_count ?? 0) - (a.articles_count ?? 0))
-    }
-
-    if (sortParam.value === 'articlesAsc') {
-        return list.sort((a, b) => (a.articles_count ?? 0) - (b.articles_count ?? 0))
-    }
-
-    if (sortParam.value === 'relatedVideosDesc') {
-        return list.sort((a, b) => (b.related_videos_count ?? 0) - (a.related_videos_count ?? 0))
-    }
-
-    if (sortParam.value === 'relatedVideosAsc') {
-        return list.sort((a, b) => (a.related_videos_count ?? 0) - (b.related_videos_count ?? 0))
-    }
-
-    if (sortParam.value === 'durationDesc') {
-        return list.sort((a, b) => (b.duration ?? 0) - (a.duration ?? 0))
-    }
-
-    if (sortParam.value === 'durationAsc') {
-        return list.sort((a, b) => (a.duration ?? 0) - (b.duration ?? 0))
-    }
-
-    if (sortParam.value === 'showFromAtDesc') {
-        return list.sort((a, b) =>
-            new Date(b.show_from_at || 0) - new Date(a.show_from_at || 0))
-    }
-
-    if (sortParam.value === 'showFromAtAsc') {
-        return list.sort((a, b) =>
-            new Date(a.show_from_at || 0) - new Date(b.show_from_at || 0))
-    }
-
-    if (sortParam.value === 'showToAtDesc') {
-        return list.sort((a, b) =>
-            new Date(b.show_to_at || 0) - new Date(a.show_to_at || 0))
-    }
-
-    if (sortParam.value === 'showToAtAsc') {
-        return list.sort((a, b) =>
-            new Date(a.show_to_at || 0) - new Date(b.show_to_at || 0))
-    }
-
-    if (sortParam.value === 'publishedAtDesc') {
-        return list.sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0))
-    }
-
-    if (sortParam.value === 'publishedAtAsc') {
-        return list.sort((a, b) => new Date(a.published_at || 0) - new Date(b.published_at || 0))
-    }
-
-    if (sortParam.value === 'createdAtDesc') {
-        return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-    }
-
-    if (sortParam.value === 'createdAtAsc') {
-        return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
-    }
-
-    if (sortParam.value === 'updatedAtDesc') {
-        return list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
-    }
-
-    if (sortParam.value === 'updatedAtAsc') {
-        return list.sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
-    }
-
-    if (sortParam.value === 'moderationPending') {
-        return list.filter((video) => moderationNum(video?.moderation_status) === 0)
-    }
-
-    if (sortParam.value === 'moderationApproved') {
-        return list.filter((video) => moderationNum(video?.moderation_status) === 1)
-    }
-
-    if (sortParam.value === 'moderationRejected') {
-        return list.filter((video) => moderationNum(video?.moderation_status) === 2)
-    }
-
-    if (sortParam.value === 'moderationStatusAsc') {
-        return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
-    }
-
-    if (sortParam.value === 'moderationStatusDesc') {
-        return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
-    }
-
-    if (sortParam.value === 'ownerNameAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
-    }
-
-    if (sortParam.value === 'ownerNameDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
-    }
-
-    if (sortParam.value === 'ownerEmailAsc') {
-        return list.sort((a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
-    }
-
-    if (sortParam.value === 'ownerEmailDesc') {
-        return list.sort((a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
-    }
-
-    return list
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
 }
 
-/** Фильтрация видео */
 const filteredVideos = computed(() => {
     let filtered = localVideos.value || []
     const query = normalize(searchQuery.value)
@@ -573,29 +418,28 @@ const filteredVideos = computed(() => {
     }
 
     filtered = filtered.filter((video) => {
-        const title = normalize(getVideoTitle(video))
-        const short = normalize(getVideoShort(video))
-        const description = normalize(getVideoDescription(video))
-        const url = normalize(video?.url)
-        const externalVideoId = normalize(video?.external_video_id)
-        const sourceType = normalize(video?.source_type)
-        const ownerName = normalize(video?.owner?.name)
-        const ownerEmail = normalize(video?.owner?.email)
+        const values = [
+            video?.id,
+            video?.url,
+            video?.external_video_id,
+            video?.source_type,
+            video?.embed_code,
+            video?.moderation_note,
+            getVideoTitle(video),
+            getVideoShort(video),
+            getVideoDescription(video),
+            video?.owner?.name,
+            video?.owner?.email,
+            video?.moderator?.name,
+            video?.moderator?.email,
+        ]
 
-        return title.includes(query)
-            || short.includes(query)
-            || description.includes(query)
-            || url.includes(query)
-            || externalVideoId.includes(query)
-            || sourceType.includes(query)
-            || ownerName.includes(query)
-            || ownerEmail.includes(query)
+        return values.some((value) => normalize(value).includes(query))
     })
 
     return sortVideos(filtered)
 })
 
-/** Пагинация */
 const paginatedVideos = computed(() => {
     const perPage = Number(itemsPerPage.value || 10)
     const start = (currentPage.value - 1) * perPage
@@ -603,17 +447,21 @@ const paginatedVideos = computed(() => {
     return filteredVideos.value.slice(start, start + perPage)
 })
 
+const displayedVideos = computed(() => {
+    return props.useServerProcessing
+        ? videosList.value
+        : paginatedVideos.value
+})
+
 watch([itemsPerPage, searchQuery], () => {
     currentPage.value = 1
 })
 
-/** Выбранные видео */
 const selectedVideos = ref([])
 
-/** Выбрать/снять все видео */
 const toggleAll = (payload) => {
     const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? paginatedVideos.value.map((video) => video.id)
+    const ids = payload?.ids ?? displayedVideos.value.map((video) => video.id)
 
     if (checked) {
         selectedVideos.value = [...new Set([...selectedVideos.value, ...ids])]
@@ -622,7 +470,6 @@ const toggleAll = (payload) => {
     }
 }
 
-/** Выбрать или снять одно видео */
 const toggleSelectVideo = (videoId) => {
     const index = selectedVideos.value.indexOf(videoId)
 
@@ -633,7 +480,6 @@ const toggleSelectVideo = (videoId) => {
     }
 }
 
-/** Массовое включение/выключение активности */
 const bulkToggleActivity = (newActivity) => {
     if (!selectedVideos.value.length) {
         toast.warning('Выберите видео для активации/деактивации')
@@ -644,20 +490,15 @@ const bulkToggleActivity = (newActivity) => {
 
     router.put(
         route('admin.actions.blogVideos.bulkUpdateActivity'),
-        {
-            ids: idsToUpdate,
-            activity: newActivity,
-        },
+        { ids: idsToUpdate, activity: newActivity },
         {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => {
                 localVideos.value = localVideos.value.map((video) => {
-                    if (idsToUpdate.includes(video.id)) {
-                        return { ...video, activity: newActivity }
-                    }
-
-                    return video
+                    return idsToUpdate.includes(video.id)
+                        ? { ...video, activity: newActivity }
+                        : video
                 })
 
                 selectedVideos.value = []
@@ -671,7 +512,6 @@ const bulkToggleActivity = (newActivity) => {
     )
 }
 
-/** Массовое изменение boolean-поля */
 const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
     if (!selectedVideos.value.length) {
         toast.warning('Выберите видео для массового действия')
@@ -682,20 +522,15 @@ const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
 
     router.put(
         route(routeName),
-        {
-            ids: idsToUpdate,
-            [field]: newValue,
-        },
+        { ids: idsToUpdate, [field]: newValue },
         {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => {
                 localVideos.value = localVideos.value.map((video) => {
-                    if (idsToUpdate.includes(video.id)) {
-                        return { ...video, [field]: newValue }
-                    }
-
-                    return video
+                    return idsToUpdate.includes(video.id)
+                        ? { ...video, [field]: newValue }
+                        : video
                 })
 
                 selectedVideos.value = []
@@ -709,7 +544,6 @@ const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
     )
 }
 
-/** Массовое удаление */
 const bulkDelete = () => {
     if (!selectedVideos.value.length) {
         toast.warning('Выберите хотя бы одно видео для удаления.')
@@ -727,13 +561,12 @@ const bulkDelete = () => {
             toast.success('Массовое удаление видео успешно завершено.')
         },
         onError: (errors) => {
-            const errorKey = Object.keys(errors)[0]
+            const errorKey = Object.keys(errors || {})[0]
             toast.error(errors[errorKey] || 'Произошла ошибка при удалении видео.')
         },
     })
 }
 
-/** Обработка select массовых действий */
 const handleBulkAction = (event) => {
     const action = event.target.value
 
@@ -764,16 +597,12 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-/** Одобрение / отклонение видео */
 const approveVideo = (video, status = 1, note = '') => {
     if (!video?.id) return
 
     router.put(
         route('admin.actions.blogVideos.approve', { blogVideo: video.id }),
-        {
-            moderation_status: status,
-            moderation_note: note,
-        },
+        { moderation_status: status, moderation_note: note },
         {
             preserveScroll: true,
             preserveState: true,
@@ -791,7 +620,6 @@ const approveVideo = (video, status = 1, note = '') => {
     )
 }
 
-/** Обновление сортировки */
 const handleSortOrderUpdate = (newOrderIds) => {
     const items = newOrderIds.map((id, index) => ({
         id,
@@ -829,14 +657,26 @@ const handleSortOrderUpdate = (newOrderIds) => {
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.blogVideos.create')">
                         {{ t('addVideo') }}
                     </DefaultButton>
+
+                    <ProcessingModeSwitcher
+                        setting-key="adminBlogVideosProcessingMode"
+                        :mode="adminBlogVideosProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="videosCount"
+                    />
                 </div>
 
                 <SearchInput
-                    v-if="videosCount"
+                    v-if="videosCount && !useServerProcessing"
+                    v-model="searchQuery"
+                />
+
+                <ServerSearchInput
+                    v-if="videosCount && useServerProcessing"
                     v-model="searchQuery"
                 />
 
@@ -845,8 +685,15 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     class="flex justify-between items-center flex-col md:flex-row my-3"
                 >
                     <ItemsPerPageSelect
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <ServerItemsPerPageSelect
+                        v-else
+                        :items-per-page="itemsPerPage"
+                        update-route="admin.settings.updateAdminCountVideos"
                     />
 
                     <SortSelect
@@ -874,17 +721,22 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredVideos.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="videos"
                     />
                 </div>
 
                 <VideoTable
                     v-if="viewMode === 'table'"
-                    :videos="paginatedVideos"
+                    :videos="displayedVideos"
                     :selected-videos="selectedVideos"
                     :is-admin="isAdmin"
                     @toggle-left="toggleLeft"
@@ -900,7 +752,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
                 <VideoCardGrid
                     v-else
-                    :videos="paginatedVideos"
+                    :videos="displayedVideos"
                     :selected-videos="selectedVideos"
                     :is-admin="isAdmin"
                     @toggle-left="toggleLeft"
@@ -919,11 +771,16 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
                 >
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredVideos.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="videos"
                     />
                 </div>
             </div>

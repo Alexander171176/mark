@@ -8,6 +8,7 @@ use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoSharedResource;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\BlogVideo\BlogVideoImage;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -87,41 +88,48 @@ class BlogVideoController extends BaseBlogAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminBlogVideosPerPage = $settings->int('site_settings.adminBlogVideosPerPage', 6);
-        $adminBlogVideosDefaultSort = $settings->string('site_settings.adminBlogVideosDefaultSort', 'idDesc');
 
-        $sortParam = (string) $request->query('sort', $adminBlogVideosDefaultSort);
+        $perPage = $settings->int('adminBlogVideosPerPage', 6);
+        $defaultSort = $settings->string('adminBlogVideosDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string('adminBlogVideosProcessingMode', 'frontend');
+
+        $videosCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $videosCount,
+                300
+            );
 
         try {
-            $videos = $this->baseQuery()
-                ->with([
-                    'owner',
-                    'moderator',
-                    'translations',
-                    'images',
-                    'relatedVideos.translations',
-                    'relatedVideos.images',
-                ])
-                ->withCount([
-                    'images',
-                    'comments',
-                    'likes',
-                    'articles',
-                    'relatedVideos',
-                ])
-                ->sortByParam($sortParam, $currentLocale)
-                ->get();
+            $videos = $this->getIndexVideos(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/Blog/BlogVideos/Index', [
-                'videos' => BlogVideoResource::collection($videos),
-                'videosCount' => $this->baseQuery()->count(),
-
-                'adminBlogVideosPerPage' => $adminBlogVideosPerPage,
-                'adminBlogVideosDefaultSort' => $adminBlogVideosDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminBlogVideosPerPage' => $perPage,
+                'adminBlogVideosDefaultSort' => $defaultSort,
+                'adminBlogVideosProcessingMode' => $processingMode,
+
+                'videos' => BlogVideoResource::collection($videos),
+                'videosCount' => $videosCount,
+
                 'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки списка blog videos: ' . $e->getMessage(), [
@@ -129,15 +137,21 @@ class BlogVideoController extends BaseBlogAdminController
             ]);
 
             return Inertia::render('Admin/Blog/BlogVideos/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminBlogVideosPerPage' => $perPage,
+                'adminBlogVideosDefaultSort' => $defaultSort,
+                'adminBlogVideosProcessingMode' => $processingMode,
+
                 'videos' => [],
                 'videosCount' => 0,
 
-                'adminBlogVideosPerPage' => $adminBlogVideosPerPage,
-                'adminBlogVideosDefaultSort' => $adminBlogVideosDefaultSort,
-
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
                 'sortParam' => $sortParam,
+                'search' => $search,
+
                 'error' => 'Ошибка загрузки видео.',
             ]);
         }
@@ -401,5 +415,49 @@ class BlogVideoController extends BaseBlogAdminController
 
             return back()->with('error', 'Ошибка при массовом удалении видео.');
         }
+    }
+
+    /** Базовый запрос списка видео */
+    private function indexVideosQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'owner',
+                'moderator',
+                'translations',
+                'images',
+                'relatedVideos.translations',
+                'relatedVideos.images',
+            ])
+            ->withCount([
+                'images',
+                'comments',
+                'likes',
+                'articles',
+                'relatedVideos',
+            ]);
+    }
+
+    /** Список видео по режиму обработки */
+    private function getIndexVideos(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+    ) {
+        $query = $this->indexVideosQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

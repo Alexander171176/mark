@@ -353,27 +353,60 @@ class BlogVideo extends Model implements HasMedia
         return $query->where('right', true);
     }
 
-    /** Поиск по переводимым полям и служебным полям */
+    /** Поиск по словам */
     public function scopeSearch(Builder $query, ?string $term, ?string $locale = null): Builder
     {
-        if (!$term) {
+        $term = trim((string) $term);
+
+        if ($term === '') {
             return $query;
         }
 
         $locale = $locale ?: app()->getLocale();
 
-        return $query->where(function (Builder $q) use ($term, $locale) {
-            $q->where('url', 'like', "%{$term}%")
-                ->orWhere('external_video_id', 'like', "%{$term}%")
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%")
-                                ->orWhere('pseudonym', 'like', "%{$term}%");
+        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term))
+            ->map(fn ($word) => trim($word))
+            ->filter(fn ($word) => mb_strlen($word) >= 2)
+            ->values();
+
+        if ($words->isEmpty()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($words, $locale) {
+            foreach ($words as $word) {
+                $query->where(function (Builder $query) use ($word, $locale) {
+                    $query
+                        ->where('blog_videos.url', 'like', "%{$word}%")
+                        ->orWhere('blog_videos.external_video_id', 'like', "%{$word}%")
+                        ->orWhere('blog_videos.source_type', 'like', "%{$word}%")
+                        ->orWhere('blog_videos.embed_code', 'like', "%{$word}%")
+                        ->orWhere('blog_videos.moderation_note', 'like', "%{$word}%")
+
+                        ->orWhereHas('translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%")
+                                        ->orWhere('description', 'like', "%{$word}%")
+                                        ->orWhere('pseudonym', 'like', "%{$word}%")
+                                        ->orWhere('meta_title', 'like', "%{$word}%")
+                                        ->orWhere('meta_keywords', 'like', "%{$word}%")
+                                        ->orWhere('meta_desc', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('owner', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%");
+                        })
+
+                        ->orWhereHas('moderator', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%");
                         });
                 });
+            }
         });
     }
 
@@ -477,6 +510,30 @@ class BlogVideo extends Model implements HasMedia
                         ->where('bvt_sort.locale', '=', $locale);
                 })
                 ->orderBy('bvt_sort.title', 'desc')
+                ->orderByDesc('blog_videos.id')
+                ->select('blog_videos.*'),
+
+            'ownerNameAsc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
+                ->orderBy('owner_sort.name', 'asc')
+                ->orderByDesc('blog_videos.id')
+                ->select('blog_videos.*'),
+
+            'ownerNameDesc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
+                ->orderBy('owner_sort.name', 'desc')
+                ->orderByDesc('blog_videos.id')
+                ->select('blog_videos.*'),
+
+            'ownerEmailAsc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
+                ->orderBy('owner_sort.email', 'asc')
+                ->orderByDesc('blog_videos.id')
+                ->select('blog_videos.*'),
+
+            'ownerEmailDesc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
+                ->orderBy('owner_sort.email', 'desc')
                 ->orderByDesc('blog_videos.id')
                 ->select('blog_videos.*'),
 

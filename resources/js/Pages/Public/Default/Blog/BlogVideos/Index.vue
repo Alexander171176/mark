@@ -128,8 +128,8 @@ const videoSortOptions = [
     { value: 'durationDesc', label: `${t('duration')} 9→0` },
     { value: 'durationAsc', label: `${t('duration')} 0→9` },
 
-    { value: 'dateDesc', label: `${t('publishedAt')} ↓` },
-    { value: 'dateAsc', label: `${t('publishedAt')} ↑` },
+    { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
+    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
 ]
 
 /* ===================== FRONTEND MODE ===================== */
@@ -243,11 +243,11 @@ const sortedVideos = computed(() => {
             case 'durationDesc':
                 return getVideoDuration(b) - getVideoDuration(a)
 
-            case 'dateAsc':
+            case 'publishedAtAsc':
                 return new Date(a.published_at ?? a.created_at ?? 0) -
                     new Date(b.published_at ?? b.created_at ?? 0)
 
-            case 'dateDesc':
+            case 'publishedAtDesc':
                 return new Date(b.published_at ?? b.created_at ?? 0) -
                     new Date(a.published_at ?? a.created_at ?? 0)
 

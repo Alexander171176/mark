@@ -39,8 +39,8 @@ const updateSort = (event) => {
             <option value="inactive">{{ t('inactive') }}</option>
             <option disabled>───────────────────</option>
 
-            <option value="courseTitleAsc">{{ t('course') }} ↑</option>
-            <option value="courseTitleDesc">{{ t('course') }} ↓</option>
+            <option value="bundleTitleAsc">{{ t('bundles') }} ↑</option>
+            <option value="bundleTitleDesc">{{ t('bundles') }} ↓</option>
 
             <option value="currencyCodeAsc">{{ t('currency') }} ↑</option>
             <option value="currencyCodeDesc">{{ t('currency') }} ↓</option>

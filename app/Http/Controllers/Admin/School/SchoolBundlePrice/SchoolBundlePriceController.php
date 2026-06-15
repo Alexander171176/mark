@@ -11,7 +11,9 @@ use App\Http\Resources\Admin\School\SchoolBundlePrice\SchoolBundlePriceResource;
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\School\SchoolBundle\SchoolBundle;
 use App\Models\Admin\School\SchoolBundlePrice\SchoolBundlePrice;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -47,129 +49,66 @@ class SchoolBundlePriceController extends Controller
         $currencyId = $request->query('currency_id');
         $activity = $request->query('activity');
 
+        $currentLocale = app()->getLocale();
+
         $settings = app(AdminSettingsService::class);
-        $adminSchoolBundlePricesPerPage = $settings->int('site_settings.adminSchoolBundlePricesPerPage', 6);
-        $adminSchoolBundlePricesDefaultSort = $settings->string('site_settings.adminSchoolBundlePricesDefaultSort', 'idDesc');
+
+        $perPage = $settings->int('adminSchoolBundlePricesPerPage', 6);
+        $defaultSort = $settings->string('adminSchoolBundlePricesDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSchoolBundlePricesProcessingMode',
+            'frontend'
+        );
+
+        $pricesCount = $this->indexQuery(
+            bundleId: $bundleId,
+            currencyId: $currencyId,
+            activity: $activity,
+        )->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $pricesCount,
+                300
+            );
 
         try {
-            $query = SchoolBundlePrice::query()
-                ->with([
-                    'bundle.translation',
-                    'bundle.translations',
-                    'currency:id,code,name,symbol',
-                ]);
-
-            if ($bundleId) {
-                $query->where('school_bundle_id', (int) $bundleId);
-            }
-
-            if ($currencyId) {
-                $query->where('currency_id', (int) $currencyId);
-            }
-
-            if ($activity !== null && $activity !== '') {
-                $query->where('activity', filter_var($activity, FILTER_VALIDATE_BOOL));
-            }
-
-            match ($adminSchoolBundlePricesDefaultSort) {
-                'idAsc' => $query->orderBy('school_bundle_prices.id'),
-                'idDesc' => $query->orderByDesc('school_bundle_prices.id'),
-
-                'sortAsc' => $query->orderBy('sort')->orderByDesc('school_bundle_prices.id'),
-                'sortDesc' => $query->orderByDesc('sort')->orderByDesc('school_bundle_prices.id'),
-
-                'priceAsc' => $query->orderBy('price')->orderByDesc('school_bundle_prices.id'),
-                'priceDesc' => $query->orderByDesc('price')->orderByDesc('school_bundle_prices.id'),
-
-                'salePriceAsc' => $query->orderBy('sale_price')->orderByDesc('school_bundle_prices.id'),
-                'salePriceDesc' => $query->orderByDesc('sale_price')->orderByDesc('school_bundle_prices.id'),
-
-                'compareAtPriceAsc' => $query->orderBy('compare_at_price')->orderByDesc('school_bundle_prices.id'),
-                'compareAtPriceDesc' => $query->orderByDesc('compare_at_price')->orderByDesc('school_bundle_prices.id'),
-
-                'effectivePriceAsc' => $query
-                    ->orderByRaw('CASE WHEN sale_price IS NOT NULL AND sale_price > 0 THEN sale_price ELSE price END ASC')
-                    ->orderByDesc('school_bundle_prices.id'),
-
-                'effectivePriceDesc' => $query
-                    ->orderByRaw('CASE WHEN sale_price IS NOT NULL AND sale_price > 0 THEN sale_price ELSE price END DESC')
-                    ->orderByDesc('school_bundle_prices.id'),
-
-                'discountPercentAsc' => $query
-                    ->orderByRaw("
-                        CASE
-                            WHEN compare_at_price IS NULL OR compare_at_price <= 0 THEN 0
-                            WHEN compare_at_price <= (CASE WHEN sale_price IS NOT NULL AND sale_price > 0 THEN sale_price ELSE price END) THEN 0
-                            ELSE ((compare_at_price - (CASE WHEN sale_price IS NOT NULL AND sale_price > 0 THEN sale_price ELSE price END)) / compare_at_price) * 100
-                        END ASC
-                    ")
-                    ->orderByDesc('school_bundle_prices.id'),
-
-                'discountPercentDesc' => $query
-                    ->orderByRaw("
-                        CASE
-                            WHEN compare_at_price IS NULL OR compare_at_price <= 0 THEN 0
-                            WHEN compare_at_price <= (CASE WHEN sale_price IS NOT NULL AND sale_price > 0 THEN sale_price ELSE price END) THEN 0
-                            ELSE ((compare_at_price - (CASE WHEN sale_price IS NOT NULL AND sale_price > 0 THEN sale_price ELSE price END)) / compare_at_price) * 100
-                        END DESC
-                    ")
-                    ->orderByDesc('school_bundle_prices.id'),
-
-                'startsAtAsc' => $query->orderBy('starts_at')->orderByDesc('school_bundle_prices.id'),
-                'startsAtDesc' => $query->orderByDesc('starts_at')->orderByDesc('school_bundle_prices.id'),
-
-                'endsAtAsc' => $query->orderBy('ends_at')->orderByDesc('school_bundle_prices.id'),
-                'endsAtDesc' => $query->orderByDesc('ends_at')->orderByDesc('school_bundle_prices.id'),
-
-                'activity' => $query->where('activity', true)->orderByDesc('school_bundle_prices.id'),
-                'inactive' => $query->where('activity', false)->orderByDesc('school_bundle_prices.id'),
-
-                'bundleTitleAsc' => $query
-                    ->leftJoin('school_bundle_translations as sbt', function ($join) {
-                        $join->on('school_bundle_prices.school_bundle_id', '=', 'sbt.school_bundle_id')
-                            ->where('sbt.locale', app()->getLocale());
-                    })
-                    ->orderBy('sbt.title')
-                    ->orderByDesc('school_bundle_prices.id')
-                    ->select('school_bundle_prices.*'),
-
-                'bundleTitleDesc' => $query
-                    ->leftJoin('school_bundle_translations as sbt', function ($join) {
-                        $join->on('school_bundle_prices.school_bundle_id', '=', 'sbt.school_bundle_id')
-                            ->where('sbt.locale', app()->getLocale());
-                    })
-                    ->orderByDesc('sbt.title')
-                    ->orderByDesc('school_bundle_prices.id')
-                    ->select('school_bundle_prices.*'),
-
-                'currencyCodeAsc' => $query
-                    ->join('currencies', 'school_bundle_prices.currency_id', '=', 'currencies.id')
-                    ->orderBy('currencies.code')
-                    ->orderByDesc('school_bundle_prices.id')
-                    ->select('school_bundle_prices.*'),
-
-                'currencyCodeDesc' => $query
-                    ->join('currencies', 'school_bundle_prices.currency_id', '=', 'currencies.id')
-                    ->orderByDesc('currencies.code')
-                    ->orderByDesc('school_bundle_prices.id')
-                    ->select('school_bundle_prices.*'),
-
-                default => $query->orderByDesc('school_bundle_prices.id'),
-            };
-
-            $prices = $query->get();
+            $prices = $this->getIndexBundlePrices(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+                bundleId: $bundleId,
+                currencyId: $currencyId,
+                activity: $activity,
+            );
 
             return Inertia::render('Admin/School/SchoolBundlePrices/Index', [
-                'prices' => SchoolBundlePriceResource::collection($prices),
-                'pricesCount' => $prices->count(),
+                'currentLocale' => $currentLocale,
 
-                'adminSchoolBundlePricesPerPage' => $adminSchoolBundlePricesPerPage,
-                'adminSchoolBundlePricesDefaultSort' => $adminSchoolBundlePricesDefaultSort,
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolBundlePricesPerPage' => $perPage,
+                'adminSchoolBundlePricesDefaultSort' => $defaultSort,
+                'adminSchoolBundlePricesProcessingMode' => $processingMode,
+
+                'prices' => SchoolBundlePriceResource::collection($prices),
+                'pricesCount' => $pricesCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'school_bundle_id' => $bundleId,
                     'currency_id' => $currencyId,
                     'activity' => $activity,
+                    'search' => $search,
                 ],
 
                 'bundles' => $this->bundlesForSelect(),
@@ -181,16 +120,25 @@ class SchoolBundlePriceController extends Controller
             ]);
 
             return Inertia::render('Admin/School/SchoolBundlePrices/Index', [
+                'currentLocale' => $currentLocale,
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSchoolBundlePricesPerPage' => $perPage,
+                'adminSchoolBundlePricesDefaultSort' => $defaultSort,
+                'adminSchoolBundlePricesProcessingMode' => $processingMode,
+
                 'prices' => [],
                 'pricesCount' => 0,
 
-                'adminSchoolBundlePricesPerPage' => $adminSchoolBundlePricesPerPage,
-                'adminSchoolBundlePricesDefaultSort' => $adminSchoolBundlePricesDefaultSort,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'filters' => [
                     'school_bundle_id' => $bundleId,
                     'currency_id' => $currencyId,
                     'activity' => $activity,
+                    'search' => $search,
                 ],
 
                 'bundles' => [],
@@ -483,6 +431,62 @@ class SchoolBundlePriceController extends Controller
         return Currency::query()
             ->select('id', 'code', 'name', 'symbol')
             ->orderBy('code')
+            ->get();
+    }
+
+    /** Базовый запрос для списка цен бандлов. */
+    private function indexQuery(
+        null|string|int $bundleId = null,
+        null|string|int $currencyId = null,
+        null|string|bool $activity = null,
+    ): Builder {
+        return SchoolBundlePrice::query()
+            ->with([
+                'bundle.translation',
+                'bundle.translations',
+                'currency:id,code,name,symbol',
+            ])
+            ->when($bundleId, fn (Builder $query) => $query
+                ->where('school_bundle_id', (int) $bundleId)
+            )
+            ->when($currencyId, fn (Builder $query) => $query
+                ->where('currency_id', (int) $currencyId)
+            )
+            ->when($activity !== null && $activity !== '', function (Builder $query) use ($activity) {
+                $query->where(
+                    'activity',
+                    filter_var($activity, FILTER_VALIDATE_BOOL)
+                );
+            });
+    }
+
+    /** Получение списка цен бандлов по активному режиму обработки. */
+    private function getIndexBundlePrices(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+        null|string|int $bundleId = null,
+        null|string|int $currencyId = null,
+        null|string|bool $activity = null,
+    ) {
+        $query = $this->indexQuery(
+            bundleId: $bundleId,
+            currencyId: $currencyId,
+            activity: $activity,
+        );
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
             ->get();
     }
 }

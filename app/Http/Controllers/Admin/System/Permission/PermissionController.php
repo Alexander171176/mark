@@ -5,13 +5,16 @@ namespace App\Http\Controllers\Admin\System\Permission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\Permission\PermissionRequest;
 use App\Http\Resources\Admin\System\Permission\PermissionResource;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\Models\Permission;
+use App\Models\Admin\System\Permission\AdminPermission as Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Throwable;
 
@@ -40,32 +43,85 @@ class PermissionController extends Controller
      *
      * @return Response
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        // TODO: Проверка прав $this->authorize('show-permissions', Permission::class);
-
         $settings = app(AdminSettingsService::class);
-        $adminCountPermissions = $settings->int('site_settings.AdminCountPermissions', 6); // Больше на страницу
-        $adminSortPermissions  = $settings->string('site_settings.AdminSortPermissions', 'nameAsc'); // Сортировка по имени
+
+        $perPage = $settings->int(
+            'adminSystemPermissionsPerPage',
+            $settings->int('site_settings.AdminCountPermissions', 6)
+        );
+
+        $defaultSort = $settings->string(
+            'adminSystemPermissionsDefaultSort',
+            $settings->string('site_settings.AdminSortPermissions', 'nameAsc')
+        );
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSystemPermissionsProcessingMode',
+            'frontend'
+        );
+
+        $permissionsCount = $this->indexQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $permissionsCount,
+                300
+            );
 
         try {
-            // Загружаем ВСЕ разрешения
-            $permissions = Permission::all();
-            $permissionsCount = $permissions->count(); // Считаем из загруженной коллекции
+            $permissions = $this->getIndexPermissions(
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
+            return Inertia::render('Admin/System/Permissions/Index', [
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSystemPermissionsProcessingMode' => $processingMode,
+                'adminSystemPermissionsPerPage' => $perPage,
+                'adminSystemPermissionsDefaultSort' => $defaultSort,
+
+                'adminCountPermissions' => $perPage,
+                'adminSortPermissions' => $sortParam,
+
+                'permissions' => PermissionResource::collection($permissions),
+                'permissionsCount' => $permissionsCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+            ]);
         } catch (Throwable $e) {
-            Log::error("Ошибка загрузки разрешений для Index: " . $e->getMessage());
-            $permissions = collect(); // Пустая коллекция в случае ошибки
-            $permissionsCount = 0;
-            session()->flash('error', __('admin/controllers.index_error'));
-        }
+            Log::error('Ошибка загрузки разрешений для Index: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
 
-        return Inertia::render('Admin/System/Permissions/Index', [
-            'permissions' => PermissionResource::collection($permissions),
-            'permissionsCount' => $permissionsCount,
-            'adminCountPermissions' => (int)$adminCountPermissions,
-            'adminSortPermissions' => $adminSortPermissions,
-        ]);
+            return Inertia::render('Admin/System/Permissions/Index', [
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSystemPermissionsProcessingMode' => $processingMode,
+                'adminSystemPermissionsPerPage' => $perPage,
+                'adminSystemPermissionsDefaultSort' => $defaultSort,
+
+                'adminCountPermissions' => $perPage,
+                'adminSortPermissions' => $sortParam,
+
+                'permissions' => [],
+                'permissionsCount' => 0,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+
+                'error' => 'Ошибка загрузки разрешений.',
+            ]);
+        }
     }
 
     /**
@@ -191,4 +247,31 @@ class PermissionController extends Controller
         }
     }
 
+    private function indexQuery(): Builder
+    {
+        return Permission::query()
+            ->with('roles')
+            ->withCount('roles');
+    }
+
+    private function getIndexPermissions(
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search)
+                ->sortByParam($sort)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort)
+            ->get();
+    }
 }

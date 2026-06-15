@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\Blog\Comment\CommentRequest;
 use App\Http\Requests\Admin\System\UpdateActivityRequest;
 use App\Http\Resources\Admin\Blog\Comment\CommentResource;
 use App\Models\Admin\Blog\Comment\Comment;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -51,78 +52,71 @@ class CommentController extends Controller
         // return $q;
     }
 
-    /** Список комментариев (без серверной пагинации/фильтров/поиска). */
+    /** Список комментариев */
     public function index(Request $request): Response
     {
         $settings = app(AdminSettingsService::class);
-        $adminCommentsPerPage = $settings->int('site_settings.adminCommentsPerPage', 6);
-        $adminCommentsDefaultSort  = $settings->string('site_settings.adminCommentsDefaultSort', 'idDesc');
+
+        $perPage = $settings->int('adminCommentsPerPage', 6);
+        $defaultSort = $settings->string('adminCommentsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string('adminCommentsProcessingMode', 'frontend');
+
+        $commentsCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $commentsCount,
+                300
+            );
 
         $user = auth()->user();
         $isAdmin = (bool) ($user && $user->hasRole('admin'));
 
         try {
-            // Начальная серверная сортировка по сохранённой настройке.
-            $sort = (string) config('site_settings.adminCommentsDefaultSort', 'idDesc');
-
-            $comments = $this->baseQuery()
-                ->with([
-                    'user:id,name,email',
-                    'moderator:id,name,email',
-                    'commentable',
-                    'parent' => fn ($q) => $q->with('user:id,name'),
-                ])
-                ->withCount('replies')
-                ->when($sort === 'idAsc', fn ($q) => $q->orderBy('id', 'asc'))
-                ->when($sort === 'idDesc', fn ($q) => $q->orderBy('id', 'desc'))
-                ->when($sort === 'createdAtAsc', fn ($q) => $q->orderBy('created_at', 'asc')->orderByDesc('id'))
-                ->when($sort === 'createdAtDesc', fn ($q) => $q->orderBy('created_at', 'desc')->orderByDesc('id'))
-                ->when($sort === 'updatedAtAsc', fn ($q) => $q->orderBy('updated_at', 'asc')->orderByDesc('id'))
-                ->when($sort === 'updatedAtDesc', fn ($q) => $q->orderBy('updated_at', 'desc')->orderByDesc('id'))
-                ->when($sort === 'repliesAsc', fn ($q) => $q->orderBy('replies_count', 'asc')->orderByDesc('id'))
-                ->when($sort === 'repliesDesc', fn ($q) => $q->orderBy('replies_count', 'desc')->orderByDesc('id'))
-                ->when($sort === 'moderationStatusAsc', fn ($q) => $q->orderBy('moderation_status', 'asc')->orderByDesc('id'))
-                ->when($sort === 'moderationStatusDesc', fn ($q) => $q->orderBy('moderation_status', 'desc')->orderByDesc('id'))
-                ->when($sort === 'activityAsc', fn ($q) => $q->orderBy('activity', 'asc')->orderByDesc('id'))
-                ->when($sort === 'activityDesc', fn ($q) => $q->orderBy('activity', 'desc')->orderByDesc('id'))
-                ->when(
-                    !in_array($sort, [
-                        'idAsc',
-                        'idDesc',
-                        'createdAtAsc',
-                        'createdAtDesc',
-                        'updatedAtAsc',
-                        'updatedAtDesc',
-                        'repliesAsc',
-                        'repliesDesc',
-                        'moderationStatusAsc',
-                        'moderationStatusDesc',
-                        'activityAsc',
-                        'activityDesc',
-                    ], true),
-                    fn ($q) => $q->orderByDesc('id')
-                )
-                ->get();
+            $comments = $this->getIndexComments(
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/Blog/Comments/Index', [
                 'comments' => CommentResource::collection($comments),
-                'commentsCount' => $comments->count(),
+                'commentsCount' => $commentsCount,
 
-                'adminCommentsPerPage' => $adminCommentsPerPage,
-                'adminCommentsDefaultSort'  => $adminCommentsDefaultSort,
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminCommentsProcessingMode' => $processingMode,
+                'adminCommentsPerPage' => $perPage,
+                'adminCommentsDefaultSort' => $defaultSort,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'isAdmin' => $isAdmin,
             ]);
-
         } catch (Throwable $e) {
-            Log::error("Ошибка загрузки комментариев для Index: ".$e->getMessage(), ['exception' => $e]);
+            Log::error('Ошибка загрузки комментариев для Index: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
 
             return Inertia::render('Admin/Blog/Comments/Index', [
                 'comments' => [],
                 'commentsCount' => 0,
 
-                'adminCommentsPerPage' => $adminCommentsPerPage,
-                'adminCommentsDefaultSort'  => $adminCommentsDefaultSort,
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminCommentsProcessingMode' => $processingMode,
+                'adminCommentsPerPage' => $perPage,
+                'adminCommentsDefaultSort' => $defaultSort,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
 
                 'isAdmin' => $isAdmin,
 
@@ -411,5 +405,40 @@ class CommentController extends Controller
                 ? response()->json(['message' => $msg], 500)
                 : back()->with('error', $msg);
         }
+    }
+
+    /** Базовый запрос списка комментариев */
+    private function indexCommentsQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'user:id,name,email',
+                'moderator:id,name,email',
+                'commentable',
+                'parent' => fn ($q) => $q->with('user:id,name'),
+            ])
+            ->withCount('replies');
+    }
+
+    /** Получение списка комментариев по режиму обработки */
+    private function getIndexComments(
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+    ) {
+        $query = $this->indexCommentsQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search)
+                ->sortByParam($sort)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort)
+            ->get();
     }
 }

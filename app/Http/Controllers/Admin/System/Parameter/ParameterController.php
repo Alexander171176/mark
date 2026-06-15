@@ -8,7 +8,9 @@ use App\Http\Requests\Admin\System\UpdateActivityRequest;
 use App\Http\Requests\Admin\System\UpdateSortEntityRequest;
 use App\Http\Resources\Admin\System\Setting\SettingResource;
 use App\Models\Admin\System\Setting\Setting;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -44,33 +46,81 @@ class ParameterController extends Controller
      * Передает данные для отображения и настройки пагинации/сортировки.
      * Пагинация и сортировка выполняются на фронтенде.
      *
+     * @param Request $request
      * @return Response
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        // TODO: Проверка прав $this->authorize('show-parameters');
+        $currentLocale = app()->getLocale();
 
-        $settings = app(AdminSettingsService::class);
-        $adminSystemSettingsPerPage = $settings->int('site_settings.adminSystemSettingsPerPage', 6); // Используем свой ключ или общий
-        $adminSystemSettingsDefaultSort  = $settings->string('site_settings.adminSystemSettingsDefaultSort', 'idDesc'); // Используем свой ключ или общий
+        $settingsService = app(AdminSettingsService::class);
+
+        $perPage = $settingsService->int('adminSystemSettingsPerPage', 6);
+        $defaultSort = $settingsService->string('adminSystemSettingsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settingsService->string(
+            'adminSystemSettingsProcessingMode',
+            'frontend'
+        );
+
+        $settingsCount = $this->indexQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $settingsCount,
+                300
+            );
 
         try {
-            $settings = Setting::all();
-            $settingsCount = Setting::count();
-        } catch (Throwable $e) {
-            Log::error("Ошибка загрузки параметров для Index: " . $e->getMessage());
-            $settings = collect(); // Пустая коллекция в случае ошибки
-            $settingsCount = 0;
-            session()->flash('error', __('admin/controllers.index_error'));
-        }
+            $settings = $this->getIndexSettings(
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
-        return Inertia::render('Admin/System/Parameters/Index', [
-            // Используем SettingResource, но передаем как 'parameters'
-            'settings' => SettingResource::collection($settings),
-            'settingsCount' => $settingsCount,
-            'adminSystemSettingsPerPage' => (int)$adminSystemSettingsPerPage,
-            'adminSystemSettingsDefaultSort' => $adminSystemSettingsDefaultSort,
-        ]);
+            return Inertia::render('Admin/System/Parameters/Index', [
+                'currentLocale' => $currentLocale,
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSystemSettingsPerPage' => $perPage,
+                'adminSystemSettingsDefaultSort' => $defaultSort,
+                'adminSystemSettingsProcessingMode' => $processingMode,
+
+                'settings' => SettingResource::collection($settings),
+                'settingsCount' => $settingsCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+            ]);
+        } catch (Throwable $e) {
+            Log::error('Ошибка загрузки параметров для Index: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
+            return Inertia::render('Admin/System/Parameters/Index', [
+                'currentLocale' => $currentLocale,
+
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSystemSettingsPerPage' => $perPage,
+                'adminSystemSettingsDefaultSort' => $defaultSort,
+                'adminSystemSettingsProcessingMode' => $processingMode,
+
+                'settings' => [],
+                'settingsCount' => 0,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+
+                'error' => 'Ошибка загрузки параметров.',
+            ]);
+        }
     }
 
     /**
@@ -335,6 +385,34 @@ class ParameterController extends Controller
             return back()
                 ->with('error', __('admin/controllers.bulk_sort_updated_error'));
         }
+    }
+
+    /** Базовый запрос для списка параметров. */
+    private function indexQuery(): Builder
+    {
+        return Setting::query();
+    }
+
+    /** Получение параметров по активному режиму обработки. */
+    private function getIndexSettings(
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search)
+                ->sortByParam($sort)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort)
+            ->get();
     }
 
 }

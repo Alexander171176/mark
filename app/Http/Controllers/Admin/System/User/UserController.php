@@ -10,8 +10,11 @@ use App\Http\Resources\Admin\System\Permission\PermissionResource;
 use App\Http\Resources\Admin\System\Role\RoleResource;
 use App\Http\Resources\Admin\System\User\UserResource;
 use App\Models\User;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -24,27 +27,86 @@ class UserController extends Controller
 {
     use PasswordValidationRules;
 
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        // TODO: Проверка прав $this->authorize('show-users', User::class);
-
-        // Прямой запрос без кэширования
-        $users = User::with(['roles', 'permissions'])->get();
-        $usersCount = User::count();
-
         $settings = app(AdminSettingsService::class);
-        $adminCountUsers = $settings->int('site_settings.AdminCountUsers', 6);
-        $adminSortUsers  = $settings->string('site_settings.AdminSortUsers', 'idDesc');
 
-        return Inertia::render('Admin/System/Users/Index', [
-            'users' => UserResource::collection($users),
-            'usersCount' => $usersCount,
-            'adminCountUsers' => (int)$adminCountUsers,
-            'adminSortUsers' => $adminSortUsers,
-        ]);
+        $perPage = $settings->int(
+            'adminSystemUsersPerPage',
+            $settings->int('site_settings.AdminCountUsers', 6)
+        );
+
+        $defaultSort = $settings->string(
+            'adminSystemUsersDefaultSort',
+            $settings->string('site_settings.AdminSortUsers', 'idDesc')
+        );
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminSystemUsersProcessingMode',
+            'frontend'
+        );
+
+        $usersCount = $this->indexQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $usersCount,
+                300
+            );
+
+        try {
+            $users = $this->getIndexUsers(
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
+
+            return Inertia::render('Admin/System/Users/Index', [
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSystemUsersProcessingMode' => $processingMode,
+                'adminSystemUsersPerPage' => $perPage,
+                'adminSystemUsersDefaultSort' => $defaultSort,
+
+                // Старые props оставляем для совместимости
+                'adminCountUsers' => $perPage,
+                'adminSortUsers' => $sortParam,
+
+                'users' => UserResource::collection($users),
+                'usersCount' => $usersCount,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+            ]);
+        } catch (Throwable $e) {
+            Log::error('Ошибка загрузки пользователей: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
+            return Inertia::render('Admin/System/Users/Index', [
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminSystemUsersProcessingMode' => $processingMode,
+                'adminSystemUsersPerPage' => $perPage,
+                'adminSystemUsersDefaultSort' => $defaultSort,
+
+                'adminCountUsers' => $perPage,
+                'adminSortUsers' => $sortParam,
+
+                'users' => [],
+                'usersCount' => 0,
+
+                'sortParam' => $sortParam,
+                'search' => $search,
+
+                'error' => 'Ошибка загрузки пользователей.',
+            ]);
+        }
     }
 
     /**
@@ -201,4 +263,39 @@ class UserController extends Controller
         }
     }
 
+    /** Базовый запрос для списка пользователей. */
+    private function indexQuery(): Builder
+    {
+        return User::query()
+            ->with([
+                'roles',
+                'permissions',
+            ])
+            ->withCount([
+                'roles',
+                'permissions',
+            ]);
+    }
+
+    /** Получение пользователей по активному режиму обработки. */
+    private function getIndexUsers(
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+    ) {
+        $query = $this->indexQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search)
+                ->sortByParam($sort)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort)
+            ->get();
+    }
 }

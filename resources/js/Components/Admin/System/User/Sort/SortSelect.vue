@@ -17,26 +17,43 @@ const updateSort = (event) => {
 
 <template>
     <div class="flex justify-center items-center h-fit my-2">
-        <label for="sortParam"
-               class="hidden lg:block sm:mr-2 tracking-wider
-                      text-sm font-semibold text-slate-600 dark:text-slate-100">
+        <label
+            for="sortParam"
+            class="hidden lg:block sm:mr-2 tracking-wider
+                   text-sm font-semibold text-slate-600 dark:text-slate-100"
+        >
             {{ t('sort') }}
         </label>
+
         <select
             id="sortParam"
             :value="sortParam"
             @change="updateSort"
-            class="w-40 px-3 py-0.5 form-select bg-white dark:bg-gray-200
+            class="w-56 px-3 py-0.5 form-select bg-white dark:bg-gray-200
                    text-gray-600 dark:text-gray-900
                    border border-slate-400 dark:border-slate-600
                    rounded-sm shadow-sm"
         >
-            <!-- Новые варианты для id -->
             <option value="idDesc">{{ t('idDesc') }}</option>
             <option value="idAsc">{{ t('idAsc') }}</option>
             <option disabled>───────────</option>
-            <option value="name">{{ t('name') }}</option>
+
+            <option value="nameAsc">{{ t('name') }} A→Z</option>
+            <option value="nameDesc">{{ t('name') }} Z→A</option>
+
+            <option value="emailAsc">Email A→Z</option>
+            <option value="emailDesc">Email Z→A</option>
             <option disabled>───────────</option>
+
+            <option value="rolesDesc">{{ t('roles') }} 9→0</option>
+            <option value="rolesAsc">{{ t('roles') }} 0→9</option>
+
+            <option value="permissionsDesc">{{ t('permissions') }} 9→0</option>
+            <option value="permissionsAsc">{{ t('permissions') }} 0→9</option>
+            <option disabled>───────────</option>
+
+            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
+            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
         </select>
     </div>
 </template>

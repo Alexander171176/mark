@@ -7,6 +7,7 @@ use App\Models\Admin\Blog\Comment\Comment;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\User\Like\BlogArticleLike;
 use App\Models\User\Like\BlogVideoLike;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -106,5 +107,75 @@ class User extends Authenticatable /* implements MustVerifyEmail */
     }
     // --- КОНЕЦ НОВЫХ СВЯЗЕЙ ---
 
-    // Вы можете добавить здесь другие связи или методы, специфичные для пользователя
+    /* ======================== Scopes ======================== */
+
+    /** Сортировка по умолчанию */
+    public function scopeOrdered(Builder $q): Builder
+    {
+        return $q->orderByDesc('id');
+    }
+
+    /** Поиск */
+    public function scopeSearch(Builder $q, ?string $term): Builder
+    {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return $q;
+        }
+
+        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term))
+            ->map(fn ($word) => trim($word))
+            ->filter(fn ($word) => mb_strlen($word) >= 2)
+            ->values();
+
+        if ($words->isEmpty()) {
+            return $q;
+        }
+
+        return $q->where(function (Builder $query) use ($words) {
+            foreach ($words as $word) {
+                $query->where(function (Builder $query) use ($word) {
+                    $query
+                        ->where('users.name', 'like', "%{$word}%")
+                        ->orWhere('users.email', 'like', "%{$word}%")
+                        ->orWhereHas('roles', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%");
+                        })
+                        ->orWhereHas('permissions', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%");
+                        });
+                });
+            }
+        });
+    }
+
+    /** Сортировка по параметру */
+    public function scopeSortByParam(Builder $q, ?string $sort): Builder
+    {
+        return match ($sort) {
+            'idAsc' => $q->orderBy('users.id', 'asc'),
+            'idDesc' => $q->orderBy('users.id', 'desc'),
+
+            'name', 'nameAsc' => $q->orderBy('users.name', 'asc')->orderByDesc('users.id'),
+            'nameDesc' => $q->orderBy('users.name', 'desc')->orderByDesc('users.id'),
+
+            'emailAsc' => $q->orderBy('users.email', 'asc')->orderByDesc('users.id'),
+            'emailDesc' => $q->orderBy('users.email', 'desc')->orderByDesc('users.id'),
+
+            'rolesAsc' => $q->withCount('roles')->orderBy('roles_count', 'asc')->orderByDesc('users.id'),
+            'rolesDesc' => $q->withCount('roles')->orderBy('roles_count', 'desc')->orderByDesc('users.id'),
+
+            'permissionsAsc' => $q->withCount('permissions')->orderBy('permissions_count', 'asc')->orderByDesc('users.id'),
+            'permissionsDesc' => $q->withCount('permissions')->orderBy('permissions_count', 'desc')->orderByDesc('users.id'),
+
+            'createdAtAsc' => $q->orderBy('users.created_at', 'asc')->orderByDesc('users.id'),
+            'createdAtDesc' => $q->orderBy('users.created_at', 'desc')->orderByDesc('users.id'),
+
+            'updatedAtAsc' => $q->orderBy('users.updated_at', 'asc')->orderByDesc('users.id'),
+            'updatedAtDesc' => $q->orderBy('users.updated_at', 'desc')->orderByDesc('users.id'),
+
+            default => $q->ordered(),
+        };
+    }
 }

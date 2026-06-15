@@ -188,27 +188,59 @@ class BlogTag extends Model
             ->active();
     }
 
-    /** Поиск по переводимым полям и slug */
+    /** Поиск по словам */
     public function scopeSearch(Builder $query, ?string $term = null, ?string $locale = null): Builder
     {
-        if (!$term) {
+        $term = trim((string) $term);
+
+        if ($term === '') {
             return $query;
         }
 
         $locale = $locale ?: app()->getLocale();
-        $term = trim($term);
 
-        return $query->where(function (Builder $q) use ($term, $locale) {
-            $q->where('slug', 'like', "%{$term}%")
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('name', 'like', "%{$term}%")
-                                ->orWhere('subtitle', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%");
+        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term))
+            ->map(fn ($word) => trim($word))
+            ->filter(fn ($word) => mb_strlen($word) >= 2)
+            ->values();
+
+        if ($words->isEmpty()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($words, $locale) {
+            foreach ($words as $word) {
+                $query->where(function (Builder $query) use ($word, $locale) {
+                    $query
+                        ->where('blog_tags.slug', 'like', "%{$word}%")
+                        ->orWhere('blog_tags.icon', 'like', "%{$word}%")
+                        ->orWhere('blog_tags.views', 'like', "%{$word}%")
+                        ->orWhere('blog_tags.moderation_note', 'like', "%{$word}%")
+
+                        ->orWhereHas('translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('name', 'like', "%{$word}%")
+                                        ->orWhere('subtitle', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%")
+                                        ->orWhere('description', 'like', "%{$word}%")
+                                        ->orWhere('meta_title', 'like', "%{$word}%")
+                                        ->orWhere('meta_keywords', 'like', "%{$word}%")
+                                        ->orWhere('meta_desc', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('owner', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%");
+                        })
+
+                        ->orWhereHas('moderator', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%");
                         });
                 });
+            }
         });
     }
 
@@ -233,37 +265,37 @@ class BlogTag extends Model
         $locale = $locale ?: app()->getLocale();
 
         return match ($sort) {
-            'idAsc' => $query->orderBy('id', 'asc'),
-            'idDesc' => $query->orderBy('id', 'desc'),
+            'idAsc' => $query->orderBy('blog_tags.id', 'asc'),
+            'idDesc' => $query->orderBy('blog_tags.id', 'desc'),
 
-            'sortAsc' => $query->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sortDesc' => $query->orderBy('sort', 'desc')->orderByDesc('id'),
+            'sortAsc' => $query->orderBy('blog_tags.sort', 'asc')->orderByDesc('blog_tags.id'),
+            'sortDesc' => $query->orderBy('blog_tags.sort', 'desc')->orderByDesc('blog_tags.id'),
 
-            'slugAsc' => $query->orderBy('slug', 'asc')->orderByDesc('id'),
-            'slugDesc' => $query->orderBy('slug', 'desc')->orderByDesc('id'),
+            'slugAsc' => $query->orderBy('blog_tags.slug', 'asc')->orderByDesc('blog_tags.id'),
+            'slugDesc' => $query->orderBy('blog_tags.slug', 'desc')->orderByDesc('blog_tags.id'),
 
-            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+            'viewsAsc' => $query->orderBy('blog_tags.views', 'asc')->orderByDesc('blog_tags.id'),
+            'viewsDesc' => $query->orderBy('blog_tags.views', 'desc')->orderByDesc('blog_tags.id'),
 
-            'articlesAsc' => $query->withCount('articles')->orderBy('articles_count', 'asc')->orderByDesc('id'),
-            'articlesDesc' => $query->withCount('articles')->orderBy('articles_count', 'desc')->orderByDesc('id'),
+            'articlesAsc' => $query->withCount('articles')->orderBy('articles_count', 'asc')->orderByDesc('blog_tags.id'),
+            'articlesDesc' => $query->withCount('articles')->orderBy('articles_count', 'desc')->orderByDesc('blog_tags.id'),
 
-            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
-            'activity' => $query->where('activity', true)->orderByDesc('id'),
-            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+            'createdAtAsc', 'dateAsc' => $query->orderBy('blog_tags.created_at', 'asc')->orderByDesc('blog_tags.id'),
+            'createdAtDesc', 'dateDesc' => $query->orderBy('blog_tags.created_at', 'desc')->orderByDesc('blog_tags.id'),
 
-            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
-            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
-            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
-            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
-            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+            'updatedAtAsc' => $query->orderBy('blog_tags.updated_at', 'asc')->orderByDesc('blog_tags.id'),
+            'updatedAtDesc' => $query->orderBy('blog_tags.updated_at', 'desc')->orderByDesc('blog_tags.id'),
 
-            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'activityAsc' => $query->orderBy('blog_tags.activity', 'asc')->orderByDesc('blog_tags.id'),
+            'activityDesc' => $query->orderBy('blog_tags.activity', 'desc')->orderByDesc('blog_tags.id'),
+            'activity' => $query->where('blog_tags.activity', true)->orderByDesc('blog_tags.id'),
+            'inactive' => $query->where('blog_tags.activity', false)->orderByDesc('blog_tags.id'),
 
-            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+            'moderationStatusAsc' => $query->orderBy('blog_tags.moderation_status', 'asc')->orderByDesc('blog_tags.id'),
+            'moderationStatusDesc' => $query->orderBy('blog_tags.moderation_status', 'desc')->orderByDesc('blog_tags.id'),
+            'moderationPending' => $query->where('blog_tags.moderation_status', 0)->orderByDesc('blog_tags.id'),
+            'moderationApproved' => $query->where('blog_tags.moderation_status', 1)->orderByDesc('blog_tags.id'),
+            'moderationRejected' => $query->where('blog_tags.moderation_status', 2)->orderByDesc('blog_tags.id'),
 
             'nameAsc' => $query
                 ->leftJoin('blog_tag_translations as btt_sort', function ($join) use ($locale) {
@@ -280,6 +312,30 @@ class BlogTag extends Model
                         ->where('btt_sort.locale', '=', $locale);
                 })
                 ->orderBy('btt_sort.name', 'desc')
+                ->orderByDesc('blog_tags.id')
+                ->select('blog_tags.*'),
+
+            'ownerNameAsc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_tags.user_id')
+                ->orderBy('owner_sort.name', 'asc')
+                ->orderByDesc('blog_tags.id')
+                ->select('blog_tags.*'),
+
+            'ownerNameDesc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_tags.user_id')
+                ->orderBy('owner_sort.name', 'desc')
+                ->orderByDesc('blog_tags.id')
+                ->select('blog_tags.*'),
+
+            'ownerEmailAsc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_tags.user_id')
+                ->orderBy('owner_sort.email', 'asc')
+                ->orderByDesc('blog_tags.id')
+                ->select('blog_tags.*'),
+
+            'ownerEmailDesc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_tags.user_id')
+                ->orderBy('owner_sort.email', 'desc')
                 ->orderByDesc('blog_tags.id')
                 ->select('blog_tags.*'),
 

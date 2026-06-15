@@ -6,7 +6,9 @@ use App\Http\Controllers\Admin\Blog\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogTag\BlogTagRequest;
 use App\Http\Resources\Admin\Blog\BlogTag\BlogTagResource;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,33 +55,48 @@ class BlogTagController extends BaseBlogAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminBlogTagsPerPage = $settings->int('site_settings.adminBlogTagsPerPage', 6);
-        $adminBlogTagsDefaultSort = $settings->string('site_settings.adminBlogTagsDefaultSort', 'idDesc');
 
-        $sortParam = (string) $request->query('sort', $adminBlogTagsDefaultSort);
+        $perPage = $settings->int('adminBlogTagsPerPage', 6);
+        $defaultSort = $settings->string('adminBlogTagsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string('adminBlogTagsProcessingMode', 'frontend');
+
+        $tagsCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $tagsCount,
+                300
+            );
 
         try {
-            $tags = $this->baseQuery()
-                ->with([
-                    'owner',
-                    'moderator',
-                    'translations',
-                ])
-                ->withCount(['articles'])
-                ->sortByParam($sortParam, $currentLocale)
-                ->get();
+            $tags = $this->getIndexTags(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/Blog/BlogTags/Index', [
-                'tags' => BlogTagResource::collection($tags),
-                'tagsCount' => $this->baseQuery()->count(),
-
-                'adminBlogTagsPerPage' => $adminBlogTagsPerPage,
-                'adminBlogTagsDefaultSort' => $adminBlogTagsDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
 
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminBlogTagsPerPage' => $perPage,
+                'adminBlogTagsDefaultSort' => $defaultSort,
+                'adminBlogTagsProcessingMode' => $processingMode,
+
+                'tags' => BlogTagResource::collection($tags),
+                'tagsCount' => $tagsCount,
+
                 'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки списка blog tags: ' . $e->getMessage(), [
@@ -87,16 +104,21 @@ class BlogTagController extends BaseBlogAdminController
             ]);
 
             return Inertia::render('Admin/Blog/BlogTags/Index', [
-                'tags' => [],
-                'tagsCount' => 0,
-
-                'adminBlogTagsPerPage' => $adminBlogTagsPerPage,
-                'adminBlogTagsDefaultSort' => $adminBlogTagsDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
 
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminBlogTagsPerPage' => $perPage,
+                'adminBlogTagsDefaultSort' => $defaultSort,
+                'adminBlogTagsProcessingMode' => $processingMode,
+
+                'tags' => [],
+                'tagsCount' => 0,
+
                 'sortParam' => $sortParam,
+                'search' => $search,
+
                 'error' => 'Ошибка загрузки тегов.',
             ]);
         }
@@ -299,5 +321,42 @@ class BlogTagController extends BaseBlogAdminController
 
             return back()->with('error', 'Ошибка при массовом удалении тегов.');
         }
+    }
+
+    /** Базовый запрос списка тегов */
+    private function indexTagsQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'owner',
+                'moderator',
+                'translations',
+            ])
+            ->withCount([
+                'articles',
+            ]);
+    }
+
+    /** Список тегов по режиму обработки */
+    private function getIndexTags(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+    ) {
+        $query = $this->indexTagsQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

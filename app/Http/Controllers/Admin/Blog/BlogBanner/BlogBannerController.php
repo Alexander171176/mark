@@ -7,7 +7,9 @@ use App\Http\Requests\Admin\Blog\BlogBanner\BlogBannerRequest;
 use App\Http\Resources\Admin\Blog\BlogBanner\BlogBannerResource;
 use App\Models\Admin\Blog\BlogBanner\BlogBanner;
 use App\Models\Admin\Blog\BlogBanner\BlogBannerImage;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -59,34 +61,47 @@ class BlogBannerController extends BaseBlogAdminController
 
         $settings = app(AdminSettingsService::class);
 
-        $adminBlogBannersPerPage = $settings->int('site_settings.adminBlogBannersPerPage', 6);
-        $adminBlogBannersDefaultSort = $settings->string('site_settings.adminBlogBannersDefaultSort', 'idDesc');
+        $perPage = $settings->int('adminBlogBannersPerPage', 6);
+        $defaultSort = $settings->string('adminBlogBannersDefaultSort', 'idDesc');
 
-        $sortParam = (string) $request->query('sort', $adminBlogBannersDefaultSort);
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string('adminBlogBannersProcessingMode', 'frontend');
+
+        $bannersCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $bannersCount,
+                300
+            );
 
         try {
-            $banners = $this->baseQuery()
-                ->with([
-                    'owner',
-                    'moderator',
-                    'translations',
-                    'images',
-                ])
-                ->withCount(['images'])
-                ->sortByParam($sortParam, $currentLocale)
-                ->get();
+            $banners = $this->getIndexBanners(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/Blog/BlogBanners/Index', [
-                'banners' => BlogBannerResource::collection($banners),
-                'bannersCount' => $this->baseQuery()->count(),
-
-                'adminBlogBannersPerPage' => $adminBlogBannersPerPage,
-                'adminBlogBannersDefaultSort' => $adminBlogBannersDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
 
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminBlogBannersPerPage' => $perPage,
+                'adminBlogBannersDefaultSort' => $defaultSort,
+                'adminBlogBannersProcessingMode' => $processingMode,
+
+                'banners' => BlogBannerResource::collection($banners),
+                'bannersCount' => $bannersCount,
+
                 'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки blog banners: ' . $e->getMessage(), [
@@ -94,16 +109,21 @@ class BlogBannerController extends BaseBlogAdminController
             ]);
 
             return Inertia::render('Admin/Blog/BlogBanners/Index', [
-                'banners' => [],
-                'bannersCount' => 0,
-
-                'adminBlogBannersPerPage' => $adminBlogBannersPerPage,
-                'adminBlogBannersDefaultSort' => $adminBlogBannersDefaultSort,
-
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
 
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminBlogBannersPerPage' => $perPage,
+                'adminBlogBannersDefaultSort' => $defaultSort,
+                'adminBlogBannersProcessingMode' => $processingMode,
+
+                'banners' => [],
+                'bannersCount' => 0,
+
                 'sortParam' => $sortParam,
+                'search' => $search,
+
                 'error' => 'Ошибка загрузки баннеров.',
             ]);
         }
@@ -332,5 +352,43 @@ class BlogBannerController extends BaseBlogAdminController
 
             return back()->with('error', 'Ошибка при массовом удалении баннеров.');
         }
+    }
+
+    /** Базовый запрос списка баннеров */
+    private function indexBannersQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'owner',
+                'moderator',
+                'translations',
+                'images',
+            ])
+            ->withCount([
+                'images',
+            ]);
+    }
+
+    /** Список баннеров по режиму обработки */
+    private function getIndexBanners(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+    ) {
+        $query = $this->indexBannersQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

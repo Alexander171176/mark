@@ -17,8 +17,12 @@ import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
 import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
+import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
+import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
+import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
+import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
 import BulkActionSelect from '@/Components/Admin/Blog/BlogBanner/Select/BulkActionSelect.vue'
 import SortSelect from '@/Components/Admin/Blog/BlogBanner/Sort/SortSelect.vue'
@@ -29,10 +33,12 @@ const { t, locale } = useI18n()
 const toast = useToast()
 const page = usePage()
 
-/** Props от контроллера */
 const props = defineProps({
-    banners: { type: Array, default: () => [] },
+    banners: { type: [Array, Object], default: () => [] },
     bannersCount: { type: Number, default: 0 },
+
+    adminBlogBannersProcessingMode: { type: String, default: 'frontend' },
+    useServerProcessing: { type: Boolean, default: false },
 
     adminBlogBannersPerPage: { type: Number, default: 20 },
     adminBlogBannersDefaultSort: { type: String, default: 'idDesc' },
@@ -41,53 +47,41 @@ const props = defineProps({
     availableLocales: { type: Array, default: () => [] },
 
     sortParam: { type: String, default: '' },
+    search: { type: String, default: '' },
+
     errors: { type: Object, default: () => ({}) },
 })
 
-/** Проверка роли администратора */
 const isAdmin = computed(() => {
     const roles = page.props?.auth?.user?.roles || []
     return roles.some((role) => role?.name === 'admin')
 })
 
-/** Получение текущего перевода баннера */
 const getBannerTranslation = (banner) => banner?.translation || {}
+const getBannerTitle = (banner) => getBannerTranslation(banner)?.title || `ID: ${banner?.id}`
+const getBannerShort = (banner) => getBannerTranslation(banner)?.short || ''
+const getBannerLink = (banner) => getBannerTranslation(banner)?.link || ''
 
-/** Получение названия баннера */
-const getBannerTitle = (banner) => {
-    return getBannerTranslation(banner)?.title || `ID: ${banner?.id}`
-}
-
-/** Короткое описание */
-const getBannerShort = (banner) => {
-    return getBannerTranslation(banner)?.short || ''
-}
-
-/** Ссылка баннера */
-const getBannerLink = (banner) => {
-    return getBannerTranslation(banner)?.link || ''
-}
-
-/** Нормализация строки для поиска/сортировки */
 const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
 
-/** Приведение статуса модерации к числу */
 const moderationNum = (value) => {
     const number = Number(value)
     return Number.isFinite(number) ? number : 0
 }
 
-/** Режим отображения (таблица/карточки) */
+const safeDate = (value) => {
+    const time = new Date(value || 0).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
 const viewMode = ref(localStorage.getItem('admin_view_mode_banners') || 'cards')
 
 watch(viewMode, (value) => {
     localStorage.setItem('admin_view_mode_banners', value)
 })
 
-/** Количество элементов на странице */
 const itemsPerPage = ref(props.adminBlogBannersPerPage || 20)
 
-/** Обновление количества элементов (сохранение в настройках) */
 watch(itemsPerPage, (newVal) => {
     router.put(
         route('admin.settings.updateAdminCountBanners'),
@@ -101,40 +95,65 @@ watch(itemsPerPage, (newVal) => {
     )
 })
 
-/** Текущий параметр сортировки */
 const sortParam = ref(props.sortParam || props.adminBlogBannersDefaultSort || 'idDesc')
 
-/** Обновление сортировки (сохранение в настройках) */
 watch(sortParam, (newVal) => {
+    currentPage.value = 1
+
     router.put(
         route('admin.settings.updateAdminSortBanners'),
         { value: newVal },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.info('Сортировка успешно изменена'),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
+
+            onSuccess: () => {
+                if (props.useServerProcessing) {
+                    router.get(
+                        window.location.pathname,
+                        {
+                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                            sort: newVal || undefined,
+                            page: undefined,
+                        },
+                        {
+                            preserveScroll: true,
+                            preserveState: false,
+                            replace: true,
+                        }
+                    )
+                }
+
+                toast.info('Сортировка успешно изменена')
+            },
+
+            onError: (errors) => {
+                toast.error(errors.value || 'Ошибка обновления сортировки.')
+            },
         }
     )
 })
 
-/** Локальный список баннеров (для реактивных изменений) */
+const bannersList = computed(() => {
+    if (Array.isArray(props.banners)) return props.banners
+    if (Array.isArray(props.banners?.data)) return props.banners.data
+    return []
+})
+
 const localBanners = ref([])
 
 watch(
-    () => props.banners,
+    bannersList,
     (newVal) => {
         localBanners.value = JSON.parse(JSON.stringify(newVal || []))
     },
     { immediate: true, deep: true }
 )
 
-/** УДАЛЕНИЕ */
 const showConfirmDeleteModal = ref(false)
 const bannerToDeleteId = ref(null)
 const bannerToDeleteTitle = ref('')
 
-/** Открыть модалку удаления */
 const confirmDelete = (bannerOrId, title = null) => {
     if (typeof bannerOrId === 'object') {
         bannerToDeleteId.value = bannerOrId.id
@@ -147,14 +166,12 @@ const confirmDelete = (bannerOrId, title = null) => {
     showConfirmDeleteModal.value = true
 }
 
-/** Закрыть модалку */
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     bannerToDeleteId.value = null
     bannerToDeleteTitle.value = ''
 }
 
-/** Удаление баннера */
 const deleteBanner = () => {
     if (bannerToDeleteId.value === null) return
 
@@ -168,7 +185,7 @@ const deleteBanner = () => {
             toast.success(`Баннер "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
         },
         onError: (errors) => {
-            const errorKey = Object.keys(errors)[0]
+            const errorKey = Object.keys(errors || {})[0]
             const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
             toast.error(`${errorMsg} (Баннер: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
@@ -176,7 +193,6 @@ const deleteBanner = () => {
     })
 }
 
-/** Локальное обновление баннера */
 const patchLocalBanner = (bannerId, callback) => {
     const index = localBanners.value.findIndex((banner) => banner.id === bannerId)
 
@@ -185,7 +201,6 @@ const patchLocalBanner = (bannerId, callback) => {
     }
 }
 
-/** Переключение активности */
 const toggleActivity = (banner) => {
     const newActivity = !banner.activity
     const title = getBannerTitle(banner)
@@ -211,7 +226,6 @@ const toggleActivity = (banner) => {
     )
 }
 
-/** Переключение left */
 const toggleLeft = (banner) => {
     const newLeft = !banner.left
     const title = getBannerTitle(banner)
@@ -236,7 +250,6 @@ const toggleLeft = (banner) => {
     )
 }
 
-/** Переключение main */
 const toggleMain = (banner) => {
     const newMain = !banner.main
     const title = getBannerTitle(banner)
@@ -261,7 +274,6 @@ const toggleMain = (banner) => {
     )
 }
 
-/** Переключение right */
 const toggleRight = (banner) => {
     const newRight = !banner.right
     const title = getBannerTitle(banner)
@@ -286,178 +298,73 @@ const toggleRight = (banner) => {
     )
 }
 
-/** ПОИСК И СОРТИРОВКА */
-const searchQuery = ref('')
+const searchQuery = ref(props.search || '')
 const currentPage = ref(1)
 
-/** Сортировка баннеров по выбранному параметру */
 const sortBanners = (banners) => {
     const list = (banners || []).slice()
 
-    if (sortParam.value === 'ownerNameAsc') {
-        return list.sort((a, b) =>
-            normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
+    if (sortParam.value === 'activity') return list.filter((banner) => !!banner.activity)
+    if (sortParam.value === 'inactive') return list.filter((banner) => !banner.activity)
+
+    if (sortParam.value === 'left') return list.filter((banner) => !!banner.left)
+    if (sortParam.value === 'noLeft') return list.filter((banner) => !banner.left)
+
+    if (sortParam.value === 'main') return list.filter((banner) => !!banner.main)
+    if (sortParam.value === 'noMain') return list.filter((banner) => !banner.main)
+
+    if (sortParam.value === 'right') return list.filter((banner) => !!banner.right)
+    if (sortParam.value === 'noRight') return list.filter((banner) => !banner.right)
+
+    if (sortParam.value === 'moderationPending') return list.filter((banner) => moderationNum(banner?.moderation_status) === 0)
+    if (sortParam.value === 'moderationApproved') return list.filter((banner) => moderationNum(banner?.moderation_status) === 1)
+    if (sortParam.value === 'moderationRejected') return list.filter((banner) => moderationNum(banner?.moderation_status) === 2)
+
+    const sortMap = {
+        idAsc: (a, b) => (a.id ?? 0) - (b.id ?? 0),
+        idDesc: (a, b) => (b.id ?? 0) - (a.id ?? 0),
+
+        sortAsc: (a, b) => (a.sort ?? 0) - (b.sort ?? 0),
+        sortDesc: (a, b) => (b.sort ?? 0) - (a.sort ?? 0),
+
+        ownerNameAsc: (a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value),
+        ownerNameDesc: (a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value),
+        ownerEmailAsc: (a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value),
+        ownerEmailDesc: (a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value),
+
+        titleAsc: (a, b) => normalize(getBannerTitle(a)).localeCompare(normalize(getBannerTitle(b)), locale.value),
+        titleDesc: (a, b) => normalize(getBannerTitle(b)).localeCompare(normalize(getBannerTitle(a)), locale.value),
+
+        imagesAsc: (a, b) => (a.images_count ?? 0) - (b.images_count ?? 0),
+        imagesDesc: (a, b) => (b.images_count ?? 0) - (a.images_count ?? 0),
+
+        activityAsc: (a, b) => Number(a.activity) - Number(b.activity),
+        activityDesc: (a, b) => Number(b.activity) - Number(a.activity),
+
+        leftAsc: (a, b) => Number(a.left) - Number(b.left),
+        leftDesc: (a, b) => Number(b.left) - Number(a.left),
+
+        mainAsc: (a, b) => Number(a.main) - Number(b.main),
+        mainDesc: (a, b) => Number(b.main) - Number(a.main),
+
+        rightAsc: (a, b) => Number(a.right) - Number(b.right),
+        rightDesc: (a, b) => Number(b.right) - Number(a.right),
+
+        createdAtAsc: (a, b) => safeDate(a.created_at) - safeDate(b.created_at),
+        createdAtDesc: (a, b) => safeDate(b.created_at) - safeDate(a.created_at),
+
+        updatedAtAsc: (a, b) => safeDate(a.updated_at) - safeDate(b.updated_at),
+        updatedAtDesc: (a, b) => safeDate(b.updated_at) - safeDate(a.updated_at),
+
+        moderationStatusAsc: (a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status),
+        moderationStatusDesc: (a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status),
     }
 
-    if (sortParam.value === 'ownerNameDesc') {
-        return list.sort((a, b) =>
-            normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
-    }
-
-    if (sortParam.value === 'ownerEmailAsc') {
-        return list.sort((a, b) =>
-            normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
-    }
-
-    if (sortParam.value === 'ownerEmailDesc') {
-        return list.sort((a, b) =>
-            normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
-    }
-
-    if (sortParam.value === 'idAsc') {
-        return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    }
-
-    if (sortParam.value === 'idDesc') {
-        return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-    }
-
-    if (sortParam.value === 'sortAsc') {
-        return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    }
-
-    if (sortParam.value === 'sortDesc') {
-        return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
-    }
-
-    if (sortParam.value === 'titleAsc') {
-        return list.sort((a, b) =>
-            normalize(getBannerTitle(a)).localeCompare(normalize(getBannerTitle(b)), locale.value))
-    }
-
-    if (sortParam.value === 'titleDesc') {
-        return list.sort((a, b) =>
-            normalize(getBannerTitle(b)).localeCompare(normalize(getBannerTitle(a)), locale.value))
-    }
-
-    if (sortParam.value === 'activity') {
-        return list.filter((banner) => !!banner.activity)
-    }
-
-    if (sortParam.value === 'inactive') {
-        return list.filter((banner) => !banner.activity)
-    }
-
-    if (sortParam.value === 'activityDesc') {
-        return list.sort((a, b) => Number(b.activity) - Number(a.activity))
-    }
-
-    if (sortParam.value === 'activityAsc') {
-        return list.sort((a, b) => Number(a.activity) - Number(b.activity))
-    }
-
-    if (sortParam.value === 'left') {
-        return list.filter((banner) => !!banner.left)
-    }
-
-    if (sortParam.value === 'noLeft') {
-        return list.filter((banner) => !banner.left)
-    }
-
-    if (sortParam.value === 'leftDesc') {
-        return list.sort((a, b) => Number(b.left) - Number(a.left))
-    }
-
-    if (sortParam.value === 'leftAsc') {
-        return list.sort((a, b) => Number(a.left) - Number(b.left))
-    }
-
-    if (sortParam.value === 'main') {
-        return list.filter((banner) => !!banner.main)
-    }
-
-    if (sortParam.value === 'noMain') {
-        return list.filter((banner) => !banner.main)
-    }
-
-    if (sortParam.value === 'mainDesc') {
-        return list.sort((a, b) => Number(b.main) - Number(a.main))
-    }
-
-    if (sortParam.value === 'mainAsc') {
-        return list.sort((a, b) => Number(a.main) - Number(b.main))
-    }
-
-    if (sortParam.value === 'right') {
-        return list.filter((banner) => !!banner.right)
-    }
-
-    if (sortParam.value === 'noRight') {
-        return list.filter((banner) => !banner.right)
-    }
-
-    if (sortParam.value === 'rightDesc') {
-        return list.sort((a, b) => Number(b.right) - Number(a.right))
-    }
-
-    if (sortParam.value === 'rightAsc') {
-        return list.sort((a, b) => Number(a.right) - Number(b.right))
-    }
-
-    if (sortParam.value === 'imagesDesc') {
-        return list.sort((a, b) => (b.images_count ?? 0) - (a.images_count ?? 0))
-    }
-
-    if (sortParam.value === 'imagesAsc') {
-        return list.sort((a, b) => (a.images_count ?? 0) - (b.images_count ?? 0))
-    }
-
-    if (sortParam.value === 'moderationPending') {
-        return list.filter((banner) => moderationNum(banner?.moderation_status) === 0)
-    }
-
-    if (sortParam.value === 'moderationApproved') {
-        return list.filter((banner) => moderationNum(banner?.moderation_status) === 1)
-    }
-
-    if (sortParam.value === 'moderationRejected') {
-        return list.filter((banner) => moderationNum(banner?.moderation_status) === 2)
-    }
-
-    if (sortParam.value === 'moderationStatusAsc') {
-        return list.sort(
-            (a, b) =>
-                moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status)
-        )
-    }
-
-    if (sortParam.value === 'moderationStatusDesc') {
-        return list.sort(
-            (a, b) =>
-                moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status)
-        )
-    }
-
-    if (sortParam.value === 'createdAtDesc') {
-        return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-    }
-
-    if (sortParam.value === 'createdAtAsc') {
-        return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
-    }
-
-    if (sortParam.value === 'updatedAtDesc') {
-        return list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
-    }
-
-    if (sortParam.value === 'updatedAtAsc') {
-        return list.sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
-    }
-
-    return list
+    return sortMap[sortParam.value]
+        ? list.sort(sortMap[sortParam.value])
+        : list
 }
 
-/** Фильтрация + сортировка */
 const filteredBanners = computed(() => {
     let filtered = localBanners.value || []
     const query = normalize(searchQuery.value)
@@ -467,25 +374,25 @@ const filteredBanners = computed(() => {
     }
 
     filtered = filtered.filter((banner) => {
-        const title = normalize(getBannerTitle(banner))
-        const short = normalize(getBannerShort(banner))
-        const link = normalize(getBannerLink(banner))
-        const comment = normalize(banner?.comment)
-        const ownerName = normalize(banner?.owner?.name)
-        const ownerEmail = normalize(banner?.owner?.email)
+        const values = [
+            banner?.id,
+            banner?.comment,
+            banner?.moderation_note,
+            getBannerTitle(banner),
+            getBannerShort(banner),
+            getBannerLink(banner),
+            banner?.owner?.name,
+            banner?.owner?.email,
+            banner?.moderator?.name,
+            banner?.moderator?.email,
+        ]
 
-        return title.includes(query)
-            || short.includes(query)
-            || link.includes(query)
-            || comment.includes(query)
-            || ownerName.includes(query)
-            || ownerEmail.includes(query)
+        return values.some((value) => normalize(value).includes(query))
     })
 
     return sortBanners(filtered)
 })
 
-/** Пагинация */
 const paginatedBanners = computed(() => {
     const perPage = Number(itemsPerPage.value || 10)
     const start = (currentPage.value - 1) * perPage
@@ -493,17 +400,21 @@ const paginatedBanners = computed(() => {
     return filteredBanners.value.slice(start, start + perPage)
 })
 
+const displayedBanners = computed(() => {
+    return props.useServerProcessing
+        ? bannersList.value
+        : paginatedBanners.value
+})
+
 watch([itemsPerPage, searchQuery], () => {
     currentPage.value = 1
 })
 
-/** BULK */
 const selectedBanners = ref([])
 
-/** Выбрать / снять выбор всех */
 const toggleAll = (payload) => {
     const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? paginatedBanners.value.map((banner) => banner.id)
+    const ids = payload?.ids ?? displayedBanners.value.map((banner) => banner.id)
 
     if (checked) {
         selectedBanners.value = [...new Set([...selectedBanners.value, ...ids])]
@@ -512,7 +423,6 @@ const toggleAll = (payload) => {
     }
 }
 
-/** Выбор одного баннера */
 const toggleSelectBanner = (bannerId) => {
     const index = selectedBanners.value.indexOf(bannerId)
 
@@ -523,7 +433,6 @@ const toggleSelectBanner = (bannerId) => {
     }
 }
 
-/** Массовое переключение активности */
 const bulkToggleActivity = (newActivity) => {
     if (!selectedBanners.value.length) {
         toast.warning('Выберите баннеры для активации/деактивации')
@@ -534,20 +443,15 @@ const bulkToggleActivity = (newActivity) => {
 
     router.put(
         route('admin.actions.blogBanners.bulkUpdateActivity'),
-        {
-            ids: idsToUpdate,
-            activity: newActivity,
-        },
+        { ids: idsToUpdate, activity: newActivity },
         {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => {
                 localBanners.value = localBanners.value.map((banner) => {
-                    if (idsToUpdate.includes(banner.id)) {
-                        return { ...banner, activity: newActivity }
-                    }
-
-                    return banner
+                    return idsToUpdate.includes(banner.id)
+                        ? { ...banner, activity: newActivity }
+                        : banner
                 })
 
                 selectedBanners.value = []
@@ -561,7 +465,6 @@ const bulkToggleActivity = (newActivity) => {
     )
 }
 
-/** Выбор инпутов для маасовых действий */
 const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
     if (!selectedBanners.value.length) {
         toast.warning('Выберите баннеры для массового действия')
@@ -572,20 +475,15 @@ const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
 
     router.put(
         route(routeName),
-        {
-            ids: idsToUpdate,
-            [field]: newValue,
-        },
+        { ids: idsToUpdate, [field]: newValue },
         {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => {
                 localBanners.value = localBanners.value.map((banner) => {
-                    if (idsToUpdate.includes(banner.id)) {
-                        return { ...banner, [field]: newValue }
-                    }
-
-                    return banner
+                    return idsToUpdate.includes(banner.id)
+                        ? { ...banner, [field]: newValue }
+                        : banner
                 })
 
                 selectedBanners.value = []
@@ -599,7 +497,6 @@ const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
     )
 }
 
-/** Массовое удаление */
 const bulkDelete = () => {
     if (!selectedBanners.value.length) {
         toast.warning('Выберите хотя бы один баннер для удаления.')
@@ -617,13 +514,12 @@ const bulkDelete = () => {
             toast.success('Массовое удаление баннеров успешно завершено.')
         },
         onError: (errors) => {
-            const errorKey = Object.keys(errors)[0]
+            const errorKey = Object.keys(errors || {})[0]
             toast.error(errors[errorKey] || 'Произошла ошибка при удалении баннеров.')
         },
     })
 }
 
-/** Обработчик bulk действий */
 const handleBulkAction = (event) => {
     const action = event.target.value
 
@@ -654,16 +550,12 @@ const handleBulkAction = (event) => {
     event.target.value = ''
 }
 
-/** Модерация баннера */
 const approveBanner = (banner, status = 1, note = '') => {
     if (!banner?.id) return
 
     router.put(
         route('admin.actions.blogBanners.approve', { blogBanner: banner.id }),
-        {
-            moderation_status: status,
-            moderation_note: note,
-        },
+        { moderation_status: status, moderation_note: note },
         {
             preserveScroll: true,
             preserveState: true,
@@ -681,7 +573,6 @@ const approveBanner = (banner, status = 1, note = '') => {
     )
 }
 
-/** Сохранение сортировки drag&drop */
 const handleSortOrderUpdate = (newOrderIds) => {
     const items = newOrderIds.map((id, index) => ({
         id,
@@ -713,30 +604,34 @@ const handleSortOrderUpdate = (newOrderIds) => {
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
-            <div
-                class="p-4 bg-slate-50 dark:bg-slate-700
-                       border border-blue-400 dark:border-blue-200
-                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
-                       bg-opacity-95 dark:bg-opacity-95"
-            >
-                <div class="sm:flex sm:justify-between sm:items-center mb-3">
+            <div class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200 overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400 bg-opacity-95 dark:bg-opacity-95">
+                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.blogBanners.create')">
                         {{ t('addBanner') }}
                     </DefaultButton>
+
+                    <ProcessingModeSwitcher
+                        setting-key="adminBlogBannersProcessingMode"
+                        :mode="adminBlogBannersProcessingMode"
+                        :use-server-processing="useServerProcessing"
+                        :total="bannersCount"
+                    />
                 </div>
 
-                <SearchInput
-                    v-if="bannersCount"
-                    v-model="searchQuery"
-                />
+                <SearchInput v-if="bannersCount && !useServerProcessing" v-model="searchQuery" />
+                <ServerSearchInput v-if="bannersCount && useServerProcessing" v-model="searchQuery" />
 
-                <div
-                    v-if="bannersCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
-                >
+                <div v-if="bannersCount" class="flex justify-between items-center flex-col md:flex-row my-3">
                     <ItemsPerPageSelect
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <ServerItemsPerPageSelect
+                        v-else
+                        :items-per-page="itemsPerPage"
+                        update-route="admin.settings.updateAdminCountBanners"
                     />
 
                     <SortSelect
@@ -745,36 +640,32 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     />
                 </div>
 
-                <div
-                    v-if="bannersCount"
-                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
-                >
+                <div v-if="bannersCount" class="flex flex-col lg:flex-row items-center justify-between gap-3">
                     <CountTable>{{ bannersCount }}</CountTable>
 
-                    <BulkActionSelect
-                        v-if="bannersCount"
-                        @change="handleBulkAction"
-                    />
+                    <BulkActionSelect v-if="bannersCount" @change="handleBulkAction" />
 
                     <ToggleViewButton v-model:viewMode="viewMode" />
                 </div>
 
-                <div
-                    v-if="bannersCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
-                >
+                <div v-if="bannersCount" class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredBanners.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="banners"
                     />
                 </div>
 
                 <BannerTable
                     v-if="viewMode === 'table'"
-                    :banners="paginatedBanners"
+                    :banners="displayedBanners"
                     :selected-banners="selectedBanners"
                     :is-admin="isAdmin"
                     @toggle-left="toggleLeft"
@@ -790,7 +681,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
                 <BannerCardGrid
                     v-else
-                    :banners="paginatedBanners"
+                    :banners="displayedBanners"
                     :selected-banners="selectedBanners"
                     :is-admin="isAdmin"
                     @toggle-left="toggleLeft"
@@ -804,16 +695,18 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     @approve="approveBanner"
                 />
 
-                <div
-                    v-if="bannersCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
-                >
+                <div v-if="bannersCount" class="flex justify-center items-center flex-col md:flex-row mt-3">
                     <Pagination
+                        v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
                         :total-items="filteredBanners.length"
                         @update:currentPage="currentPage = $event"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                    />
+
+                    <AdminServerPagination
+                        v-else
+                        :pagination="banners"
                     />
                 </div>
             </div>

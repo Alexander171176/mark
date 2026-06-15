@@ -1,7 +1,6 @@
 <script setup>
-import { defineEmits, defineProps, ref, watch } from 'vue'
+import { defineEmits, defineProps } from 'vue'
 import { useI18n } from 'vue-i18n'
-import draggable from 'vuedraggable'
 
 import ModerationButton from '@/Components/Admin/UI/Buttons/ModerationButton.vue'
 import ActivityToggle from '@/Components/Admin/UI/Buttons/ActivityToggle.vue'
@@ -20,22 +19,11 @@ const props = defineProps({
 const emits = defineEmits([
     'toggle-activity',
     'delete',
-    'update-sort-order',
     'clone',
     'toggle-select',
     'toggle-all',
     'approve'
 ])
-
-const localRubrics = ref([])
-
-watch(
-    () => props.rubrics,
-    (newVal) => {
-        localRubrics.value = JSON.parse(JSON.stringify(newVal || []))
-    },
-    { immediate: true, deep: true }
-)
 
 const getTranslation = (rubric) => rubric?.translation || {}
 
@@ -47,14 +35,10 @@ const getShort = (rubric) => {
     return getTranslation(rubric)?.short || ''
 }
 
-const handleDragEnd = () => {
-    emits('update-sort-order', localRubrics.value.map(rubric => rubric.id))
-}
-
 const toggleAll = (event) => {
     emits('toggle-all', {
-        ids: localRubrics.value.map(r => r.id),
-        checked: event.target.checked
+        ids: props.rubrics.map(r => r.id),
+        checked: event.target.checked,
     })
 }
 
@@ -147,7 +131,7 @@ const moderationBadge = (status) => {
             </div>
 
             <label
-                v-if="localRubrics.length"
+                v-if="props.rubrics.length"
                 class="flex items-center text-xs text-slate-600 dark:text-slate-200
                        cursor-pointer"
             >
@@ -156,16 +140,16 @@ const moderationBadge = (status) => {
             </label>
         </div>
 
-        <div v-if="localRubrics.length" class="p-3">
-            <draggable
-                tag="div"
-                v-model="localRubrics"
-                item-key="id"
-                @end="handleDragEnd"
-                handle=".drag-handle"
-                class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            >
-                <template #item="{ element: rubric }">
+        <div v-if="rubrics.length" class="p-3">
+            <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div
+                    v-for="rubric in rubrics"
+                    :key="rubric.id"
+                    class="relative flex flex-col h-full rounded-md
+                           border border-slate-400 dark:border-slate-500
+                           bg-slate-50/70 dark:bg-slate-800/80
+                           shadow-sm hover:shadow-md transition-shadow duration-150"
+                >
                     <div
                         class="relative flex flex-col h-full rounded-md
                                border border-slate-400 dark:border-slate-500
@@ -177,18 +161,6 @@ const moderationBadge = (status) => {
                                    border-b border-dashed border-slate-400 dark:border-slate-500"
                         >
                             <div class="flex items-center space-x-2">
-                                <button
-                                    type="button"
-                                    class="drag-handle cursor-move text-slate-400
-                                           hover:text-slate-700 dark:hover:text-slate-100"
-                                    :title="t('dragDrop')"
-                                >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
-                                    </svg>
-                                </button>
-
                                 <div
                                     class="text-[10px] font-semibold px-1.5 py-0.5 rounded-sm
                                            border border-gray-400 bg-slate-200 dark:bg-slate-700
@@ -371,8 +343,8 @@ const moderationBadge = (status) => {
                             </div>
                         </footer>
                     </div>
-                </template>
-            </draggable>
+                </div>
+            </div>
         </div>
 
         <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">

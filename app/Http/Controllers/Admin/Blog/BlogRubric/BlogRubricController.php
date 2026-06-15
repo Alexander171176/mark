@@ -8,7 +8,9 @@ use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricSharedResource;
 use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\Blog\BlogRubric\BlogRubricImage;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -101,49 +103,56 @@ class BlogRubricController extends BaseBlogAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
-        $adminBlogRubricsPerPage = $settings->int('site_settings.adminBlogRubricsPerPage', 6);
-        $adminBlogRubricsDefaultSort = $settings->string('site_settings.adminBlogRubricsDefaultSort', 'idDesc');
 
-        $sortParam = (string) $request->query('sort', $adminBlogRubricsDefaultSort);
+        $perPage = $settings->int('adminBlogRubricsPerPage', 6);
+        $defaultSort = $settings->string('adminBlogRubricsDefaultSort', 'idDesc');
+
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+
+        $processingMode = $settings->string(
+            'adminBlogRubricsProcessingMode',
+            'frontend'
+        );
+
+        $rubricsCount = $this->baseQuery()->count();
+
+        $useServerProcessing = app(ProcessingModeService::class)
+            ->shouldUseServer(
+                $processingMode,
+                $rubricsCount,
+                300
+            );
 
         try {
-            $rubricsTree = $this->baseQuery()
-                ->roots()
-                ->with([
-                    'owner',
-                    'moderator',
-                    'images',
-                    'translations',
-                    'childrenRecursive',
-                ])
-                ->withCount(['articles', 'images'])
-                ->ordered()
-                ->get();
+            $rubricsTree = $this->getIndexRubricsTree();
 
             $this->prepareTreeChildren($rubricsTree);
 
-            $rubricsFlat = $this->baseQuery()
-                ->with([
-                    'owner',
-                    'moderator',
-                    'images',
-                    'translations',
-                ])
-                ->withCount(['articles', 'images'])
-                ->sortByParam($sortParam, $currentLocale)
-                ->get();
+            $rubricsFlat = $this->getIndexRubrics(
+                locale: $currentLocale,
+                useServerProcessing: $useServerProcessing,
+                perPage: $perPage,
+                sort: $sortParam,
+                search: $search,
+            );
 
             return Inertia::render('Admin/Blog/BlogRubrics/Index', [
                 'rubricsTree' => BlogRubricResource::collection($rubricsTree),
                 'rubrics' => BlogRubricResource::collection($rubricsFlat),
-                'rubricsCount' => $this->baseQuery()->count(),
+                'rubricsCount' => $rubricsCount,
 
-                'adminBlogRubricsPerPage' => $adminBlogRubricsPerPage,
-                'adminBlogRubricsDefaultSort' => $adminBlogRubricsDefaultSort,
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminBlogRubricsPerPage' => $perPage,
+                'adminBlogRubricsDefaultSort' => $defaultSort,
+                'adminBlogRubricsProcessingMode' => $processingMode,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
                 'sortParam' => $sortParam,
+                'search' => $search,
             ]);
         } catch (Throwable $e) {
             Log::error('Ошибка загрузки списка blog rubrics: ' . $e->getMessage(), [
@@ -155,12 +164,18 @@ class BlogRubricController extends BaseBlogAdminController
                 'rubrics' => [],
                 'rubricsCount' => 0,
 
-                'adminBlogRubricsPerPage' => $adminBlogRubricsPerPage,
-                'adminBlogRubricsDefaultSort' => $adminBlogRubricsDefaultSort,
+                'useServerProcessing' => $useServerProcessing,
+
+                'adminBlogRubricsPerPage' => $perPage,
+                'adminBlogRubricsDefaultSort' => $defaultSort,
+                'adminBlogRubricsProcessingMode' => $processingMode,
 
                 'currentLocale' => $currentLocale,
                 'availableLocales' => $this->availableLocales(),
+
                 'sortParam' => $sortParam,
+                'search' => $search,
+
                 'error' => 'Ошибка загрузки рубрик.',
             ]);
         }
@@ -556,5 +571,65 @@ class BlogRubricController extends BaseBlogAdminController
 
             return back()->with('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'Ошибка при клонировании рубрики.');
         }
+    }
+
+    /** Дерево рубрик для drag-and-drop */
+    private function getIndexRubricsTree()
+    {
+        return $this->baseQuery()
+            ->roots()
+            ->with([
+                'owner',
+                'moderator',
+                'images',
+                'translations',
+                'childrenRecursive',
+            ])
+            ->withCount([
+                'articles',
+                'images',
+            ])
+            ->ordered()
+            ->get();
+    }
+
+    /** Базовый запрос плоского списка рубрик */
+    private function indexRubricsQuery(): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'owner',
+                'moderator',
+                'parent.translations',
+                'images',
+                'translations',
+            ])
+            ->withCount([
+                'articles',
+                'images',
+            ]);
+    }
+
+    /** Плоский список рубрик по режиму обработки */
+    private function getIndexRubrics(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = '',
+    ) {
+        $query = $this->indexRubricsQuery();
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 }

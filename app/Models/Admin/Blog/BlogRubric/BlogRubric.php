@@ -235,85 +235,122 @@ class BlogRubric extends Model
             ->ordered();
     }
 
-    /**
-     * Поиск по переводимым полям и url
-     */
+    /** Поиск по словам */
     public function scopeSearch(Builder $query, ?string $term, ?string $locale = null): Builder
     {
-        if (!$term) {
+        $term = trim((string) $term);
+
+        if ($term === '') {
             return $query;
         }
 
         $locale = $locale ?: app()->getLocale();
 
-        return $query->where(function (Builder $q) use ($term, $locale) {
-            $q->where('url', 'like', "%{$term}%")
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
-                                ->orWhere('subtitle', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%");
+        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term))
+            ->map(fn ($word) => trim($word))
+            ->filter(fn ($word) => mb_strlen($word) >= 2)
+            ->values();
+
+        if ($words->isEmpty()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($words, $locale) {
+            foreach ($words as $word) {
+                $query->where(function (Builder $query) use ($word, $locale) {
+                    $query
+                        ->where('blog_rubrics.url', 'like', "%{$word}%")
+                        ->orWhere('blog_rubrics.icon', 'like', "%{$word}%")
+                        ->orWhere('blog_rubrics.views', 'like', "%{$word}%")
+                        ->orWhere('blog_rubrics.moderation_note', 'like', "%{$word}%")
+
+                        ->orWhereHas('translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('subtitle', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%")
+                                        ->orWhere('description', 'like', "%{$word}%")
+                                        ->orWhere('meta_title', 'like', "%{$word}%")
+                                        ->orWhere('meta_keywords', 'like', "%{$word}%")
+                                        ->orWhere('meta_desc', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('parent.translations', function (Builder $qq) use ($word, $locale) {
+                            $qq->where('locale', $locale)
+                                ->where(function (Builder $sub) use ($word) {
+                                    $sub->where('title', 'like', "%{$word}%")
+                                        ->orWhere('subtitle', 'like', "%{$word}%")
+                                        ->orWhere('short', 'like', "%{$word}%");
+                                });
+                        })
+
+                        ->orWhereHas('owner', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%");
+                        })
+
+                        ->orWhereHas('moderator', function (Builder $qq) use ($word) {
+                            $qq->where('name', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%");
                         });
                 });
+            }
         });
     }
 
-    /**
-     * Сортировка по параметру
-     * По title сортируем через translations текущей локали
-     */
+    /** Сортировка по параметру */
     public function scopeSortByParam(Builder $query, ?string $sort, ?string $locale = null): Builder
     {
         $locale = $locale ?: app()->getLocale();
 
         return match ($sort) {
-            'idAsc' => $query->orderBy('id', 'asc'),
-            'idDesc' => $query->orderBy('id', 'desc'),
+            'idAsc' => $query->orderBy('blog_rubrics.id', 'asc'),
+            'idDesc' => $query->orderBy('blog_rubrics.id', 'desc'),
 
-            'sortAsc' => $query->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sortDesc' => $query->orderBy('sort', 'desc')->orderByDesc('id'),
+            'sortAsc' => $query->orderBy('blog_rubrics.sort', 'asc')->orderByDesc('blog_rubrics.id'),
+            'sortDesc' => $query->orderBy('blog_rubrics.sort', 'desc')->orderByDesc('blog_rubrics.id'),
 
-            'parentAsc' => $query->orderBy('parent_id', 'asc')->orderByDesc('id'),
-            'parentDesc' => $query->orderBy('parent_id', 'desc')->orderByDesc('id'),
+            'levelAsc' => $query->orderBy('blog_rubrics.level', 'asc')->orderByDesc('blog_rubrics.id'),
+            'levelDesc' => $query->orderBy('blog_rubrics.level', 'desc')->orderByDesc('blog_rubrics.id'),
 
-            'levelAsc' => $query->orderBy('level', 'asc')->orderByDesc('id'),
-            'levelDesc' => $query->orderBy('level', 'desc')->orderByDesc('id'),
+            'parentAsc' => $query->orderBy('blog_rubrics.parent_id', 'asc')->orderByDesc('blog_rubrics.id'),
+            'parentDesc' => $query->orderBy('blog_rubrics.parent_id', 'desc')->orderByDesc('blog_rubrics.id'),
 
-            'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
-            'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
+            'urlAsc' => $query->orderBy('blog_rubrics.url', 'asc')->orderByDesc('blog_rubrics.id'),
+            'urlDesc' => $query->orderBy('blog_rubrics.url', 'desc')->orderByDesc('blog_rubrics.id'),
 
-            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+            'viewsAsc' => $query->orderBy('blog_rubrics.views', 'asc')->orderByDesc('blog_rubrics.id'),
+            'viewsDesc' => $query->orderBy('blog_rubrics.views', 'desc')->orderByDesc('blog_rubrics.id'),
 
-            'articlesAsc' => $query->withCount('articles')->orderBy('articles_count', 'asc')->orderByDesc('id'),
-            'articlesDesc' => $query->withCount('articles')->orderBy('articles_count', 'desc')->orderByDesc('id'),
+            'activityAsc' => $query->orderBy('blog_rubrics.activity', 'asc')->orderByDesc('blog_rubrics.id'),
+            'activityDesc' => $query->orderBy('blog_rubrics.activity', 'desc')->orderByDesc('blog_rubrics.id'),
+            'activity' => $query->where('blog_rubrics.activity', true)->orderByDesc('blog_rubrics.id'),
+            'inactive' => $query->where('blog_rubrics.activity', false)->orderByDesc('blog_rubrics.id'),
 
-            'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
-            'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+            'inMenuAsc' => $query->orderBy('blog_rubrics.in_menu', 'asc')->orderByDesc('blog_rubrics.id'),
+            'inMenuDesc' => $query->orderBy('blog_rubrics.in_menu', 'desc')->orderByDesc('blog_rubrics.id'),
+            'inMenu' => $query->where('blog_rubrics.in_menu', true)->orderByDesc('blog_rubrics.id'),
+            'notInMenu' => $query->where('blog_rubrics.in_menu', false)->orderByDesc('blog_rubrics.id'),
 
-            'inMenuAsc' => $query->orderBy('in_menu', 'asc')->orderByDesc('id'),
-            'inMenuDesc' => $query->orderBy('in_menu', 'desc')->orderByDesc('id'),
-            'inMenu' => $query->where('in_menu', true)->orderByDesc('id'),
-            'notInMenu' => $query->where('in_menu', false)->orderByDesc('id'),
+            'articlesAsc' => $query->withCount('articles')->orderBy('articles_count', 'asc')->orderByDesc('blog_rubrics.id'),
+            'articlesDesc' => $query->withCount('articles')->orderBy('articles_count', 'desc')->orderByDesc('blog_rubrics.id'),
 
-            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
-            'activity' => $query->where('activity', true)->orderByDesc('id'),
-            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+            'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('blog_rubrics.id'),
+            'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('blog_rubrics.id'),
 
-            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
-            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
-            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
-            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
-            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+            'moderationStatusAsc' => $query->orderBy('blog_rubrics.moderation_status', 'asc')->orderByDesc('blog_rubrics.id'),
+            'moderationStatusDesc' => $query->orderBy('blog_rubrics.moderation_status', 'desc')->orderByDesc('blog_rubrics.id'),
+            'moderationPending' => $query->where('blog_rubrics.moderation_status', 0)->orderByDesc('blog_rubrics.id'),
+            'moderationApproved' => $query->where('blog_rubrics.moderation_status', 1)->orderByDesc('blog_rubrics.id'),
+            'moderationRejected' => $query->where('blog_rubrics.moderation_status', 2)->orderByDesc('blog_rubrics.id'),
 
-            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'createdAtAsc' => $query->orderBy('blog_rubrics.created_at', 'asc')->orderByDesc('blog_rubrics.id'),
+            'createdAtDesc' => $query->orderBy('blog_rubrics.created_at', 'desc')->orderByDesc('blog_rubrics.id'),
 
-            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+            'updatedAtAsc' => $query->orderBy('blog_rubrics.updated_at', 'asc')->orderByDesc('blog_rubrics.id'),
+            'updatedAtDesc' => $query->orderBy('blog_rubrics.updated_at', 'desc')->orderByDesc('blog_rubrics.id'),
 
             'titleAsc' => $query
                 ->leftJoin('blog_rubric_translations as brt_sort', function ($join) use ($locale) {
@@ -330,6 +367,30 @@ class BlogRubric extends Model
                         ->where('brt_sort.locale', '=', $locale);
                 })
                 ->orderBy('brt_sort.title', 'desc')
+                ->orderByDesc('blog_rubrics.id')
+                ->select('blog_rubrics.*'),
+
+            'ownerNameAsc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_rubrics.user_id')
+                ->orderBy('owner_sort.name', 'asc')
+                ->orderByDesc('blog_rubrics.id')
+                ->select('blog_rubrics.*'),
+
+            'ownerNameDesc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_rubrics.user_id')
+                ->orderBy('owner_sort.name', 'desc')
+                ->orderByDesc('blog_rubrics.id')
+                ->select('blog_rubrics.*'),
+
+            'ownerEmailAsc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_rubrics.user_id')
+                ->orderBy('owner_sort.email', 'asc')
+                ->orderByDesc('blog_rubrics.id')
+                ->select('blog_rubrics.*'),
+
+            'ownerEmailDesc' => $query
+                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_rubrics.user_id')
+                ->orderBy('owner_sort.email', 'desc')
                 ->orderByDesc('blog_rubrics.id')
                 ->select('blog_rubrics.*'),
 

@@ -12,8 +12,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
@@ -31,74 +33,48 @@ class ReportController extends Controller
     // Время кэширования локали (в секундах)
     private const LOCALE_CACHE_TTL = 3600;
 
-    /**
-     * Отображает страницу отчетов или отдает JSON с данными.
-     */
+    /** Отображает страницу отчетов или отдает JSON с данными. */
     public function index(Request $request): JsonResponse|InertiaResponse
     {
-        // TODO: Проверка прав 'show-reports'
-        // $this->authorize('show-reports');
+        $tables = $this->getDatabaseTables();
 
-        $locale = $this->getCurrentLocale();
-        $type = $request->query('type', 'page'); // 'page' - для Inertia view по умолчанию
-        $format = $request->query('format'); // Для JSON запроса может быть не нужен
+        $selectedTable = $request->query('table', $tables[0] ?? null);
 
-        // --- Получаем данные в зависимости от типа ---
-        try {
-            $query = $this->getBaseReportQuery($type, $locale);
-            // Для JSON отдаем ВСЕ данные (или пагинируем, если нужно)
-            // Для страницы Inertia можно взять только часть или агрегаты
-            // Пока оставим get() для простоты, но лучше оптимизировать под нужды страницы/JSON
-            $data = $query->get();
-
-        } catch (InvalidArgumentException $e) {
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $e->getMessage()], 400);
-            }
-            abort(400, $e->getMessage());
-        } catch (Throwable $e) {
-            Log::error("Ошибка получения данных для отчета: " . $e->getMessage());
-            if ($request->expectsJson()) {
-                return response()->json(['error' => 'Ошибка сервера при получении данных.'], 500);
-            }
-            // Для Inertia можно показать сообщение об ошибке
-            // return Inertia::render('Admin/System/Reports/Index', ['error' => '...']);
-            abort(500, 'Ошибка сервера'); // Или просто 500
-        }
-
-
-        // --- Формируем ответ ---
-        if ($request->expectsJson() || $type !== 'page') { // Если явно запрошен JSON
-            $resource = match ($type) {
-                'rubrics' => BlogRubricResource::collection($data),
-                'articles', => BlogArticleResource::collection($data), // По умолчанию статьи
-                default => collect(), // Или ошибка, т.к. тип проверен в getBaseReportQuery
-            };
-            return response()->json(['data' => $resource]);
-        } else {
-            // --- Готовим данные СПЕЦИАЛЬНО для Inertia View ---
-            // (Возможно, нужны не все данные, а агрегаты или пагинация)
-
-            // Пример: передаем пагинированные статьи и количество рубрик/секций
-            $articlesPaginated = $this->getBaseReportQuery('articles', $locale)->paginate(15); // Пагинация статей
-            $rubricsCount = BlogRubric::where('locale', $locale)->count();
-            $activeArticlesCount = BlogArticle::where('activity', 1)->where('locale', $locale)->count();
-
-
+        if (!$selectedTable) {
             return Inertia::render('Admin/System/Reports/Index', [
-                // Передаем только необходимые данные для страницы
-                'articles'            => BlogArticleResource::collection($articlesPaginated),
-                'rubricsCount'        => $rubricsCount,
-                'activeArticlesCount' => $activeArticlesCount,
-                // Можно передать данные для графиков, как в ChartController
-                // 'chartData' => [ ... ]
+                'tables' => [],
+                'selectedTable' => null,
+                'columns' => [],
+                'items' => [],
             ]);
         }
+
+        $selectedTable = $this->validateTable($selectedTable);
+
+        $columns = Schema::getColumnListing($selectedTable);
+
+        $items = DB::table($selectedTable)
+            ->limit(500)
+            ->get();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'tables' => $tables,
+                'selectedTable' => $selectedTable,
+                'columns' => $columns,
+                'data' => $items,
+            ]);
+        }
+
+        return Inertia::render('Admin/System/Reports/Index', [
+            'tables' => $tables,
+            'selectedTable' => $selectedTable,
+            'columns' => $columns,
+            'items' => $items,
+        ]);
     }
 
-    /**
-     * Экспорт отчёта в выбранном формате.
-     */
+    /** Экспорт отчёта в выбранном формате. */
     public function download(Request $request): StreamedResponse
     {
         // TODO: Проверка прав 'download-reports'
@@ -106,7 +82,7 @@ class ReportController extends Controller
 
         // Валидация входных данных
         $validated = $request->validate([
-            'type' => ['required', 'string', Rule::in(['rubrics', 'sections', 'articles'])],
+            'type' => ['required', 'string', Rule::in(['rubrics', 'articles'])],
             'format' => ['required', 'string', Rule::in(['csv', 'xls', 'pdf', 'zip'])],
             // TODO: Добавить валидацию других фильтров, если они есть (даты, локаль и т.д.)
             // 'locale' => ['sometimes', 'string', Rule::in(['ru', 'en', 'kz'])],
@@ -153,52 +129,52 @@ class ReportController extends Controller
         }
     }
 
-    /**
-     * Формирует базовый запрос для получения данных отчета.
-     *
-     * @param string $type Тип отчета ('rubrics', 'sections', 'articles')
-     * @param string $locale Локаль
-     * @return Builder
-     * @throws InvalidArgumentException
-     */
+    /** Формирует базовый запрос для получения данных отчета. */
     private function getBaseReportQuery(string $type, string $locale): Builder
     {
-        // TODO: Оптимизировать выборку полей и связей для КАЖДОГО типа отчета
-        // Выбирать только то, что реально нужно для отчета/экспорта
-
-        switch ($type) {
-            case 'rubrics':
-                return BlogRubric::with([
-                    // Загружаем только нужные поля секций и считаем активные статьи
-                    'sections' => fn($q) => $q->select('sections.id', 'sections.title', 'sections.locale')
-                        ->where('activity', 1)
-                        ->where('locale', $locale)
-                        ->withCount(['articles' => fn($aq) => $aq
-                            ->where('activity', 1)
-                            ->where('locale', $locale)])
-                        ->orderBy('sort', 'asc')
+        return match ($type) {
+            'rubrics' => BlogRubric::query()
+                ->with([
+                    'translations' => fn ($q) => $q->where('locale', $locale),
+                    'articles' => fn ($q) => $q
+                        ->where('activity', true)
+                        ->whereHas('translations', fn ($tq) => $tq->where('locale', $locale))
+                        ->with([
+                            'translations' => fn ($tq) => $tq->where('locale', $locale),
+                        ])
+                        ->withCount('comments'),
                 ])
-                    ->where('locale', $locale)
-                    ->orderBy('sort', 'asc'); // Добавим сортировку для рубрик
+                ->whereHas('translations', fn ($q) => $q->where('locale', $locale))
+                ->orderBy('sort')
+                ->orderByDesc('id'),
 
-            case 'articles':
-                return BlogArticle::with(['sections:id,title', 'tags:id,name', 'images']) // Загружаем только ID/названия связей + изображения
-                ->where('activity', 1)
-                    ->where('locale', $locale)
-                    ->orderBy('sort', 'asc');
+            'articles' => BlogArticle::query()
+                ->with([
+                    'translations' => fn ($q) => $q->where('locale', $locale),
+                    'rubrics.translations' => fn ($q) => $q->where('locale', $locale),
+                    'tags.translations' => fn ($q) => $q->where('locale', $locale),
+                    'images',
+                ])
+                ->withCount([
+                    'comments',
+                    'likes',
+                ])
+                ->where('activity', true)
+                ->whereHas('translations', fn ($q) => $q->where('locale', $locale))
+                ->orderBy('sort')
+                ->orderByDesc('id'),
 
-            case 'page': // Тип для Inertia view, можно вернуть пустой запрос или базовый
-                return BlogArticle::query(); // Или вернуть null/выбросить исключение
+            'page' => BlogArticle::query()
+                ->with([
+                    'translations' => fn ($q) => $q->where('locale', $locale),
+                ])
+                ->whereHas('translations', fn ($q) => $q->where('locale', $locale)),
 
-            default:
-                throw new InvalidArgumentException('Неподдерживаемый тип отчета: ' . $type);
-        }
+            default => throw new InvalidArgumentException('Неподдерживаемый тип отчета: ' . $type),
+        };
     }
 
-
-    /**
-     * Генерирует контент отчета в указанном формате.
-     */
+    /** Генерирует контент отчета в указанном формате. */
     private function generateReportContent($data, string $format, string $type): string
     {
         if ($data->isEmpty()) return '';
@@ -224,9 +200,7 @@ class ReportController extends Controller
         }
     }
 
-    /**
-     * Генерирует CSV контент.
-     */
+    /** Генерирует CSV контент. */
     private function generateCsv($data, string $type): string
     {
         // TODO: Улучшить генерацию CSV - выбирать конкретные колонки, разворачивать связи
@@ -260,9 +234,7 @@ class ReportController extends Controller
         // Или return $csvContent; если UTF-8 достаточно
     }
 
-    /**
-     * Возвращает заголовки для скачивания файла.
-     */
+    /** Возвращает заголовки для скачивания файла. */
     private function getDownloadHeaders(string $format): array
     {
         $contentType = match ($format) {
@@ -275,9 +247,7 @@ class ReportController extends Controller
         return ['Content-Type' => $contentType];
     }
 
-    /**
-     * Получает текущую локаль из настроек (с кэшированием).
-     */
+    /** Получает текущую локаль из настроек (с кэшированием). */
     private function getCurrentLocale(): string
     {
         return Cache::remember('setting_locale', self::LOCALE_CACHE_TTL, function () {
@@ -285,5 +255,28 @@ class ReportController extends Controller
         });
     }
 
-    // Методы deleteImages() не нужны в этом контроллере
+    private function getDatabaseTables(): array
+    {
+        $database = config('database.connections.mysql.database');
+
+        return collect(DB::select('SHOW TABLES'))
+            ->map(function ($row) use ($database) {
+                $key = "Tables_in_{$database}";
+                return $row->$key;
+            })
+            ->filter(fn ($table) => !str_starts_with($table, 'migrations'))
+            ->values()
+            ->toArray();
+    }
+
+    private function validateTable(string $table): string
+    {
+        $tables = $this->getDatabaseTables();
+
+        if (!in_array($table, $tables, true)) {
+            abort(404, 'Таблица не найдена.');
+        }
+
+        return $table;
+    }
 }

@@ -1,133 +1,483 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
     <url>
-        <loc>http://localhost:8000</loc>
-        <lastmod>2026-01-06T00:00:00+00:00</lastmod>
+        <loc>http://localhost:8000/ru</loc>
+        <lastmod>2026-06-15T00:00:00+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/rubrics/programmirovanie</loc>
-        <lastmod>2026-01-03T01:34:41+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics</loc>
+        <lastmod>2026-06-15T00:00:00+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/rubrics/baghdarlamalau</loc>
-        <lastmod>2026-01-03T01:34:41+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/frontend-development</loc>
+        <lastmod>2026-06-09T15:17:03+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/rubrics/programming</loc>
-        <lastmod>2026-01-03T01:34:41+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/backend-development</loc>
+        <lastmod>2026-06-04T07:17:36+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/osnovy-html-kak-nachat</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/devops-and-infrastructure</loc>
+        <lastmod>2026-05-29T16:03:48+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/semanticheskie-tegi-v-html</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/html-and-css</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/osnovy-css-kak-stilizovat-stranicy</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/javascript</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/flexbox-sekrety-gibkoi-verstki</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/php</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/osnovy-javascript-peremennye-i-funktsii</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/databases</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/sobytia-i-manipulyatsii-dom-v-javascript</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/docker</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/osnovy-laravel-marshrutizatsiya-i-kontrollery</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/ci-cd</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/rabota-s-bazoi-dannykh-v-laravel-migratsii-i-modeli</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/vue-js</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/osnovy-vuejs-sozdanie-komponentov</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/tailwind-css</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/dvustoronnee-svyazyvanie-dannykh-vuejs</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/laravel</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/osnovy-tailwind-css-utilitarnye-klassy</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/mysql</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/articles/sozdanie-adaptivnogo-dizaina-tailwind-css</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/postgresql</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/tags/html</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/docker-compose</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/tags/css</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/rubrics/github-actions</loc>
+        <lastmod>2026-06-15T13:52:43+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/tags/javascript</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/articles</loc>
+        <lastmod>2026-06-15T00:00:00+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/tags/vuejs</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/articles/how-frontend-projects-are-structured</loc>
+        <lastmod>2026-06-04T07:23:57+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/tags/laravel</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/articles/responsive-layout-principles</loc>
+        <lastmod>2026-06-02T03:53:29+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/tags/tailwind-css</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/articles/component-driven-ui-development</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/tags/web-development</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/articles/how-to-connect-frontend-with-api</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/tags/seo</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/articles/backend-architecture-for-modern-web-apps</loc>
+        <lastmod>2026-06-10T07:31:29+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/tags/ui-ux</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/articles/how-to-design-rest-api-endpoints</loc>
+        <lastmod>2026-06-09T15:19:05+00:00</lastmod>
 
             </url>
     <url>
-        <loc>http://localhost:8000/ru/tags/programming</loc>
-        <lastmod>2026-01-03T01:34:42+00:00</lastmod>
+        <loc>http://localhost:8000/ru/blog/articles/working-with-business-logic-in-services</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/caching-and-performance-on-backend</loc>
+        <lastmod>2026-06-02T08:24:42+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/why-devops-is-important-for-small-teams</loc>
+        <lastmod>2026-06-03T02:42:06+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/setting-up-staging-and-production-environments</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/deployment-pipeline-basics</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/infrastructure-monitoring-basics</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/semantic-html-for-modern-websites</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/css-grid-vs-flexbox-practical-difference</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/how-to-build-responsive-layouts</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/clean-css-architecture-basics</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/modern-javascript-features-you-should-know</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/async-await-in-real-projects</loc>
+        <lastmod>2026-06-10T07:31:29+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/dom-events-and-ui-interactions</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/working-with-fetch-and-json</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/php-oop-fundamentals-for-real-projects</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/dependency-injection-in-php-applications</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/structuring-large-php-projects</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/error-handling-and-logging-in-php</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/database-design-basics-for-web-projects</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/indexes-and-query-optimization</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/choosing-between-mysql-and-postgresql</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/normalization-and-practical-schema-design</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/docker-for-local-development</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/docker-images-containers-and-volumes</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/how-to-build-php-stack-with-docker</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/common-docker-debugging-cases</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/continuous-integration-basics</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/continuous-delivery-for-web-projects</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/testing-before-deployment-pipeline</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/how-to-automate-release-process</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/vue-components-best-practices</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/working-with-props-and-emits-in-vue</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/vue-composables-for-clean-code</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/state-management-patterns-in-vue</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/tailwind-css-utility-first-approach</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/building-admin-panels-with-tailwind</loc>
+        <lastmod>2026-06-10T07:31:29+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/dark-mode-patterns-with-tailwind</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/responsive-ui-with-tailwind-css</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/laravel-routing-and-controllers-basics</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/eloquent-relations-in-real-projects</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/requests-resources-and-validation-in-laravel</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/laravel-service-layer-and-clean-architecture</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/mysql-indexes-explained-simply</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/mysql-query-optimization-for-beginners</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/mysql-relations-and-foreign-keys</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/mysql-migrations-and-schema-updates</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/postgresql-basics-for-backend-developers</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/jsonb-in-postgresql-practical-usage</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/postgresql-indexing-strategies</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/postgresql-vs-mysql-in-real-projects</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/docker-compose-for-full-stack-projects</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/managing-services-with-docker-compose</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/php-nginx-mysql-stack-in-docker-compose</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/debugging-multi-container-environments</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/github-actions-for-laravel-projects</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/running-tests-in-github-actions</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/automatic-deployment-with-github-actions</loc>
+        <lastmod>2026-06-10T07:31:29+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/articles/workflow-secrets-and-environment-variables</loc>
+        <lastmod>2026-06-02T03:46:39+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/tags/php</loc>
+        <lastmod>2026-05-21T04:26:30+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/tags/laravel</loc>
+        <lastmod>2026-06-04T07:58:47+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/tags/vue-js</loc>
+        <lastmod>2026-05-21T04:26:30+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/tags/javascript</loc>
+        <lastmod>2026-06-09T15:20:00+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/tags/tailwind-css</loc>
+        <lastmod>2026-05-21T04:26:30+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/tags/docker</loc>
+        <lastmod>2026-05-21T04:26:30+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/tags/mysql</loc>
+        <lastmod>2026-05-21T04:26:30+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/tags/postgresql</loc>
+        <lastmod>2026-05-21T04:26:30+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/tags/api</loc>
+        <lastmod>2026-05-21T04:26:30+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/blog/tags/devops</loc>
+        <lastmod>2026-05-21T04:26:30+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/videos</loc>
+        <lastmod>2026-06-15T00:00:00+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/videos/youtube-video</loc>
+        <lastmod>2026-06-03T02:29:25+00:00</lastmod>
+
+            </url>
+    <url>
+        <loc>http://localhost:8000/ru/videos/vimeo-video</loc>
+        <lastmod>2026-06-03T05:11:23+00:00</lastmod>
 
             </url>
 </urlset>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, onUnmounted, defineProps } from 'vue';
+import { ref, onMounted, watch, onUnmounted } from 'vue';
 import {
     Chart, BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend
 } from 'chart.js';
@@ -10,9 +10,13 @@ import { tailwindConfig } from '@/utils/Utils';
 Chart.register(BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend);
 
 const props = defineProps({
-    rubrics: {
+    items: {
         type: Array,
         default: () => []
+    },
+    title: {
+        type: String,
+        default: ''
     },
     width: {
         type: [Number, String],
@@ -27,28 +31,39 @@ const props = defineProps({
 const canvas = ref(null);
 let chart = null;
 
+// Подготовить подпись
+const itemLabel = (item) => {
+    return item.id ? `ID ${item.id}: ${item.label}` : item.label;
+};
+
+// Подготовить данные
+const chartData = () => {
+    const labels = props.items.map(item => itemLabel(item));
+    const values = props.items.map(item => item.value || 0);
+
+    return {
+        labels,
+        datasets: [
+            {
+                label: props.title,
+                data: values,
+                backgroundColor: tailwindConfig().theme.colors.blue[400],
+                borderRadius: 6,
+                barThickness: 28
+            }
+        ]
+    };
+};
+
+// Создать график
 const createChart = () => {
-    if (!canvas.value || !props.rubrics.length) return;
+    if (!canvas.value || !props.items.length) return;
 
     if (chart) chart.destroy();
 
-    const labels = props.rubrics.map(r => r.name);
-    const values = props.rubrics.map(r => r.value);
-
     chart = new Chart(canvas.value, {
         type: 'bar',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: 'Просмотры по рубрикам',
-                    data: values,
-                    backgroundColor: tailwindConfig().theme.colors.blue[400],
-                    borderRadius: 6,
-                    barThickness: 28
-                }
-            ]
-        },
+        data: chartData(),
         options: {
             layout: {
                 padding: 20,
@@ -61,13 +76,13 @@ const createChart = () => {
                     },
                     title: {
                         display: true,
-                        text: 'Просмотры'
+                        text: 'Значение'
                     }
                 },
                 x: {
                     title: {
                         display: true,
-                        text: 'Рубрики'
+                        text: 'Сущности'
                     }
                 }
             },
@@ -77,7 +92,8 @@ const createChart = () => {
                 },
                 tooltip: {
                     callbacks: {
-                        label: ctx => `Просмотры: ${ctx.raw}`
+                        title: ctx => ctx[0]?.label || '',
+                        label: ctx => `Значение: ${ctx.raw}`
                     }
                 }
             },
@@ -90,7 +106,9 @@ const createChart = () => {
 onMounted(createChart);
 onUnmounted(() => chart && chart.destroy());
 
-watch(() => props.rubrics, createChart);
+watch(() => props.items, createChart, {
+    deep: true
+});
 </script>
 
 <template>

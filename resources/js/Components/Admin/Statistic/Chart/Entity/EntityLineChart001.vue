@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch, defineProps } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import {
     Chart, LineController, LineElement, Filler, PointElement,
     LinearScale, CategoryScale, Tooltip, Legend
@@ -11,9 +11,13 @@ import { tailwindConfig } from '@/utils/Utils';
 Chart.register(LineController, LineElement, Filler, PointElement, LinearScale, CategoryScale, Tooltip, Legend);
 
 const props = defineProps({
-    articles: {
+    items: {
         type: Array,
         default: () => []
+    },
+    title: {
+        type: String,
+        default: ''
     },
     width: {
         type: [Number, String],
@@ -28,57 +32,50 @@ const props = defineProps({
 const canvas = ref(null);
 let chart = null;
 
-const processArticles = () => {
-    if (!props.articles || props.articles.length === 0) {
-        return {
-            labels: [],
-            datasets: []
-        };
-    }
+// Отсортировать элементы
+const sortedItems = () => {
+    return [...props.items].sort((a, b) => {
+        if (a.id && b.id) return a.id - b.id;
 
-    const sorted = [...props.articles].sort((a, b) => a.id - b.id);
-    const labels = sorted.map(a => `ID: ${a.id}`);
-    const views = sorted.map(a => a.views || 0);
-    const likes = sorted.map(a => a.likes_count || 0); // заменили likes → likes_count
+        return String(a.label).localeCompare(String(b.label));
+    });
+};
+
+// Подготовить подпись
+const itemLabel = (item) => {
+    return item.id ? `ID ${item.id}: ${item.label}` : item.label;
+};
+
+// Подготовить данные
+const chartData = () => {
+    const items = sortedItems();
 
     return {
-        labels,
+        labels: items.map(item => itemLabel(item)),
         datasets: [
             {
-                label: 'Просмотры',
-                data: views,
+                label: props.title,
+                data: items.map(item => item.value || 0),
                 fill: false,
                 borderColor: tailwindConfig().theme.colors.blue[500],
                 backgroundColor: tailwindConfig().theme.colors.blue[100],
                 tension: 0.4,
                 pointRadius: 4,
                 pointBackgroundColor: tailwindConfig().theme.colors.blue[500]
-            },
-            {
-                label: 'Лайки',
-                data: likes,
-                fill: false,
-                borderColor: tailwindConfig().theme.colors.green[500],
-                backgroundColor: tailwindConfig().theme.colors.green[100],
-                tension: 0.4,
-                pointRadius: 4,
-                pointBackgroundColor: tailwindConfig().theme.colors.green[500]
             }
         ]
     };
 };
 
+// Создать график
 const createChart = () => {
-    if (!canvas.value) return;
+    if (!canvas.value || !props.items.length) return;
 
-    const ctx = canvas.value;
-    const data = processArticles();
+    if (chart) chart.destroy();
 
-    if (!data.labels.length) return;
-
-    chart = new Chart(ctx, {
+    chart = new Chart(canvas.value, {
         type: 'line',
-        data,
+        data: chartData(),
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -96,7 +93,7 @@ const createChart = () => {
                 x: {
                     title: {
                         display: true,
-                        text: 'ID статьи'
+                        text: 'Сущности'
                     }
                 }
             },
@@ -106,6 +103,7 @@ const createChart = () => {
                 },
                 tooltip: {
                     callbacks: {
+                        title: ctx => ctx[0]?.label || '',
                         label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}`
                     }
                 }
@@ -116,13 +114,9 @@ const createChart = () => {
 
 onMounted(createChart);
 onUnmounted(() => chart && chart.destroy());
-watch(() => props.articles, () => {
-    if (chart) {
-        chart.data = processArticles();
-        chart.update();
-    } else {
-        createChart();
-    }
+
+watch(() => props.items, createChart, {
+    deep: true
 });
 </script>
 

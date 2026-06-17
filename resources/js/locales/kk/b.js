@@ -5,6 +5,7 @@ export default {
     backupStep2: 'Сақтық көшірмеден дамп қалпына келтірілуде...',
     backupStep3: 'Сақтық көшірмедегі демп сәтті қалпына келтірілді!',
     backupConfirmDeleteBackup: 'Сақтық көшірмені жоюды растаңыз',
+    backupConfirmRestoreBackup: 'Таңдалған сақтық көшірмеден дерекқорды қалпына келтіру керек пе?',
     backupCreated: 'Сақтық көшірме жасалды!',
     backupDeleted: 'Сақтық көшірме жойылды',
     backupDeleteFailed: 'Жою мүмкін болмады',

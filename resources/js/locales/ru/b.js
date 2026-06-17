@@ -5,6 +5,7 @@ export default {
     backupStep2: 'Восстанавливаем дамп с резервной копии...',
     backupStep3: 'Дамп из резервной копии успешно восстановлен!',
     backupConfirmDeleteBackup: 'Подтвердите удаление резервной копии',
+    backupConfirmRestoreBackup: 'Восстановить базу данных из выбранного бэкапа?',
     backupCreated: 'Резервная копия создана!',
     backupDeleted: 'Резервная копия удалена',
     backupDeleteFailed: 'Не удалось удалить',

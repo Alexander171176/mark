@@ -119,6 +119,7 @@
 `docker exec -it mark-php-app php artisan cache:clear`  <br>
 `docker exec -it mark-php-app php artisan config:clear`  <br>
 `docker exec -it mark-php-app php artisan route:clear`  <br>
+`docker exec -it mark-php-app php artisan optimize:clear`  <br>
 `docker exec -it mark-php-app php artisan view:clear`  <br>
 `docker restart mark-php-app`  <br>
 `docker exec -it mark-php-app php artisan route:list`  <br>

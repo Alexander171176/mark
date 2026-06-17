@@ -5,6 +5,7 @@ export default {
     backupStep2: 'Restoring the dump from the backup...',
     backupStep3: 'The backup dump has been successfully restored!',
     backupConfirmDeleteBackup: 'Confirm the deletion of the backup',
+    backupConfirmRestoreBackup: 'Restore database from selected backup?',
     backupCreated: 'The backup has been created!',
     backupDeleted: 'The backup has been deleted',
     backupDeleteFailed: 'Couldn\'t delete',

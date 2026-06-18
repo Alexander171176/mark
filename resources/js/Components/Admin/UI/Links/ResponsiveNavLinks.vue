@@ -20,16 +20,6 @@ const { t } = useI18n();
         </ResponsiveNavLink>
         <!-- Админские маршруты с префиксом -->
         <ResponsiveNavLink
-            :href="route('admin.marketCompanies.index')"
-            :active="route().current('admin.marketCompanies.index')">
-            {{ t('marketCompanies') }}
-        </ResponsiveNavLink>
-        <ResponsiveNavLink
-            :href="route('admin.marketStorefronts.index')"
-            :active="route().current('admin.marketStorefronts.*')">
-            {{ t('marketStorefronts') }}
-        </ResponsiveNavLink>
-        <ResponsiveNavLink
             :href="route('admin.schoolOrders.index')"
             :active="route().current('admin.schoolOrders.*')">
             {{ t('orders') }}

@@ -9,8 +9,6 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
-use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
-use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
@@ -120,11 +118,3 @@ Route::put('/school-bundle-prices/bulk-activity',
 Route::put('/school-subscription-plans/bulk-activity',
     [SchoolSubscriptionPlanController::class, 'bulkUpdateActivity'])
     ->name('schoolSubscriptionPlans.bulkUpdateActivity');
-
-Route::put('market-companies/bulk-update-activity',
-    [MarketCompanyController::class, 'bulkUpdateActivity'])
-    ->name('marketCompanies.bulkUpdateActivity');
-
-Route::put('market-storefronts/bulk-update-activity',
-    [MarketStorefrontController::class, 'bulkUpdateActivity'])
-    ->name('marketStorefronts.bulkUpdateActivity');

@@ -270,17 +270,4 @@ trait SortSettingsTrait
             'adminSystemPermissionsDefaultSort', 'site_settings.adminSystemPermissionsDefaultSort');
     }
 
-    /** Обновляет сортировку элементов в фирмах */
-    public function updateAdminSortMarketCompanies(UpdateSortRequest $request): RedirectResponse
-    {
-        return $this->sortSetting($request,
-            'adminMarketCompaniesDefaultSort', 'site_settings.adminMarketCompaniesDefaultSort');
-    }
-
-    /** Обновляет сортировку элементов в витринах */
-    public function updateAdminSortMarketStorefronts(UpdateSortRequest $request): RedirectResponse
-    {
-        return $this->sortSetting($request,
-            'adminMarketStorefrontsDefaultSort', 'site_settings.adminMarketStorefrontsDefaultSort');
-    }
 }

@@ -10,8 +10,6 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
-use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
-use App\Http\Controllers\Admin\Market\MarketStorefront\MarketStorefrontController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
 use App\Http\Controllers\Admin\School\SchoolCoursePrice\SchoolCoursePriceController;
@@ -86,9 +84,3 @@ Route::delete('/school-course-prices/bulk-delete',
 Route::delete('/school-bundle-prices/bulk-delete',
     [SchoolBundlePriceController::class, 'bulkDestroy'])
     ->name('schoolBundlePrices.bulkDestroy');
-
-Route::delete('market-companies/bulk-destroy', [MarketCompanyController::class, 'bulkDestroy'])
-    ->name('marketCompanies.bulkDestroy');
-
-Route::delete('market-storefronts/bulk-destroy', [MarketStorefrontController::class, 'bulkDestroy'])
-    ->name('marketStorefronts.bulkDestroy');

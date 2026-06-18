@@ -268,17 +268,4 @@ trait CountSettingsTrait
             'adminSystemPermissionsPerPage', 'site_settings.adminSystemPermissionsPerPage');
     }
 
-    /** Обновление количества элементов в фирмах */
-    public function updateAdminCountMarketCompanies(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'adminMarketCompaniesPerPage', 'site_settings.adminMarketCompaniesPerPage');
-    }
-
-    /** Обновление количества элементов в витринах */
-    public function updateAdminCountMarketStorefronts(UpdateCountSettingRequest $request): RedirectResponse
-    {
-        return $this->countSetting($request,
-            'adminMarketStorefrontsPerPage', 'site_settings.adminMarketStorefrontsPerPage');
-    }
 }

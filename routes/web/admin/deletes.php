@@ -1,13 +1,9 @@
 <?php
 
 // --- Маршруты удаления связей ManyToMany ---
-
-use App\Http\Controllers\Admin\System\Invokable\RemoveArticleFromTagController;
-use App\Http\Controllers\Admin\System\Invokable\RemoveArticleFromVideoController;
 use App\Http\Controllers\Admin\System\Invokable\RemovePermissionFromRoleController;
 use App\Http\Controllers\Admin\System\Invokable\RemovePermissionFromUserController;
 use App\Http\Controllers\Admin\System\Invokable\RemoveRoleFromUserController;
-use App\Http\Controllers\Admin\System\Invokable\RemoveTagFromArticleController;
 use Illuminate\Support\Facades\Route;
 
 Route::delete('/roles/{role}/permissions/{permission}',

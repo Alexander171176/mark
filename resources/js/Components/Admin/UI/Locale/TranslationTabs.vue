@@ -103,7 +103,7 @@ const removeLocaleTab = (locale) => {
             <select
                 v-model="localeToAdd"
                 class="w-auto pl-3 pr-7 py-0.5 form-select rounded-sm shadow-sm
-                       bg-white dark:bg-gray-200 text-gray-600 dark:text-gray-900
+                       bg-white dark:bg-cyan-800 dark:text-slate-100 text-gray-600
                        border border-slate-400 dark:border-slate-600"
             >
                 <option value="">{{ t('addLocale') }}</option>

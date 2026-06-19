@@ -5,6 +5,7 @@ export default {
     imagePosition: 'Позиция изображения',
     images: 'Изображений',
     inactive: 'Неактивные',
+    individual: 'Физ. лицо',
     instructions: 'Инструкции',
     instructor: 'Инструктор',
     instructors: 'Инструкторы',

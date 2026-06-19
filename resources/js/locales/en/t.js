@@ -35,6 +35,7 @@ export default {
     tracks: 'Tracks',
     translate: 'Translate',
     translator: 'Translator',
+    translationRemoved: 'Translation removed',
     translationWillAppearHere: 'Translation will appear here...',
     trial: 'Trial',
     trialDays: 'Trial period (in days)',

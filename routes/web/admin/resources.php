@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
@@ -40,15 +41,46 @@ use App\Http\Controllers\Admin\System\User\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::resource('/settings', SettingController::class);
-
 Route::resource('/parameters', ParameterController::class);
-
 Route::resource('/users', UserController::class);
-
 Route::resource('/roles', RoleController::class);
-
 Route::resource('/permissions', PermissionController::class);
 
+Route::resource('/charts', ChartController::class)->except(['show']);
+
+Route::resource('/comments', CommentController::class)->except(['create', 'store', 'show']); // Админ обычно не создает комменты с нуля
+
+Route::resource('/components', ComponentController::class);
+Route::post('/components/save', [ComponentController::class, 'save'])
+    ->name('components.save'); // Выносим отдельно, т.к. не ресурсный
+
+Route::resource('/reports', ReportController::class)->only(['index']);
+
+Route::get('/reports/download', [ReportController::class, 'download'])
+    ->name('reports.download'); // Выносим отдельно
+
+// маршруты блога
+Route::resource('/blog-rubrics', BlogRubricController::class)
+    ->parameters(['blog-rubrics' => 'blogRubric'])
+    ->names('blogRubrics');
+
+Route::resource('/blog-articles', BlogArticleController::class)
+    ->parameters(['blog-articles' => 'blogArticle'])
+    ->names('blogArticles');
+
+Route::resource('/blog-tags', BlogTagController::class)
+    ->parameters(['blog-tags' => 'blogTag'])
+    ->names('blogTags');
+
+Route::resource('/blog-banners', BlogBannerController::class)
+    ->parameters(['blog-banners' => 'blogBanner'])
+    ->names('blogBanners');
+
+Route::resource('/blog-videos', BlogVideoController::class)
+    ->parameters(['blog-videos' => 'blogVideo'])
+    ->names('blogVideos');
+
+// маршруты онлайн школы
 Route::resource('/school-instructor-profiles',
     SchoolInstructorProfileController::class)
     ->parameters(['school-instructor-profiles' => 'schoolInstructorProfile'])
@@ -144,42 +176,15 @@ Route::resource('/school-subscription-plans',
     ->parameters(['school-subscription-plans' => 'schoolSubscriptionPlan'])
     ->names('schoolSubscriptionPlans');
 
-Route::resource('/currencies', CurrencyController::class);
-
 Route::resource('/school-orders',
     SchoolOrderController::class)
     ->parameters(['school-orders' => 'schoolOrder'])
     ->names('schoolOrders');
 
-Route::resource('/blog-rubrics', BlogRubricController::class)
-    ->parameters(['blog-rubrics' => 'blogRubric'])
-    ->names('blogRubrics');
+Route::resource('/currencies', CurrencyController::class);
 
-Route::resource('/blog-articles', BlogArticleController::class)
-    ->parameters(['blog-articles' => 'blogArticle'])
-    ->names('blogArticles');
+// маршруты маркетплейса
 
-Route::resource('/blog-tags', BlogTagController::class)
-    ->parameters(['blog-tags' => 'blogTag'])
-    ->names('blogTags');
-
-Route::resource('/blog-banners', BlogBannerController::class)
-    ->parameters(['blog-banners' => 'blogBanner'])
-    ->names('blogBanners');
-
-Route::resource('/blog-videos', BlogVideoController::class)
-    ->parameters(['blog-videos' => 'blogVideo'])
-    ->names('blogVideos');
-
-Route::resource('/charts', ChartController::class)->except(['show']);
-
-Route::resource('/reports', ReportController::class)->only(['index']);
-
-Route::resource('/comments', CommentController::class)->except(['create', 'store', 'show']); // Админ обычно не создает комменты с нуля
-Route::resource('/components', ComponentController::class);
-
-Route::post('/components/save', [ComponentController::class, 'save'])
-    ->name('components.save'); // Выносим отдельно, т.к. не ресурсный
-
-Route::get('/reports/download', [ReportController::class, 'download'])
-    ->name('reports.download'); // Выносим отдельно
+Route::resource('/market-companies', MarketCompanyController::class)
+    ->parameters(['market-companies' => 'marketCompany'])
+    ->names('marketCompanies');

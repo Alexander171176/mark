@@ -5,6 +5,7 @@
 use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
+use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,3 +24,7 @@ Route::put('/blog-videos/bulk-main',
 Route::put('/school-courses/bulk-main',
     [SchoolCourseController::class, 'bulkUpdateMain'])
     ->name('schoolCourses.bulkUpdateMain');
+
+Route::put('/market-companies/bulk-main',
+    [MarketCompanyController::class, 'bulkUpdateMain'])
+    ->name('marketCompanies.bulkUpdateMain');

@@ -41,6 +41,7 @@ export default {
     details: 'Дополнительные детали/комментарии к турниру или поединку',
     diagrams: 'Диаграммы',
     difficulty: 'Сложность в баллах',
+    director: 'Директор',
     disable: 'Отключить',
     disabled: 'выключено',
     discountTotal: 'Общая сумма скидок',

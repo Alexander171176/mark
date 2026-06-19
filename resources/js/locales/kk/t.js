@@ -35,6 +35,7 @@ export default {
     tracks: 'Жолдар',
     translate: 'Аударма',
     translator: 'Аудармашы',
+    translationRemoved: 'Аударма жойылды',
     translationWillAppearHere: 'Аударма осында пайда болады...',
     trial: 'Сынақ',
     trialDays: 'Сынақ мерзімі (күндермен)',

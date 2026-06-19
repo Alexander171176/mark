@@ -1,5 +1,7 @@
 export default {
     value: 'Value',
+    vat: 'VAT',
+    vatRate: 'VAT rate %',
     verificationLinkSent: 'A new verification link has been sent to your email address.',
     verificationLinkSent2: 'A new verification link has been sent to the email address you provided in your profile settings.',
     venue: 'Venue',

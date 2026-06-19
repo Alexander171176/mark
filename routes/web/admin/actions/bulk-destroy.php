@@ -2,7 +2,6 @@
 
 // Массовое удаление
 
-
 use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
@@ -10,6 +9,7 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
 use App\Http\Controllers\Admin\School\SchoolCoursePrice\SchoolCoursePriceController;
@@ -84,3 +84,7 @@ Route::delete('/school-course-prices/bulk-delete',
 Route::delete('/school-bundle-prices/bulk-delete',
     [SchoolBundlePriceController::class, 'bulkDestroy'])
     ->name('schoolBundlePrices.bulkDestroy');
+
+Route::delete('/market-companies/bulk-delete',
+    [MarketCompanyController::class, 'bulkDestroy'])
+    ->name('marketCompanies.bulkDestroy');

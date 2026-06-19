@@ -41,6 +41,8 @@ export default {
     commentedArticle: 'Пікір жазылған мақала: ',
     commentedRubric: 'Пікір жазылған рубрика',
     commentDetails: 'Пікірдің егжей-тегжейі',
+    company: 'Компания',
+    companyLogo: 'Логотип таңдау',
     companyType: 'Компания түрі',
     compareAtPrice: 'Ескі баға',
     componentEditorHeader: 'Компонент кодын қарау және өңдеу',

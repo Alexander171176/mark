@@ -41,6 +41,8 @@ export default {
     commentedArticle: 'The commented article: ',
     commentedRubric: 'The commented rubric',
     commentDetails: 'Comment Details',
+    company: 'Company',
+    companyLogo: 'Company Logo',
     companyType: 'Company type',
     compareAtPrice: 'Old price',
     componentEditorHeader: 'Component Code Viewer and Editor',

@@ -35,6 +35,7 @@ export default {
     tracks: 'Треки',
     translate: 'Перевести',
     translator: 'Переводчик',
+    translationRemoved: 'Перевод удалён',
     translationWillAppearHere: 'Здесь появится перевод...',
     trial: 'Пробный период',
     trialDays: 'Пробный период (в днях)',

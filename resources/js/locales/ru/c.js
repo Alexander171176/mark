@@ -41,6 +41,8 @@ export default {
     commentedArticle: 'Комментируемая статья: ',
     commentedRubric: 'Комментируемая рубрика',
     commentDetails: 'Детали Комментария',
+    company: 'Компания',
+    companyLogo: 'Логотип компании',
     companyType: 'Тип компании',
     compareAtPrice: 'Старая цена',
     componentEditorHeader: 'Просмотр и редактирование кода компонента',

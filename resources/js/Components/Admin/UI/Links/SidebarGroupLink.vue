@@ -99,6 +99,39 @@ const {t} = useI18n();
             {{ t('createNewTeam') }}
         </template>
     </SidebarLink>
+    <!-- Админские маршруты магазина -->
+    <SidebarLink :href="route('admin.marketCompanies.index')"
+                 :active="route().current('marketCompanies.*')"
+                 :expanded="props.expanded">
+        <template #default>
+            <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
+                <path class="fill-current text-blue-600"
+                      d="M18.974 8H22a2 2 0 012 2v6h-2v5a1 1 0 01-1 1h-2a1 1 0 01-1-1v-5h-2v-6a2 2 0 012-2h.974zM20 7a2 2 0 11-.001-3.999A2 2 0 0120 7zM2.974 8H6a2 2 0 012 2v6H6v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5H0v-6a2 2 0 012-2h.974zM4 7a2 2 0 11-.001-3.999A2 2 0 014 7z"></path>
+                <path class="fill-current text-blue-400"
+                      d="M12 6a3 3 0 110-6 3 3 0 010 6zm2 18h-4a1 1 0 01-1-1v-6H6v-6a3 3 0 013-3h6a3 3 0 013 3v6h-3v6a1 1 0 01-1 1z"></path>
+            </svg>
+        </template>
+        <template #text>
+            {{ t('marketCompanies') }}
+        </template>
+    </SidebarLink>
+    <!-- Админский маршрут валюты -->
+    <SidebarLink :href="route('admin.currencies.index')"
+                 :active="route().current('currencies.*')"
+                 :expanded="props.expanded">
+        <template #default>
+            <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
+                <path class="fill-current text-blue-600"
+                      d="M18.974 8H22a2 2 0 012 2v6h-2v5a1 1 0 01-1 1h-2a1 1 0 01-1-1v-5h-2v-6a2 2 0 012-2h.974zM20 7a2 2 0 11-.001-3.999A2 2 0 0120 7zM2.974 8H6a2 2 0 012 2v6H6v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5H0v-6a2 2 0 012-2h.974zM4 7a2 2 0 11-.001-3.999A2 2 0 014 7z"></path>
+                <path class="fill-current text-blue-400"
+                      d="M12 6a3 3 0 110-6 3 3 0 010 6zm2 18h-4a1 1 0 01-1-1v-6H6v-6a3 3 0 013-3h6a3 3 0 013 3v6h-3v6a1 1 0 01-1 1z"></path>
+            </svg>
+        </template>
+        <template #text>
+            {{ t('currencies') }}
+        </template>
+    </SidebarLink>
+    <!-- Админские маршруты онлайн школы -->
     <SidebarLink :href="route('admin.schoolOrders.index')"
                  :active="route().current('schoolOrders.*')"
                  :expanded="props.expanded">
@@ -157,21 +190,6 @@ const {t} = useI18n();
         </template>
         <template #text>
             {{ t('bundlePrices') }}
-        </template>
-    </SidebarLink>
-    <SidebarLink :href="route('admin.currencies.index')"
-                 :active="route().current('currencies.*')"
-                 :expanded="props.expanded">
-        <template #default>
-            <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
-                <path class="fill-current text-blue-600"
-                      d="M18.974 8H22a2 2 0 012 2v6h-2v5a1 1 0 01-1 1h-2a1 1 0 01-1-1v-5h-2v-6a2 2 0 012-2h.974zM20 7a2 2 0 11-.001-3.999A2 2 0 0120 7zM2.974 8H6a2 2 0 012 2v6H6v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5H0v-6a2 2 0 012-2h.974zM4 7a2 2 0 11-.001-3.999A2 2 0 014 7z"></path>
-                <path class="fill-current text-blue-400"
-                      d="M12 6a3 3 0 110-6 3 3 0 010 6zm2 18h-4a1 1 0 01-1-1v-6H6v-6a3 3 0 013-3h6a3 3 0 013 3v6h-3v6a1 1 0 01-1 1z"></path>
-            </svg>
-        </template>
-        <template #text>
-            {{ t('currencies') }}
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.schoolInstructorProfiles.index')"
@@ -414,51 +432,7 @@ const {t} = useI18n();
             {{ t('quizAttemptItems') }}
         </template>
     </SidebarLink>
-    <SidebarLink :href="route('admin.users.index')"
-                 :active="route().current('users.*')"
-                 :expanded="props.expanded">
-        <template #default>
-            <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
-                <path class="fill-current text-blue-600"
-                      d="M18.974 8H22a2 2 0 012 2v6h-2v5a1 1 0 01-1 1h-2a1 1 0 01-1-1v-5h-2v-6a2 2 0 012-2h.974zM20 7a2 2 0 11-.001-3.999A2 2 0 0120 7zM2.974 8H6a2 2 0 012 2v6H6v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5H0v-6a2 2 0 012-2h.974zM4 7a2 2 0 11-.001-3.999A2 2 0 014 7z"></path>
-                <path class="fill-current text-blue-400"
-                      d="M12 6a3 3 0 110-6 3 3 0 010 6zm2 18h-4a1 1 0 01-1-1v-6H6v-6a3 3 0 013-3h6a3 3 0 013 3v6h-3v6a1 1 0 01-1 1z"></path>
-            </svg>
-        </template>
-        <template #text>
-            {{ t('users') }}
-        </template>
-    </SidebarLink>
-    <SidebarLink :href="route('admin.roles.index')"
-                 :active="route().current('roles.*')"
-                 :expanded="props.expanded">
-        <template #default>
-            <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
-                <path class="fill-current text-blue-600"
-                      d="M20 7a.75.75 0 01-.75-.75 1.5 1.5 0 00-1.5-1.5.75.75 0 110-1.5 1.5 1.5 0 001.5-1.5.75.75 0 111.5 0 1.5 1.5 0 001.5 1.5.75.75 0 110 1.5 1.5 1.5 0 00-1.5 1.5A.75.75 0 0120 7zM4 23a.75.75 0 01-.75-.75 1.5 1.5 0 00-1.5-1.5.75.75 0 110-1.5 1.5 1.5 0 001.5-1.5.75.75 0 111.5 0 1.5 1.5 0 001.5 1.5.75.75 0 110 1.5 1.5 1.5 0 00-1.5 1.5A.75.75 0 014 23z"></path>
-                <path class="fill-current text-blue-400"
-                      d="M17 23a1 1 0 01-1-1 4 4 0 00-4-4 1 1 0 010-2 4 4 0 004-4 1 1 0 012 0 4 4 0 004 4 1 1 0 010 2 4 4 0 00-4 4 1 1 0 01-1 1zM7 13a1 1 0 01-1-1 4 4 0 00-4-4 1 1 0 110-2 4 4 0 004-4 1 1 0 112 0 4 4 0 004 4 1 1 0 010 2 4 4 0 00-4 4 1 1 0 01-1 1z"></path>
-            </svg>
-        </template>
-        <template #text>
-            {{ t('roles') }}
-        </template>
-    </SidebarLink>
-    <SidebarLink :href="route('admin.permissions.index')"
-                 :active="route().current('permissions.*')"
-                 :expanded="props.expanded">
-        <template #default>
-            <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
-                <circle class="fill-current text-blue-400" cx="18.5" cy="5.5" r="4.5"></circle>
-                <circle class="fill-current text-blue-600" cx="5.5" cy="5.5" r="4.5"></circle>
-                <circle class="fill-current text-blue-600" cx="18.5" cy="18.5" r="4.5"></circle>
-                <circle class="fill-current text-blue-400" cx="5.5" cy="18.5" r="4.5"></circle>
-            </svg>
-        </template>
-        <template #text>
-            {{ t('permissions') }}
-        </template>
-    </SidebarLink>
+    <!-- Админские маршруты блога -->
     <SidebarLink :href="route('admin.blogRubrics.index')"
                  :active="route().current('blogRubrics.*')"
                  :expanded="props.expanded">
@@ -526,6 +500,7 @@ const {t} = useI18n();
             {{ t('videos') }}
         </template>
     </SidebarLink>
+    <!-- Админский маршрут комментариев -->
     <SidebarLink :href="route('admin.comments.index')"
                  :active="route().current('comments.*')"
                  :expanded="props.expanded">
@@ -539,6 +514,7 @@ const {t} = useI18n();
             {{ t('comments') }}
         </template>
     </SidebarLink>
+    <!-- Админский маршрут графиков -->
     <SidebarLink :href="route('admin.charts.index')"
                  :active="route().current('charts.*')"
                  :expanded="props.expanded">
@@ -554,6 +530,52 @@ const {t} = useI18n();
         </template>
         <template #text>
             {{ t('charts') }}
+        </template>
+    </SidebarLink>
+    <!-- Админские маршруты системы -->
+    <SidebarLink :href="route('admin.users.index')"
+                 :active="route().current('users.*')"
+                 :expanded="props.expanded">
+        <template #default>
+            <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
+                <path class="fill-current text-blue-600"
+                      d="M18.974 8H22a2 2 0 012 2v6h-2v5a1 1 0 01-1 1h-2a1 1 0 01-1-1v-5h-2v-6a2 2 0 012-2h.974zM20 7a2 2 0 11-.001-3.999A2 2 0 0120 7zM2.974 8H6a2 2 0 012 2v6H6v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5H0v-6a2 2 0 012-2h.974zM4 7a2 2 0 11-.001-3.999A2 2 0 014 7z"></path>
+                <path class="fill-current text-blue-400"
+                      d="M12 6a3 3 0 110-6 3 3 0 010 6zm2 18h-4a1 1 0 01-1-1v-6H6v-6a3 3 0 013-3h6a3 3 0 013 3v6h-3v6a1 1 0 01-1 1z"></path>
+            </svg>
+        </template>
+        <template #text>
+            {{ t('users') }}
+        </template>
+    </SidebarLink>
+    <SidebarLink :href="route('admin.roles.index')"
+                 :active="route().current('roles.*')"
+                 :expanded="props.expanded">
+        <template #default>
+            <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
+                <path class="fill-current text-blue-600"
+                      d="M20 7a.75.75 0 01-.75-.75 1.5 1.5 0 00-1.5-1.5.75.75 0 110-1.5 1.5 1.5 0 001.5-1.5.75.75 0 111.5 0 1.5 1.5 0 001.5 1.5.75.75 0 110 1.5 1.5 1.5 0 00-1.5 1.5A.75.75 0 0120 7zM4 23a.75.75 0 01-.75-.75 1.5 1.5 0 00-1.5-1.5.75.75 0 110-1.5 1.5 1.5 0 001.5-1.5.75.75 0 111.5 0 1.5 1.5 0 001.5 1.5.75.75 0 110 1.5 1.5 1.5 0 00-1.5 1.5A.75.75 0 014 23z"></path>
+                <path class="fill-current text-blue-400"
+                      d="M17 23a1 1 0 01-1-1 4 4 0 00-4-4 1 1 0 010-2 4 4 0 004-4 1 1 0 012 0 4 4 0 004 4 1 1 0 010 2 4 4 0 00-4 4 1 1 0 01-1 1zM7 13a1 1 0 01-1-1 4 4 0 00-4-4 1 1 0 110-2 4 4 0 004-4 1 1 0 112 0 4 4 0 004 4 1 1 0 010 2 4 4 0 00-4 4 1 1 0 01-1 1z"></path>
+            </svg>
+        </template>
+        <template #text>
+            {{ t('roles') }}
+        </template>
+    </SidebarLink>
+    <SidebarLink :href="route('admin.permissions.index')"
+                 :active="route().current('permissions.*')"
+                 :expanded="props.expanded">
+        <template #default>
+            <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
+                <circle class="fill-current text-blue-400" cx="18.5" cy="5.5" r="4.5"></circle>
+                <circle class="fill-current text-blue-600" cx="5.5" cy="5.5" r="4.5"></circle>
+                <circle class="fill-current text-blue-600" cx="18.5" cy="18.5" r="4.5"></circle>
+                <circle class="fill-current text-blue-400" cx="5.5" cy="18.5" r="4.5"></circle>
+            </svg>
+        </template>
+        <template #text>
+            {{ t('permissions') }}
         </template>
     </SidebarLink>
     <SidebarLink :href="route('admin.settings.index')"

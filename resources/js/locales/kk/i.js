@@ -5,6 +5,7 @@ export default {
     imagePosition: 'Кескін орны',
     images: 'Изображений',
     inactive: 'Белсенді емес',
+    individual: 'Individual',
     instructions: 'Нұсқаулар',
     instructor: 'Нұсқаушы',
     instructors: 'Нұсқаушылар',

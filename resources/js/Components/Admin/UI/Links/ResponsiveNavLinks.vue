@@ -18,7 +18,19 @@ const { t } = useI18n();
             :active="route().current('admin.index')">
             {{ t('adminPanel') }}
         </ResponsiveNavLink>
-        <!-- Админские маршруты с префиксом -->
+        <!-- Админские маршруты магазина -->
+        <ResponsiveNavLink
+            :href="route('admin.marketCompanies.index')"
+            :active="route().current('admin.marketCompanies.*')">
+            {{ t('marketCompanies') }}
+        </ResponsiveNavLink>
+        <!-- Админский маршрут валюты -->
+        <ResponsiveNavLink
+            :href="route('admin.currencies.index')"
+            :active="route().current('admin.currencies.*')">
+            {{ t('currencies') }}
+        </ResponsiveNavLink>
+        <!-- Админские маршруты онлайн школы -->
         <ResponsiveNavLink
             :href="route('admin.schoolOrders.index')"
             :active="route().current('admin.schoolOrders.*')">
@@ -38,11 +50,6 @@ const { t } = useI18n();
             :href="route('admin.schoolBundlePrices.index')"
             :active="route().current('admin.schoolBundlePrices.*')">
             {{ t('bundlePrices') }}
-        </ResponsiveNavLink>
-        <ResponsiveNavLink
-            :href="route('admin.currencies.index')"
-            :active="route().current('admin.currencies.*')">
-            {{ t('currencies') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
             :href="route('admin.schoolInstructorProfiles.index')"
@@ -124,21 +131,7 @@ const { t } = useI18n();
             :active="route().current('admin.schoolQuizAttemptItems.*')">
             {{ t('quizAttemptItems') }}
         </ResponsiveNavLink>
-        <ResponsiveNavLink
-            :href="route('admin.users.index')"
-            :active="route().current('admin.users.*')">
-            {{ t('users') }}
-        </ResponsiveNavLink>
-        <ResponsiveNavLink
-            :href="route('admin.roles.index')"
-            :active="route().current('admin.roles.*')">
-            {{ t('roles') }}
-        </ResponsiveNavLink>
-        <ResponsiveNavLink
-            :href="route('admin.permissions.index')"
-            :active="route().current('admin.permissions.*')">
-            {{ t('permissions') }}
-        </ResponsiveNavLink>
+        <!-- Админские маршруты блога -->
         <ResponsiveNavLink
             :href="route('admin.blogRubrics.index')"
             :active="route().current('admin.blogRubrics.*')">
@@ -164,15 +157,33 @@ const { t } = useI18n();
             :active="route().current('admin.blogVideos.*')">
             {{ t('videos') }}
         </ResponsiveNavLink>
+        <!-- Админский маршрут комментариев -->
         <ResponsiveNavLink
             :href="route('admin.comments.index')"
             :active="route().current('admin.comments.*')">
             {{ t('comments') }}
         </ResponsiveNavLink>
+        <!-- Админский маршрут графиков -->
         <ResponsiveNavLink
             :href="route('admin.charts.index')"
             :active="route().current('admin.charts.*')">
             {{ t('charts') }}
+        </ResponsiveNavLink>
+        <!-- Админские маршруты системы -->
+        <ResponsiveNavLink
+            :href="route('admin.users.index')"
+            :active="route().current('admin.users.*')">
+            {{ t('users') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.roles.index')"
+            :active="route().current('admin.roles.*')">
+            {{ t('roles') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.permissions.index')"
+            :active="route().current('admin.permissions.*')">
+            {{ t('permissions') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
             :href="route('admin.settings.index')"

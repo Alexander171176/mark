@@ -5,6 +5,7 @@ export default {
     lastUsed: 'Соңғы пайдалану',
     latestNews: 'Соңғы жаңалықтар',
     learningCategories: 'Оқыту санаттары',
+    latitude: 'Ендік',
     learningFlow: 'Оқу ағыны',
     learningTags: 'Жаттығу тегтері',
     leave: 'Шығу',
@@ -26,6 +27,7 @@ export default {
     limit: 'Шектеу',
     limitCount: 'Әрекеттер саны',
     limitMinutes: 'Минутпен шектеу',
+    localeAdded: 'Тіл қосылды',
     location: 'Орналасқан жері',
     login: 'Кіру',
     loginTitle: 'Жүйеге кіру',
@@ -36,5 +38,6 @@ export default {
     logs: 'Журналдар',
     local: 'жергілікті',
     localization: 'Локализация',
+    longitude: 'Бойлық',
     losses: 'Зақымдану саны',
 }

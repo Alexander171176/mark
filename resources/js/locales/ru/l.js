@@ -4,6 +4,7 @@ export default {
     lastName: 'Фамилия',
     lastUsed: 'Последнее использование',
     latestNews: 'Последние новости',
+    latitude: 'Широта',
     learningCategories: 'Категории обучения',
     learningFlow: 'Поток обучения',
     learningTags: 'Теги обучения',
@@ -26,6 +27,7 @@ export default {
     limit: 'Лимит',
     limitCount: 'Количество попыток',
     limitMinutes: 'Лимит в минутах',
+    localeAdded: 'Локаль добавлена',
     location: 'Локация',
     login: 'Вход',
     loginTitle: 'Вход в систему',
@@ -36,5 +38,6 @@ export default {
     logs: 'Логи',
     local: 'локально',
     localization: 'Локализация',
+    longitude: 'Долгота',
     losses: 'Количество поражений',
 }

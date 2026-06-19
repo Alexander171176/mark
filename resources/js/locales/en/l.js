@@ -5,6 +5,7 @@ export default {
     lastUsed: 'Last used',
     latestNews: 'Latest news',
     learningCategories: 'Training categories',
+    latitude: 'Latitude',
     learningTags: 'Training tags',
     learningFlow: 'Learning flow',
     leave: 'Leave',
@@ -26,6 +27,7 @@ export default {
     limit: 'Limit',
     limitCount: 'Number of attempts',
     limitMinutes: 'Limit in minutes',
+    localeAdded: 'Locale added',
     location: 'Location',
     login: 'Login',
     loginTitle: 'Login',
@@ -36,5 +38,6 @@ export default {
     logs: 'Logs',
     local: 'locally',
     localization: 'Localization',
+    longitude: 'Longitude',
     losses: 'Number of defeats',
 }

@@ -41,6 +41,7 @@ export default {
     details: 'Additional details/comments on the tournament or match',
     diagrams: 'Diagrams',
     difficulty: 'Difficulty in points',
+    director: 'Director',
     disable: 'Disable',
     disabled: 'Disabled',
     discountTotal: 'Total amount of discounts',

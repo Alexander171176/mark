@@ -14,6 +14,7 @@ export default {
     recoverCodeDescription: 'Please confirm access to your account by entering one of your emergency recovery codes.',
     recoverCodesMessage: 'Save these recovery codes in a secure password manager. They can be used to recover access to your account if your two-factor authentication device is lost.',
     regenerateRecoveryCodes: 'Regenerate Recovery Codes',
+    region: 'Region',
     register: 'Register',
     registerModule: 'Register a module',
     registerPrompt: 'Register in the system?',

@@ -1993,6 +1993,86 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // ADMIN SYSTEM PERMISSIONS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketCompaniesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_COMPANIES_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных фирм в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET COMPANIES PROCESSING MODE
+            [
+                'type' => 'string',
+                'option' => 'publicMarketCompaniesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'PUBLIC_MARKET_COMPANIES_PROCESSING_MODE',
+                'category' => 'public',
+                'description' => 'Режим обработки данных фирм в публичной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET COMPANIES PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketCompaniesPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_COMPANIES_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество фирм в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET COMPANIES PER PAGE
+            [
+                'type' => 'number',
+                'option' => 'publicMarketCompaniesPerPage',
+                'value' => '3',
+                'constant' => 'PUBLIC_MARKET_COMPANIES_PER_PAGE',
+                'category' => 'public',
+                'description' => 'Показывать количество фирм в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET COMPANIES PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketCompaniesDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_COMPANIES_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка фирм по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET COMPANIES DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'publicMarketCompaniesDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'PUBLIC_MARKET_COMPANIES_DEFAULT_SORT',
+                'category' => 'public',
+                'description' => 'Сортировка фирм по умолчанию в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET COMPANIES DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketCompaniesDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_COMPANIES_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка фирм в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET COMPANIES DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'publicMarketCompaniesDefaultView',
+                'value' => 'grid',
+                'constant' => 'PUBLIC_MARKET_COMPANIES_DEFAULT_VIEW',
+                'category' => 'public',
+                'description' => 'Вид списка фирм в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET COMPANIES DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

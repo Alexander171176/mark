@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\System\FileBackupController;
 use Illuminate\Support\Facades\Route;
 
+// Резервное копирование файлов сайта
 Route::prefix('files')
     ->name('files.')
     ->group(function () {

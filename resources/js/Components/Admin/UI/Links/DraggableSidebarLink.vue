@@ -109,6 +109,8 @@ const linkInfo = {
     robot: {label: t('robot'), route: 'admin.robot.index'},
     sitemap: {label: 'sitemap.xml', route: 'admin.sitemap.index'},
     reports: {label: t('reports'), route: 'admin.reports.index'},
+    imageProcessingProfiles: {label: t('imageProcessingProfiles'),
+        route: 'admin.imageProcessorProfiles.index'},
 };
 
 const link = computed(() => linkInfo[props.id]);

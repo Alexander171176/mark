@@ -1,9 +1,35 @@
 <?php
 
+// Способ сортировки
 use App\Http\Controllers\Admin\System\Setting\SettingController;
 use Illuminate\Support\Facades\Route;
 
-// Тип сортировки
+// системные
+Route::put('/update-sort/settings', [SettingController::class, 'updateAdminSortSettings'])
+    ->name('updateAdminSortSettings');
+
+Route::put('/update-sort/image-processor-profiles',
+    [SettingController::class, 'updateAdminSortImageProcessorProfiles'])
+    ->name('updateAdminSortImageProcessorProfiles');
+
+Route::put('/update-sort/users', [SettingController::class, 'updateAdminSortUsers'])
+    ->name('updateAdminSortUsers');
+
+Route::put('/update-sort/roles', [SettingController::class, 'updateAdminSortRoles'])
+    ->name('updateAdminSortRoles');
+
+Route::put('/update-sort/permissions', [SettingController::class, 'updateAdminSortPermissions'])
+    ->name('updateAdminSortPermissions');
+
+// валюта
+Route::put('/update-sort/currencies', [SettingController::class, 'updateAdminSortCurrencies'])
+    ->name('updateAdminSortCurrencies');
+
+// комментарии
+Route::put('/update-sort/comments', [SettingController::class, 'updateAdminSortComments'])
+    ->name('updateAdminSortComments');
+
+// блог
 Route::put('/update-sort/rubrics', [SettingController::class, 'updateAdminSortRubrics'])
     ->name('updateAdminSortRubrics');
 
@@ -13,15 +39,13 @@ Route::put('/update-sort/articles', [SettingController::class, 'updateAdminSortA
 Route::put('/update-sort/tags', [SettingController::class, 'updateAdminSortTags'])
     ->name('updateAdminSortTags');
 
-Route::put('/update-sort/comments', [SettingController::class, 'updateAdminSortComments'])
-    ->name('updateAdminSortComments');
-
 Route::put('/update-sort/banners', [SettingController::class, 'updateAdminSortBanners'])
     ->name('updateAdminSortBanners');
 
 Route::put('/update-sort/videos', [SettingController::class, 'updateAdminSortVideos'])
     ->name('updateAdminSortVideos');
 
+// школа
 Route::put('/update-sort/instructors', [SettingController::class, 'updateAdminSortInstructors'])
     ->name('updateAdminSortInstructors');
 
@@ -70,9 +94,6 @@ Route::put('/update-sort/quiz-attempt-items', [SettingController::class, 'update
 Route::put('/update-sort/bundles', [SettingController::class, 'updateAdminSortBundles'])
     ->name('updateAdminSortBundles');
 
-Route::put('/update-sort/currencies', [SettingController::class, 'updateAdminSortCurrencies'])
-    ->name('updateAdminSortCurrencies');
-
 Route::put('/update-sort/orders', [SettingController::class, 'updateAdminSortOrders'])
     ->name('updateAdminSortOrders');
 
@@ -85,18 +106,7 @@ Route::put('/update-sort/bundle-prices', [SettingController::class, 'updateAdmin
 Route::put('/update-sort/subscription-plans', [SettingController::class, 'updateAdminSortSubscriptionPlans'])
     ->name('updateAdminSortSubscriptionPlans');
 
-Route::put('/update-sort/users', [SettingController::class, 'updateAdminSortUsers'])
-    ->name('updateAdminSortUsers');
-
-Route::put('/update-sort/roles', [SettingController::class, 'updateAdminSortRoles'])
-    ->name('updateAdminSortRoles');
-
-Route::put('/update-sort/permissions', [SettingController::class, 'updateAdminSortPermissions'])
-    ->name('updateAdminSortPermissions');
-
-Route::put('/update-sort/settings', [SettingController::class, 'updateAdminSortSettings'])
-    ->name('updateAdminSortSettings');
-
+// маркет
 Route::put('/update-sort/companies', [SettingController::class, 'updateAdminSortCompanies'])
     ->name('updateAdminSortCompanies');
 

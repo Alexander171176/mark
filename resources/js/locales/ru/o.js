@@ -5,6 +5,7 @@ export default {
     online: 'онлайн',
     openLink: 'Открыть ссылку',
     options: 'Опции и настройки модуля',
+    optionsOptions: 'Варианты опций',
     order: 'Заказ',
     orderNumber: 'Номер заказа',
     orders: 'Заказы',

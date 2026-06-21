@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\School\SchoolOrder\SchoolOrderController;
 use App\Http\Controllers\Admin\School\SchoolQuiz\SchoolQuizController;
 use Illuminate\Support\Facades\Route;
 
+// блог
 Route::post('/blog-rubrics/{blogRubric}/clone',
     [BlogRubricController::class, 'clone'])
     ->name('blogRubrics.clone');
@@ -17,6 +18,7 @@ Route::post('/blog-articles/{blogArticle}/clone',
     [BlogArticleController::class, 'clone'])
     ->name('blogArticles.clone');
 
+// школа
 Route::post('/school-lessons/{schoolLesson}/clone',
     [SchoolLessonController::class, 'clone'])
     ->whereNumber('schoolLesson')

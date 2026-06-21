@@ -27,6 +27,7 @@ export default {
     addData: 'Деректерді қосу',
     addEnrollment: 'Тіркелу',
     addImage: 'Сурет қосу',
+    addImageProcessingProfile: 'Кескінді өңдеу профилін жасау',
     addInstructor: 'Нұсқаушы қосу',
     addLearningCategory: 'Оқыту санатын қосу',
     addLearningTag: 'Оқу тегін қосыңыз',

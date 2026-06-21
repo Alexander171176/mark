@@ -1,7 +1,6 @@
 <?php
 
 // Переключение активности массово
-
 use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
@@ -26,9 +25,54 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
+use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorProfileController;
+use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorVariantController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
+Route::put('/settings/bulk-activity',
+    [ParameterController::class, 'bulkUpdateActivity'])
+    ->name('settings.bulkUpdateActivity');
+
+Route::put('/currencies/bulk-activity',
+    [CurrencyController::class, 'bulkUpdateActivity'])
+    ->name('currencies.bulkUpdateActivity');
+
+Route::put('/comments/bulk-activity',
+    [CommentController::class, 'bulkUpdateActivity'])
+    ->name('comments.bulkUpdateActivity');
+
+// Image Processor
+Route::put('/image-processor-profiles/bulk-activity',
+    [ImageProcessorProfileController::class, 'bulkUpdateActivity'])
+    ->name('imageProcessorProfiles.bulkUpdateActivity');
+
+Route::put('/image-processor-variants/bulk-activity',
+    [ImageProcessorVariantController::class, 'bulkUpdateActivity'])
+    ->name('imageProcessorVariants.bulkUpdateActivity');
+
+// блог
+Route::put('/blog-rubrics/bulk-activity',
+    [BlogRubricController::class, 'bulkUpdateActivity'])
+    ->name('blogRubrics.bulkUpdateActivity');
+
+Route::put('/blog-articles/bulk-activity',
+    [BlogArticleController::class, 'bulkUpdateActivity'])
+    ->name('blogArticles.bulkUpdateActivity');
+
+Route::put('/blog-tags/bulk-activity',
+    [BlogTagController::class, 'bulkUpdateActivity'])
+    ->name('blogTags.bulkUpdateActivity');
+
+Route::put('/blog-banners/bulk-activity',
+    [BlogBannerController::class, 'bulkUpdateActivity'])
+    ->name('blogBanners.bulkUpdateActivity');
+
+Route::put('/blog-videos/bulk-activity',
+    [BlogVideoController::class, 'bulkUpdateActivity'])
+    ->name('blogVideos.bulkUpdateActivity');
+
+// онлайн школа
 Route::put('/school-instructor-profiles/bulk-activity',
     [SchoolInstructorProfileController::class, 'bulkUpdateActivity'])
     ->name('schoolInstructorProfiles.bulkUpdateActivity');
@@ -77,38 +121,6 @@ Route::put('/school-bundles/bulk-activity',
     [SchoolBundleController::class, 'bulkUpdateActivity'])
     ->name('schoolBundles.bulkUpdateActivity');
 
-Route::put('/blog-rubrics/bulk-activity',
-    [BlogRubricController::class, 'bulkUpdateActivity'])
-    ->name('blogRubrics.bulkUpdateActivity');
-
-Route::put('/blog-articles/bulk-activity',
-    [BlogArticleController::class, 'bulkUpdateActivity'])
-    ->name('blogArticles.bulkUpdateActivity');
-
-Route::put('/blog-tags/bulk-activity',
-    [BlogTagController::class, 'bulkUpdateActivity'])
-    ->name('blogTags.bulkUpdateActivity');
-
-Route::put('/blog-banners/bulk-activity',
-    [BlogBannerController::class, 'bulkUpdateActivity'])
-    ->name('blogBanners.bulkUpdateActivity');
-
-Route::put('/blog-videos/bulk-activity',
-    [BlogVideoController::class, 'bulkUpdateActivity'])
-    ->name('blogVideos.bulkUpdateActivity');
-
-Route::put('/settings/bulk-activity',
-    [ParameterController::class, 'bulkUpdateActivity'])
-    ->name('settings.bulkUpdateActivity');
-
-Route::put('/comments/bulk-activity',
-    [CommentController::class, 'bulkUpdateActivity'])
-    ->name('comments.bulkUpdateActivity');
-
-Route::put('/currencies/bulk-activity',
-    [CurrencyController::class, 'bulkUpdateActivity'])
-    ->name('currencies.bulkUpdateActivity');
-
 Route::put('/school-course-prices/bulk-activity',
     [SchoolCoursePriceController::class, 'bulkUpdateActivity'])
     ->name('schoolCoursePrices.bulkUpdateActivity');
@@ -121,6 +133,7 @@ Route::put('/school-subscription-plans/bulk-activity',
     [SchoolSubscriptionPlanController::class, 'bulkUpdateActivity'])
     ->name('schoolSubscriptionPlans.bulkUpdateActivity');
 
+// маркет
 Route::put('/market-companies/bulk-activity',
     [MarketCompanyController::class, 'bulkUpdateActivity'])
     ->name('marketCompanies.bulkUpdateActivity');

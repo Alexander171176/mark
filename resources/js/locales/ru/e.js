@@ -11,6 +11,7 @@ export default {
     editCoursePrice: 'Редактировать Прайс курса',
     editCurrency: 'Редактировать Валюту',
     editEnrollment: 'Редактировать Зачисление',
+    editImageProcessingProfile: 'Редактировать профиля обработки изображений',
     editImages: 'Редактировать изображения',
     editInstructor: 'Редактировать Инструктора',
     editLearningCategory: 'Редактировать Категорию обучения',

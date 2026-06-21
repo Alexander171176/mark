@@ -3,6 +3,7 @@ export default {
     id: 'ID',
     image: 'Image',
     imagePosition: 'Image position',
+    imageProcessingProfiles: 'Image processing profiles',
     images: 'Images',
     inactive: 'Inactive',
     individual: 'Жеке',

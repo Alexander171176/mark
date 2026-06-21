@@ -27,6 +27,7 @@ export default {
     addData: 'Add data',
     addEnrollment: 'Enroll',
     addImage: 'Add an image',
+    addImageProcessingProfile: 'Creating an image processing profile',
     addInstructor: 'Add an instructor',
     addLearningCategory: 'Add a Training Category',
     addLearningTag: 'Add a Learning Tag',

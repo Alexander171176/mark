@@ -1,7 +1,6 @@
 <?php
 
 // Обновление сортировки для Drag and Drop
-
 use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
@@ -25,9 +24,50 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
+use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorProfileController;
+use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorVariantController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
+Route::put('/settings/update-sort-bulk',
+    [ParameterController::class, 'updateSortBulk'])
+    ->name('settings.updateSortBulk');
+
+Route::put('/currencies/update-sort-bulk',
+    [CurrencyController::class, 'updateSortBulk'])
+    ->name('currencies.updateSortBulk');
+
+// Image Processor
+Route::put('/image-processor-profiles/update-sort-bulk',
+    [ImageProcessorProfileController::class, 'updateSortBulk'])
+    ->name('imageProcessorProfiles.updateSortBulk');
+
+Route::put('/image-processor-variants/update-sort-bulk',
+    [ImageProcessorVariantController::class, 'updateSortBulk'])
+    ->name('imageProcessorVariants.updateSortBulk');
+
+// блог
+Route::put('/blog-rubrics/update-sort-bulk',
+    [BlogRubricController::class, 'updateSortBulk'])
+    ->name('blogRubrics.updateSortBulk');
+
+Route::put('/blog-articles/update-sort-bulk',
+    [BlogArticleController::class, 'updateSortBulk'])
+    ->name('blogArticles.updateSortBulk');
+
+Route::put('/blog-tags/update-sort-bulk',
+    [BlogTagController::class, 'updateSortBulk'])
+    ->name('blogTags.updateSortBulk');
+
+Route::put('/blog-banners/update-sort-bulk',
+    [BlogBannerController::class, 'updateSortBulk'])
+    ->name('blogBanners.updateSortBulk');
+
+Route::put('/blog-videos/update-sort-bulk',
+    [BlogVideoController::class, 'updateSortBulk'])
+    ->name('blogVideos.updateSortBulk');
+
+// школа
 Route::put('/school-instructor-profiles/update-sort-bulk',
     [SchoolInstructorProfileController::class, 'updateSortBulk'])
     ->name('schoolInstructorProfiles.updateSortBulk');
@@ -76,34 +116,6 @@ Route::put('/school-bundles/update-sort-bulk',
     [SchoolBundleController::class, 'updateSortBulk'])
     ->name('schoolBundles.updateSortBulk');
 
-Route::put('/blog-rubrics/update-sort-bulk',
-    [BlogRubricController::class, 'updateSortBulk'])
-    ->name('blogRubrics.updateSortBulk');
-
-Route::put('/blog-articles/update-sort-bulk',
-    [BlogArticleController::class, 'updateSortBulk'])
-    ->name('blogArticles.updateSortBulk');
-
-Route::put('/blog-tags/update-sort-bulk',
-    [BlogTagController::class, 'updateSortBulk'])
-    ->name('blogTags.updateSortBulk');
-
-Route::put('/blog-banners/update-sort-bulk',
-    [BlogBannerController::class, 'updateSortBulk'])
-    ->name('blogBanners.updateSortBulk');
-
-Route::put('/blog-videos/update-sort-bulk',
-    [BlogVideoController::class, 'updateSortBulk'])
-    ->name('blogVideos.updateSortBulk');
-
-Route::put('/settings/update-sort-bulk',
-    [ParameterController::class, 'updateSortBulk'])
-    ->name('settings.updateSortBulk');
-
-Route::put('/currencies/update-sort-bulk',
-    [CurrencyController::class, 'updateSortBulk'])
-    ->name('currencies.updateSortBulk');
-
 Route::put('/school-course-prices/update-sort-bulk',
     [SchoolCoursePriceController::class, 'updateSortBulk'])
     ->name('schoolCoursePrices.updateSortBulk');
@@ -116,6 +128,7 @@ Route::put('/school-subscription-plans/update-sort-bulk',
     [SchoolSubscriptionPlanController::class, 'updateSortBulk'])
     ->name('schoolSubscriptionPlans.updateSortBulk');
 
+// маркет
 Route::put('/market-companies/update-sort-bulk',
     [MarketCompanyController::class, 'updateSortBulk'])
     ->name('marketCompanies.updateSortBulk');

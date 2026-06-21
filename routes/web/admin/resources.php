@@ -33,6 +33,8 @@ use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionP
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
 use App\Http\Controllers\Admin\Statistics\Chart\ChartController;
 use App\Http\Controllers\Admin\System\Component\ComponentController;
+use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorProfileController;
+use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorVariantController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use App\Http\Controllers\Admin\System\Permission\PermissionController;
 use App\Http\Controllers\Admin\System\Report\ReportController;
@@ -41,24 +43,43 @@ use App\Http\Controllers\Admin\System\Setting\SettingController;
 use App\Http\Controllers\Admin\System\User\UserController;
 use Illuminate\Support\Facades\Route;
 
+// системные
 Route::resource('/settings', SettingController::class);
 Route::resource('/parameters', ParameterController::class);
 Route::resource('/users', UserController::class);
 Route::resource('/roles', RoleController::class);
 Route::resource('/permissions', PermissionController::class);
 
-Route::resource('/charts', ChartController::class)->except(['show']);
-
-Route::resource('/comments', CommentController::class)->except(['create', 'store', 'show']); // Админ обычно не создает комменты с нуля
-
+// редактор компонентов в админке
 Route::resource('/components', ComponentController::class);
 Route::post('/components/save', [ComponentController::class, 'save'])
-    ->name('components.save'); // Выносим отдельно, т.к. не ресурсный
+    ->name('components.save');
 
+// отчёты по таблицам БД
 Route::resource('/reports', ReportController::class)->only(['index']);
-
 Route::get('/reports/download', [ReportController::class, 'download'])
-    ->name('reports.download'); // Выносим отдельно
+    ->name('reports.download');
+
+// графики
+Route::resource('/charts', ChartController::class)->except(['show']);
+
+// валюты
+Route::resource('/currencies', CurrencyController::class);
+
+// комментарии
+Route::resource('/comments', CommentController::class)->except(['create', 'store', 'show']); // Админ обычно не создает комменты с нуля
+
+
+// маршруты обработки изображений
+Route::resource('/image-processor-profiles',
+    ImageProcessorProfileController::class)
+    ->parameters(['image-processor-profiles' => 'imageProcessorProfile',])
+    ->names('imageProcessorProfiles');
+
+Route::resource('/image-processor-variants',
+    ImageProcessorVariantController::class)
+    ->parameters(['image-processor-variants' => 'imageProcessorVariant',])
+    ->names('imageProcessorVariants');
 
 // маршруты блога
 Route::resource('/blog-rubrics', BlogRubricController::class)
@@ -182,10 +203,7 @@ Route::resource('/school-orders',
     ->parameters(['school-orders' => 'schoolOrder'])
     ->names('schoolOrders');
 
-Route::resource('/currencies', CurrencyController::class);
-
 // маршруты маркетплейса
-
 Route::resource('/market-companies', MarketCompanyController::class)
     ->parameters(['market-companies' => 'marketCompany'])
     ->names('marketCompanies');

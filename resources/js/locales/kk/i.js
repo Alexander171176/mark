@@ -3,6 +3,7 @@ export default {
     id: 'ID',
     image: 'Сурет',
     imagePosition: 'Кескін орны',
+    imageProcessingProfiles: 'Кескінді өңдеу профильдері',
     images: 'Изображений',
     inactive: 'Белсенді емес',
     individual: 'Individual',

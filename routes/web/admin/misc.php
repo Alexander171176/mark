@@ -1,6 +1,6 @@
 <?php
 
-// --- Маршрут просмотр локалей и другие ---
+// --- Маршрут просмотр локалей ---
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;

@@ -1,12 +1,35 @@
 <?php
 
+// Количество элементов на странице
 use App\Http\Controllers\Admin\System\Setting\SettingController;
 use Illuminate\Support\Facades\Route;
 
-// Количество элементов на странице
+// системные
 Route::put('/update-count/settings', [SettingController::class, 'updateAdminCountSettings'])
     ->name('updateAdminCountSettings');
 
+Route::put('/update-count/image-processor-profiles',
+    [SettingController::class, 'updateAdminCountImageProcessorProfiles'])
+    ->name('updateAdminCountImageProcessorProfiles');
+
+Route::put('/update-count/users', [SettingController::class, 'updateAdminCountUsers'])
+    ->name('updateAdminCountUsers');
+
+Route::put('/update-count/roles', [SettingController::class, 'updateAdminCountRoles'])
+    ->name('updateAdminCountRoles');
+
+Route::put('/update-count/permissions', [SettingController::class, 'updateAdminCountPermissions'])
+    ->name('updateAdminCountPermissions');
+
+// валюта
+Route::put('/update-count/currencies', [SettingController::class, 'updateAdminCountCurrencies'])
+    ->name('updateAdminCountCurrencies');
+
+// комментарии
+Route::put('/update-count/comments', [SettingController::class, 'updateAdminCountComments'])
+    ->name('updateAdminCountComments');
+
+// блог
 Route::put('/update-count/rubrics', [SettingController::class, 'updateAdminCountRubrics'])
     ->name('updateAdminCountRubrics');
 
@@ -16,15 +39,13 @@ Route::put('/update-count/articles', [SettingController::class, 'updateAdminCoun
 Route::put('/update-count/tags', [SettingController::class, 'updateAdminCountTags'])
     ->name('updateAdminCountTags');
 
-Route::put('/update-count/comments', [SettingController::class, 'updateAdminCountComments'])
-    ->name('updateAdminCountComments');
-
 Route::put('/update-count/banners', [SettingController::class, 'updateAdminCountBanners'])
     ->name('updateAdminCountBanners');
 
 Route::put('/update-count/videos', [SettingController::class, 'updateAdminCountVideos'])
     ->name('updateAdminCountVideos');
 
+// школа
 Route::put('/update-count/instructors', [SettingController::class, 'updateAdminCountInstructors'])
     ->name('updateAdminCountInstructors');
 
@@ -73,9 +94,6 @@ Route::put('/update-count/quiz-attempt-items', [SettingController::class, 'updat
 Route::put('/update-count/bundles', [SettingController::class, 'updateAdminCountBundles'])
     ->name('updateAdminCountBundles');
 
-Route::put('/update-count/currencies', [SettingController::class, 'updateAdminCountCurrencies'])
-    ->name('updateAdminCountCurrencies');
-
 Route::put('/update-count/orders', [SettingController::class, 'updateAdminCountOrders'])
     ->name('updateAdminCountOrders');
 
@@ -88,15 +106,7 @@ Route::put('/update-count/bundle-prices', [SettingController::class, 'updateAdmi
 Route::put('/update-count/subscription-plans', [SettingController::class, 'updateAdminCountSubscriptionPlans'])
     ->name('updateAdminCountSubscriptionPlans');
 
-Route::put('/update-count/users', [SettingController::class, 'updateAdminCountUsers'])
-    ->name('updateAdminCountUsers');
-
-Route::put('/update-count/roles', [SettingController::class, 'updateAdminCountRoles'])
-    ->name('updateAdminCountRoles');
-
-Route::put('/update-count/permissions', [SettingController::class, 'updateAdminCountPermissions'])
-    ->name('updateAdminCountPermissions');
-
+// маркет
 Route::put('/update-count/companies', [SettingController::class, 'updateAdminCountCompanies'])
     ->name('updateAdminCountCompanies');
 

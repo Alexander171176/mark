@@ -3,6 +3,7 @@ export default {
     id: 'ID',
     image: 'Изображение',
     imagePosition: 'Позиция изображения',
+    imageProcessingProfiles: 'Профили обработки изображений',
     images: 'Изображений',
     inactive: 'Неактивные',
     individual: 'Физ. лицо',

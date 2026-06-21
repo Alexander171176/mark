@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
 use Illuminate\Support\Facades\Route;
 
+// Онлайн школа - новинки, хиты, распродажа
 Route::put('/school-courses/{schoolCourse}/is-new',
     [SchoolCourseController::class, 'updateIsNew'])
     ->whereNumber('schoolCourse')

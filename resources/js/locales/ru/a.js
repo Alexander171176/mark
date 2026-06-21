@@ -27,6 +27,7 @@ export default {
     addData: 'Добавить данные',
     addEnrollment: 'Зачислить',
     addImage: 'Добавить изображение',
+    addImageProcessingProfile: 'Создание профиля обработки изображений',
     addInstructor: 'Добавить инструктора',
     addLearningCategory: 'Добавить Категорию обучения',
     addLearningTag: 'Добавить Тег обучения',

@@ -11,6 +11,7 @@ export default {
     editCoursePrice: 'Курс бағасын өңдеу',
     editCurrency: 'Валютаны өзгерту',
     editEnrollment: 'Тіркеуді өңдеу',
+    editImageProcessingProfile: 'Кескінді өңдеу профильдерін өңдеу',
     editImages: 'Суреттерді өңдеу',
     editInstructor: 'Оқытушыны редакциялау',
     editLearningCategory: 'Оқыту санатын өңдеу',

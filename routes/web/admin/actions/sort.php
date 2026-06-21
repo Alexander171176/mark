@@ -25,9 +25,31 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
+use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorProfileController;
+use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorVariantController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
+Route::put('/parameters/{parameter}/sort',
+    [ParameterController::class, 'updateSort'])
+    ->name('parameters.updateSort');
+
+Route::put('/currencies/{currency}/sort',
+    [CurrencyController::class, 'updateSort'])
+    ->name('currencies.updateSort');
+
+// Image Processor
+Route::put('/image-processor-profiles/{imageProcessorProfile}/sort',
+    [ImageProcessorProfileController::class, 'updateSort'])
+    ->whereNumber('imageProcessorProfile')
+    ->name('imageProcessorProfiles.updateSort');
+
+Route::put('/image-processor-variants/{imageProcessorVariant}/sort',
+    [ImageProcessorVariantController::class, 'updateSort'])
+    ->whereNumber('imageProcessorVariant')
+    ->name('imageProcessorVariants.updateSort');
+
+// блог
 Route::put('/blog-rubrics/{blogRubric}/sort',
     [BlogRubricController::class, 'updateSort'])
     ->name('blogRubrics.updateSort');
@@ -48,14 +70,7 @@ Route::put('/blog-videos/{blogVideo}/sort',
     [BlogVideoController::class, 'updateSort'])
     ->name('blogVideos.updateSort');
 
-Route::put('/parameters/{parameter}/sort',
-    [ParameterController::class, 'updateSort'])
-    ->name('parameters.updateSort');
-
-Route::put('/currencies/{currency}/sort',
-    [CurrencyController::class, 'updateSort'])
-    ->name('currencies.updateSort');
-
+// школа
 Route::put('/school-instructor-profiles/{schoolInstructorProfile}/sort',
     [SchoolInstructorProfileController::class, 'updateSort'])
     ->whereNumber('schoolInstructorProfile')
@@ -131,6 +146,7 @@ Route::put('/school-subscription-plans/{schoolSubscriptionPlan}/sort',
     ->whereNumber('schoolSubscriptionPlan')
     ->name('schoolSubscriptionPlans.updateSort');
 
+// маркет
 Route::put('/market-companies/{marketCompany}/sort',
     [MarketCompanyController::class, 'updateSort'])
     ->whereNumber('marketCompany')

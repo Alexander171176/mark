@@ -5,6 +5,7 @@ export default {
     online: 'онлайн',
     openLink: 'Сілтемені ашу',
     options: 'Модульдің опциялары мен параметрлері',
+    optionsOptions: 'Опциялар',
     order: 'Заказ',
     orderNumber: 'Тапсырыс нөмірі',
     orders: 'Тапсырыстар',

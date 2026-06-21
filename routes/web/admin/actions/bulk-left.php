@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
 use Illuminate\Support\Facades\Route;
 
+// блог
 Route::put('/blog-articles/bulk-left',
     [BlogArticleController::class, 'bulkUpdateLeft'])
     ->name('blogArticles.bulkUpdateLeft');
@@ -22,10 +23,12 @@ Route::put('/blog-videos/bulk-left',
     [BlogVideoController::class, 'bulkUpdateLeft'])
     ->name('blogVideos.bulkUpdateLeft');
 
+// школа
 Route::put('/school-courses/bulk-left',
     [SchoolCourseController::class, 'bulkUpdateLeft'])
     ->name('schoolCourses.bulkUpdateLeft');
 
+// маркет
 Route::put('/market-companies/bulk-left',
     [MarketCompanyController::class, 'bulkUpdateLeft'])
     ->name('marketCompanies.bulkUpdateLeft');

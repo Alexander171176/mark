@@ -40,6 +40,7 @@ const mainLinks = ref(JSON.parse(localStorage.getItem('mainLinks')) || [
     'roles',
     'permissions',
     'settings',
+    'imageProcessingProfiles',
 ]);
 
 const hiddenLinks = ref(JSON.parse(localStorage.getItem('hiddenLinks')) || [

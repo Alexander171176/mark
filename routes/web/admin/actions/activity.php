@@ -26,9 +26,56 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
+use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorProfileController;
+use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorVariantController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
+Route::put('/settings/{setting}/activity',
+    [ParameterController::class, 'updateActivity'])
+    ->name('settings.updateActivity');
+
+Route::put('/currencies/{currency}/activity',
+    [CurrencyController::class, 'updateActivity'])
+    ->name('currencies.updateActivity');
+
+Route::put('/comments/{comment}/activity',
+    [CommentController::class, 'updateActivity'])
+    ->name('comments.updateActivity');
+
+// Image Processor
+Route::put('/image-processor-profiles/{imageProcessorProfile}/activity',
+    [ImageProcessorProfileController::class, 'updateActivity'])
+    ->whereNumber('imageProcessorProfile')
+    ->name('imageProcessorProfiles.updateActivity');
+
+Route::put('/image-processor-variants/{imageProcessorVariant}/activity',
+    [ImageProcessorVariantController::class, 'updateActivity'])
+    ->whereNumber('imageProcessorVariant')
+    ->name('imageProcessorVariants.updateActivity');
+
+// блог
+Route::put('/blog-rubrics/{blogRubric}/activity',
+    [BlogRubricController::class, 'updateActivity'])
+    ->name('blogRubrics.updateActivity');
+
+Route::put('/blog-articles/{blogArticle}/activity',
+    [BlogArticleController::class, 'updateActivity'])
+    ->name('blogArticles.updateActivity');
+
+Route::put('/blog-tags/{blogTag}/activity',
+    [BlogTagController::class, 'updateActivity'])
+    ->name('blogTags.updateActivity');
+
+Route::put('/blog-banners/{blogBanner}/activity',
+    [BlogBannerController::class, 'updateActivity'])
+    ->name('blogBanners.updateActivity');
+
+Route::put('/blog-videos/{blogVideo}/activity',
+    [BlogVideoController::class, 'updateActivity'])
+    ->name('blogVideos.updateActivity');
+
+// школа
 Route::put('/school-instructor-profiles/{schoolInstructorProfile}/activity',
     [SchoolInstructorProfileController::class, 'updateActivity'])
     ->whereNumber('schoolInstructorProfile')
@@ -88,38 +135,6 @@ Route::put('/school-bundles/{schoolBundle}/activity',
     ->whereNumber('schoolBundle')
     ->name('schoolBundles.updateActivity');
 
-Route::put('/blog-rubrics/{blogRubric}/activity',
-    [BlogRubricController::class, 'updateActivity'])
-    ->name('blogRubrics.updateActivity');
-
-Route::put('/blog-articles/{blogArticle}/activity',
-    [BlogArticleController::class, 'updateActivity'])
-    ->name('blogArticles.updateActivity');
-
-Route::put('/blog-tags/{blogTag}/activity',
-    [BlogTagController::class, 'updateActivity'])
-    ->name('blogTags.updateActivity');
-
-Route::put('/blog-banners/{blogBanner}/activity',
-    [BlogBannerController::class, 'updateActivity'])
-    ->name('blogBanners.updateActivity');
-
-Route::put('/blog-videos/{blogVideo}/activity',
-    [BlogVideoController::class, 'updateActivity'])
-    ->name('blogVideos.updateActivity');
-
-Route::put('/settings/{setting}/activity',
-    [ParameterController::class, 'updateActivity'])
-    ->name('settings.updateActivity');
-
-Route::put('/comments/{comment}/activity',
-    [CommentController::class, 'updateActivity'])
-    ->name('comments.updateActivity');
-
-Route::put('/currencies/{currency}/activity',
-    [CurrencyController::class, 'updateActivity'])
-    ->name('currencies.updateActivity');
-
 Route::put('/school-course-prices/{schoolCoursePrice}/activity',
     [SchoolCoursePriceController::class, 'updateActivity'])
     ->whereNumber('schoolCoursePrice')
@@ -135,6 +150,7 @@ Route::put('/school-subscription-plans/{schoolSubscriptionPlan}/activity',
     ->whereNumber('schoolSubscriptionPlan')
     ->name('schoolSubscriptionPlans.updateActivity');
 
+// маркет
 Route::put('/market-companies/{marketCompany}/activity',
     [MarketCompanyController::class, 'updateActivity'])
     ->whereNumber('marketCompany')

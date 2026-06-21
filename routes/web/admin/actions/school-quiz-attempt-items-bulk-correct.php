@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\School\SchoolQuizAttemptItem\SchoolQuizAttemptItemController;
 use Illuminate\Support\Facades\Route;
 
+// Онлайн школа - корректность ответа на викторину
 Route::put('/school-quiz-attempt-items/bulk-correct',
     [SchoolQuizAttemptItemController::class, 'bulkUpdateCorrect'])
     ->name('schoolQuizAttemptItems.bulkUpdateCorrect');

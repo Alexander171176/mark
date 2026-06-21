@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
 use App\Http\Controllers\Admin\School\SchoolQuiz\SchoolQuizController;
 use Illuminate\Support\Facades\Route;
 
+// блог
 Route::put('/blog-articles/{blogArticle}/left',
     [BlogArticleController::class, 'updateLeft'])
     ->name('blogArticles.updateLeft');
@@ -24,6 +25,7 @@ Route::put('/blog-videos/{blogVideo}/left',
     [BlogVideoController::class, 'updateLeft'])
     ->name('blogVideos.updateLeft');
 
+// школа
 Route::put('/school-courses/{schoolCourse}/left',
     [SchoolCourseController::class, 'updateLeft'])
     ->whereNumber('schoolCourse')
@@ -39,6 +41,7 @@ Route::put('/school-quizzes/{schoolQuiz}/left',
     ->whereNumber('schoolQuiz')
     ->name('schoolQuizzes.updateLeft');
 
+// маркет
 Route::put('/market-companies/{marketCompany}/left',
     [MarketCompanyController::class, 'updateLeft'])
     ->whereNumber('marketCompany')

@@ -1,6 +1,6 @@
 <?php
 
-// --- Системные маршруты для отладки ---
+// --- Системные маршруты для отладки системы ---
 
 use App\Http\Controllers\Admin\System\ComposerController;
 use App\Http\Controllers\Admin\System\EnvController;

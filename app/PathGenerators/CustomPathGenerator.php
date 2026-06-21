@@ -10,8 +10,8 @@ use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\Blog\BlogRubric\BlogRubricImage;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\BlogVideo\BlogVideoImage;
-use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
-use App\Models\Admin\School\SchoolQuiz\SchoolQuizImage;
+use App\Models\Admin\Market\MarketShop\MarketShop;
+use App\Models\Admin\Market\MarketShop\MarketShopImage;
 use App\Models\Admin\School\SchoolAssignment\SchoolAssignment;
 use App\Models\Admin\School\SchoolAssignment\SchoolAssignmentImage;
 use App\Models\Admin\School\SchoolBundle\SchoolBundle;
@@ -26,8 +26,10 @@ use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolLesson\SchoolLessonImage;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
 use App\Models\Admin\School\SchoolModule\SchoolModuleImage;
-use App\Models\Admin\School\SchoolSubscriptionPlan\SubscriptionPlan;
-use App\Models\Admin\School\SchoolSubscriptionPlan\SubscriptionPlanImage;
+use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
+use App\Models\Admin\School\SchoolQuiz\SchoolQuizImage;
+use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlan;
+use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanImage;
 use App\Models\Admin\School\SchoolTrack\SchoolTrack;
 use App\Models\Admin\School\SchoolTrack\SchoolTrackImage;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -38,49 +40,53 @@ class CustomPathGenerator implements PathGenerator
     public function getPath(Media $media): string
     {
         // === блог (новая мультиязычная архитектура) ===
-        if ($media->model_type === BlogArticle::class)      return 'blog_articles/' . $media->model_id . '/';
-        if ($media->model_type === BlogArticleImage::class) return 'blog_article_images/' . $media->model_id . '/';
+        if ($media->model_type === BlogArticle::class)      return 'blog/blog_articles/' . $media->model_id . '/';
+        if ($media->model_type === BlogArticleImage::class) return 'blog/blog_article_images/' . $media->model_id . '/';
 
-        if ($media->model_type === BlogRubric::class)       return 'blog_rubrics/' . $media->model_id . '/';
-        if ($media->model_type === BlogRubricImage::class)  return 'blog_rubric_images/' . $media->model_id . '/';
+        if ($media->model_type === BlogRubric::class)       return 'blog/blog_rubrics/' . $media->model_id . '/';
+        if ($media->model_type === BlogRubricImage::class)  return 'blog/blog_rubric_images/' . $media->model_id . '/';
 
-        if ($media->model_type === BlogBanner::class)       return 'blog_banners/' . $media->model_id . '/';
-        if ($media->model_type === BlogBannerImage::class)  return 'blog_banner_images/' . $media->model_id . '/';
+        if ($media->model_type === BlogBanner::class)       return 'blog/blog_banners/' . $media->model_id . '/';
+        if ($media->model_type === BlogBannerImage::class)  return 'blog/blog_banner_images/' . $media->model_id . '/';
 
-        if ($media->model_type === BlogVideo::class)        return 'blog_videos/' . $media->model_id . '/';
-        if ($media->model_type === BlogVideoImage::class)   return 'blog_video_images/' . $media->model_id . '/';
+        if ($media->model_type === BlogVideo::class)        return 'blog/blog_videos/' . $media->model_id . '/';
+        if ($media->model_type === BlogVideoImage::class)   return 'blog/blog_video_images/' . $media->model_id . '/';
 
         // === школа ===
-        if ($media->model_type === SchoolInstructorProfile::class)      return 'school_instructor_profiles/' . $media->model_id . '/';
-        if ($media->model_type === SchoolInstructorProfileImage::class) return 'school_instructor_profile_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolInstructorProfile::class)      return 'school/school_instructor_profiles/' . $media->model_id . '/';
+        if ($media->model_type === SchoolInstructorProfileImage::class) return 'school/school_instructor_profile_images/' . $media->model_id . '/';
 
-        if ($media->model_type === SchoolTrack::class)       return 'school_tracks/' . $media->model_id . '/';
-        if ($media->model_type === SchoolTrackImage::class)  return 'school_track_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolTrack::class)       return 'school/school_tracks/' . $media->model_id . '/';
+        if ($media->model_type === SchoolTrackImage::class)  return 'school/school_track_images/' . $media->model_id . '/';
 
-        if ($media->model_type === SchoolCourse::class)       return 'school_courses/' . $media->model_id . '/';
-        if ($media->model_type === SchoolCourseImage::class)  return 'school_course_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolCourse::class)       return 'school/school_courses/' . $media->model_id . '/';
+        if ($media->model_type === SchoolCourseImage::class)  return 'school/school_course_images/' . $media->model_id . '/';
 
-        if ($media->model_type === SchoolModule::class)       return 'school_modules/' . $media->model_id . '/';
-        if ($media->model_type === SchoolModuleImage::class)  return 'school_module_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolModule::class)       return 'school/school_modules/' . $media->model_id . '/';
+        if ($media->model_type === SchoolModuleImage::class)  return 'school/school_module_images/' . $media->model_id . '/';
 
-        if ($media->model_type === SchoolLesson::class)       return 'school_lessons/' . $media->model_id . '/';
-        if ($media->model_type === SchoolLessonImage::class)  return 'school_lesson_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolLesson::class)       return 'school/school_lessons/' . $media->model_id . '/';
+        if ($media->model_type === SchoolLessonImage::class)  return 'school/school_lesson_images/' . $media->model_id . '/';
 
-        if ($media->model_type === SchoolAssignment::class)       return 'school_assignments/' . $media->model_id . '/';
-        if ($media->model_type === SchoolAssignmentImage::class)  return 'school_assignment_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolAssignment::class)       return 'school/school_assignments/' . $media->model_id . '/';
+        if ($media->model_type === SchoolAssignmentImage::class)  return 'school/school_assignment_images/' . $media->model_id . '/';
 
-        if ($media->model_type === SchoolCourseSchedule::class)       return 'school_course_schedules/' . $media->model_id . '/';
-        if ($media->model_type === SchoolCourseScheduleImage::class)  return 'school_course_schedule_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolCourseSchedule::class)       return 'school/school_course_schedules/' . $media->model_id . '/';
+        if ($media->model_type === SchoolCourseScheduleImage::class)  return 'school/school_course_schedule_images/' . $media->model_id . '/';
 
-        if ($media->model_type === SchoolQuiz::class)       return 'school_quizzes/' . $media->model_id . '/';
-        if ($media->model_type === SchoolQuizImage::class)  return 'school_quiz_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolQuiz::class)       return 'school/school_quizzes/' . $media->model_id . '/';
+        if ($media->model_type === SchoolQuizImage::class)  return 'school/school_quiz_images/' . $media->model_id . '/';
 
-        if ($media->model_type === SchoolBundle::class)       return 'school_bundles/' . $media->model_id . '/';
-        if ($media->model_type === SchoolBundleImage::class)  return 'school_bundle_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolBundle::class)       return 'school/school_bundles/' . $media->model_id . '/';
+        if ($media->model_type === SchoolBundleImage::class)  return 'school/school_bundle_images/' . $media->model_id . '/';
 
-        // === финансы ===
-        if ($media->model_type === SubscriptionPlan::class)      return 'subscription_plans/' . $media->model_id . '/';
-        if ($media->model_type === SubscriptionPlanImage::class) return 'subscription_plan_images/' . $media->model_id . '/';
+        if ($media->model_type === SchoolSubscriptionPlan::class)      return 'school/school_subscription_plans/' . $media->model_id . '/';
+        if ($media->model_type === SchoolSubscriptionPlanImage::class) return 'school/school_subscription_plan_images/' . $media->model_id . '/';
+
+        // === маркет ===
+        if ($media->model_type === MarketShop::class)      return 'market/market_shops/' . $media->model_id . '/';
+        if ($media->model_type === MarketShopImage::class) return 'market/market_shop_images/' . $media->model_id . '/';
+
 
         // Дефолт
         return 'media/' . $media->model_id . '/';

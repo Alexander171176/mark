@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
@@ -118,3 +119,7 @@ Route::put('/school-subscription-plans/update-sort-bulk',
 Route::put('/market-companies/update-sort-bulk',
     [MarketCompanyController::class, 'updateSortBulk'])
     ->name('marketCompanies.updateSortBulk');
+
+Route::put('/market-shops/update-sort-bulk',
+    [MarketShopController::class, 'updateSortBulk'])
+    ->name('marketShops.updateSortBulk');

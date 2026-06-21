@@ -2073,6 +2073,86 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // PUBLIC MARKET COMPANIES DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'adminMarketShopsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_SHOPS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных магазинов в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET SHOPS PROCESSING MODE
+            [
+                'type' => 'string',
+                'option' => 'publicMarketShopsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'PUBLIC_MARKET_SHOPS_PROCESSING_MODE',
+                'category' => 'public',
+                'description' => 'Режим обработки данных магазинов в публичной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET SHOPS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketShopsPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_SHOPS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество магазинов в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET SHOPS PER PAGE
+            [
+                'type' => 'number',
+                'option' => 'publicMarketShopsPerPage',
+                'value' => '3',
+                'constant' => 'PUBLIC_MARKET_SHOPS_PER_PAGE',
+                'category' => 'public',
+                'description' => 'Показывать количество магазинов в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET SHOPS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketShopsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_SHOPS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка магазинов по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET SHOPS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'publicMarketShopsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'PUBLIC_MARKET_SHOPS_DEFAULT_SORT',
+                'category' => 'public',
+                'description' => 'Сортировка магазинов по умолчанию в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET SHOPS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketShopsDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_SHOPS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка магазинов в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET SHOPS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'publicMarketShopsDefaultView',
+                'value' => 'grid',
+                'constant' => 'PUBLIC_MARKET_SHOPS_DEFAULT_VIEW',
+                'category' => 'public',
+                'description' => 'Вид списка магазинов в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET SHOPS DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

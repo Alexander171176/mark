@@ -100,3 +100,5 @@ Route::put('/update-count/permissions', [SettingController::class, 'updateAdminC
 Route::put('/update-count/companies', [SettingController::class, 'updateAdminCountCompanies'])
     ->name('updateAdminCountCompanies');
 
+Route::put('/update-count/shops', [SettingController::class, 'updateAdminCountShops'])
+    ->name('updateAdminCountShops');

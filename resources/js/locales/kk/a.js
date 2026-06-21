@@ -34,6 +34,7 @@ export default {
     addLink: 'Сілтеме қосу',
     addLocale: 'Тіл қосу',
     addMarketCompany: 'Компания қосу',
+    addMarketShop: 'Дүкен қосу',
     addMarketStorefront: 'Көрме қосу',
     addModule: 'Модуль қосу',
     addOrder: 'Тапсырыс жасау',

@@ -33,6 +33,7 @@ export default {
     loginTitle: 'Login',
     loginUser: 'User Login',
     loginWarning: 'To log in, you need to enter the email and password of the registered account.',
+    logo: 'Logo',
     logout: 'Logout',
     logoutOtherSessionsButton: 'Log Out Other Browser Sessions',
     logs: 'Logs',

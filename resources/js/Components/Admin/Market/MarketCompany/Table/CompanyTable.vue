@@ -199,10 +199,10 @@ const vatLabel = (company) => {
                                 d="M16.293,15.293,12,19.586,7.707,15.293a1,1,0,0,0-1.414,1.414l5,5a1,1,0,0,0,1.414,0l5-5a1,1,0,0,0-1.414-1.414Z"></path>
                         </svg>
                     </th>
-                    <th class="px-1 py-3 first:pl-12 last:pr-12 whitespace-nowrap w-px">
+                    <th class="px-1 py-3 whitespace-nowrap w-px">
                         <div class="font-semibold text-center">{{ t('id') }}</div>
                     </th>
-                    <th class="px-1 py-3 first:pl-12 last:pr-12 whitespace-nowrap w-px">
+                    <th class="px-1 py-3 whitespace-nowrap w-px">
                         <div class="flex justify-center" :title="t('owner')">
                             <svg class="w-6 h-6 fill-current shrink-0" viewBox="0 0 24 24">
                                 <path d="M3,7H1V2A1,1,0,0,1,2,1H7V3H3Z"></path>
@@ -214,7 +214,7 @@ const vatLabel = (company) => {
                             </svg>
                         </div>
                     </th>
-                    <th class="px-1 py-3 first:pl-12 last:pr-12 whitespace-nowrap w-px">
+                    <th class="px-1 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('image')">
                             <svg class="w-6 h-6 fill-current shrink-0" viewBox="0 0 512 512">
                                 <path
@@ -222,18 +222,18 @@ const vatLabel = (company) => {
                             </svg>
                         </div>
                     </th>
-                    <th class="px-1 py-3 first:pl-12 last:pr-12 whitespace-nowrap">
+                    <th class="px-1 py-3 whitespace-nowrap">
                         <div class="font-semibold text-left">{{ t('title') }}</div>
                     </th>
-                    <th class="px-1 py-3 first:pl-12 last:pr-12 whitespace-nowrap">
+                    <th class="px-1 py-3 whitespace-nowrap">
                         <div class="font-semibold text-left">БИН/ИИН</div>
                     </th>
-                    <th class="px-1 py-3 first:pl-12 last:pr-12 whitespace-nowrap">
+                    <th class="px-1 py-3 whitespace-nowrap">
                         <div class="font-semibold text-left">
                             {{ t('contacts') }} / {{ t('city') }}
                         </div>
                     </th>
-                    <th class="px-1 py-3 first:pl-12 last:pr-12 whitespace-nowrap">
+                    <th class="px-1 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('views')">
                             <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 16 16">
                                 <path
@@ -243,13 +243,13 @@ const vatLabel = (company) => {
                             </svg>
                         </div>
                     </th>
-                    <th class="px-1 py-3 first:pl-12 last:pr-12 whitespace-nowrap">
+                    <th class="px-1 py-3 whitespace-nowrap">
                         <div class="font-medium text-center">{{ t('show') }}</div>
                     </th>
-                    <th class="px-1 py-3 first:pl-12 last:pr-12 whitespace-nowrap">
+                    <th class="px-1 py-3 whitespace-nowrap">
                         <div class="font-medium text-center">{{ t('status') }}</div>
                     </th>
-                    <th class="px-1 py-3 first:pl-12 last:pr-12 whitespace-nowrap">
+                    <th class="px-1 py-3 whitespace-nowrap">
                         <div class="font-semibold text-end">{{ t('actions') }}</div>
                     </th>
                     <th class="px-1 py-1 whitespace-nowrap text-center">
@@ -292,7 +292,7 @@ const vatLabel = (company) => {
                                     {{ company.id }}
                                 </div>
                             </td>
-                            <td class="px-1 py-1">
+                            <td class="px-1 py-3">
                                 <div class="flex justify-center">
                                     <img
                                         :src="ownerAvatar(company)"
@@ -303,7 +303,7 @@ const vatLabel = (company) => {
                                     />
                                 </div>
                             </td>
-                            <td class="px-1 py-1">
+                            <td class="px-1 py-3">
                                 <div class="flex justify-center">
                                     <img
                                         :src="logoUrl(company)"
@@ -314,7 +314,7 @@ const vatLabel = (company) => {
                                     />
                                 </div>
                             </td>
-                            <td class="px-1 py-1">
+                            <td class="px-1 py-3">
                                 <div class="text-left">
                                     <a
                                         :href="`/market/companies/${encodeURIComponent(company.url)}`"
@@ -339,12 +339,12 @@ const vatLabel = (company) => {
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-1 py-1 whitespace-nowrap">
+                            <td class="px-1 py-3 whitespace-nowrap">
                                 <div class="text-left text-xs text-indigo-700 dark:text-indigo-300">
                                     {{ company.bin_iin || '—' }}
                                 </div>
                             </td>
-                            <td class="px-1 py-1 whitespace-nowrap
+                            <td class="px-1 py-3 whitespace-nowrap
                                        flex flex-col items-center justify-center gap-3">
                                 <div class="text-left text-xs">
                                     <div class="text-fuchsia-700 dark:text-fuchsia-300">
@@ -361,12 +361,12 @@ const vatLabel = (company) => {
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-1 py-1 whitespace-nowrap">
+                            <td class="px-1 py-3 whitespace-nowrap">
                                 <div class="text-center text-blue-600 dark:text-blue-300">
                                     {{ company.views }}
                                 </div>
                             </td>
-                            <td class="px-1 py-1 whitespace-nowrap">
+                            <td class="px-1 py-3 whitespace-nowrap">
                                 <div class="flex justify-center space-x-2">
                                     <LeftToggle
                                         :isActive="company.left"
@@ -387,7 +387,7 @@ const vatLabel = (company) => {
                                     />
                                 </div>
                             </td>
-                            <td class="px-1 py-1 whitespace-nowrap">
+                            <td class="px-1 py-3 whitespace-nowrap">
                                 <div class="flex items-center justify-center gap-1">
                                     <span
                                         class="text-[10px] px-2 py-1 rounded-sm
@@ -409,7 +409,6 @@ const vatLabel = (company) => {
                                     />
                                 </div>
                             </td>
-
                             <td class="px-1 py-1 whitespace-nowrap">
                                 <div class="flex justify-center space-x-1">
                                     <ActivityToggle
@@ -425,7 +424,6 @@ const vatLabel = (company) => {
                                     <DeleteIconButton @delete="$emit('delete', company)" />
                                 </div>
                             </td>
-
                             <td class="px-1 py-1 whitespace-nowrap">
                                 <div class="text-center">
                                     <input

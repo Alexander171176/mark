@@ -34,6 +34,7 @@ export default {
     addLink: 'Добавить ссылку',
     addLocale: 'Добавить локаль',
     addMarketCompany: 'Добавить фирму',
+    addMarketShop: 'Добавить магазин',
     addMarketStorefront: 'Добавить витрину',
     addModule: 'Добавить Модуль',
     addOrder: 'Создать заказ',

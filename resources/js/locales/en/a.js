@@ -34,6 +34,7 @@ export default {
     addLink: 'Add link',
     addLocale: 'Add locale',
     addMarketCompany: 'Add a company',
+    addMarketShop: 'Add a store',
     addMarketStorefront: 'Add a showcase',
     addModule: 'Add Module',
     addOrder: 'Create an order',

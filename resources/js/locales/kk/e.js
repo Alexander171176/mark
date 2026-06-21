@@ -17,6 +17,7 @@ export default {
     editLearningTag: 'Оқу тегін өңдеу',
     editLesson: 'Сабақты өңдеу',
     editMarketCompany: 'Компанияны өңдеу',
+    editMarketShop: 'Дүкенді өңдеу',
     editModule: 'Модульді өңдеу',
     editNotes: 'Ескертпені өңдеу',
     editOrder: 'Тапсырысты өңдеу',

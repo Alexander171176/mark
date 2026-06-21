@@ -208,7 +208,7 @@ const trackName = (track) => {
 
                         <template v-else>
                             <img
-                                src="/storage/school_track_images/default-image.png"
+                                src="/storage/school/school_track_images/default-image.png"
                                 :alt="t('defaultImageTitle')"
                                 class="h-6 w-8 object-cover rounded-sm
                                        border border-slate-400 dark:border-slate-200 p-0.5"

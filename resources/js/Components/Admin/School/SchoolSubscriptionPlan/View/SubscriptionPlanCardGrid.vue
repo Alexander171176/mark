@@ -65,7 +65,7 @@ const imageSrc = (plan) => {
 
     return image?.webp_url
         || image?.url
-        || '/storage/subscription_plan_images/default-image.png'
+        || '/storage/school/school_subscription_plan_images/default-image.png'
 }
 
 const imageAlt = (plan) => {

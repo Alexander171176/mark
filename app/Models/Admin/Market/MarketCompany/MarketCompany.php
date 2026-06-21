@@ -2,12 +2,14 @@
 
 namespace App\Models\Admin\Market\MarketCompany;
 
+use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Log;
 
 class MarketCompany extends Model
@@ -98,6 +100,12 @@ class MarketCompany extends Model
     ];
 
     /* ======================== Relations ======================== */
+
+    /** Магазин компании */
+    public function shop(): HasOne
+    {
+        return $this->hasOne(MarketShop::class, 'market_company_id');
+    }
 
     public function owner(): BelongsTo
     {

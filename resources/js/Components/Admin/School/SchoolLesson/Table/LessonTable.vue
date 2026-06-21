@@ -50,10 +50,14 @@ const lessonPreviewModeLabelKeyMap = {
     chars: 'previewChars'
 }
 
-const getLessonStatusLabel = (status) => t(lessonStatusLabelKeyMap[status] || status || 'no')
-const getLessonAvailabilityLabel = (availability) => t(lessonAvailabilityLabelKeyMap[availability] || availability || 'no')
-const getLessonAccessTypeLabel = (accessType) => t(lessonAccessTypeLabelKeyMap[accessType] || accessType || 'no')
-const getLessonPreviewModeLabel = (previewMode) => t(lessonPreviewModeLabelKeyMap[previewMode] || previewMode || 'no')
+const getLessonStatusLabel = (status) =>
+    t(lessonStatusLabelKeyMap[status] || status || 'no')
+const getLessonAvailabilityLabel = (availability) =>
+    t(lessonAvailabilityLabelKeyMap[availability] || availability || 'no')
+const getLessonAccessTypeLabel = (accessType) =>
+    t(lessonAccessTypeLabelKeyMap[accessType] || accessType || 'no')
+const getLessonPreviewModeLabel = (previewMode) =>
+    t(lessonPreviewModeLabelKeyMap[previewMode] || previewMode || 'no')
 
 const localLessons = ref([])
 
@@ -263,7 +267,7 @@ const formatDate = (dateStr) => {
                         >
                                     <img
                                         v-else
-                                        src="/storage/school_lesson_images/default-image.png"
+                                        src="/storage/school/school_lesson_images/default-image.png"
                                         :alt="t('defaultImageTitle')"
                                         class="h-8 w-12 object-cover rounded-sm"
                                     >

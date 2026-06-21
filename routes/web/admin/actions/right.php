@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
 use App\Http\Controllers\Admin\School\SchoolQuiz\SchoolQuizController;
@@ -42,3 +43,8 @@ Route::put('/market-companies/{marketCompany}/right',
     [MarketCompanyController::class, 'updateRight'])
     ->whereNumber('marketCompany')
     ->name('marketCompanies.updateRight');
+
+Route::put('/market-shops/{marketShop}/right',
+    [MarketShopController::class, 'updateRight'])
+    ->whereNumber('marketShop')
+    ->name('marketShops.updateRight');

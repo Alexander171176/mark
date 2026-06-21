@@ -261,18 +261,19 @@ const getInstructorTitle = (schedule) => {
                                     :title="getPrimaryImage(schedule)?.caption || t('scheduleImage')"
                                     class="h-8 w-12 object-cover rounded-sm"
                                 >
-                                <img
-                                    v-else
-                                    src="/storage/school_course_schedule_images/default-image.png"
-                                    :alt="t('defaultImageTitle')"
-                                    class="h-8 w-12 object-cover rounded-sm"
-                                >
+                        <img
+                            v-else
+                            src="/storage/school/school_course_schedule_images/default-image.png"
+                            :alt="t('defaultImageTitle')"
+                            class="h-8 w-12 object-cover rounded-sm"
+                        >
                                 </div>
                             </td>
                             <td class="px-2 py-3">
                                 <a
                                     :href="`/school/schedules/${encodeURIComponent(schedule.slug)}`"
-                                    class="text-xs text-amber-600 dark:text-amber-200 hover:underline
+                                    class="text-xs text-amber-600
+                                           dark:text-amber-200 hover:underline
                                            hover:text-red-600 dark:hover:text-red-300"
                                     target="_blank"
                                     rel="noopener noreferrer"

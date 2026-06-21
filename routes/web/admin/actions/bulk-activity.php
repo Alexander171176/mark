@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
@@ -123,3 +124,7 @@ Route::put('/school-subscription-plans/bulk-activity',
 Route::put('/market-companies/bulk-activity',
     [MarketCompanyController::class, 'bulkUpdateActivity'])
     ->name('marketCompanies.bulkUpdateActivity');
+
+Route::put('/market-shops/bulk-activity',
+    [MarketShopController::class, 'bulkUpdateActivity'])
+    ->name('marketShops.bulkUpdateActivity');

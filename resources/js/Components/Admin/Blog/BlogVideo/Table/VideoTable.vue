@@ -78,7 +78,7 @@ const imageUrl = (video) => {
         || image?.thumb_url
         || image?.image_url
         || image?.url
-        || '/storage/blog_video_images/default-image.png'
+        || '/storage/blog/blog_video_images/default-image.png'
 }
 
 const imageAlt = (video) => {
@@ -125,20 +125,23 @@ const moderationBadge = (status) => {
     if (s === 1) {
         return {
             text: t('statusSelectApproved'),
-            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300'
+            class: 'bg-emerald-100 text-emerald-700 ' +
+                'border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300'
         }
     }
 
     if (s === 2) {
         return {
             text: t('statusSelectRejected'),
-            class: 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/40 dark:text-rose-300'
+            class: 'bg-rose-100 text-rose-700 ' +
+                'border-rose-300 dark:bg-rose-900/40 dark:text-rose-300'
         }
     }
 
     return {
         text: t('underModeration'),
-        class: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300'
+        class: 'bg-amber-100 text-amber-800 ' +
+            'border-amber-300 dark:bg-amber-900/40 dark:text-amber-300'
     }
 }
 
@@ -146,13 +149,15 @@ const privacyBadge = (isPrivate) => {
     if (isPrivate) {
         return {
             text: t('private'),
-            class: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300 dark:bg-fuchsia-900/40 dark:text-fuchsia-200'
+            class: 'bg-fuchsia-100 text-fuchsia-800 ' +
+                'border-fuchsia-300 dark:bg-fuchsia-900/40 dark:text-fuchsia-200'
         }
     }
 
     return {
         text: t('public'),
-        class: 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/40 dark:text-sky-200'
+        class: 'bg-sky-100 text-sky-800 ' +
+            'border-sky-300 dark:bg-sky-900/40 dark:text-sky-200'
     }
 }
 </script>

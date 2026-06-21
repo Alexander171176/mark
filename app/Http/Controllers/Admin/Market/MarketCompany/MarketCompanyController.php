@@ -18,7 +18,7 @@ use Inertia\Response;
 use Throwable;
 
 /**
- * Контроллер для управления Фирмами (Market) в админке.
+ * Контроллер для управления Фирмами (MarketCompany) в админке.
  *
  * Паттерн:
  * - Поиск, Пагинация, сортировка (режимы: frontend | auto | server )

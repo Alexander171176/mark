@@ -113,9 +113,12 @@ const assignmentGradingTypeLabelKeyMap = {
     auto: 'gradingAuto',
 }
 
-const getAssignmentStatusLabel = (status) => t(assignmentStatusLabelKeyMap[status] || status || 'no')
-const getAssignmentVisibilityLabel = (visibility) => t(assignmentVisibilityLabelKeyMap[visibility] || visibility || 'no')
-const getAssignmentGradingTypeLabel = (gradingType) => t(assignmentGradingTypeLabelKeyMap[gradingType] || gradingType || 'no')
+const getAssignmentStatusLabel = (status) =>
+    t(assignmentStatusLabelKeyMap[status] || status || 'no')
+const getAssignmentVisibilityLabel = (visibility) =>
+    t(assignmentVisibilityLabelKeyMap[visibility] || visibility || 'no')
+const getAssignmentGradingTypeLabel = (gradingType) =>
+    t(assignmentGradingTypeLabelKeyMap[gradingType] || gradingType || 'no')
 </script>
 
 <template>
@@ -251,7 +254,7 @@ const getAssignmentGradingTypeLabel = (gradingType) => t(assignmentGradingTypeLa
                                     >
                                     <img
                                         v-else
-                                        src="/storage/school_assignment_images/default-image.png"
+                                        src="/storage/school/school_assignment_images/default-image.png"
                                         :alt="t('defaultImageTitle')"
                                         class="h-8 w-12 object-cover rounded-sm"
                                     >

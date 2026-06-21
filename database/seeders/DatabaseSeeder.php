@@ -105,6 +105,12 @@ class DatabaseSeeder extends Seeder
             // Комментарии
             CommentsSeeder::class,
 
+            // Фирмы
+            MarketCompanySeeder::class,
+
+            // Магазины
+            MarketShopSeeder::class,
+
 // Добавьте сюда другие сидеры по мере необходимости
         ]);
     }

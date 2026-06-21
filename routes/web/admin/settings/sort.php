@@ -99,3 +99,6 @@ Route::put('/update-sort/settings', [SettingController::class, 'updateAdminSortS
 
 Route::put('/update-sort/companies', [SettingController::class, 'updateAdminSortCompanies'])
     ->name('updateAdminSortCompanies');
+
+Route::put('/update-sort/shops', [SettingController::class, 'updateAdminSortShops'])
+    ->name('updateAdminSortShops');

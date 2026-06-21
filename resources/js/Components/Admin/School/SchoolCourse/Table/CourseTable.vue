@@ -179,7 +179,7 @@ const formatDate = (dateStr) => {
                     <th class="px-2 py-3 w-px">
                         <div class="font-medium text-center">{{ t('id') }}</div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('image')">
                             <svg class="w-6 h-6 fill-current shrink-0" viewBox="0 0 512 512">
                                 <path
@@ -188,12 +188,12 @@ const formatDate = (dateStr) => {
                             </svg>
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="font-semibold text-left">
                             {{ t('course') }}
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="flex justify-center"
                              :title="`${t('availability')} / ${t('level')}`">
                             <svg
@@ -223,7 +223,7 @@ const formatDate = (dateStr) => {
                             </svg>
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('duration')">
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -237,7 +237,7 @@ const formatDate = (dateStr) => {
                             </svg>
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('views')">
                             <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 16 16">
                                 <path class="fill-current text-blue-600 dark:text-blue-300"
@@ -246,7 +246,7 @@ const formatDate = (dateStr) => {
                             </svg>
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('popularity')">
                             <div class="flex justify-center">
                                 <svg class="h-8 w-8 fill-current" viewBox="0 0 32 32">
@@ -256,7 +256,7 @@ const formatDate = (dateStr) => {
                             </div>
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('ratingCount')">
                             <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24"
                                  viewBox="0 0 24 24" class="shrink-0 h-4 w-4">
@@ -265,7 +265,7 @@ const formatDate = (dateStr) => {
                             </svg>
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('ratingAvg')">
                             <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24"
                                  viewBox="0 0 24 24" class="shrink-0 h-4 w-4">
@@ -274,7 +274,7 @@ const formatDate = (dateStr) => {
                             </svg>
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('likes')">
                             <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24"
                                  viewBox="0 0 24 24" class="shrink-0 h-4 w-4">
@@ -285,17 +285,17 @@ const formatDate = (dateStr) => {
                             </svg>
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="font-semibold text-end">
                             {{ t('show') }}
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="font-semibold text-end">
                             {{ t('actions') }}
                         </div>
                     </th>
-                    <th class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                    <th class="px-2 py-3 whitespace-nowrap">
                         <div class="text-center">
                             <input type="checkbox" @change="toggleAll" />
                         </div>
@@ -324,7 +324,7 @@ const formatDate = (dateStr) => {
                                     />
                                 </svg>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div
                                     class="text-center text-xs
                                            text-slate-800 dark:text-blue-200"
@@ -332,7 +332,7 @@ const formatDate = (dateStr) => {
                                     {{ course.id }}
                                 </div>
                             </td>
-                            <td class="first:pl-14 last:pr-14">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="flex justify-center"
                                      :title="course?.instructorProfile?.title || course?.title || ''">
                                     <template
@@ -349,15 +349,15 @@ const formatDate = (dateStr) => {
                                         />
                                     </template>
                                     <template v-else>
-                                        <img
-                                            src="/storage/school_course_images/default-image.png"
-                                            :alt="t('defaultImageTitle')"
-                                            class="h-8 w-12 object-cover rounded-sm"
-                                        />
+                                    <img
+                                        src="/storage/school/school_course_images/default-image.png"
+                                        :alt="t('defaultImageTitle')"
+                                        class="h-8 w-12 object-cover rounded-sm"
+                                    />
                                     </template>
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="min-w-0">
                                     <a
                                         :href="`/school/courses/${encodeURIComponent(course.slug)}`"
@@ -376,7 +376,7 @@ const formatDate = (dateStr) => {
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="text-center text-xs
                                             text-fuchsia-800 dark:text-fuchsia-400"
                                      :title="`${t('status')} : ${getCourseStatusLabel(course.status)}`">
@@ -388,45 +388,45 @@ const formatDate = (dateStr) => {
                                     {{ getCourseLevelLabel(course.level) }}
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="text-center text-xs
                                             text-violet-700 dark:text-violet-300"
                                      :title="`${t('duration')} [${course.duration}]`">
                                     {{ course.duration }}
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="text-center text-xs
                                             text-blue-700 dark:text-blue-300"
                                      :title="course.students_count">
                                     {{ course.views }}
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div
                                     class="text-center text-xs
                                            text-rose-500 dark:text-rose-300">
                                     {{ course.popularity }}
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="text-center text-xs">
                                     {{ course.rating_count }}
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div
                                     class="text-center text-xs
                                            text-rose-500 dark:text-rose-300">
                                     {{ course.rating_avg ?? 'no' }}
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="text-center text-xs">
                                     {{ course.likes }}
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="flex flex-col justify-center items-center gap-1">
                                     <div class="flex flex-row items-center justify-center gap-1">
                                         <LeftToggle
@@ -464,7 +464,7 @@ const formatDate = (dateStr) => {
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="flex flex-row items-center justify-center gap-1">
                                     <ActivityToggle
                                         :isActive="course.activity"
@@ -479,7 +479,7 @@ const formatDate = (dateStr) => {
                                     />
                                 </div>
                             </td>
-                            <td class="px-2 py-3 first:pl-14 last:pr-14 whitespace-nowrap">
+                            <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="text-center">
                                     <input
                                         type="checkbox"

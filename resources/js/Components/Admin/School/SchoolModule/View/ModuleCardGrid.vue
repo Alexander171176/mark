@@ -197,7 +197,7 @@ const formatDate = (dateStr) => {
 
                             <template v-else>
                                 <img
-                                    src="/storage/school_module_images/default-image.png"
+                                    src="/storage/school/school_module_images/default-image.png"
                                     :alt="t('defaultImageTitle')"
                                     class="w-full h-full object-cover"
                                 />

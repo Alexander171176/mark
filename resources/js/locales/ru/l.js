@@ -33,6 +33,7 @@ export default {
     loginTitle: 'Вход в систему',
     loginUser: 'Вход пользователя',
     loginWarning: 'Для входа в систему требуется ввести email и пароль зарегистрированного аккаунта.',
+    logo: 'Логотип',
     logout: 'Выход',
     logoutOtherSessionsButton: 'Выйти из других сессий браузера',
     logs: 'Логи',

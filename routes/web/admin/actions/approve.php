@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use Illuminate\Support\Facades\Route;
 
 Route::put('/blog-rubrics/{blogRubric}/approve',
@@ -33,3 +34,8 @@ Route::put('/market-companies/{marketCompany}/approve',
     [MarketCompanyController::class, 'approve'])
     ->whereNumber('marketCompany')
     ->name('marketCompanies.approve');
+
+Route::put('/market-shops/{marketShop}/approve',
+    [MarketShopController::class, 'approve'])
+    ->whereNumber('marketShop')
+    ->name('marketShops.approve');

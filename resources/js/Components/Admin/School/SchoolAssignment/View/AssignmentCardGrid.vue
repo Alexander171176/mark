@@ -211,7 +211,7 @@ const getAssignmentGradingTypeLabel = (gradingType) => t(assignmentGradingTypeLa
                 >
                             <img
                                 v-else
-                                src="/storage/school_assignment_images/default-image.png"
+                                src="/storage/school/school_assignment_images/default-image.png"
                                 :alt="t('defaultImageTitle')"
                                 class="w-full h-full object-cover"
                             >

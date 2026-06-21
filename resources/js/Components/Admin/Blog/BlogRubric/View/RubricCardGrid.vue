@@ -103,20 +103,23 @@ const moderationBadge = (status) => {
     if (s === 1) {
         return {
             text: t('statusSelectApproved'),
-            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300'
+            class: 'bg-emerald-100 text-emerald-700 ' +
+                'border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300'
         }
     }
 
     if (s === 2) {
         return {
             text: t('statusSelectRejected'),
-            class: 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/40 dark:text-rose-300'
+            class: 'bg-rose-100 text-rose-700 ' +
+                'border-rose-300 dark:bg-rose-900/40 dark:text-rose-300'
         }
     }
 
     return {
         text: t('underModeration'),
-        class: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300'
+        class: 'bg-amber-100 text-amber-800 ' +
+            'border-amber-300 dark:bg-amber-900/40 dark:text-amber-300'
     }
 }
 </script>
@@ -202,7 +205,7 @@ const moderationBadge = (status) => {
 
                             <template v-else>
                                 <img
-                                    src="/storage/blog_rubric_images/default-image.png"
+                                    src="/storage/blog/blog_rubric_images/default-image.png"
                                     :alt="t('defaultImageTitle')"
                                     class="h-32 w-full object-cover"
                                 />

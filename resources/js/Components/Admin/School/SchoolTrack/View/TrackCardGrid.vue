@@ -156,7 +156,7 @@ const parentTitle = (track) => {
 
                         <template v-else>
                             <img
-                                src="/storage/school_track_images/default-image.png"
+                                src="/storage/school/school_track_images/default-image.png"
                                 :alt="t('defaultImageTitle')"
                                 class="h-32 w-full object-cover"
                             />

@@ -93,7 +93,7 @@ const imageUrl = (banner) => {
         || banner?.cover_webp_url
         || banner?.cover_thumb_url
         || banner?.cover_image_url
-        || '/storage/banner_images/default-image.png'
+        || '/storage/blog/blog_banner_images/default-image.png'
 }
 
 const imageAlt = (banner) => {

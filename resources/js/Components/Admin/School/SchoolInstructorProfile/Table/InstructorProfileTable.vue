@@ -207,12 +207,12 @@ const getPrimaryImage = (instructorProfile) => {
                                         >
                                     </template>
                                     <template v-else>
-                                        <img
-                                            src="/storage/school_instructor_profile_images/default-image.png"
-                                            :alt="t('defaultImageTitle')"
-                                            class="h-20 w-20 object-cover rounded-full
-                                                   border border-slate-300 dark:border-slate-500"
-                                        >
+                        <img
+                            src="/storage/school/school_instructor_profile_images/default-image.png"
+                            :alt="t('defaultImageTitle')"
+                            class="h-20 w-20 object-cover rounded-full
+                                   border border-slate-300 dark:border-slate-500"
+                        >
                                     </template>
                                 </div>
                             </td>

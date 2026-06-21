@@ -64,7 +64,7 @@ const imageUrl = (bundle) => {
         || image?.thumb_url
         || image?.image_url
         || image?.url
-        || '/storage/school_bundle_images/default-image.png'
+        || '/storage/school/school_bundle_images/default-image.png'
 }
 
 const imageAlt = (bundle) => {

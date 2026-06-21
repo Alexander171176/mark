@@ -73,7 +73,7 @@ const getImageUrl = (quiz) => {
         || image?.thumb_url
         || image?.image_url
         || image?.url
-        || '/storage/school_quiz_images/default-image.png'
+        || '/storage/school/school_quiz_images/default-image.png'
 }
 
 const getImageAlt = (quiz) => {

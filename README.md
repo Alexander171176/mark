@@ -133,6 +133,7 @@
 `docker exec -it mark-php-app composer dump-autoload` <br> очистка кеша перед пересборкой
 `docker exec -it mark-php-app composer install --no-cache --no-interaction --prefer-dist` <br> пересборка зависимостей composer
 `composer config --global disable-tls false` <br> включение сертификатов обратно
+`docker exec mark-php-app php -r "echo ini_get('upload_max_filesize').PHP_EOL; echo ini_get('post_max_size').PHP_EOL;"`<br> посмотреть параметры php.ini 
 -------------------------------------------------------------------------------------
 
 1) creating business logic app Role <br>
@@ -819,25 +820,30 @@
 1) Компания 
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompany -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompanyTranslation -m` <br>
-`docker exec mark-php-app php artisan migrate` <br>
-`docker exec mark-php-app php artisan migrate:rollback` <br>
-`docker exec mark-php-app php artisan db:seed --class=MarketCompanySeeder` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketCompany/MarketCompanyResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketCompany/MarketCompanyTranslationResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketCompany/MarketCompanyRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketCompany/MarketCompanyController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketCompanySeeder` <br>
+
+2) Магазин
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShop -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShopTranslation -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShopImage -m` <br>
+`docker exec mark-php-app php artisan make:migration create_market_shop_has_images_table --create=market_shop_has_images` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketShop/MarketShopResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketShop/MarketShopTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketShop/MarketShopImageResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketShop/MarketShopRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketShop/MarketShopController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketShopSeeder` <br>
 
 
 
-
-2) Витрина / Настройки
-`docker exec mark-php-app php artisan make:migration create_market_storefronts_table --create=market_storefronts` <br>
-`docker exec mark-php-app php artisan make:model Admin/Market/MarketStorefront/MarketStorefront -fs` <br>
-`docker exec mark-php-app php artisan make:request Admin/Market/MarketStorefront/MarketStorefrontRequest` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Market/MarketStorefront/MarketStorefrontResource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Market/MarketStorefront/MarketStorefrontController --resource` <br>
-`docker exec mark-php-app php artisan make:migration create_market_storefront_settings_table --create=market_storefront_settings` <br>
-`docker exec mark-php-app php artisan make:migration create_market_storefront_locale_settings_table --create=market_storefront_locale_settings` <br>
 
 3) Валюта, локаль витрины
 `docker exec mark-php-app php artisan make:migration create_market_storefront_has_currencies_table --create=market_storefront_has_currencies` <br>

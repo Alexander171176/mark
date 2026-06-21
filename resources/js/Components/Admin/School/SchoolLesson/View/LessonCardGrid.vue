@@ -192,12 +192,12 @@ const formatDate = (dateStr) => {
                                 :alt="getPrimaryImage(lesson)?.alt || t('defaultImageAlt')"
                                 class="w-full h-full object-cover"
                             >
-                            <img
-                                v-else
-                                src="/storage/school_lesson_images/default-image.png"
-                                :alt="t('defaultImageTitle')"
-                                class="w-full h-full object-cover"
-                            >
+                        <img
+                            v-else
+                            src="/storage/school/school_lesson_images/default-image.png"
+                            :alt="t('defaultImageTitle')"
+                            class="w-full h-full object-cover"
+                        >
                         </div>
                         <div class="flex flex-col flex-1 px-3 py-2 space-y-1">
                             <a

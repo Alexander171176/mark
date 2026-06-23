@@ -207,19 +207,14 @@
 `docker exec mark-php-app php artisan make:controller Admin/System/FileBackupController` <br>
 -------------------------------------------------------------------------------------
 
-1) Image Processor - обработка изображений
-`docker exec mark-php-app php artisan make:model Admin/System/ImageProcessor/ImageProcessorProfile -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/System/ImageProcessor/ImageProcessorVariant -mfs` <br>
+1) ImagePreset - варианты обработки изображений
+`docker exec mark-php-app php artisan make:model Admin/System/ImagePreset/ImagePreset -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
-`docker exec mark-php-app php artisan db:seed --class=ImageProcessorProfileSeeder` <br>
-`docker exec mark-php-app php artisan db:seed --class=ImageProcessorVariantSeeder` <br>
-`docker exec mark-php-app php artisan make:resource Admin/System/ImageProcessor/ImageProcessorProfileResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/System/ImageProcessor/ImageProcessorVariantResource` <br>
-`docker exec mark-php-app php artisan make:request Admin/System/ImageProcessor/ImageProcessorProfileRequest` <br>
-`docker exec mark-php-app php artisan make:request Admin/System/ImageProcessor/ImageProcessorVariantRequest` <br>
-`docker exec mark-php-app php artisan make:controller Admin/System/ImageProcessor/ImageProcessorProfileController --resource` <br>
-`docker exec mark-php-app php artisan make:controller Admin/System/ImageProcessor/ImageProcessorVariantController --resource` <br>
+`docker exec mark-php-app php artisan db:seed --class=ImagePresetSeeder` <br>
+`docker exec mark-php-app php artisan make:resource Admin/System/ImagePreset/ImagePresetResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/System/ImagePreset/ImagePresetRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/System/ImagePreset/ImagePresetController` <br>
 -------------------------------------------------------------------------------------
 
 1) creating business logic app BlogRubric <br>

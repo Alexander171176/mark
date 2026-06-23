@@ -45,6 +45,7 @@ export default {
     personalCabinet: 'Personal Cabinet',
     phone: 'phone',
     photo: 'Photo',
+    photoFrames: 'Photo frame',
     platform: 'Platform',
     plugins: 'Modules',
     points: 'Points',

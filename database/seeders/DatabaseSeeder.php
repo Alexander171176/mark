@@ -19,8 +19,7 @@ class DatabaseSeeder extends Seeder
             SettingSeeder::class,
 
             // Обработка изображений
-            ImageProcessorProfileSeeder::class,
-            ImageProcessorVariantSeeder::class,
+            ImagePresetSeeder::class,
 
             // Блог
             BlogRubricSeeder::class,

@@ -253,47 +253,27 @@ class SettingSeeder extends Seeder
                     'Включает или выключает модуль автоматической обработки изображений.',
                 'activity' => true,
                 'sort' => 100,
-            ], // IMAGE PROCESSOR ON/OFF
-            [
-                'type' => 'string',
-                'option' => 'adminImageProcessorProfilesProcessingMode',
-                'value' => 'frontend',
-                'constant' => 'ADMIN_IMAGE_PROCESSOR_PROFILES_PROCESSING_MODE',
-                'category' => 'admin',
-                'description' => 'Показывать количество профилей обработки изображений в панели администратора',
-                'activity' => true,
-                'sort' => 0,
-            ], // ADMIN IMAGE PROCESSOR PROFILES PROCESSING MODE
+            ], // IMAGE PRESETS ON/OFF
             [
                 'type' => 'number',
-                'option' => 'adminImageProcessorProfilesPerPage',
+                'option' => 'adminImagePresetsPerPage',
                 'value' => '6',
-                'constant' => 'ADMIN_IMAGE_PROCESSOR_PROFILES_PER_PAGE',
+                'constant' => 'ADMIN_IMAGE_PRESETS_PER_PAGE',
                 'category' => 'admin',
-                'description' => 'Показывать количество профилей обработки изображений в панели администратора',
+                'description' => 'Показывать количество вариантов обработки изображений в панели администратора',
                 'activity' => true,
                 'sort' => 0,
-            ], // ADMIN IMAGE PROCESSOR PROFILES PER PAGE
+            ], // ADMIN IMAGE PRESETS PER PAGE
             [
                 'type' => 'string',
-                'option' => 'adminImageProcessorProfilesDefaultSort',
+                'option' => 'adminImagePresetsDefaultSort',
                 'value' => 'idDesc',
-                'constant' => 'ADMIN_IMAGE_PROCESSOR_PROFILES_DEFAULT_SORT',
+                'constant' => 'ADMIN_IMAGE_PRESETS_DEFAULT_SORT',
                 'category' => 'admin',
-                'description' => 'Сортировка профилей обработки изображений по умолчанию в панели администратора',
+                'description' => 'Сортировка вариантов обработки изображений по умолчанию в панели администратора',
                 'activity' => true,
                 'sort' => 0,
-            ], // ADMIN IMAGE PROCESSOR PROFILES DEFAULT SORT
-            [
-                'type' => 'string',
-                'option' => 'adminImageProcessorProfilesDefaultView',
-                'value' => 'grid',
-                'constant' => 'ADMIN_IMAGE_PROCESSOR_PROFILES_DEFAULT_VIEW',
-                'category' => 'admin',
-                'description' => 'Вид списка профилей обработки изображений в панели администратора',
-                'activity' => true,
-                'sort' => 0,
-            ], // ADMIN IMAGE PROCESSOR PROFILES DEFAULT VIEW
+            ], // ADMIN IMAGE PRESETS DEFAULT SORT
             [
                 'type' => 'string',
                 'option' => 'adminBlogRubricsProcessingMode',

@@ -7,4 +7,5 @@ export default {
     welcome: 'Қош келдіңіз',
     whereFrom: 'Қайда',
     whereTo: 'Және қайдан',
+    width: 'Ені',
 }

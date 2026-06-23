@@ -40,6 +40,7 @@ export default {
     trial: 'Сынақ',
     trialDays: 'Сынақ мерзімі (күндермен)',
     true: 'иә',
+    turn: 'Бұрылыс',
     twoFactorAuthentication: 'Қос факторлы аутентификация',
     twoFactorAuthenticationDescription: 'Есептік жазбаңыздың қауіпсіздігін қос факторлы аутентификация арқылы арттырыңыз.',
     twoFactorConfirmation: 'Қос факторлы растау',

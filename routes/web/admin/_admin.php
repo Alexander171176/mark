@@ -33,6 +33,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified',
         // --- Основные CRUD Ресурсы ---
         require __DIR__ . '/resources.php';
 
+        // --- Image Presets ---
+        require __DIR__ . '/image-presets.php';
+
         // --- Маршруты удаления связей ManyToMany ---
         require __DIR__ . '/deletes.php';
 

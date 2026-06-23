@@ -60,11 +60,11 @@ trait SortSettingsTrait
             'adminSystemSettingsDefaultSort', 'site_settings.adminSystemSettingsDefaultSort');
     }
 
-    /** Обновляет сортировку элементов в профилях обработки изображений */
-    public function updateAdminSortImageProcessorProfiles(UpdateSortRequest $request): RedirectResponse
+    /** Обновляет сортировку элементов в вариантах обработки изображений */
+    public function updateAdminSortImagePresets(UpdateSortRequest $request): RedirectResponse
     {
         return $this->sortSetting($request,
-            'adminImageProcessorProfilesDefaultSort', 'site_settings.adminImageProcessorProfilesDefaultSort');
+            'adminImagePresetsDefaultSort', 'site_settings.adminImagePresetsDefaultSort');
     }
 
     /** Обновляет сортировку элементов в рубриках */

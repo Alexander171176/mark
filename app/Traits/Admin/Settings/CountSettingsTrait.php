@@ -58,11 +58,11 @@ trait CountSettingsTrait
             'adminSystemSettingsPerPage', 'site_settings.adminSystemSettingsPerPage');
     }
 
-    /** Обновление количества элементов в профилях обработки изображений */
-    public function updateAdminCountImageProcessorProfiles(UpdateCountSettingRequest $request): RedirectResponse
+    /** Обновление количества элементов в вариантах обработки изображений */
+    public function updateAdminCountImagePresets(UpdateCountSettingRequest $request): RedirectResponse
     {
         return $this->countSetting($request,
-            'adminImageProcessorProfilesPerPage', 'site_settings.adminImageProcessorProfilesPerPage');
+            'adminImagePresetsPerPage', 'site_settings.adminImagePresetsPerPage');
     }
 
     /** Обновление количества элементов в рубриках */

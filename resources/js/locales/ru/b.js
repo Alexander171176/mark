@@ -1,5 +1,8 @@
 export default {
     back: 'Назад',
+    backgroundDark: 'Фон тёмного режима',
+    backgroundLight: 'Фон светлого режима',
+    backgroundShort: 'Фон',
     backups: 'Бэкапы БД',
     backupStep1: 'Сохраняем текущий дамп базы данных...',
     backupStep2: 'Восстанавливаем дамп с резервной копии...',

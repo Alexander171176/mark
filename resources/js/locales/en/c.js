@@ -109,6 +109,7 @@ export default {
     created: 'Created.',
     createdAt: 'Date of creation',
     creatingBackup: 'A database backup is being created...',
+    cropRotationEnabled: 'Allow frame rotation',
     currentImage: 'Current Image',
     currentPassword: 'Current Password',
     currencies: 'Currencies',

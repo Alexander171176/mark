@@ -1,4 +1,5 @@
 export default {
+    quality: 'Сапа',
     quantity: 'Саны',
     question: 'Сұрақ',
     questionType: 'Сұрақ түрі',

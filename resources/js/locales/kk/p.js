@@ -45,6 +45,7 @@ export default {
     personalCabinet: 'Жеке кабинет',
     phone: 'телефон',
     photo: 'Фото',
+    photoFrames: 'Фото жақтау',
     platform: 'Платформа',
     plugins: 'Модульдер',
     points: 'Ұпайлар',

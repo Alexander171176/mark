@@ -109,6 +109,7 @@ export default {
     created: 'Создано.',
     createdAt: 'Дата создания',
     creatingBackup: 'Бэкап базы данных создаётся...',
+    cropRotationEnabled: 'Разрешить поворот рамки',
     currentImage: 'Текущее Изображение',
     currentPassword: 'Текущий пароль',
     currencies: 'Валюты',

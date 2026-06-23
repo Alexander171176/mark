@@ -24,8 +24,7 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
-use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorProfileController;
-use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorVariantController;
+use App\Http\Controllers\Admin\System\ImagePreset\ImagePresetController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,18 +32,14 @@ Route::put('/settings/update-sort-bulk',
     [ParameterController::class, 'updateSortBulk'])
     ->name('settings.updateSortBulk');
 
+Route::put(
+    '/image-presets/update-sort-bulk',
+    [ImagePresetController::class, 'updateSortBulk']
+)->name('imagePresets.updateSortBulk');
+
 Route::put('/currencies/update-sort-bulk',
     [CurrencyController::class, 'updateSortBulk'])
     ->name('currencies.updateSortBulk');
-
-// Image Processor
-Route::put('/image-processor-profiles/update-sort-bulk',
-    [ImageProcessorProfileController::class, 'updateSortBulk'])
-    ->name('imageProcessorProfiles.updateSortBulk');
-
-Route::put('/image-processor-variants/update-sort-bulk',
-    [ImageProcessorVariantController::class, 'updateSortBulk'])
-    ->name('imageProcessorVariants.updateSortBulk');
 
 // блог
 Route::put('/blog-rubrics/update-sort-bulk',

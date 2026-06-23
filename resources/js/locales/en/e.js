@@ -11,7 +11,7 @@ export default {
     editCoursePrice: 'Edit Course Price',
     editCurrency: 'Edit Currency',
     editEnrollment: 'Edit Enrollment',
-    editImageProcessingProfile: 'Edit image processing profiles',
+    editImagePreset: 'Edit image presets',
     editImages: 'Edit the Images',
     editInstructor: 'Edit Instructor',
     editLearningCategory: 'Edit Training Category',

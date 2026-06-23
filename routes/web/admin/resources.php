@@ -33,7 +33,6 @@ use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionP
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
 use App\Http\Controllers\Admin\Statistics\Chart\ChartController;
 use App\Http\Controllers\Admin\System\Component\ComponentController;
-use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorProfileController;
 use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorVariantController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use App\Http\Controllers\Admin\System\Permission\PermissionController;
@@ -67,19 +66,7 @@ Route::resource('/charts', ChartController::class)->except(['show']);
 Route::resource('/currencies', CurrencyController::class);
 
 // комментарии
-Route::resource('/comments', CommentController::class)->except(['create', 'store', 'show']); // Админ обычно не создает комменты с нуля
-
-
-// маршруты обработки изображений
-Route::resource('/image-processor-profiles',
-    ImageProcessorProfileController::class)
-    ->parameters(['image-processor-profiles' => 'imageProcessorProfile',])
-    ->names('imageProcessorProfiles');
-
-Route::resource('/image-processor-variants',
-    ImageProcessorVariantController::class)
-    ->parameters(['image-processor-variants' => 'imageProcessorVariant',])
-    ->names('imageProcessorVariants');
+Route::resource('/comments', CommentController::class)->except(['create', 'store', 'show']);
 
 // маршруты блога
 Route::resource('/blog-rubrics', BlogRubricController::class)

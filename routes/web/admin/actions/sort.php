@@ -25,8 +25,7 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
-use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorProfileController;
-use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorVariantController;
+use App\Http\Controllers\Admin\System\ImagePreset\ImagePresetController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,20 +33,16 @@ Route::put('/parameters/{parameter}/sort',
     [ParameterController::class, 'updateSort'])
     ->name('parameters.updateSort');
 
+Route::put(
+    '/image-presets/{imagePreset}/sort',
+    [ImagePresetController::class, 'updateSort']
+)
+    ->whereNumber('imagePreset')
+    ->name('imagePresets.updateSort');
+
 Route::put('/currencies/{currency}/sort',
     [CurrencyController::class, 'updateSort'])
     ->name('currencies.updateSort');
-
-// Image Processor
-Route::put('/image-processor-profiles/{imageProcessorProfile}/sort',
-    [ImageProcessorProfileController::class, 'updateSort'])
-    ->whereNumber('imageProcessorProfile')
-    ->name('imageProcessorProfiles.updateSort');
-
-Route::put('/image-processor-variants/{imageProcessorVariant}/sort',
-    [ImageProcessorVariantController::class, 'updateSort'])
-    ->whereNumber('imageProcessorVariant')
-    ->name('imageProcessorVariants.updateSort');
 
 // блог
 Route::put('/blog-rubrics/{blogRubric}/sort',

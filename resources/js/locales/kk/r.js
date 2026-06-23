@@ -6,6 +6,7 @@ export default {
     ratingAvg: 'Орташа баға',
     ratingCount: 'Бағалаулар саны',
     ratingDesc: 'Бағалау ↑',
+    ratio: 'Қатынас',
     readme: 'Нұсқаулық',
     readMore: 'Толығырақ оқу',
     recommended: 'Ұсынылған',

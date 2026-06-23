@@ -40,6 +40,7 @@ export default {
     trial: 'Пробный период',
     trialDays: 'Пробный период (в днях)',
     true: 'да',
+    turn: 'Поворот',
     twoFactorAuthentication: 'Двухфакторная аутентификация',
     twoFactorAuthenticationDescription: 'Добавьте дополнительную безопасность своей учетной записи, используя двухфакторную аутентификацию.',
     twoFactorConfirmation: 'Двухфакторное подтверждение',

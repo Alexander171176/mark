@@ -6,6 +6,7 @@ export default {
     ratingAvg: 'Average rating',
     ratingCount: 'Number of ratings',
     ratingDesc: 'Rating ↑',
+    ratio: 'Ratio',
     readme: 'Instruction manual',
     readMore: 'Read more',
     recommended: 'Recommended',

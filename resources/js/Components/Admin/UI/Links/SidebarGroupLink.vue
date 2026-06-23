@@ -810,8 +810,8 @@ const {t} = useI18n();
             {{ t('plugins') }}
         </template>
     </SidebarLink>
-    <SidebarLink :href="route('admin.imageProcessorProfiles.index')"
-                 :active="route().current('imageProcessorProfiles.index')"
+    <SidebarLink :href="route('admin.imagePresets.index')"
+                 :active="route().current('imagePresets.index')"
                  :expanded="props.expanded">
         <template #default>
             <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
@@ -821,7 +821,7 @@ const {t} = useI18n();
             </svg>
         </template>
         <template #text>
-            {{ t('imageProcessingProfiles') }}
+            {{ t('imagePresets') }}
         </template>
     </SidebarLink>
 </template>

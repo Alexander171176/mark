@@ -26,8 +26,6 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
-use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorProfileController;
-use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorVariantController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,17 +40,6 @@ Route::put('/currencies/{currency}/activity',
 Route::put('/comments/{comment}/activity',
     [CommentController::class, 'updateActivity'])
     ->name('comments.updateActivity');
-
-// Image Processor
-Route::put('/image-processor-profiles/{imageProcessorProfile}/activity',
-    [ImageProcessorProfileController::class, 'updateActivity'])
-    ->whereNumber('imageProcessorProfile')
-    ->name('imageProcessorProfiles.updateActivity');
-
-Route::put('/image-processor-variants/{imageProcessorVariant}/activity',
-    [ImageProcessorVariantController::class, 'updateActivity'])
-    ->whereNumber('imageProcessorVariant')
-    ->name('imageProcessorVariants.updateActivity');
 
 // блог
 Route::put('/blog-rubrics/{blogRubric}/activity',

@@ -7,4 +7,5 @@ export default {
     welcome: 'Добро Пожаловать',
     whereFrom: 'Откуда',
     whereTo: 'Куда',
+    width: 'Ширина',
 }

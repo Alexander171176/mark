@@ -1,5 +1,8 @@
 export default {
     back: 'Back',
+    backgroundDark: 'Dark mode background',
+    backgroundLight: 'Light mode background',
+    backgroundShort: 'Background',
     backups: 'DB backups',
     backupStep1: 'Saving the current database dump...',
     backupStep2: 'Restoring the dump from the backup...',

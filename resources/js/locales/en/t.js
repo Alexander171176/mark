@@ -40,6 +40,7 @@ export default {
     trial: 'Trial',
     trialDays: 'Trial period (in days)',
     true: 'yes',
+    turn: 'Turn',
     twoFactorAuthentication: 'Two-Factor Authentication',
     twoFactorAuthenticationDescription: 'Add additional security to your account using two-factor authentication.',
     twoFactorConfirmation: 'Two-Factor Confirmation',

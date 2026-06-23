@@ -109,6 +109,7 @@ export default {
     created: 'Жасалды.',
     createdAt: 'Құру күні',
     creatingBackup: 'Дерекқордың сақтық көшірмесі жасалуда...',
+    cropRotationEnabled: 'Кадрдың айналуына рұқсат беру',
     currentImage: 'Ағымдағы сурет',
     currentPassword: 'Ағымдағы құпия сөз',
     currencies: 'Валюталар',

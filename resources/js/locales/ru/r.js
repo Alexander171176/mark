@@ -6,6 +6,7 @@ export default {
     ratingAvg: 'Средняя оценка',
     ratingCount: 'Количество оценок',
     ratingDesc: 'Рейтинг ↑',
+    ratio: 'Соотношение',
     readme: 'Инструкция',
     readMore: 'Подробнее',
     recommended: 'Рекомендуемые',

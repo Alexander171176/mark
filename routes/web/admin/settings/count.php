@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\Route;
 Route::put('/update-count/settings', [SettingController::class, 'updateAdminCountSettings'])
     ->name('updateAdminCountSettings');
 
-Route::put('/update-count/image-processor-profiles',
-    [SettingController::class, 'updateAdminCountImageProcessorProfiles'])
-    ->name('updateAdminCountImageProcessorProfiles');
+Route::put('/update-count/image-presets',
+    [SettingController::class, 'updateAdminCountImagePresets'])
+    ->name('updateAdminCountImagePresets');
 
 Route::put('/update-count/users', [SettingController::class, 'updateAdminCountUsers'])
     ->name('updateAdminCountUsers');

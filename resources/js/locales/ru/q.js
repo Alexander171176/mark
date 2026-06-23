@@ -1,4 +1,5 @@
 export default {
+    quality: 'Качество',
     quantity: 'Количество',
     question: 'Вопрос',
     questionType: 'Тип вопроса',

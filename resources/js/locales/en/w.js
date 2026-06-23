@@ -7,4 +7,5 @@ export default {
     welcome: 'Welcome',
     whereFrom: 'Where from',
     whereTo: 'Where to',
+    width: 'Width',
 }

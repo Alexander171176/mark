@@ -45,6 +45,7 @@ export default {
     personalCabinet: 'Личный кабинет',
     phone: 'телефон',
     photo: 'Фото',
+    photoFrames: 'Фоторамка',
     platform: 'Платформа',
     plugins: 'Модули',
     points: 'Баллы',

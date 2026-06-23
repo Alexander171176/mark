@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\Route;
 Route::put('/update-sort/settings', [SettingController::class, 'updateAdminSortSettings'])
     ->name('updateAdminSortSettings');
 
-Route::put('/update-sort/image-processor-profiles',
-    [SettingController::class, 'updateAdminSortImageProcessorProfiles'])
-    ->name('updateAdminSortImageProcessorProfiles');
+Route::put('/update-sort/image-presets',
+    [SettingController::class, 'updateAdminSortImagePresets'])
+    ->name('updateAdminSortImagePresets');
 
 Route::put('/update-sort/users', [SettingController::class, 'updateAdminSortUsers'])
     ->name('updateAdminSortUsers');

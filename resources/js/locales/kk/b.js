@@ -1,5 +1,8 @@
 export default {
     back: 'Артқа',
+    backgroundDark: 'Қараңғы режимдегі фон',
+    backgroundLight: 'Жарық режиміндегі фон',
+    backgroundShort: 'Фон',
     backups: 'Мәліметтер қоры',
     backupStep1: 'Ағымдағы дерекқор дампі сақталуда...',
     backupStep2: 'Сақтық көшірмеден дамп қалпына келтірілуде...',

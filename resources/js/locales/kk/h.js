@@ -1,6 +1,7 @@
 export default {
     hashtags: 'Хэштегтер',
     heading: 'Тақырып',
+    height: 'Биіктігі',
     hide: 'Жасыру',
     hideFromMenu: 'Мәзірден жасыру',
     hideSeo: 'SEO жасыру',

@@ -256,9 +256,9 @@ const { t } = useI18n();
             {{ t('reports') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
-            :href="route('admin.imageProcessorProfiles.index')"
-            :active="route().current('admin.imageProcessorProfiles.index')">
-            {{ t('imageProcessingProfiles') }}
+            :href="route('admin.imagePresets.index')"
+            :active="route().current('admin.imagePresets.index')">
+            {{ t('imagePresets') }}
         </ResponsiveNavLink>
     </div>
 </template>

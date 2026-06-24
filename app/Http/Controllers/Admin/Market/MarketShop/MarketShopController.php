@@ -9,6 +9,7 @@ use App\Http\Resources\Admin\Market\MarketShop\MarketShopResource;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketShop\MarketShopImage;
+use App\Services\Admin\ImagePresetService;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -60,6 +62,12 @@ class MarketShopController extends BaseMarketAdminController
         'meta_keywords',
         'meta_desc',
     ];
+
+    /** Пресет для галереи магазина */
+    protected string $imagePresetKey = 'rectangle_large';
+
+    /** Директория для обработанных изображений галереи */
+    protected string $imagePresetDirectory = 'market/market_shop_images/preset';
 
     /** Список магазинов */
     public function index(Request $request): Response
@@ -197,7 +205,7 @@ class MarketShopController extends BaseMarketAdminController
 
             if ($request->hasFile('logo')) {
                 $shop->update([
-                    'logo' => $request->file('logo')->store('market/shops/logos', 'public'),
+                    'logo' => $this->storeShopLogo($request),
                 ]);
             }
 
@@ -291,8 +299,12 @@ class MarketShopController extends BaseMarketAdminController
             });
 
             if ($request->hasFile('logo')) {
+                if ($shop->logo) {
+                    Storage::disk('public')->delete($shop->logo);
+                }
+
                 $shop->update([
-                    'logo' => $request->file('logo')->store('market/shops/logos', 'public'),
+                    'logo' => $this->storeShopLogo($request),
                 ]);
             }
 
@@ -319,6 +331,9 @@ class MarketShopController extends BaseMarketAdminController
 
         try {
             DB::transaction(function () use ($shop) {
+                if ($shop->logo) {
+                    Storage::disk('public')->delete($shop->logo);
+                }
                 $this->deleteImages(
                     $shop->images()->pluck('market_shop_images.id')->toArray()
                 );
@@ -470,5 +485,24 @@ class MarketShopController extends BaseMarketAdminController
                     ->orWhere('id', $shop->market_company_id);
             })
             ->get();
+    }
+
+    private function storeShopLogo(Request $request): string
+    {
+        if (
+            app(AdminSettingsService::class)->int('imageProcessorEnabled', 1) !== 1
+        ) {
+            return $request->file('logo')->store(
+                'market/market_shops/logos',
+                'public'
+            );
+        }
+
+        return app(ImagePresetService::class)->storeUploadedImage(
+            file: $request->file('logo'),
+            presetKey: 'square_medium',
+            directory: 'market/market_shops/logos',
+            storeOriginal: false
+        );
     }
 }

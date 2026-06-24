@@ -22,7 +22,9 @@
         "tightenco/ziggy": "^2.0",
         "unisharp/laravel-filemanager": "^2.9",
         "ext-zip": "*",
-        "ext-bcmath": "*"
+        "ext-bcmath": "*",
+        "ext-gd": "*",
+        "ext-exif": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

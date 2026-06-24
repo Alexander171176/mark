@@ -250,10 +250,10 @@ class SettingSeeder extends Seeder
                 'constant' => 'IMAGE_PROCESSOR_ENABLED',
                 'category' => 'system',
                 'description' =>
-                    'Включает или выключает модуль автоматической обработки изображений.',
+                    'Включает или выключает автоматическую обработку изображений через пресеты.',
                 'activity' => true,
                 'sort' => 100,
-            ], // IMAGE PRESETS ON/OFF
+            ], // IMAGE PROCESSOR ENABLED
             [
                 'type' => 'number',
                 'option' => 'adminImagePresetsPerPage',

@@ -2,6 +2,7 @@ export default {
     icon: 'Иконка',
     id: 'ID',
     image: 'Изображение',
+    imageEditor: 'Редактор изображений',
     imagePosition: 'Позиция изображения',
     imagePresets: 'Пресеты изображений',
     imageRotationEnabled: 'Разрешить поворот картинки',

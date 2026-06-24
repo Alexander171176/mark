@@ -86,7 +86,7 @@ const ownerAvatar = (shop) => {
 
 const logoUrl = (shop) => {
     if (!shop?.logo) {
-        return '/storage/market/shops/logos/default-image-light.png'
+        return '/storage/market/market_shops/logos/default-image-light.png'
     }
 
     return shop.logo.startsWith('/storage/')

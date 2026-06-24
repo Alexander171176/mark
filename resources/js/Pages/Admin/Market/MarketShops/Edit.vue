@@ -30,8 +30,8 @@ import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
 import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 import EditImageFileInput from '@/Components/Admin/UI/File/EditImageFileInput.vue'
-import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
-import MultiImageEdit from '@/Components/Admin/UI/Image/MultiImageEdit.vue'
+import MultiImagePresetEdit from '@/Components/Admin/UI/Image/MultiImagePresetEdit.vue'
+import MultiImagePresetUpload from '@/Components/Admin/UI/Image/MultiImagePresetUpload.vue'
 
 /** Сервисы страницы */
 const toast = useToast()
@@ -177,6 +177,15 @@ const getCompanyTitle = (company) => {
         || `ID: ${company?.id}`
 }
 
+const galleryPreset = {
+    key: 'rectangle_large',
+    shape: 'rectangle',
+    width: 1200,
+    height: 800,
+    image_rotation_enabled: true,
+    crop_rotation_enabled: true,
+}
+
 /** Существующие изображения магазина */
 const existingImages = ref(
     (shopData.value.images || [])
@@ -305,6 +314,11 @@ const submitForm = () => {
             transformed[`images[${i}][order]`] = img.order ?? 0
             transformed[`images[${i}][alt]`] = img.alt ?? ''
             transformed[`images[${i}][caption]`] = img.caption ?? ''
+
+            if (img.file instanceof File) {
+                transformed[`images[${i}][file]`] = img.file
+            }
+
             i++
         })
 
@@ -620,13 +634,17 @@ const submitForm = () => {
                     </div>
 
                     <div class="mt-4">
-                        <MultiImageEdit
+                        <MultiImagePresetEdit
                             :images="existingImages"
+                            :preset="galleryPreset"
                             @update:images="handleExistingImagesUpdate"
                             @delete:image="handleDeleteExistingImage"
                         />
 
-                        <MultiImageUpload @update:images="handleNewImagesUpdate" />
+                        <MultiImagePresetUpload
+                            :preset="galleryPreset"
+                            @update:images="handleNewImagesUpdate"
+                        />
 
                         <div v-if="newImages.length" class="text-xs text-slate-600 dark:text-slate-300 mt-2">
                             {{ t('images') }}: {{ newImages.length }}

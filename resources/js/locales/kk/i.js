@@ -2,6 +2,7 @@ export default {
     icon: 'Таңба',
     id: 'ID',
     image: 'Сурет',
+    imageEditor: 'Сурет редакторы',
     imagePosition: 'Кескін орны',
     imagePresets: 'Кескінді өңдеу',
     imageRotationEnabled: 'Кескінді айналдыруға рұқсат беру',

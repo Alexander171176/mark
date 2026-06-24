@@ -2,6 +2,7 @@ export default {
     icon: 'Icon',
     id: 'ID',
     image: 'Image',
+    imageEditor: 'Image editor',
     imagePosition: 'Image position',
     imagePresets: 'Image presets',
     imageRotationEnabled: 'Allow image rotation',

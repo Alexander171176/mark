@@ -30,6 +30,7 @@ import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
 import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 import ImageFileInput from '@/Components/Admin/UI/File/ImageFileInput.vue'
 import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
+import MultiImagePresetUpload from '@/Components/Admin/UI/Image/MultiImagePresetUpload.vue'
 
 /** Сервисы страницы */
 const toast = useToast()
@@ -38,6 +39,7 @@ const page = usePage()
 
 /** Входные параметры страницы */
 const props = defineProps({
+    imageProcessorEnabled: { type: Boolean, default: true },
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
     companies: { type: Array, default: () => [] },
@@ -124,6 +126,16 @@ const getCompanyTitle = (company) => {
         || `ID: ${company?.id}`
 }
 
+/** Пресет для изображений галлереи */
+const galleryPreset = {
+    key: 'rectangle_large',
+    shape: 'rectangle',
+    width: 1200,
+    height: 800,
+    image_rotation_enabled: true,
+    crop_rotation_enabled: true,
+}
+
 /** Автогенерация URL из названия */
 const handleUrlInputFocus = () => {
     if (!form.url && currentTranslation.value.title) {
@@ -180,6 +192,11 @@ const generateMetaFields = () => {
     }
 }
 
+/** Подготовка файла к отправке */
+const fileOrNull = (value) => {
+    return value instanceof File ? value : null
+}
+
 /** Отправка формы создания */
 const submitForm = () => {
     form.transform((data) => {
@@ -191,11 +208,15 @@ const submitForm = () => {
             main: data.main ? 1 : 0,
             right: data.right ? 1 : 0,
 
+            logo: fileOrNull(data.logo),
+
             social_links: Object.fromEntries(
                 Object.entries(data.social_links || {})
                     .filter(([, value]) => String(value || '').trim() !== '')
             ),
         }
+
+        delete transformed.images
 
         newImages.value.forEach((image, index) => {
             if (image.file) {
@@ -555,7 +576,16 @@ const submitForm = () => {
                     </div>
 
                     <div class="mt-4">
-                        <MultiImageUpload @update:images="handleNewImagesUpdate" />
+                        <MultiImagePresetUpload
+                            v-if="imageProcessorEnabled"
+                            :preset="galleryPreset"
+                            @update:images="handleNewImagesUpdate"
+                        />
+
+                        <MultiImageUpload
+                            v-else
+                            @update:images="handleNewImagesUpdate"
+                        />
 
                         <div v-if="newImages.length" class="text-xs text-slate-600 dark:text-slate-300 mt-2">
                             {{ t('images') }}: {{ newImages.length }}

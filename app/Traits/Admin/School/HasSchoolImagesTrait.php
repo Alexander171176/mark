@@ -42,6 +42,32 @@ trait HasSchoolImagesTrait
             return;
         }
 
+        $imageTable = (new $imageModelClass)->getTable();
+
+        $currentImageIds = $model->images()
+            ->pluck("{$imageTable}.id")
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
+        $incomingImageIds = collect($imagesData)
+            ->pluck('id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
+        $autoDeletedIds = array_values(
+            array_diff($currentImageIds, $incomingImageIds)
+        );
+
+        $deletedImageIds = array_values(
+            array_unique(
+                array_map(
+                    'intval',
+                    array_merge($deletedImageIds, $autoDeletedIds)
+                )
+            )
+        );
+
         if (!empty($deletedImageIds)) {
             $model->images()->detach($deletedImageIds);
             $this->deleteImages($deletedImageIds);
@@ -66,9 +92,15 @@ trait HasSchoolImagesTrait
                 ]);
 
                 if ($request->hasFile($fileKey)) {
-                    $image->clearMediaCollection($this->getImageMediaCollection());
-                    $image->addMedia($request->file($fileKey))
-                        ->toMediaCollection($this->getImageMediaCollection());
+                    $image->clearMediaCollection(
+                        $this->getImageMediaCollection()
+                    );
+
+                    $image
+                        ->addMedia($request->file($fileKey))
+                        ->toMediaCollection(
+                            $this->getImageMediaCollection()
+                        );
                 }
 
                 $syncData[$image->id] = [
@@ -85,32 +117,14 @@ trait HasSchoolImagesTrait
                     'caption' => $imageData['caption'] ?? '',
                 ]);
 
-                $image->addMedia($request->file($fileKey))
-                    ->toMediaCollection($this->getImageMediaCollection());
+                $image
+                    ->addMedia($request->file($fileKey))
+                    ->toMediaCollection(
+                        $this->getImageMediaCollection()
+                    );
 
                 $syncData[$image->id] = [
                     'order' => $image->order,
-                ];
-            }
-        }
-
-        $imageTable = (new $imageModelClass)->getTable();
-
-        $existingIds = $model->images()
-            ->whereNotIn("{$imageTable}.id", $deletedImageIds)
-            ->pluck("{$imageTable}.id")
-            ->toArray();
-
-        foreach ($existingIds as $existingId) {
-            if (array_key_exists($existingId, $syncData)) {
-                continue;
-            }
-
-            $existingImage = $imageModelClass::find($existingId);
-
-            if ($existingImage) {
-                $syncData[$existingId] = [
-                    'order' => $existingImage->order,
                 ];
             }
         }

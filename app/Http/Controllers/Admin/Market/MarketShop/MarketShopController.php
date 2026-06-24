@@ -9,6 +9,7 @@ use App\Http\Resources\Admin\Market\MarketShop\MarketShopResource;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketShop\MarketShopImage;
+use App\Services\Admin\AdminFeatureService;
 use App\Services\Admin\ImagePresetService;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
@@ -33,7 +34,7 @@ use Throwable;
  * - activity (single + bulk)
  * - sort + drag&drop (bulk)
  * - moderation (approve/reject) только для admin
- * - images single
+ * - images + сервис обработки изображений.
  *
  * @version 1.1 (мультиязычеая архитектура)
  * @author Александр Косолапов <kosolapov1976@gmail.com>
@@ -82,7 +83,10 @@ class MarketShopController extends BaseMarketAdminController
         $sortParam = (string) $request->query('sort', $defaultSort);
         $search = trim((string) $request->query('search', ''));
 
-        $processingMode = $settings->string('adminMarketShopsProcessingMode', 'frontend');
+        $processingMode = $settings->string(
+            'adminMarketShopsProcessingMode',
+            'frontend'
+        );
 
         $shopsCount = $this->baseQuery()->count();
 
@@ -148,9 +152,12 @@ class MarketShopController extends BaseMarketAdminController
         return Inertia::render('Admin/Market/MarketShops/Create', [
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
+
             'companies' => MarketCompanyResource::collection(
                 $this->availableCompaniesForCreate()
             ),
+
+            'imageProcessorEnabled' => $this->imageProcessorEnabled(),
         ]);
     }
 
@@ -191,7 +198,13 @@ class MarketShopController extends BaseMarketAdminController
         }
 
         try {
-            DB::transaction(function () use (&$shop, $request, $data, $translations, $imagesData) {
+            DB::transaction(function () use (
+                &$shop,
+                $request,
+                $data,
+                $translations,
+                $imagesData
+            ) {
                 if (!isset($data['sort']) || is_null($data['sort'])) {
                     $maxSort = MarketShop::query()->max('sort');
                     $data['sort'] = is_null($maxSort) ? 0 : $maxSort + 1;
@@ -251,15 +264,20 @@ class MarketShopController extends BaseMarketAdminController
             'shop' => new MarketShopResource($shop),
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
+
             'companies' => MarketCompanyResource::collection(
                 $this->availableCompaniesForEdit($shop)
             ),
+
+            'imageProcessorEnabled' => $this->imageProcessorEnabled(),
         ]);
     }
 
     /** Обновление магазина */
-    public function update(MarketShopRequest $request, int $marketShop): RedirectResponse
-    {
+    public function update(
+        MarketShopRequest $request,
+        int $marketShop
+    ): RedirectResponse {
         $shop = $this->baseQuery()->findOrFail($marketShop);
 
         $data = $request->validated();
@@ -291,7 +309,14 @@ class MarketShopController extends BaseMarketAdminController
         }
 
         try {
-            DB::transaction(function () use ($shop, $request, $data, $translations, $imagesData, $deletedImageIds) {
+            DB::transaction(function () use (
+                $shop,
+                $request,
+                $data,
+                $translations,
+                $imagesData,
+                $deletedImageIds
+            ) {
                 $shop->update($data);
 
                 $this->syncTranslations($shop, $translations);
@@ -334,6 +359,7 @@ class MarketShopController extends BaseMarketAdminController
                 if ($shop->logo) {
                     Storage::disk('public')->delete($shop->logo);
                 }
+
                 $this->deleteImages(
                     $shop->images()->pluck('market_shop_images.id')->toArray()
                 );
@@ -382,6 +408,10 @@ class MarketShopController extends BaseMarketAdminController
                     ->get();
 
                 foreach ($shops as $shop) {
+                    if ($shop->logo) {
+                        Storage::disk('public')->delete($shop->logo);
+                    }
+
                     $this->deleteImages(
                         $shop->images()->pluck('market_shop_images.id')->toArray()
                     );
@@ -487,11 +517,10 @@ class MarketShopController extends BaseMarketAdminController
             ->get();
     }
 
+    /** Метод для сохранения логтипа */
     private function storeShopLogo(Request $request): string
     {
-        if (
-            app(AdminSettingsService::class)->int('imageProcessorEnabled', 1) !== 1
-        ) {
+        if (!$this->imageProcessorEnabled()) {
             return $request->file('logo')->store(
                 'market/market_shops/logos',
                 'public'
@@ -504,5 +533,11 @@ class MarketShopController extends BaseMarketAdminController
             directory: 'market/market_shops/logos',
             storeOriginal: false
         );
+    }
+
+    /** Сервис определения настройки процессора изображений */
+    protected function imageProcessorEnabled(): bool
+    {
+        return app(AdminFeatureService::class)->imageProcessorEnabled();
     }
 }

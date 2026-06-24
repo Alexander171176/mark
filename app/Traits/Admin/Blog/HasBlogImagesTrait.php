@@ -10,9 +10,38 @@ trait HasBlogImagesTrait
     /**
      * Синхронизация изображений (создание, обновление, удаление, порядок)
      */
-    protected function syncImages(Model $model, Request $request, array $imagesData, array $deletedImageIds = []): void
-    {
-        // Удаляем отмеченные изображения
+    protected function syncImages(
+        Model $model,
+        Request $request,
+        array $imagesData,
+        array $deletedImageIds = []
+    ): void {
+        $imageTable = (new $this->imageModelClass)->getTable();
+
+        $currentImageIds = $model->images()
+            ->pluck("{$imageTable}.id")
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
+        $incomingImageIds = collect($imagesData)
+            ->pluck('id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
+        $autoDeletedIds = array_values(
+            array_diff($currentImageIds, $incomingImageIds)
+        );
+
+        $deletedImageIds = array_values(
+            array_unique(
+                array_map(
+                    'intval',
+                    array_merge($deletedImageIds, $autoDeletedIds)
+                )
+            )
+        );
+
         if (!empty($deletedImageIds)) {
             $model->images()->detach($deletedImageIds);
             $this->deleteImages($deletedImageIds);
@@ -23,7 +52,6 @@ trait HasBlogImagesTrait
         foreach ($imagesData as $index => $imageData) {
             $fileKey = "images.{$index}.file";
 
-            // Обновление существующего изображения
             if (!empty($imageData['id'])) {
                 $image = $this->imageModelClass::find($imageData['id']);
 
@@ -37,18 +65,21 @@ trait HasBlogImagesTrait
                     'caption' => $imageData['caption'] ?? $image->caption,
                 ]);
 
-                // Обновление файла
                 if ($request->hasFile($fileKey)) {
                     $image->clearMediaCollection($this->imageMediaCollection);
-                    $image->addMedia($request->file($fileKey))
+
+                    $image
+                        ->addMedia($request->file($fileKey))
                         ->toMediaCollection($this->imageMediaCollection);
                 }
 
-                $syncData[$image->id] = ['order' => $image->order];
+                $syncData[$image->id] = [
+                    'order' => $image->order,
+                ];
+
                 continue;
             }
 
-            // Создание нового изображения
             if ($request->hasFile($fileKey)) {
                 $image = $this->imageModelClass::create([
                     'order' => $imageData['order'] ?? 0,
@@ -56,33 +87,16 @@ trait HasBlogImagesTrait
                     'caption' => $imageData['caption'] ?? '',
                 ]);
 
-                $image->addMedia($request->file($fileKey))
+                $image
+                    ->addMedia($request->file($fileKey))
                     ->toMediaCollection($this->imageMediaCollection);
 
-                $syncData[$image->id] = ['order' => $image->order];
+                $syncData[$image->id] = [
+                    'order' => $image->order,
+                ];
             }
         }
 
-        // Получаем существующие изображения (кроме удалённых)
-        $imageTable = (new $this->imageModelClass)->getTable();
-
-        $existingIds = $model->images()
-            ->whereNotIn("{$imageTable}.id", $deletedImageIds)
-            ->pluck("{$imageTable}.id")
-            ->toArray();
-
-        // Добавляем отсутствующие в sync (чтобы не потерять их)
-        foreach ($existingIds as $existingId) {
-            if (!array_key_exists($existingId, $syncData)) {
-                $existingImage = $this->imageModelClass::find($existingId);
-
-                if ($existingImage) {
-                    $syncData[$existingId] = ['order' => $existingImage->order];
-                }
-            }
-        }
-
-        // Синхронизация pivot-таблицы
         $model->images()->sync($syncData);
     }
 

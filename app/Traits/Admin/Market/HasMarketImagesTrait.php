@@ -2,8 +2,8 @@
 
 namespace App\Traits\Admin\Market;
 
+use App\Services\Admin\AdminFeatureService;
 use App\Services\Admin\ImagePresetService;
-use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -126,7 +126,10 @@ trait HasMarketImagesTrait
         Model $image,
         UploadedFile $file
     ): void {
-        if (!$this->imageProcessorEnabled()) {
+        if (
+            !$this->imageProcessorEnabled() ||
+            $file->getMimeType() === 'image/webp'
+        ) {
             $image
                 ->addMedia($file)
                 ->toMediaCollection($this->imageMediaCollection);
@@ -154,10 +157,7 @@ trait HasMarketImagesTrait
      */
     protected function imageProcessorEnabled(): bool
     {
-        return app(AdminSettingsService::class)->int(
-                'imageProcessorEnabled',
-                1
-            ) === 1;
+        return app(AdminFeatureService::class)->imageProcessorEnabled();
     }
 
     /**

@@ -32,6 +32,8 @@ import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 import EditImageFileInput from '@/Components/Admin/UI/File/EditImageFileInput.vue'
 import MultiImagePresetEdit from '@/Components/Admin/UI/Image/MultiImagePresetEdit.vue'
 import MultiImagePresetUpload from '@/Components/Admin/UI/Image/MultiImagePresetUpload.vue'
+import MultiImageEdit from '@/Components/Admin/UI/Image/MultiImageEdit.vue'
+import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
 
 /** Сервисы страницы */
 const toast = useToast()
@@ -39,6 +41,7 @@ const { t } = useI18n()
 
 /** Входные параметры страницы */
 const props = defineProps({
+    imageProcessorEnabled: { type: Boolean, default: true },
     shop: { type: Object, required: true },
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
@@ -177,6 +180,7 @@ const getCompanyTitle = (company) => {
         || `ID: ${company?.id}`
 }
 
+/** Пресет для изображений галлереи */
 const galleryPreset = {
     key: 'rectangle_large',
     shape: 'rectangle',
@@ -634,17 +638,31 @@ const submitForm = () => {
                     </div>
 
                     <div class="mt-4">
-                        <MultiImagePresetEdit
-                            :images="existingImages"
-                            :preset="galleryPreset"
-                            @update:images="handleExistingImagesUpdate"
-                            @delete:image="handleDeleteExistingImage"
-                        />
+                        <template v-if="imageProcessorEnabled">
+                            <MultiImagePresetEdit
+                                :images="existingImages"
+                                :preset="galleryPreset"
+                                @update:images="handleExistingImagesUpdate"
+                                @delete:image="handleDeleteExistingImage"
+                            />
 
-                        <MultiImagePresetUpload
-                            :preset="galleryPreset"
-                            @update:images="handleNewImagesUpdate"
-                        />
+                            <MultiImagePresetUpload
+                                :preset="galleryPreset"
+                                @update:images="handleNewImagesUpdate"
+                            />
+                        </template>
+
+                        <template v-else>
+                            <MultiImageEdit
+                                :images="existingImages"
+                                @update:images="handleExistingImagesUpdate"
+                                @delete:image="handleDeleteExistingImage"
+                            />
+
+                            <MultiImageUpload
+                                @update:images="handleNewImagesUpdate"
+                            />
+                        </template>
 
                         <div v-if="newImages.length" class="text-xs text-slate-600 dark:text-slate-300 mt-2">
                             {{ t('images') }}: {{ newImages.length }}

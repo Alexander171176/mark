@@ -92,6 +92,25 @@ watch(sidebarExpanded, (newVal) => {
     localStorage.setItem('sidebar-expanded', newVal.toString());
 });
 
+const sidebarGroups = ref({
+    pages: localStorage.getItem('sidebar-group-pages') !== 'false',
+    market: localStorage.getItem('sidebar-group-market') !== 'false',
+    finance: localStorage.getItem('sidebar-group-finance') !== 'false',
+    school: localStorage.getItem('sidebar-group-school') !== 'false',
+    blog: localStorage.getItem('sidebar-group-blog') !== 'false',
+    statistics: localStorage.getItem('sidebar-group-statistics') !== 'false',
+    administrator: localStorage.getItem('sidebar-group-administrator') !== 'false',
+})
+
+const toggleSidebarGroup = (key) => {
+    sidebarGroups.value[key] = !sidebarGroups.value[key]
+
+    localStorage.setItem(
+        `sidebar-group-${key}`,
+        sidebarGroups.value[key].toString()
+    )
+}
+
 </script>
 
 <template>
@@ -133,57 +152,145 @@ watch(sidebarExpanded, (newVal) => {
             <div class="space-y-1">
 
                 <!-- Ссылки администратора -->
-                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
-                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
-                      v-if="sidebarExpanded">
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('pages')"
+                >
                     {{ t('pages') }}
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.pages }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
                 </span>
-                <DraggableSidebarPageMainLink :expanded="sidebarExpanded" />
+
+                <DraggableSidebarPageMainLink
+                    v-show="!sidebarExpanded || sidebarGroups.pages"
+                    :expanded="sidebarExpanded"
+                />
 
                 <!-- Ссылки страниц онлайн школы -->
-                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
-                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
-                      v-if="sidebarExpanded">
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('market')"
+                >
                     {{ t('store') }}
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.market }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
                 </span>
-                <DraggableSidebarPageMarketLink :expanded="sidebarExpanded" />
+                <DraggableSidebarPageMarketLink
+                    v-show="!sidebarExpanded || sidebarGroups.market"
+                    :expanded="sidebarExpanded"
+                />
 
                 <!-- Ссылки страниц онлайн школы -->
-                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
-                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
-                      v-if="sidebarExpanded">
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('finance')"
+                >
                     {{ t('finance') }}
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.finance }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
                 </span>
-                <DraggableSidebarPageFinanceLink :expanded="sidebarExpanded" />
+                <DraggableSidebarPageFinanceLink
+                    v-show="!sidebarExpanded || sidebarGroups.finance"
+                    :expanded="sidebarExpanded"
+                />
 
                 <!-- Ссылки страниц онлайн школы -->
-                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
-                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
-                      v-if="sidebarExpanded">
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('school')"
+                >
                     {{ t('school') }}
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.finance }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
                 </span>
-                <DraggableSidebarPageSchoolLink :expanded="sidebarExpanded" />
+                <DraggableSidebarPageSchoolLink
+                    v-show="!sidebarExpanded || sidebarGroups.school"
+                    :expanded="sidebarExpanded"
+                />
 
                 <!-- Ссылки страниц блога -->
-                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
-                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
-                      v-if="sidebarExpanded">
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('blog')"
+                >
                     {{ t('blog') }}
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.finance }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
                 </span>
-                <DraggableSidebarPageBlogLink :expanded="sidebarExpanded" />
+                <DraggableSidebarPageBlogLink
+                    v-show="!sidebarExpanded || sidebarGroups.blog"
+                    :expanded="sidebarExpanded"
+                />
 
                 <!-- Ссылки страниц статистики -->
-                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
-                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
-                      v-if="sidebarExpanded">
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('statistics')"
+                >
                     {{ t('statistics') }}
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.finance }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
                 </span>
-                <DraggableSidebarPageStatisticLink :expanded="sidebarExpanded" />
+                <DraggableSidebarPageStatisticLink
+                    v-show="!sidebarExpanded || sidebarGroups.statistics"
+                    :expanded="sidebarExpanded"
+                />
 
                 <!-- Ссылки главного ряда -->
-                <span class="flex justify-start text-xs uppercase font-semibold pl-1 opacity-95
-                             text-indigo-200 pt-1 border-t border-dotted border-gray-50"
-                      v-if="sidebarExpanded">
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                >
                     {{ t('administrator') }}
                 </span>
                 <DraggableSidebarGroupLink :expanded="sidebarExpanded" />

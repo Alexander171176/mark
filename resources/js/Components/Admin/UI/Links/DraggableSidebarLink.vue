@@ -64,6 +64,7 @@ const linkInfo = {
     currencies: {label: t('currencies'), route: 'admin.currencies.index'},
     marketCompanies: {label: t('marketCompanies'), route: 'admin.marketCompanies.index'},
     marketShops: {label: t('marketShops'), route: 'admin.marketShops.index'},
+    marketCategories: {label: t('marketCategories'), route: 'admin.marketCategories.index'},
     subscriptionPlans: {label: t('subscriptionPlans'), route: 'admin.schoolSubscriptionPlans.index'},
     coursePrices: {label: t('coursePrices'), route: 'admin.schoolCoursePrices.index'},
     bundlePrices: {label: t('bundlePrices'), route: 'admin.schoolBundlePrices.index'},

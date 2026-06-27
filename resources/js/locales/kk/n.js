@@ -27,6 +27,7 @@ export default {
     notPrintInMenu: 'мәзірде жоқ',
     notRight: 'оң жақ бағанда жоқ',
     notSelected: 'таңдалмаған',
+    notShowInMenu: 'Мәзірде көрсетілмесін',
     number: 'Саны',
     numberOrder: 'Тапсырыс нөмірі',
 }

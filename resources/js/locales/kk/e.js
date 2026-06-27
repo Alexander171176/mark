@@ -17,6 +17,7 @@ export default {
     editLearningCategory: 'Оқыту санатын өңдеу',
     editLearningTag: 'Оқу тегін өңдеу',
     editLesson: 'Сабақты өңдеу',
+    editMarketCategory: 'Өнім санатын өңдеу',
     editMarketCompany: 'Компанияны өңдеу',
     editMarketShop: 'Дүкенді өңдеу',
     editModule: 'Модульді өңдеу',

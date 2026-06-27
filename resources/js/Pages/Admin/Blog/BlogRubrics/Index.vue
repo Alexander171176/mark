@@ -793,7 +793,6 @@ const handleBulkAction = (event) => {
                     </DefaultButton>
 
                     <ProcessingModeSwitcher
-                        v-if="viewMode !== 'table'"
                         setting-key="adminBlogRubricsProcessingMode"
                         :mode="adminBlogRubricsProcessingMode"
                         :use-server-processing="useServerProcessing"

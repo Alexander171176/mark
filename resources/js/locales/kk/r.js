@@ -52,6 +52,7 @@ export default {
     rolePermissions: 'Осы рөл үшін рұқсаттар',
     roles: 'Рөлдер',
     rolesForUser: 'Осы пайдаланушы үшін рөлдер',
+    rootCategory: 'Түбірлік санат',
     rotateCropFrame: 'Фотосурет жақтауын айналдырыңыз',
     rotateImageLeft: 'Солға бұрылыңыз',
     rotateImageRight: 'Оңға бұрылыңыз',

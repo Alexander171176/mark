@@ -29,6 +29,11 @@ const { t } = useI18n();
             :active="route().current('admin.marketShops.*')">
             {{ t('marketShops') }}
         </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.marketCategories.index')"
+            :active="route().current('admin.marketCategories.*')">
+            {{ t('marketCategories') }}
+        </ResponsiveNavLink>
         <!-- Админский маршрут валюты -->
         <ResponsiveNavLink
             :href="route('admin.currencies.index')"

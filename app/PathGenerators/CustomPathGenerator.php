@@ -10,6 +10,8 @@ use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\Blog\BlogRubric\BlogRubricImage;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\BlogVideo\BlogVideoImage;
+use App\Models\Admin\Market\MarketCategory\MarketCategory;
+use App\Models\Admin\Market\MarketCategory\MarketCategoryImage;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketShop\MarketShopImage;
 use App\Models\Admin\School\SchoolAssignment\SchoolAssignment;
@@ -86,6 +88,9 @@ class CustomPathGenerator implements PathGenerator
         // === маркет ===
         if ($media->model_type === MarketShop::class)      return 'market/market_shops/' . $media->model_id . '/';
         if ($media->model_type === MarketShopImage::class) return 'market/market_shop_images/' . $media->model_id . '/';
+
+        if ($media->model_type === MarketCategory::class)      return 'market/market_categories/' . $media->model_id . '/';
+        if ($media->model_type === MarketCategoryImage::class) return 'market/market_category_images/' . $media->model_id . '/';
 
 
         // Дефолт

@@ -2184,6 +2184,86 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // PUBLIC MARKET SHOPS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'adminMarketCategoriesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_CATEGORIES_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных категорий товаров в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET CATEGORIES PROCESSING MODE
+            [
+                'type' => 'string',
+                'option' => 'publicMarketCategoriesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'PUBLIC_MARKET_CATEGORIES_PROCESSING_MODE',
+                'category' => 'public',
+                'description' => 'Режим обработки данных категорий товаров в публичной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET CATEGORIES PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketCategoriesPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_CATEGORIES_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество категорий товаров в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET CATEGORIES PER PAGE
+            [
+                'type' => 'number',
+                'option' => 'publicMarketCategoriesPerPage',
+                'value' => '3',
+                'constant' => 'PUBLIC_MARKET_CATEGORIES_PER_PAGE',
+                'category' => 'public',
+                'description' => 'Показывать количество категорий товаров в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET CATEGORIES PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketCategoriesDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_CATEGORIES_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка категорий товаров по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET CATEGORIES DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'publicMarketCategoriesDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'PUBLIC_MARKET_CATEGORIES_DEFAULT_SORT',
+                'category' => 'public',
+                'description' => 'Сортировка категорий товаров по умолчанию в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET CATEGORIES DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketCategoriesDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_CATEGORIES_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка категорий товаров в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET CATEGORIES DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'publicMarketCategoriesDefaultView',
+                'value' => 'grid',
+                'constant' => 'PUBLIC_MARKET_CATEGORIES_DEFAULT_VIEW',
+                'category' => 'public',
+                'description' => 'Вид списка категорий товаров в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET CATEGORIES DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

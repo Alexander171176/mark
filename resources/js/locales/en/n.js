@@ -27,6 +27,7 @@ export default {
     notPrintInMenu: 'not on the menu',
     notRight: 'not in the right column',
     notSelected: 'not selected',
+    notShowInMenu: 'Do not show in menu',
     number: 'Number',
     numberOrder: 'Order number',
 }

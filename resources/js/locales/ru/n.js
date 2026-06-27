@@ -27,6 +27,7 @@ export default {
     notPrintInMenu: 'не в меню',
     notRight: 'нет в правой колонки',
     notSelected: 'не выбрано',
+    notShowInMenu: 'Не показывать в меню',
     number: 'Число',
     numberOrder: 'Номер заказа',
 }

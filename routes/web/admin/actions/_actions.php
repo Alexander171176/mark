@@ -18,6 +18,9 @@ Route::prefix('actions')->name('actions.')->group(function () { // Группи�
     // Переключение активности (массовое)
     require __DIR__ . '/bulk-activity.php';
 
+    // Переключение показывать в главном меню
+    require __DIR__ . '/menu.php';
+
     // Переключение Left/Main/Right
     require __DIR__ . '/left.php';
     require __DIR__ . '/main.php';

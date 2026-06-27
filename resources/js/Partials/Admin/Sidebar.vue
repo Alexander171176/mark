@@ -130,7 +130,8 @@ const toggleSidebarGroup = (key) => {
                     overflow-y-scroll no-scrollbar transition-all duration-200 ease-in-out">
 
             <div class="flex justify-around items-center mb-2 pr-3 md:px-0">
-                <button @click.prevent="sidebarExpanded = !sidebarExpanded" title="t('toggleSidebar')">
+                <button @click.prevent="sidebarExpanded = !sidebarExpanded"
+                        :title="t('toggleSidebar')">
                     <svg :class="{ 'rotate-180': sidebarExpanded }"
                          class="mx-1 w-6 h-6 py-1 fill-current transition-transform duration-200
                                 border border-gray-400 hover:border-red-400"
@@ -145,7 +146,7 @@ const toggleSidebarGroup = (key) => {
                 </Link>
                 <FontAwesomeIcon
                     :icon="['fas', 'sliders']"
-                    class="text-white"
+                    class="text-white ml-1"
                     v-if="sidebarExpanded" />
             </div>
             <DigitalClock v-if="sidebarExpanded" class="mb-2 relative z-10" />

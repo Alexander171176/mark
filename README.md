@@ -852,15 +852,24 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketShopSeeder` <br>
 
+3) Market Categories - категории товаров / дерево категорий
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategory -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategoryTranslation -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategoryImage -m` <br>
+`docker exec mark-php-app php artisan make:migration create_market_category_has_images_table --create=market_category_has_images` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketCategory/MarketCategoryResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketCategory/MarketCategorySharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketCategory/MarketCategoryTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketCategory/MarketCategoryImageResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketCategory/MarketCategoryRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketCategory/MarketCategoryController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketCategorySeeder` <br>
 
 
 
-3) Валюта, локаль витрины
-`docker exec mark-php-app php artisan make:migration create_market_storefront_has_currencies_table --create=market_storefront_has_currencies` <br>
-`docker exec mark-php-app php artisan make:migration create_market_storefront_locale_currency_settings_table --create=market_storefront_locale_currency_settings` <br>
 
-4) Категории (дерево)
-`docker exec mark-php-app php artisan make:migration create_market_categories_table --create=market_categories` <br>
 
 5) Товары / Бренды
 `docker exec mark-php-app php artisan make:migration create_market_products_table --create=market_products` <br>

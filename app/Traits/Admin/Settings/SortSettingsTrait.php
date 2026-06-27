@@ -290,4 +290,11 @@ trait SortSettingsTrait
         return $this->sortSetting($request,
             'adminMarketShopsDefaultSort', 'site_settings.adminMarketShopsDefaultSort');
     }
+
+    /** Обновляет сортировку элементов в категориях товаров */
+    public function updateAdminSortCategories(UpdateSortRequest $request): RedirectResponse
+    {
+        return $this->sortSetting($request,
+            'adminMarketCategoriesDefaultSort', 'site_settings.adminMarketCategoriesDefaultSort');
+    }
 }

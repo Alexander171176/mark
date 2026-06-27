@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
@@ -151,3 +152,8 @@ Route::put('/market-shops/{marketShop}/sort',
     [MarketShopController::class, 'updateSort'])
     ->whereNumber('marketShop')
     ->name('marketShops.updateSort');
+
+Route::put('/market-categories/{marketCategory}/sort',
+    [MarketCategoryController::class, 'updateSort'])
+    ->whereNumber('marketCategory')
+    ->name('marketCategories.updateSort');

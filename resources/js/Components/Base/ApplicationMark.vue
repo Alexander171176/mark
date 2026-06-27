@@ -1,5 +1,5 @@
 <template>
-    <div class="flex inline-flex items-center justify-center gap-3">
+    <div class="inline-flex items-center justify-center gap-1">
         <svg
             class="w-5 h-5"
             viewBox="0 0 48 48"
@@ -19,5 +19,3 @@
         </span>
     </div>
 </template>
-<script setup lang="ts">
-</script>

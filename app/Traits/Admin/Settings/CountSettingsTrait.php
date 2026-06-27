@@ -289,4 +289,12 @@ trait CountSettingsTrait
             'adminMarketShopsPerPage', 'site_settings.adminMarketShopsPerPage');
     }
 
+    /** Обновление количества элементов в категориях товаров */
+    public function updateAdminCountCategories(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminMarketCategoriesPerPage', 'site_settings.adminMarketCategoriesPerPage');
+    }
+
+
 }

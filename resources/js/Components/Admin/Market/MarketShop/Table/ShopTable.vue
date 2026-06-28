@@ -69,6 +69,13 @@ const companyTitle = (shop) => {
         || `Company ID: ${shop?.market_company_id}`
 }
 
+const statusLabelKeyMap = {
+    draft: 'statusDraft',
+    published: 'statusPublished',
+    archived: 'statusArchived',
+}
+const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
+
 const ownerTitle = (shop) => {
     const owner = shop?.owner
 
@@ -365,8 +372,8 @@ const truncateText = (text, maxLength = 50) => {
                                 <div class="text-left">
                                     <a
                                         :href="`/market/shops/${encodeURIComponent(shop.url)}`"
-                                        class="text-sky-700 dark:text-sky-200
-                                               text-xs hover:underline
+                                        class="text-blue-700 dark:text-blue-300
+                                               text-sm hover:underline
                                                hover:text-amber-700 dark:hover:text-amber-200"
                                         target="_blank"
                                         rel="noopener noreferrer"
@@ -381,14 +388,14 @@ const truncateText = (text, maxLength = 50) => {
                                         {{ truncateText(shop.url, 70) }}
                                     </div>
 
-                                    <div class="text-[10px] text-slate-400 dark:text-slate-400">
-                                        {{ shop.status || 'draft' }}
+                                    <div class="text-[10px] text-fuchsia-700 dark:text-fuchsia-300">
+                                        {{ getStatusLabel(shop.status) }}
                                     </div>
                                 </div>
                             </td>
                             <td class="px-1 py-1 whitespace-nowrap">
                                 <div class="text-left text-xs">
-                                    <div class="text-fuchsia-700 dark:text-fuchsia-300">
+                                    <div class="text-amber-700 dark:text-amber-300">
                                         {{ shop.phone || '—' }}
                                     </div>
                                     <div class="text-[10px] text-slate-500 dark:text-slate-300">

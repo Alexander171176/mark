@@ -86,6 +86,14 @@ const getSafeIcon = (icon) => {
     return null
 }
 
+const statusLabelKeyMap = {
+    draft: 'statusDraft',
+    published: 'statusPublished',
+    archived: 'statusArchived',
+}
+
+const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
+
 const ownerTitle = (category) => {
     const owner = category?.owner
 
@@ -186,7 +194,7 @@ const moderationBadge = (status) => {
                     <div
                         class="w-8 font-semibold text-sm
                                text-amber-600 dark:text-amber-200 mr-1 flex-shrink-0"
-                        :title="`[sort: ${category.sort}] level: ${category.level}`"
+:title="`[${t('sort')}: ${category.sort}] ${t('level')}: ${category.level} / ${getStatusLabel(category.status)}`"
                     >
                         {{ category.id }}
                     </div>

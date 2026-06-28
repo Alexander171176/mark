@@ -113,7 +113,7 @@ const clearFile = () => {
 
         <LabelInput :value="labelText" />
 
-        <div class="mt-2">
+        <div class="mt-1">
             <img
                 v-if="preview"
                 :src="preview"

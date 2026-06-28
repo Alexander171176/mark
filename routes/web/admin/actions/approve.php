@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
+use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
@@ -45,3 +46,8 @@ Route::put('/market-categories/{marketCategory}/approve',
     [MarketCategoryController::class, 'approve'])
     ->whereNumber('marketCategory')
     ->name('marketCategories.approve');
+
+Route::put('/market-brands/{marketBrand}/approve',
+    [MarketBrandController::class, 'approve'])
+    ->whereNumber('marketBrand')
+    ->name('marketBrands.approve');

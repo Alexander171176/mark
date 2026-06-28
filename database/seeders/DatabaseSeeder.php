@@ -108,11 +108,10 @@ class DatabaseSeeder extends Seeder
             // Комментарии
             CommentsSeeder::class,
 
-            // Фирмы
-            MarketCompanySeeder::class,
-
-            // Магазины
-            MarketShopSeeder::class,
+            //  Маркет
+            MarketCompanySeeder::class, // Фирмы
+            MarketShopSeeder::class, // Магазины
+            MarketBrandSeeder::class, // Бренды
 
 // Добавьте сюда другие сидеры по мере необходимости
         ]);

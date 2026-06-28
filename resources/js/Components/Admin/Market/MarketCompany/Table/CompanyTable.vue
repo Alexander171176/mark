@@ -113,6 +113,13 @@ const moderationBadge = (status) => {
     }
 }
 
+const statusLabelKeyMap = {
+    draft: 'statusDraft',
+    published: 'statusPublished',
+    archived: 'statusArchived',
+}
+const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
+
 const formatDate = (dateStr) => {
     if (!dateStr) return ''
 
@@ -335,7 +342,11 @@ const vatLabel = (company) => {
                                     </div>
 
                                     <div class="text-[10px] text-slate-400 dark:text-slate-400">
-                                        {{ companyTypeLabel(company.company_type) }} / {{ vatLabel(company) }}
+                            {{ companyTypeLabel(company.company_type) }} / {{ vatLabel(company) }}
+                                    </div>
+
+                                    <div class="text-[10px] text-fuchsia-700 dark:text-fuchsia-300">
+                                        {{ getStatusLabel(company.status) }}
                                     </div>
                                 </div>
                             </td>

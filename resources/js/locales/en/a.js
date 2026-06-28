@@ -33,6 +33,7 @@ export default {
     addLesson: 'Add a Lesson',
     addLink: 'Add link',
     addLocale: 'Add locale',
+    addMarketBrand: 'Add Brand',
     addMarketCategory: 'Add category',
     addMarketCompany: 'Add a company',
     addMarketShop: 'Add a store',

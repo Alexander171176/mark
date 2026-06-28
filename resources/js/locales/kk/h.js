@@ -4,6 +4,7 @@ export default {
     height: 'Биіктігі',
     hide: 'Жасыру',
     hideFromMenu: 'Мәзірден жасыру',
+    hideOwner: 'Иесін жасыру',
     hideSeo: 'SEO жасыру',
     home: 'Басты бет',
     horizontalView: 'көлденең көрсету',

@@ -16,6 +16,7 @@ export default {
     shapeSquare: 'Квадрат',
     shapeCircle: 'Круг',
     showFromAt: 'Начало публикации',
+    showOwner: 'Показать владельца',
     showToAt: 'Окончание публикации',
     score: 'Набранные баллы',
     screenshots: 'Скриншоты',

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
@@ -136,3 +137,7 @@ Route::put('/market-shops/update-sort-bulk',
 Route::put('/market-categories/update-sort-bulk',
     [MarketCategoryController::class, 'updateSortBulk'])
     ->name('marketCategories.updateSortBulk');
+
+Route::put('/market-brands/update-sort-bulk',
+    [MarketBrandController::class, 'updateSortBulk'])
+    ->name('marketBrands.updateSortBulk');

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
@@ -34,7 +35,6 @@ use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionP
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
 use App\Http\Controllers\Admin\Statistics\Chart\ChartController;
 use App\Http\Controllers\Admin\System\Component\ComponentController;
-use App\Http\Controllers\Admin\System\ImageProcessor\ImageProcessorVariantController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use App\Http\Controllers\Admin\System\Permission\PermissionController;
 use App\Http\Controllers\Admin\System\Report\ReportController;
@@ -203,3 +203,7 @@ Route::resource('/market-shops', MarketShopController::class)
 Route::resource('/market-categories', MarketCategoryController::class)
     ->parameters(['market-categories' => 'marketCategory'])
     ->names('marketCategories');
+
+Route::resource('/market-brands', MarketBrandController::class)
+    ->parameters(['market-brands' => 'marketBrand'])
+    ->names('marketBrands');

@@ -16,6 +16,7 @@ export default {
     shapeSquare: 'Шаршы',
     shapeCircle: 'Шеңбер',
     showFromAt: 'Жарияланымның басталуы',
+    showOwner: 'Шоу иесі',
     showToAt: 'Жарияланымның аяқталуы',
     score: 'Ұпайлар жиналды',
     screenshots: 'Скриншоттар',

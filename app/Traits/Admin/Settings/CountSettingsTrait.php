@@ -296,5 +296,10 @@ trait CountSettingsTrait
             'adminMarketCategoriesPerPage', 'site_settings.adminMarketCategoriesPerPage');
     }
 
-
+    /** Обновление количества элементов в брендах */
+    public function updateAdminCountMarketBrands(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminMarketBrandsPerPage', 'site_settings.adminMarketBrandsPerPage');
+    }
 }

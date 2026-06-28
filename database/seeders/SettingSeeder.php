@@ -2264,6 +2264,86 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // PUBLIC MARKET CATEGORIES DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'adminMarketBrandsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_BRANDS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных брендов в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET BRANDS PROCESSING MODE
+            [
+                'type' => 'string',
+                'option' => 'publicMarketBrandsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'PUBLIC_MARKET_BRANDS_PROCESSING_MODE',
+                'category' => 'public',
+                'description' => 'Режим обработки данных брендов в публичной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET BRANDS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketBrandsPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_BRANDS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество брендов в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET BRANDS PER PAGE
+            [
+                'type' => 'number',
+                'option' => 'publicMarketBrandsPerPage',
+                'value' => '3',
+                'constant' => 'PUBLIC_MARKET_BRANDS_PER_PAGE',
+                'category' => 'public',
+                'description' => 'Показывать количество брендов в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET BRANDS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketBrandsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_BRANDS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка брендов по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET BRANDS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'publicMarketBrandsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'PUBLIC_MARKET_BRANDS_DEFAULT_SORT',
+                'category' => 'public',
+                'description' => 'Сортировка брендов по умолчанию в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET BRANDS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketBrandsDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_BRANDS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка брендов в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET BRANDS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'publicMarketBrandsDefaultView',
+                'value' => 'grid',
+                'constant' => 'PUBLIC_MARKET_BRANDS_DEFAULT_VIEW',
+                'category' => 'public',
+                'description' => 'Вид списка брендов в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET BRANDS DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

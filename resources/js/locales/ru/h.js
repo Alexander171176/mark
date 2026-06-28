@@ -4,6 +4,7 @@ export default {
     height: 'Высота',
     hide: 'Скрыть',
     hideFromMenu: 'Скрывать в меню',
+    hideOwner: 'Скрыть владельца',
     hideSeo: 'Скрыть SEO',
     home: 'Главная',
     horizontalView: 'показ горизонтально',

@@ -867,7 +867,20 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketCategorySeeder` <br>
 
-
+4) Бренды
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrand -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrandTranslation -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrandImage -m` <br>
+`docker exec mark-php-app php artisan make:migration create_market_brand_has_images_table --create=market_brand_has_images` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketBrand/MarketBrandResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketBrand/MarketBrandSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketBrand/MarketBrandTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketBrand/MarketBrandImageResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketBrand/MarketBrandRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketBrand/MarketBrandController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketBrandSeeder` <br>
 
 
 

@@ -70,6 +70,13 @@ const companyTitle = (shop) => {
         || `Company ID: ${shop?.market_company_id}`
 }
 
+const statusLabelKeyMap = {
+    draft: 'statusDraft',
+    published: 'statusPublished',
+    archived: 'statusArchived',
+}
+const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
+
 const ownerName = (shop) => shop?.owner?.name || t('noData')
 const ownerEmail = (shop) => shop?.owner?.email || ''
 
@@ -258,8 +265,9 @@ const toggleOwnerBlock = (shopId) => {
 
                                 <button
                                     type="button"
-                                    class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-300"
-                                    :title="isOwnerBlockOpen(shop.id) ? 'Скрыть владельца' : 'Показать владельца'"
+                                    class="text-slate-400 hover:text-blue-600
+                                           dark:hover:text-blue-300"
+                                :title="isOwnerBlockOpen(shop.id) ? t('hideOwner') : t('showOwner')"
                                     @click.prevent="toggleOwnerBlock(shop.id)"
                                 >
                                     <svg
@@ -330,7 +338,8 @@ const toggleOwnerBlock = (shopId) => {
                                 <div
                                     v-if="shop.show_from_at"
                                     class="flex flex-col items-center justify-center
-                                           text-center text-[10px] text-slate-500 dark:text-slate-300"
+                                           text-center text-[10px]
+                                           text-slate-500 dark:text-slate-300"
                                 >
                                     {{ t('show') }}: {{ shop.show_from_at }} / {{ shop.show_to_at }}
                                 </div>
@@ -338,7 +347,8 @@ const toggleOwnerBlock = (shopId) => {
                                 <div
                                     v-else
                                     class="flex flex-col items-center justify-center
-                                           text-center text-[10px] text-slate-500 dark:text-slate-300"
+                                           text-center text-[10px]
+                                           text-slate-500 dark:text-slate-300"
                                 >
                                     {{ formatDate(shop.published_at) }}
                                 </div>
@@ -367,8 +377,8 @@ const toggleOwnerBlock = (shopId) => {
                                 :href="`/market/shops/${encodeURIComponent(shop.url)}`"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="text-xs font-semibold
-                                       text-sky-700 dark:text-sky-200 hover:underline
+                                class="text-sm font-semibold
+                                       text-blue-700 dark:text-blue-300 hover:underline
                                        hover:text-amber-700 dark:hover:text-amber-200
                                        line-clamp-2 text-center"
                             >
@@ -380,7 +390,7 @@ const toggleOwnerBlock = (shopId) => {
                             </div>
 
                             <div
-                                class="text-center text-[11px]
+                                class="text-center text-[11px] font-semibold
                                        text-indigo-700 dark:text-indigo-300"
                             >
                                 {{ truncateText(companyTitle(shop), 90) }}
@@ -395,7 +405,7 @@ const toggleOwnerBlock = (shopId) => {
 
                             <div
                                 class="font-semibold text-[12px] text-center
-                                       text-teal-700 dark:text-teal-300"
+                                       text-sky-700 dark:text-sky-300"
                             >
                                 {{ truncateText(shopShort(shop), 120) }}
                             </div>
@@ -404,9 +414,11 @@ const toggleOwnerBlock = (shopId) => {
                                 class="grid grid-cols-1 gap-0.5 text-[11px]
                                        text-slate-600 dark:text-slate-300"
                             >
-                                <div class="text-center">
-                                    <span class="font-semibold">{{ t('contacts') }}:</span>
-                                    {{ shop.phone || '—' }}
+                                <div class="text-center font-semibold">
+                                    <span>{{ t('contacts') }}:</span>
+                                    <span class="text-amber-700 dark:text-amber-300">
+                                        {{ shop.phone || '—' }}
+                                    </span>
                                 </div>
 
                                 <div
@@ -415,11 +427,6 @@ const toggleOwnerBlock = (shopId) => {
                                     :title="shop.email"
                                 >
                                     {{ shop.email }}
-                                </div>
-
-                                <div class="text-center">
-                                    <span class="font-semibold">{{ t('status') }}:</span>
-                                    {{ shop.status || 'draft' }}
                                 </div>
                             </div>
 
@@ -454,6 +461,17 @@ const toggleOwnerBlock = (shopId) => {
                                     <span class="text-[12px] text-slate-700 dark:text-slate-200">
                                         {{ shop.images_count ?? 0 }}
                                     </span>
+                                </div>
+                            </div>
+
+                            <div
+                                class="grid grid-cols-1 gap-0.5 text-[11px]
+                                       text-slate-600 dark:text-slate-300"
+                            >
+                                <div class="font-semibold text-center
+                                            text-fuchsia-700 dark:text-fuchsia-300">
+                                    <span>{{ t('status') }}: </span>
+                                    {{ getStatusLabel(shop.status) }}
                                 </div>
                             </div>
 

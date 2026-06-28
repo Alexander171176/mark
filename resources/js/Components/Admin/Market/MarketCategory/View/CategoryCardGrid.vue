@@ -101,6 +101,14 @@ const getSafeIcon = (icon) => {
     return null
 }
 
+const statusLabelKeyMap = {
+    draft: 'statusDraft',
+    published: 'statusPublished',
+    archived: 'statusArchived',
+}
+
+const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
+
 const formatDate = (dateStr) => {
     if (!dateStr) return ''
 
@@ -223,8 +231,8 @@ const moderationBadge = (status) => {
                                        dark:hover:text-blue-300"
                                 :title="
                                     isOwnerBlockOpen(category.id)
-                                        ? 'Скрыть владельца'
-                                        : 'Показать владельца'
+                                        ? t('hideOwner')
+                                        : t('showOwner')
                                 "
                                 @click.prevent="toggleOwnerBlock(category.id)"
                             >
@@ -417,6 +425,17 @@ const moderationBadge = (status) => {
                             >
                                 {{ category.views ?? 0 }}
                             </span>
+                        </div>
+
+                        <div
+                            class="grid grid-cols-1 gap-0.5 text-[11px]
+                                       text-slate-600 dark:text-slate-300"
+                        >
+                            <div class="font-semibold text-center
+                                            text-fuchsia-700 dark:text-fuchsia-300">
+                                <span>{{ t('status') }}: </span>
+                                {{ getStatusLabel(category.status) }}
+                            </div>
                         </div>
 
                         <div class="flex justify-center gap-1">

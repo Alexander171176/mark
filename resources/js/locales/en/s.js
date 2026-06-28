@@ -16,6 +16,7 @@ export default {
     shapeSquare: 'Square',
     shapeCircle: 'Circle',
     showFromAt: 'Start of publication',
+    showOwner: 'Show owner',
     showToAt: 'End of publication',
     score: 'Points scored',
     screenshots: 'Screenshots',

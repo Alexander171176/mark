@@ -67,6 +67,13 @@ const companyTitle = (company) => {
 
 const companyShort = (company) => companyTranslation(company)?.short || ''
 
+const statusLabelKeyMap = {
+    draft: 'statusDraft',
+    published: 'statusPublished',
+    archived: 'statusArchived',
+}
+const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
+
 const ownerName = (company) => company?.owner?.name || t('noData')
 const ownerEmail = (company) => company?.owner?.email || ''
 
@@ -243,8 +250,9 @@ const toggleOwnerBlock = (companyId) => {
 
                                 <button
                                     type="button"
-                                    class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-300"
-                                    :title="isOwnerBlockOpen(company.id) ? 'Скрыть владельца' : 'Показать владельца'"
+                                    class="text-slate-400 hover:text-blue-600
+                                           dark:hover:text-blue-300"
+                            :title="isOwnerBlockOpen(company.id) ? t('hideOwner') : t('showOwner')"
                                     @click.prevent="toggleOwnerBlock(company.id)"
                                 >
                                     <svg
@@ -281,7 +289,7 @@ const toggleOwnerBlock = (companyId) => {
                             </div>
                         </header>
 
-                        <div class="flex flex-col flex-1 px-3 py-2 space-y-0.5">
+                        <div class="flex flex-col flex-1 px-3 py-2 space-y-1">
                             <div
                                 v-show="isOwnerBlockOpen(company.id)"
                                 class="flex flex-col items-center justify-center text-center"
@@ -405,6 +413,12 @@ const toggleOwnerBlock = (companyId) => {
                                     :title="company.email"
                                 >
                                     {{ company.email }}
+                                </div>
+
+                                <div class="font-semibold text-center my-1
+                                            text-fuchsia-700 dark:text-fuchsia-300">
+                                    <span>{{ t('status') }}: </span>
+                                    {{ getStatusLabel(company.status) }}
                                 </div>
                             </div>
 

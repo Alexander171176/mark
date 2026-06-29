@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
+use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
@@ -140,3 +141,7 @@ Route::put('/market-categories/bulk-activity',
 Route::put('/market-brands/bulk-activity',
     [MarketBrandController::class, 'bulkUpdateActivity'])
     ->name('marketBrands.bulkUpdateActivity');
+
+Route::put('/market-tags/bulk-activity',
+    [MarketTagController::class, 'bulkUpdateActivity'])
+    ->name('marketTags.bulkUpdateActivity');

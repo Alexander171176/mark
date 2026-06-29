@@ -78,7 +78,7 @@ watch(
 const itemsPerPage = ref(props.adminSchoolOrdersPerPage || 10)
 
 watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountOrders'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminCountSchoolOrders'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
@@ -95,7 +95,7 @@ const sortParam = ref(
 watch(sortParam, (newVal) => {
     currentPage.value = 1
 
-    router.put(route('admin.settings.updateAdminSortOrders'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminSortSchoolOrders'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => {
@@ -388,7 +388,7 @@ const cloneOrder = (order) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountOrders"
+                        update-route="admin.settings.updateAdminCountSchoolOrders"
                     />
 
                     <SortSelect

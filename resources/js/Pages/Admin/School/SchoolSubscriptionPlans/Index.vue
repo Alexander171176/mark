@@ -18,9 +18,11 @@ import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
 import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
 import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
-import BulkActionSelect from '@/Components/Admin/School/SchoolSubscriptionPlan/Select/BulkActionSelect.vue'
+import BulkActionSelect
+    from '@/Components/Admin/School/SchoolSubscriptionPlan/Select/BulkActionSelect.vue'
 import SortSelect from '@/Components/Admin/School/SchoolSubscriptionPlan/Sort/SortSelect.vue'
-import SubscriptionPlanTable from '@/Components/Admin/School/SchoolSubscriptionPlan/Table/SubscriptionPlanTable.vue'
+import SubscriptionPlanTable
+    from '@/Components/Admin/School/SchoolSubscriptionPlan/Table/SubscriptionPlanTable.vue'
 import SubscriptionPlanCardGrid
     from '@/Components/Admin/School/SchoolSubscriptionPlan/View/SubscriptionPlanCardGrid.vue'
 
@@ -72,7 +74,7 @@ watch(
 const itemsPerPage = ref(props.adminSchoolSubscriptionPlansPerPage || 10)
 
 watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountSubscriptionPlans'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminCountSchoolSubscriptionPlans'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
@@ -89,7 +91,7 @@ const sortParam = ref(
 watch(sortParam, (newVal) => {
     currentPage.value = 1
 
-    router.put(route('admin.settings.updateAdminSortSubscriptionPlans'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminSortSchoolSubscriptionPlans'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => {
@@ -528,7 +530,7 @@ const toggleActivity = (plan) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountSubscriptionPlans"
+                        update-route="admin.settings.updateAdminCountSchoolSubscriptionPlans"
                     />
 
                     <SortSelect

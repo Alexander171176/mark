@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
+use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
@@ -207,3 +208,7 @@ Route::resource('/market-categories', MarketCategoryController::class)
 Route::resource('/market-brands', MarketBrandController::class)
     ->parameters(['market-brands' => 'marketBrand'])
     ->names('marketBrands');
+
+Route::resource('/market-tags', MarketTagController::class)
+    ->parameters(['market-tags' => 'marketTag'])
+    ->names('marketTags');

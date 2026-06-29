@@ -126,7 +126,7 @@ const itemsPerPage = ref(props.adminBlogRubricsPerPage || 6)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountRubrics'),
+        route('admin.settings.updateAdminCountBlogRubrics'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -143,7 +143,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortRubrics'),
+        route('admin.settings.updateAdminSortBlogRubrics'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -824,7 +824,7 @@ const handleBulkAction = (event) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountRubrics"
+                        update-route="admin.settings.updateAdminCountBlogRubrics"
                     />
 
                     <SortSelect

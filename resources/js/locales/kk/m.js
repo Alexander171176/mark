@@ -14,6 +14,7 @@ export default {
     marketShop: 'Дүкен',
     marketShops: 'Дүкендер',
     marketStorefronts: 'Көрме витриналары',
+    marketTags: 'Өнім тегтері',
     maxFileSizeKb: 'Файлдың макс. өлшемі',
     maxScore: 'Максималды балл',
     meetingUrl: 'Кездесу URL мекенжайы',

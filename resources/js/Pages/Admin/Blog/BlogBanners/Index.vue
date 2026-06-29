@@ -84,7 +84,7 @@ const itemsPerPage = ref(props.adminBlogBannersPerPage || 20)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountBanners'),
+        route('admin.settings.updateAdminCountBlogBanners'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -101,7 +101,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortBanners'),
+        route('admin.settings.updateAdminSortBlogBanners'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -631,7 +631,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountBanners"
+                        update-route="admin.settings.updateAdminCountBlogBanners"
                     />
 
                     <SortSelect

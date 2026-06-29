@@ -131,7 +131,7 @@ const itemsPerPage = ref(props.adminSchoolTracksPerPage || 6)
 /** Сохраняем количество элементов */
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountTracks'),
+        route('admin.settings.updateAdminCountSchoolTracks'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -150,7 +150,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortTracks'),
+        route('admin.settings.updateAdminSortSchoolTracks'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -789,7 +789,7 @@ const toggleActivity = (track) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountTracks"
+                        update-route="admin.settings.updateAdminCountSchoolTracks"
                     />
 
                     <SortSelect

@@ -132,7 +132,7 @@ const itemsPerPage = ref(props.adminSchoolCoursePricesPerPage || 10)
 /** Сохраняем настройку количества элементов */
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountCoursePrices'),
+        route('admin.settings.updateAdminCountSchoolCoursePrices'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -155,7 +155,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortCoursePrices'),
+        route('admin.settings.updateAdminSortSchoolCoursePrices'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -720,7 +720,7 @@ const handleSortOrderUpdate = (orderedIds) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountCoursePrices"
+                        update-route="admin.settings.updateAdminCountSchoolCoursePrices"
                     />
 
                     <SortSelect

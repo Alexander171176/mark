@@ -38,6 +38,7 @@ export default {
     addMarketCompany: 'Add a company',
     addMarketShop: 'Add a store',
     addMarketStorefront: 'Add a showcase',
+    addMarketTag: 'Add a Product Tag',
     addModule: 'Add Module',
     addOrder: 'Create an order',
     addPage: 'Add a Page',

@@ -123,7 +123,7 @@ const itemsPerPage = ref(props.adminMarketCategoriesPerPage || 6)
 /** Сохранение количества элементов на странице */
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountCategories'),
+        route('admin.settings.updateAdminCountMarketCategories'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -144,7 +144,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortCategories'),
+        route('admin.settings.updateAdminSortMarketCategories'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -848,7 +848,7 @@ const handleBulkAction = (event) => {
                     <ServerItemsPerPageSelect
                         v-if="useServerProcessing && viewMode !== 'table'"
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountCategories"
+                        update-route="admin.settings.updateAdminCountMarketCategories"
                     />
 
                     <SortSelect

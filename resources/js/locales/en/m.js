@@ -14,6 +14,7 @@ export default {
     marketShop: 'Shop',
     marketShops: 'Shops',
     marketStorefronts: 'Showcases',
+    marketTags: 'Product tags',
     maxFileSizeKb: 'Max file size',
     maxScore: 'Maximum score',
     meetingUrl: 'Meeting URL',

@@ -127,7 +127,7 @@ const itemsPerPage = ref(props.adminSchoolCourseSchedulesPerPage || 6)
 /** Сохраняем настройку количества элементов */
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountCourseSchedules'),
+        route('admin.settings.updateAdminCountSchoolCourseSchedules'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -156,7 +156,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortCourseSchedules'),
+        route('admin.settings.updateAdminSortSchoolCourseSchedules'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -800,7 +800,7 @@ const cloneSchedule = (schedule) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountCourseSchedules"
+                        update-route="admin.settings.updateAdminCountSchoolCourseSchedules"
                     />
 
                     <SortSelect

@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
+use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
 use App\Http\Controllers\Admin\School\SchoolCoursePrice\SchoolCoursePriceController;
@@ -106,3 +107,7 @@ Route::delete('/market-categories/bulk-delete',
 Route::delete('/market-brands/bulk-delete',
     [MarketBrandController::class, 'bulkDestroy'])
     ->name('marketBrands.bulkDestroy');
+
+Route::delete('/market-tags/bulk-delete',
+    [MarketTagController::class, 'bulkDestroy'])
+    ->name('marketTags.bulkDestroy');

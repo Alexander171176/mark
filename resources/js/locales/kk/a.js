@@ -38,6 +38,7 @@ export default {
     addMarketCompany: 'Компания қосу',
     addMarketShop: 'Дүкен қосу',
     addMarketStorefront: 'Көрме қосу',
+    addMarketTag: 'Өнім тегін қосыңыз',
     addModule: 'Модуль қосу',
     addOrder: 'Тапсырыс жасау',
     addPage: 'Бет қосу',

@@ -99,7 +99,7 @@ const itemsPerPage = ref(props.adminMarketCompaniesPerPage || 6)
 /** Обновление количества элементов */
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountCompanies'),
+        route('admin.settings.updateAdminCountMarketCompanies'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -116,7 +116,7 @@ const sortParam = ref(props.sortParam || props.adminMarketCompaniesDefaultSort |
 /** Обновление сортировки */
 watch(sortParam, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminSortCompanies'),
+        route('admin.settings.updateAdminSortMarketCompanies'),
         { value: newVal },
         {
             preserveScroll: true,

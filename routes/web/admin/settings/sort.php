@@ -5,116 +5,155 @@ use App\Http\Controllers\Admin\System\Setting\SettingController;
 use Illuminate\Support\Facades\Route;
 
 // системные
-Route::put('/update-sort/settings', [SettingController::class, 'updateAdminSortSettings'])
+Route::put('/update-sort/settings',
+    [SettingController::class, 'updateAdminSortSettings'])
     ->name('updateAdminSortSettings');
 
 Route::put('/update-sort/image-presets',
     [SettingController::class, 'updateAdminSortImagePresets'])
     ->name('updateAdminSortImagePresets');
 
-Route::put('/update-sort/users', [SettingController::class, 'updateAdminSortUsers'])
+Route::put('/update-sort/users',
+    [SettingController::class, 'updateAdminSortUsers'])
     ->name('updateAdminSortUsers');
 
-Route::put('/update-sort/roles', [SettingController::class, 'updateAdminSortRoles'])
+Route::put('/update-sort/roles',
+    [SettingController::class, 'updateAdminSortRoles'])
     ->name('updateAdminSortRoles');
 
-Route::put('/update-sort/permissions', [SettingController::class, 'updateAdminSortPermissions'])
+Route::put('/update-sort/permissions',
+    [SettingController::class, 'updateAdminSortPermissions'])
     ->name('updateAdminSortPermissions');
 
 // валюта
-Route::put('/update-sort/currencies', [SettingController::class, 'updateAdminSortCurrencies'])
+Route::put('/update-sort/currencies',
+    [SettingController::class, 'updateAdminSortCurrencies'])
     ->name('updateAdminSortCurrencies');
 
 // комментарии
-Route::put('/update-sort/comments', [SettingController::class, 'updateAdminSortComments'])
+Route::put('/update-sort/comments',
+    [SettingController::class, 'updateAdminSortComments'])
     ->name('updateAdminSortComments');
 
 // блог
-Route::put('/update-sort/rubrics', [SettingController::class, 'updateAdminSortRubrics'])
-    ->name('updateAdminSortRubrics');
+Route::put('/update-sort/blog-rubrics',
+    [SettingController::class, 'updateAdminSortBlogRubrics'])
+    ->name('updateAdminSortBlogRubrics');
 
-Route::put('/update-sort/articles', [SettingController::class, 'updateAdminSortArticles'])
-    ->name('updateAdminSortArticles');
+Route::put('/update-sort/blog-articles',
+    [SettingController::class, 'updateAdminSortBlogArticles'])
+    ->name('updateAdminSortBlogArticles');
 
-Route::put('/update-sort/tags', [SettingController::class, 'updateAdminSortTags'])
-    ->name('updateAdminSortTags');
+Route::put('/update-sort/blog-tags',
+    [SettingController::class, 'updateAdminSortBlogTags'])
+    ->name('updateAdminSortBlogTags');
 
-Route::put('/update-sort/banners', [SettingController::class, 'updateAdminSortBanners'])
-    ->name('updateAdminSortBanners');
+Route::put('/update-sort/blog-banners',
+    [SettingController::class, 'updateAdminSortBlogBanners'])
+    ->name('updateAdminSortBlogBanners');
 
-Route::put('/update-sort/videos', [SettingController::class, 'updateAdminSortVideos'])
-    ->name('updateAdminSortVideos');
+Route::put('/update-sort/blog-videos',
+    [SettingController::class, 'updateAdminSortBlogVideos'])
+    ->name('updateAdminSortBlogVideos');
 
 // школа
-Route::put('/update-sort/instructors', [SettingController::class, 'updateAdminSortInstructors'])
-    ->name('updateAdminSortInstructors');
+Route::put('/update-sort/school-instructors',
+    [SettingController::class, 'updateAdminSortSchoolInstructors'])
+    ->name('updateAdminSortSchoolInstructors');
 
-Route::put('/update-sort/tracks', [SettingController::class, 'updateAdminSortTracks'])
-    ->name('updateAdminSortTracks');
+Route::put('/update-sort/school-tracks',
+    [SettingController::class, 'updateAdminSortSchoolTracks'])
+    ->name('updateAdminSortSchoolTracks');
 
-Route::put('/update-sort/hashtags', [SettingController::class, 'updateAdminSortHashtags'])
-    ->name('updateAdminSortHashtags');
+Route::put('/update-sort/school-hashtags',
+    [SettingController::class, 'updateAdminSortSchoolHashtags'])
+    ->name('updateAdminSortSchoolHashtags');
 
-Route::put('/update-sort/courses', [SettingController::class, 'updateAdminSortCourses'])
-    ->name('updateAdminSortCourses');
+Route::put('/update-sort/school-courses',
+    [SettingController::class, 'updateAdminSortSchoolCourses'])
+    ->name('updateAdminSortSchoolCourses');
 
-Route::put('/update-sort/lessons', [SettingController::class, 'updateAdminSortLessons'])
-    ->name('updateAdminSortLessons');
+Route::put('/update-sort/school-lessons',
+    [SettingController::class, 'updateAdminSortSchoolLessons'])
+    ->name('updateAdminSortSchoolLessons');
 
-Route::put('/update-sort/modules', [SettingController::class, 'updateAdminSortModules'])
-    ->name('updateAdminSortModules');
+Route::put('/update-sort/school-modules',
+    [SettingController::class, 'updateAdminSortSchoolModules'])
+    ->name('updateAdminSortSchoolModules');
 
-Route::put('/update-sort/assignments', [SettingController::class, 'updateAdminSortAssignments'])
-    ->name('updateAdminSortAssignments');
+Route::put('/update-sort/school-assignments',
+    [SettingController::class, 'updateAdminSortSchoolAssignments'])
+    ->name('updateAdminSortSchoolAssignments');
 
-Route::put('/update-sort/course-schedules', [SettingController::class, 'updateAdminSortCourseSchedules'])
-    ->name('updateAdminSortCourseSchedules');
+Route::put('/update-sort/school-course-schedules',
+    [SettingController::class, 'updateAdminSortSchoolCourseSchedules'])
+    ->name('updateAdminSortSchoolCourseSchedules');
 
-Route::put('/update-sort/cohort-enrollments', [SettingController::class, 'updateAdminSortCohortEnrollments'])
-    ->name('updateAdminSortCohortEnrollments');
+Route::put('/update-sort/school-cohort-enrollments',
+    [SettingController::class, 'updateAdminSortSchoolCohortEnrollments'])
+    ->name('updateAdminSortSchoolCohortEnrollments');
 
-Route::put('/update-sort/enrollments', [SettingController::class, 'updateAdminSortEnrollments'])
-    ->name('updateAdminSortEnrollments');
+Route::put('/update-sort/school-enrollments',
+    [SettingController::class, 'updateAdminSortSchoolEnrollments'])
+    ->name('updateAdminSortSchoolEnrollments');
 
-Route::put('/update-sort/quizzes', [SettingController::class, 'updateAdminSortQuizzes'])
-    ->name('updateAdminSortQuizzes');
+Route::put('/update-sort/school-quizzes',
+    [SettingController::class, 'updateAdminSortSchoolQuizzes'])
+    ->name('updateAdminSortSchoolQuizzes');
 
-Route::put('/update-sort/quiz-questions', [SettingController::class, 'updateAdminSortQuizQuestions'])
-    ->name('updateAdminSortQuizQuestions');
+Route::put('/update-sort/school-quiz-questions',
+    [SettingController::class, 'updateAdminSortSchoolQuizQuestions'])
+    ->name('updateAdminSortSchoolQuizQuestions');
 
-Route::put('/update-sort/quiz-answers', [SettingController::class, 'updateAdminSortQuizAnswers'])
-    ->name('updateAdminSortQuizAnswers');
+Route::put('/update-sort/school-quiz-answers',
+    [SettingController::class, 'updateAdminSortSchoolQuizAnswers'])
+    ->name('updateAdminSortSchoolQuizAnswers');
 
-Route::put('/update-sort/quiz-attempts', [SettingController::class, 'updateAdminSortQuizAttempts'])
-    ->name('updateAdminSortQuizAttempts');
+Route::put('/update-sort/school-quiz-attempts',
+    [SettingController::class, 'updateAdminSortSchoolQuizAttempts'])
+    ->name('updateAdminSortSchoolQuizAttempts');
 
-Route::put('/update-sort/quiz-attempt-items', [SettingController::class, 'updateAdminSortQuizAttemptItems'])
-    ->name('updateAdminSortQuizAttemptItems');
+Route::put('/update-sort/school-quiz-attempt-items',
+    [SettingController::class, 'updateAdminSortSchoolQuizAttemptItems'])
+    ->name('updateAdminSortSchoolQuizAttemptItems');
 
-Route::put('/update-sort/bundles', [SettingController::class, 'updateAdminSortBundles'])
-    ->name('updateAdminSortBundles');
+Route::put('/update-sort/school-bundles',
+    [SettingController::class, 'updateAdminSortSchoolBundles'])
+    ->name('updateAdminSortSchoolBundles');
 
-Route::put('/update-sort/orders', [SettingController::class, 'updateAdminSortOrders'])
-    ->name('updateAdminSortOrders');
+Route::put('/update-sort/school-orders',
+    [SettingController::class, 'updateAdminSortSchoolOrders'])
+    ->name('updateAdminSortSchoolOrders');
 
-Route::put('/update-sort/course-prices', [SettingController::class, 'updateAdminSortCoursePrices'])
-    ->name('updateAdminSortCoursePrices');
+Route::put('/update-sort/school-course-prices',
+    [SettingController::class, 'updateAdminSortSchoolCoursePrices'])
+    ->name('updateAdminSortSchoolCoursePrices');
 
-Route::put('/update-sort/bundle-prices', [SettingController::class, 'updateAdminSortBundlePrices'])
-    ->name('updateAdminSortBundlePrices');
+Route::put('/update-sort/school-bundle-prices',
+    [SettingController::class, 'updateAdminSortSchoolBundlePrices'])
+    ->name('updateAdminSortSchoolBundlePrices');
 
-Route::put('/update-sort/subscription-plans', [SettingController::class, 'updateAdminSortSubscriptionPlans'])
-    ->name('updateAdminSortSubscriptionPlans');
+Route::put('/update-sort/school-subscription-plans',
+    [SettingController::class, 'updateAdminSortSchoolSubscriptionPlans'])
+    ->name('updateAdminSortSchoolSubscriptionPlans');
 
 // маркет
-Route::put('/update-sort/companies', [SettingController::class, 'updateAdminSortCompanies'])
-    ->name('updateAdminSortCompanies');
+Route::put('/update-sort/market-companies',
+    [SettingController::class, 'updateAdminSortMarketCompanies'])
+    ->name('updateAdminSortMarketCompanies');
 
-Route::put('/update-sort/shops', [SettingController::class, 'updateAdminSortShops'])
-    ->name('updateAdminSortShops');
+Route::put('/update-sort/market-shops',
+    [SettingController::class, 'updateAdminSortMarketShops'])
+    ->name('updateAdminSortMarketShops');
 
-Route::put('/update-sort/categories', [SettingController::class, 'updateAdminSortCategories'])
-    ->name('updateAdminSortCategories');
+Route::put('/update-sort/market-categories',
+    [SettingController::class, 'updateAdminSortMarketCategories'])
+    ->name('updateAdminSortMarketCategories');
 
-Route::put('/update-sort/brands', [SettingController::class, 'updateAdminSortMarketBrands'])
+Route::put('/update-sort/market-brands',
+    [SettingController::class, 'updateAdminSortMarketBrands'])
     ->name('updateAdminSortMarketBrands');
+
+Route::put('/update-sort/market-tags',
+    [SettingController::class, 'updateAdminSortMarketTags'])
+    ->name('updateAdminSortMarketTags');

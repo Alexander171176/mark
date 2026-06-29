@@ -126,7 +126,7 @@ const itemsPerPage = ref(props.adminSchoolAssignmentsPerPage || 6)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountAssignments'),
+        route('admin.settings.updateAdminCountSchoolAssignments'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -142,7 +142,7 @@ const sortParam = ref(props.sortParam || props.adminSchoolAssignmentsDefaultSort
 
 watch(sortParam, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminSortAssignments'),
+        route('admin.settings.updateAdminSortSchoolAssignments'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -888,7 +888,7 @@ const cloneAssignment = (assignment) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountAssignments"
+                        update-route="admin.settings.updateAdminCountSchoolAssignments"
                     />
 
                     <SortSelect

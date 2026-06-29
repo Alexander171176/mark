@@ -127,7 +127,7 @@ const itemsPerPage = ref(props.adminSchoolBundlesPerPage || 6)
 /** Сохраняем настройку количества элементов */
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountBundles'),
+        route('admin.settings.updateAdminCountSchoolBundles'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -146,7 +146,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortBundles'),
+        route('admin.settings.updateAdminSortSchoolBundles'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -728,7 +728,7 @@ const toggleActivity = (bundle) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountBundles"
+                        update-route="admin.settings.updateAdminCountSchoolBundles"
                     />
 
                     <SortSelect

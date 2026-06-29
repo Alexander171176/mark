@@ -72,7 +72,7 @@ watch(
 const itemsPerPage = ref(props.adminSchoolBundlePricesPerPage || 10)
 
 watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountBundlePrices'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminCountSchoolBundlePrices'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
@@ -92,7 +92,7 @@ const searchQuery = ref(props.search || props.filters?.search || '')
 watch(sortParam, (newVal) => {
     currentPage.value = 1
 
-    router.put(route('admin.settings.updateAdminSortBundlePrices'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminSortSchoolBundlePrices'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => {
@@ -532,7 +532,7 @@ const handleSortOrderUpdate = (orderedIds) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountBundlePrices"
+                        update-route="admin.settings.updateAdminCountSchoolBundlePrices"
                     />
 
                     <SortSelect

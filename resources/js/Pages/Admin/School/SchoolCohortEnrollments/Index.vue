@@ -116,7 +116,7 @@ const itemsPerPage = ref(props.adminSchoolCohortEnrollmentsPerPage || 10)
 /** Сохраняем количество элементов */
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountCohortEnrollments'),
+        route('admin.settings.updateAdminCountSchoolCohortEnrollments'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -135,7 +135,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortCohortEnrollments'),
+        route('admin.settings.updateAdminSortSchoolCohortEnrollments'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -418,7 +418,7 @@ watch([itemsPerPage, searchQuery], () => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountCohortEnrollments"
+                        update-route="admin.settings.updateAdminCountSchoolCohortEnrollments"
                     />
 
                     <SortSelect

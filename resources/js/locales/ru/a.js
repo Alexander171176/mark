@@ -38,6 +38,7 @@ export default {
     addMarketCompany: 'Добавить фирму',
     addMarketShop: 'Добавить магазин',
     addMarketStorefront: 'Добавить витрину',
+    addMarketTag: 'Добавить Тег товаров',
     addModule: 'Добавить Модуль',
     addOrder: 'Создать заказ',
     addPage: 'Добавить Страницу',

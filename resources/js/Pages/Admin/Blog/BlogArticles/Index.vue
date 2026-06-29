@@ -94,7 +94,7 @@ const itemsPerPage = ref(props.adminBlogArticlesPerPage || 6)
 /** Сохраняем Количество элементов в БД */
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountArticles'),
+        route('admin.settings.updateAdminCountBlogArticles'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -111,7 +111,7 @@ const sortParam = ref(props.sortParam || props.adminBlogArticlesDefaultSort || '
 /** Сохраняем значение параметра сортировки в БД */
 watch(sortParam, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminSortArticles'),
+        route('admin.settings.updateAdminSortBlogArticles'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -667,7 +667,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountArticles"
+                        update-route="admin.settings.updateAdminCountBlogArticles"
                     />
 
                     <SortSelect

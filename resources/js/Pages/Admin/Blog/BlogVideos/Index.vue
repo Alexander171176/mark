@@ -85,7 +85,7 @@ const itemsPerPage = ref(props.adminBlogVideosPerPage || 20)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountVideos'),
+        route('admin.settings.updateAdminCountBlogVideos'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -102,7 +102,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortVideos'),
+        route('admin.settings.updateAdminSortBlogVideos'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -693,7 +693,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountVideos"
+                        update-route="admin.settings.updateAdminCountBlogVideos"
                     />
 
                     <SortSelect

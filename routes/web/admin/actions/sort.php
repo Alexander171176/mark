@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
+use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
@@ -163,3 +164,8 @@ Route::put('/market-brands/{marketBrand}/sort',
     [MarketBrandController::class, 'updateSort'])
     ->whereNumber('marketBrand')
     ->name('marketBrands.updateSort');
+
+Route::put('/market-tags/{marketTag}/sort',
+    [MarketTagController::class, 'updateSort'])
+    ->whereNumber('marketTag')
+    ->name('marketTags.updateSort');

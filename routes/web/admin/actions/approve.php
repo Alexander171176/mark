@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
+use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use Illuminate\Support\Facades\Route;
 
 Route::put('/blog-rubrics/{blogRubric}/approve',
@@ -51,3 +52,8 @@ Route::put('/market-brands/{marketBrand}/approve',
     [MarketBrandController::class, 'approve'])
     ->whereNumber('marketBrand')
     ->name('marketBrands.approve');
+
+Route::put('/market-tags/{marketTag}/approve',
+    [MarketTagController::class, 'approve'])
+    ->whereNumber('marketTag')
+    ->name('marketTags.approve');

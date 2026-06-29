@@ -72,7 +72,7 @@ watch(
 const itemsPerPage = ref(props.adminSchoolQuizAttemptItemsPerPage ?? 20)
 
 watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountQuizAttemptItems'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminCountSchoolQuizAttemptItems'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
@@ -89,7 +89,7 @@ const sortParam = ref(
 watch(sortParam, (newVal) => {
     currentPage.value = 1
 
-    router.put(route('admin.settings.updateAdminSortQuizAttemptItems'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminSortSchoolQuizAttemptItems'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => {
@@ -462,7 +462,7 @@ const handleBulkAction = (event) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountQuizAttemptItems"
+                        update-route="admin.settings.updateAdminCountSchoolQuizAttemptItems"
                     />
 
                     <SortSelect

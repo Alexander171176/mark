@@ -14,6 +14,7 @@ export default {
     marketShop: 'Магазин',
     marketShops: 'Магазины',
     marketStorefronts: 'Витрины',
+    marketTags: 'Теги товаров',
     maxFileSizeKb: 'Макс.размер файла',
     maxScore: 'Максимальный балл',
     meetingUrl: 'URL встречи',

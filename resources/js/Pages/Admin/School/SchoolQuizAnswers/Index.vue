@@ -171,7 +171,7 @@ const handleQuestionFilterChange = () => {
 const itemsPerPage = ref(props.adminSchoolQuizAnswersPerPage || 10)
 
 watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountQuizAnswers'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminCountSchoolQuizAnswers'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
@@ -188,7 +188,7 @@ const sortParam = ref(
 watch(sortParam, (newVal) => {
     currentPage.value = 1
 
-    router.put(route('admin.settings.updateAdminSortQuizAnswers'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminSortSchoolQuizAnswers'), { value: newVal }, {
         preserveScroll: true,
         preserveState: true,
 
@@ -688,7 +688,7 @@ const toggleActivity = (answer) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountQuizAnswers"
+                        update-route="admin.settings.updateAdminCountSchoolQuizAnswers"
                     />
 
                     <SortSelect

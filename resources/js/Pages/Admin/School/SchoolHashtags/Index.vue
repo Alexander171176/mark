@@ -127,7 +127,7 @@ const itemsPerPage = ref(props.adminSchoolHashtagsPerPage || 6)
 /** Сохраняем настройку количества элементов */
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountHashtags'),
+        route('admin.settings.updateAdminCountSchoolHashtags'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -146,7 +146,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortHashtags'),
+        route('admin.settings.updateAdminSortSchoolHashtags'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -703,7 +703,7 @@ const toggleActivity = (hashtag) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountHashtags"
+                        update-route="admin.settings.updateAdminCountSchoolHashtags"
                     />
 
                     <SortSelect

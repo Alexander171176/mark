@@ -2344,6 +2344,86 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // PUBLIC MARKET BRANDS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'adminMarketTagsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_TAGS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных тегов товаров в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET TAGS PROCESSING MODE
+            [
+                'type' => 'string',
+                'option' => 'publicMarketTagsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'PUBLIC_MARKET_TAGS_PROCESSING_MODE',
+                'category' => 'public',
+                'description' => 'Режим обработки данных тегов товаров в публичной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET TAGS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketTagsPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_TAGS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество тегов товаров в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET TAGS PER PAGE
+            [
+                'type' => 'number',
+                'option' => 'publicMarketTagsPerPage',
+                'value' => '3',
+                'constant' => 'PUBLIC_MARKET_TAGS_PER_PAGE',
+                'category' => 'public',
+                'description' => 'Показывать количество тегов товаров в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET TAGS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketTagsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_TAGS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка тегов товаров по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET TAGS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'publicMarketTagsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'PUBLIC_MARKET_TAGS_DEFAULT_SORT',
+                'category' => 'public',
+                'description' => 'Сортировка тегов товаров по умолчанию в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET TAGS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketTagsDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_TAGS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка тегов товаров в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET TAGS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'publicMarketTagsDefaultView',
+                'value' => 'grid',
+                'constant' => 'PUBLIC_MARKET_TAGS_DEFAULT_VIEW',
+                'category' => 'public',
+                'description' => 'Вид списка тегов товаров в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET TAGS DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

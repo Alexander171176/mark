@@ -16,7 +16,7 @@ const updateSort = (event) => {
 </script>
 
 <template>
-    <div class="flex justify-center items-center h-fit sm:mr-4 mt-2 mb-2">
+    <div class="flex justify-center items-center h-fit my-2">
         <label for="sortParam"
                class="hidden lg:block sm:mr-2 tracking-wider
                       text-sm font-semibold text-slate-600 dark:text-slate-100">

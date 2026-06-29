@@ -78,7 +78,7 @@ const itemsPerPage = ref(props.adminSchoolQuizzesPerPage || 6)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminCountQuizzes'),
+        route('admin.settings.updateAdminCountSchoolQuizzes'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -95,7 +95,7 @@ watch(sortParam, (newVal) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortQuizzes'),
+        route('admin.settings.updateAdminSortSchoolQuizzes'),
         { value: newVal },
         {
             preserveScroll: true,
@@ -676,7 +676,7 @@ const cloneQuiz = (quiz) => {
                     <ServerItemsPerPageSelect
                         v-else
                         :items-per-page="itemsPerPage"
-                        update-route="admin.settings.updateAdminCountQuizzes"
+                        update-route="admin.settings.updateAdminCountSchoolQuizzes"
                     />
 
                     <SortSelect

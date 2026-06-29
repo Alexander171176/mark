@@ -827,7 +827,7 @@
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolFaq/SchoolFaqController --resource` <br>
 -------------------------------------------------------------------------------------
 
-1) Компания 
+1) Компания <br> 
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompany -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompanyTranslation -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketCompany/MarketCompanyResource` <br>
@@ -838,7 +838,7 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketCompanySeeder` <br>
 
-2) Магазин
+2) Магазин <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShop -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShopTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShopImage -m` <br>
@@ -852,7 +852,7 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketShopSeeder` <br>
 
-3) Market Categories - категории товаров / дерево категорий
+3) Market Categories - категории товаров / дерево категорий <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategory -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategoryTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategoryImage -m` <br>
@@ -867,7 +867,7 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketCategorySeeder` <br>
 
-4) Бренды
+4) Бренды <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrand -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrandTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrandImage -m` <br>
@@ -881,6 +881,18 @@
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketBrandSeeder` <br>
+
+5) Теги <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketTag/MarketTag -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketTag/MarketTagTranslation -m` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketTag/MarketTagResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketTag/MarketTagSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketTag/MarketTagTranslationResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketTag/MarketTagRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketTag/MarketTagController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketTagSeeder` <br>
 
 
 

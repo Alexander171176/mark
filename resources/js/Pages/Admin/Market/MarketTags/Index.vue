@@ -298,7 +298,7 @@ const currentPage = ref(1)
 /** Сортировка по числу по возрастанию */
 const byNumberAsc = (field) => (a, b) =>
     safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    || safeNumber(b?.id) - safeNumber(a?.id)
 
 /** Сортировка по числу по убыванию */
 const byNumberDesc = (field) => (a, b) =>
@@ -308,7 +308,7 @@ const byNumberDesc = (field) => (a, b) =>
 /** Сортировка по дате по возрастанию */
 const byDateAsc = (field) => (a, b) =>
     safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    || safeNumber(b?.id) - safeNumber(a?.id)
 
 /** Сортировка по дате по убыванию */
 const byDateDesc = (field) => (a, b) =>

@@ -32,6 +32,7 @@ import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 
 import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
 import MultiImagePresetUpload from '@/Components/Admin/UI/Image/MultiImagePresetUpload.vue'
+import SvgIconField from '@/Components/Admin/UI/Icon/SvgIconField.vue'
 
 /** Сервисы страницы */
 const { t } = useI18n()
@@ -265,6 +266,14 @@ const submitForm = () => {
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
                     <DefaultButton :href="route('admin.marketCategories.index')">
+                        <template #icon>
+                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                 viewBox="0 0 16 16">
+                                <path
+                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
+                                />
+                            </svg>
+                        </template>
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
@@ -524,17 +533,11 @@ const submitForm = () => {
                         <InputError class="mt-2" :message="form.errors.moderation_note" />
                     </div>
 
-                    <div class="mb-4 flex flex-col items-start">
-                        <LabelInput for="icon" :value="t('svg')" />
-
-                        <DescriptionTextarea
-                            id="icon"
-                            v-model="form.icon"
-                            class="w-full"
-                        />
-
-                        <InputError class="mt-2" :message="form.errors.icon" />
-                    </div>
+                    <SvgIconField
+                        v-model="form.icon"
+                        :label="t('svg')"
+                        :error="form.errors.icon"
+                    />
 
                     <div class="mb-4">
                         <MultiImagePresetUpload

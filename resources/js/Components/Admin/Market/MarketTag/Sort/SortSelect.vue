@@ -55,30 +55,12 @@ const updateSort = (event) => {
             <option value="inactive">{{ t('inactive') }}</option>
             <option disabled>─────────────────</option>
 
-            <option value="leftDesc">{{ t('left') }} ON→OFF</option>
-            <option value="leftAsc">{{ t('left') }} OFF→ON</option>
-            <option value="left">{{ t('left') }}</option>
-            <option value="noLeft">{{ t('notLeft') }}</option>
-            <option disabled>─────────────────</option>
-
-            <option value="mainDesc">{{ t('main') }} ON→OFF</option>
-            <option value="mainAsc">{{ t('main') }} OFF→ON</option>
-            <option value="main">{{ t('main') }}</option>
-            <option value="noMain">{{ t('notMain') }}</option>
-            <option disabled>─────────────────</option>
-
-            <option value="rightDesc">{{ t('right') }} ON→OFF</option>
-            <option value="rightAsc">{{ t('right') }} OFF→ON</option>
-            <option value="right">{{ t('right') }}</option>
-            <option value="noRight">{{ t('notRight') }}</option>
-            <option disabled>─────────────────</option>
-
             <option value="viewsDesc">{{ t('views') }} 9→0</option>
             <option value="viewsAsc">{{ t('views') }} 0→9</option>
             <option disabled>─────────────────</option>
 
-            <option value="imagesDesc">{{ t('images') }} 9→0</option>
-            <option value="imagesAsc">{{ t('images') }} 0→9</option>
+            <option value="colorAsc">{{ t('typeColor') }} 0→F</option>
+            <option value="colorDesc">{{ t('typeColor') }} F→0</option>
             <option disabled>─────────────────</option>
 
             <option value="statusAsc">{{ t('status') }} A→Z</option>
@@ -116,10 +98,6 @@ const updateSort = (event) => {
             <option value="ownerNameDesc">{{ t('owner') }} Z→A</option>
             <option value="ownerEmailAsc">{{ t('ownerEmail') }} A→Z</option>
             <option value="ownerEmailDesc">{{ t('ownerEmail') }} Z→A</option>
-            <option disabled>─────────────────</option>
-
-            <option value="websiteAsc">{{ t('site') }} A→Z</option>
-            <option value="websiteDesc">{{ t('site') }} Z→A</option>
             <option disabled>─────────────────</option>
         </select>
     </div>

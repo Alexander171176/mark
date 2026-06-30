@@ -36,8 +36,9 @@ const emit = defineEmits(['update:pageLinks']);
 const pageLinks = ref(JSON.parse(localStorage.getItem('pageLinks')) || [
     'marketCompanies',
     'marketShops',
-    'marketCategories',
+    'marketTags',
     'marketBrands',
+    'marketCategories',
 ]);
 
 const handleDragEnd = () => {

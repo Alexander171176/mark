@@ -5,7 +5,6 @@
  *
  * Редактирование бренда MarketBrand
  */
-
 import { ref, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useI18n } from 'vue-i18n'
@@ -36,7 +35,7 @@ import MultiImagePresetEdit from '@/Components/Admin/UI/Image/MultiImagePresetEd
 import MultiImagePresetUpload from '@/Components/Admin/UI/Image/MultiImagePresetUpload.vue'
 import MultiImageEdit from '@/Components/Admin/UI/Image/MultiImageEdit.vue'
 import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
-import DescriptionTextarea from '@/Components/Admin/UI/Textarea/DescriptionTextarea.vue'
+import SvgIconField from '@/Components/Admin/UI/Icon/SvgIconField.vue'
 
 /** Сервисы страницы */
 const toast = useToast()
@@ -687,14 +686,11 @@ const submitForm = () => {
 
                     </div>
 
-                    <div
-                        class="mt-6 mb-3 p-3 border border-slate-300 dark:border-slate-500
-                               bg-white dark:bg-slate-800 rounded-sm"
-                    >
-                        <LabelInput for="icon" :value="t('icon')" />
-                        <DescriptionTextarea id="icon" v-model="form.icon" class="w-full" />
-                        <InputError class="mt-2" :message="form.errors.icon" />
-                    </div>
+                    <SvgIconField
+                        v-model="form.icon"
+                        :label="t('svg')"
+                        :error="form.errors.icon"
+                    />
 
                     <EditImageFileInput
                         v-model="form.logo"

@@ -139,39 +139,6 @@ class MarketTag extends Model
             'sortAsc' => $query->orderBy('sort', 'asc')->orderByDesc('id'),
             'sortDesc' => $query->orderBy('sort', 'desc')->orderByDesc('id'),
 
-            'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
-            'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
-
-            'colorAsc' => $query->orderBy('color', 'asc')->orderByDesc('id'),
-            'colorDesc' => $query->orderBy('color', 'desc')->orderByDesc('id'),
-
-            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
-
-            'statusAsc' => $query->orderBy('status', 'asc')->orderByDesc('id'),
-            'statusDesc' => $query->orderBy('status', 'desc')->orderByDesc('id'),
-
-            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
-
-            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
-            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
-
-            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
-            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
-
-            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
-            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
-
-            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
-            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
-
-            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
-
-            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
-
             'titleAsc' => $query
                 ->leftJoin('market_tag_translations as sort_translations', function ($join) use ($locale) {
                     $join->on('market_tags.id', '=', 'sort_translations.market_tag_id')
@@ -189,6 +156,47 @@ class MarketTag extends Model
                 ->select('market_tags.*')
                 ->orderBy('sort_translations.title', 'desc')
                 ->orderByDesc('market_tags.id'),
+
+            'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
+            'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
+
+            'colorAsc' => $query->orderBy('color', 'asc')->orderByDesc('id'),
+            'colorDesc' => $query->orderBy('color', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $query->where('activity', true)->orderByDesc('id'),
+            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+
+            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+
+            'statusAsc' => $query->orderBy('status', 'asc')->orderByDesc('id'),
+            'statusDesc' => $query->orderBy('status', 'desc')->orderByDesc('id'),
+            'statusDraft' => $query->where('status', 'draft')->orderByDesc('id'),
+            'statusPublished' => $query->where('status', 'published')->orderByDesc('id'),
+            'statusArchived' => $query->where('status', 'archived')->orderByDesc('id'),
+
+            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
+            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
+
+            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
+            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
+
+            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
+            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
+
+            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
+            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
+            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
+            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
 
             'ownerNameAsc' => $query
                 ->leftJoin('users as sort_users', 'market_tags.user_id', '=', 'sort_users.id')
@@ -213,17 +221,6 @@ class MarketTag extends Model
                 ->select('market_tags.*')
                 ->orderBy('sort_users.email', 'desc')
                 ->orderByDesc('market_tags.id'),
-
-            'activity' => $query->where('activity', true)->orderByDesc('id'),
-            'inactive' => $query->where('activity', false)->orderByDesc('id'),
-
-            'statusDraft' => $query->where('status', 'draft')->orderByDesc('id'),
-            'statusPublished' => $query->where('status', 'published')->orderByDesc('id'),
-            'statusArchived' => $query->where('status', 'archived')->orderByDesc('id'),
-
-            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
-            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
-            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
 
             default => $query->orderByDesc('id'),
         };

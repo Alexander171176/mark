@@ -17,6 +17,21 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
 
+/**
+ * Контроллер для управления Тегами товаров (MarketTag) в админке.
+ *
+ * Паттерн:
+ * - Поиск, Пагинация, сортировка (режимы: frontend | auto | server )
+ * - CRUD
+ * - owner/ограничение “владелец/админ”
+ * - activity (single + bulk)
+ * - delete (single + bulk)
+ * - sort + drag&drop (bulk)
+ * - moderation (approve/reject) только для admin
+ *
+ * @version 1.1 (мультиязычеая архитектура)
+ * @author Александр Косолапов <kosolapov1976@gmail.com>
+ */
 class MarketTagController extends BaseMarketAdminController
 {
     /** Основная модель контроллера */

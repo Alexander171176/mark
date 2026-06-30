@@ -37,17 +37,6 @@ const { t } = useI18n()
             <option value="deactivate">{{ t('deactivate') }}</option>
             <option disabled>──────────────────</option>
 
-            <!-- Показ -->
-            <option value="left">{{ t('left') }}</option>
-            <option value="noLeft">{{ t('noLeft') }}</option>
-            <option disabled>──────────────────</option>
-            <option value="main">{{ t('main') }}</option>
-            <option value="noMain">{{ t('noMain') }}</option>
-            <option disabled>──────────────────</option>
-            <option value="right">{{ t('right') }}</option>
-            <option value="noRight">{{ t('noRight') }}</option>
-            <option disabled>──────────────────</option>
-
             <!-- Удаление -->
             <option value="delete">
                 {{ t('deleteSelected') }}

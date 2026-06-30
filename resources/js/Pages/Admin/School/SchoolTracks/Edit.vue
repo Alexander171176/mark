@@ -117,7 +117,6 @@ const form = useForm({
     sort: props.track.sort ?? 0,
     activity: Boolean(props.track.activity ?? true),
     slug: props.track.slug ?? '',
-    views: props.track.views ?? 0,
 
     translations: buildTranslations(),
 
@@ -280,7 +279,6 @@ const submitForm = () => {
             ...data,
             parent_id: data.parent_id || null,
             activity: data.activity ? 1 : 0,
-            views: Number(data.views || 0),
         }
 
         delete transformed.images
@@ -428,21 +426,6 @@ const submitForm = () => {
                             <InputError class="mt-2" :message="form.errors.slug" />
                         </div>
 
-                        <div class="mb-3 flex flex-col items-start">
-                            <LabelInput for="views" :value="t('views')" />
-
-                            <InputNumber
-                                id="views"
-                                type="number"
-                                min="0"
-                                v-model.number="form.views"
-                                autocomplete="views"
-                                class="w-full lg:w-28"
-                            />
-
-                            <InputError class="mt-2" :message="form.errors.views" />
-                        </div>
-
                         <div
                             class="my-5 p-3 border border-slate-300 dark:border-slate-500
                                    bg-white dark:bg-slate-800 rounded-sm"
@@ -585,17 +568,7 @@ const submitForm = () => {
 
                             <div class="flex justify-end gap-2 mt-4">
                                 <ClearMetaButton @click.prevent="clearMetaFields">
-                                    <template #default>
-                                        <svg
-                                            class="w-4 h-4 fill-current text-gray-500 shrink-0 mr-2"
-                                            viewBox="0 0 16 16"
-                                        >
-                                            <path
-                                                d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm3 9H5V7h6v2z"
-                                            />
-                                        </svg>
                                         {{ t('clearMetaFields') }}
-                                    </template>
                                 </ClearMetaButton>
 
                                 <MetatagsButton @click.prevent="generateMetaFields">

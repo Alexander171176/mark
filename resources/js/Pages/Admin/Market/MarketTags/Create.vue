@@ -1,48 +1,46 @@
 <script setup>
 /**
  * @version PulsarCMS 1.0
- * @author Александр Косолапов
+ * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Создание тега блога
- * Новая мультиязычная архитектура:
- * - blog_tags
- * - blog_tag_translations
+ * Создание тега товаров MarketTag
  */
 import { ref, computed } from 'vue'
+import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { transliterate } from '@/utils/transliteration'
-import { useForm } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
 import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
 import MetatagsButton from '@/Components/Admin/UI/Buttons/MetatagsButton.vue'
-import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue'
+
 import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue'
-import SvgIconField from '@/Components/Admin/UI/Icon/SvgIconField.vue'
-import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
-import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
+import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue'
 import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
 import InputText from '@/Components/Admin/UI/Input/InputText.vue'
+import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
 import InputError from '@/Components/Admin/UI/Input/InputError.vue'
+import SvgIconField from '@/Components/Admin/UI/Icon/SvgIconField.vue'
+import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
 import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
 import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 
 const { t } = useI18n()
 const toast = useToast()
 
-/** Props приходят из BlogTagController@create */
+/** Входные параметры страницы */
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
     errors: { type: Object, default: () => ({}) },
 })
 
-/** Шаблон одного перевода */
+/** Создание пустого перевода */
 const makeTranslation = () => ({
-    name: '',
+    title: '',
     subtitle: '',
     short: '',
     description: '',
@@ -51,25 +49,38 @@ const makeTranslation = () => ({
     meta_desc: '',
 })
 
-/** Дефолтная локаль */
+/** Локаль по умолчанию */
 const defaultLocale = props.currentLocale || 'ru'
 
-/** Активная вкладка перевода */
+/** Активная локаль редактора */
 const activeLocale = ref(defaultLocale)
 
-/** Основная форма */
+/** Форма создания тега */
 const form = useForm({
-    sort: 0,
+    url: '',
     icon: '',
-    slug: '',
-    activity: false,
+    color: '#22c55e',
+
+    sort: 0,
+    activity: true,
+
+    status: 'published',
+
+    moderation_status: 1,
+    moderated_by: null,
+    moderated_at: null,
+    moderation_note: '',
+
+    published_at: '',
+    show_from_at: '',
+    show_to_at: '',
 
     translations: {
         [defaultLocale]: makeTranslation(),
     },
 })
 
-/** Текущий активный перевод */
+/** Текущий перевод */
 const currentTranslation = computed(() => {
     if (!form.translations[activeLocale.value]) {
         form.translations[activeLocale.value] = makeTranslation()
@@ -78,19 +89,32 @@ const currentTranslation = computed(() => {
     return form.translations[activeLocale.value]
 })
 
-/** Ошибка поля текущей локали */
+/** Получение ошибки текущего языка */
 const getError = (key) => {
     return form.errors[`translations.${activeLocale.value}.${key}`]
 }
 
-/** Автогенерация slug из name */
-const handleSlugInputFocus = () => {
-    if (!form.slug && currentTranslation.value.name) {
-        form.slug = transliterate(currentTranslation.value.name.toLowerCase())
+/** Проверка HEX-цвета */
+const isValidHexColor = (value) => /^#([0-9A-Fa-f]{6})$/.test(value || '')
+
+/** Цвет для color picker */
+const colorForPicker = computed({
+    get() {
+        return isValidHexColor(form.color) ? form.color : '#22c55e'
+    },
+    set(value) {
+        form.color = value
+    },
+})
+
+/** Автоматическая генерация URL */
+const handleUrlFocus = () => {
+    if (!form.url && currentTranslation.value.title) {
+        form.url = transliterate(currentTranslation.value.title.toLowerCase())
     }
 }
 
-/** Обрезка текста для SEO */
+/** Обрезка текста до указанной длины */
 const truncateText = (text, maxLength, addEllipsis = false) => {
     if (!text) return ''
 
@@ -106,12 +130,12 @@ const truncateText = (text, maxLength, addEllipsis = false) => {
     return addEllipsis ? `${truncated}...` : truncated
 }
 
-/** Генерация SEO-полей для активной локали */
+/** Генерация SEO-полей */
 const generateMetaFields = () => {
     const translation = currentTranslation.value
 
-    if (translation.name && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.name, 255)
+    if (translation.title && !translation.meta_title) {
+        translation.meta_title = truncateText(translation.title, 255)
     }
 
     if (!translation.meta_keywords && translation.short) {
@@ -129,7 +153,7 @@ const generateMetaFields = () => {
 
     if (translation.short && !translation.meta_desc) {
         const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        translation.meta_desc = truncateText(descText, 200, true)
+        translation.meta_desc = truncateText(descText, 255, true)
     }
 }
 
@@ -138,16 +162,21 @@ const submitForm = () => {
     form.transform((data) => ({
         ...data,
         activity: data.activity ? 1 : 0,
+        moderation_status: Number(data.moderation_status ?? 0),
+        sort: Number(data.sort ?? 0),
     }))
 
-    form.post(route('admin.blogTags.store'), {
-        errorBag: 'createBlogTag',
+    form.post(route('admin.marketTags.store'), {
+        errorBag: 'createMarketTag',
         preserveScroll: true,
-        onSuccess: () => toast.success('Тег успешно создан!'),
+
+        onSuccess: () => {
+            toast.success('Тег успешно создан.')
+        },
+
         onError: (errors) => {
-            console.error('Не удалось отправить форму:', errors)
-            const firstError = errors?.[Object.keys(errors)[0]]
-            toast.error(firstError || 'Пожалуйста, проверьте правильность заполнения полей.')
+            const firstKey = Object.keys(errors || {})[0]
+            toast.error(errors[firstKey] || 'Проверьте корректность заполнения полей.')
         },
     })
 }
@@ -167,7 +196,7 @@ const submitForm = () => {
                        bg-opacity-95 dark:bg-opacity-95"
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <DefaultButton :href="route('admin.blogTags.index')">
+                    <DefaultButton :href="route('admin.marketTags.index')">
                         <template #icon>
                             <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
                                  viewBox="0 0 16 16">
@@ -196,33 +225,79 @@ const submitForm = () => {
                             <InputNumber
                                 id="sort"
                                 type="number"
-                                v-model="form.sort"
+                                v-model.number="form.sort"
                                 class="w-full lg:w-28"
                             />
                             <InputError class="mt-2 lg:mt-0" :message="form.errors.sort" />
                         </div>
                     </div>
 
-                    <SvgIconField
-                        v-model="form.icon"
-                        :label="t('svg')"
-                        :error="form.errors.icon"
-                    />
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                        <div class="flex flex-col items-start">
+                            <LabelInput for="status" :value="t('status')" />
+                            <select
+                                id="status"
+                                v-model="form.status"
+                                class="w-full px-2 py-0.5 form-select bg-white
+                                       text-gray-600 border border-slate-400
+                                       dark:border-slate-600 rounded-sm shadow-sm
+                                       dark:bg-cyan-800 dark:text-slate-100"
+                            >
+                                <option value="draft">{{ t('statusDraft') }}</option>
+                                <option value="published">{{ t('statusPublished') }}</option>
+                                <option value="archived">{{ t('statusArchived') }}</option>
+                            </select>
+                            <InputError class="mt-2" :message="form.errors.status" />
+                        </div>
 
-                    <div class="mb-3 flex flex-col items-start">
-                        <LabelInput for="slug">
-                            <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                            {{ t('url') }}
-                        </LabelInput>
-                        <InputText
-                            id="slug"
-                            type="text"
-                            v-model="form.slug"
-                            required
-                            autocomplete="slug"
-                            @focus="handleSlugInputFocus"
-                        />
-                        <InputError class="mt-2" :message="form.errors.slug" />
+                        <div class="flex flex-col items-start">
+                            <LabelInput for="published_at" :value="t('publishedAt')" />
+                            <InputText
+                                id="published_at"
+                                type="date"
+                                v-model="form.published_at"
+                            />
+                            <InputError class="mt-2" :message="form.errors.published_at" />
+                        </div>
+
+                        <div class="flex flex-col items-start">
+                            <LabelInput for="moderation_status" :value="t('moderationStatus')" />
+                            <select
+                                id="moderation_status"
+                                v-model="form.moderation_status"
+                                class="w-full px-2 py-0.5 form-select bg-white
+                                       text-gray-600 border border-slate-400
+                                       dark:border-slate-600 rounded-sm shadow-sm
+                                       dark:bg-cyan-800 dark:text-slate-100"
+                            >
+                                <option :value="0">{{ t('underModeration') }}</option>
+                                <option :value="1">{{ t('statusSelectApproved') }}</option>
+                                <option :value="2">{{ t('statusSelectRejected') }}</option>
+                            </select>
+                            <InputError class="mt-2" :message="form.errors.moderation_status" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <div class="flex flex-col items-start">
+                            <LabelInput for="show_from_at" :value="t('showFromAt')" />
+                            <InputText
+                                id="show_from_at"
+                                type="datetime-local"
+                                v-model="form.show_from_at"
+                            />
+                            <InputError class="mt-2" :message="form.errors.show_from_at" />
+                        </div>
+
+                        <div class="flex flex-col items-start">
+                            <LabelInput for="show_to_at" :value="t('showToAt')" />
+                            <InputText
+                                id="show_to_at"
+                                type="datetime-local"
+                                v-model="form.show_to_at"
+                            />
+                            <InputError class="mt-2" :message="form.errors.show_to_at" />
+                        </div>
                     </div>
 
                     <div
@@ -240,19 +315,21 @@ const submitForm = () => {
                         />
 
                         <div class="mb-3 flex flex-col items-start">
-                            <LabelInput for="name">
+                            <LabelInput for="title">
                                 <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                                {{ t('name') }} [{{ activeLocale.toUpperCase() }}]
+                                {{ t('title') }} [{{ activeLocale.toUpperCase() }}]
                             </LabelInput>
+
                             <InputText
-                                id="name"
+                                id="title"
                                 type="text"
-                                v-model="currentTranslation.name"
+                                v-model="currentTranslation.title"
                                 maxlength="255"
                                 required
-                                autocomplete="name"
+                                autocomplete="off"
                             />
-                            <InputError class="mt-2" :message="getError('name')" />
+
+                            <InputError class="mt-2" :message="getError('title')" />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -265,7 +342,7 @@ const submitForm = () => {
                                 type="text"
                                 v-model="currentTranslation.subtitle"
                                 maxlength="255"
-                                autocomplete="subtitle"
+                                autocomplete="off"
                             />
                             <InputError class="mt-2" :message="getError('subtitle')" />
                         </div>
@@ -280,7 +357,12 @@ const submitForm = () => {
                                     {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
                                 </div>
                             </div>
-                            <MetaDescTextarea v-model="currentTranslation.short" class="w-full" />
+
+                            <MetaDescTextarea
+                                v-model="currentTranslation.short"
+                                class="w-full"
+                            />
+
                             <InputError class="mt-2" :message="getError('short')" />
                         </div>
 
@@ -289,7 +371,10 @@ const submitForm = () => {
                                 for="description"
                                 :value="`${t('description')} [${activeLocale.toUpperCase()}]`"
                             />
-                            <TinyEditor v-model="currentTranslation.description" :height="500" />
+                            <TinyEditor
+                                v-model="currentTranslation.description"
+                                :height="500"
+                            />
                             <InputError class="mt-2" :message="getError('description')" />
                         </div>
 
@@ -303,13 +388,15 @@ const submitForm = () => {
                                     {{ (currentTranslation.meta_title || '').length }} / 255 {{ t('characters') }}
                                 </div>
                             </div>
+
                             <InputText
                                 id="meta_title"
                                 type="text"
                                 v-model="currentTranslation.meta_title"
                                 maxlength="255"
-                                autocomplete="meta_title"
+                                autocomplete="off"
                             />
+
                             <InputError class="mt-2" :message="getError('meta_title')" />
                         </div>
 
@@ -323,13 +410,15 @@ const submitForm = () => {
                                     {{ (currentTranslation.meta_keywords || '').length }} / 255 {{ t('characters') }}
                                 </div>
                             </div>
+
                             <InputText
                                 id="meta_keywords"
                                 type="text"
                                 v-model="currentTranslation.meta_keywords"
                                 maxlength="255"
-                                autocomplete="meta_keywords"
+                                autocomplete="off"
                             />
+
                             <InputError class="mt-2" :message="getError('meta_keywords')" />
                         </div>
 
@@ -343,7 +432,12 @@ const submitForm = () => {
                                     {{ (currentTranslation.meta_desc || '').length }} / 255 {{ t('characters') }}
                                 </div>
                             </div>
-                            <MetaDescTextarea v-model="currentTranslation.meta_desc" class="w-full" />
+
+                            <MetaDescTextarea
+                                v-model="currentTranslation.meta_desc"
+                                class="w-full"
+                            />
+
                             <InputError class="mt-2" :message="getError('meta_desc')" />
                         </div>
 
@@ -352,10 +446,60 @@ const submitForm = () => {
                                 {{ t('generateMetaTags') }}
                             </MetatagsButton>
                         </div>
+
+
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <LabelInput for="url">
+                                <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                                {{ t('url') }}
+                            </LabelInput>
+
+                            <InputText
+                                id="url"
+                                type="text"
+                                v-model="form.url"
+                                autocomplete="off"
+                                required
+                                @focus="handleUrlFocus"
+                            />
+
+                            <InputError class="mt-2" :message="form.errors.url" />
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <LabelInput for="color" :value="t('typeColor')" />
+
+                            <div class="flex items-center gap-3 w-full">
+                                <InputText
+                                    id="color_text"
+                                    type="text"
+                                    v-model="form.color"
+                                    placeholder="#22c55e"
+                                    maxlength="50"
+                                    autocomplete="off"
+                                />
+
+                                <input
+                                    id="color"
+                                    type="color"
+                                    v-model="colorForPicker"
+                                    class="h-9 w-16 rounded bg-transparent cursor-pointer"
+                                />
+                            </div>
+
+                            <InputError class="mt-2" :message="form.errors.color" />
+                        </div>
+
+                        <SvgIconField
+                            v-model="form.icon"
+                            :label="t('svg')"
+                            :error="form.errors.icon"
+                        />
                     </div>
 
-                    <div class="flex items-center justify-center mt-4">
-                        <DefaultButton :href="route('admin.blogTags.index')">
+                    <div class="flex items-center justify-center mt-4 gap-3">
+                        <DefaultButton :href="route('admin.marketTags.index')">
                             <template #icon>
                                 <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
                                      viewBox="0 0 16 16">
@@ -368,17 +512,10 @@ const submitForm = () => {
                         </DefaultButton>
 
                         <PrimaryButton
-                            class="ms-4 mb-0"
+                            class="mb-0"
                             :class="{ 'opacity-25': form.processing }"
                             :disabled="form.processing"
                         >
-                            <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100" viewBox="0 0 16 16">
-                                    <path
-                                        d="M14.3 2.3L5 11.6 1.7 8.3c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4l4 4c.2.2.4.3.7.3.3 0 .5-.1.7-.3l10-10c.4-.4.4-1 0-1.4-.4-.4-1-.4-1.4 0z"
-                                    />
-                                </svg>
-                            </template>
                             {{ t('save') }}
                         </PrimaryButton>
                     </div>

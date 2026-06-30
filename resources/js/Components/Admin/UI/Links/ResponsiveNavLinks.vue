@@ -30,14 +30,19 @@ const { t } = useI18n();
             {{ t('marketShops') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
-            :href="route('admin.marketCategories.index')"
-            :active="route().current('admin.marketCategories.*')">
-            {{ t('marketCategories') }}
+            :href="route('admin.marketTags.index')"
+            :active="route().current('admin.marketTags.*')">
+            {{ t('marketTags') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
             :href="route('admin.marketBrands.index')"
             :active="route().current('admin.marketBrands.*')">
             {{ t('marketBrands') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.marketCategories.index')"
+            :active="route().current('admin.marketCategories.*')">
+            {{ t('marketCategories') }}
         </ResponsiveNavLink>
         <!-- Админский маршрут валюты -->
         <ResponsiveNavLink

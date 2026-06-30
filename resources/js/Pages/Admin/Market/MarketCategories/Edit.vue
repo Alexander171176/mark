@@ -35,6 +35,7 @@ import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
 import MultiImageEdit from '@/Components/Admin/UI/Image/MultiImageEdit.vue'
 import MultiImagePresetUpload from '@/Components/Admin/UI/Image/MultiImagePresetUpload.vue'
 import MultiImagePresetEdit from '@/Components/Admin/UI/Image/MultiImagePresetEdit.vue'
+import SvgIconField from '@/Components/Admin/UI/Icon/SvgIconField.vue'
 
 /** Сервисы страницы */
 const { t } = useI18n()
@@ -646,17 +647,11 @@ const submitForm = () => {
                         <InputError class="mt-2" :message="form.errors.moderation_note" />
                     </div>
 
-                    <div class="mb-4 flex flex-col items-start">
-                        <LabelInput for="icon" :value="t('svg')" />
-
-                        <DescriptionTextarea
-                            id="icon"
-                            v-model="form.icon"
-                            class="w-full"
-                        />
-
-                        <InputError class="mt-2" :message="form.errors.icon" />
-                    </div>
+                    <SvgIconField
+                        v-model="form.icon"
+                        :label="t('svg')"
+                        :error="form.errors.icon"
+                    />
 
                     <div class="mt-4">
                         <template v-if="imageProcessorEnabled && imagePreset">

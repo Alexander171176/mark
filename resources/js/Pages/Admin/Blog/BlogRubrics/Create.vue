@@ -18,7 +18,7 @@ import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
 import MetatagsButton from '@/Components/Admin/UI/Buttons/MetatagsButton.vue'
 import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue'
 import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue'
-import DescriptionTextarea from '@/Components/Admin/UI/Textarea/DescriptionTextarea.vue'
+import SvgIconField from '@/Components/Admin/UI/Icon/SvgIconField.vue'
 import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
 import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
 import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
@@ -283,11 +283,11 @@ const submitForm = () => {
                         :errorMessage="form.errors.parent_id"
                     />
 
-                    <div class="mb-3 flex flex-col items-start">
-                        <LabelInput for="icon" :value="t('svg')" />
-                        <DescriptionTextarea v-model="form.icon" class="w-full" />
-                        <InputError class="mt-2" :message="form.errors.icon" />
-                    </div>
+                    <SvgIconField
+                        v-model="form.icon"
+                        :label="t('svg')"
+                        :error="form.errors.icon"
+                    />
 
                     <div class="mb-3 flex flex-col items-start">
                         <LabelInput for="url">

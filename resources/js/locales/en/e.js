@@ -17,6 +17,7 @@ export default {
     editLearningCategory: 'Edit Training Category',
     editLearningTag: 'Edit Training Tag',
     editLesson: 'Edit Lesson',
+    editMarketAttributeGroup: 'Edit Attribute Group',
     editMarketBrand: 'Edit Brand',
     editMarketCategory: 'Edit Product Category',
     editMarketCompany: 'Edit company',

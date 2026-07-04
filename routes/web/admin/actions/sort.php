@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
@@ -169,3 +170,8 @@ Route::put('/market-tags/{marketTag}/sort',
     [MarketTagController::class, 'updateSort'])
     ->whereNumber('marketTag')
     ->name('marketTags.updateSort');
+
+Route::put('/market-attribute-groups/{marketAttributeGroup}/sort',
+    [MarketAttributeGroupController::class, 'updateSort'])
+    ->whereNumber('marketAttributeGroup')
+    ->name('marketAttributeGroups.updateSort');

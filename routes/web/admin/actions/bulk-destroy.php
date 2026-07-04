@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
@@ -111,3 +112,7 @@ Route::delete('/market-brands/bulk-delete',
 Route::delete('/market-tags/bulk-delete',
     [MarketTagController::class, 'bulkDestroy'])
     ->name('marketTags.bulkDestroy');
+
+Route::delete('/market-attribute-groups/bulk-delete',
+    [MarketAttributeGroupController::class, 'bulkDestroy'])
+    ->name('marketAttributeGroups.bulkDestroy');

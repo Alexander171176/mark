@@ -827,7 +827,38 @@
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolFaq/SchoolFaqController --resource` <br>
 -------------------------------------------------------------------------------------
 
-1) Компания <br> 
+1) Группы характеристик
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeGroup/MarketAttributeGroup -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeGroup/MarketAttributeGroupTranslation -m` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketAttributeGroup/MarketAttributeGroupResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketAttributeGroup/MarketAttributeGroupSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketAttributeGroup/MarketAttributeGroupTranslationResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketAttributeGroup/MarketAttributeGroupRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketAttributeGroup/MarketAttributeGroupController --resource` <br>
+
+2) Характеристики
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketAttribute/MarketAttribute -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketAttribute/MarketAttributeTranslation -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeValue/MarketAttributeValue -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeValue/MarketAttributeValueTranslation -m` <br>
+`docker exec mark-php-app php artisan make:migration create_market_attributables_table` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketAttribute/MarketAttributeResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketAttribute/MarketAttributeSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketAttribute/MarketAttributeTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketAttributeValue/MarketAttributeValueResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketAttributeValue/MarketAttributeValueSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketAttributeValue/MarketAttributeValueTranslationResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketAttribute/MarketAttributeRequest` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketAttributeValue/MarketAttributeValueRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketAttribute/MarketAttributeController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketAttributeValue/MarketAttributeValueController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketAttributeGroupSeeder` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketAttributeSeeder` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketAttributeValueSeeder` <br>
+
+3) Компания <br> 
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompany -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompanyTranslation -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketCompany/MarketCompanyResource` <br>
@@ -838,7 +869,7 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketCompanySeeder` <br>
 
-2) Магазин <br>
+4) Магазин <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShop -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShopTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShopImage -m` <br>
@@ -852,7 +883,7 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketShopSeeder` <br>
 
-3) Market Categories - категории товаров / дерево категорий <br>
+5) Market Categories - категории товаров / дерево категорий <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategory -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategoryTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategoryImage -m` <br>
@@ -867,7 +898,7 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketCategorySeeder` <br>
 
-4) Бренды <br>
+6) Бренды <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrand -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrandTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrandImage -m` <br>
@@ -882,7 +913,7 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketBrandSeeder` <br>
 
-5) Теги <br>
+7) Теги <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketTag/MarketTag -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketTag/MarketTagTranslation -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketTag/MarketTagResource` <br>

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
@@ -212,3 +213,7 @@ Route::resource('/market-brands', MarketBrandController::class)
 Route::resource('/market-tags', MarketTagController::class)
     ->parameters(['market-tags' => 'marketTag'])
     ->names('marketTags');
+
+Route::resource('/market-attribute-groups', MarketAttributeGroupController::class)
+    ->parameters(['market-attribute-groups' => 'marketAttributeGroup'])
+    ->names('marketAttributeGroups');

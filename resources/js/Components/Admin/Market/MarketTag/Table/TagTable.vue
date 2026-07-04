@@ -57,8 +57,6 @@ const tagTitle = (tag) => tagTranslation(tag)?.title || `ID: ${tag?.id}`
 
 const tagShort = (tag) => tagTranslation(tag)?.short || ''
 
-const tagLocale = (tag) => tagTranslation(tag)?.locale || ''
-
 const tagPublicUrl = (tag) => {
     return `/market/tags/${encodeURIComponent(tag.url)}`
 }

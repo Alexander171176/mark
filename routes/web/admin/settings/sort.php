@@ -157,3 +157,7 @@ Route::put('/update-sort/market-brands',
 Route::put('/update-sort/market-tags',
     [SettingController::class, 'updateAdminSortMarketTags'])
     ->name('updateAdminSortMarketTags');
+
+Route::put('/update-sort/market-attribute-groups',
+    [SettingController::class, 'updateAdminSortMarketAttributeGroups'])
+    ->name('updateAdminSortMarketAttributeGroups');

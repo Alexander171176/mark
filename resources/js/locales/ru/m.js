@@ -7,6 +7,7 @@ export default {
     manageApiTokensDescription: 'Вы можете удалить любой из ваших существующих токенов, если они больше не нужны.',
     manageRoles: 'Управление Ролями',
     managerComment: 'Комментарий менеджера',
+    marketAttributeGroups: 'Группы Характеристик',
     marketBrands: 'Бренды',
     marketCategories: 'Категории товаров',
     marketCompanies: 'Фирмы',

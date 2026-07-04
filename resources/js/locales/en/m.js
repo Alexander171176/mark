@@ -7,6 +7,7 @@ export default {
     manageApiTokensDescription: 'You may delete any of your existing tokens if they are no longer needed.',
     manageRoles: 'Manage Roles',
     managerComment: 'Manager\'s comment',
+    marketAttributeGroups: 'Characteristic Groups',
     marketBrands: 'Brands',
     marketCategories: 'Product categories',
     marketCompanies: 'Companies',

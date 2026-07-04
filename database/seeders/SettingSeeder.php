@@ -2424,6 +2424,46 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // PUBLIC MARKET TAGS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'adminMarketAttributeGroupsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTE_GROUPS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных групп характеристик в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTE GROUPS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketAttributeGroupsPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTE_GROUPS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество групп характеристик в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTE GROUPS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketAttributeGroupsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTE_GROUPS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка групп характеристик по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTE GROUPS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketAttributeGroupsDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTE_GROUPS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка групп характеристик в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTE GROUPS DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

@@ -267,7 +267,7 @@ const submitForm = () => {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                         <div class="flex flex-col items-start">
                             <LabelInput for="status" :value="t('status')" />
                             <select
@@ -293,23 +293,6 @@ const submitForm = () => {
                                 v-model="form.published_at"
                             />
                             <InputError class="mt-2" :message="form.errors.published_at" />
-                        </div>
-
-                        <div class="flex flex-col items-start">
-                            <LabelInput for="moderation_status" :value="t('moderationStatus')" />
-                            <select
-                                id="moderation_status"
-                                v-model="form.moderation_status"
-                                class="w-full px-2 py-0.5 form-select bg-white
-                                       text-gray-600 border border-slate-400
-                                       dark:border-slate-600 rounded-sm shadow-sm
-                                       dark:bg-cyan-800 dark:text-slate-100"
-                            >
-                                <option :value="0">{{ t('underModeration') }}</option>
-                                <option :value="1">{{ t('statusSelectApproved') }}</option>
-                                <option :value="2">{{ t('statusSelectRejected') }}</option>
-                            </select>
-                            <InputError class="mt-2" :message="form.errors.moderation_status" />
                         </div>
                     </div>
 

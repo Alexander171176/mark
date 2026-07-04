@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
@@ -150,3 +151,7 @@ Route::put('/market-tags/bulk-activity',
 Route::put('/market-attribute-groups/bulk-activity',
     [MarketAttributeGroupController::class, 'bulkUpdateActivity'])
     ->name('marketAttributeGroups.bulkUpdateActivity');
+
+Route::put('/market-attributes/bulk-activity',
+    [MarketAttributeController::class, 'bulkUpdateActivity'])
+    ->name('marketAttributes.bulkUpdateActivity');

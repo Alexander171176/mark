@@ -7,6 +7,7 @@ export default {
     manageApiTokensDescription: 'You may delete any of your existing tokens if they are no longer needed.',
     manageRoles: 'Manage Roles',
     managerComment: 'Manager\'s comment',
+    marketAttributes: 'Characteristics',
     marketAttributeGroups: 'Characteristic Groups',
     marketBrands: 'Brands',
     marketCategories: 'Product categories',
@@ -42,4 +43,5 @@ export default {
     modules: 'Training modules',
     months: 'months',
     more: 'More',
+    multiselect: 'Multiple list',
 }

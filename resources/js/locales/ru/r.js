@@ -32,6 +32,7 @@ export default {
     replyToComment: 'комментировать ответ',
     report: 'Отчёт:',
     reports: 'Отчёты',
+    required: 'Обязательное поле',
     resendVerification: 'Повторная верификация',
     resendVerificationEmail: 'Нажмите здесь, чтобы повторно отправить электронное письмо с подтверждением.',
     reset: 'перезагрузить',

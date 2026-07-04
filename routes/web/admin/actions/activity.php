@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
@@ -171,3 +172,8 @@ Route::put('/market-attribute-groups/{marketAttributeGroup}/activity',
     [MarketAttributeGroupController::class, 'updateActivity'])
     ->whereNumber('marketAttributeGroup')
     ->name('marketAttributeGroups.updateActivity');
+
+Route::put('/market-attributes/{marketAttribute}/activity',
+    [MarketAttributeController::class, 'updateActivity'])
+    ->whereNumber('marketAttribute')
+    ->name('marketAttributes.updateActivity');

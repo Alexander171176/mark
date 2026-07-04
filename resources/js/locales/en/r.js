@@ -32,6 +32,7 @@ export default {
     replyToComment: 'comment on the response',
     report: 'Report:',
     reports: 'Reports',
+    required: 'Required field',
     resendVerification: 'Resend Verification Email',
     resendVerificationEmail: 'Click here to resend the verification email.',
     reset: 'reset',

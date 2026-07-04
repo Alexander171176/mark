@@ -34,6 +34,7 @@ export default {
     addLesson: 'Сабақ қосу',
     addLink: 'Сілтеме қосу',
     addLocale: 'Тіл қосу',
+    addMarketAttribute: 'Функция қосу',
     addMarketBrand: 'Бренд қосу',
     addMarketCategory: 'Санат қосу',
     addMarketCompany: 'Компания қосу',

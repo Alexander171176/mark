@@ -1,5 +1,6 @@
 export default {
     value: 'Мән',
+    values: 'Құндылықтар',
     vat: 'ҚҚС',
     vatRate: 'ҚҚС мөлшерлемесі %',
     verificationLinkSent: 'Сіздің электрондық пошта мекенжайыңызға растау сілтемесі жіберілді.',
@@ -25,6 +26,7 @@ export default {
     view: 'Қарау',
     viewingLogs: 'Журналдарды қарау',
     views: 'Көрулер саны',
-    visibility: 'Көріну',
     vimeo: 'Vimeo көмегімен',
+    visibleCard: 'Картада көрсету',
+    visibility: 'Көріну',
 }

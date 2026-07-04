@@ -7,6 +7,7 @@ export default {
     manageApiTokensDescription: 'Егер олар сізге қажет болмаса, бар API токендерін жоюға болады.',
     manageRoles: 'Рөлдерді басқару',
     managerComment: 'Менеджердің пікірі',
+    marketAttributes: 'Сипаттамалары',
     marketAttributeGroups: 'Сипаттамалық топтар',
     marketBrands: 'Брендтер',
     marketCategories: 'Өнім санаттары',
@@ -42,4 +43,5 @@ export default {
     modules: 'Оқыту модульдері',
     months: 'айлар',
     more: 'Көбірек',
+    multiselect: 'Бірнеше тізім',
 }

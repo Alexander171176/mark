@@ -2464,6 +2464,46 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // ADMIN MARKET ATTRIBUTE GROUPS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'adminMarketAttributesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTES_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных характеристик в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTES PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketAttributesPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTES_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество характеристик в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTES PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketAttributesDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTES_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка характеристик по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTES DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketAttributesDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTES_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка характеристик в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTES DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

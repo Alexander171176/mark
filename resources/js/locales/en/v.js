@@ -1,5 +1,6 @@
 export default {
     value: 'Value',
+    values: 'Values',
     vat: 'VAT',
     vatRate: 'VAT rate %',
     verificationLinkSent: 'A new verification link has been sent to your email address.',
@@ -26,5 +27,6 @@ export default {
     viewingLogs: 'Viewing logs',
     views: 'Views',
     vimeo: 'with Vimeo',
+    visibleCard: 'Show in card',
     visibility: 'Visibility',
 }

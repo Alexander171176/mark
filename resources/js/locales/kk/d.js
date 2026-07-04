@@ -5,6 +5,7 @@ export default {
     dataUploaded: 'деректер жүктеледі...',
     date: 'Күні',
     dates: 'Күндер',
+    datetime: 'Күні мен уақыты',
     dateBirth: 'Туған күні',
     days: 'күндер',
     daysLeft: 'Қалған күндер',

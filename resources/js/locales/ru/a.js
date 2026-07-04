@@ -34,6 +34,7 @@ export default {
     addLesson: 'Добавить Урок',
     addLink: 'Добавить ссылку',
     addLocale: 'Добавить локаль',
+    addMarketAttribute: 'Добавить Характеристику',
     addMarketBrand: 'Добавить Бренд',
     addMarketCategory: 'Добавить категорию',
     addMarketCompany: 'Добавить фирму',

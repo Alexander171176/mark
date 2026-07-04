@@ -6,6 +6,7 @@ export default {
     gradingManual: 'Персональная оценка',
     gradingType: 'Тип оценки',
     gridView: 'показ вертикально',
+    group: 'Группа',
     groups: 'Группы',
     guest: 'Гость',
 }

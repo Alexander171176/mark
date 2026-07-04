@@ -7,6 +7,7 @@ export default {
     manageApiTokensDescription: 'Вы можете удалить любой из ваших существующих токенов, если они больше не нужны.',
     manageRoles: 'Управление Ролями',
     managerComment: 'Комментарий менеджера',
+    marketAttributes: 'Характеристики',
     marketAttributeGroups: 'Группы Характеристик',
     marketBrands: 'Бренды',
     marketCategories: 'Категории товаров',
@@ -42,4 +43,5 @@ export default {
     modules: 'Модули обучения',
     months: 'месяцев',
     more: 'Ещё',
+    multiselect: 'Множественный список',
 }

@@ -32,6 +32,7 @@ export default {
     replyToComment: 'Пікірге жауап беру',
     report: 'Есеп:',
     reports: 'Есептер',
+    required: 'Міндетті өріс',
     resendVerification: 'Қайта растау',
     resendVerificationEmail: 'Растау электрондық хатын қайта жіберу үшін осы жерді басыңыз.',
     reset: 'қалпына келтіру',

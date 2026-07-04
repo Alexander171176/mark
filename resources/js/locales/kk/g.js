@@ -6,6 +6,7 @@ export default {
     gradingManual: 'Жеке бағалау',
     gradingType: 'Бағалау түрі',
     gridView: 'тігінен көрсету',
+    group: 'Топ',
     groups: 'Топтар',
     guest: 'Қонақ',
 }

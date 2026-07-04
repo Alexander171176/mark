@@ -1,5 +1,6 @@
 export default {
     value: 'Значение',
+    values: 'Значения',
     vat: 'НДС',
     vatRate: 'Ставка НДС %',
     verificationLinkSent: 'На ваш адрес электронной почты была отправлена новая ссылка для подтверждения.',
@@ -26,5 +27,6 @@ export default {
     viewingLogs: 'Просмотр логов',
     views: 'Просмотры',
     vimeo: 'с Vimeo',
+    visibleCard: 'Показывать в карточке',
     visibility: 'Видимость',
 }

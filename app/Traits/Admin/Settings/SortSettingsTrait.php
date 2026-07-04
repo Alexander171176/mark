@@ -318,4 +318,11 @@ trait SortSettingsTrait
         return $this->sortSetting($request,
             'adminMarketAttributeGroupsDefaultSort', 'site_settings.adminMarketAttributeGroupsDefaultSort');
     }
+
+    /** Обновляет сортировку элементов в характеристиках */
+    public function updateAdminSortMarketAttributes(UpdateSortRequest $request): RedirectResponse
+    {
+        return $this->sortSetting($request,
+            'adminMarketAttributesDefaultSort', 'site_settings.adminMarketAttributesDefaultSort');
+    }
 }

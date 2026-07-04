@@ -162,3 +162,7 @@ Route::put('/update-count/market-tags',
 Route::put('/update-count/market-attribute-groups',
     [SettingController::class, 'updateAdminCountMarketAttributeGroups'])
     ->name('updateAdminCountMarketAttributeGroups');
+
+Route::put('/update-count/market-attributes',
+    [SettingController::class, 'updateAdminCountMarketAttributes'])
+    ->name('updateAdminCountMarketAttributes');

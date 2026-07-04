@@ -150,6 +150,154 @@ class MarketAttribute extends Model
             ->orderByDesc('id');
     }
 
+    /** Сортировка по параметру списка */
+    public function scopeSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale = $locale ?: app()->getLocale();
+
+        return match ($sort) {
+            'idAsc' => $query->orderBy('id', 'asc'),
+            'idDesc' => $query->orderBy('id', 'desc'),
+
+            'sortAsc' => $query->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $query->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'titleAsc' => $query
+                ->leftJoin('market_attribute_translations as sort_translations', function ($join) use ($locale) {
+                    $join->on('market_attributes.id', '=', 'sort_translations.market_attribute_id')
+                        ->where('sort_translations.locale', '=', $locale);
+                })
+                ->select('market_attributes.*')
+                ->orderBy('sort_translations.title', 'asc')
+                ->orderByDesc('market_attributes.id'),
+
+            'titleDesc' => $query
+                ->leftJoin('market_attribute_translations as sort_translations', function ($join) use ($locale) {
+                    $join->on('market_attributes.id', '=', 'sort_translations.market_attribute_id')
+                        ->where('sort_translations.locale', '=', $locale);
+                })
+                ->select('market_attributes.*')
+                ->orderBy('sort_translations.title', 'desc')
+                ->orderByDesc('market_attributes.id'),
+
+            'groupTitleAsc' => $query
+                ->leftJoin('market_attribute_group_translations as sort_group_translations', function ($join) use ($locale) {
+                    $join->on('market_attributes.market_attribute_group_id', '=', 'sort_group_translations.market_attribute_group_id')
+                        ->where('sort_group_translations.locale', '=', $locale);
+                })
+                ->select('market_attributes.*')
+                ->orderBy('sort_group_translations.title', 'asc')
+                ->orderByDesc('market_attributes.id'),
+
+            'groupTitleDesc' => $query
+                ->leftJoin('market_attribute_group_translations as sort_group_translations', function ($join) use ($locale) {
+                    $join->on('market_attributes.market_attribute_group_id', '=', 'sort_group_translations.market_attribute_group_id')
+                        ->where('sort_group_translations.locale', '=', $locale);
+                })
+                ->select('market_attributes.*')
+                ->orderBy('sort_group_translations.title', 'desc')
+                ->orderByDesc('market_attributes.id'),
+
+            'codeAsc' => $query->orderBy('code', 'asc')->orderByDesc('id'),
+            'codeDesc' => $query->orderBy('code', 'desc')->orderByDesc('id'),
+
+            'colorAsc' => $query->orderBy('color', 'asc')->orderByDesc('id'),
+            'colorDesc' => $query->orderBy('color', 'desc')->orderByDesc('id'),
+
+            'typeAsc' => $query->orderBy('type', 'asc')->orderByDesc('id'),
+            'typeDesc' => $query->orderBy('type', 'desc')->orderByDesc('id'),
+
+            'unitAsc' => $query->orderBy('unit', 'asc')->orderByDesc('id'),
+            'unitDesc' => $query->orderBy('unit', 'desc')->orderByDesc('id'),
+
+            'valuesCountAsc' => $query
+                ->withCount('values')
+                ->orderBy('values_count', 'asc')
+                ->orderByDesc('market_attributes.id'),
+
+            'valuesCountDesc' => $query
+                ->withCount('values')
+                ->orderBy('values_count', 'desc')
+                ->orderByDesc('market_attributes.id'),
+
+            'requiredAsc' => $query->orderBy('required', 'asc')->orderByDesc('id'),
+            'requiredDesc' => $query->orderBy('required', 'desc')->orderByDesc('id'),
+            'required' => $query->where('required', true)->orderByDesc('id'),
+            'notRequired' => $query->where('required', false)->orderByDesc('id'),
+
+            'filterableAsc' => $query->orderBy('filterable', 'asc')->orderByDesc('id'),
+            'filterableDesc' => $query->orderBy('filterable', 'desc')->orderByDesc('id'),
+            'filterable' => $query->where('filterable', true)->orderByDesc('id'),
+            'notFilterable' => $query->where('filterable', false)->orderByDesc('id'),
+
+            'visibleAsc' => $query->orderBy('visible', 'asc')->orderByDesc('id'),
+            'visibleDesc' => $query->orderBy('visible', 'desc')->orderByDesc('id'),
+            'visible' => $query->where('visible', true)->orderByDesc('id'),
+            'hidden' => $query->where('visible', false)->orderByDesc('id'),
+
+            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $query->where('activity', true)->orderByDesc('id'),
+            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+
+            'statusAsc' => $query->orderBy('status', 'asc')->orderByDesc('id'),
+            'statusDesc' => $query->orderBy('status', 'desc')->orderByDesc('id'),
+            'statusDraft' => $query->where('status', 'draft')->orderByDesc('id'),
+            'statusPublished' => $query->where('status', 'published')->orderByDesc('id'),
+            'statusArchived' => $query->where('status', 'archived')->orderByDesc('id'),
+
+            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
+            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
+
+            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
+            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
+
+            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
+            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
+
+            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
+            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
+            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
+            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
+
+            'ownerNameAsc' => $query
+                ->leftJoin('users as sort_users', 'market_attributes.user_id', '=', 'sort_users.id')
+                ->select('market_attributes.*')
+                ->orderBy('sort_users.name', 'asc')
+                ->orderByDesc('market_attributes.id'),
+
+            'ownerNameDesc' => $query
+                ->leftJoin('users as sort_users', 'market_attributes.user_id', '=', 'sort_users.id')
+                ->select('market_attributes.*')
+                ->orderBy('sort_users.name', 'desc')
+                ->orderByDesc('market_attributes.id'),
+
+            'ownerEmailAsc' => $query
+                ->leftJoin('users as sort_users', 'market_attributes.user_id', '=', 'sort_users.id')
+                ->select('market_attributes.*')
+                ->orderBy('sort_users.email', 'asc')
+                ->orderByDesc('market_attributes.id'),
+
+            'ownerEmailDesc' => $query
+                ->leftJoin('users as sort_users', 'market_attributes.user_id', '=', 'sort_users.id')
+                ->select('market_attributes.*')
+                ->orderBy('sort_users.email', 'desc')
+                ->orderByDesc('market_attributes.id'),
+
+            default => $query->orderByDesc('id'),
+        };
+    }
+
     /** Попадает в окно показа */
     public function scopeInShowWindow(Builder $query): Builder
     {
@@ -202,6 +350,15 @@ class MarketAttribute extends Model
                                 ->orWhere('subtitle', 'like', "%{$term}%")
                                 ->orWhere('short', 'like', "%{$term}%")
                                 ->orWhere('description', 'like', "%{$term}%");
+                        });
+                })
+
+                ->orWhereHas('group.translations', function (Builder $gq) use ($term, $locale) {
+                    $gq->where('locale', $locale)
+                        ->where(function (Builder $sq) use ($term) {
+                            $sq->where('title', 'like', "%{$term}%")
+                                ->orWhere('subtitle', 'like', "%{$term}%")
+                                ->orWhere('short', 'like', "%{$term}%");
                         });
                 })
 

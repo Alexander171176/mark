@@ -6,6 +6,7 @@ export default {
     gradingManual: 'Personal assessment',
     gradingType: 'Assessment type',
     gridView: 'vertical display',
+    group: 'Group',
     groups: 'Groups',
     guest: 'Guest',
 }

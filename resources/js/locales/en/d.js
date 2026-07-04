@@ -5,6 +5,7 @@ export default {
     dataUploaded: 'the data is being uploaded...',
     date: 'Date',
     dates: 'Dates',
+    datetime: 'Date and time',
     dateBirth: 'Date of birth',
     days: 'days',
     daysLeft: 'Remaining days',

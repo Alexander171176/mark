@@ -5,6 +5,7 @@ export default {
     dataUploaded: 'данные загружаются...',
     date: 'Дата',
     dates: 'Даты',
+    datetime: 'Дата и время',
     dateBirth: 'Дата рождения',
     days: 'дней',
     daysLeft: 'Оставшиеся дни',

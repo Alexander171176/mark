@@ -49,6 +49,16 @@ const { t } = useI18n();
             :active="route().current('admin.marketAttributeGroups.*')">
             {{ t('marketAttributeGroups') }}
         </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.marketAttributes.index')"
+            :active="route().current('admin.marketAttributes.*')">
+            {{ t('marketAttributes') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.marketAttributeValues.index')"
+            :active="route().current('admin.marketAttributeValues.*')">
+            {{ t('marketAttributeValues') }}
+        </ResponsiveNavLink>
         <!-- Админский маршрут валюты -->
         <ResponsiveNavLink
             :href="route('admin.currencies.index')"

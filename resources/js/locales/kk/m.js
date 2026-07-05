@@ -9,6 +9,7 @@ export default {
     managerComment: 'Менеджердің пікірі',
     marketAttributes: 'Сипаттамалары',
     marketAttributeGroups: 'Сипаттамалық топтар',
+    marketAttributeValues: 'Сипаттамалық мәндер',
     marketBrands: 'Брендтер',
     marketCategories: 'Өнім санаттары',
     marketCompanies: 'Компаниялар',

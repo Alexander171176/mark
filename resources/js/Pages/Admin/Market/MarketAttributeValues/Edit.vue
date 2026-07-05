@@ -3,7 +3,7 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Редактирование группы характеристик MarketAttributeGroup
+ * Редактирование значения характеристики MarketAttributeValue
  */
 
 import { ref, computed } from 'vue'
@@ -35,20 +35,45 @@ const toast = useToast()
 
 /** Входные параметры страницы */
 const props = defineProps({
-    group: { type: [Object, null], default: null },
+    value: { type: [Object, null], default: null },
+    attributes: { type: [Array, Object], default: () => [] },
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
     errors: { type: Object, default: () => ({}) },
 })
 
-/** Данные редактируемой группы */
-const groupData = computed(() => props.group?.data || props.group || {})
+/** Данные редактируемого значения характеристики */
+const valueData = computed(() => props.value?.data || props.value || {})
+
+/** Список характеристик для select */
+const attributesList = computed(() => {
+    if (Array.isArray(props.attributes)) return props.attributes
+    if (Array.isArray(props.attributes?.data)) return props.attributes.data
+    return []
+})
+
+/** Получение названия характеристик */
+const attributeTitle = (attribute) => {
+    return attribute?.title
+        || attribute?.translation?.title
+        || attribute?.code
+        || `ID: ${attribute?.id}`
+}
+
+/** Получение данных характеристик */
+const attributeInfo = (attribute) => {
+    return [
+        attribute?.code,
+        attribute?.type,
+        attribute?.unit,
+    ].filter(Boolean).join(' / ')
+}
 
 /** Заголовок страницы */
 const pageTitle = computed(() => {
     return currentTranslation.value.title
-        || groupData.value.translation?.title
-        || `ID: ${groupData.value.id}`
+        || valueData.value.translation?.title
+        || `ID: ${valueData.value.id}`
 })
 
 /** Создание пустого перевода */
@@ -56,12 +81,13 @@ const makeTranslation = () => ({
     title: '',
     subtitle: '',
     short: '',
+    description: '',
 })
 
 /** Подготовка переводов из БД */
 const makeTranslations = () => {
     const result = {}
-    const translations = groupData.value?.translations || []
+    const translations = valueData.value?.translations || []
     const list = Array.isArray(translations?.data) ? translations.data : translations
 
     if (Array.isArray(list)) {
@@ -72,6 +98,7 @@ const makeTranslations = () => {
                 title: translation.title || '',
                 subtitle: translation.subtitle || '',
                 short: translation.short || '',
+                description: translation.description || '',
             }
         })
     }
@@ -86,7 +113,7 @@ const makeTranslations = () => {
 }
 
 /** Локаль по умолчанию */
-const defaultLocale = props.currentLocale || groupData.value?.translation?.locale || 'ru'
+const defaultLocale = props.currentLocale || valueData.value?.translation?.locale || 'ru'
 
 /** Активная локаль редактора */
 const activeLocale = ref(defaultLocale)
@@ -95,23 +122,25 @@ const activeLocale = ref(defaultLocale)
 const form = useForm({
     _method: 'put',
 
-    code: groupData.value.code || '',
-    icon: groupData.value.icon || '',
-    color: groupData.value.color || '#3b82f6',
+    market_attribute_id: valueData.value.market_attribute_id || '',
 
-    sort: groupData.value.sort ?? 0,
-    activity: Boolean(groupData.value.activity),
+    code: valueData.value.code || '',
+    icon: valueData.value.icon || '',
+    color: valueData.value.color || '#3b82f6',
 
-    status: groupData.value.status || 'draft',
+    sort: valueData.value.sort ?? 0,
+    activity: Boolean(valueData.value.activity),
 
-    moderation_status: Number(groupData.value.moderation_status ?? 0),
-    moderated_by: groupData.value.moderated_by || null,
-    moderated_at: groupData.value.moderated_at || null,
-    moderation_note: groupData.value.moderation_note || '',
+    status: valueData.value.status || 'draft',
 
-    published_at: groupData.value.published_at || '',
-    show_from_at: groupData.value.show_from_at || '',
-    show_to_at: groupData.value.show_to_at || '',
+    moderation_status: Number(valueData.value.moderation_status ?? 0),
+    moderated_by: valueData.value.moderated_by || null,
+    moderated_at: valueData.value.moderated_at || null,
+    moderation_note: valueData.value.moderation_note || '',
+
+    published_at: valueData.value.published_at || '',
+    show_from_at: valueData.value.show_from_at || '',
+    show_to_at: valueData.value.show_to_at || '',
 
     translations: makeTranslations(),
 })
@@ -154,19 +183,20 @@ const handleCodeFocus = () => {
 const submitForm = () => {
     form.transform((data) => ({
         ...data,
+        market_attribute_id: Number(data.market_attribute_id),
         activity: data.activity ? 1 : 0,
         moderation_status: Number(data.moderation_status ?? 0),
         sort: Number(data.sort ?? 0),
     }))
 
-    form.post(route('admin.marketAttributeGroups.update', {
-        marketAttributeGroup: groupData.value.id,
+    form.post(route('admin.marketAttributeValues.update', {
+        marketAttributeValue: valueData.value.id,
     }), {
-        errorBag: 'editMarketAttributeGroup',
+        errorBag: 'editMarketAttributeValue',
         preserveScroll: true,
 
         onSuccess: () => {
-            toast.success('Группа характеристик успешно обновлена.')
+            toast.success('Значение характеристики успешно обновлено.')
         },
 
         onError: (errors) => {
@@ -178,10 +208,10 @@ const submitForm = () => {
 </script>
 
 <template>
-    <AdminLayout :title="t('editMarketAttributeGroup')">
+    <AdminLayout :title="t('editMarketAttributeValue')">
         <template #header>
             <TitlePage>
-                {{ t('editMarketAttributeGroup') }}: {{ pageTitle }} [ID: {{ groupData.id }}]
+                {{ t('editMarketAttributeValue') }}: {{ pageTitle }} [ID: {{ valueData.id }}]
             </TitlePage>
         </template>
 
@@ -193,7 +223,7 @@ const submitForm = () => {
                        bg-opacity-95 dark:bg-opacity-95"
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <DefaultButton :href="route('admin.marketAttributeGroups.index')">
+                    <DefaultButton :href="route('admin.marketAttributeValues.index')">
                         <template #icon>
                             <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
                                  viewBox="0 0 16 16">
@@ -229,9 +259,42 @@ const submitForm = () => {
                         </div>
                     </div>
 
+                    <div class="mb-3 flex flex-col items-start">
+                        <LabelInput for="market_attribute_id">
+                            <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                            {{ t('attribute') }}
+                        </LabelInput>
+
+                        <select
+                            id="market_attribute_id"
+                            v-model="form.market_attribute_id"
+                            required
+                            class="w-full px-2 py-0.5 form-select bg-white
+                                   text-gray-600 border border-slate-400
+                                   dark:border-slate-600 rounded-sm shadow-sm
+                                   dark:bg-cyan-800 dark:text-slate-100"
+                        >
+                            <option value="">{{ t('select') }}</option>
+
+                            <option
+                                v-for="attribute in attributesList"
+                                :key="attribute.id"
+                                :value="attribute.id"
+                            >
+                                {{ attributeTitle(attribute) }}
+                                <span v-if="attributeInfo(attribute)">
+                                    — {{ attributeInfo(attribute) }}
+                                </span>
+                            </option>
+                        </select>
+
+                        <InputError class="mt-2" :message="form.errors.market_attribute_id" />
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                         <div class="flex flex-col items-start">
                             <LabelInput for="status" :value="t('status')" />
+
                             <select
                                 id="status"
                                 v-model="form.status"
@@ -244,6 +307,7 @@ const submitForm = () => {
                                 <option value="published">{{ t('statusPublished') }}</option>
                                 <option value="archived">{{ t('statusArchived') }}</option>
                             </select>
+
                             <InputError class="mt-2" :message="form.errors.status" />
                         </div>
 
@@ -297,7 +361,7 @@ const submitForm = () => {
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput for="title">
                                 <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                                {{ t('title') }} [{{ activeLocale.toUpperCase() }}]
+                                {{ t('value') }} [{{ activeLocale.toUpperCase() }}]
                             </LabelInput>
 
                             <InputText
@@ -317,6 +381,7 @@ const submitForm = () => {
                                 for="subtitle"
                                 :value="`${t('subtitle')} [${activeLocale.toUpperCase()}]`"
                             />
+
                             <InputText
                                 id="subtitle"
                                 type="text"
@@ -324,6 +389,7 @@ const submitForm = () => {
                                 maxlength="255"
                                 autocomplete="off"
                             />
+
                             <InputError class="mt-2" :message="getError('subtitle')" />
                         </div>
 
@@ -333,6 +399,7 @@ const submitForm = () => {
                                     for="short"
                                     :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
                                 />
+
                                 <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
                                     {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
                                 </div>
@@ -344,6 +411,20 @@ const submitForm = () => {
                             />
 
                             <InputError class="mt-2" :message="getError('short')" />
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <LabelInput
+                                for="description"
+                                :value="`${t('description')} [${activeLocale.toUpperCase()}]`"
+                            />
+
+                            <MetaDescTextarea
+                                v-model="currentTranslation.description"
+                                class="w-full"
+                            />
+
+                            <InputError class="mt-2" :message="getError('description')" />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -396,7 +477,7 @@ const submitForm = () => {
                     </div>
 
                     <div class="flex items-center justify-center mt-4 gap-3">
-                        <DefaultButton :href="route('admin.marketAttributeGroups.index')">
+                        <DefaultButton :href="route('admin.marketAttributeValues.index')">
                             <template #icon>
                                 <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
                                      viewBox="0 0 16 16">

@@ -323,4 +323,11 @@ trait CountSettingsTrait
         return $this->countSetting($request,
             'adminMarketAttributesPerPage', 'site_settings.adminMarketAttributesPerPage');
     }
+
+    /** Обновление количества элементов в значениях характеристик */
+    public function updateAdminCountMarketAttributeValues(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminMarketAttributeValuesPerPage', 'site_settings.adminMarketAttributeValuesPerPage');
+    }
 }

@@ -14,6 +14,7 @@ export default {
     children: 'Дети',
     city: 'Город',
     class: 'классы Tailwind CSS',
+    clear: 'Очистить',
     clearCache: 'Очистить кэш',
     clearLog: 'Очистить лог',
     clearMetaFields: 'Очистить мета-поля',

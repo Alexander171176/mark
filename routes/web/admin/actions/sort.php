@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
+use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
@@ -181,3 +182,8 @@ Route::put('/market-attributes/{marketAttribute}/sort',
     [MarketAttributeController::class, 'updateSort'])
     ->whereNumber('marketAttribute')
     ->name('marketAttributes.updateSort');
+
+Route::put('/market-attribute-values/{marketAttributeValue}/sort',
+    [MarketAttributeValueController::class, 'updateSort'])
+    ->whereNumber('marketAttributeValue')
+    ->name('marketAttributeValues.updateSort');

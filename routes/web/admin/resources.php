@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
+use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
@@ -222,3 +223,7 @@ Route::resource('/market-attribute-groups', MarketAttributeGroupController::clas
 Route::resource('/market-attributes', MarketAttributeController::class)
     ->parameters(['market-attributes' => 'marketAttribute'])
     ->names('marketAttributes');
+
+Route::resource('/market-attribute-values', MarketAttributeValueController::class)
+    ->parameters(['market-attribute-values' => 'marketAttributeValue'])
+    ->names('marketAttributeValues');

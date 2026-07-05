@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
+use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
@@ -69,3 +70,8 @@ Route::put('/market-attributes/{marketAttribute}/approve',
     [MarketAttributeController::class, 'approve'])
     ->whereNumber('marketAttribute')
     ->name('marketAttributes.approve');
+
+Route::put('/market-attribute-values/{marketAttributeValue}/approve',
+    [MarketAttributeValueController::class, 'approve'])
+    ->whereNumber('marketAttributeValue')
+    ->name('marketAttributeValues.approve');

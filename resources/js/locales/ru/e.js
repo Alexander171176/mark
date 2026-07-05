@@ -19,6 +19,7 @@ export default {
     editLesson: 'Редактировать Урок обучения',
     editMarketAttribute: 'Редактировать Характеристику',
     editMarketAttributeGroup: 'Редактировать Группу характеристик',
+    editMarketAttributeValue: 'Редактировать Значение характеристики',
     editMarketBrand: 'Редактировать Бренд',
     editMarketCategory: 'Редактировать Категорию товаров',
     editMarketCompany: 'Редактировать фирму',

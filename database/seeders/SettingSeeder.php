@@ -2504,6 +2504,46 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // ADMIN MARKET ATTRIBUTES DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'adminMarketAttributeValuesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTE_VALUES_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных значений характеристик в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTE VALUES PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketAttributeValuesPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTE_VALUES_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество значений характеристик в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTE VALUES PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketAttributeValuesDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTE_VALUES_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка значений характеристик по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTE VALUES DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketAttributeValuesDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_ATTRIBUTE_VALUES_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка значений характеристик в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET ATTRIBUTE VALUES DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

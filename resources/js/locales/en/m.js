@@ -9,6 +9,7 @@ export default {
     managerComment: 'Manager\'s comment',
     marketAttributes: 'Characteristics',
     marketAttributeGroups: 'Characteristic Groups',
+    marketAttributeValues: 'Characteristic Values',
     marketBrands: 'Brands',
     marketCategories: 'Product categories',
     marketCompanies: 'Companies',

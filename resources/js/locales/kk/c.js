@@ -14,6 +14,7 @@ export default {
     children: 'Балалар',
     city: 'Қала',
     class: 'Tailwind CSS кластары',
+    clear: 'Таза',
     clearCache: 'Кэшті тазалау',
     clearLog: 'Журналды тазарту',
     clearMetaFields: 'Мета өрістерін тазалаңыз',

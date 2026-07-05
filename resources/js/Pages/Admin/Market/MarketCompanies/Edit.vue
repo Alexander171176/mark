@@ -59,6 +59,13 @@ const props = defineProps({
 /** Данные редактируемой компании */
 const companyData = computed(() => props.company?.data ?? props.company)
 
+/** Заголовок страницы */
+const pageTitle = computed(() => {
+    return currentTranslation.value.title
+        || companyData.value.translation?.title
+        || `ID: ${companyData.value.id}`
+})
+
 /** Шаблон нового перевода */
 const makeTranslation = () => ({
     title: '',
@@ -309,7 +316,9 @@ const submitForm = () => {
 <template>
     <AdminLayout :title="t('editMarketCompany')">
         <template #header>
-            <TitlePage>{{ t('editMarketCompany') }}</TitlePage>
+            <TitlePage>
+                {{ t('editMarketCompany') }}: {{ pageTitle }} [ID: {{ companyData.id }}]
+            </TitlePage>
         </template>
 
         <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-12xl mx-auto">

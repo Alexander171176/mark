@@ -19,6 +19,7 @@ export default {
     editLesson: 'Сабақты өңдеу',
     editMarketAttribute: 'Сипаттамаларды өңдеу',
     editMarketAttributeGroup: 'Функциялар тобын өңдеу',
+    editMarketAttributeValue: 'Сипаттаманың мәнін өңдеу',
     editMarketBrand: 'Брендті өңдеу',
     editMarketCategory: 'Өнім санатын өңдеу',
     editMarketCompany: 'Компанияны өңдеу',

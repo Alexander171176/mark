@@ -3,7 +3,7 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Редактирование группы характеристик MarketAttributeGroup
+ * Создание значения характеристики MarketAttributeValue
  */
 
 import { ref, computed } from 'vue'
@@ -35,20 +35,18 @@ const toast = useToast()
 
 /** Входные параметры страницы */
 const props = defineProps({
-    group: { type: [Object, null], default: null },
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
+    attributes: { type: [Array, Object], default: () => [] },
     errors: { type: Object, default: () => ({}) },
 })
 
-/** Данные редактируемой группы */
-const groupData = computed(() => props.group?.data || props.group || {})
+/** Список характеристик для select */
+const attributesList = computed(() => {
+    if (Array.isArray(props.attributes)) return props.attributes
+    if (Array.isArray(props.attributes?.data)) return props.attributes.data
 
-/** Заголовок страницы */
-const pageTitle = computed(() => {
-    return currentTranslation.value.title
-        || groupData.value.translation?.title
-        || `ID: ${groupData.value.id}`
+    return []
 })
 
 /** Создание пустого перевода */
@@ -56,64 +54,40 @@ const makeTranslation = () => ({
     title: '',
     subtitle: '',
     short: '',
+    description: '',
 })
 
-/** Подготовка переводов из БД */
-const makeTranslations = () => {
-    const result = {}
-    const translations = groupData.value?.translations || []
-    const list = Array.isArray(translations?.data) ? translations.data : translations
-
-    if (Array.isArray(list)) {
-        list.forEach((translation) => {
-            if (!translation?.locale) return
-
-            result[translation.locale] = {
-                title: translation.title || '',
-                subtitle: translation.subtitle || '',
-                short: translation.short || '',
-            }
-        })
-    }
-
-    const locale = props.currentLocale || 'ru'
-
-    if (!result[locale]) {
-        result[locale] = makeTranslation()
-    }
-
-    return result
-}
-
 /** Локаль по умолчанию */
-const defaultLocale = props.currentLocale || groupData.value?.translation?.locale || 'ru'
+const defaultLocale = props.currentLocale || 'ru'
 
 /** Активная локаль редактора */
 const activeLocale = ref(defaultLocale)
 
-/** Форма редактирования */
+/** Форма создания */
 const form = useForm({
-    _method: 'put',
+    market_attribute_id: '',
 
-    code: groupData.value.code || '',
-    icon: groupData.value.icon || '',
-    color: groupData.value.color || '#3b82f6',
+    code: '',
+    icon: '',
+    color: '#3b82f6',
 
-    sort: groupData.value.sort ?? 0,
-    activity: Boolean(groupData.value.activity),
+    sort: 0,
+    activity: true,
 
-    status: groupData.value.status || 'draft',
+    status: 'draft',
 
-    moderation_status: Number(groupData.value.moderation_status ?? 0),
-    moderated_by: groupData.value.moderated_by || null,
-    moderated_at: groupData.value.moderated_at || null,
-    moderation_note: groupData.value.moderation_note || '',
+    moderation_status: 0,
+    moderated_by: null,
+    moderated_at: null,
+    moderation_note: '',
 
-    published_at: groupData.value.published_at || '',
-    show_from_at: groupData.value.show_from_at || '',
-    show_to_at: groupData.value.show_to_at || '',
+    published_at: '',
+    show_from_at: '',
+    show_to_at: '',
 
-    translations: makeTranslations(),
+    translations: {
+        [defaultLocale]: makeTranslation(),
+    },
 })
 
 /** Текущий перевод */
@@ -143,6 +117,23 @@ const colorForPicker = computed({
     },
 })
 
+/** Название характеристики */
+const attributeTitle = (attribute) => {
+    return attribute?.title
+        || attribute?.translation?.title
+        || attribute?.code
+        || `ID: ${attribute?.id}`
+}
+
+/** Информация по характеристике */
+const attributeInfo = (attribute) => {
+    return [
+        attribute?.code,
+        attribute?.type,
+        attribute?.unit,
+    ].filter(Boolean).join(' / ')
+}
+
 /** Автоматическая генерация системного кода */
 const handleCodeFocus = () => {
     if (!form.code && currentTranslation.value.title) {
@@ -154,19 +145,18 @@ const handleCodeFocus = () => {
 const submitForm = () => {
     form.transform((data) => ({
         ...data,
+        market_attribute_id: Number(data.market_attribute_id),
         activity: data.activity ? 1 : 0,
         moderation_status: Number(data.moderation_status ?? 0),
         sort: Number(data.sort ?? 0),
     }))
 
-    form.post(route('admin.marketAttributeGroups.update', {
-        marketAttributeGroup: groupData.value.id,
-    }), {
-        errorBag: 'editMarketAttributeGroup',
+    form.post(route('admin.marketAttributeValues.store'), {
+        errorBag: 'createMarketAttributeValue',
         preserveScroll: true,
 
         onSuccess: () => {
-            toast.success('Группа характеристик успешно обновлена.')
+            toast.success('Значение характеристики успешно создано.')
         },
 
         onError: (errors) => {
@@ -178,11 +168,9 @@ const submitForm = () => {
 </script>
 
 <template>
-    <AdminLayout :title="t('editMarketAttributeGroup')">
+    <AdminLayout :title="t('addMarketAttributeValue')">
         <template #header>
-            <TitlePage>
-                {{ t('editMarketAttributeGroup') }}: {{ pageTitle }} [ID: {{ groupData.id }}]
-            </TitlePage>
+            <TitlePage>{{ t('addMarketAttributeValue') }}</TitlePage>
         </template>
 
         <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-12xl mx-auto">
@@ -193,7 +181,7 @@ const submitForm = () => {
                        bg-opacity-95 dark:bg-opacity-95"
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <DefaultButton :href="route('admin.marketAttributeGroups.index')">
+                    <DefaultButton :href="route('admin.marketAttributeValues.index')">
                         <template #icon>
                             <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
                                  viewBox="0 0 16 16">
@@ -227,6 +215,38 @@ const submitForm = () => {
                             />
                             <InputError class="mt-2 lg:mt-0" :message="form.errors.sort" />
                         </div>
+                    </div>
+
+                    <div class="mb-3 flex flex-col items-start">
+                        <LabelInput for="market_attribute_id">
+                            <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                            {{ t('attribute') }}
+                        </LabelInput>
+
+                        <select
+                            id="market_attribute_id"
+                            v-model="form.market_attribute_id"
+                            required
+                            class="w-full px-2 py-0.5 form-select bg-white
+                                   text-gray-600 border border-slate-400
+                                   dark:border-slate-600 rounded-sm shadow-sm
+                                   dark:bg-cyan-800 dark:text-slate-100"
+                        >
+                            <option value="">{{ t('select') }}</option>
+
+                            <option
+                                v-for="attribute in attributesList"
+                                :key="attribute.id"
+                                :value="attribute.id"
+                            >
+                                {{ attributeTitle(attribute) }}
+                                <span v-if="attributeInfo(attribute)">
+                                    — {{ attributeInfo(attribute) }}
+                                </span>
+                            </option>
+                        </select>
+
+                        <InputError class="mt-2" :message="form.errors.market_attribute_id" />
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -297,7 +317,7 @@ const submitForm = () => {
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput for="title">
                                 <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                                {{ t('title') }} [{{ activeLocale.toUpperCase() }}]
+                                {{ t('value') }} [{{ activeLocale.toUpperCase() }}]
                             </LabelInput>
 
                             <InputText
@@ -331,10 +351,10 @@ const submitForm = () => {
                             <div class="flex justify-between w-full">
                                 <LabelInput
                                     for="short"
-                                    :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
+                                :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
                                 />
                                 <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                    {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
+                        {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
                                 </div>
                             </div>
 
@@ -344,6 +364,20 @@ const submitForm = () => {
                             />
 
                             <InputError class="mt-2" :message="getError('short')" />
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <LabelInput
+                                for="description"
+                                :value="`${t('description')} [${activeLocale.toUpperCase()}]`"
+                            />
+
+                            <MetaDescTextarea
+                                v-model="currentTranslation.description"
+                                class="w-full"
+                            />
+
+                            <InputError class="mt-2" :message="getError('description')" />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -396,7 +430,7 @@ const submitForm = () => {
                     </div>
 
                     <div class="flex items-center justify-center mt-4 gap-3">
-                        <DefaultButton :href="route('admin.marketAttributeGroups.index')">
+                        <DefaultButton :href="route('admin.marketAttributeValues.index')">
                             <template #icon>
                                 <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
                                      viewBox="0 0 16 16">

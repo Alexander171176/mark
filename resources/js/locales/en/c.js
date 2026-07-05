@@ -14,6 +14,7 @@ export default {
     children: 'Children',
     city: 'City',
     class: 'tailwind css classes',
+    clear: 'Clear',
     clearCache: 'Clear the cache',
     clearLog: 'Clear the log',
     clearMetaFields: 'Clear meta fields',

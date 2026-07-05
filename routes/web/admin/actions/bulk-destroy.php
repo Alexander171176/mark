@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
+use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
@@ -121,3 +122,7 @@ Route::delete('/market-attribute-groups/bulk-delete',
 Route::delete('/market-attributes/bulk-delete',
     [MarketAttributeController::class, 'bulkDestroy'])
     ->name('marketAttributes.bulkDestroy');
+
+Route::delete('/market-attribute-values/bulk-delete',
+    [MarketAttributeValueController::class, 'bulkDestroy'])
+    ->name('marketAttributeValues.bulkDestroy');

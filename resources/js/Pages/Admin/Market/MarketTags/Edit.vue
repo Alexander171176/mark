@@ -42,6 +42,13 @@ const props = defineProps({
 /** Данные редактируемого тега */
 const tagData = computed(() => props.tag?.data || props.tag || {})
 
+/** Заголовок страницы */
+const pageTitle = computed(() => {
+    return currentTranslation.value.title
+        || tagData.value.translation?.title
+        || `ID: ${tagData.value.id}`
+})
+
 /** Создание пустого перевода */
 const makeTranslation = () => ({
     title: '',
@@ -220,7 +227,9 @@ const submitForm = () => {
 <template>
     <AdminLayout :title="t('editTag')">
         <template #header>
-            <TitlePage>{{ t('editTag') }}</TitlePage>
+            <TitlePage>
+                {{ t('editTag') }}: {{ pageTitle }} [ID: {{ tagData.id }}]
+            </TitlePage>
         </template>
 
         <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-12xl mx-auto">

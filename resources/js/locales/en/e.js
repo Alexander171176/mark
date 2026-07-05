@@ -19,6 +19,7 @@ export default {
     editLesson: 'Edit Lesson',
     editMarketAttribute: 'Edit Characteristics',
     editMarketAttributeGroup: 'Edit Attribute Group',
+    editMarketAttributeValue: 'Edit Value of a characteristic',
     editMarketBrand: 'Edit Brand',
     editMarketCategory: 'Edit Product Category',
     editMarketCompany: 'Edit company',

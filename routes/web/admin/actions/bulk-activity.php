@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
+use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
@@ -155,3 +156,7 @@ Route::put('/market-attribute-groups/bulk-activity',
 Route::put('/market-attributes/bulk-activity',
     [MarketAttributeController::class, 'bulkUpdateActivity'])
     ->name('marketAttributes.bulkUpdateActivity');
+
+Route::put('/market-attribute-values/bulk-activity',
+    [MarketAttributeValueController::class, 'bulkUpdateActivity'])
+    ->name('marketAttributeValues.bulkUpdateActivity');

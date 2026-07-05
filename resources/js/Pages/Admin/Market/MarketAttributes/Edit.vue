@@ -45,6 +45,13 @@ const props = defineProps({
 /** Редактируемая характеристика */
 const attributeData = computed(() => props.attribute?.data || props.attribute || {})
 
+/** Заголовок страницы */
+const pageTitle = computed(() => {
+    return currentTranslation.value.title
+        || attributeData.value.translation?.title
+        || `ID: ${attributeData.value.id}`
+})
+
 /** Список групп для select */
 const groupsList = computed(() => {
     if (Array.isArray(props.groups)) return props.groups
@@ -214,7 +221,9 @@ const submitForm = () => {
 <template>
     <AdminLayout :title="t('editMarketAttribute')">
         <template #header>
-            <TitlePage>{{ t('editMarketAttribute') }}</TitlePage>
+            <TitlePage>
+                {{ t('editMarketAttribute') }}: {{ pageTitle }} [ID: {{ attributeData.id }}]
+            </TitlePage>
         </template>
 
         <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-12xl mx-auto">

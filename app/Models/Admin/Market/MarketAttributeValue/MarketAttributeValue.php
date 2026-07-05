@@ -127,6 +127,99 @@ class MarketAttributeValue extends Model
             ->orderByDesc('id');
     }
 
+    /** Сортировка по параметру списка */
+    public function scopeSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale = $locale ?: app()->getLocale();
+
+        return match ($sort) {
+            'idAsc' => $query->orderBy('id', 'asc'),
+            'idDesc' => $query->orderBy('id', 'desc'),
+
+            'sortAsc' => $query->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $query->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'titleAsc' => $query
+                ->leftJoin('market_attribute_value_translations as sort_translations', function ($join) use ($locale) {
+                    $join->on('market_attribute_values.id', '=', 'sort_translations.market_attribute_value_id')
+                        ->where('sort_translations.locale', '=', $locale);
+                })
+                ->select('market_attribute_values.*')
+                ->orderBy('sort_translations.title', 'asc')
+                ->orderByDesc('market_attribute_values.id'),
+
+            'titleDesc' => $query
+                ->leftJoin('market_attribute_value_translations as sort_translations', function ($join) use ($locale) {
+                    $join->on('market_attribute_values.id', '=', 'sort_translations.market_attribute_value_id')
+                        ->where('sort_translations.locale', '=', $locale);
+                })
+                ->select('market_attribute_values.*')
+                ->orderBy('sort_translations.title', 'desc')
+                ->orderByDesc('market_attribute_values.id'),
+
+            'attributeTitleAsc' => $query
+                ->leftJoin('market_attribute_translations as sort_attribute_translations', function ($join) use ($locale) {
+                    $join->on('market_attribute_values.market_attribute_id', '=', 'sort_attribute_translations.market_attribute_id')
+                        ->where('sort_attribute_translations.locale', '=', $locale);
+                })
+                ->select('market_attribute_values.*')
+                ->orderBy('sort_attribute_translations.title', 'asc')
+                ->orderByDesc('market_attribute_values.id'),
+
+            'attributeTitleDesc' => $query
+                ->leftJoin('market_attribute_translations as sort_attribute_translations', function ($join) use ($locale) {
+                    $join->on('market_attribute_values.market_attribute_id', '=', 'sort_attribute_translations.market_attribute_id')
+                        ->where('sort_attribute_translations.locale', '=', $locale);
+                })
+                ->select('market_attribute_values.*')
+                ->orderBy('sort_attribute_translations.title', 'desc')
+                ->orderByDesc('market_attribute_values.id'),
+
+            'codeAsc' => $query->orderBy('code', 'asc')->orderByDesc('id'),
+            'codeDesc' => $query->orderBy('code', 'desc')->orderByDesc('id'),
+
+            'colorAsc' => $query->orderBy('color', 'asc')->orderByDesc('id'),
+            'colorDesc' => $query->orderBy('color', 'desc')->orderByDesc('id'),
+
+            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
+            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
+            'activity' => $query->where('activity', true)->orderByDesc('id'),
+            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+
+            'statusAsc' => $query->orderBy('status', 'asc')->orderByDesc('id'),
+            'statusDesc' => $query->orderBy('status', 'desc')->orderByDesc('id'),
+            'statusDraft' => $query->where('status', 'draft')->orderByDesc('id'),
+            'statusPublished' => $query->where('status', 'published')->orderByDesc('id'),
+            'statusArchived' => $query->where('status', 'archived')->orderByDesc('id'),
+
+            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
+            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
+
+            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
+            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
+
+            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
+            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
+
+            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
+            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+
+            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
+            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+
+            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
+            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
+            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
+            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
+
+            default => $query->orderByDesc('id'),
+        };
+    }
+
     /** Попадает в окно показа */
     public function scopeInShowWindow(Builder $query): Builder
     {
@@ -181,9 +274,19 @@ class MarketAttributeValue extends Model
                         });
                 })
 
-                ->orWhereHas('attribute', function (Builder $aq) use ($term) {
-
-                    $aq->where('code', 'like', "%{$term}%");
+                ->orWhereHas('attribute', function (Builder $aq) use ($term, $locale) {
+                    $aq->where('code', 'like', "%{$term}%")
+                        ->orWhere('type', 'like', "%{$term}%")
+                        ->orWhere('unit', 'like', "%{$term}%")
+                        ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
+                            $tq->where('locale', $locale)
+                                ->where(function (Builder $sq) use ($term) {
+                                    $sq->where('title', 'like', "%{$term}%")
+                                        ->orWhere('subtitle', 'like', "%{$term}%")
+                                        ->orWhere('short', 'like', "%{$term}%")
+                                        ->orWhere('description', 'like', "%{$term}%");
+                                });
+                        });
                 })
 
                 ->orWhereHas('moderator', function (Builder $mq) use ($term) {

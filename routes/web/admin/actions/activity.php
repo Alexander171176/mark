@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
+use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
@@ -177,3 +178,8 @@ Route::put('/market-attributes/{marketAttribute}/activity',
     [MarketAttributeController::class, 'updateActivity'])
     ->whereNumber('marketAttribute')
     ->name('marketAttributes.updateActivity');
+
+Route::put('/market-attribute-values/{marketAttributeValue}/activity',
+    [MarketAttributeValueController::class, 'updateActivity'])
+    ->whereNumber('marketAttributeValue')
+    ->name('marketAttributeValues.updateActivity');

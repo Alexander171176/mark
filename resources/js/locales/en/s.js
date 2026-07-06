@@ -57,6 +57,7 @@ export default {
     server: 'Server',
     services: 'Services',
     serviceCode: 'Service code',
+    session: 'Session',
     setCorrect: 'Set the answer as correct',
     setMax: 'Set maximum',
     setStatusCompleted: 'Completed',

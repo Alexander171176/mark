@@ -827,6 +827,46 @@
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolFaq/SchoolFaqController --resource` <br>
 -------------------------------------------------------------------------------------
 
+1) Privacy — согласия, cookies, политика конфиденциальности
+`docker exec mark-php-app php artisan make:model Admin/Privacy/PrivacyUserConsent/PrivacyUserConsent -m` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentRequest` <br>
+`docker exec mark-php-app php artisan make:request Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentStatusRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentController` <br>
+`docker exec mark-php-app php artisan make:controller Public/Privacy/PrivacyController` <br>
+`docker exec mark-php-app php artisan make:controller Public/Privacy/PrivacyUserConsentController` <br>
+
+2) Analytics — журнал посещений, отчёты, графики, очистка
+`docker exec mark-php-app php artisan make:model Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLog -mf` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogController` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsVisitorLog/AdminAnalyticsVisitorLogController` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsDashboard/AnalyticsDashboardController` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupController` <br>
+`docker exec mark-php-app php artisan make:request Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupRequest` <br>
+
+3) Services (создать вручную)
+Privacy
+`app/Services/Admin/Privacy/PrivacyPolicyService.php` <br>
+Base
+`app/Services/Admin/Base/File/JsonlFileWriterService.php` <br>
+Analytics
+`app/Services/Admin/Analytics/AnalyticsFileWriterService.php` <br>
+
+4) SQLite Analytics
+`docker exec mark-php-app rm database/analytics.sqlite` <br>
+`docker exec mark-php-app touch database/analytics.sqlite` <br>
+`docker exec mark-php-app chmod 664 database/analytics.sqlite` <br>
+`docker exec mark-php-app mkdir -p database/migrations_analytics` <br>
+`docker exec mark-php-app php artisan migrate --database=analytics --path=database/migrations_analytics` <br>
+`docker exec mark-php-app php artisan schedule:work` <br>
+
+5) Импорт JSONL в SQLite Analytics
+`docker exec mark-php-app php artisan make:command ImportAnalyticsVisitorLogsCommand` <br>
+`docker exec mark-php-app php artisan analytics:import-visitor-logs` <br>
+-------------------------------------------------------------------------------------
+
 1) Группы характеристик
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeGroup/MarketAttributeGroup -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeGroup/MarketAttributeGroupTranslation -m` <br>
@@ -925,6 +965,20 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketTagSeeder` <br>
 
+8) Товары <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProduct/MarketProduct -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProduct/MarketProductTranslation -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProduct/MarketProductImage -m` <br>
+`docker exec mark-php-app php artisan make:migration create_market_product_has_images_table --create=market_product_has_images` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProduct/MarketProductResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProduct/MarketProductSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProduct/MarketProductTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProduct/MarketProductImageResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketProduct/MarketProductRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketProduct/MarketProductController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketProductSeeder` <br>
 
 
 5) Товары / Бренды

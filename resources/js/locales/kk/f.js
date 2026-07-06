@@ -9,6 +9,7 @@ export default {
     fileBackup: 'Сайтты мұрағаттау және қалпына келтіру',
     fileSize: 'Файл өлшемі',
     fillAllFields: 'Барлық өрістерді толтыру қажет',
+    filter: 'Сүзгі',
     finance: 'Қаржы',
     fitCrop: 'Кесу',
     fitContain: 'Кіру',

@@ -40,6 +40,7 @@ export default {
     deselectAll: 'Отменить выбор всех',
     description: 'Описание',
     details: 'Дополнительные детали/комментарии к турниру или поединку',
+    device: 'Устройство',
     diagrams: 'Диаграммы',
     difficulty: 'Сложность в баллах',
     director: 'Директор',

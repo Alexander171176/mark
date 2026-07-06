@@ -40,6 +40,7 @@ export default {
     deselectAll: 'Deselect all',
     description: 'Description',
     details: 'Additional details/comments on the tournament or match',
+    device: 'Device',
     diagrams: 'Diagrams',
     difficulty: 'Difficulty in points',
     director: 'Director',

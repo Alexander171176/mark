@@ -9,6 +9,7 @@ export default {
     fileBackup: 'Archiving and Restoring a website',
     fileSize: 'File size',
     fillAllFields: 'All fields must be filled',
+    filter: 'Filter',
     finance: 'Finance',
     fitCrop: 'Trimming',
     fitContain: 'Enter',

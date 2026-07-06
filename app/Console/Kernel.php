@@ -12,6 +12,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        // команда импорта данных аналитики в SQLite
+        $schedule->command('analytics:import-visitor-logs')
+            ->everyFiveMinutes()
+            ->withoutOverlapping();
+
         // $schedule->command('inspire')->hourly();
     }
 

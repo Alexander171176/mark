@@ -9,6 +9,7 @@ export default {
     fileBackup: 'Архивация и Восстановление сайта',
     fileSize: 'Размер файла',
     fillAllFields: 'Необходимо заполнить все поля',
+    filter: 'Фильтр',
     finance: 'Финансы',
     fitCrop: 'Обрезка',
     fitContain: 'Вписать',

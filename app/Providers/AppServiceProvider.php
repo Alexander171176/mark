@@ -67,6 +67,10 @@ class AppServiceProvider extends ServiceProvider
                 'admin' => [
                     'welcome' => trans('admin/welcome'),
                 ],
+
+                'public' => [
+                    'privacy' => trans('public/privacy'),
+                ],
             ],
         ]);
     }

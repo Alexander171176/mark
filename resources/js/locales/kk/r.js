@@ -36,6 +36,7 @@ export default {
     resendVerification: 'Қайта растау',
     resendVerificationEmail: 'Растау электрондық хатын қайта жіберу үшін осы жерді басыңыз.',
     reset: 'қалпына келтіру',
+    resetFilter: 'Сүзгіні қалпына келтіру',
     resetPassword: 'Құпия сөзді қалпына келтіру',
     resetPasswordButton: 'Құпия сөзді қалпына келтіру',
     resetPasswordLink: 'Құпия сөзді қалпына келтіру сілтемесі',

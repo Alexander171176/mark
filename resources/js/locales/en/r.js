@@ -36,6 +36,7 @@ export default {
     resendVerification: 'Resend Verification Email',
     resendVerificationEmail: 'Click here to resend the verification email.',
     reset: 'reset',
+    resetFilter: 'Reset filter',
     resetPassword: 'Reset Password',
     resetPasswordButton: 'Reset Password',
     resetPasswordLink: 'Reset Password Link',

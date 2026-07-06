@@ -102,6 +102,7 @@ const linkInfo = {
     banners: {label: t('banners'), route: 'admin.blogBanners.index'},
     videos: {label: t('videos'), route: 'admin.blogVideos.index'},
     charts: {label: t('charts'), route: 'admin.charts.index'},
+    analyticsVisitorLogs: {label: t('analyticsLogs'), route: 'admin.analyticsVisitorLogs.index'},
     settings: {label: t('settings'), route: 'admin.settings.index'},
     parameters: {label: t('parameters'), route: 'admin.parameters.index'},
     logs: {label: t('logs'), route: 'admin.logs.index'},

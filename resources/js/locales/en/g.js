@@ -1,6 +1,8 @@
 export default {
+    gender: 'Gender',
     generate: 'Generate',
     generateMetaTags: 'Generate Meta Tags',
+    geography: 'Geography',
     gradingAuto: 'Automatic assessment',
     goToModule: 'go to the module',
     gradingManual: 'Personal assessment',

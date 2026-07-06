@@ -36,6 +36,7 @@ export default {
     resendVerification: 'Повторная верификация',
     resendVerificationEmail: 'Нажмите здесь, чтобы повторно отправить электронное письмо с подтверждением.',
     reset: 'перезагрузить',
+    resetFilter: 'Сбросить фильтр',
     resetPassword: 'Подтверждение пароля',
     resetPasswordButton: 'Сбросить пароль',
     resetPasswordLink: 'Сбросить пароль по ссылке',

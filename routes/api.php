@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\Analytics\AnalyticsVisitorLog\AnalyticsVisitorLogController;
 use App\Http\Controllers\Api\Blog\BlogArticle\ApiBlogArticleController;
 use App\Http\Controllers\Api\Blog\BlogRubric\ApiBlogRubricController;
+use App\Http\Controllers\Public\Privacy\PrivacyUserConsentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Resources\Admin\System\User\UserResource;
@@ -31,6 +33,39 @@ Route::prefix('comments')->name('api.comments.')->group(function () use ($public
     Route::put('/{comment}', [$publicCommentControllerClass, 'update'])->name('update')->middleware('auth:sanctum');
     Route::delete('/{comment}', [$publicCommentControllerClass, 'destroy'])->name('destroy')->middleware('auth:sanctum');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Privacy
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('privacy')
+    ->name('privacy.')
+    ->group(function () {
+
+        Route::get('/consent', [PrivacyUserConsentController::class, 'show'])
+            ->name('consent.show');
+
+        Route::post('/consent', [PrivacyUserConsentController::class, 'store'])
+            ->name('consent.store');
+
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Analytics
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('analytics')
+    ->name('analytics.')
+    ->group(function () {
+
+        Route::post('/visitor-logs', [AnalyticsVisitorLogController::class, 'store'])
+            ->name('visitor-logs.store');
+
+    });
 
 // --- Маршруты, Требующие Аутентификации (Sanctum) ---
 Route::middleware('auth:sanctum')->group(function () {

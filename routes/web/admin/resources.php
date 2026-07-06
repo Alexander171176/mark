@@ -2,6 +2,7 @@
 
 // --- Основные CRUD Ресурсы ---
 
+use App\Http\Controllers\Admin\Analytics\AnalyticsVisitorLog\AdminAnalyticsVisitorLogController;
 use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
@@ -66,6 +67,17 @@ Route::get('/reports/download', [ReportController::class, 'download'])
 
 // графики
 Route::resource('/charts', ChartController::class)->except(['show']);
+
+/*
+|--------------------------------------------------------------------------
+| Маршруты аналитики
+|--------------------------------------------------------------------------
+*/
+
+Route::resource('/analytics-visitor-logs', AdminAnalyticsVisitorLogController::class)
+    ->parameters(['analytics-visitor-logs' => 'analyticsVisitorLog'])
+    ->only(['index', 'show'])
+    ->names('analyticsVisitorLogs');
 
 // валюты
 Route::resource('/currencies', CurrencyController::class);

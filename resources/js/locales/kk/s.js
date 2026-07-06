@@ -57,6 +57,7 @@ export default {
     server: 'Сервер',
     services: 'Қызметтер',
     serviceCode: 'Қызмет коды',
+    session: 'Сессия',
     setCorrect: 'Жауапты дұрыс деп белгілеңіз',
     setMax: 'Максималды мәнді орнату',
     setStatusCompleted: 'Аяқталды',

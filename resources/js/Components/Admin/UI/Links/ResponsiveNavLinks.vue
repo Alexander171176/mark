@@ -204,6 +204,11 @@ const { t } = useI18n();
             :active="route().current('admin.charts.*')">
             {{ t('charts') }}
         </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.analyticsVisitorLogs.index')"
+            :active="route().current('admin.analyticsVisitorLogs.*')">
+            {{ t('analyticsLogs') }}
+        </ResponsiveNavLink>
         <!-- Админские маршруты системы -->
         <ResponsiveNavLink
             :href="route('admin.users.index')"

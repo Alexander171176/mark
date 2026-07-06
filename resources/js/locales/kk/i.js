@@ -11,6 +11,7 @@ export default {
     imageVariantSquare: 'Шаршы',
     imageVariantCircle: 'Шеңбер',
     images: 'Изображений',
+    import: 'Импорттау',
     inactive: 'Белсенді емес',
     individual: 'Individual',
     instructions: 'Нұсқаулар',

@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Admin\System\Report;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleResource;
-use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\System\Setting\Setting;

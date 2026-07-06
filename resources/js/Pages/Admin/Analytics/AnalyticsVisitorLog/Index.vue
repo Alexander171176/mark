@@ -1,7 +1,9 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { router, Link } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
+
+import { useTableExport } from '@/composables/useTableExport'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
@@ -57,6 +59,65 @@ const formatDate = (value) => {
 
     return new Date(value).toLocaleString()
 }
+
+const importAnalytics = () => {
+    router.post(route('admin.analytics.import'), {}, {
+        preserveScroll: true,
+        preserveState: false,
+    })
+}
+
+const { download } = useTableExport()
+
+const exportColumns = [
+    'id',
+    'visited_at',
+    'user_id',
+    'visitor_uuid',
+    'module',
+    'entity_type',
+    'entity_id',
+    'event_type',
+    'page_title',
+    'url',
+    'referer',
+    'time_on_page',
+    'scroll_depth',
+    'clicks_count',
+    'locale',
+]
+
+const exportItems = computed(() => props.visitorLogs.data || [])
+
+const downloadAnalytics = (format) => {
+    download(
+        format,
+        exportItems.value,
+        exportColumns,
+        'analytics_visitor_logs',
+        'Analytics Visitor Logs'
+    )
+}
+
+const cleanupAnalytics = () => {
+    if (!filters.value.date_from || !filters.value.date_to) {
+        alert('Выберите период очистки.')
+        return
+    }
+
+    if (!confirm('Удалить аналитику за выбранный период?')) {
+        return
+    }
+
+    router.delete(route('admin.analytics.cleanup.destroy'), {
+        data: {
+            date_from: filters.value.date_from,
+            date_to: filters.value.date_to,
+        },
+        preserveScroll: true,
+        preserveState: false,
+    })
+}
 </script>
 
 <template>
@@ -74,35 +135,113 @@ const formatDate = (value) => {
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
+
+                <div class="flex flex-col lg:flex-row items-center justify-between
+                            gap-3 space-x-2 pb-4">
+
+                    <div class="flex items-center justify-start gap-3">
+                        <button
+                            type="button"
+                            @click="importAnalytics"
+                            class="px-3 py-1 rounded flex items-center justify-center gap-2
+                                   bg-cyan-600 hover:bg-cyan-700
+                                   dark:bg-cyan-700 dark:hover:bg-cyan-800"
+                        >
+                            <svg class="shrink-0 h-3 w-3" viewBox="0 0 24 24">
+                                <path class="fill-current text-white"
+                                      d="M14,0H3A1,1,0,0,0,2,1V23a1,1,0,0,0,1,1H21a1,1,0,0,0,1-1V8H15a1,1,0,0,1-1-1ZM5.5,17h13a.5.5,0,0,1,.5.5v1a.5.5,0,0,1-.5.5H5.5a.5.5,0,0,1-.5-.5v-1A.5.5,0,0,1,5.5,17Zm0-5h13a.5.5,0,0,1,.5.5v1a.5.5,0,0,1-.5.5H5.5a.5.5,0,0,1-.5-.5v-1A.5.5,0,0,1,5.5,12Zm5-3h-5A.5.5,0,0,1,5,8.5v-1A.5.5,0,0,1,5.5,7h5a.5.5,0,0,1,.5.5v1A.5.5,0,0,1,10.5,9Z"></path>
+                                <polygon class="fill-current text-white"
+                                         points="21.414 6 16 6 16 0.586 21.414 6"></polygon>
+                            </svg>
+                            <span class="text-sm font-semibold text-white">
+                                {{ t('import') }}
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            @click="cleanupAnalytics"
+                            class="px-3 py-1 rounded flex items-center justify-center gap-2
+                                   bg-rose-500 hover:bg-rose-800"
+                        >
+                            <svg class="shrink-0 h-3 w-3"
+                                 viewBox="0 0 512 512">
+                                <path class="fill-current text-white"
+                                    d="M504 255.531c.253 136.64-111.18 248.372-247.82 248.468-59.015.042-113.223-20.53-155.822-54.911-11.077-8.94-11.905-25.541-1.839-35.607l11.267-11.267c8.609-8.609 22.353-9.551 31.891-1.984C173.062 425.135 212.781 440 256 440c101.705 0 184-82.311 184-184 0-101.705-82.311-184-184-184-48.814 0-93.149 18.969-126.068 49.932l50.754 50.754c10.08 10.08 2.941 27.314-11.313 27.314H24c-8.837 0-16-7.163-16-16V38.627c0-14.254 17.234-21.393 27.314-11.314l49.372 49.372C129.209 34.136 189.552 8 256 8c136.81 0 247.747 110.78 248 247.531zm-180.912 78.784l9.823-12.63c8.138-10.463 6.253-25.542-4.21-33.679L288 256.349V152c0-13.255-10.745-24-24-24h-16c-13.255 0-24 10.745-24 24v135.651l65.409 50.874c10.463 8.137 25.541 6.253 33.679-4.21z" />
+                            </svg>
+                            <span class="text-sm font-semibold text-white">
+                                Очистить период
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button
+                            type="button"
+                            @click="downloadAnalytics('csv')"
+                            class="px-3 py-1 rounded text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700"
+                        >
+                            CSV
+                        </button>
+                        <button
+                            type="button"
+                            @click="downloadAnalytics('xls')"
+                            class="px-3 py-1 rounded text-sm font-semibold text-white bg-green-600 hover:bg-green-700"
+                        >
+                            Excel
+                        </button>
+                        <button
+                            type="button"
+                            @click="downloadAnalytics('docx')"
+                            class="px-3 py-1 rounded text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700"
+                        >
+                            Word
+                        </button>
+                        <button
+                            type="button"
+                            @click="downloadAnalytics('pdf')"
+                            class="px-3 py-1 rounded text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
+                        >
+                            PDF
+                        </button>
+                        <button
+                            type="button"
+                            @click="downloadAnalytics('zip')"
+                            class="px-3 py-1 rounded text-sm font-semibold text-white bg-slate-600 hover:bg-slate-700"
+                        >
+                            ZIP
+                        </button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
 
                     <input v-model="filters.date_from" type="date"
-                           class="px-2 py-1 border border-slate-500 font-semibold text-sm
+                           class="px-3 py-1 border border-slate-500 font-semibold text-sm
                                   focus:border-indigo-500 focus:ring-indigo-300 rounded-sm
                                   shadow-sm dark:bg-cyan-800 dark:text-slate-100" />
 
                     <input v-model="filters.date_to" type="date"
-                           class="px-2 py-1 border border-slate-500 font-semibold text-sm
+                           class="px-3 py-1 border border-slate-500 font-semibold text-sm
                                   focus:border-indigo-500 focus:ring-indigo-300 rounded-sm
                                   shadow-sm dark:bg-cyan-800 dark:text-slate-100" />
 
                     <input v-model="filters.module" type="text" placeholder="module"
-                           class="px-2 py-1 border border-slate-500 font-semibold text-sm
+                           class="px-3 py-1 border border-slate-500 font-semibold text-sm
                                   focus:border-indigo-500 focus:ring-indigo-300 rounded-sm
                                   shadow-sm dark:bg-cyan-800 dark:text-slate-100" />
 
                     <input v-model="filters.event_type" type="text" placeholder="event_type"
-                           class="px-2 py-1 border border-slate-500 font-semibold text-sm
+                           class="px-3 py-1 border border-slate-500 font-semibold text-sm
                                   focus:border-indigo-500 focus:ring-indigo-300 rounded-sm
                                   shadow-sm dark:bg-cyan-800 dark:text-slate-100" />
 
                     <input v-model="filters.user_id" type="text" placeholder="user_id"
-                           class="px-2 py-1 border border-slate-500 font-semibold text-sm
+                           class="px-3 py-1 border border-slate-500 font-semibold text-sm
                                   focus:border-indigo-500 focus:ring-indigo-300 rounded-sm
                                   shadow-sm dark:bg-cyan-800 dark:text-slate-100" />
 
                     <input v-model="filters.url" type="text" placeholder="url"
-                           class="px-2 py-1 border border-slate-500 font-semibold text-sm
+                           class="px-3 py-1 border border-slate-500 font-semibold text-sm
                                   focus:border-indigo-500 focus:ring-indigo-300 rounded-sm
                                   shadow-sm dark:bg-cyan-800 dark:text-slate-100" />
                 </div>
@@ -112,7 +251,7 @@ const formatDate = (value) => {
                     <select
                         v-model="filters.per_page"
                         @change="applyFilters"
-                        class="px-7 py-0.5 border border-slate-500 font-semibold text-sm
+                        class="px-7 py-1 border border-slate-500 font-semibold text-sm
                                focus:border-indigo-500 focus:ring-indigo-300 rounded-sm
                                shadow-sm dark:bg-cyan-800 dark:text-slate-100"
                     >
@@ -127,7 +266,7 @@ const formatDate = (value) => {
                         <button
                             type="button"
                             @click="applyFilters"
-                            class="px-2 py-0.5 rounded flex items-center justify-center gap-2
+                            class="px-3 py-1 rounded flex items-center justify-center gap-2
                                bg-blue-600 hover:bg-blue-700"
                         >
                             <svg class="shrink-0 h-3 w-3"
@@ -139,11 +278,10 @@ const formatDate = (value) => {
                             {{ t('filter') }}
                         </span>
                         </button>
-
                         <button
                             type="button"
                             @click="resetFilters"
-                            class="px-2 py-0.5 rounded flex items-center justify-center gap-2
+                            class="px-3 py-1 rounded flex items-center justify-center gap-2
                                border border-gray-400 dark:border-gray-500
                                bg-slate-200 hover:bg-slate-300
                                dark:bg-slate-800 dark:hover:bg-slate-900"
@@ -162,7 +300,7 @@ const formatDate = (value) => {
                     <select
                         v-model="filters.sort_direction"
                         @change="applyFilters"
-                        class="px-7 py-0.5 border border-slate-500 font-semibold text-sm
+                        class="px-7 py-1 border border-slate-500 font-semibold text-sm
                                focus:border-indigo-500 focus:ring-indigo-300 rounded-sm
                                shadow-sm dark:bg-cyan-800 dark:text-slate-100"
                     >
@@ -229,7 +367,7 @@ const formatDate = (value) => {
                             <td class="px-2 py-2">
                                 <Link
                                     :href="route('admin.analyticsVisitorLogs.show', log.id)"
-                                    :title="t('open')"
+                                    :title="t('openLink')"
                                     class="flex items-center justify-center"
                                 >
                                     <svg class="shrink-0 h-4 w-4"
@@ -242,7 +380,9 @@ const formatDate = (value) => {
                         </tr>
 
                         <tr v-if="!props.visitorLogs.data || !props.visitorLogs.data.length">
-                            <td colspan="11" class="px-2 py-6 text-center text-gray-500">
+                            <td colspan="11"
+                                class="px-2 py-6 text-center text-sm
+                                       text-gray-600 dark:text-gray-400">
                                 {{ t('noData') }}
                             </td>
                         </tr>
@@ -253,10 +393,10 @@ const formatDate = (value) => {
                 <div class="flex items-center justify-center flex-wrap gap-2 mt-4">
                     <Link
                         :href="props.visitorLogs.links?.prev || '#'"
-                        class="px-3 py-1 text-xs border rounded"
+                        class="px-3 py-1 text-sm border rounded"
                         :class="{
         'text-slate-700 dark:text-slate-100 pointer-events-none': !props.visitorLogs.links?.prev,
-        'bg-sky-200 dark:bg-cyan-800': props.visitorLogs.links?.prev,
+        'bg-cyan-600 dark:bg-cyan-800 text-white': props.visitorLogs.links?.prev,
                         }"
                     >
                         ← {{ t('previous') }}
@@ -264,10 +404,10 @@ const formatDate = (value) => {
 
                     <Link
                         :href="props.visitorLogs.links?.next || '#'"
-                        class="px-3 py-1 text-xs border rounded"
+                        class="px-3 py-1 text-sm border rounded"
                         :class="{
         'text-slate-700 dark:text-slate-100 pointer-events-none': !props.visitorLogs.links?.next,
-        'bg-sky-200 dark:bg-cyan-800': props.visitorLogs.links?.next,
+        'bg-cyan-600 dark:bg-cyan-800 text-white': props.visitorLogs.links?.next,
                         }"
                     >
                         {{ t('next') }} →

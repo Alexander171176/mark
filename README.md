@@ -842,9 +842,9 @@
 `docker exec mark-php-app php artisan make:request Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogController` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsVisitorLog/AdminAnalyticsVisitorLogController` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsDashboard/AnalyticsDashboardController` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupController` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsImport/AnalyticsImportController` <br>
 `docker exec mark-php-app php artisan make:request Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupController` <br>
 
 3) Services (создать вручную)
 Privacy

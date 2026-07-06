@@ -11,6 +11,7 @@ export default {
     imageVariantSquare: 'Квадрат',
     imageVariantCircle: 'Круг',
     images: 'Изображений',
+    import: 'Импортировать',
     inactive: 'Неактивные',
     individual: 'Физ. лицо',
     instructions: 'Инструкции',

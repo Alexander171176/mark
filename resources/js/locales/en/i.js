@@ -11,6 +11,7 @@ export default {
     imageVariantSquare: 'Square',
     imageVariantCircle: 'Circle',
     images: 'Images',
+    import: 'Import',
     inactive: 'Inactive',
     individual: 'Жеке',
     instructions: 'Instructions',

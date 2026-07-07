@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
+use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
@@ -146,6 +147,12 @@ Route::put('/school-subscription-plans/{schoolSubscriptionPlan}/sort',
     [SchoolSubscriptionPlanController::class, 'updateSort'])
     ->whereNumber('schoolSubscriptionPlan')
     ->name('schoolSubscriptionPlans.updateSort');
+
+// конструктор страниц
+Route::put('/cms-pages/{cmsPage}/sort',
+    [CmsPageController::class, 'updateSort'])
+    ->whereNumber('cmsPage')
+    ->name('cmsPages.updateSort');
 
 // маркет
 Route::put('/market-companies/{marketCompany}/sort',

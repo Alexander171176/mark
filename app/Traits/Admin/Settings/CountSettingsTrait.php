@@ -275,6 +275,13 @@ trait CountSettingsTrait
             'adminSchoolSubscriptionPlansPerPage', 'site_settings.adminSchoolSubscriptionPlansPerPage');
     }
 
+    /** Обновление количества элементов в CMS страниц */
+    public function updateAdminCountCmsPages(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminCmsPagesPerPage', 'site_settings.adminCmsPagesPerPage');
+    }
+
     /** Обновление количества элементов в компаниях */
     public function updateAdminCountMarketCompanies(UpdateCountSettingRequest $request): RedirectResponse
     {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
+use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
@@ -128,6 +129,11 @@ Route::put('/school-bundle-prices/update-sort-bulk',
 Route::put('/school-subscription-plans/update-sort-bulk',
     [SchoolSubscriptionPlanController::class, 'updateSortBulk'])
     ->name('schoolSubscriptionPlans.updateSortBulk');
+
+// конструктор страниц
+Route::put('/cms-pages/update-sort-bulk',
+    [CmsPageController::class, 'updateSortBulk'])
+    ->name('cmsPages.updateSortBulk');
 
 // маркет
 Route::put('/market-companies/update-sort-bulk',

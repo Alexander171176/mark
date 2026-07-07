@@ -217,6 +217,59 @@
 `docker exec mark-php-app php artisan make:controller Admin/System/ImagePreset/ImagePresetController` <br>
 -------------------------------------------------------------------------------------
 
+1) Privacy — согласия, cookies, политика конфиденциальности
+`docker exec mark-php-app php artisan make:model Admin/Privacy/PrivacyUserConsent/PrivacyUserConsent -m` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentRequest` <br>
+`docker exec mark-php-app php artisan make:request Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentStatusRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentController` <br>
+`docker exec mark-php-app php artisan make:controller Public/Privacy/PrivacyController` <br>
+`docker exec mark-php-app php artisan make:controller Public/Privacy/PrivacyUserConsentController` <br>
+
+2) Analytics — журнал посещений, отчёты, графики, очистка
+`docker exec mark-php-app php artisan make:model Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLog -mf` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogController` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsVisitorLog/AdminAnalyticsVisitorLogController` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsImport/AnalyticsImportController` <br>
+`docker exec mark-php-app php artisan make:request Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupController` <br>
+
+3) Services (создать вручную)
+Privacy
+`app/Services/Admin/Privacy/PrivacyPolicyService.php` <br>
+Base
+`app/Services/Admin/Base/File/JsonlFileWriterService.php` <br>
+Analytics
+`app/Services/Admin/Analytics/AnalyticsFileWriterService.php` <br>
+
+4) SQLite Analytics
+`docker exec mark-php-app rm database/analytics.sqlite` <br>
+`docker exec mark-php-app touch database/analytics.sqlite` <br>
+`docker exec mark-php-app chmod 664 database/analytics.sqlite` <br>
+`docker exec mark-php-app mkdir -p database/migrations_analytics` <br>
+`docker exec mark-php-app php artisan migrate --database=analytics --path=database/migrations_analytics` <br>
+`docker exec mark-php-app php artisan schedule:work` <br>
+
+5) Импорт JSONL в SQLite Analytics
+`docker exec mark-php-app php artisan make:command ImportAnalyticsVisitorLogsCommand` <br>
+`docker exec mark-php-app php artisan analytics:import-visitor-logs` <br>
+-------------------------------------------------------------------------------------
+
+1) CMS страницы <br>
+`docker exec mark-php-app php artisan make:model Admin/Cms/CmsPage/CmsPage -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Cms/CmsPage/CmsPageTranslation -m` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Cms/CmsPage/CmsPageResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Cms/CmsPage/CmsPageSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Cms/CmsPage/CmsPageTranslationResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Cms/CmsPage/CmsPageRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Cms/CmsPage/CmsPageController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=CmsPageSeeder` <br>
+-------------------------------------------------------------------------------------
+
 1) creating business logic app BlogRubric <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogRubric/BlogRubric -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogRubric/BlogRubricTranslation -mfs` <br>
@@ -825,46 +878,6 @@
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolFaq/SchoolFaqResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolFaq/SchoolFaqTranslationResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolFaq/SchoolFaqController --resource` <br>
--------------------------------------------------------------------------------------
-
-1) Privacy — согласия, cookies, политика конфиденциальности
-`docker exec mark-php-app php artisan make:model Admin/Privacy/PrivacyUserConsent/PrivacyUserConsent -m` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentResource` <br>
-`docker exec mark-php-app php artisan make:request Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentRequest` <br>
-`docker exec mark-php-app php artisan make:request Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentStatusRequest` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentController` <br>
-`docker exec mark-php-app php artisan make:controller Public/Privacy/PrivacyController` <br>
-`docker exec mark-php-app php artisan make:controller Public/Privacy/PrivacyUserConsentController` <br>
-
-2) Analytics — журнал посещений, отчёты, графики, очистка
-`docker exec mark-php-app php artisan make:model Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLog -mf` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogResource` <br>
-`docker exec mark-php-app php artisan make:request Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogRequest` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogController` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsVisitorLog/AdminAnalyticsVisitorLogController` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsImport/AnalyticsImportController` <br>
-`docker exec mark-php-app php artisan make:request Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupRequest` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupController` <br>
-
-3) Services (создать вручную)
-Privacy
-`app/Services/Admin/Privacy/PrivacyPolicyService.php` <br>
-Base
-`app/Services/Admin/Base/File/JsonlFileWriterService.php` <br>
-Analytics
-`app/Services/Admin/Analytics/AnalyticsFileWriterService.php` <br>
-
-4) SQLite Analytics
-`docker exec mark-php-app rm database/analytics.sqlite` <br>
-`docker exec mark-php-app touch database/analytics.sqlite` <br>
-`docker exec mark-php-app chmod 664 database/analytics.sqlite` <br>
-`docker exec mark-php-app mkdir -p database/migrations_analytics` <br>
-`docker exec mark-php-app php artisan migrate --database=analytics --path=database/migrations_analytics` <br>
-`docker exec mark-php-app php artisan schedule:work` <br>
-
-5) Импорт JSONL в SQLite Analytics
-`docker exec mark-php-app php artisan make:command ImportAnalyticsVisitorLogsCommand` <br>
-`docker exec mark-php-app php artisan analytics:import-visitor-logs` <br>
 -------------------------------------------------------------------------------------
 
 1) Группы характеристик

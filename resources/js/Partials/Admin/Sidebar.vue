@@ -16,6 +16,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { fas } from '@fortawesome/free-solid-svg-icons'
 import { useI18n } from 'vue-i18n'
+import DraggableSidebarPageCmsLink from '@/Components/Admin/UI/Links/DraggableSidebarPageCmsLink.vue'
 
 library.add(fas);
 
@@ -175,7 +176,29 @@ const toggleSidebarGroup = (key) => {
                     :expanded="sidebarExpanded"
                 />
 
-                <!-- Ссылки страниц онлайн школы -->
+                <!-- Ссылки страниц CMS -->
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('market')"
+                >
+                    CMS
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.market }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
+                </span>
+                <DraggableSidebarPageCmsLink
+                    v-show="!sidebarExpanded || sidebarGroups.market"
+                    :expanded="sidebarExpanded"
+                />
+
+                <!-- Ссылки страниц магазина -->
                 <span
                     class="flex justify-between items-center cursor-pointer select-none
                            text-xs uppercase font-semibold pl-1 pr-1 opacity-95

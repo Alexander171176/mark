@@ -29,7 +29,10 @@ export default {
     notRequired: 'Қосымша өріс',
     notRight: 'оң жақ бағанда жоқ',
     notSelected: 'таңдалмаған',
+    notShowHtml: 'HTML мазмұнын көрсетпеу',
+    notShowInFooter: 'Төменгі мәзірде көрсетпеу',
     notShowInMenu: 'Мәзірде көрсетілмесін',
+    notShowSeo: 'SEO өрістеріңізді көрсетпеңіз',
     number: 'Саны',
     numberOrder: 'Тапсырыс нөмірі',
 }

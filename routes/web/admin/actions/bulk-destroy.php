@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
+use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
@@ -93,6 +94,11 @@ Route::delete('/school-course-prices/bulk-delete',
 Route::delete('/school-bundle-prices/bulk-delete',
     [SchoolBundlePriceController::class, 'bulkDestroy'])
     ->name('schoolBundlePrices.bulkDestroy');
+
+// конструктор страниц
+Route::delete('/cms-pages/bulk-delete',
+    [CmsPageController::class, 'bulkDestroy'])
+    ->name('cmsPages.bulkDestroy');
 
 // маркет
 Route::delete('/market-companies/bulk-delete',

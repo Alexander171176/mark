@@ -2026,6 +2026,46 @@ class SettingSeeder extends Seeder
             ], // ADMIN SYSTEM PERMISSIONS DEFAULT SORT
             [
                 'type' => 'string',
+                'option' => 'adminCmsPagesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_CMS_PAGES_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных страниц CMS в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN CMS PAGES PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminCmsPagesPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_CMS_PAGES_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество страниц CMS в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN CMS PAGES PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminCmsPagesDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_CMS_PAGES_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка страниц CMS по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN CMS PAGES DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminCmsPagesDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_CMS_PAGES_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка страниц CMS в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN CMS PAGES DEFAULT VIEW
+            [
+                'type' => 'string',
                 'option' => 'adminMarketCompaniesProcessingMode',
                 'value' => 'auto',
                 'constant' => 'ADMIN_MARKET_COMPANIES_PROCESSING_MODE',

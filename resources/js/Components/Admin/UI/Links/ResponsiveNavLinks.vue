@@ -18,6 +18,12 @@ const { t } = useI18n();
             :active="route().current('admin.index')">
             {{ t('adminPanel') }}
         </ResponsiveNavLink>
+        <!-- Админские маршруты CMS -->
+        <ResponsiveNavLink
+            :href="route('admin.cmsPages.index')"
+            :active="route().current('admin.cmsPages.*')">
+            {{ t('pages') }}
+        </ResponsiveNavLink>
         <!-- Админские маршруты магазина -->
         <ResponsiveNavLink
             :href="route('admin.marketCompanies.index')"

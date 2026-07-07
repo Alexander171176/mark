@@ -138,6 +138,11 @@ Route::put('/update-count/school-subscription-plans',
     [SettingController::class, 'updateAdminCountSchoolSubscriptionPlans'])
     ->name('updateAdminCountSchoolSubscriptionPlans');
 
+// конструктор страниц
+Route::put('/update-count/cms-pages',
+    [SettingController::class, 'updateAdminCountCmsPages'])
+    ->name('updateAdminCountCmsPages');
+
 // маркет
 Route::put('/update-count/market-companies',
     [SettingController::class, 'updateAdminCountMarketCompanies'])

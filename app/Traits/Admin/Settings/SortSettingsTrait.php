@@ -277,6 +277,13 @@ trait SortSettingsTrait
             'adminSchoolSubscriptionPlansDefaultSort', 'site_settings.adminSchoolSubscriptionPlansDefaultSort');
     }
 
+    /** Обновляет сортировку элементов в CMS страниц */
+    public function updateAdminSortCmsPages(UpdateSortRequest $request): RedirectResponse
+    {
+        return $this->sortSetting($request,
+            'adminCmsPagesDefaultSort', 'site_settings.adminCmsPagesDefaultSort');
+    }
+
     /** Обновляет сортировку элементов в компаниях */
     public function updateAdminSortMarketCompanies(UpdateSortRequest $request): RedirectResponse
     {

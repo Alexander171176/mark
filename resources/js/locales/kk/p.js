@@ -1,6 +1,7 @@
 export default {
     page: 'бет',
     pageBuilder: 'Конструктор',
+    pageContents: 'Бет мазмұны',
     pageNotFound: 'Бет табылмады',
     pageNotFoundText: 'Кешіріңіз, сіз сұраған бет жоқ.',
     pages: 'Беттер',

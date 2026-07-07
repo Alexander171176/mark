@@ -55,6 +55,7 @@ export default {
     roles: 'Роли',
     rolesForUser: 'Роли для этого Пользователя',
     rootCategory: 'Корневая категория',
+    rootPage: 'Корневая страница',
     rotateCropFrame: 'Вращение фоторамки',
     rotateImageLeft: 'Повернуть налево',
     rotateImageRight: 'Повернуть направо',

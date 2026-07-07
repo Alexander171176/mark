@@ -108,6 +108,9 @@ class DatabaseSeeder extends Seeder
             // Комментарии
             CommentsSeeder::class,
 
+            // Конструктор страниц
+            CmsPageSeeder::class,
+
             // Характеристики
             MarketAttributeGroupSeeder::class,
             MarketAttributeSeeder::class,

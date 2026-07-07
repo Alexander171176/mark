@@ -137,6 +137,11 @@ Route::put('/update-sort/school-subscription-plans',
     [SettingController::class, 'updateAdminSortSchoolSubscriptionPlans'])
     ->name('updateAdminSortSchoolSubscriptionPlans');
 
+// конструктор страниц
+Route::put('/update-sort/cms-pages',
+    [SettingController::class, 'updateAdminSortCmsPages'])
+    ->name('updateAdminSortCmsPages');
+
 // маркет
 Route::put('/update-sort/market-companies',
     [SettingController::class, 'updateAdminSortMarketCompanies'])

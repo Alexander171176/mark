@@ -1,6 +1,7 @@
 export default {
     page: 'страница',
     pageBuilder: 'Конструктор',
+    pageContents: 'Содержание страницы',
     pageNotFound: 'Страница не найдена',
     pageNotFoundText: 'Извините, запрошенная вами страница отсутствует.',
     pages: 'Страницы',

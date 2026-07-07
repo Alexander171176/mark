@@ -29,7 +29,10 @@ export default {
     notRight: 'нет в правой колонки',
     notRequired: 'Не обязательное поле',
     notSelected: 'не выбрано',
+    notShowHtml: 'Не показывать HTML контент',
+    notShowInFooter: 'Не показывать в меню Footer',
     notShowInMenu: 'Не показывать в меню',
+    notShowSeo: 'Не показывать свои поля SEO',
     number: 'Число',
     numberOrder: 'Номер заказа',
 }

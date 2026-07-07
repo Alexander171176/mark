@@ -29,7 +29,10 @@ export default {
     notRequired: 'Optional field',
     notRight: 'not in the right column',
     notSelected: 'not selected',
+    notShowHtml: 'Do not show HTML content',
+    notShowInFooter: 'Don\'t show in footer menu',
     notShowInMenu: 'Do not show in menu',
+    notShowSeo: 'Don\'t show your SEO fields',
     number: 'Number',
     numberOrder: 'Order number',
 }

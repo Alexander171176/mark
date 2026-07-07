@@ -21,6 +21,9 @@ Route::prefix('actions')->name('actions.')->group(function () { // Группи�
     // Переключение показывать в главном меню
     require __DIR__ . '/menu.php';
 
+    // Переключение страниц
+    require __DIR__ . '/page.php';
+
     // Переключение Left/Main/Right
     require __DIR__ . '/left.php';
     require __DIR__ . '/main.php';

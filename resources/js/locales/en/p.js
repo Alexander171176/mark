@@ -1,6 +1,7 @@
 export default {
     page: 'page',
     pageBuilder: 'Page builder',
+    pageContents: 'Page Contents',
     pageNotFound: 'Page not found',
     pageNotFoundText: 'Sorry, the page you requested is missing.',
     pages: 'Pages',

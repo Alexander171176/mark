@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
+use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
@@ -206,6 +207,11 @@ Route::resource('/school-orders',
     SchoolOrderController::class)
     ->parameters(['school-orders' => 'schoolOrder'])
     ->names('schoolOrders');
+
+// маршруты конструктора страниц
+Route::resource('/cms-pages', CmsPageController::class)
+    ->parameters(['cms-pages' => 'cmsPage'])
+    ->names('cmsPages');
 
 // маршруты маркетплейса
 Route::resource('/market-companies', MarketCompanyController::class)

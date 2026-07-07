@@ -55,6 +55,7 @@ export default {
     roles: 'Roles',
     rolesForUser: 'Roles for this User',
     rootCategory: 'Root category',
+    rootPage: 'Root page',
     rotateCropFrame: 'Rotate the photo frame',
     rotateImageLeft: 'Turn left',
     rotateImageRight: 'Turn right',

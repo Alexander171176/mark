@@ -170,8 +170,8 @@ const moderationBadge = (status) => {
             <div
                 class="flex items-center justify-between py-1 px-2
                        border border-gray-400 rounded-sm
-                       bg-white dark:bg-slate-600
-                       hover:bg-slate-50 dark:hover:bg-slate-700
+                       bg-white dark:bg-slate-800
+                       hover:bg-slate-100 dark:hover:bg-slate-700
                        transition duration-150 ease-in-out"
             >
                 <div class="flex items-center space-x-2 flex-grow min-w-0">

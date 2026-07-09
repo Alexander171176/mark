@@ -309,6 +309,14 @@ const badgeClass = (enabled) => {
                         </div>
 
                         <div
+                            class="flex justify-center font-semibold text-[10px]
+                                   text-slate-600 dark:text-slate-200"
+                            :title="t('url')"
+                        >
+                            {{ page.url || '#' }}
+                        </div>
+
+                        <div
                             class="font-semibold text-[12px] text-center
                                    text-cyan-700 dark:text-cyan-300"
                             :title="getShort(page)"

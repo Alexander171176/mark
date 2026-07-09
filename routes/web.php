@@ -37,4 +37,6 @@ Route::group([
         Lfm::routes();
     });
 
+    // cms
+    require __DIR__ . '/web/cms/pages.php'; // Страницы
 });

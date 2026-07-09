@@ -15,7 +15,7 @@ const props = defineProps({
     page: { type: Object, required: true },
     level: { type: Number, default: 0 },
     selectedPages: { type: Array, default: () => [] },
-    isAdmin: { type: Boolean, default: false },
+    isAdmin: { type: Boolean, default: false }
 })
 
 const emit = defineEmits([
@@ -26,7 +26,7 @@ const emit = defineEmits([
     'toggle-menu',
     'toggle-footer',
     'toggle-content',
-    'toggle-seo',
+    'toggle-seo'
 ])
 
 const storageKey = computed(() => {
@@ -107,7 +107,7 @@ const getSafeIcon = (icon) => {
 const statusLabelKeyMap = {
     draft: 'statusDraft',
     published: 'statusPublished',
-    archived: 'statusArchived',
+    archived: 'statusArchived'
 }
 
 const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
@@ -136,8 +136,8 @@ const badgeClass = (enabled) => {
             <div
                 class="flex items-center justify-between py-1 px-2
                        border border-gray-400 rounded-sm
-                       bg-white dark:bg-slate-600
-                       hover:bg-slate-50 dark:hover:bg-slate-700
+                       bg-white dark:bg-slate-800
+                       hover:bg-slate-100 dark:hover:bg-slate-700
                        transition duration-150 ease-in-out"
             >
                 <div class="flex items-center space-x-2 flex-grow min-w-0">
@@ -182,7 +182,7 @@ const badgeClass = (enabled) => {
                     <div
                         class="w-8 font-semibold text-sm
                                text-amber-600 dark:text-amber-200 mr-1 flex-shrink-0"
-:title="`[${t('sort')}: ${page.sort}] ${t('level')}: ${page.level} / ${getStatusLabel(page.status)}`"
+                        :title="`[${t('sort')}: ${page.sort}] ${t('level')}: ${page.level} / ${getStatusLabel(page.status)}`"
                     >
                         {{ page.id }}
                     </div>
@@ -278,9 +278,20 @@ const badgeClass = (enabled) => {
                     >
                         SEO
                     </span>
+
+                    <div class="flex items-center space-x-1 flex-shrink-0 ml-4">
+                        <div
+                            class="w-7 font-semibold text-[8px]
+                                   text-slate-700 dark:text-slate-300"
+                            :title="t('url')"
+                        >
+                            {{ page.url || '#' }}
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex items-center space-x-1 flex-shrink-0 ml-4">
+
                     <div class="flex items-center gap-1">
                         <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 16 16">
                             <path

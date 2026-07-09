@@ -32,6 +32,13 @@ const { t } = useI18n()
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
+    seo: { type: Object, default: () => ({
+            title: '',
+            keywords: '',
+            description: '',
+        }),
+    },
+
     useServerProcessing: { type: Boolean, default: false },
     publicBlogRubricsProcessingMode: { type: String, default: 'server' },
 
@@ -416,26 +423,27 @@ const rubricGridCols = computed(() => {
 
 <template>
     <Head>
-        <title>{{ t('rubrics') }}</title>
-        <meta name="title" :content="t('rubrics')" />
-        <meta name="keywords" content="" />
-        <meta name="description" content="" />
+        <title>{{ seo?.title || t('rubrics') }}</title>
 
-        <meta property="og:title" :content="t('rubrics')" />
-        <meta property="og:description" content="" />
+        <meta name="title" :content="seo?.title || t('rubrics')" />
+        <meta name="keywords" :content="seo?.keywords || ''" />
+        <meta name="description" :content="seo?.description || ''" />
+
+        <meta property="og:title" :content="seo?.title || t('rubrics')" />
+        <meta property="og:description" :content="seo?.description || ''" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="/" />
+        <meta property="og:url" :content="`/${locale}/blog/rubrics`" />
         <meta property="og:image" content="" />
-        <meta property="og:locale" :content="locale" />
+        <meta property="og:locale" :content="locale === 'ru' ? 'ru_RU' : locale" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="t('rubrics')" />
-        <meta name="twitter:description" content="" />
+        <meta name="twitter:title" :content="seo?.title || t('rubrics')" />
+        <meta name="twitter:description" :content="seo?.description || ''" />
         <meta name="twitter:image" content="" />
 
-        <meta name="DC.title" :content="t('rubrics')" />
-        <meta name="DC.description" content="" />
-        <meta name="DC.identifier" content="/" />
+        <meta name="DC.title" :content="seo?.title || t('rubrics')" />
+        <meta name="DC.description" :content="seo?.description || ''" />
+        <meta name="DC.identifier" :content="`/${locale}/blog/rubrics`" />
         <meta name="DC.language" :content="locale" />
     </Head>
 

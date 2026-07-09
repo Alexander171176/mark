@@ -8,6 +8,7 @@ use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Services\Admin\ProcessingModeService;
+use App\Services\Public\Cms\CmsPageResolverService;
 use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\Blog\BuildsRubricTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
@@ -30,6 +31,23 @@ class BlogArticleController extends Controller
     public function index(Request $request): Response
     {
         $locale = app()->getLocale();
+
+        $cmsSeoPage = app(CmsPageResolverService::class)
+            ->resolveSeo($request->path());
+
+        $cmsSeoTranslation = $cmsSeoPage?->translationOrFallback();
+
+        $seo = $cmsSeoTranslation
+            ? [
+                'title' => $cmsSeoTranslation->meta_title ?: $cmsSeoTranslation->title,
+                'keywords' => $cmsSeoTranslation->meta_keywords,
+                'description' => $cmsSeoTranslation->meta_desc ?: $cmsSeoTranslation->short,
+            ]
+            : [
+                'title' => __('Статьи'),
+                'keywords' => '',
+                'description' => '',
+            ];
 
         $settings = app(PublicSettingsService::class);
 
@@ -80,6 +98,8 @@ class BlogArticleController extends Controller
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/Blog/BlogArticles/Index', [
+
+            'seo' => $seo,
 
             'publicBlogArticlesProcessingMode' => $processingMode,
             'useServerProcessing' => $useServerProcessing,

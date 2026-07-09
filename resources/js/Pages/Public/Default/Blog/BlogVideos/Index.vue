@@ -32,6 +32,13 @@ const { t } = useI18n()
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
+    seo: { type: Object, default: () => ({
+            title: '',
+            keywords: '',
+            description: '',
+        }),
+    },
+
     useServerProcessing: { type: Boolean, default: false },
     publicBlogVideosProcessingMode: { type: String, default: 'server' },
 
@@ -442,27 +449,28 @@ const videoGridCols = computed(() => {
 
 <template>
     <Head>
-        <title>{{ t('videos') }}</title>
-        <meta name="title" :content="''" />
-        <meta name="keywords" :content="''" />
-        <meta name="description" :content="''" />
+        <title>{{ seo?.title || t('videos') }}</title>
 
-        <meta property="og:title" :content="''" />
-        <meta property="og:description" :content="''" />
+        <meta name="title" :content="seo?.title || t('videos')" />
+        <meta name="keywords" :content="seo?.keywords || ''" />
+        <meta name="description" :content="seo?.description || ''" />
+
+        <meta property="og:title" :content="seo?.title || t('videos')" />
+        <meta property="og:description" :content="seo?.description || ''" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" :content="`/`" />
-        <meta property="og:image" :content="''" />
-        <meta property="og:locale" :content="'ru_RU'" />
+        <meta property="og:url" :content="`/${locale}/blog/videos`" />
+        <meta property="og:image" content="" />
+        <meta property="og:locale" :content="locale === 'ru' ? 'ru_RU' : locale" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="''" />
-        <meta name="twitter:description" :content="''" />
-        <meta name="twitter:image" :content="''" />
+        <meta name="twitter:title" :content="seo?.title || t('videos')" />
+        <meta name="twitter:description" :content="seo?.description || ''" />
+        <meta name="twitter:image" content="" />
 
-        <meta name="DC.title" :content="''" />
-        <meta name="DC.description" :content="''" />
-        <meta name="DC.identifier" :content="`/`" />
-        <meta name="DC.language" :content="'ru'" />
+        <meta name="DC.title" :content="seo?.title || t('videos')" />
+        <meta name="DC.description" :content="seo?.description || ''" />
+        <meta name="DC.identifier" :content="`/${locale}/blog/videos`" />
+        <meta name="DC.language" :content="locale" />
     </Head>
 
     <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">

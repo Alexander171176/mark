@@ -30,6 +30,23 @@ class SchoolTrackController extends Controller
     {
         $locale = app()->getLocale();
 
+        $cmsSeoPage = app(CmsPageResolverService::class)
+            ->resolveSeo($request->path());
+
+        $cmsSeoTranslation = $cmsSeoPage?->translationOrFallback();
+
+        $seo = $cmsSeoTranslation
+            ? [
+                'title' => $cmsSeoTranslation->meta_title ?: $cmsSeoTranslation->title,
+                'keywords' => $cmsSeoTranslation->meta_keywords,
+                'description' => $cmsSeoTranslation->meta_desc ?: $cmsSeoTranslation->short,
+            ]
+            : [
+                'title' => __('Направления обучения'),
+                'keywords' => '',
+                'description' => '',
+            ];
+
         $settings = app(PublicSettingsService::class);
 
         $perPage = $this->resolvePerPage(
@@ -84,6 +101,9 @@ class SchoolTrackController extends Controller
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/School/SchoolTracks/Index', [
+
+            'seo' => $seo,
+
             'publicSchoolTracksProcessingMode' => $processingMode,
             'useServerProcessing' => $useServerProcessing,
 

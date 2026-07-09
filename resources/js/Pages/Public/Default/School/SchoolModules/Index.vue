@@ -43,6 +43,13 @@ const { t } = useI18n()
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
+    seo: { type: Object, default: () => ({
+            title: '',
+            keywords: '',
+            description: '',
+        }),
+    },
+
     useServerProcessing: { type: Boolean, default: false },
     publicSchoolModulesProcessingMode: { type: String, default: 'server' },
 
@@ -591,27 +598,28 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
 
 <template>
     <Head>
-        <title>{{ t('modules') }}</title>
-        <meta name="title" :content="t('modules')" />
-        <meta name="keywords" content="" />
-        <meta name="description" :content="t('modules')" />
+        <title>{{ seo?.title || t('modules') }}</title>
 
-        <meta property="og:title" :content="t('modules')" />
-        <meta property="og:description" :content="t('modules')" />
+        <meta name="title" :content="seo?.title || t('modules')" />
+        <meta name="keywords" :content="seo?.keywords || ''" />
+        <meta name="description" :content="seo?.description || t('modules')" />
+
+        <meta property="og:title" :content="seo?.title || t('modules')" />
+        <meta property="og:description" :content="seo?.description || t('modules')" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" :content="`/school/modules`" />
+        <meta property="og:url" :content="`/${locale}/school/modules`" />
         <meta property="og:image" content="" />
-        <meta property="og:locale" :content="'ru_RU'" />
+        <meta property="og:locale" :content="locale === 'ru' ? 'ru_RU' : locale" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="t('modules')" />
-        <meta name="twitter:description" :content="t('modules')" />
+        <meta name="twitter:title" :content="seo?.title || t('modules')" />
+        <meta name="twitter:description" :content="seo?.description || t('modules')" />
         <meta name="twitter:image" content="" />
 
-        <meta name="DC.title" :content="t('modules')" />
-        <meta name="DC.description" :content="t('modules')" />
-        <meta name="DC.identifier" :content="`/school/modules`" />
-        <meta name="DC.language" :content="'ru'" />
+        <meta name="DC.title" :content="seo?.title || t('modules')" />
+        <meta name="DC.description" :content="seo?.description || t('modules')" />
+        <meta name="DC.identifier" :content="`/${locale}/school/modules`" />
+        <meta name="DC.language" :content="locale" />
     </Head>
 
     <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">

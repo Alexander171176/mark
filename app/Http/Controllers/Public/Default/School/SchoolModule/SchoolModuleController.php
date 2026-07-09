@@ -7,6 +7,7 @@ use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
 use App\Services\Admin\ProcessingModeService;
+use App\Services\Public\Cms\CmsPageResolverService;
 use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
@@ -29,6 +30,23 @@ class SchoolModuleController extends Controller
     public function index(Request $request): Response
     {
         $locale = app()->getLocale();
+
+        $cmsSeoPage = app(CmsPageResolverService::class)
+            ->resolveSeo($request->path());
+
+        $cmsSeoTranslation = $cmsSeoPage?->translationOrFallback();
+
+        $seo = $cmsSeoTranslation
+            ? [
+                'title' => $cmsSeoTranslation->meta_title ?: $cmsSeoTranslation->title,
+                'keywords' => $cmsSeoTranslation->meta_keywords,
+                'description' => $cmsSeoTranslation->meta_desc ?: $cmsSeoTranslation->short,
+            ]
+            : [
+                'title' => __('Модули'),
+                'keywords' => '',
+                'description' => '',
+            ];
 
         $settings = app(PublicSettingsService::class);
 
@@ -84,6 +102,9 @@ class SchoolModuleController extends Controller
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/School/SchoolModules/Index', [
+
+            'seo' => $seo,
+
             'publicSchoolModulesProcessingMode' => $processingMode,
             'useServerProcessing' => $useServerProcessing,
 

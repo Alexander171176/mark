@@ -8,6 +8,7 @@ use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Services\Admin\ProcessingModeService;
+use App\Services\Public\Cms\CmsPageResolverService;
 use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\Blog\BuildsRubricTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
@@ -29,6 +30,23 @@ class BlogRubricController extends Controller
     public function index(Request $request): Response
     {
         $locale = app()->getLocale();
+
+        $cmsSeoPage = app(CmsPageResolverService::class)
+            ->resolveSeo($request->path());
+
+        $cmsSeoTranslation = $cmsSeoPage?->translationOrFallback();
+
+        $seo = $cmsSeoTranslation
+            ? [
+                'title' => $cmsSeoTranslation->meta_title ?: $cmsSeoTranslation->title,
+                'keywords' => $cmsSeoTranslation->meta_keywords,
+                'description' => $cmsSeoTranslation->meta_desc ?: $cmsSeoTranslation->short,
+            ]
+            : [
+                'title' => __('Рубрики'),
+                'keywords' => '',
+                'description' => '',
+            ];
 
         $settings = app(PublicSettingsService::class);
 
@@ -82,6 +100,9 @@ class BlogRubricController extends Controller
         $sidebarData = $this->getSidebarData($locale);
 
         return Inertia::render('Public/Default/Blog/BlogRubrics/Index', [
+
+            'seo' => $seo,
+
             'publicBlogRubricsProcessingMode' => $processingMode,
             'useServerProcessing' => $useServerProcessing,
 

@@ -1,12 +1,11 @@
 <script setup>
-import { defineOptions, defineProps, defineEmits, ref, watch } from 'vue'
+import { defineOptions, defineProps, defineEmits, ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
 import ActivityToggle from '@/Components/Admin/UI/Buttons/ActivityToggle.vue'
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
 import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue'
-import MenuToggle from '@/Components/Admin/UI/Buttons/MenuToggle.vue'
 
 const { t } = useI18n()
 
@@ -30,8 +29,40 @@ const emit = defineEmits([
     'toggle-seo',
 ])
 
+const storageKey = computed(() => {
+    return `admin.cms.pages.tree.expanded.${props.page.id}`
+})
+
 const isExpanded = ref(true)
 const localChildren = ref([])
+
+const readExpandedState = () => {
+    const savedValue = localStorage.getItem(storageKey.value)
+
+    if (savedValue === null) {
+        return true
+    }
+
+    return savedValue === '1'
+}
+
+isExpanded.value = readExpandedState()
+
+watch(
+    () => props.page.id,
+    () => {
+        isExpanded.value = readExpandedState()
+    }
+)
+
+const toggleExpand = () => {
+    isExpanded.value = !isExpanded.value
+
+    localStorage.setItem(
+        storageKey.value,
+        isExpanded.value ? '1' : '0'
+    )
+}
 
 watch(
     () => props.page.children,
@@ -55,10 +86,6 @@ const getShort = (page) => {
     return page?.short
         || getTranslation(page)?.short
         || ''
-}
-
-const toggleExpand = () => {
-    isExpanded.value = !isExpanded.value
 }
 
 const handleInnerDragEnd = (event) => {

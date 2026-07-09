@@ -265,6 +265,8 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Cms/CmsPage/CmsPageTranslationResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Cms/CmsPage/CmsPageRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Cms/CmsPage/CmsPageController --resource` <br>
+`docker exec mark-php-app php artisan make:class Services/Public/Cms/CmsNavigationService` <br>
+`docker exec mark-php-app php artisan make:class Services/Public/Market/MarketCatalogNavigationService` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=CmsPageSeeder` <br>

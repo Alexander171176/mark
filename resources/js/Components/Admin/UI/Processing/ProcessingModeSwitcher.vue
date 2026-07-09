@@ -22,8 +22,8 @@ const modes = computed(() => [
 
 const actualMode = computed(() => (
     props.useServerProcessing
-        ? t('server')
-        : t('frontend')
+        ? 'S'
+        : 'F'
 ))
 
 const reloadPage = () => {

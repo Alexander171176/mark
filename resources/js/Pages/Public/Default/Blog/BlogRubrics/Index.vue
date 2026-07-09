@@ -24,7 +24,7 @@ import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/Section
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
 import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
-import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
+import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
 
@@ -412,24 +412,6 @@ const rubricGridCols = computed(() => {
 
     return leftExpanded && rightExpanded ? 2 : 3
 })
-
-/** Ключ localStorage для нижней админ-панели */
-const ADMIN_PANEL_KEY = 'public_admin_panel_collapsed'
-
-/** Состояние нижней админ-панели */
-const adminPanelCollapsed = ref(
-    getStoredBoolean(ADMIN_PANEL_KEY, false)
-)
-
-/** Сохраняем состояние нижней админ-панели */
-watch(adminPanelCollapsed, (value) => {
-    localStorage.setItem(ADMIN_PANEL_KEY, String(value))
-})
-
-/** Переключение нижней админ-панели */
-const toggleAdminPanel = () => {
-    adminPanelCollapsed.value = !adminPanelCollapsed.value
-}
 </script>
 
 <template>
@@ -469,7 +451,7 @@ const toggleAdminPanel = () => {
                 <!-- LEFT -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 sm:mt-16 transition-all duration-300"
+                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebar
@@ -479,10 +461,10 @@ const toggleAdminPanel = () => {
                     />
                 </aside>
 
-                <div class="w-full lg:mt-16 pb-6 slate-1">
+                <div class="w-full lg:mt-28 pb-6 slate-1">
                     <div class="mx-auto max-w-6xl">
                         <nav class="text-sm" aria-label="Breadcrumb">
-                            <ol class="flex items-center font-semibold">
+                            <ol class="flex flex-wrap items-center font-semibold">
                                 <li>
                                     <Link
                                         :href="route('home')"
@@ -601,7 +583,7 @@ const toggleAdminPanel = () => {
                 <!-- RIGHT -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-16 transition-all duration-300"
+                    class="shrink-0 lg:mt-28 transition-all duration-300"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <RightSidebar
@@ -615,66 +597,12 @@ const toggleAdminPanel = () => {
         <FooterBlog />
         <Progress />
         <!-- Нижняя панель администратора -->
-        <div
+        <PublicAdminBottomPanel
             v-if="isAdmin"
-            class="fixed bottom-0 left-0 right-0 z-[9999]"
-        >
-            <button
-                type="button"
-                class="absolute left-1/2 -translate-x-1/2
-                       flex h-3 w-6 items-center justify-center
-                       rounded-t-full border border-b-0
-                       border-slate-400/60
-                       bg-slate-300/95 dark:bg-slate-700/95
-                       text-slate-700 dark:text-slate-300
-                       shadow-md backdrop-blur-md
-                       hover:text-indigo-600 dark:hover:text-indigo-300"
-                :class="adminPanelCollapsed ? 'bottom-0' : 'bottom-8'"
-                :title="adminPanelCollapsed ? t('show') : t('hide')"
-                @click="toggleAdminPanel"
-            >
-                <svg
-                    class="h-3 w-3 transition-transform duration-300"
-                    :class="adminPanelCollapsed ? 'rotate-180' : ''"
-                    fill="currentColor"
-                    viewBox="0 0 320 512"
-                >
-                    <path
-                        d="M182.6 137.4c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-9.2 9.2-11.9 22.9-6.9 34.9S19.1 320 32 320h256c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-128-128z"
-                    />
-                </svg>
-            </button>
-
-            <div
-                class="h-8 flex items-center justify-between px-3
-                       border-t border-slate-400/40
-                       bg-slate-300/90 dark:bg-slate-700/90
-                       backdrop-blur-md text-[11px] text-slate-100
-                       transition-transform duration-300"
-                :class="adminPanelCollapsed ? 'translate-y-full' : 'translate-y-0'"
-            >
-                <div class="flex items-center gap-2">
-                    <Link
-                        :href="route('admin.index')"
-                        class="bg-gray-200 dark:bg-gray-800 rounded-sm px-2 py-0.5
-                       border-2 border-slate-500 hover:border-indigo-500"
-                    >
-                <span class="text-slate-700 dark:text-slate-300
-                             hover:text-indigo-700 hover:dark:text-indigo-300">
-                    {{ t('adminPanel') }}
-                </span>
-                    </Link>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <ProcessingModeSwitcher
-                        setting-key="publicBlogRubricsProcessingMode"
-                        :mode="publicBlogRubricsProcessingMode"
-                        :use-server-processing="useServerProcessing"
-                        :total="rubricsCount"
-                    />
-                </div>
-            </div>
-        </div>
+            setting-key="publicBlogRubricsProcessingMode"
+            :mode="publicBlogRubricsProcessingMode"
+            :use-server-processing="useServerProcessing"
+            :total="rubricsCount"
+        />
     </DefaultLayout>
 </template>

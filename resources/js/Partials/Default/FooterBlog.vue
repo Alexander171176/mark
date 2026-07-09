@@ -1,7 +1,39 @@
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { computed } from 'vue'
+import { Link, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
+
+const { t, locale } = useI18n()
+const inertiaPage = usePage()
+
+const cmsFooter = computed(() => inertiaPage.props.cmsFooter || [])
+
+const currentLocale = computed(() => {
+    return inertiaPage.props.locale || locale.value || 'ru'
+})
+
+const fallbackLocale = 'ru'
+
+const getTranslation = (item) => {
+    if (!item?.translations?.length) {
+        return item?.translation || null
+    }
+
+    return item.translations.find(translation => translation.locale === currentLocale.value)
+        || item.translations.find(translation => translation.locale === fallbackLocale)
+        || item.translations[0]
+        || null
+}
+
+const getTitle = (item) => {
+    return item?.title
+        || getTranslation(item)?.title
+        || `ID: ${item?.id}`
+}
+
+const getFooterChildren = (item) => {
+    return item?.public_footer_children || []
+}
 </script>
 
 <template>
@@ -97,56 +129,52 @@ const { t } = useI18n()
 
                 <!-- LINKS COLUMNS -->
                 <div class="md:col-span-3">
-                    <div class="grid grid-cols-1 gap-10
-                                sm:grid-cols-2 md:grid-cols-4">
+                    <div class="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-4">
 
-                        <!-- COLUMN -->
-                        <div>
+                        <div
+                            v-for="rootPage in cmsFooter"
+                            :key="rootPage.id"
+                        >
                             <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                                Discover
+                                <Link
+                                    :href="rootPage.url"
+                                    class="hover:text-sky-600 dark:hover:text-sky-400 transition"
+                                >
+                                    {{ getTitle(rootPage) }}
+                                </Link>
                             </h3>
-                            <ul class="space-y-3 text-sm">
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Get Started</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Product</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Features</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Sign Up</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Sign In</a></li>
-                            </ul>
-                        </div>
 
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                                Company
-                            </h3>
                             <ul class="space-y-3 text-sm">
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">About</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Training</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">FAQs</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Contact</a></li>
-                            </ul>
-                        </div>
+                                <li
+                                    v-for="child in getFooterChildren(rootPage)"
+                                    :key="child.id"
+                                >
+                                    <Link
+                                        :href="child.url"
+                                        class="text-gray-600 dark:text-gray-400
+                               hover:text-sky-600 dark:hover:text-sky-400 transition"
+                                    >
+                                        {{ getTitle(child) }}
+                                    </Link>
 
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                                Support
-                            </h3>
-                            <ul class="space-y-3 text-sm">
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Help Center</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Guides</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">API Docs</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Terms</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Privacy</a></li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                                Legal
-                            </h3>
-                            <ul class="space-y-3 text-sm">
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Policy</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Security</a></li>
-                                <li><a href="#" class="text-gray-600 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition">Licenses</a></li>
+                                    <ul
+                                        v-if="getFooterChildren(child).length"
+                                        class="mt-2 space-y-2"
+                                    >
+                                        <li
+                                            v-for="subChild in getFooterChildren(child)"
+                                            :key="subChild.id"
+                                        >
+                                            <Link
+                                                :href="subChild.url"
+                                                class="text-xs text-gray-500 dark:text-gray-500
+                                       hover:text-sky-600 dark:hover:text-sky-400 transition"
+                                            >
+                                                {{ getTitle(subChild) }}
+                                            </Link>
+                                        </li>
+                                    </ul>
+                                </li>
                             </ul>
                         </div>
 

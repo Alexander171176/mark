@@ -11,6 +11,7 @@ export default {
     fillAllFields: 'All fields must be filled',
     filter: 'Filter',
     finance: 'Finance',
+    find: 'Find',
     fitCrop: 'Trimming',
     fitContain: 'Enter',
     fitStretch: 'Stretch',

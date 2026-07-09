@@ -1,5 +1,5 @@
 <script setup>
-import { defineOptions, defineProps, defineEmits, ref, watch } from 'vue'
+import { defineOptions, defineProps, defineEmits, ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
@@ -29,9 +29,32 @@ const emits = defineEmits([
     'approve',
 ])
 
+const storageKey = computed(() => {
+    return `admin.blog.rubrics.tree.expanded.${props.rubric.id}`
+})
+
 const isExpanded = ref(true)
 
 const localChildren = ref([])
+
+const readExpandedState = () => {
+    const savedValue = localStorage.getItem(storageKey.value)
+
+    if (savedValue === null) {
+        return true
+    }
+
+    return savedValue === '1'
+}
+
+isExpanded.value = readExpandedState()
+
+watch(
+    () => props.rubric.id,
+    () => {
+        isExpanded.value = readExpandedState()
+    }
+)
 
 watch(
     () => props.rubric.children,
@@ -61,6 +84,11 @@ const handleInnerDragEnd = (event) => {
 
 const toggleExpand = () => {
     isExpanded.value = !isExpanded.value
+
+    localStorage.setItem(
+        storageKey.value,
+        isExpanded.value ? '1' : '0'
+    )
 }
 
 const getPrimaryImage = (rubric) => {

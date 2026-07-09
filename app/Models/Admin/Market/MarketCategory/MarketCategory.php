@@ -107,6 +107,20 @@ class MarketCategory extends Model
             ]);
     }
 
+    /** Публичные дочерние категории для каталога */
+    public function publicCatalogChildren(): HasMany
+    {
+        return $this->children()
+            ->forMenu()
+            ->with([
+                'translations',
+                'publicCatalogChildren',
+            ])
+            ->withCount([
+                'children',
+            ]);
+    }
+
     /** Переводы категории */
     public function translations(): HasMany
     {

@@ -1,7 +1,7 @@
 /* Стили светлого режима */
 html, body {
-    background: var(--slate-1);
-    color: var(--gray-11);
+    background: var(--white-1);
+    color: var(--black-1);
 }
 /* логотип в топ-баре */
 .logo {
@@ -61,7 +61,7 @@ html, body {
 /* Тёмная тема — включается, когда useDark ставит class="dark" на html */
 html.dark {
     html, body {
-        background: var(--slate-11);
+        background: var(--slate-9);
         color: var(--gray-1);
     }
     /* логотип в топ-баре */

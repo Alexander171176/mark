@@ -11,6 +11,7 @@ export default {
     fillAllFields: 'Барлық өрістерді толтыру қажет',
     filter: 'Сүзгі',
     finance: 'Қаржы',
+    find: 'Іздеу',
     fitCrop: 'Кесу',
     fitContain: 'Кіру',
     fitStretch: 'Созылу',

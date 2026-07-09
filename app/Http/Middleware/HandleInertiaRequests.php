@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Http\Resources\Admin\System\User\UserSharedResource;
+use App\Services\Public\Cms\CmsNavigationService;
+use App\Services\Public\Market\MarketCatalogNavigationService;
 use App\Services\SiteSettings\AdminSettingsService;
 use App\Services\SiteSettings\PublicSettingsService;
 use Illuminate\Http\Request;
@@ -74,7 +76,10 @@ class HandleInertiaRequests extends Middleware
         }
 
         // Публичка
-        $shared['publicSettings'] = fn () => app(PublicSettingsService::class)->all();
+        $shared['publicSettings'] = fn () => app(PublicSettingsService::class)->all(); // настройки
+        $shared['marketCatalog'] = fn () => app(MarketCatalogNavigationService::class)->catalog(); // категории
+        $shared['cmsMenu'] = fn () => app(CmsNavigationService::class)->menu(); // меню в Header
+        $shared['cmsFooter'] = fn () => app(CmsNavigationService::class)->footer(); // меню в Footer
 
         return $shared;
     }

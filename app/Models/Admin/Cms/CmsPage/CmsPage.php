@@ -137,6 +137,36 @@ class CmsPage extends Model
         )?->title;
     }
 
+    /** Публичные дочерние страницы для меню */
+    public function publicMenuChildren(): HasMany
+    {
+        return $this->children()
+            ->forPublic()
+            ->inMenu()
+            ->with([
+                'translations',
+                'publicMenuChildren',
+            ])
+            ->withCount([
+                'children',
+            ]);
+    }
+
+    /** Публичные дочерние страницы для футера */
+    public function publicFooterChildren(): HasMany
+    {
+        return $this->children()
+            ->forPublic()
+            ->inFooter()
+            ->with([
+                'translations',
+                'publicFooterChildren',
+            ])
+            ->withCount([
+                'children',
+            ]);
+    }
+
     /** Активные страницы */
     public function scopeActive(Builder $query): Builder
     {

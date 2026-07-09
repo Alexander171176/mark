@@ -196,7 +196,7 @@ const rightCollapsed = ref(false)
                 <!-- LEFT -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 sm:mt-16 pl-3 transition-all duration-300"
+                    class="shrink-0 mt-12 lg:mt-28 pl-3 transition-all duration-300"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebar
@@ -206,7 +206,7 @@ const rightCollapsed = ref(false)
                 </aside>
 
                 <!-- CENTER -->
-                <section class="w-full lg:mt-16 pb-6 slate-1 min-w-0">
+                <section class="w-full lg:mt-28 pb-6 slate-1 min-w-0">
                     <div class="mx-auto max-w-6xl">
                         <article
                             itemscope
@@ -215,7 +215,7 @@ const rightCollapsed = ref(false)
                         >
                             <!-- Breadcrumbs -->
                             <nav class="text-sm" aria-label="Breadcrumb">
-                                <ol class="flex items-center font-semibold">
+                                <ol class="flex flex-wrap items-center font-semibold">
                                     <li>
                                         <Link
                                             :href="route('home')"
@@ -366,7 +366,7 @@ const rightCollapsed = ref(false)
                 <!-- RIGHT -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-16 pr-3 transition-all duration-300"
+                    class="shrink-0 lg:mt-28 pr-3 transition-all duration-300"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <RightSidebar @collapsed="rightCollapsed = $event" />

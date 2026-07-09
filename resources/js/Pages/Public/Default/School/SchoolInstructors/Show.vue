@@ -394,7 +394,7 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                 <!-- LEFT -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 sm:mt-16 pl-3 transition-all duration-300"
+                    class="shrink-0 mt-12 lg:mt-28 pl-3 transition-all duration-300"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebarSchool
@@ -404,12 +404,12 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                 </aside>
 
                 <!-- CENTER -->
-                <div class="w-full lg:mt-16 pb-6 slate-1">
+                <div class="w-full lg:mt-28 pb-6 slate-1">
                     <div class="mx-auto max-w-6xl">
 
                         <!-- Breadcrumbs -->
                         <nav class="text-sm mb-3" aria-label="Breadcrumb">
-                            <ol class="flex items-center font-semibold">
+                            <ol class="flex flex-wrap items-center font-semibold">
                                 <li>
                                     <Link
                                         :href="route('home')"
@@ -726,7 +726,7 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                 <!-- RIGHT -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-16 pr-3 transition-all duration-300"
+                    class="shrink-0 lg:mt-28 pr-3 transition-all duration-300"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <RightSidebarSchool @collapsed="rightCollapsed = $event" />

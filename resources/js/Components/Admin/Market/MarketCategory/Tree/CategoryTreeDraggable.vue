@@ -1,5 +1,5 @@
 <script setup>
-import { defineOptions, defineProps, defineEmits, ref, watch } from 'vue'
+import { defineOptions, defineProps, defineEmits, ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
@@ -29,8 +29,31 @@ const emit = defineEmits([
     'toggle-menu',
 ])
 
+const storageKey = computed(() => {
+    return `admin.market.categories.tree.expanded.${props.category.id}`
+})
+
 const isExpanded = ref(true)
 const localChildren = ref([])
+
+const readExpandedState = () => {
+    const savedValue = localStorage.getItem(storageKey.value)
+
+    if (savedValue === null) {
+        return true
+    }
+
+    return savedValue === '1'
+}
+
+isExpanded.value = readExpandedState()
+
+watch(
+    () => props.category.id,
+    () => {
+        isExpanded.value = readExpandedState()
+    }
+)
 
 watch(
     () => props.category.children,
@@ -58,6 +81,11 @@ const getShort = (category) => {
 
 const toggleExpand = () => {
     isExpanded.value = !isExpanded.value
+
+    localStorage.setItem(
+        storageKey.value,
+        isExpanded.value ? '1' : '0'
+    )
 }
 
 const handleInnerDragEnd = (event) => {

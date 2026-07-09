@@ -1,5 +1,5 @@
 <script setup>
-import { defineOptions, defineProps, defineEmits, ref, watch } from 'vue'
+import { defineOptions, defineProps, defineEmits, ref, watch, computed } from 'vue'
 import draggable from 'vuedraggable'
 import ActivityToggle from '@/Components/Admin/UI/Buttons/ActivityToggle.vue'
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
@@ -32,10 +32,33 @@ const emit = defineEmits([
     'request-drag-end',
 ])
 
+const storageKey = computed(() => {
+    return `admin.school.tracks.tree.expanded.${props.track.id}`
+})
+
 const isExpanded = ref(true)
 
 // Локальная копия дочерних треков
 const localChildren = ref([])
+
+const readExpandedState = () => {
+    const savedValue = localStorage.getItem(storageKey.value)
+
+    if (savedValue === null) {
+        return true
+    }
+
+    return savedValue === '1'
+}
+
+isExpanded.value = readExpandedState()
+
+watch(
+    () => props.track.id,
+    () => {
+        isExpanded.value = readExpandedState()
+    }
+)
 
 watch(
     () => props.track.children,
@@ -56,6 +79,11 @@ const handleInnerDragEnd = (event) => {
 
 const toggleExpand = () => {
     isExpanded.value = !isExpanded.value
+
+    localStorage.setItem(
+        storageKey.value,
+        isExpanded.value ? '1' : '0'
+    )
 }
 
 const getPrimaryImage = (track) => {

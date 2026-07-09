@@ -170,7 +170,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div ref="dropdownRef" class="relative">
+    <div ref="dropdownRef" class="relative border border-gray-300 dark:border-gray-600">
         <!-- Trigger -->
         <div class="group relative">
             <button

@@ -11,6 +11,7 @@ export default {
     fillAllFields: 'Необходимо заполнить все поля',
     filter: 'Фильтр',
     finance: 'Финансы',
+    find: 'Искать',
     fitCrop: 'Обрезка',
     fitContain: 'Вписать',
     fitStretch: 'Растянуть',

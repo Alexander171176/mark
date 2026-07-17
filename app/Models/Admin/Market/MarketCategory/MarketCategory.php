@@ -2,6 +2,7 @@
 
 namespace App\Models\Admin\Market\MarketCategory;
 
+use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -149,6 +150,22 @@ class MarketCategory extends Model
             'market_category_image_id'
         )
             ->withPivot('order')
+            ->orderByPivot('order');
+    }
+
+    /** Товары категории */
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            MarketProduct::class,
+            'market_product_has_categories',
+            'market_category_id',
+            'market_product_id'
+        )
+            ->withPivot([
+                'main',
+                'order',
+            ])
             ->orderByPivot('order');
     }
 
@@ -392,6 +409,16 @@ class MarketCategory extends Model
 
             'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('market_categories.id'),
             'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('market_categories.id'),
+
+            'productsAsc' => $query
+                ->withCount('products')
+                ->orderBy('products_count', 'asc')
+                ->orderByDesc('market_categories.id'),
+
+            'productsDesc' => $query
+                ->withCount('products')
+                ->orderBy('products_count', 'desc')
+                ->orderByDesc('market_categories.id'),
 
             'childrenAsc' => $query->withCount('children')->orderBy('children_count', 'asc')->orderByDesc('market_categories.id'),
             'childrenDesc' => $query->withCount('children')->orderBy('children_count', 'desc')->orderByDesc('market_categories.id'),

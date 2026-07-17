@@ -14,6 +14,8 @@ use App\Models\Admin\Market\MarketBrand\MarketBrand;
 use App\Models\Admin\Market\MarketBrand\MarketBrandImage;
 use App\Models\Admin\Market\MarketCategory\MarketCategory;
 use App\Models\Admin\Market\MarketCategory\MarketCategoryImage;
+use App\Models\Admin\Market\MarketProduct\MarketProduct;
+use App\Models\Admin\Market\MarketProduct\MarketProductImage;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketShop\MarketShopImage;
 use App\Models\Admin\School\SchoolAssignment\SchoolAssignment;
@@ -93,6 +95,9 @@ class CustomPathGenerator implements PathGenerator
 
         if ($media->model_type === MarketCategory::class)      return 'market/market_categories/' . $media->model_id . '/';
         if ($media->model_type === MarketCategoryImage::class) return 'market/market_category_images/' . $media->model_id . '/';
+
+        if ($media->model_type === MarketProduct::class)      return 'market/market_products/' . $media->model_id . '/';
+        if ($media->model_type === MarketProductImage::class) return 'market/market_product_images/' . $media->model_id . '/';
 
         if ($media->model_type === MarketBrand::class)      return 'market/market_brands/' . $media->model_id . '/';
         if ($media->model_type === MarketBrandImage::class) return 'market/market_brand_images/' . $media->model_id . '/';

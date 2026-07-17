@@ -939,7 +939,7 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketShopSeeder` <br>
 
-5) Market Categories - категории товаров / дерево категорий <br>
+5) Категории товаров / дерево категорий <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategory -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategoryTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategoryImage -m` <br>
@@ -987,6 +987,11 @@ Analytics
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProduct/MarketProductTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProduct/MarketProductImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_market_product_has_images_table --create=market_product_has_images` <br>
+`docker exec mark-php-app php artisan make:migration create_market_product_has_categories_table --create=market_product_has_categories` <br>
+`docker exec mark-php-app php artisan make:migration create_market_product_has_tags_table --create=market_product_has_tags` <br>
+`docker exec mark-php-app php artisan make:migration create_market_product_related_table --create=market_product_related` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductAttributeValue/MarketProductAttributeValue -m` <br>
+`docker exec mark-php-app php artisan make:model User/Like/MarketProductLike -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketProduct/MarketProductResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketProduct/MarketProductSharedResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketProduct/MarketProductTranslationResource` <br>
@@ -996,6 +1001,16 @@ Analytics
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketProductSeeder` <br>
+
+9) Отзывы товара <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductReview/MarketProductReview -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductReview/MarketProductReviewImage -m` <br>
+`docker exec mark-php-app php artisan make:migration create_market_product_review_has_images_table --create=market_product_review_has_images` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductReview/MarketProductReviewResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductReview/MarketProductReviewImageResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketProductReview/MarketProductReviewRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketProductReview/MarketProductReviewController --resource` <br>
+
 
 
 5) Товары / Бренды

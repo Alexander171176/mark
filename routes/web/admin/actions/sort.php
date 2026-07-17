@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueC
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
@@ -169,6 +170,11 @@ Route::put('/market-categories/{marketCategory}/sort',
     [MarketCategoryController::class, 'updateSort'])
     ->whereNumber('marketCategory')
     ->name('marketCategories.updateSort');
+
+Route::put('/market-products/{marketProduct}/sort',
+    [MarketProductController::class, 'updateSort'])
+    ->whereNumber('marketProduct')
+    ->name('marketProducts.updateSort');
 
 Route::put('/market-brands/{marketBrand}/sort',
     [MarketBrandController::class, 'updateSort'])

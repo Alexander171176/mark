@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueC
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
@@ -146,6 +147,10 @@ Route::put('/market-shops/bulk-activity',
 Route::put('/market-categories/bulk-activity',
     [MarketCategoryController::class, 'bulkUpdateActivity'])
     ->name('marketCategories.bulkUpdateActivity');
+
+Route::put('/market-products/bulk-activity',
+    [MarketProductController::class, 'bulkUpdateActivity'])
+    ->name('marketProducts.bulkUpdateActivity');
 
 Route::put('/market-brands/bulk-activity',
     [MarketBrandController::class, 'bulkUpdateActivity'])

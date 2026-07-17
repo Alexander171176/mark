@@ -1,6 +1,7 @@
 export default {
     icon: 'Icon',
     id: 'ID',
+    inStock: 'In stock',
     image: 'Image',
     imageEditor: 'Image editor',
     imagePosition: 'Image position',

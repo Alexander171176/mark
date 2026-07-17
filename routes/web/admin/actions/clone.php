@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\Blog\BlogArticle\BlogArticleController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
+use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolCourseSchedule\SchoolCourseScheduleController;
 use App\Http\Controllers\Admin\School\SchoolLesson\SchoolLessonController;
@@ -43,3 +44,8 @@ Route::post('/school-quizzes/{schoolQuiz}/clone',
     [SchoolQuizController::class, 'clone'])
     ->whereNumber('schoolQuiz')
     ->name('schoolQuizzes.clone');
+
+// магазин
+Route::post('/market-products/{marketProduct}/clone',
+    [MarketProductController::class, 'clone'])
+    ->name('marketProducts.clone');

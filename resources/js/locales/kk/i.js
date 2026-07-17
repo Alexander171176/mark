@@ -1,6 +1,7 @@
 export default {
     icon: 'Таңба',
     id: 'ID',
+    inStock: 'Қоймада бар',
     image: 'Сурет',
     imageEditor: 'Сурет редакторы',
     imagePosition: 'Кескін орны',

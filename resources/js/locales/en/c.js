@@ -2,6 +2,7 @@ export default {
     cancel: 'Cancel',
     cancelled: 'canceled',
     capacity: 'Places',
+    caption: 'image caption',
     cards: 'Cards',
     categories: 'Categories',
     category: 'Category',

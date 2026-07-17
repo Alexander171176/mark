@@ -4,9 +4,14 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail; // Если используете верификацию email
 use App\Models\Admin\Blog\Comment\Comment;
+use App\Models\Admin\Market\MarketCompany\MarketCompany;
+use App\Models\Admin\Market\MarketProduct\MarketProduct;
+use App\Models\Admin\Market\MarketProductReview\MarketProductReview;
+use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\User\Like\BlogArticleLike;
 use App\Models\User\Like\BlogVideoLike;
+use App\Models\User\Like\MarketProductLike;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -105,7 +110,89 @@ class User extends Authenticatable /* implements MustVerifyEmail */
     {
         return $this->hasMany(SchoolInstructorProfile::class, 'user_id');
     }
-    // --- КОНЕЦ НОВЫХ СВЯЗЕЙ ---
+
+    /** Компании, промодерированные пользователем */
+    public function moderatedMarketCompanies(): HasMany
+    {
+        return $this->hasMany(
+            MarketCompany::class,
+            'moderated_by'
+        );
+    }
+
+    /** Магазины, промодерированные пользователем */
+    public function moderatedMarketShops(): HasMany
+    {
+        return $this->hasMany(
+            MarketShop::class,
+            'moderated_by'
+        );
+    }
+
+    /** Товары, промодерированные пользователем */
+    public function moderatedMarketProducts(): HasMany
+    {
+        return $this->hasMany(
+            MarketProduct::class,
+            'moderated_by'
+        );
+    }
+
+    /** Отзывы товаров, промодерированные пользователем */
+    public function moderatedMarketProductReviews(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductReview::class,
+            'moderated_by'
+        );
+    }
+
+    /* ======================== Marketplace Relations ======================== */
+
+    /** Компании маркетплейса, созданные пользователем */
+    public function marketCompanies(): HasMany
+    {
+        return $this->hasMany(
+            MarketCompany::class,
+            'user_id'
+        );
+    }
+
+    /** Магазины маркетплейса, созданные пользователем */
+    public function marketShops(): HasMany
+    {
+        return $this->hasMany(
+            MarketShop::class,
+            'user_id'
+        );
+    }
+
+    /** Товары маркетплейса, созданные пользователем */
+    public function marketProducts(): HasMany
+    {
+        return $this->hasMany(
+            MarketProduct::class,
+            'user_id'
+        );
+    }
+
+    /** Лайки товаров, поставленные пользователем */
+    public function marketProductLikes(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductLike::class,
+            'user_id'
+        );
+    }
+
+    /** Отзывы на товары, оставленные пользователем */
+    public function marketProductReviews(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductReview::class,
+            'user_id'
+        );
+    }
 
     /* ======================== Scopes ======================== */
 
@@ -139,11 +226,33 @@ class User extends Authenticatable /* implements MustVerifyEmail */
                     $query
                         ->where('users.name', 'like', "%{$word}%")
                         ->orWhere('users.email', 'like', "%{$word}%")
+
                         ->orWhereHas('roles', function (Builder $qq) use ($word) {
                             $qq->where('name', 'like', "%{$word}%");
                         })
+
                         ->orWhereHas('permissions', function (Builder $qq) use ($word) {
                             $qq->where('name', 'like', "%{$word}%");
+                        })
+
+                        ->orWhereHas('marketCompanies', function (Builder $qq) use ($word) {
+                            $qq->where('url', 'like', "%{$word}%")
+                                ->orWhere('legal_name', 'like', "%{$word}%")
+                                ->orWhere('bin_iin', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%");
+                        })
+
+                        ->orWhereHas('marketShops', function (Builder $qq) use ($word) {
+                            $qq->where('url', 'like', "%{$word}%")
+                                ->orWhere('email', 'like', "%{$word}%")
+                                ->orWhere('phone', 'like', "%{$word}%");
+                        })
+
+                        ->orWhereHas('marketProducts', function (Builder $qq) use ($word) {
+                            $qq->where('url', 'like', "%{$word}%")
+                                ->orWhere('sku', 'like', "%{$word}%")
+                                ->orWhere('vendor_code', 'like', "%{$word}%")
+                                ->orWhere('barcode', 'like', "%{$word}%");
                         });
                 });
             }
@@ -174,6 +283,56 @@ class User extends Authenticatable /* implements MustVerifyEmail */
 
             'updatedAtAsc' => $q->orderBy('users.updated_at', 'asc')->orderByDesc('users.id'),
             'updatedAtDesc' => $q->orderBy('users.updated_at', 'desc')->orderByDesc('users.id'),
+
+            'marketCompaniesAsc' => $q
+                ->withCount('marketCompanies')
+                ->orderBy('market_companies_count', 'asc')
+                ->orderByDesc('users.id'),
+
+            'marketCompaniesDesc' => $q
+                ->withCount('marketCompanies')
+                ->orderBy('market_companies_count', 'desc')
+                ->orderByDesc('users.id'),
+
+            'marketShopsAsc' => $q
+                ->withCount('marketShops')
+                ->orderBy('market_shops_count', 'asc')
+                ->orderByDesc('users.id'),
+
+            'marketShopsDesc' => $q
+                ->withCount('marketShops')
+                ->orderBy('market_shops_count', 'desc')
+                ->orderByDesc('users.id'),
+
+            'marketProductsAsc' => $q
+                ->withCount('marketProducts')
+                ->orderBy('market_products_count', 'asc')
+                ->orderByDesc('users.id'),
+
+            'marketProductsDesc' => $q
+                ->withCount('marketProducts')
+                ->orderBy('market_products_count', 'desc')
+                ->orderByDesc('users.id'),
+
+            'marketProductLikesAsc' => $q
+                ->withCount('marketProductLikes')
+                ->orderBy('market_product_likes_count', 'asc')
+                ->orderByDesc('users.id'),
+
+            'marketProductLikesDesc' => $q
+                ->withCount('marketProductLikes')
+                ->orderBy('market_product_likes_count', 'desc')
+                ->orderByDesc('users.id'),
+
+            'marketProductReviewsAsc' => $q
+                ->withCount('marketProductReviews')
+                ->orderBy('market_product_reviews_count', 'asc')
+                ->orderByDesc('users.id'),
+
+            'marketProductReviewsDesc' => $q
+                ->withCount('marketProductReviews')
+                ->orderBy('market_product_reviews_count', 'desc')
+                ->orderByDesc('users.id'),
 
             default => $q->ordered(),
         };

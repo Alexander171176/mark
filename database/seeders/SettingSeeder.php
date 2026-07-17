@@ -2584,6 +2584,86 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // ADMIN MARKET ATTRIBUTE VALUES DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'adminMarketProductsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_PRODUCTS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных товаров в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCTS PROCESSING MODE
+            [
+                'type' => 'string',
+                'option' => 'publicMarketProductsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'PUBLIC_MARKET_PRODUCTS_PROCESSING_MODE',
+                'category' => 'public',
+                'description' => 'Режим обработки данных товаров в публичной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCTS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketProductsPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_PRODUCTS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество товаров в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCTS PER PAGE
+            [
+                'type' => 'number',
+                'option' => 'publicMarketProductsPerPage',
+                'value' => '3',
+                'constant' => 'PUBLIC_MARKET_PRODUCTS_PER_PAGE',
+                'category' => 'public',
+                'description' => 'Показывать количество товаров в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCTS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketProductsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_PRODUCTS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка товаров по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCTS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'publicMarketProductsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'PUBLIC_MARKET_PRODUCTS_DEFAULT_SORT',
+                'category' => 'public',
+                'description' => 'Сортировка товаров по умолчанию в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCTS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketProductsDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_PRODUCTS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка товаров в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCTS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'publicMarketProductsDefaultView',
+                'value' => 'grid',
+                'constant' => 'PUBLIC_MARKET_PRODUCTS_DEFAULT_VIEW',
+                'category' => 'public',
+                'description' => 'Вид списка товаров в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCTS DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

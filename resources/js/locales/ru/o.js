@@ -13,6 +13,7 @@ export default {
     orEnterIdManually: 'или введите идентификатор вручную',
     originalShort: 'Оригинал',
     ourCommunityBlog: 'Наш блог сообщества',
+    outOfStock: 'Распродано',
     owner: 'Владелец',
     ownerEmail: 'email владельца',
 }

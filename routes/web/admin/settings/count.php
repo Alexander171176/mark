@@ -156,6 +156,10 @@ Route::put('/update-count/market-categories',
     [SettingController::class, 'updateAdminCountMarketCategories'])
     ->name('updateAdminCountMarketCategories');
 
+Route::put('/update-count/market-products',
+    [SettingController::class, 'updateAdminCountMarketProducts'])
+    ->name('updateAdminCountMarketProducts');
+
 Route::put('/update-count/market-brands',
     [SettingController::class, 'updateAdminCountMarketBrands'])
     ->name('updateAdminCountMarketBrands');

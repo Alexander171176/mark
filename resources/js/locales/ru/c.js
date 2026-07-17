@@ -2,6 +2,7 @@ export default {
     cancel: 'Отмена',
     cancelled: 'отменён',
     capacity: 'Мест',
+    caption: 'подпись к изображению',
     cards: 'Карточки',
     categories: 'Категории',
     category: 'Категория',

@@ -85,4 +85,5 @@ export default {
     public: 'Public',
     publicHash: 'hash for public order links',
     publishedAt: 'Date of publication',
+    purchasePrice: 'Purchase price',
 }

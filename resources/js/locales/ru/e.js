@@ -23,6 +23,7 @@ export default {
     editMarketBrand: 'Редактировать Бренд',
     editMarketCategory: 'Редактировать Категорию товаров',
     editMarketCompany: 'Редактировать фирму',
+    editMarketProduct: 'Редактировать товар',
     editMarketShop: 'Редактировать магазин',
     editModule: 'Редактировать Модуль',
     editNotes: 'Редактировать заметку',

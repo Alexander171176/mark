@@ -66,6 +66,7 @@ const linkInfo = {
     marketCompanies: {label: t('marketCompanies'), route: 'admin.marketCompanies.index'},
     marketShops: {label: t('marketShops'), route: 'admin.marketShops.index'},
     marketCategories: {label: t('marketCategories'), route: 'admin.marketCategories.index'},
+    marketProducts: {label: t('marketProducts'), route: 'admin.marketProducts.index'},
     marketBrands: {label: t('marketBrands'), route: 'admin.marketBrands.index'},
     marketTags: {label: t('marketTags'), route: 'admin.marketTags.index'},
     marketAttributeGroups: {label: t('marketAttributeGroups'), route: 'admin.marketAttributeGroups.index'},

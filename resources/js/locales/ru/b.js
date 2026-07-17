@@ -21,6 +21,7 @@ export default {
     bankAccount: 'Банковский счёт',
     bannerTitle: 'Название Баннера',
     banners: 'Баннеры',
+    barcode: 'штрихкод',
     baseUnit: 'Базовая единица',
     billingAddress: 'Адрес юр.лица',
     billingCompany: 'Компания',

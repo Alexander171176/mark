@@ -41,6 +41,11 @@ const { t } = useI18n();
             {{ t('marketCategories') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
+            :href="route('admin.marketProducts.index')"
+            :active="route().current('admin.marketProducts.*')">
+            {{ t('marketProducts') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
             :href="route('admin.marketBrands.index')"
             :active="route().current('admin.marketBrands.*')">
             {{ t('marketBrands') }}

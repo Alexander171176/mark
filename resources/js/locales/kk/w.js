@@ -3,9 +3,12 @@ export default {
     watch: 'Көзқарас',
     website: 'веб-сайтқа',
     weeks: 'апталар',
+    weight: 'Салмақ',
     weightClassName: 'Салмақ категориясының атауы',
     welcome: 'Қош келдіңіз',
     whereFrom: 'Қайда',
     whereTo: 'Және қайдан',
     width: 'Ені',
+    wholesaleMinQuantity: 'Көтерме саудадағы ең аз саны',
+    wholesalePrice: 'Көтерме баға',
 }

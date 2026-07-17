@@ -23,6 +23,7 @@ export default {
     editMarketBrand: 'Edit Brand',
     editMarketCategory: 'Edit Product Category',
     editMarketCompany: 'Edit company',
+    editMarketProduct: 'Edit Product',
     editMarketShop: 'Edit store',
     editModule: 'Edit Module',
     editNotes: 'Edit a note',

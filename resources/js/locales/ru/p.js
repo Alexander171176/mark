@@ -85,4 +85,5 @@ export default {
     public: 'Публичное',
     publicHash: 'хеш для публичных ссылок на заказ',
     publishedAt: 'Дата публикации',
+    purchasePrice: 'Цена покупки',
 }

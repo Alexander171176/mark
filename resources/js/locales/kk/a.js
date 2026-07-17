@@ -1,5 +1,6 @@
 export default {
     access: 'Кіру',
+    accessory: 'Қосалқы құрал',
     accessEndDate: 'Қолжетімділіктің аяқталу күні',
     accessDenied: 'Рұқсат жоқ',
     accessGranted: 'Кіру рұқсаты берілді',
@@ -39,6 +40,7 @@ export default {
     addMarketBrand: 'Бренд қосу',
     addMarketCategory: 'Санат қосу',
     addMarketCompany: 'Компания қосу',
+    addMarketProduct: 'Өнім қосу',
     addMarketShop: 'Дүкен қосу',
     addMarketStorefront: 'Көрме қосу',
     addMarketTag: 'Өнім тегін қосыңыз',
@@ -85,6 +87,7 @@ export default {
     allowRotateShort: 'U бұрылысы',
     alreadyRegistered: 'Тіркелгенсіз бе?',
     amount: 'Қосынды',
+    analog: 'Аналог',
     analyticsLogs: 'Аналитика журналы',
     and: 'және',
     answer: 'Жауап',

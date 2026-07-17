@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueC
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,11 @@ Route::put('/market-categories/{marketCategory}/approve',
     [MarketCategoryController::class, 'approve'])
     ->whereNumber('marketCategory')
     ->name('marketCategories.approve');
+
+Route::put('/market-products/{marketProduct}/approve',
+    [MarketProductController::class, 'approve'])
+    ->whereNumber('marketProduct')
+    ->name('marketProducts.approve');
 
 Route::put('/market-brands/{marketBrand}/approve',
     [MarketBrandController::class, 'approve'])

@@ -23,6 +23,7 @@ export default {
     editMarketBrand: 'Брендті өңдеу',
     editMarketCategory: 'Өнім санатын өңдеу',
     editMarketCompany: 'Компанияны өңдеу',
+    editMarketProduct: 'Өнімді өңдеу',
     editMarketShop: 'Дүкенді өңдеу',
     editModule: 'Модульді өңдеу',
     editNotes: 'Ескертпені өңдеу',

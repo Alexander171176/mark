@@ -1,5 +1,6 @@
 export default {
     access: 'Доступ',
+    accessory: 'Аксессуар',
     accessEndDate: 'Дата окончания доступа',
     accessDenied: 'Доступ запрещен',
     accessGranted: 'Доступ разрешен',
@@ -39,6 +40,7 @@ export default {
     addMarketBrand: 'Добавить Бренд',
     addMarketCategory: 'Добавить категорию',
     addMarketCompany: 'Добавить фирму',
+    addMarketProduct: 'Добавить Товар',
     addMarketShop: 'Добавить магазин',
     addMarketStorefront: 'Добавить витрину',
     addMarketTag: 'Добавить Тег товаров',
@@ -85,6 +87,7 @@ export default {
     allowRotateShort: 'Разворот',
     alreadyRegistered: 'Уже зарегистрированы?',
     amount: 'Сумма',
+    analog: 'Аналог',
     analyticsLogs: 'Лог Аналитики',
     and: 'и',
     answer: 'Ответ',

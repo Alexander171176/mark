@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueC
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
@@ -225,6 +226,10 @@ Route::resource('/market-shops', MarketShopController::class)
 Route::resource('/market-categories', MarketCategoryController::class)
     ->parameters(['market-categories' => 'marketCategory'])
     ->names('marketCategories');
+
+Route::resource('/market-products', MarketProductController::class)
+    ->parameters(['market-products' => 'marketProduct'])
+    ->names('marketProducts');
 
 Route::resource('/market-brands', MarketBrandController::class)
     ->parameters(['market-brands' => 'marketBrand'])

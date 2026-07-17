@@ -3,6 +3,7 @@
 namespace App\Models\Admin\Market\MarketShop;
 
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
+use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -66,6 +67,15 @@ class MarketShop extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(MarketCompany::class, 'market_company_id');
+    }
+
+    /** Товары магазина */
+    public function products(): HasMany
+    {
+        return $this->hasMany(
+            MarketProduct::class,
+            'market_shop_id'
+        );
     }
 
     /** Создатель магазина */
@@ -219,6 +229,23 @@ class MarketShop extends Model
                         ->orWhere('bin_iin', 'like', "%{$term}%")
                         ->orWhere('email', 'like', "%{$term}%")
                         ->orWhere('phone', 'like', "%{$term}%");
+                })
+
+                ->orWhereHas('products', function (Builder $productQuery) use ($term, $locale) {
+                    $productQuery
+                        ->where('url', 'like', "%{$term}%")
+                        ->orWhere('sku', 'like', "%{$term}%")
+                        ->orWhere('vendor_code', 'like', "%{$term}%")
+                        ->orWhere('barcode', 'like', "%{$term}%")
+                        ->orWhereHas('translations', function (Builder $translationQuery) use ($term, $locale) {
+                            $translationQuery
+                                ->where('locale', $locale)
+                                ->where(function (Builder $sq) use ($term) {
+                                    $sq->where('title', 'like', "%{$term}%")
+                                        ->orWhere('subtitle', 'like', "%{$term}%")
+                                        ->orWhere('short', 'like', "%{$term}%");
+                                });
+                        });
                 });
         });
     }
@@ -288,6 +315,16 @@ class MarketShop extends Model
 
             'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
             'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+
+            'productsAsc' => $query
+                ->withCount('products')
+                ->orderBy('products_count', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'productsDesc' => $query
+                ->withCount('products')
+                ->orderBy('products_count', 'desc')
+                ->orderByDesc('market_shops.id'),
 
             'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
             'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),

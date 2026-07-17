@@ -558,8 +558,6 @@ const submitForm = () => {
                         </div>
                     </div>
 
-
-
                     <div class="flex flex-col items-start">
                         <LabelInput for="url">
                             <span class="text-red-500 dark:text-red-300 font-semibold">*</span>

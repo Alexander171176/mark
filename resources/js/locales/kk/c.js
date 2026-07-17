@@ -2,6 +2,7 @@ export default {
     cancel: 'Бас тарту',
     cancelled: 'болдырылмады',
     capacity: 'Орындар',
+    caption: 'сурет тақырыбы',
     cards: 'Карталар',
     categories: 'Санаттар',
     category: 'Санат',

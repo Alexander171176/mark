@@ -21,6 +21,7 @@ export default {
     bankAccount: 'Bank account',
     bannerTitle: 'Banner Name',
     banners: 'Banners',
+    barcode: 'barcode',
     baseUnit: 'Basic unit',
     billingAddress: 'Legal entity address',
     billingCompany: 'Company',

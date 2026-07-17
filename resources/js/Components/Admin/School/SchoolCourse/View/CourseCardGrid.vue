@@ -414,7 +414,6 @@ const formatDate = (dateStr) => {
                                         @delete="$emit('delete', course)"
                                     />
                                 </div>
-
                             </div>
                         </div>
                     </div>

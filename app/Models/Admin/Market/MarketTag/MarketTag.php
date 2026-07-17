@@ -2,11 +2,13 @@
 
 namespace App\Models\Admin\Market\MarketTag;
 
+use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -93,6 +95,19 @@ class MarketTag extends Model
         )->where('locale', app()->getLocale());
     }
 
+    /** Товары тега */
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            MarketProduct::class,
+            'market_product_has_tags',
+            'market_tag_id',
+            'market_product_id'
+        )
+            ->withPivot('order')
+            ->orderByPivot('order');
+    }
+
     /* ===================== Scopes ===================== */
 
     /** Только активные */
@@ -170,6 +185,16 @@ class MarketTag extends Model
 
             'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
             'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+
+            'productsAsc' => $query
+                ->withCount('products')
+                ->orderBy('products_count', 'asc')
+                ->orderByDesc('market_tags.id'),
+
+            'productsDesc' => $query
+                ->withCount('products')
+                ->orderBy('products_count', 'desc')
+                ->orderByDesc('market_tags.id'),
 
             'statusAsc' => $query->orderBy('status', 'asc')->orderByDesc('id'),
             'statusDesc' => $query->orderBy('status', 'desc')->orderByDesc('id'),
@@ -288,6 +313,23 @@ class MarketTag extends Model
 
                     $oq->where('name', 'like', "%{$term}%")
                         ->orWhere('email', 'like', "%{$term}%");
+                })
+
+                ->orWhereHas('products', function (Builder $productQuery) use ($term, $locale) {
+                    $productQuery
+                        ->where('market_products.url', 'like', "%{$term}%")
+                        ->orWhere('market_products.sku', 'like', "%{$term}%")
+                        ->orWhere('market_products.vendor_code', 'like', "%{$term}%")
+                        ->orWhere('market_products.barcode', 'like', "%{$term}%")
+                        ->orWhereHas('translations', function (Builder $translationQuery) use ($term, $locale) {
+                            $translationQuery
+                                ->where('locale', $locale)
+                                ->where(function (Builder $sq) use ($term) {
+                                    $sq->where('title', 'like', "%{$term}%")
+                                        ->orWhere('subtitle', 'like', "%{$term}%")
+                                        ->orWhere('short', 'like', "%{$term}%");
+                                });
+                        });
                 });
         });
     }

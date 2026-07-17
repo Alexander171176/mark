@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
+use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,10 @@ Route::put('/market-companies/bulk-left',
 Route::put('/market-shops/bulk-left',
     [MarketShopController::class, 'bulkUpdateLeft'])
     ->name('marketShops.bulkUpdateLeft');
+
+Route::put('/market-products/bulk-left',
+    [MarketProductController::class, 'bulkUpdateLeft'])
+    ->name('marketProducts.bulkUpdateLeft');
 
 Route::put('/market-brands/bulk-left',
     [MarketBrandController::class, 'bulkUpdateLeft'])

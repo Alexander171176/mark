@@ -85,4 +85,5 @@ export default {
     public: 'Қоғамдық',
     publicHash: 'қоғамдық тапсырыс сілтемелеріне арналған хэш',
     publishedAt: 'Жарияланған күні',
+    purchasePrice: 'Сатып алу бағасы',
 }

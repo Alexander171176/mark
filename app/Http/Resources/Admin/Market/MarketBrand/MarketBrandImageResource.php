@@ -5,7 +5,7 @@ namespace App\Http\Resources\Admin\Market\MarketBrand;
 use App\Http\Resources\Admin\Image\BaseImageResource;
 
 /**
- * Ресурс изображений статей блога.
+ * Ресурс изображений брендов.
  * Вся базовая логика берётся из BaseImageResource.
  */
 class MarketBrandImageResource extends BaseImageResource

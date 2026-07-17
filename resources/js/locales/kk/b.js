@@ -21,6 +21,7 @@ export default {
     bankAccount: 'Банк шоты',
     bannerTitle: 'Баннер Атауы',
     banners: 'Баннерлер',
+    barcode: 'штрих-код',
     baseUnit: 'Негізгі блок',
     billingAddress: 'Заңды тұлғаның мекенжайы',
     billingCompany: 'Компаниясы',

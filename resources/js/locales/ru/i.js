@@ -1,6 +1,7 @@
 export default {
     icon: 'Иконка',
     id: 'ID',
+    inStock: 'В наличии',
     image: 'Изображение',
     imageEditor: 'Редактор изображений',
     imagePosition: 'Позиция изображения',

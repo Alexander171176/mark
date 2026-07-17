@@ -1,5 +1,6 @@
 export default {
     access: 'Access',
+    accessory: 'Accessory',
     accessEndDate: 'Access end date',
     accessDenied: 'Access denied',
     accessGranted: 'Access granted',
@@ -39,6 +40,7 @@ export default {
     addMarketBrand: 'Add Brand',
     addMarketCategory: 'Add category',
     addMarketCompany: 'Add a company',
+    addMarketProduct: 'Add Product',
     addMarketShop: 'Add a store',
     addMarketStorefront: 'Add a showcase',
     addMarketTag: 'Add a Product Tag',
@@ -85,6 +87,7 @@ export default {
     allowRotateShort: 'U-turn',
     alreadyRegistered: 'Already registered?',
     amount: 'Sum',
+    analog: 'Analogue',
     analyticsLogs: 'Analytics Log',
     and: 'and',
     answer: 'Answer',

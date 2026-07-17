@@ -2,6 +2,7 @@
 
 namespace App\Models\Admin\Market\MarketBrand;
 
+use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -94,6 +95,15 @@ class MarketBrand extends Model
             'market_brand_image_id'
         )->withPivot('order')
             ->orderByPivot('order');
+    }
+
+    /** Товары бренда */
+    public function products(): HasMany
+    {
+        return $this->hasMany(
+            MarketProduct::class,
+            'market_brand_id'
+        );
     }
 
     /** Активные бренды */
@@ -240,6 +250,16 @@ class MarketBrand extends Model
 
             'websiteAsc' => $query->orderBy('website', 'asc')->orderByDesc('id'),
             'websiteDesc' => $query->orderBy('website', 'desc')->orderByDesc('id'),
+
+            'productsAsc' => $query
+                ->withCount('products')
+                ->orderBy('products_count', 'asc')
+                ->orderByDesc('market_brands.id'),
+
+            'productsDesc' => $query
+                ->withCount('products')
+                ->orderBy('products_count', 'desc')
+                ->orderByDesc('market_brands.id'),
 
             'statusAsc' => $query->orderBy('status', 'asc')->orderByDesc('id'),
             'statusDesc' => $query->orderBy('status', 'desc')->orderByDesc('id'),

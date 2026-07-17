@@ -179,7 +179,10 @@ const closeEditor = () => {
                             <button
                                 type="button"
                                 class="w-full text-xs font-semibold px-2 py-1 rounded-sm
-                                       bg-blue-600 hover:bg-blue-700 text-white
+                                       bg-amber-300 hover:bg-amber-500
+                                       dark:bg-amber-400 dark:hover:bg-amber-600
+                                       text-slate-800 hover:text-slate-100
+                                       dark:text-slate-800 dark:hover:text-slate-100
                                        flex items-center justify-center gap-1"
                                 @click.prevent="selectReplaceFile(index)"
                             >

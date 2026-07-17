@@ -13,6 +13,7 @@ export default {
     orEnterIdManually: 'немесе идентификаторды қолмен енгізіңіз',
     originalShort: 'Түпнұсқа',
     ourCommunityBlog: 'Біздің қауымдастық блогымыз',
+    outOfStock: 'Сатылып бітті',
     owner: 'Иесі',
     ownerEmail: 'Иесінің email',
 }

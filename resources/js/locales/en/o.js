@@ -13,6 +13,7 @@ export default {
     orEnterIdManually: 'or enter the ID manually',
     originalShort: 'Original',
     ourCommunityBlog: 'Our Community Blog',
+    outOfStock: 'Sold out',
     owner: 'Owner',
     ownerEmail: 'Owner email',
 }

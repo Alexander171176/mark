@@ -8,12 +8,10 @@ use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\Comment\Comment;
+use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\Admin\School\SchoolBundle\SchoolBundle;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
-use App\Models\Admin\School\SchoolModule\SchoolModule;
-use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlan;
-use App\Models\Admin\School\SchoolTrack\SchoolTrack;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\App;
@@ -116,18 +114,19 @@ class AppServiceProvider extends ServiceProvider
     private function bootMorphMap(): void
     {
         Relation::morphMap([
-            'rubric' => BlogRubric::class,
-            'article' => BlogArticle::class,
-            'tag' => BlogTag::class,
-            'banner' => BlogBanner::class,
-            'video' => BlogVideo::class,
 
-            'track' => SchoolTrack::class,
-            'course' => SchoolCourse::class,
-            'module' => SchoolModule::class,
-            'lesson' => SchoolLesson::class,
-            'bundle' => SchoolBundle::class,
-            'subscription_plan' => SchoolSubscriptionPlan::class,
+            // Блог
+            'blog_article' => BlogArticle::class,
+            'blog_video'   => BlogVideo::class,
+
+            // Онлайн школа
+            'school_course' => SchoolCourse::class,
+            'school_lesson' => SchoolLesson::class,
+            'school_bundle' => SchoolBundle::class,
+
+            // Маркетплейс
+            'market_product' => MarketProduct::class,
+
         ]);
     }
 }

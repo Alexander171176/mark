@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
+use App\Http\Controllers\Admin\Review\ReviewController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
@@ -48,6 +49,11 @@ Route::put('/currencies/{currency}/activity',
 Route::put('/comments/{comment}/activity',
     [CommentController::class, 'updateActivity'])
     ->name('comments.updateActivity');
+
+Route::put('/reviews/{review}/activity',
+    [ReviewController::class, 'updateActivity'])
+    ->whereNumber('review')
+    ->name('reviews.updateActivity');
 
 // блог
 Route::put('/blog-rubrics/{blogRubric}/activity',

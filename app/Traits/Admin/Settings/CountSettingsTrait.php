@@ -100,6 +100,13 @@ trait CountSettingsTrait
             'adminCommentsPerPage', 'site_settings.adminCommentsPerPage');
     }
 
+    /** Обновление количества элементов в отзывах */
+    public function updateAdminCountReviews(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminReviewsPerPage', 'site_settings.adminReviewsPerPage');
+    }
+
     /** Обновление количества элементов в рубриках */
     public function updateAdminCountBlogRubrics(UpdateCountSettingRequest $request): RedirectResponse
     {

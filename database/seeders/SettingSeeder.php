@@ -276,6 +276,96 @@ class SettingSeeder extends Seeder
             ], // ADMIN IMAGE PRESETS DEFAULT SORT
             [
                 'type' => 'string',
+                'option' => 'adminCommentsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_COMMENTS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных комментариев в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN COMMENTS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminCommentsPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_COMMENTS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество комментариев в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN COMMENTS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminCommentsDefaultSort',
+                'value' => 'idDesc',
+                'constant' => 'ADMIN_COMMENTS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка комментариев по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN COMMENTS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminReviewsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_REVIEWS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных отзывов в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN REVIEWS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminReviewsPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_REVIEWS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество отзывов в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN REVIEWS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminReviewsDefaultSort',
+                'value' => 'idDesc',
+                'constant' => 'ADMIN_REVIEWS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка отзывов по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN REVIEWS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminFinanceCurrenciesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_FINANCE_CURRENCIES_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных валют в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FINANCE CURRENCIES PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminFinanceCurrenciesPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_FINANCE_CURRENCIES_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество Валют в таблице Панели Администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FINANCE CURRENCIES PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminFinanceCurrenciesDefaultSort',
+                'value' => 'idDesc',
+                'constant' => 'ADMIN_FINANCE_CURRENCIES_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка по полю у Валют по умолчанию в таблице Панели Администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FINANCE CURRENCIES DEFAULT SORT
+            [
+                'type' => 'string',
                 'option' => 'adminBlogRubricsProcessingMode',
                 'value' => 'auto',
                 'constant' => 'ADMIN_BLOG_RUBRICS_PROCESSING_MODE',
@@ -604,66 +694,6 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // PUBLIC BLOG VIDEOS DEFAULT SORT
-            [
-                'type' => 'string',
-                'option' => 'adminCommentsProcessingMode',
-                'value' => 'auto',
-                'constant' => 'ADMIN_COMMENTS_PROCESSING_MODE',
-                'category' => 'admin',
-                'description' => 'Режим обработки данных комментариев в административной части: frontend / server / auto',
-                'activity' => true,
-                'sort' => 0,
-            ], // ADMIN COMMENTS PROCESSING MODE
-            [
-                'type' => 'number',
-                'option' => 'adminCommentsPerPage',
-                'value' => '6',
-                'constant' => 'ADMIN_COMMENTS_PER_PAGE',
-                'category' => 'admin',
-                'description' => 'Показывать количество комментариев в панели администратора',
-                'activity' => true,
-                'sort' => 0,
-            ], // ADMIN COMMENTS PER PAGE
-            [
-                'type' => 'string',
-                'option' => 'adminCommentsDefaultSort',
-                'value' => 'idDesc',
-                'constant' => 'ADMIN_COMMENTS_DEFAULT_SORT',
-                'category' => 'admin',
-                'description' => 'Сортировка комментариев по умолчанию в панели администратора',
-                'activity' => true,
-                'sort' => 0,
-            ], // ADMIN COMMENTS DEFAULT SORT
-            [
-                'type' => 'string',
-                'option' => 'adminFinanceCurrenciesProcessingMode',
-                'value' => 'auto',
-                'constant' => 'ADMIN_FINANCE_CURRENCIES_PROCESSING_MODE',
-                'category' => 'admin',
-                'description' => 'Режим обработки данных валют в административной части: frontend / server / auto',
-                'activity' => true,
-                'sort' => 0,
-            ], // ADMIN FINANCE CURRENCIES PROCESSING MODE
-            [
-                'type' => 'number',
-                'option' => 'adminFinanceCurrenciesPerPage',
-                'value' => '6',
-                'constant' => 'ADMIN_FINANCE_CURRENCIES_PER_PAGE',
-                'category' => 'admin',
-                'description' => 'Показывать количество Валют в таблице Панели Администратора',
-                'activity' => true,
-                'sort' => 0,
-            ], // ADMIN FINANCE CURRENCIES PER PAGE
-            [
-                'type' => 'string',
-                'option' => 'adminFinanceCurrenciesDefaultSort',
-                'value' => 'idDesc',
-                'constant' => 'ADMIN_FINANCE_CURRENCIES_DEFAULT_SORT',
-                'category' => 'admin',
-                'description' => 'Сортировка по полю у Валют по умолчанию в таблице Панели Администратора',
-                'activity' => true,
-                'sort' => 0,
-            ], // ADMIN FINANCE CURRENCIES DEFAULT SORT
             [
                 'type' => 'string',
                 'option' => 'adminSchoolHashtagsProcessingMode',

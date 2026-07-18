@@ -72,6 +72,7 @@ export default {
     administrator: 'Administrator',
     administer: 'Administer',
     adminPanel: 'Admin Panel',
+    advantages: 'Advantages',
     age: 'Age',
     ageGroup: 'Age group',
     agreeTerms1: 'I agree to the',

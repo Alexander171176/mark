@@ -16,6 +16,7 @@ export default {
     noMain: 'Негізгі терезеден алып тастаңыз',
     noNewImagePreview: 'Жаңа кескіннің алдын ала қарау мүмкін емес',
     noParent: '-',
+    noReply: 'Жауап жоқ',
     noRight: 'Оң жақ бағаннан алып тастаңыз',
     noSignature: 'Қолтаңба жоқ',
     noStamp: 'Мөр жоқ',
@@ -36,6 +37,7 @@ export default {
     notShowInFooter: 'Төменгі мәзірде көрсетпеу',
     notShowInMenu: 'Мәзірде көрсетілмесін',
     notShowSeo: 'SEO өрістеріңізді көрсетпеңіз',
+    notVerified: 'Расталмаған',
     number: 'Саны',
     numberOrder: 'Тапсырыс нөмірі',
 }

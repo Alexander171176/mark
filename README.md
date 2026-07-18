@@ -1002,35 +1002,29 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketProductSeeder` <br>
 
-9) Отзывы товара <br>
-`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductReview/MarketProductReview -mfs` <br>
-`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductReview/MarketProductReviewImage -m` <br>
-`docker exec mark-php-app php artisan make:migration create_market_product_review_has_images_table --create=market_product_review_has_images` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductReview/MarketProductReviewResource` <br>
-`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductReview/MarketProductReviewImageResource` <br>
-`docker exec mark-php-app php artisan make:request Admin/Market/MarketProductReview/MarketProductReviewRequest` <br>
-`docker exec mark-php-app php artisan make:controller Admin/Market/MarketProductReview/MarketProductReviewController --resource` <br>
+9) Отзывы <br>
+`docker exec mark-php-app php artisan make:model Admin/Review/Review -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Review/ReviewImage -m` <br>
+`docker exec mark-php-app php artisan make:migration create_review_has_images_table --create=review_has_images` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Review/ReviewResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Review/ReviewImageResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Review/ReviewRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Review/ReviewController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=ReviewSeeder` <br>
 
 
 
-5) Товары / Бренды
-`docker exec mark-php-app php artisan make:migration create_market_products_table --create=market_products` <br>
-`docker exec mark-php-app php artisan make:migration create_market_category_has_products_table --create=market_category_has_products` <br>
-`docker exec mark-php-app php artisan make:migration create_market_brands_table --create=market_brands` <br>
-`docker exec mark-php-app php artisan make:migration create_market_brand_has_products_table --create=market_brand_has_products` <br>
 
+
+
+   
 6) Варианты товаров / Рекомендованные товары / Комплекты товаров 
 `docker exec mark-php-app php artisan make:migration create_market_product_variants_table --create=market_product_variants` <br>
 `docker exec mark-php-app php artisan make:migration create_market_product_recommendations_table --create=market_product_recommendations` <br>
 `docker exec mark-php-app php artisan make:migration create_market_kits_table --create=market_kits` <br>
 `docker exec mark-php-app php artisan make:migration create_market_kit_items_table --create=market_kit_items` <br>
-
-7) Группы характеристик / Характеристики / Значения характеристик
-`docker exec mark-php-app php artisan make:migration create_market_property_groups_table --create=market_property_groups` <br>
-`docker exec mark-php-app php artisan make:migration create_market_properties_table --create=market_properties` <br>
-`docker exec mark-php-app php artisan make:migration create_market_property_values_table --create=market_property_values` <br>
-`docker exec mark-php-app php artisan make:migration create_market_category_has_properties_table --create=market_category_has_properties` <br>
-`docker exec mark-php-app php artisan make:migration create_market_product_variant_has_property_values_table --create=market_product_variant_has_property_values` <br>
 
 8) Склады / остатки 
 `docker exec mark-php-app php artisan make:migration create_market_warehouses_table --create=market_warehouses` <br>

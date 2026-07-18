@@ -72,6 +72,7 @@ export default {
     administrator: 'Әкімші',
     administer: 'Әкімшілік',
     adminPanel: 'Әкімші панелі',
+    advantages: 'Артықшылықтары',
     age: 'Жасы',
     ageGroup: 'Жас тобы',
     agreeTerms1: 'Мен келісемін,',

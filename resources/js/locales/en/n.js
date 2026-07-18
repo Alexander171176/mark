@@ -16,6 +16,7 @@ export default {
     noMain: 'Remove from the main window',
     noNewImagePreview: 'there is no preview of the new image',
     noParent: '-',
+    noReply: 'No answer',
     noRight: 'Remove from the right column',
     noSignature: 'No Signature',
     noStamp: 'No Stamp',
@@ -36,6 +37,7 @@ export default {
     notShowInFooter: 'Don\'t show in footer menu',
     notShowInMenu: 'Do not show in menu',
     notShowSeo: 'Don\'t show your SEO fields',
+    notVerified: 'Not confirmed',
     number: 'Number',
     numberOrder: 'Order number',
 }

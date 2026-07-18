@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
+use App\Http\Controllers\Admin\Review\ReviewController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundle\SchoolBundleController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
@@ -86,6 +87,12 @@ Route::resource('/currencies', CurrencyController::class);
 
 // комментарии
 Route::resource('/comments', CommentController::class)->except(['create', 'store', 'show']);
+
+// отзывы
+Route::resource('/reviews', ReviewController::class)
+    ->only(['index', 'destroy',])
+    ->parameters(['reviews' => 'review',])
+    ->names('reviews');
 
 // маршруты блога
 Route::resource('/blog-rubrics', BlogRubricController::class)

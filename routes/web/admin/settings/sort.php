@@ -35,6 +35,11 @@ Route::put('/update-sort/comments',
     [SettingController::class, 'updateAdminSortComments'])
     ->name('updateAdminSortComments');
 
+// отзывы
+Route::put('/update-sort/reviews',
+    [SettingController::class, 'updateAdminSortReviews'])
+    ->name('updateAdminSortReviews');
+
 // блог
 Route::put('/update-sort/blog-rubrics',
     [SettingController::class, 'updateAdminSortBlogRubrics'])

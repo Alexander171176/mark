@@ -123,6 +123,8 @@ class DatabaseSeeder extends Seeder
             MarketTagSeeder::class,     // Теги
             MarketProductSeeder::class, // Товары
 
+            ReviewSeeder::class, // Отзывы
+
 // Добавьте сюда другие сидеры по мере необходимости
         ]);
     }

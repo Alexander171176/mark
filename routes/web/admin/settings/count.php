@@ -36,6 +36,11 @@ Route::put('/update-count/comments',
     [SettingController::class, 'updateAdminCountComments'])
     ->name('updateAdminCountComments');
 
+// отзывыs
+Route::put('/update-count/reviews',
+    [SettingController::class, 'updateAdminCountReviews'])
+    ->name('updateAdminCountReviews');
+
 // блог
 Route::put('/update-count/blog-rubrics',
     [SettingController::class, 'updateAdminCountBlogRubrics'])

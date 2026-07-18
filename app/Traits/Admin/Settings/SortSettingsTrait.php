@@ -102,6 +102,13 @@ trait SortSettingsTrait
             'adminCommentsDefaultSort', 'site_settings.adminCommentsDefaultSort');
     }
 
+    /** Обновляет сортировку элементов в отзывах */
+    public function updateAdminSortReviews(UpdateSortRequest $request): RedirectResponse
+    {
+        return $this->sortSetting($request,
+            'adminReviewsDefaultSort', 'site_settings.adminReviewsDefaultSort');
+    }
+
     /** Обновляет сортировку элементов в рубриках */
     public function updateAdminSortBlogRubrics(UpdateSortRequest $request): RedirectResponse
     {

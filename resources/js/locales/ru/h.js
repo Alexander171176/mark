@@ -1,5 +1,6 @@
 export default {
     hashtags: 'Хештеги',
+    hasReply: 'Есть ответ',
     heading: 'Заголовок',
     height: 'Высота',
     hide: 'Скрыть',

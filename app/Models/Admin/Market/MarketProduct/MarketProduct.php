@@ -7,9 +7,9 @@ use App\Models\Admin\Market\MarketBrand\MarketBrand;
 use App\Models\Admin\Market\MarketCategory\MarketCategory;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketProductAttributeValue\MarketProductAttributeValue;
-use App\Models\Admin\Market\MarketProductReview\MarketProductReview;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketTag\MarketTag;
+use App\Models\Admin\Review\Review;
 use App\Models\User;
 use App\Models\User\Like\MarketProductLike;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class MarketProduct extends Model
 {
@@ -281,11 +282,11 @@ class MarketProduct extends Model
     }
 
     /** Отзывы товара */
-    public function reviews(): HasMany
+    public function reviews(): MorphMany
     {
-        return $this->hasMany(
-            MarketProductReview::class,
-            'market_product_id'
+        return $this->morphMany(
+            Review::class,
+            'reviewable'
         );
     }
 

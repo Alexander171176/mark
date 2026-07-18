@@ -1,5 +1,6 @@
 export default {
     hashtags: 'Хэштегтер',
+    hasReply: 'Жауап бар',
     heading: 'Тақырып',
     height: 'Биіктігі',
     hide: 'Жасыру',

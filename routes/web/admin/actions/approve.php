@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Blog\BlogBanner\BlogBannerController;
 use App\Http\Controllers\Admin\Blog\BlogRubric\BlogRubricController;
 use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
+use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
@@ -15,8 +16,21 @@ use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
+use App\Http\Controllers\Admin\Review\ReviewController;
 use Illuminate\Support\Facades\Route;
 
+// Комментарии - одобрение
+Route::put('/comments/{comment}/approve',
+    [CommentController::class, 'approve'])
+    ->name('comments.approve');
+
+// Отзывы - одобрение
+Route::put('/reviews/{review}/approve',
+    [ReviewController::class, 'approve'])
+    ->whereNumber('review')
+    ->name('reviews.approve');
+
+// Блог
 Route::put('/blog-rubrics/{blogRubric}/approve',
     [BlogRubricController::class, 'approve'])
     ->name('blogRubrics.approve');
@@ -37,6 +51,7 @@ Route::put('/blog-videos/{blogVideo}/approve',
     [BlogVideoController::class, 'approve'])
     ->name('blogVideos.approve');
 
+// Маркет
 Route::put('/market-companies/{marketCompany}/approve',
     [MarketCompanyController::class, 'approve'])
     ->whereNumber('marketCompany')

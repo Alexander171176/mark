@@ -1,5 +1,6 @@
 export default {
     hashtags: 'Hashtags',
+    hasReply: 'There is an answer',
     heading: 'Heading',
     height: 'Height',
     hide: 'Hide',

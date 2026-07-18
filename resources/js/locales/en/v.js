@@ -7,6 +7,7 @@ export default {
     venue: 'Venue',
     verificationLinkSent: 'A new verification link has been sent to your email address.',
     verificationLinkSent2: 'A new verification link has been sent to the email address you provided in your profile settings.',
+    verified: 'Confirmed',
     version: 'Version',
     video: 'Video',
     videoAlt: 'Video Alt',

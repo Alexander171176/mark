@@ -43,12 +43,6 @@ Route::prefix('actions')->name('actions.')->group(function () { // Группи�
     // Обновление сортировки (bulk / drag-and-drop)
     require __DIR__ . '/bulk-sort.php';
 
-    // Обновление сортировки (1 запись)
-    // require __DIR__ . '/sort.php';
-
-    // Одобрение комментария
-    require __DIR__ . '/comment-approve.php';
-
     // Одобрение рубрики
     require __DIR__ . '/approve.php';
 

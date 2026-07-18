@@ -46,6 +46,7 @@ export default {
     director: 'Директор',
     disable: 'Отключить',
     disabled: 'выключено',
+    disadvantages: 'Недостатки',
     discountTotal: 'Общая сумма скидок',
     done: 'Сделано.',
     download: 'Скачать',

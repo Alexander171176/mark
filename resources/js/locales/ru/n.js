@@ -16,6 +16,7 @@ export default {
     noMain: 'Убрать с главного окна',
     noNewImagePreview: 'Нет предварительного просмотра нового изображения',
     noParent: '-',
+    noReply: 'Нет ответа',
     noRight: 'Убрать с правой колонки',
     noSignature: 'Нет подписи',
     noStamp: 'Нет печати',
@@ -36,6 +37,7 @@ export default {
     notShowInFooter: 'Не показывать в меню Footer',
     notShowInMenu: 'Не показывать в меню',
     notShowSeo: 'Не показывать свои поля SEO',
+    notVerified: 'Не подтверждён',
     number: 'Число',
     numberOrder: 'Номер заказа',
 }

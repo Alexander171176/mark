@@ -46,6 +46,7 @@ export default {
     director: 'Director',
     disable: 'Disable',
     disabled: 'Disabled',
+    disadvantages: 'Flaws',
     discountTotal: 'Total amount of discounts',
     done: 'Done.',
     download: 'Download',

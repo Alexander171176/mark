@@ -46,6 +46,7 @@ export default {
     director: 'Директор',
     disable: 'Өшіру',
     disabled: 'Өшірілген',
+    disadvantages: 'Кемшіліктер',
     discountTotal: 'Жеңілдіктердің жалпы сомасы',
     done: 'Аяқталды.',
     download: 'Жүктеу',

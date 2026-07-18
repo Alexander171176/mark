@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
+use App\Http\Controllers\Admin\Review\ReviewController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolBundlePrice\SchoolBundlePriceController;
 use App\Http\Controllers\Admin\School\SchoolCoursePrice\SchoolCoursePriceController;
@@ -37,6 +38,10 @@ Route::delete('/currencies/bulk-delete',
 Route::delete('/comments/bulk-delete',
     [CommentController::class, 'bulkDestroy'])
     ->name('comments.bulkDestroy');
+
+Route::delete('/reviews/bulk-delete',
+    [ReviewController::class, 'bulkDestroy'])
+    ->name('reviews.bulkDestroy');
 
 // блог
 Route::delete('/blog-rubrics/bulk-delete',

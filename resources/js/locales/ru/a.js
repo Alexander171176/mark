@@ -72,6 +72,7 @@ export default {
     administrator: 'Администратор',
     administer: 'Администрировать',
     adminPanel: 'Панель Администратора',
+    advantages: 'Достоинства',
     age: 'Возраст',
     ageGroup: 'Возрастная группа',
     agreeTerms1: 'Я согласен,',

@@ -220,5 +220,6 @@ export default {
     switchTeams: 'Switch Teams',
     symbol: 'Symbol',
     symbolFirst: 'Symbol ahead',
+    system: 'System',
     systems: 'Systems',
 }

@@ -43,6 +43,7 @@ export default {
     commentedArticle: 'The commented article: ',
     commentedRubric: 'The commented rubric',
     commentDetails: 'Comment Details',
+    communications: 'Communications',
     company: 'Company',
     companyLogo: 'Company Logo',
     companyType: 'Company type',

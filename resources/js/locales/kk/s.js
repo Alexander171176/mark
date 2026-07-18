@@ -220,5 +220,6 @@ export default {
     switchTeams: 'Топты ауыстыру',
     symbol: 'Белгі',
     symbolFirst: 'Алда символ бар',
+    system: 'Жүйе',
     systems: 'Жүйелік',
 }

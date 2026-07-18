@@ -43,6 +43,7 @@ export default {
     commentedArticle: 'Пікір жазылған мақала: ',
     commentedRubric: 'Пікір жазылған рубрика',
     commentDetails: 'Пікірдің егжей-тегжейі',
+    communications: 'Байланыс',
     company: 'Компания',
     companyLogo: 'Логотип таңдау',
     companyType: 'Компания түрі',

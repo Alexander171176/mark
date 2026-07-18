@@ -4,19 +4,21 @@ import { defineProps, defineEmits } from 'vue'
 import {Link, usePage} from '@inertiajs/vue3'
 
 import ApplicationMark from '@/Components/Base/ApplicationMark.vue'
-import DraggableSidebarGroupLink from '@/Components/Admin/UI/Links/DraggableSidebarGroupLink.vue'
-import DraggableSidebarPageMarketLink from '@/Components/Admin/UI/Links/DraggableSidebarPageMarketLink.vue'
-import DraggableSidebarPageFinanceLink from '@/Components/Admin/UI/Links/DraggableSidebarPageFinanceLink.vue'
-import DraggableSidebarPageSchoolLink from '@/Components/Admin/UI/Links/DraggableSidebarPageSchoolLink.vue'
-import DraggableSidebarPageBlogLink from '@/Components/Admin/UI/Links/DraggableSidebarPageBlogLink.vue'
-import DraggableSidebarPageStatisticLink from '@/Components/Admin/UI/Links/DraggableSidebarPageStatisticLink.vue'
-import DraggableSidebarPageMainLink from '@/Components/Admin/UI/Links/DraggableSidebarPageMainLink.vue'
+import SidebarMain from '@/Components/Admin/UI/Links/SidebarMain.vue'
+import SidebarCms from '@/Components/Admin/UI/Links/SidebarCms.vue'
+import SidebarMarket from '@/Components/Admin/UI/Links/SidebarMarket.vue'
+import SidebarFinance from '@/Components/Admin/UI/Links/SidebarFinance.vue'
+import SidebarSchool from '@/Components/Admin/UI/Links/SidebarSchool.vue'
+import SidebarBlog from '@/Components/Admin/UI/Links/SidebarBlog.vue'
+import SidebarCommunications from '@/Components/Admin/UI/Links/SidebarCommunications.vue'
+import SidebarStatistics from '@/Components/Admin/UI/Links/SidebarStatistics.vue'
+import SidebarSystem from '@/Components/Admin/UI/Links/SidebarSystem.vue'
+import SidebarSettings from '@/Components/Admin/UI/Links/SidebarSettings.vue'
 import DigitalClock from '@/Components/Admin/UI/CurrentTime/DigitalClock.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { fas } from '@fortawesome/free-solid-svg-icons'
 import { useI18n } from 'vue-i18n'
-import DraggableSidebarPageCmsLink from '@/Components/Admin/UI/Links/DraggableSidebarPageCmsLink.vue'
 
 library.add(fas);
 
@@ -95,11 +97,14 @@ watch(sidebarExpanded, (newVal) => {
 
 const sidebarGroups = ref({
     pages: localStorage.getItem('sidebar-group-pages') !== 'false',
-    market: localStorage.getItem('sidebar-group-market') !== 'false',
+    cms: localStorage.getItem('sidebar-group-cms') !== 'false',
     finance: localStorage.getItem('sidebar-group-finance') !== 'false',
+    market: localStorage.getItem('sidebar-group-market') !== 'false',
     school: localStorage.getItem('sidebar-group-school') !== 'false',
     blog: localStorage.getItem('sidebar-group-blog') !== 'false',
+    communications: localStorage.getItem('sidebar-group-communications') !== 'false',
     statistics: localStorage.getItem('sidebar-group-statistics') !== 'false',
+    system: localStorage.getItem('sidebar-group-system') !== 'false',
     administrator: localStorage.getItem('sidebar-group-administrator') !== 'false',
 })
 
@@ -153,7 +158,7 @@ const toggleSidebarGroup = (key) => {
             <DigitalClock v-if="sidebarExpanded" class="mb-2 relative z-10" />
             <div class="space-y-1">
 
-                <!-- Ссылки администратора -->
+                <!-- Ссылки Администратора -->
                 <span
                     class="flex justify-between items-center cursor-pointer select-none
                            text-xs uppercase font-semibold pl-1 pr-1 opacity-95
@@ -170,19 +175,18 @@ const toggleSidebarGroup = (key) => {
                         <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
                     </svg>
                 </span>
-
-                <DraggableSidebarPageMainLink
+                <SidebarMain
                     v-show="!sidebarExpanded || sidebarGroups.pages"
                     :expanded="sidebarExpanded"
                 />
 
-                <!-- Ссылки страниц CMS -->
+                <!-- Ссылки CMS -->
                 <span
                     class="flex justify-between items-center cursor-pointer select-none
                            text-xs uppercase font-semibold pl-1 pr-1 opacity-95
                            text-indigo-200 pt-1 border-t border-dotted border-gray-50"
                     v-if="sidebarExpanded"
-                    @click.prevent="toggleSidebarGroup('market')"
+                    @click.prevent="toggleSidebarGroup('cms')"
                 >
                     CMS
                     <svg
@@ -193,12 +197,12 @@ const toggleSidebarGroup = (key) => {
                         <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
                     </svg>
                 </span>
-                <DraggableSidebarPageCmsLink
-                    v-show="!sidebarExpanded || sidebarGroups.market"
+                <SidebarCms
+                    v-show="!sidebarExpanded || sidebarGroups.cms"
                     :expanded="sidebarExpanded"
                 />
 
-                <!-- Ссылки страниц магазина -->
+                <!-- Ссылки Магазина -->
                 <span
                     class="flex justify-between items-center cursor-pointer select-none
                            text-xs uppercase font-semibold pl-1 pr-1 opacity-95
@@ -215,12 +219,12 @@ const toggleSidebarGroup = (key) => {
                         <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
                     </svg>
                 </span>
-                <DraggableSidebarPageMarketLink
+                <SidebarMarket
                     v-show="!sidebarExpanded || sidebarGroups.market"
                     :expanded="sidebarExpanded"
                 />
 
-                <!-- Ссылки страниц онлайн школы -->
+                <!-- Ссылки Финансы -->
                 <span
                     class="flex justify-between items-center cursor-pointer select-none
                            text-xs uppercase font-semibold pl-1 pr-1 opacity-95
@@ -237,12 +241,12 @@ const toggleSidebarGroup = (key) => {
                         <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
                     </svg>
                 </span>
-                <DraggableSidebarPageFinanceLink
+                <SidebarFinance
                     v-show="!sidebarExpanded || sidebarGroups.finance"
                     :expanded="sidebarExpanded"
                 />
 
-                <!-- Ссылки страниц онлайн школы -->
+                <!-- Ссылки Школы -->
                 <span
                     class="flex justify-between items-center cursor-pointer select-none
                            text-xs uppercase font-semibold pl-1 pr-1 opacity-95
@@ -259,12 +263,12 @@ const toggleSidebarGroup = (key) => {
                         <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
                     </svg>
                 </span>
-                <DraggableSidebarPageSchoolLink
+                <SidebarSchool
                     v-show="!sidebarExpanded || sidebarGroups.school"
                     :expanded="sidebarExpanded"
                 />
 
-                <!-- Ссылки страниц блога -->
+                <!-- Ссылки Блога -->
                 <span
                     class="flex justify-between items-center cursor-pointer select-none
                            text-xs uppercase font-semibold pl-1 pr-1 opacity-95
@@ -281,12 +285,34 @@ const toggleSidebarGroup = (key) => {
                         <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
                     </svg>
                 </span>
-                <DraggableSidebarPageBlogLink
+                <SidebarBlog
                     v-show="!sidebarExpanded || sidebarGroups.blog"
                     :expanded="sidebarExpanded"
                 />
 
-                <!-- Ссылки страниц статистики -->
+                <!-- Ссылки Коммуникаций -->
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('communications')"
+                >
+                    {{ t('communications') }}
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.communications }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
+                </span>
+                <SidebarCommunications
+                    v-show="!sidebarExpanded || sidebarGroups.communications"
+                    :expanded="sidebarExpanded"
+                />
+
+                <!-- Ссылки Статистики -->
                 <span
                     class="flex justify-between items-center cursor-pointer select-none
                            text-xs uppercase font-semibold pl-1 pr-1 opacity-95
@@ -303,12 +329,34 @@ const toggleSidebarGroup = (key) => {
                         <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
                     </svg>
                 </span>
-                <DraggableSidebarPageStatisticLink
+                <SidebarStatistics
                     v-show="!sidebarExpanded || sidebarGroups.statistics"
                     :expanded="sidebarExpanded"
                 />
 
-                <!-- Ссылки главного ряда -->
+                <!-- Ссылки Системные -->
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('system')"
+                >
+                    {{ t('system') }}
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.system }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
+                </span>
+                <SidebarSystem
+                    v-show="!sidebarExpanded || sidebarGroups.system"
+                    :expanded="sidebarExpanded"
+                />
+
+                <!-- Ссылки Настройки -->
                 <span
                     class="flex justify-between items-center cursor-pointer select-none
                            text-xs uppercase font-semibold pl-1 pr-1 opacity-95
@@ -317,7 +365,7 @@ const toggleSidebarGroup = (key) => {
                 >
                     {{ t('administrator') }}
                 </span>
-                <DraggableSidebarGroupLink :expanded="sidebarExpanded" />
+                <SidebarSettings :expanded="sidebarExpanded" />
 
             </div>
         </div>

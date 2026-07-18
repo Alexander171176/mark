@@ -220,5 +220,6 @@ export default {
     switchTeams: 'Переключение Группы',
     symbol: 'Символ',
     symbolFirst: 'Символ впереди',
+    system: 'Система',
     systems: 'Системные',
 }

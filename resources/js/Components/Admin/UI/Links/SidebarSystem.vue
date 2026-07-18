@@ -1,11 +1,8 @@
 <script setup>
-import {ref, watch, onMounted, onUnmounted, computed} from 'vue';
-import { useI18n } from 'vue-i18n';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import Draggable from 'vuedraggable';
 import DraggableSidebarLink from '@/Components/Admin/UI/Links/DraggableSidebarLink.vue';
-import {usePage} from "@inertiajs/vue3";
 
-const { siteSettings } = usePage().props;
 defineProps({
     expanded: Boolean
 });
@@ -34,16 +31,9 @@ onUnmounted(() => {
     if (observer) observer.disconnect();
 });
 
-const colorTextActive = computed(() => {
-    return isDarkMode.value
-        ? (siteSettings.AdminSidebarDarkActiveText || 'text-yellow-200')
-        : (siteSettings.AdminSidebarLightActiveText || 'text-yellow-200');
-});
+const emit = defineEmits(['update:pageLinks']);
 
-const emit = defineEmits(['update:hiddenLinks']);
-const { t } = useI18n();
-
-const hiddenLinks = ref(JSON.parse(localStorage.getItem('hiddenLinks')) || [
+const pageLinks = ref(JSON.parse(localStorage.getItem('pageLinks')) || [
     'logs',
     'phpinfo',
     'composer',
@@ -58,42 +48,26 @@ const hiddenLinks = ref(JSON.parse(localStorage.getItem('hiddenLinks')) || [
     'reports',
 ]);
 
-const showHiddenLinks = ref(false);
-
-const toggleHiddenLinks = () => {
-    showHiddenLinks.value = !showHiddenLinks.value;
-};
-
 const handleDragEnd = () => {
-    localStorage.setItem('hiddenLinks', JSON.stringify(hiddenLinks.value));
-    emit('update:hiddenLinks', hiddenLinks.value);
+    localStorage.setItem('pageLinks', JSON.stringify(pageLinks.value));
+    emit('update:pageLinks', pageLinks.value);
 };
 
-watch(hiddenLinks, (newVal) => {
-    localStorage.setItem('hiddenLinks', JSON.stringify(newVal));
-    emit('update:hiddenLinks', newVal);
+watch(pageLinks, (newVal) => {
+    localStorage.setItem('pageLinks', JSON.stringify(newVal));
+    emit('update:pageLinks', newVal);
 });
 
 onMounted(() => {
-    hiddenLinks.value = JSON.parse(localStorage.getItem('hiddenLinks')) || hiddenLinks.value;
+    pageLinks.value = JSON.parse(localStorage.getItem('pageLinks')) || pageLinks.value;
 });
 </script>
 
 <template>
-    <button @click="toggleHiddenLinks" class="flex justify-center items-center w-full mb-0">
-        <span :class="[colorTextActive]"
-              class="text-xs uppercase font-semibold opacity-45">
-            {{ t('systems') }}
-        </span>
-    </button>
-
-    <Draggable v-if="showHiddenLinks"
-               v-model="hiddenLinks" @end="handleDragEnd" itemKey="id" group="links"
+    <Draggable v-model="pageLinks" @end="handleDragEnd" itemKey="id" group="links"
                tag="ul" class="pb-2">
         <template #item="{ element }">
             <DraggableSidebarLink :id="element" :expanded="expanded" />
         </template>
     </Draggable>
-
-    <br>
 </template>

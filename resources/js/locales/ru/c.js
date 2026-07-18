@@ -43,6 +43,7 @@ export default {
     commentedArticle: 'Комментируемая статья: ',
     commentedRubric: 'Комментируемая рубрика',
     commentDetails: 'Детали Комментария',
+    communications: 'Коммуникации',
     company: 'Компания',
     companyLogo: 'Логотип компании',
     companyType: 'Тип компании',

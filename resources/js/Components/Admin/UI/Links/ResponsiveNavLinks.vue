@@ -203,11 +203,16 @@ const { t } = useI18n();
             :active="route().current('admin.blogVideos.*')">
             {{ t('videos') }}
         </ResponsiveNavLink>
-        <!-- Админский маршрут комментариев -->
+        <!-- Админский маршрут коммуникаций -->
         <ResponsiveNavLink
             :href="route('admin.comments.index')"
             :active="route().current('admin.comments.*')">
             {{ t('comments') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.reviews.index')"
+            :active="route().current('admin.reviews.*')">
+            {{ t('reviews') }}
         </ResponsiveNavLink>
         <!-- Админский маршрут графиков -->
         <ResponsiveNavLink

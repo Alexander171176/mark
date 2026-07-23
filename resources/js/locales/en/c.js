@@ -121,6 +121,7 @@ export default {
     currencyCode: 'Currency code',
     currencyCodeComment: 'Code (e.g. USD)',
     currencyComma: 'Comma',
+    currencyDesc: 'An empty value uses the currency of the parent product.',
     currencyDot: 'Dot',
     currencyNbsp: 'Non-breaking space',
     currencyRates: 'Exchange rates',

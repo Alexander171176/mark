@@ -23,6 +23,7 @@ export default {
     banners: 'Баннеры',
     barcode: 'штрихкод',
     baseUnit: 'Базовая единица',
+    basicProductVariant: 'Основной вариант товара',
     billingAddress: 'Адрес юр.лица',
     billingCompany: 'Компания',
     billingPeriod: 'Расчетный период',

@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
+use App\Http\Controllers\Admin\Market\MarketProductVariant\MarketProductVariantController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use App\Http\Controllers\Admin\Review\ReviewController;
@@ -122,6 +123,10 @@ Route::delete('/market-categories/bulk-delete',
 Route::delete('/market-products/bulk-delete',
     [MarketProductController::class, 'bulkDestroy'])
     ->name('marketProducts.bulkDestroy');
+
+Route::delete('/market-product-variants/bulk-delete',
+    [MarketProductVariantController::class, 'bulkDestroy'])
+    ->name('marketProductVariants.bulkDestroy');
 
 Route::delete('/market-brands/bulk-delete',
     [MarketBrandController::class, 'bulkDestroy'])

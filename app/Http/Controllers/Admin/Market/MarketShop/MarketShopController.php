@@ -9,7 +9,6 @@ use App\Http\Resources\Admin\Market\MarketShop\MarketShopResource;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketShop\MarketShopImage;
-use App\Services\Admin\AdminFeatureService;
 use App\Services\Admin\ImagePresetService;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
@@ -533,11 +532,5 @@ class MarketShopController extends BaseMarketAdminController
             directory: 'market/market_shops/logos',
             storeOriginal: false
         );
-    }
-
-    /** Сервис определения настройки процессора изображений */
-    protected function imageProcessorEnabled(): bool
-    {
-        return app(AdminFeatureService::class)->imageProcessorEnabled();
     }
 }

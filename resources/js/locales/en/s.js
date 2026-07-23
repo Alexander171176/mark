@@ -15,6 +15,7 @@ export default {
     shapeRectangle: 'Rectangle',
     shapeSquare: 'Square',
     shapeCircle: 'Circle',
+    showDetails: 'Show details',
     showFromAt: 'Start of publication',
     showOwner: 'Show owner',
     showToAt: 'End of publication',

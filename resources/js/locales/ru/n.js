@@ -21,6 +21,7 @@ export default {
     noSignature: 'Нет подписи',
     noStamp: 'Нет печати',
     notes: 'Заметки Администратора',
+    notDefaultVariant: 'Не основной вариант',
     notFilterable: 'Не показывать в фильтре',
     notHit: 'нет в Рекомендованных',
     notLeft: 'нет в левой колонке',

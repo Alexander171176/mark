@@ -2694,6 +2694,86 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // PUBLIC MARKET PRODUCTS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'adminMarketProductVariantsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_PRODUCT_VARIANTS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных вариантов товаров в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCT VARIANTS PROCESSING MODE
+            [
+                'type' => 'string',
+                'option' => 'publicMarketProductVariantsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'PUBLIC_MARKET_PRODUCT_VARIANTS_PROCESSING_MODE',
+                'category' => 'public',
+                'description' => 'Режим обработки данных вариантов товаров в публичной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCT VARIANTS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketProductVariantsPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_PRODUCT_VARIANTS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество вариантов товаров в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCT VARIANTS PER PAGE
+            [
+                'type' => 'number',
+                'option' => 'publicMarketProductVariantsPerPage',
+                'value' => '3',
+                'constant' => 'PUBLIC_MARKET_PRODUCT_VARIANTS_PER_PAGE',
+                'category' => 'public',
+                'description' => 'Показывать количество вариантов товаров в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCT VARIANTS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketProductVariantsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_PRODUCT_VARIANTS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка вариантов товаров по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCT VARIANTS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'publicMarketProductVariantsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'PUBLIC_MARKET_PRODUCT_VARIANTS_DEFAULT_SORT',
+                'category' => 'public',
+                'description' => 'Сортировка вариантов товаров по умолчанию в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCT VARIANTS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketProductVariantsDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_PRODUCT_VARIANTS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка вариантов товаров в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCT VARIANTS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'publicMarketProductVariantsDefaultView',
+                'value' => 'grid',
+                'constant' => 'PUBLIC_MARKET_PRODUCT_VARIANTS_DEFAULT_VIEW',
+                'category' => 'public',
+                'description' => 'Вид списка вариантов товаров в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCT VARIANTS DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

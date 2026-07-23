@@ -1014,6 +1014,22 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=ReviewSeeder` <br>
 
+10) Варианты товаров <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductVariant/MarketProductVariant -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductVariant/MarketProductVariantTranslation -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductVariant/MarketProductVariantValue -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductVariant/MarketProductVariantImage -m` <br>
+`docker exec mark-php-app php artisan make:migration create_market_product_variant_has_images_table --create=market_product_variant_has_images` <br>
+`docker exec mark-php-app php artisan make:migration add_use_for_variants_to_market_attributes_table --table=market_attributes` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductVariant/MarketProductVariantResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductVariant/MarketProductVariantTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductVariant/MarketProductVariantSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductVariant/MarketProductVariantImageResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketProductVariant/MarketProductVariantRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketProductVariant/MarketProductVariantController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketProductVariantSeeder` <br>
 
 
 

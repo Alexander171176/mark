@@ -111,11 +111,6 @@ class DatabaseSeeder extends Seeder
             // Конструктор страниц
             CmsPageSeeder::class,
 
-            // Характеристики магазина
-            MarketAttributeGroupSeeder::class, // Группы характеристик
-            MarketAttributeSeeder::class,      // Характеристики
-            MarketAttributeValueSeeder::class, // Значения характеристик
-
             //  Маркет
             MarketCompanySeeder::class, // Фирмы
             MarketShopSeeder::class,    // Магазины
@@ -124,6 +119,13 @@ class DatabaseSeeder extends Seeder
             MarketProductSeeder::class, // Товары
 
             ReviewSeeder::class, // Отзывы
+
+            // Характеристики магазина
+            MarketAttributeGroupSeeder::class, // Группы характеристик
+            MarketAttributeSeeder::class,      // Характеристики
+            MarketAttributeValueSeeder::class, // Значения характеристик
+
+            MarketProductVariantSeeder::class,
 
 // Добавьте сюда другие сидеры по мере необходимости
         ]);

@@ -4,6 +4,7 @@ namespace App\Http\Resources\Admin\Market\MarketProduct;
 
 use App\Http\Resources\Admin\Finance\Currency\CurrencyResource;
 use App\Http\Resources\Admin\Market\MarketCategory\MarketCategoryResource;
+use App\Http\Resources\Admin\Market\MarketProductVariant\MarketProductVariantSharedResource;
 use App\Http\Resources\Admin\Market\MarketTag\MarketTagResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -128,6 +129,26 @@ class MarketProductResource extends JsonResource
             'has_stock' => $this->hasStock(),
             'has_old_price' => $this->hasOldPrice(),
             'has_wholesale_price' => $this->hasWholesalePrice(),
+
+            /**
+             * Состояние вариантов товара.
+             *
+             * Для административных списков желательно загружать
+             * variants_count через withCount(), чтобы не создавать
+             * дополнительный запрос для каждого товара.
+             */
+            'has_variants' => isset($this->variants_count)
+                ? (int) $this->variants_count > 0
+                : $this->hasVariants(),
+
+            'has_available_variants' => $this->relationLoaded('variants')
+                ? $this->variants
+                    ->contains(
+                        fn ($variant) =>
+                            $variant->isActive()
+                            && $variant->hasStock()
+                    )
+                : $this->hasAvailableVariants(),
 
             'is_active' => $this->isActive(),
             'is_published' => $this->isPublished(),
@@ -407,6 +428,38 @@ class MarketProductResource extends JsonResource
                 }
             ),
 
+            /**
+             * Все варианты товара.
+             *
+             * Используем компактный ресурс, чтобы основной ресурс товара
+             * не содержал чрезмерно тяжёлую вложенную структуру.
+             */
+            'variants' => MarketProductVariantSharedResource::collection(
+                $this->whenLoaded('variants')
+            ),
+
+            /**
+             * Основной вариант товара.
+             */
+            'default_variant' => $this->whenLoaded(
+                'defaultVariant',
+                fn () => $this->defaultVariant
+                    ? new MarketProductVariantSharedResource(
+                        $this->defaultVariant
+                    )
+                    : null
+            ),
+
+            /**
+             * Публично доступные варианты.
+             *
+             * Связь загружается только там, где действительно нужна:
+             * например, в публичной карточке товара.
+             */
+            'public_variants' => MarketProductVariantSharedResource::collection(
+                $this->whenLoaded('publicVariants')
+            ),
+
             /** Связанные товары */
             'related_products' => MarketProductSharedResource::collection(
                 $this->whenLoaded('relatedProducts')
@@ -419,6 +472,10 @@ class MarketProductResource extends JsonResource
             'categories_count' => $this->whenCounted('categories'),
             'tags_count' => $this->whenCounted('tags'),
             'attribute_values_count' => $this->whenCounted('attributeValues'),
+
+            'variants_count' => $this->whenCounted('variants'),
+            'public_variants_count' => $this->whenCounted('publicVariants'),
+
             'reviews_count' => $this->whenCounted('reviews'),
             'likes_relation_count' => $this->whenCounted('likes'),
             'related_products_count' => $this->whenCounted('relatedProducts'),

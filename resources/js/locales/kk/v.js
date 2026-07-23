@@ -1,6 +1,8 @@
 export default {
     value: 'Мән',
     values: 'Құндылықтар',
+    variants: 'Опциялар',
+    variantDimensions: 'Нұсқаның өзіндік өлшемдері',
     vat: 'ҚҚС',
     vatRate: 'ҚҚС мөлшерлемесі %',
     vendorCode: 'Жеткізуші коды',

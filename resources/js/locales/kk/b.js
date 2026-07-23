@@ -23,6 +23,7 @@ export default {
     banners: 'Баннерлер',
     barcode: 'штрих-код',
     baseUnit: 'Негізгі блок',
+    basicProductVariant: 'Негізгі өнім нұсқасы',
     billingAddress: 'Заңды тұлғаның мекенжайы',
     billingCompany: 'Компаниясы',
     billingTaxId: 'БИН/ИНН/VAT',

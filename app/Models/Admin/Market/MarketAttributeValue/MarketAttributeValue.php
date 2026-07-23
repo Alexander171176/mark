@@ -3,6 +3,8 @@
 namespace App\Models\Admin\Market\MarketAttributeValue;
 
 use App\Models\Admin\Market\MarketAttribute\MarketAttribute;
+use App\Models\Admin\Market\MarketProductAttributeValue\MarketProductAttributeValue;
+use App\Models\Admin\Market\MarketProductVariant\MarketProductVariantValue;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -96,6 +98,42 @@ class MarketAttributeValue extends Model
         )->where('locale', app()->getLocale());
     }
 
+    /**
+     * Использования справочного значения в обычных товарах.
+     */
+    public function productValues(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductAttributeValue::class,
+            'market_attribute_value_id'
+        );
+    }
+
+    /**
+     * Использования значения характеристики
+     * в вариантах товаров.
+     */
+    public function variantValues(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductVariantValue::class,
+            'market_attribute_value_id'
+        );
+    }
+
+    /* ===================== Helpers ===================== */
+
+    /**
+     * Используется ли значение характеристики
+     * хотя бы в одном варианте товара.
+     */
+    public function isUsedInVariants(): bool
+    {
+        return $this->relationLoaded('variantValues')
+            ? $this->variantValues->isNotEmpty()
+            : $this->variantValues()->exists();
+    }
+
     /* ===================== Scopes ===================== */
 
     /** Только активные */
@@ -176,6 +214,16 @@ class MarketAttributeValue extends Model
                 })
                 ->select('market_attribute_values.*')
                 ->orderBy('sort_attribute_translations.title', 'desc')
+                ->orderByDesc('market_attribute_values.id'),
+
+            'variantValuesCountAsc' => $query
+                ->withCount('variantValues')
+                ->orderBy('variant_values_count', 'asc')
+                ->orderByDesc('market_attribute_values.id'),
+
+            'variantValuesCountDesc' => $query
+                ->withCount('variantValues')
+                ->orderBy('variant_values_count', 'desc')
                 ->orderByDesc('market_attribute_values.id'),
 
             'codeAsc' => $query->orderBy('code', 'asc')->orderByDesc('id'),

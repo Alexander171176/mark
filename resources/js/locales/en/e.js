@@ -24,6 +24,7 @@ export default {
     editMarketCategory: 'Edit Product Category',
     editMarketCompany: 'Edit company',
     editMarketProduct: 'Edit Product',
+    editMarketProductVariant: 'Edit Product Variant',
     editMarketShop: 'Edit store',
     editModule: 'Edit Module',
     editNotes: 'Edit a note',

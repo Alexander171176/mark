@@ -3,6 +3,8 @@
 namespace App\Models\Admin\Market\MarketAttribute;
 
 use App\Models\Admin\Market\MarketAttributeGroup\MarketAttributeGroup;
+use App\Models\Admin\Market\MarketProductAttributeValue\MarketProductAttributeValue;
+use App\Models\Admin\Market\MarketProductVariant\MarketProductVariantValue;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,6 +31,7 @@ class MarketAttribute extends Model
 
         'required',
         'filterable',
+        'use_for_variants',
         'visible',
 
         'sort',
@@ -52,6 +55,7 @@ class MarketAttribute extends Model
 
         'required' => 'boolean',
         'filterable' => 'boolean',
+        'use_for_variants' => 'boolean',
         'visible' => 'boolean',
 
         'sort' => 'integer',
@@ -119,7 +123,75 @@ class MarketAttribute extends Model
         );
     }
 
+    /**
+     * Использования характеристики в обычных товарах.
+     */
+    public function productValues(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductAttributeValue::class,
+            'market_attribute_id'
+        );
+    }
+
+    /**
+     * Использования характеристики
+     * при формировании вариантов товаров.
+     */
+    public function variantValues(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductVariantValue::class,
+            'market_attribute_id'
+        );
+    }
+
+    /* ===================== Helpers ===================== */
+
+    /**
+     * Характеристика используется
+     * при формировании вариантов товаров.
+     */
+    public function isUsedForVariants(): bool
+    {
+        return (bool) $this->use_for_variants;
+    }
+
+    /**
+     * Характеристика имеет справочные значения.
+     */
+    public function hasValues(): bool
+    {
+        return $this->relationLoaded('values')
+            ? $this->values->isNotEmpty()
+            : $this->values()->exists();
+    }
+
     /* ===================== Scopes ===================== */
+
+    /**
+     * Только характеристики, используемые
+     * при формировании вариантов товаров.
+     */
+    public function scopeForVariants(Builder $query): Builder
+    {
+        return $query->where(
+            'market_attributes.use_for_variants',
+            true
+        );
+    }
+
+    /**
+     * Только обычные характеристики,
+     * не участвующие в вариантах.
+     */
+    public function scopeNotForVariants(Builder $query): Builder
+    {
+        return $query->where(
+            'market_attributes.use_for_variants',
+            false
+        );
+    }
 
     /** Только активные */
     public function scopeActive(Builder $query): Builder
@@ -232,6 +304,32 @@ class MarketAttribute extends Model
             'filterableDesc' => $query->orderBy('filterable', 'desc')->orderByDesc('id'),
             'filterable' => $query->where('filterable', true)->orderByDesc('id'),
             'notFilterable' => $query->where('filterable', false)->orderByDesc('id'),
+
+            'variantValuesCountAsc' => $query
+                ->withCount('variantValues')
+                ->orderBy('variant_values_count', 'asc')
+                ->orderByDesc('market_attributes.id'),
+
+            'variantValuesCountDesc' => $query
+                ->withCount('variantValues')
+                ->orderBy('variant_values_count', 'desc')
+                ->orderByDesc('market_attributes.id'),
+
+            'useForVariantsAsc' => $query
+                ->orderBy('use_for_variants', 'asc')
+                ->orderByDesc('id'),
+
+            'useForVariantsDesc' => $query
+                ->orderBy('use_for_variants', 'desc')
+                ->orderByDesc('id'),
+
+            'useForVariants' => $query
+                ->where('use_for_variants', true)
+                ->orderByDesc('id'),
+
+            'notForVariants' => $query
+                ->where('use_for_variants', false)
+                ->orderByDesc('id'),
 
             'visibleAsc' => $query->orderBy('visible', 'asc')->orderByDesc('id'),
             'visibleDesc' => $query->orderBy('visible', 'desc')->orderByDesc('id'),

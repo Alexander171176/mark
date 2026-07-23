@@ -15,6 +15,7 @@ export default {
     decimalSeparator: 'Decimal separator',
     defaultImageAlt: 'Default Image',
     defaultImageTitle: 'Image Not Set',
+    defaultVariant: 'Default Variant',
     delete: 'Delete',
     deleteAccountButton: 'Delete Account',
     deleteAccountConfirmation: 'Are you sure you want to delete your account? Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.',

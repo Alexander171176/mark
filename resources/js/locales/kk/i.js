@@ -15,6 +15,7 @@ export default {
     import: 'Импорттау',
     inactive: 'Белсенді емес',
     individual: 'Individual',
+    inherited: 'Мұрагерлік',
     instructions: 'Нұсқаулар',
     instructor: 'Нұсқаушы',
     instructors: 'Нұсқаушылар',

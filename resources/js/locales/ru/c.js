@@ -121,6 +121,7 @@ export default {
     currencyCode: 'Код валюты',
     currencyCodeComment: 'Код (например, USD)',
     currencyComma: 'Запятая',
+    currencyDesc: 'Пустое значение использует валюту родительского товара',
     currencyDot: 'Точка',
     currencyNbsp: 'Неразрывный пробел',
     currencyRates: 'Курсы валют',

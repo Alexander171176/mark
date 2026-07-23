@@ -482,29 +482,4 @@ class MarketBrandController extends BaseMarketAdminController
             storeOriginal: false
         );
     }
-
-    /** Данные пресета для фронтового редактора */
-    private function imagePresetPayload(): ?array
-    {
-        if (!$this->imageProcessorEnabled()) {
-            return null;
-        }
-
-        try {
-            return app(ImagePresetService::class)
-                ->editorPayload($this->imagePresetKey());
-        } catch (Throwable $e) {
-            Log::error('Ошибка загрузки image preset для market brands: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
-
-            return null;
-        }
-    }
-
-    /** Сервис определения настройки процессора изображений */
-    protected function imageProcessorEnabled(): bool
-    {
-        return app(AdminFeatureService::class)->imageProcessorEnabled();
-    }
 }

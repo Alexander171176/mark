@@ -121,6 +121,7 @@ export default {
     currencyCode: 'Валюта коды',
     currencyCodeComment: 'Код (мысалы, USD)',
     currencyComma: 'Үтір',
+    currencyDesc: 'Бос мән бас өнімнің валютасын пайдаланады.',
     currencyDot: 'Нүкте',
     currencyNbsp: 'Үзілмейтін кеңістік',
     currencyRates: 'Валюта бағамдары',

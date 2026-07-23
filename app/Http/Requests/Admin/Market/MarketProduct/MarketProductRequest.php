@@ -1087,6 +1087,14 @@ class MarketProductRequest extends FormRequest
             $this->validateMainCategory($validator);
             $this->validateShopCompany($validator);
             $this->validateAttributeValues($validator);
+
+            /*
+             * При update существующая строка характеристики
+             * должна принадлежать редактируемому товару.
+             */
+            $this->validateExistingAttributeValueOwnership(
+                $validator
+            );
         });
     }
 
@@ -1472,7 +1480,10 @@ class MarketProductRequest extends FormRequest
     protected function validateAttributeValues(
         Validator $validator
     ): void {
-        $items = $this->input('attribute_values', []);
+        $items = $this->input(
+            'attribute_values',
+            []
+        );
 
         if (! is_array($items)) {
             return;
@@ -1483,13 +1494,70 @@ class MarketProductRequest extends FormRequest
                 continue;
             }
 
+            $attributeId = Arr::get(
+                $item,
+                'market_attribute_id'
+            );
+
+            if (! is_numeric($attributeId)) {
+                continue;
+            }
+
+            $attribute = DB::table(
+                'market_attributes'
+            )
+                ->where('id', (int) $attributeId)
+                ->first([
+                    'id',
+                    'type',
+                    'use_for_variants',
+                ]);
+
+            if (! $attribute) {
+                continue;
+            }
+
+            $attributeValueId = Arr::get(
+                $item,
+                'market_attribute_value_id'
+            );
+
+            $valueString = Arr::get(
+                $item,
+                'value_string'
+            );
+
+            $valueNumber = Arr::get(
+                $item,
+                'value_number'
+            );
+
+            /*
+             * Boolean false является заполненным значением,
+             * поэтому нельзя проверять его через filled().
+             */
+            $valueBoolean = Arr::get(
+                $item,
+                'value_boolean'
+            );
+
+            $valueDate = Arr::get(
+                $item,
+                'value_date'
+            );
+
+            $valueJson = Arr::get(
+                $item,
+                'value_json'
+            );
+
             $values = [
-                Arr::get($item, 'market_attribute_value_id'),
-                Arr::get($item, 'value_string'),
-                Arr::get($item, 'value_number'),
-                Arr::get($item, 'value_boolean'),
-                Arr::get($item, 'value_date'),
-                Arr::get($item, 'value_json'),
+                $attributeValueId,
+                $valueString,
+                $valueNumber,
+                $valueBoolean,
+                $valueDate,
+                $valueJson,
             ];
 
             $filledValuesCount = collect($values)
@@ -1501,6 +1569,10 @@ class MarketProductRequest extends FormRequest
                 )
                 ->count();
 
+            /*
+             * Для каждой характеристики нужно указать
+             * одно фактическое значение.
+             */
             if ($filledValuesCount === 0) {
                 $validator->errors()->add(
                     "attribute_values.$index",
@@ -1515,37 +1587,324 @@ class MarketProductRequest extends FormRequest
                     "attribute_values.$index",
                     'Для характеристики можно указать только одно значение.'
                 );
-            }
 
-            $attributeId = Arr::get(
-                $item,
-                'market_attribute_id'
-            );
-
-            $attributeValueId = Arr::get(
-                $item,
-                'market_attribute_value_id'
-            );
-
-            if (! $attributeId || ! $attributeValueId) {
                 continue;
             }
 
             /*
-             * Готовое справочное значение должно принадлежать
+             * Справочное значение должно принадлежать
              * выбранной характеристике.
              */
-            $belongsToAttribute = DB::table(
-                'market_attribute_values'
+            if (is_numeric($attributeValueId)) {
+                $belongsToAttribute = DB::table(
+                    'market_attribute_values'
+                )
+                    ->where(
+                        'id',
+                        (int) $attributeValueId
+                    )
+                    ->where(
+                        'market_attribute_id',
+                        (int) $attributeId
+                    )
+                    ->exists();
+
+                if (! $belongsToAttribute) {
+                    $validator->errors()->add(
+                        "attribute_values.$index.market_attribute_value_id",
+                        'Выбранное значение не относится к указанной характеристике.'
+                    );
+
+                    continue;
+                }
+            }
+
+            /*
+             * Проверяем соответствие фактического значения
+             * типу характеристики.
+             */
+            match ($attribute->type) {
+                'select' => $this->validateSelectAttributeValue(
+                    validator: $validator,
+                    item: $item,
+                    index: $index
+                ),
+
+                'multiselect' => $this->validateMultiselectAttributeValue(
+                    validator: $validator,
+                    item: $item,
+                    index: $index,
+                    attributeId: (int) $attributeId
+                ),
+
+                'string', 'text' => $this->validateStringAttributeValue(
+                    validator: $validator,
+                    item: $item,
+                    index: $index
+                ),
+
+                'integer', 'decimal' => $this->validateNumberAttributeValue(
+                    validator: $validator,
+                    item: $item,
+                    index: $index
+                ),
+
+                'boolean' => $this->validateBooleanAttributeValue(
+                    validator: $validator,
+                    item: $item,
+                    index: $index
+                ),
+
+                'date', 'datetime' => $this->validateDateAttributeValue(
+                    validator: $validator,
+                    item: $item,
+                    index: $index
+                ),
+
+                default => null,
+            };
+        }
+    }
+
+    /**
+     * Характеристика select должна использовать
+     * одно справочное значение.
+     */
+    protected function validateSelectAttributeValue(
+        Validator $validator,
+        array $item,
+        int $index
+    ): void {
+        if (
+            ! is_numeric(
+                Arr::get(
+                    $item,
+                    'market_attribute_value_id'
+                )
             )
-                ->where('id', $attributeValueId)
-                ->where('market_attribute_id', $attributeId)
+        ) {
+            $validator->errors()->add(
+                "attribute_values.$index.market_attribute_value_id",
+                'Для характеристики типа select необходимо выбрать справочное значение.'
+            );
+        }
+    }
+
+    /**
+     * Для multiselect используется массив ID
+     * справочных значений в value_json.
+     */
+    protected function validateMultiselectAttributeValue(
+        Validator $validator,
+        array $item,
+        int $index,
+        int $attributeId
+    ): void {
+        $selectedIds = Arr::get(
+            $item,
+            'value_json'
+        );
+
+        if (
+            ! is_array($selectedIds)
+            || $selectedIds === []
+        ) {
+            $validator->errors()->add(
+                "attribute_values.$index.value_json",
+                'Для характеристики типа multiselect необходимо выбрать хотя бы одно значение.'
+            );
+
+            return;
+        }
+
+        $normalizedIds = collect($selectedIds)
+            ->filter(
+                fn (mixed $id) => is_numeric($id)
+            )
+            ->map(
+                fn (mixed $id) => (int) $id
+            )
+            ->unique()
+            ->values();
+
+        if (
+            $normalizedIds->count()
+            !== count($selectedIds)
+        ) {
+            $validator->errors()->add(
+                "attribute_values.$index.value_json",
+                'Значения multiselect должны быть уникальными числовыми ID.'
+            );
+
+            return;
+        }
+
+        $existingCount = DB::table(
+            'market_attribute_values'
+        )
+            ->where(
+                'market_attribute_id',
+                $attributeId
+            )
+            ->whereIn(
+                'id',
+                $normalizedIds
+            )
+            ->count();
+
+        if ($existingCount !== $normalizedIds->count()) {
+            $validator->errors()->add(
+                "attribute_values.$index.value_json",
+                'Одно или несколько выбранных значений не относятся к указанной характеристике.'
+            );
+        }
+    }
+
+    /**
+     * Строковые типы используют value_string.
+     */
+    protected function validateStringAttributeValue(
+        Validator $validator,
+        array $item,
+        int $index
+    ): void {
+        if (
+            ! filled(
+                Arr::get(
+                    $item,
+                    'value_string'
+                )
+            )
+        ) {
+            $validator->errors()->add(
+                "attribute_values.$index.value_string",
+                'Для строковой характеристики необходимо указать текстовое значение.'
+            );
+        }
+    }
+
+    /**
+     * Числовые типы используют value_number.
+     */
+    protected function validateNumberAttributeValue(
+        Validator $validator,
+        array $item,
+        int $index
+    ): void {
+        if (
+            ! is_numeric(
+                Arr::get(
+                    $item,
+                    'value_number'
+                )
+            )
+        ) {
+            $validator->errors()->add(
+                "attribute_values.$index.value_number",
+                'Для числовой характеристики необходимо указать числовое значение.'
+            );
+        }
+    }
+
+    /**
+     * Boolean использует value_boolean.
+     *
+     * Значения false и 0 являются допустимыми.
+     */
+    protected function validateBooleanAttributeValue(
+        Validator $validator,
+        array $item,
+        int $index
+    ): void {
+        if (
+            Arr::get(
+                $item,
+                'value_boolean'
+            ) === null
+        ) {
+            $validator->errors()->add(
+                "attribute_values.$index.value_boolean",
+                'Для логической характеристики необходимо выбрать значение.'
+            );
+        }
+    }
+
+    /**
+     * Типы date и datetime используют value_date.
+     */
+    protected function validateDateAttributeValue(
+        Validator $validator,
+        array $item,
+        int $index
+    ): void {
+        if (
+            ! filled(
+                Arr::get(
+                    $item,
+                    'value_date'
+                )
+            )
+        ) {
+            $validator->errors()->add(
+                "attribute_values.$index.value_date",
+                'Для характеристики даты необходимо указать значение.'
+            );
+        }
+    }
+
+    /**
+     * При update строки характеристик должны
+     * принадлежать редактируемому товару.
+     */
+    protected function validateExistingAttributeValueOwnership(
+        Validator $validator
+    ): void {
+        $productId = $this->resolveProductId();
+
+        if ($productId === null) {
+            return;
+        }
+
+        $items = $this->input(
+            'attribute_values',
+            []
+        );
+
+        if (! is_array($items)) {
+            return;
+        }
+
+        foreach ($items as $index => $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $rowId = Arr::get(
+                $item,
+                'id'
+            );
+
+            if (! is_numeric($rowId)) {
+                continue;
+            }
+
+            $belongsToProduct = DB::table(
+                'market_product_attribute_values'
+            )
+                ->where(
+                    'id',
+                    (int) $rowId
+                )
+                ->where(
+                    'market_product_id',
+                    $productId
+                )
                 ->exists();
 
-            if (! $belongsToAttribute) {
+            if (! $belongsToProduct) {
                 $validator->errors()->add(
-                    "attribute_values.$index.market_attribute_value_id",
-                    'Выбранное значение не относится к указанной характеристике.'
+                    "attribute_values.$index.id",
+                    'Указанная строка характеристики не принадлежит редактируемому товару.'
                 );
             }
         }

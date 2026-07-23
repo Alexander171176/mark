@@ -164,6 +164,10 @@ Route::put('/update-sort/market-products',
     [SettingController::class, 'updateAdminSortMarketProducts'])
     ->name('updateAdminSortMarketProducts');
 
+Route::put('/update-sort/market-product-variants',
+    [SettingController::class, 'updateAdminSortMarketProductVariants'])
+    ->name('updateAdminSortMarketProductVariants');
+
 Route::put('/update-sort/market-brands',
     [SettingController::class, 'updateAdminSortMarketBrands'])
     ->name('updateAdminSortMarketBrands');

@@ -15,6 +15,7 @@ export default {
     import: 'Import',
     inactive: 'Inactive',
     individual: 'Жеке',
+    inherited: 'Inherited',
     instructions: 'Instructions',
     instructor: 'Instructor',
     instructors: 'Instructors',

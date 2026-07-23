@@ -24,8 +24,6 @@ use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\Admin\Market\MarketProduct\MarketProductImage;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketTag\MarketTag;
-use App\Services\Admin\AdminFeatureService;
-use App\Services\Admin\ImagePresetService;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
@@ -1133,35 +1131,5 @@ class MarketProductController extends BaseMarketAdminController
                 array_unique($receivedAttributeIds)
             )
             ->delete();
-    }
-
-    /** Данные пресета для фронтового редактора изображений. */
-    private function imagePresetPayload(): ?array
-    {
-        if (! $this->imageProcessorEnabled()) {
-            return null;
-        }
-
-        try {
-            return app(ImagePresetService::class)
-                ->editorPayload($this->imagePresetKey());
-        } catch (Throwable $e) {
-            Log::error(
-                'Ошибка загрузки image preset для market products: '
-                . $e->getMessage(),
-                [
-                    'exception' => $e,
-                ]
-            );
-
-            return null;
-        }
-    }
-
-    /** Определение активности процессора изображений. */
-    protected function imageProcessorEnabled(): bool
-    {
-        return app(AdminFeatureService::class)
-            ->imageProcessorEnabled();
     }
 }

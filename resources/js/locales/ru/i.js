@@ -15,6 +15,7 @@ export default {
     import: 'Импортировать',
     inactive: 'Неактивные',
     individual: 'Физ. лицо',
+    inherited: 'Наследуется',
     instructions: 'Инструкции',
     instructor: 'Инструктор',
     instructors: 'Инструкторы',

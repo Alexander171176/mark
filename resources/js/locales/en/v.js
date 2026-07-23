@@ -1,6 +1,8 @@
 export default {
     value: 'Value',
     values: 'Values',
+    variants: 'Variants',
+    variantDimensions: 'The variant\'s own dimensions',
     vat: 'VAT',
     vatRate: 'VAT rate %',
     vendorCode: 'Supplier code',

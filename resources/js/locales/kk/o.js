@@ -7,6 +7,7 @@ export default {
     openLink: 'Сілтемені ашу',
     options: 'Опциялары',
     optionsOptions: 'Опциялар',
+    optionPrices: 'Опцион бағалары',
     order: 'Заказ',
     orderNumber: 'Тапсырыс нөмірі',
     orders: 'Тапсырыстар',
@@ -16,4 +17,5 @@ export default {
     outOfStock: 'Сатылып бітті',
     owner: 'Иесі',
     ownerEmail: 'Иесінің email',
+    ownPrice: 'Жеке баға',
 }

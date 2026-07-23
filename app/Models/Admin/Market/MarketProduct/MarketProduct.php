@@ -7,6 +7,7 @@ use App\Models\Admin\Market\MarketBrand\MarketBrand;
 use App\Models\Admin\Market\MarketCategory\MarketCategory;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketProductAttributeValue\MarketProductAttributeValue;
+use App\Models\Admin\Market\MarketProductVariant\MarketProductVariant;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketTag\MarketTag;
 use App\Models\Admin\Review\Review;
@@ -281,6 +282,54 @@ class MarketProduct extends Model
         );
     }
 
+    /**
+     * Все варианты товара.
+     *
+     * Например:
+     * - чёрный / S;
+     * - чёрный / M;
+     * - белый / XL.
+     */
+    public function variants(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductVariant::class,
+            'market_product_id'
+        )
+            ->orderBy('sort')
+            ->orderByDesc('id');
+    }
+
+    /**
+     * Основной вариант товара.
+     */
+    public function defaultVariant(): HasOne
+    {
+        return $this->hasOne(
+            MarketProductVariant::class,
+            'market_product_id'
+        )
+            ->where('is_default', true)
+            ->orderBy('sort')
+            ->orderByDesc('id');
+    }
+
+    /**
+     * Публично доступные варианты товара.
+     */
+    public function publicVariants(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductVariant::class,
+            'market_product_id'
+        )
+            ->approved()
+            ->published()
+            ->inShowWindow()
+            ->orderBy('sort')
+            ->orderByDesc('id');
+    }
+
     /** Отзывы товара */
     public function reviews(): MorphMany
     {
@@ -395,7 +444,93 @@ class MarketProduct extends Model
             && ! is_null($this->wholesale_min_quantity);
     }
 
+    /**
+     * Есть ли у товара варианты.
+     */
+    public function hasVariants(): bool
+    {
+        return $this->relationLoaded('variants')
+            ? $this->variants->isNotEmpty()
+            : $this->variants()->exists();
+    }
+
+    /**
+     * Количество вариантов товара.
+     */
+    public function variantsCount(): int
+    {
+        if (isset($this->variants_count)) {
+            return (int) $this->variants_count;
+        }
+
+        return $this->relationLoaded('variants')
+            ? $this->variants->count()
+            : $this->variants()->count();
+    }
+
+    /**
+     * Получить основной вариант товара.
+     */
+    public function getDefaultVariant(): ?MarketProductVariant
+    {
+        if ($this->relationLoaded('defaultVariant')) {
+            $variant = $this->getRelation('defaultVariant');
+
+            return $variant instanceof MarketProductVariant
+                ? $variant
+                : null;
+        }
+
+        $variant = $this->defaultVariant()->first();
+
+        return $variant instanceof MarketProductVariant
+            ? $variant
+            : null;
+    }
+
+    /**
+     * Есть ли у товара доступные варианты.
+     */
+    public function hasAvailableVariants(): bool
+    {
+        return $this->variants()
+            ->active()
+            ->inStock()
+            ->exists();
+    }
+
     /* ======================== Scopes ======================== */
+
+    /**
+     * Только товары, имеющие варианты.
+     */
+    public function scopeHasVariants(Builder $query): Builder
+    {
+        return $query->whereHas('variants');
+    }
+
+    /**
+     * Только товары без вариантов.
+     */
+    public function scopeWithoutVariants(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('variants');
+    }
+
+    /**
+     * Только товары с доступными вариантами.
+     */
+    public function scopeHasAvailableVariants(Builder $query): Builder
+    {
+        return $query->whereHas(
+            'variants',
+            function (Builder $variantQuery) {
+                $variantQuery
+                    ->active()
+                    ->inStock();
+            }
+        );
+    }
 
     /** Сортировка по умолчанию */
     public function scopeOrdered(Builder $query): Builder
@@ -700,6 +835,24 @@ class MarketProduct extends Model
             'attributesDesc' => $query
                 ->withCount('attributeValues')
                 ->orderBy('attribute_values_count', 'desc')
+                ->orderByDesc('market_products.id'),
+
+            'variantsAsc' => $query
+                ->withCount('variants')
+                ->orderBy('variants_count', 'asc')
+                ->orderByDesc('market_products.id'),
+
+            'variantsDesc' => $query
+                ->withCount('variants')
+                ->orderBy('variants_count', 'desc')
+                ->orderByDesc('market_products.id'),
+
+            'hasVariants' => $query
+                ->whereHas('variants')
+                ->orderByDesc('market_products.id'),
+
+            'withoutVariants' => $query
+                ->whereDoesntHave('variants')
                 ->orderByDesc('market_products.id'),
 
             'reviewsAsc' => $query->withCount('reviews')->orderBy('reviews_count', 'asc')

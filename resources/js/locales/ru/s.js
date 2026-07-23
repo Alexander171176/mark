@@ -15,6 +15,7 @@ export default {
     shapeRectangle: 'Прямоугольник',
     shapeSquare: 'Квадрат',
     shapeCircle: 'Круг',
+    showDetails: 'Показать детали',
     showFromAt: 'Начало публикации',
     showOwner: 'Показать владельца',
     showToAt: 'Окончание публикации',

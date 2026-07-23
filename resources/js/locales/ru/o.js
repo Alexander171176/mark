@@ -7,6 +7,7 @@ export default {
     openLink: 'Открыть ссылку',
     options: 'Опции',
     optionsOptions: 'Варианты опций',
+    optionPrices: 'Цены варианта',
     order: 'Заказ',
     orderNumber: 'Номер заказа',
     orders: 'Заказы',
@@ -16,4 +17,5 @@ export default {
     outOfStock: 'Распродано',
     owner: 'Владелец',
     ownerEmail: 'email владельца',
+    ownPrice: 'Собственная цена',
 }

@@ -46,6 +46,9 @@ Route::prefix('actions')->name('actions.')->group(function () { // Группи�
     // Одобрение рубрики
     require __DIR__ . '/approve.php';
 
+    // Сделать вариант товара основным
+    require __DIR__ . '/make-default.php';
+
     // --- Cohort Enrollments: статусы и заметки ---
     require __DIR__ . '/cohort-enrollment.php';
 

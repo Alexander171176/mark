@@ -7,6 +7,7 @@ export default {
     openLink: 'Open link',
     options: 'Options',
     optionsOptions: 'Options options',
+    optionPrices: 'Option prices',
     order: 'Заказ',
     orderNumber: 'Order number',
     orders: 'Orders',
@@ -16,4 +17,5 @@ export default {
     outOfStock: 'Sold out',
     owner: 'Owner',
     ownerEmail: 'Owner email',
+    ownPrice: 'Own price',
 }

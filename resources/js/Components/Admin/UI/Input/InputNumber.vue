@@ -1,54 +1,77 @@
 <script setup>
-import { defineProps, defineEmits, ref, onMounted } from 'vue';
+import { defineEmits, defineProps, onMounted, ref } from 'vue'
 
 const props = defineProps({
     modelValue: {
-        type: [Number, String],
-        required: true
-    }
-});
+        type: [Number, String, null],
+        default: '',
+    },
+})
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits([
+    'update:modelValue',
+])
 
-const input = ref(null);
+const input = ref(null)
 
+/**
+ * Обработка ввода.
+ *
+ * Пустое поле возвращает пустую строку.
+ * Отрицательное значение преобразуется в 0.
+ */
 const handleInput = (event) => {
-    let value = event.target.value;
-    let numberValue = parseInt(value, 10);
+    const value = event.target.value
 
-    // If the value is negative, set it to zero
+    if (value === '') {
+        emit('update:modelValue', '')
+        return
+    }
+
+    let numberValue = Number.parseInt(value, 10)
+
+    if (Number.isNaN(numberValue)) {
+        emit('update:modelValue', '')
+        return
+    }
+
     if (numberValue < 0) {
-        numberValue = 0;
+        numberValue = 0
     }
 
-    emit('update:modelValue', isNaN(numberValue) ? '' : numberValue);
-};
+    emit('update:modelValue', numberValue)
+}
 
+/**
+ * Проверка значения после потери фокуса.
+ */
 const handleBlur = () => {
-    if (props.modelValue < 0) {
-        emit('update:modelValue', 0);
+    if (props.modelValue === null || props.modelValue === '') {
+        return
     }
-};
+
+    const numberValue = Number(props.modelValue)
+
+    if (Number.isFinite(numberValue) && numberValue < 0) {
+        emit('update:modelValue', 0)
+    }
+}
 
 onMounted(() => {
-    if (input.value.hasAttribute('autofocus')) {
-        input.value.focus();
+    if (input.value?.hasAttribute('autofocus')) {
+        input.value.focus()
     }
-});
+})
 </script>
 
 <template>
     <input
-        class="w-20 py-0.5 border-slate-500
-               font-semibold text-sm
-               focus:border-indigo-500 focus:ring-indigo-300
-               rounded-sm shadow-sm
-               dark:bg-cyan-800 dark:text-slate-100"
-        :value="modelValue.toString()"
-        @input="handleInput"
-        @blur="handleBlur"
         ref="input"
         type="number"
         min="0"
+        class="w-20 py-0.5 border-slate-500 font-semibold text-sm focus:border-indigo-500 focus:ring-indigo-300 rounded-sm shadow-sm dark:bg-cyan-800 dark:text-slate-100"
+        :value="modelValue ?? ''"
+        @input="handleInput"
+        @blur="handleBlur"
     />
 </template>

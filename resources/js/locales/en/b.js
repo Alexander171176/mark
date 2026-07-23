@@ -23,6 +23,7 @@ export default {
     banners: 'Banners',
     barcode: 'barcode',
     baseUnit: 'Basic unit',
+    basicProductVariant: 'Basic product variant',
     billingAddress: 'Legal entity address',
     billingCompany: 'Company',
     billingTaxId: 'БИН/ИНН/VAT',

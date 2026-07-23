@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Admin\Market\MarketProduct;
 
 use App\Http\Resources\Admin\Finance\Currency\CurrencyResource;
+use App\Http\Resources\Admin\Market\MarketProductVariant\MarketProductVariantSharedResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -85,6 +86,20 @@ class MarketProductSharedResource extends JsonResource
             'in_stock' => (bool) $this->in_stock,
             'has_stock' => $this->hasStock(),
 
+            /**
+             * Есть ли у товара варианты.
+             *
+             * Предпочтительно передавать variants_count
+             * через withCount('variants').
+             */
+            'has_variants' => isset($this->variants_count)
+                ? (int) $this->variants_count > 0
+                : (
+                $this->relationLoaded('variants')
+                    ? $this->variants->isNotEmpty()
+                    : false
+                ),
+
             /** Маркетинговые признаки */
             'is_new' => (bool) $this->is_new,
             'is_hit' => (bool) $this->is_hit,
@@ -150,6 +165,20 @@ class MarketProductSharedResource extends JsonResource
              */
             'images' => MarketProductImageResource::collection(
                 $this->whenLoaded('images')
+            ),
+
+            /**
+             * Основной вариант товара.
+             *
+             * Возвращается только при eager loading defaultVariant.
+             */
+            'default_variant' => $this->whenLoaded(
+                'defaultVariant',
+                fn () => $this->defaultVariant
+                    ? new MarketProductVariantSharedResource(
+                        $this->defaultVariant
+                    )
+                    : null
             ),
 
             /** Компактная компания */
@@ -277,6 +306,7 @@ class MarketProductSharedResource extends JsonResource
             'images_count' => $this->whenCounted('images'),
             'categories_count' => $this->whenCounted('categories'),
             'tags_count' => $this->whenCounted('tags'),
+            'variants_count' => $this->whenCounted('variants'),
             'reviews_count' => $this->whenCounted('reviews'),
             'related_products_count' => $this->whenCounted('relatedProducts'),
 

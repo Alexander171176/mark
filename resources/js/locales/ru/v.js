@@ -1,6 +1,8 @@
 export default {
     value: 'Значение',
     values: 'Значения',
+    variants: 'Варианты',
+    variantDimensions: 'Собственные габариты варианта',
     vat: 'НДС',
     vatRate: 'Ставка НДС %',
     vendorCode: 'Код поставщика',

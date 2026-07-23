@@ -15,6 +15,7 @@ export default {
     shapeRectangle: 'Тікбұрыш',
     shapeSquare: 'Шаршы',
     shapeCircle: 'Шеңбер',
+    showDetails: 'Мәліметтерді көрсету',
     showFromAt: 'Жарияланымның басталуы',
     showOwner: 'Шоу иесі',
     showToAt: 'Жарияланымның аяқталуы',

@@ -8,7 +8,6 @@ use App\Http\Resources\Admin\Market\MarketCategory\MarketCategoryResource;
 use App\Http\Resources\Admin\Market\MarketCategory\MarketCategorySharedResource;
 use App\Models\Admin\Market\MarketCategory\MarketCategory;
 use App\Models\Admin\Market\MarketCategory\MarketCategoryImage;
-use App\Services\Admin\ImagePresetService;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
@@ -710,24 +709,5 @@ class MarketCategoryController extends BaseMarketAdminController
                 $this->prepareTreeChildren($node->children);
             }
         });
-    }
-
-    /** Данные пресета для фронтового редактора */
-    private function imagePresetPayload(): ?array
-    {
-        if (!$this->imageProcessorEnabled()) {
-            return null;
-        }
-
-        try {
-            return app(ImagePresetService::class)
-                ->editorPayload($this->imagePresetKey());
-        } catch (Throwable $e) {
-            Log::error('Ошибка загрузки image preset для market categories: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
-
-            return null;
-        }
     }
 }

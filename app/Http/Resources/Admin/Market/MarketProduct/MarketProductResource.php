@@ -131,24 +131,32 @@ class MarketProductResource extends JsonResource
             'has_wholesale_price' => $this->hasWholesalePrice(),
 
             /**
-             * Состояние вариантов товара.
-             *
-             * Для административных списков желательно загружать
-             * variants_count через withCount(), чтобы не создавать
-             * дополнительный запрос для каждого товара.
+             * Есть ли у товара варианты.
              */
             'has_variants' => isset($this->variants_count)
                 ? (int) $this->variants_count > 0
-                : $this->hasVariants(),
+                : (
+                $this->relationLoaded('variants')
+                    ? $this->variants->isNotEmpty()
+                    : false
+                ),
 
-            'has_available_variants' => $this->relationLoaded('variants')
-                ? $this->variants
-                    ->contains(
-                        fn ($variant) =>
-                            $variant->isActive()
-                            && $variant->hasStock()
-                    )
-                : $this->hasAvailableVariants(),
+            /**
+             * Есть ли активные варианты в наличии.
+             */
+            'has_available_variants' => isset(
+                $this->available_variants_count
+            )
+                ? (int) $this->available_variants_count > 0
+                : (
+                $this->relationLoaded('variants')
+                    ? $this->variants->contains(
+                    fn ($variant) =>
+                        $variant->isActive()
+                        && $variant->hasStock()
+                )
+                    : false
+                ),
 
             'is_active' => $this->isActive(),
             'is_published' => $this->isPublished(),
@@ -465,20 +473,28 @@ class MarketProductResource extends JsonResource
                 $this->whenLoaded('relatedProducts')
             ),
 
-            /**
-             * Counts, если они загружены через withCount().
-             */
+            /** Счётчики связей */
             'images_count' => $this->whenCounted('images'),
             'categories_count' => $this->whenCounted('categories'),
             'tags_count' => $this->whenCounted('tags'),
-            'attribute_values_count' => $this->whenCounted('attributeValues'),
+
+            'attribute_values_count' =>
+                $this->whenCounted('attributeValues'),
 
             'variants_count' => $this->whenCounted('variants'),
-            'public_variants_count' => $this->whenCounted('publicVariants'),
+
+            'available_variants_count' => $this->when(
+                isset($this->available_variants_count),
+                fn () => (int) $this->available_variants_count
+            ),
 
             'reviews_count' => $this->whenCounted('reviews'),
-            'likes_relation_count' => $this->whenCounted('likes'),
-            'related_products_count' => $this->whenCounted('relatedProducts'),
+
+            'likes_relation_count' =>
+                $this->whenCounted('likes'),
+
+            'related_products_count' =>
+                $this->whenCounted('relatedProducts'),
 
             /**
              * Данные текущего пользователя.

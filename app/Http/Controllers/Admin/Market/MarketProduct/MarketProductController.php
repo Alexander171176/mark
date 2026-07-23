@@ -22,6 +22,7 @@ use App\Models\Admin\Market\MarketCategory\MarketCategory;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\Admin\Market\MarketProduct\MarketProductImage;
+use App\Models\Admin\Market\MarketProductVariant\MarketProductVariantImage;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketTag\MarketTag;
 use App\Services\Admin\ProcessingModeService;
@@ -156,12 +157,9 @@ class MarketProductController extends BaseMarketAdminController
                 'shop.translations',
                 'brand.translations',
             ])
-            ->withCount([
-                'images',
-                'categories',
-                'tags',
-                'reviews',
-            ])
+            ->withCount(
+                $this->productCountRelations()
+            )
             ->when(
                 $excludeProductId,
                 fn (Builder $query) => $query->where(
@@ -501,15 +499,9 @@ class MarketProductController extends BaseMarketAdminController
                 'relatedProducts.shop.translations',
                 'relatedProducts.brand.translations',
             ])
-            ->withCount([
-                'images',
-                'categories',
-                'tags',
-                'attributeValues',
-                'reviews',
-                'likes',
-                'relatedProducts',
-            ])
+            ->withCount(
+                $this->productCountRelations()
+            )
             ->findOrFail($marketProduct);
 
         $currentLocale = $this->resolveLocale($request);
@@ -660,21 +652,33 @@ class MarketProductController extends BaseMarketAdminController
                 'images',
                 'translations',
                 'attributeValues',
+
+                'variants.images',
+                'variants.translations',
+                'variants.values',
             ])
             ->findOrFail($marketProduct);
 
         try {
             DB::transaction(function () use ($product): void {
+                /**
+                 * Сначала удаляем варианты товара,
+                 * их изображения и файлы MediaLibrary.
+                 */
+                $this->deleteProductVariants($product);
+
                 $imageIds = $product->images()
                     ->pluck('market_product_images.id')
-                    ->toArray();
+                    ->map(fn ($id) => (int) $id)
+                    ->all();
 
-                /*
-                 * Сначала удаляем связи, потом сами изображения.
+                /**
+                 * Сначала удаляем связи,
+                 * затем сами изображения товара.
                  */
                 $product->images()->detach();
 
-                if (! empty($imageIds)) {
+                if ($imageIds !== []) {
                     $this->deleteImages($imageIds);
                 }
 
@@ -686,8 +690,8 @@ class MarketProductController extends BaseMarketAdminController
 
                 $product->attributeValues()->delete();
 
-                /*
-                 * Отзывы и лайки также имеют cascadeOnDelete,
+                /**
+                 * Отзывы и лайки имеют cascadeOnDelete,
                  * но явное удаление делает жизненный цикл понятнее.
                  */
                 $product->reviews()->delete();
@@ -725,11 +729,13 @@ class MarketProductController extends BaseMarketAdminController
             'ids' => [
                 'required',
                 'array',
+                'min:1',
             ],
 
             'ids.*' => [
                 'required',
                 'integer',
+                'distinct',
                 'exists:market_products,id',
             ],
         ]);
@@ -756,17 +762,30 @@ class MarketProductController extends BaseMarketAdminController
             DB::transaction(function () use ($allowedIds): void {
                 $products = MarketProduct::query()
                     ->whereIn('id', $allowedIds)
-                    ->with('images')
+                    ->with([
+                        'images',
+
+                        'variants.images',
+                        'variants.translations',
+                        'variants.values',
+                    ])
                     ->get();
 
                 foreach ($products as $product) {
+                    /**
+                     * Удаляем варианты и их изображения
+                     * до удаления родительского товара.
+                     */
+                    $this->deleteProductVariants($product);
+
                     $imageIds = $product->images()
                         ->pluck('market_product_images.id')
-                        ->toArray();
+                        ->map(fn ($id) => (int) $id)
+                        ->all();
 
                     $product->images()->detach();
 
-                    if (! empty($imageIds)) {
+                    if ($imageIds !== []) {
                         $this->deleteImages($imageIds);
                     }
 
@@ -900,6 +919,43 @@ class MarketProductController extends BaseMarketAdminController
         abort_unless(in_array($field, ['is_new', 'is_hit', 'is_sale'], true), 422, 'Недопустимое поле товара.');
     }
 
+    /**
+     * Счётчики связей товара.
+     *
+     * Используются:
+     * - в административном списке;
+     * - на странице редактирования;
+     * - в справочнике рекомендуемых товаров.
+     *
+     * @return array<int|string, string|\Closure>
+     */
+    private function productCountRelations(): array
+    {
+        return [
+            'images',
+            'categories',
+            'tags',
+            'attributeValues',
+            'variants',
+
+            /**
+             * Количество активных вариантов,
+             * доступных для продажи.
+             */
+            'variants as available_variants_count' => function (
+                Builder $query
+            ): void {
+                $query
+                    ->active()
+                    ->inStock();
+            },
+
+            'reviews',
+            'likes',
+            'relatedProducts',
+        ];
+    }
+
     /** Базовый запрос списка товаров. */
     private function indexQuery(): Builder
     {
@@ -918,15 +974,9 @@ class MarketProductController extends BaseMarketAdminController
                 'categories.translations',
                 'tags.translations',
             ])
-            ->withCount([
-                'images',
-                'categories',
-                'tags',
-                'attributeValues',
-                'reviews',
-                'likes',
-                'relatedProducts',
-            ]);
+            ->withCount(
+                $this->productCountRelations()
+            );
     }
 
     /** Получение списка по активному режиму обработки. */
@@ -950,6 +1000,49 @@ class MarketProductController extends BaseMarketAdminController
         return $query
             ->ordered()
             ->get();
+    }
+
+    /**
+     * Удалить все варианты товара
+     * вместе с изображениями и зависимыми данными.
+     */
+    private function deleteProductVariants(
+        MarketProduct $product
+    ): void {
+        foreach ($product->variants as $variant) {
+            $variantImageIds = $variant->images
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            /**
+             * Сначала удаляем pivot-связи изображений.
+             */
+            $variant->images()->detach();
+
+            /**
+             * Удаляем только изображения, которые больше
+             * не используются другими вариантами.
+             */
+            if ($variantImageIds !== []) {
+                $variantImages = MarketProductVariantImage::query()
+                    ->whereIn('id', $variantImageIds)
+                    ->whereDoesntHave('variants')
+                    ->get();
+
+                foreach ($variantImages as $variantImage) {
+                    $variantImage->clearMediaCollection(
+                        $this->imageMediaCollection
+                    );
+
+                    $variantImage->delete();
+                }
+            }
+
+            $variant->values()->delete();
+            $variant->translations()->delete();
+            $variant->delete();
+        }
     }
 
     /** Синхронизация категорий товара. */

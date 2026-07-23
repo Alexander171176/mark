@@ -856,6 +856,19 @@ if (sortParam.value === 'notHit') return list.filter((product) => !product.is_hi
 if (sortParam.value === 'sale') return list.filter((product) => Boolean(product.is_sale))
 if (sortParam.value === 'notSale') return list.filter((product) => !product.is_sale)
 
+/** Фильтры вариантов */
+if (sortParam.value === 'hasVariants') {
+    return list.filter((product) => {
+        return safeNumber(product.variants_count) > 0
+    })
+}
+
+if (sortParam.value === 'withoutVariants') {
+    return list.filter((product) => {
+        return safeNumber(product.variants_count) === 0
+    })
+}
+
 /** Фильтры статуса публикации */
 if (sortParam.value === 'statusDraft')
     return list.filter((product) => product.status === 'draft')
@@ -978,6 +991,9 @@ const sortMap = {
 
     attributesAsc: byNumberAsc('attribute_values_count'),
     attributesDesc: byNumberDesc('attribute_values_count'),
+
+    variantsAsc: byNumberAsc('variants_count'),
+    variantsDesc: byNumberDesc('variants_count'),
 
     reviewsAsc: byNumberAsc('reviews_count'),
     reviewsDesc: byNumberDesc('reviews_count'),

@@ -873,6 +873,36 @@ const publicationTitle = (product) => {
                                         {{ product.attribute_values_count }}
                                     </div>
 
+                                    <!-- Варианты товара -->
+                                    <a :href="route('admin.marketProductVariants.index', {
+                                            market_product_id: product.id,
+                                        })"
+                                        class="mt-0.5 flex items-center gap-1
+                                               text-[10px] text-fuchsia-700
+                                               hover:text-fuchsia-900 hover:underline
+                                               dark:text-fuchsia-300 dark:hover:text-fuchsia-100"
+                                        :title="t('marketProductVariants')"
+                                    >
+                                        <svg
+                                            class="h-4 w-4 shrink-0 fill-current"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"
+                                            />
+                                        </svg>
+
+                                        {{ t('marketProductVariants') }}:
+                                        {{ product.variants_count ?? 0 }}
+
+                                        <span
+                                            v-if="product.available_variants_count"
+                                            class="text-emerald-600 dark:text-emerald-300"
+                                        >
+                                            ({{ product.available_variants_count }})
+                                        </span>
+                                    </a>
+
                                     <!-- Магазин -->
                                     <div
                                         v-if="shopTitle(product)"

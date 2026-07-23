@@ -13,6 +13,7 @@ import ModerationButton from '@/Components/Admin/UI/Buttons/ModerationButton.vue
 import SaleButtonToggle from '@/Components/Admin/UI/Buttons/SaleButtonToggle.vue'
 import HitButtonToggle from '@/Components/Admin/UI/Buttons/HitButtonToggle.vue'
 import NewButtonToggle from '@/Components/Admin/UI/Buttons/NewButtonToggle.vue'
+import AddButton from '@/Components/Admin/UI/Buttons/AddButton.vue'
 
 const { t, locale } = useI18n()
 
@@ -1012,7 +1013,7 @@ const productPublicUrl = (product) => {
 
                                 <!-- Статистика -->
                                 <div
-                                    class="grid grid-cols-4 gap-1
+                                    class="grid grid-cols-5 gap-1
                                        text-center text-[10px]
                                        font-semibold"
                                 >
@@ -1087,6 +1088,35 @@ const productPublicUrl = (product) => {
                                             {{ product.views ?? 0 }}
                                         </span>
                                     </div>
+
+                                    <a :href="route('admin.marketProductVariants.index', {
+                                            market_product_id: product.id,
+                                        })"
+                                        class="flex flex-col items-center justify-center px-1 py-1
+                                               text-fuchsia-700 transition
+                                               dark:text-fuchsia-300"
+                                        :title="t('marketProductVariants')"
+                                    >
+                                        <svg
+                                            class="h-4 w-4 shrink-0 fill-current"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"
+                                            />
+                                        </svg>
+
+                                        <span class="text-slate-700 dark:text-slate-300">
+                                            {{ product.variants_count ?? 0 }}
+
+                                            <span
+                                                v-if="product.available_variants_count"
+                                                class="text-emerald-600 dark:text-emerald-300"
+                                            >
+                                                / {{ product.available_variants_count }}
+                                            </span>
+                                        </span>
+                                    </a>
                                 </div>
 
                                 <!-- Статус -->
@@ -1178,28 +1208,24 @@ const productPublicUrl = (product) => {
                                     <ActivityToggle
                                         :isActive="product.activity"
                                         :title="
-                                        product.activity
-                                            ? t('enabled')
-                                            : t('disabled')
-                                    "
+                                        product.activity ? t('enabled') : t('disabled')"
                                         @toggle-activity="
-                                        $emit(
-                                            'toggle-activity',
-                                            product
-                                        )
-                                    "
+                                        $emit('toggle-activity', product)"
                                     />
 
                                     <IconEdit
-                                        :href="
-                                        route(
-                                            'admin.marketProducts.edit',
-                                            {
-                                                marketProduct: product.id,
-                                            }
-                                        )
-                                    "
+                                        :href="route('admin.marketProducts.edit',
+                                        {marketProduct: product.id,})"
                                     />
+
+                                    <AddButton
+                                        :href="route('admin.marketProductVariants.create', {
+                                            market_product_id: product.id,
+                                        })"
+                                        :title="t('addMarketProductVariant')"
+                                        class="py-1"
+                                    >
+                                    </AddButton>
 
                                     <DeleteIconButton
                                         @delete="

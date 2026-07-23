@@ -9,6 +9,8 @@ export default {
     whereFrom: 'Where from',
     whereTo: 'Where to',
     width: 'Width',
+    withVariants: 'With Variants',
+    withoutVariants: 'Without Variants',
     wholesaleMinQuantity: 'Wholesale min. quantity',
     wholesalePrice: 'Wholesale price',
 }

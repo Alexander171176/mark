@@ -154,6 +154,12 @@ const updateSort = (event) => {
             <option value="attributesAsc">{{ t('attributes') }} 0→9</option>
             <option disabled>────────────────────</option>
 
+            <option value="variantsDesc">{{ t('marketProductVariants') }} 9→0</option>
+            <option value="variantsAsc">{{ t('marketProductVariants') }} 0→9</option>
+            <option value="hasVariants">{{ t('withVariants') }}</option>
+            <option value="withoutVariants">{{ t('withoutVariants') }}</option>
+            <option disabled>────────────────────</option>
+
             <option value="relatedProductsDesc">{{ t('relatedProducts') }} 9→0</option>
             <option value="relatedProductsAsc">{{ t('relatedProducts') }} 0→9</option>
             <option disabled>────────────────────</option>

@@ -164,9 +164,6 @@
 
 1) creating business logic app Setting <br>
 `docker exec mark-php-app php artisan make:model Admin/System/Setting/Setting -m` <br>
-`docker exec mark-php-app php artisan migrate` <br>
-`docker exec mark-php-app php artisan make:seeder SettingSeeder` <br>
-`docker exec mark-php-app php artisan db:seed --class=SettingSeeder` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/Setting/SettingResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/Setting/SettingRequest` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/Parameter/ParameterRequest` <br>
@@ -180,6 +177,9 @@
 `docker exec mark-php-app php artisan make:request Admin/System/Parameter/UpdateParameterValueRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/Parameter/ParameterController --resource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/Snapshot/SettingsSnapshotController` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan make:seeder SettingSeeder` <br>
+`docker exec mark-php-app php artisan db:seed --class=SettingSeeder` <br>
 
 2)  Create middleware ShareSettings <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/Setting/SettingSharedResource` <br>
@@ -1030,6 +1030,23 @@ Analytics
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketProductVariantSeeder` <br>
+
+11) Комплекты товаров <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductBundle/MarketProductBundle -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductBundle/MarketProductBundleTranslation -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductBundle/MarketProductBundleItem -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Market/MarketProductBundle/MarketProductBundleImage -m` <br>
+`docker exec mark-php-app php artisan make:migration create_market_product_bundle_has_images_table --create=market_product_bundle_has_images` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductBundle/MarketProductBundleResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductBundle/MarketProductBundleSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductBundle/MarketProductBundleTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductBundle/MarketProductBundleItemResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketProductBundle/MarketProductBundleImageResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Market/MarketProductBundle/MarketProductBundleRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketProductBundle/MarketProductBundleController --resource` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=MarketProductBundleSeeder` <br>
 
 
 

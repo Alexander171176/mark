@@ -2774,6 +2774,86 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // PUBLIC MARKET PRODUCT VARIANTS DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'adminMarketProductBundlesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_MARKET_PRODUCT_BUNDLES_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных комплектов товаров в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCT BUNDLES PROCESSING MODE
+            [
+                'type' => 'string',
+                'option' => 'publicMarketProductBundlesProcessingMode',
+                'value' => 'auto',
+                'constant' => 'PUBLIC_MARKET_PRODUCT_BUNDLES_PROCESSING_MODE',
+                'category' => 'public',
+                'description' => 'Режим обработки данных комплектов товаров в публичной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCT BUNDLES PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminMarketProductBundlesPerPage',
+                'value' => '6',
+                'constant' => 'ADMIN_MARKET_PRODUCT_BUNDLES_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество комплектов товаров в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCT BUNDLES PER PAGE
+            [
+                'type' => 'number',
+                'option' => 'publicMarketProductBundlesPerPage',
+                'value' => '3',
+                'constant' => 'PUBLIC_MARKET_PRODUCT_BUNDLES_PER_PAGE',
+                'category' => 'public',
+                'description' => 'Показывать количество комплектов товаров в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCT BUNDLES PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminMarketProductBundlesDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_MARKET_PRODUCT_BUNDLES_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка комплектов товаров по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCT BUNDLES DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'publicMarketProductBundlesDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'PUBLIC_MARKET_PRODUCT_BUNDLES_DEFAULT_SORT',
+                'category' => 'public',
+                'description' => 'Сортировка комплектов товаров по умолчанию в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCT BUNDLES DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminMarketProductBundlesDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_MARKET_PRODUCT_BUNDLES_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка комплектов товаров в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN MARKET PRODUCT BUNDLES DEFAULT VIEW
+            [
+                'type' => 'string',
+                'option' => 'publicMarketProductBundlesDefaultView',
+                'value' => 'grid',
+                'constant' => 'PUBLIC_MARKET_PRODUCT_BUNDLES_DEFAULT_VIEW',
+                'category' => 'public',
+                'description' => 'Вид списка комплектов товаров в публичной части',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET PRODUCT BUNDLES DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

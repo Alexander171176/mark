@@ -317,6 +317,13 @@ trait CountSettingsTrait
             'adminMarketProductsPerPage', 'site_settings.adminMarketProductsPerPage');
     }
 
+    /** Обновление количества элементов в комплектах товаров */
+    public function updateAdminCountMarketProductBundles(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminMarketProductBundlesPerPage', 'site_settings.adminMarketProductBundlesPerPage');
+    }
+
     /** Обновление количества элементов в вариантах товаров */
     public function updateAdminCountMarketProductVariants(UpdateCountSettingRequest $request): RedirectResponse
     {

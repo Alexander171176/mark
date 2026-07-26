@@ -69,6 +69,7 @@ const linkInfo = {
     marketShops: {label: t('marketShops'), route: 'admin.marketShops.index'},
     marketCategories: {label: t('marketCategories'), route: 'admin.marketCategories.index'},
     marketProducts: {label: t('marketProducts'), route: 'admin.marketProducts.index'},
+    marketProductBundles: {label: t('marketProductBundles'), route: 'admin.marketProductBundles.index'},
     marketProductVariants: {label: t('marketProductVariants'), route: 'admin.marketProductVariants.index'},
     marketBrands: {label: t('marketBrands'), route: 'admin.marketBrands.index'},
     marketTags: {label: t('marketTags'), route: 'admin.marketTags.index'},

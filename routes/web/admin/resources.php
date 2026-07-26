@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
+use App\Http\Controllers\Admin\Market\MarketProductBundle\MarketProductBundleController;
 use App\Http\Controllers\Admin\Market\MarketProductVariant\MarketProductVariantController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
@@ -239,10 +240,13 @@ Route::resource('/market-products', MarketProductController::class)
     ->parameters(['market-products' => 'marketProduct'])
     ->names('marketProducts');
 
+Route::resource('/market-product-bundles', MarketProductBundleController::class)
+    ->parameters(['market-product-bundles' => 'marketProductBundle',])
+    ->names('marketProductBundles');
+
 Route::resource('/market-product-variants', MarketProductVariantController::class)
     ->parameters(['market-product-variants' => 'marketProductVariant',])
     ->names('marketProductVariants');
-
 
 Route::resource('/market-brands', MarketBrandController::class)
     ->parameters(['market-brands' => 'marketBrand'])

@@ -9,6 +9,7 @@ export default {
     whereFrom: 'Қайда',
     whereTo: 'Және қайдан',
     width: 'Ені',
+    withoutFixingIOption: 'Опцияны түзетпестен',
     withVariants: 'Опциялармен',
     withoutVariants: 'Опциялар жоқ',
     wholesaleMinQuantity: 'Көтерме саудадағы ең аз саны',

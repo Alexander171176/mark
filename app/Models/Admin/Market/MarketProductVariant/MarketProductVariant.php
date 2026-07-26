@@ -4,6 +4,8 @@ namespace App\Models\Admin\Market\MarketProductVariant;
 
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
+use App\Models\Admin\Market\MarketProductBundle\MarketProductBundle;
+use App\Models\Admin\Market\MarketProductBundle\MarketProductBundleItem;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -182,6 +184,86 @@ class MarketProductVariant extends Model
         )
             ->withPivot('order')
             ->orderByPivot('order');
+    }
+
+    /**
+     * Позиции комплектов, в которых используется вариант.
+     */
+    public function bundleItems(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductBundleItem::class,
+            'market_product_variant_id'
+        )
+            ->orderBy('sort')
+            ->orderBy('id');
+    }
+
+    /**
+     * Активные позиции комплектов,
+     * в которых используется вариант.
+     */
+    public function activeBundleItems(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductBundleItem::class,
+            'market_product_variant_id'
+        )
+            ->where('activity', true)
+            ->orderBy('sort')
+            ->orderBy('id');
+    }
+
+    /**
+     * Комплекты, в состав которых входит вариант.
+     */
+    public function productBundles(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            MarketProductBundle::class,
+            'market_product_bundle_items',
+            'market_product_variant_id',
+            'market_product_bundle_id'
+        )
+            ->withPivot([
+                'id',
+                'market_product_id',
+                'quantity',
+                'unit_price',
+                'discount_type',
+                'discount_value',
+                'sort',
+                'activity',
+            ])
+            ->withTimestamps()
+            ->orderByPivot('sort');
+    }
+
+    /**
+     * Только активные комплекты,
+     * в состав которых входит вариант.
+     */
+    public function activeProductBundles(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            MarketProductBundle::class,
+            'market_product_bundle_items',
+            'market_product_variant_id',
+            'market_product_bundle_id'
+        )
+            ->withPivot([
+                'id',
+                'market_product_id',
+                'quantity',
+                'unit_price',
+                'discount_type',
+                'discount_value',
+                'sort',
+                'activity',
+            ])
+            ->wherePivot('activity', true)
+            ->withTimestamps()
+            ->orderByPivot('sort');
     }
 
     /* ======================== Translations ======================== */
@@ -513,6 +595,34 @@ class MarketProductVariant extends Model
             && (float) $price > 0
             && $minimum !== null
             && $minimum > 0;
+    }
+
+    /**
+     * Используется ли вариант хотя бы в одном комплекте.
+     */
+    public function isUsedInBundles(): bool
+    {
+        if (isset($this->bundle_items_count)) {
+            return (int) $this->bundle_items_count > 0;
+        }
+
+        return $this->relationLoaded('bundleItems')
+            ? $this->bundleItems->isNotEmpty()
+            : $this->bundleItems()->exists();
+    }
+
+    /**
+     * Количество позиций комплектов с этим вариантом.
+     */
+    public function bundleItemsCount(): int
+    {
+        if (isset($this->bundle_items_count)) {
+            return (int) $this->bundle_items_count;
+        }
+
+        return $this->relationLoaded('bundleItems')
+            ? $this->bundleItems->count()
+            : $this->bundleItems()->count();
     }
 
     /* ======================== Scopes ======================== */

@@ -1,4 +1,5 @@
 export default {
+    calculatedPositions: 'The price will be calculated based on active positions.',
     cancel: 'Cancel',
     cancelled: 'canceled',
     capacity: 'Places',
@@ -54,6 +55,7 @@ export default {
     components: 'Component Editor',
     completeTwoFactorEnable: 'To complete enabling two-factor authentication, scan the following QR code using your phone\'s authenticator application or enter the setup key and provide the generated OTP code.',
     completeTwoFactorSetup: 'Complete enabling two-factor authentication.',
+    compound: 'Compound',
     config: 'Config',
     confirm: 'Confirm',
     confirmDelete: 'Confirm deletion',

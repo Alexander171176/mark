@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCategory\MarketCategoryController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
+use App\Http\Controllers\Admin\Market\MarketProductBundle\MarketProductBundleController;
 use App\Http\Controllers\Admin\Market\MarketProductVariant\MarketProductVariantController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
@@ -178,6 +179,11 @@ Route::put('/market-products/{marketProduct}/activity',
     [MarketProductController::class, 'updateActivity'])
     ->whereNumber('marketProduct')
     ->name('marketProducts.updateActivity');
+
+Route::put('/market-product-bundles/{marketProductBundle}/activity',
+    [MarketProductBundleController::class, 'updateActivity'])
+    ->whereNumber('marketProductBundle')
+    ->name('marketProductBundles.updateActivity');
 
 Route::put('/market-product-variants/{marketProductVariant}/activity',
     [MarketProductVariantController::class, 'updateActivity'])

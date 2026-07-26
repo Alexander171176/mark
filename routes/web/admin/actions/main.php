@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Market\MarketBrand\MarketBrandController;
 use App\Http\Controllers\Admin\Market\MarketCompany\MarketCompanyController;
 use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
+use App\Http\Controllers\Admin\Market\MarketProductBundle\MarketProductBundleController;
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\School\SchoolAssignment\SchoolAssignmentController;
 use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
@@ -58,6 +59,11 @@ Route::put('/market-products/{marketProduct}/main',
     [MarketProductController::class, 'updateMain'])
     ->whereNumber('marketProduct')
     ->name('marketProducts.updateMain');
+
+Route::put('/market-product-bundles/{marketProductBundle}/main',
+    [MarketProductBundleController::class, 'updateMain'])
+    ->whereNumber('marketProductBundle')
+    ->name('marketProductBundles.updateMain');
 
 Route::put('/market-brands/{marketBrand}/main',
     [MarketBrandController::class, 'updateMain'])

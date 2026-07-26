@@ -216,6 +216,7 @@ export default {
     subtitle: 'Подзаголовок',
     subtotal: 'Сумма всех всех услуг и товаров в корзине',
     supervisor: 'Руководитель',
+    supplier: 'Поставщик',
     supportService: 'Служба поддержки',
     svg: 'SVG Иконка',
     switchTeams: 'Переключение Группы',

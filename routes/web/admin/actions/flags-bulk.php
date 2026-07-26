@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
+use App\Http\Controllers\Admin\Market\MarketProductBundle\MarketProductBundleController;
 use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,3 +30,16 @@ Route::put('/market-products/bulk-is-hit',
 Route::put('/market-products/bulk-is-sale',
     [MarketProductController::class, 'bulkUpdateIsSale'])
     ->name('marketProducts.bulkUpdateIsSale');
+
+// Комплекты товаров - новинки, хиты, распродажа - массовые позиции
+Route::put('/market-product-bundles/bulk-is-new',
+    [MarketProductBundleController::class, 'bulkUpdateIsNew'])
+    ->name('marketProductBundles.bulkUpdateIsNew');
+
+Route::put('/market-product-bundles/bulk-is-hit',
+    [MarketProductBundleController::class, 'bulkUpdateIsHit'])
+    ->name('marketProductBundles.bulkUpdateIsHit');
+
+Route::put('/market-product-bundles/bulk-is-sale',
+    [MarketProductBundleController::class, 'bulkUpdateIsSale'])
+    ->name('marketProductBundles.bulkUpdateIsSale');

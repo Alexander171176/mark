@@ -24,6 +24,7 @@ export default {
     editMarketCategory: 'Редактировать Категорию товаров',
     editMarketCompany: 'Редактировать фирму',
     editMarketProduct: 'Редактировать товар',
+    editMarketProductBundle: 'Редактировать Комплект товаров',
     editMarketProductVariant: 'Редактировать Вариант товара',
     editMarketShop: 'Редактировать магазин',
     editModule: 'Редактировать Модуль',

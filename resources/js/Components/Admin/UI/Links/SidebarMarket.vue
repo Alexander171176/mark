@@ -38,6 +38,7 @@ const pageLinks = ref(JSON.parse(localStorage.getItem('pageLinks')) || [
     'marketShops',
     'marketCategories',
     'marketProducts',
+    'marketProductBundles',
     'marketProductVariants',
     'marketBrands',
     'marketTags',

@@ -21,6 +21,7 @@ export default {
     noSignature: 'Қолтаңба жоқ',
     noStamp: 'Мөр жоқ',
     notes: 'Әкімшінің ескертпелері',
+    notAvailable: 'Жоқ',
     notDefaultVariant: 'Негізгі нұсқа емес',
     notFilterable: 'Сүзгіде көрсетілмесін',
     notHit: 'Ұсынылған тізімде жоқ',

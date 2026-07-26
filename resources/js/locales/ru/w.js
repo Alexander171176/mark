@@ -9,6 +9,7 @@ export default {
     whereFrom: 'Откуда',
     whereTo: 'Куда',
     width: 'Ширина',
+    withoutFixingIOption: 'Без фиксации варианта',
     withVariants: 'С вариантами',
     withoutVariants: 'Без вариантов',
     wholesaleMinQuantity: 'Оптовка мин. количество',

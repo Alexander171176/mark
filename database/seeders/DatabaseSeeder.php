@@ -126,6 +126,7 @@ class DatabaseSeeder extends Seeder
             MarketAttributeValueSeeder::class, // Значения характеристик
 
             MarketProductVariantSeeder::class,
+            MarketProductBundleSeeder::class,
 
 // Добавьте сюда другие сидеры по мере необходимости
         ]);

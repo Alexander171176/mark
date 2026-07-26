@@ -52,6 +52,7 @@ export default {
     points: 'Ұпайлар',
     popoverEnabled: 'Қалқымалы терезе қосылды',
     popularity: 'Танымалдылық',
+    position: 'Лауазым',
     poster: 'Постер',
     postAuthor: 'Пост авторы',
     postImage: 'Посттың суреті',

@@ -216,6 +216,7 @@ export default {
     subtitle: 'Subtitle',
     subtotal: 'The sum of all services and goods in the basket',
     supervisor: 'Supervisor',
+    supplier: 'Supplier',
     supportService: 'Support Service',
     svg: 'SVG Icon',
     switchTeams: 'Switch Teams',

@@ -52,6 +52,7 @@ export default {
     points: 'Points',
     popoverEnabled: 'Popover enabled',
     popularity: 'Popularity',
+    position: 'Position',
     poster: 'Poster',
     postAuthor: 'Post Author',
     postImage: 'Post Image',

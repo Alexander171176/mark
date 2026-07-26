@@ -24,6 +24,7 @@ export default {
     editMarketCategory: 'Өнім санатын өңдеу',
     editMarketCompany: 'Компанияны өңдеу',
     editMarketProduct: 'Өнімді өңдеу',
+    editMarketProductBundle: 'Өнімдер жиынтығын өңдеу',
     editMarketProductVariant: 'Өнім нұсқасын өңдеу',
     editMarketShop: 'Дүкенді өңдеу',
     editModule: 'Модульді өңдеу',

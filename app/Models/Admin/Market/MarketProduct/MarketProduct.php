@@ -7,6 +7,8 @@ use App\Models\Admin\Market\MarketBrand\MarketBrand;
 use App\Models\Admin\Market\MarketCategory\MarketCategory;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketProductAttributeValue\MarketProductAttributeValue;
+use App\Models\Admin\Market\MarketProductBundle\MarketProductBundle;
+use App\Models\Admin\Market\MarketProductBundle\MarketProductBundleItem;
 use App\Models\Admin\Market\MarketProductVariant\MarketProductVariant;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketTag\MarketTag;
@@ -330,6 +332,94 @@ class MarketProduct extends Model
             ->orderByDesc('id');
     }
 
+    /**
+     * Позиции комплектов, в которых используется товар.
+     *
+     * Связь включает:
+     * - товар без конкретного варианта;
+     * - товар с выбранным вариантом.
+     */
+    public function bundleItems(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductBundleItem::class,
+            'market_product_id'
+        )
+            ->orderBy('sort')
+            ->orderBy('id');
+    }
+
+    /**
+     * Активные позиции комплектов,
+     * в которых используется товар.
+     */
+    public function activeBundleItems(): HasMany
+    {
+        return $this->hasMany(
+            MarketProductBundleItem::class,
+            'market_product_id'
+        )
+            ->where('activity', true)
+            ->orderBy('sort')
+            ->orderBy('id');
+    }
+
+    /**
+     * Комплекты, в состав которых входит товар.
+     *
+     * Товар может входить:
+     * - самостоятельно;
+     * - через конкретный вариант.
+     */
+    public function productBundles(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            MarketProductBundle::class,
+            'market_product_bundle_items',
+            'market_product_id',
+            'market_product_bundle_id'
+        )
+            ->withPivot([
+                'id',
+                'market_product_variant_id',
+                'quantity',
+                'unit_price',
+                'discount_type',
+                'discount_value',
+                'sort',
+                'activity',
+            ])
+            ->withTimestamps()
+            ->orderByPivot('sort');
+    }
+
+    /**
+     * Только активные комплекты,
+     * в состав которых входит товар.
+     */
+    public function activeProductBundles(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            MarketProductBundle::class,
+            'market_product_bundle_items',
+            'market_product_id',
+            'market_product_bundle_id'
+        )
+            ->withPivot([
+                'id',
+                'market_product_variant_id',
+                'quantity',
+                'unit_price',
+                'discount_type',
+                'discount_value',
+                'sort',
+                'activity',
+            ])
+            ->wherePivot('activity', true)
+            ->withTimestamps()
+            ->orderByPivot('sort');
+    }
+
     /** Отзывы товара */
     public function reviews(): MorphMany
     {
@@ -497,6 +587,34 @@ class MarketProduct extends Model
             ->active()
             ->inStock()
             ->exists();
+    }
+
+    /**
+     * Используется ли товар хотя бы в одном комплекте.
+     */
+    public function isUsedInBundles(): bool
+    {
+        if (isset($this->bundle_items_count)) {
+            return (int) $this->bundle_items_count > 0;
+        }
+
+        return $this->relationLoaded('bundleItems')
+            ? $this->bundleItems->isNotEmpty()
+            : $this->bundleItems()->exists();
+    }
+
+    /**
+     * Количество позиций комплектов с этим товаром.
+     */
+    public function bundleItemsCount(): int
+    {
+        if (isset($this->bundle_items_count)) {
+            return (int) $this->bundle_items_count;
+        }
+
+        return $this->relationLoaded('bundleItems')
+            ? $this->bundleItems->count()
+            : $this->bundleItems()->count();
     }
 
     /* ======================== Scopes ======================== */

@@ -21,6 +21,7 @@ export default {
     noSignature: 'No Signature',
     noStamp: 'No Stamp',
     notes: 'Administrator\'s Notes',
+    notAvailable: 'Not available',
     notDefaultVariant: 'Not the main option',
     notFilterable: 'Do not show in filter',
     notHit: 'not in Recommended',

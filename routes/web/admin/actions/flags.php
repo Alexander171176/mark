@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Market\MarketProduct\MarketProductController;
+use App\Http\Controllers\Admin\Market\MarketProductBundle\MarketProductBundleController;
 use App\Http\Controllers\Admin\School\SchoolCourse\SchoolCourseController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,3 +36,19 @@ Route::put('/market-products/{marketProduct}/is-sale',
     [MarketProductController::class, 'updateIsSale'])
     ->whereNumber('marketProduct')
     ->name('marketProducts.updateIsSale');
+
+// Комплекты товаров - новинки, хиты, распродажа
+Route::put('/market-product-bundles/{marketProductBundle}/is-new',
+    [MarketProductBundleController::class, 'updateIsNew'])
+    ->whereNumber('marketProductBundle')
+    ->name('marketProductBundles.updateIsNew');
+
+Route::put('/market-product-bundles/{marketProductBundle}/is-hit',
+    [MarketProductBundleController::class, 'updateIsHit'])
+    ->whereNumber('marketProductBundle')
+    ->name('marketProductBundles.updateIsHit');
+
+Route::put('/market-product-bundles/{marketProductBundle}/is-sale',
+    [MarketProductBundleController::class, 'updateIsSale'])
+    ->whereNumber('marketProductBundle')
+    ->name('marketProductBundles.updateIsSale');

@@ -52,6 +52,7 @@ export default {
     points: 'Баллы',
     popoverEnabled: 'Всплывающее окно включено',
     popularity: 'Популярность',
+    position: 'Позиция',
     poster: 'Постер',
     postAuthor: 'Автор Поста',
     postImage: 'Изображение поста',

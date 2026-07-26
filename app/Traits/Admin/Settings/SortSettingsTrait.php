@@ -319,6 +319,13 @@ trait SortSettingsTrait
             'adminMarketProductsDefaultSort', 'site_settings.adminMarketProductsDefaultSort');
     }
 
+    /** Обновляет сортировку элементов в комплектах товаров */
+    public function updateAdminSortMarketProductBundles(UpdateSortRequest $request): RedirectResponse
+    {
+        return $this->sortSetting($request,
+            'adminMarketProductBundlesDefaultSort', 'site_settings.adminMarketProductBundlesDefaultSort');
+    }
+
     /** Обновляет сортировку элементов в вариантах товаров */
     public function updateAdminSortMarketProductVariants(UpdateSortRequest $request): RedirectResponse
     {

@@ -216,6 +216,7 @@ export default {
     subtitle: 'Субтитр',
     subtotal: 'Себеттегі барлық қызметтер мен тауарлардың қосындысы',
     supervisor: 'Супервайзер',
+    supplier: 'Жеткізуші',
     supportService: 'Қолдау қызметі',
     svg: 'SVG белгішесі',
     switchTeams: 'Топты ауыстыру',

@@ -6,7 +6,7 @@
  * @author Александр
  */
 
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
@@ -77,8 +77,12 @@ const isAdmin = computed(() => page.props?.isAdmin === true)
 
 /** Дерево рубрик */
 const rubricTree = computed(() => {
-    return Array.isArray(props.rubricTree) ? props.rubricTree : []
+    return Array.isArray(props.rubricTree)
+        ? props.rubricTree
+        : []
 })
+
+/* ===================== RUBRICS DATA ===================== */
 
 /** Универсальный список рубрик */
 const rubricsData = computed(() => {
@@ -93,40 +97,18 @@ const rubricsData = computed(() => {
     return []
 })
 
-/* ===================== FILTERS ===================== */
-
-/** Поисковая строка */
-const q = ref(String(props.filters?.q ?? ''))
-
-/** Сортировка по умолчанию */
-const DEFAULT_SORT = 'sortAsc'
-
-/** Текущая сортировка */
-const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
-
-/** Ключ режима отображения */
-const VIEW_KEY = 'public_blog_rubrics_view'
-
-/** Режим отображения */
-const viewMode = ref(
-    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
-)
-
-/** Сохраняем режим отображения */
-watch(viewMode, (value) => {
-    localStorage.setItem(VIEW_KEY, value)
-})
-
 /* ===================== SIDEBARS ===================== */
 
 /** Показ левой колонки */
 const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+    return !siteSettings?.ViewLeftColumn
+        || siteSettings.ViewLeftColumn === 'true'
 })
 
 /** Показ правой колонки */
 const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+    return !siteSettings?.ViewRightColumn
+        || siteSettings.ViewRightColumn === 'true'
 })
 
 /** Ключ левого сайдбара */
@@ -162,6 +144,8 @@ const rightCollapsed = ref(
  * Оба открыты  → 2.
  * Один свернут → 3.
  * Оба свернуты → 4.
+ *
+ * Количество рубрик при этом не меняется.
  */
 const rubricGridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
@@ -178,74 +162,65 @@ const rubricGridCols = computed(() => {
     return 4
 })
 
-/**
- * Количество дополнительных карточек.
- *
- * Каждый свернутый или отключенный сайдбар
- * добавляет одну карточку.
- */
-const additionalCards = computed(() => {
-    if (viewMode.value !== 'grid') {
-        return 0
-    }
+/** Сохраняем состояние сайдбаров */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(
+        LEFT_SIDEBAR_KEY,
+        String(leftCollapsed.value)
+    )
 
-    let count = 0
+    localStorage.setItem(
+        RIGHT_SIDEBAR_KEY,
+        String(rightCollapsed.value)
+    )
+})
 
-    if (!showLeft.value || leftCollapsed.value) {
-        count++
-    }
+/* ===================== FILTERS ===================== */
 
-    if (!showRight.value || rightCollapsed.value) {
-        count++
-    }
+/** Поисковая строка */
+const q = ref(
+    String(props.filters?.q ?? '')
+)
 
-    return count
+/** Сортировка по умолчанию */
+const DEFAULT_SORT = 'sortAsc'
+
+/** Текущая сортировка */
+const sort = ref(
+    String(props.filters?.sort ?? DEFAULT_SORT)
+)
+
+/** Ключ режима отображения */
+const VIEW_KEY = 'public_blog_rubrics_view'
+
+/** Режим отображения */
+const viewMode = ref(
+    String(
+        props.filters?.view
+        || localStorage.getItem(VIEW_KEY)
+        || 'grid'
+    )
+)
+
+/** Сохраняем режим отображения */
+watch(viewMode, (value) => {
+    localStorage.setItem(VIEW_KEY, value)
 })
 
 /**
- * Определяем базовое количество рубрик.
+ * Количество рубрик на странице.
  *
- * Если per_page уже находится в URL,
- * убираем добавочные карточки сайдбаров.
- */
-const resolveBasePerPage = () => {
-    const filterPerPage = Number(props.filters?.per_page ?? 6)
-    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 6
-    const params = new URLSearchParams(window.location.search)
-
-    if (!params.has('per_page')) {
-        return safePerPage
-    }
-
-    if (viewMode.value !== 'grid') {
-        return safePerPage
-    }
-
-    let collapsedCount = 0
-
-    if (!showLeft.value || leftCollapsed.value) {
-        collapsedCount++
-    }
-
-    if (!showRight.value || rightCollapsed.value) {
-        collapsedCount++
-    }
-
-    return Math.max(1, safePerPage - collapsedCount)
-}
-
-/** Базовое количество рубрик */
-const basePerPage = ref(resolveBasePerPage())
-
-/**
- * Итоговое количество рубрик.
+ * Источник значения — backend:
+ * PublicSettingsService → resolvePerPage() → filters.per_page.
  *
- * 6 — оба сайдбара открыты.
- * 7 — свернут один.
- * 8 — свернуты оба.
+ * 12 используется только как аварийный fallback.
  */
 const perPage = computed(() => {
-    return basePerPage.value + additionalCards.value
+    const value = Number(props.filters?.per_page)
+
+    return Number.isFinite(value) && value > 0
+        ? value
+        : 12
 })
 
 /** Опции сортировки */
@@ -287,27 +262,27 @@ const normalizeText = (value) => {
 
 /** Название рубрики */
 const getRubricTitle = (rubric) => {
-    return rubric.title
-        || rubric.name
-        || rubric.translation?.title
-        || rubric.translation?.name
-        || rubric.current_translation?.title
-        || rubric.current_translation?.name
-        || rubric.translations?.[0]?.title
-        || rubric.translations?.[0]?.name
+    return rubric?.title
+        || rubric?.name
+        || rubric?.translation?.title
+        || rubric?.translation?.name
+        || rubric?.current_translation?.title
+        || rubric?.current_translation?.name
+        || rubric?.translations?.[0]?.title
+        || rubric?.translations?.[0]?.name
         || ''
 }
 
 /** Краткий текст рубрики */
 const getRubricShort = (rubric) => {
-    return rubric.short
-        || rubric.description
-        || rubric.translation?.short
-        || rubric.translation?.description
-        || rubric.current_translation?.short
-        || rubric.current_translation?.description
-        || rubric.translations?.[0]?.short
-        || rubric.translations?.[0]?.description
+    return rubric?.short
+        || rubric?.description
+        || rubric?.translation?.short
+        || rubric?.translation?.description
+        || rubric?.current_translation?.short
+        || rubric?.current_translation?.description
+        || rubric?.translations?.[0]?.short
+        || rubric?.translations?.[0]?.description
         || ''
 }
 
@@ -327,7 +302,9 @@ const filteredRubrics = computed(() => {
             rubric.slug,
             rubric.owner?.name,
             rubric.owner?.email,
-        ].some((value) => normalizeText(value).includes(query))
+        ].some((value) => {
+            return normalizeText(value).includes(query)
+        })
     })
 })
 
@@ -345,11 +322,15 @@ const sortedRubrics = computed(() => {
 
             case 'titleAsc':
                 return normalizeText(getRubricTitle(a))
-                    .localeCompare(normalizeText(getRubricTitle(b)))
+                    .localeCompare(
+                        normalizeText(getRubricTitle(b))
+                    )
 
             case 'titleDesc':
                 return normalizeText(getRubricTitle(b))
-                    .localeCompare(normalizeText(getRubricTitle(a)))
+                    .localeCompare(
+                        normalizeText(getRubricTitle(a))
+                    )
 
             case 'viewsAsc':
                 return (a.views ?? 0) - (b.views ?? 0)
@@ -358,10 +339,12 @@ const sortedRubrics = computed(() => {
                 return (b.views ?? 0) - (a.views ?? 0)
 
             case 'articlesAsc':
-                return (a.articles_count ?? 0) - (b.articles_count ?? 0)
+                return (a.articles_count ?? 0)
+                    - (b.articles_count ?? 0)
 
             case 'articlesDesc':
-                return (b.articles_count ?? 0) - (a.articles_count ?? 0)
+                return (b.articles_count ?? 0)
+                    - (a.articles_count ?? 0)
 
             case 'dateAsc':
                 return new Date(a.published_at ?? a.created_at ?? 0)
@@ -377,11 +360,21 @@ const sortedRubrics = computed(() => {
     })
 })
 
-/** Frontend-пагинация */
+/**
+ * Frontend-пагинация.
+ *
+ * Использует то же per_page,
+ * которое определил backend.
+ */
 const frontendPaginatedRubrics = computed(() => {
-    const start = (frontendCurrentPage.value - 1) * perPage.value
+    const start = (
+        frontendCurrentPage.value - 1
+    ) * perPage.value
 
-    return sortedRubrics.value.slice(start, start + perPage.value)
+    return sortedRubrics.value.slice(
+        start,
+        start + perPage.value
+    )
 })
 
 /** Сбрасываем frontend-пагинацию */
@@ -400,18 +393,33 @@ watch(frontendCurrentPage, () => {
 
 /** Текущая server-страница */
 const currentPage = computed(() => {
-    return Number(props.rubrics?.meta?.current_page ?? props.rubrics?.current_page ?? 1) || 1
+    return Number(
+        props.rubrics?.meta?.current_page
+        ?? props.rubrics?.current_page
+        ?? 1
+    ) || 1
 })
 
 /** Последняя server-страница */
 const lastPage = computed(() => {
-    return Number(props.rubrics?.meta?.last_page ?? props.rubrics?.last_page ?? 1) || 1
+    return Number(
+        props.rubrics?.meta?.last_page
+        ?? props.rubrics?.last_page
+        ?? 1
+    ) || 1
 })
 
 /** Маршрут списка рубрик */
-const indexRoute = () => route('public.blogRubrics.index')
+const indexRoute = () => {
+    return route('public.blogRubrics.index')
+}
 
-/** Server-загрузка рубрик */
+/**
+ * Server-загрузка рубрик.
+ *
+ * per_page намеренно не отправляем.
+ * Его всегда определяет backend через PublicSettingsService.
+ */
 const reloadRubrics = (page = 1) => {
     router.get(
         indexRoute(),
@@ -419,7 +427,6 @@ const reloadRubrics = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            per_page: perPage.value,
             page,
         },
         {
@@ -473,7 +480,10 @@ const goToPage = (page) => {
         return
     }
 
-    const safePage = Math.max(1, Math.min(value, lastPage.value))
+    const safePage = Math.max(
+        1,
+        Math.min(value, lastPage.value)
+    )
 
     reloadRubrics(safePage)
 }
@@ -495,41 +505,6 @@ const goNext = () => {
 
     goToPage(currentPage.value + 1)
 }
-
-/* ===================== SIDEBAR WATCH ===================== */
-
-/**
- * Сохраняем состояние сайдбаров.
- *
- * В server-режиме при сетке
- * запрашиваем новое количество рубрик.
- */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
-
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing && viewMode.value === 'grid') {
-        reloadRubrics(1)
-    }
-})
-
-/**
- * Синхронизация первого server-запроса
- * с состоянием сайдбаров из localStorage.
- */
-onMounted(() => {
-    if (!props.useServerProcessing || viewMode.value !== 'grid') {
-        return
-    }
-
-    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
-
-    if (serverPerPage !== perPage.value) {
-        reloadRubrics(1)
-    }
-})
 
 /* ===================== COMMON VIEW ===================== */
 

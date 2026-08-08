@@ -5,8 +5,9 @@
  * @version PulsarCMS 1.0
  * @author Александр
  */
-import { Head, Link, router, usePage } from '@inertiajs/vue3'
+
 import { computed, ref, watch } from 'vue'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
@@ -28,11 +29,15 @@ import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/Publi
 
 const { t } = useI18n()
 
+/* ===================== PROPS ===================== */
+
 /** Props страницы */
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
-    seo: { type: Object, default: () => ({
+    seo: {
+        type: Object,
+        default: () => ({
             title: '',
             keywords: '',
             description: '',
@@ -59,21 +64,27 @@ const props = defineProps({
     mainBanners: { type: [Array, Object], default: () => [] },
 })
 
+/* ===================== PAGE ===================== */
+
 /** Глобальные данные страницы */
 const page = usePage()
 
 /** Глобальные настройки сайта */
 const siteSettings = page.props?.siteSettings || {}
 
-/** Роль администратора для нижней служебной панели */
+/** Роль администратора */
 const isAdmin = computed(() => page.props?.isAdmin === true)
 
-/** Дерево рубрик для левого сайдбара */
+/** Дерево рубрик */
 const rubricTree = computed(() => {
-    return Array.isArray(props.rubricTree) ? props.rubricTree : []
+    return Array.isArray(props.rubricTree)
+        ? props.rubricTree
+        : []
 })
 
-/** Универсальный список видео: server paginator data или frontend array */
+/* ===================== VIDEOS DATA ===================== */
+
+/** Универсальный список видео */
 const videosData = computed(() => {
     if (Array.isArray(props.videos)) {
         return props.videos
@@ -86,36 +97,133 @@ const videosData = computed(() => {
     return []
 })
 
-/** Количество элементов на странице для обоих режимов */
-const perPage = computed(() => {
-    const value = Number(props.filters?.per_page ?? 20)
+/* ===================== SIDEBARS ===================== */
 
-    return Number.isFinite(value) ? value : 20
+/** Показ левой колонки */
+const showLeft = computed(() => {
+    return !siteSettings?.ViewLeftColumn
+        || siteSettings.ViewLeftColumn === 'true'
 })
 
-/** Поисковая строка для server/frontend */
-const q = ref(String(props.filters?.q ?? ''))
+/** Показ правой колонки */
+const showRight = computed(() => {
+    return !siteSettings?.ViewRightColumn
+        || siteSettings.ViewRightColumn === 'true'
+})
 
-/** Сортировка по умолчанию для server/frontend */
-const DEFAULT_SORT = 'sortAsc'
+/** Ключ левого сайдбара */
+const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
 
-/** Текущая сортировка для server/frontend */
-const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
+/** Ключ правого сайдбара */
+const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
 
-/** Ключ локального хранения режима отображения */
-const VIEW_KEY = 'public_blog_videos_view'
+/** Получение boolean из localStorage */
+const getStoredBoolean = (key, defaultValue = true) => {
+    const value = localStorage.getItem(key)
 
-/** Режим отображения карточки/строки для server/frontend */
-const viewMode = ref(
-    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+/** Левый сайдбар по умолчанию свернут */
+const leftCollapsed = ref(
+    getStoredBoolean(LEFT_SIDEBAR_KEY, true)
 )
 
-/** Сохраняем режим отображения локально */
+/** Правый сайдбар по умолчанию свернут */
+const rightCollapsed = ref(
+    getStoredBoolean(RIGHT_SIDEBAR_KEY, true)
+)
+
+/**
+ * Количество колонок сетки.
+ *
+ * Оба открыты  → 2.
+ * Один свернут → 3.
+ * Оба свернуты → 4.
+ *
+ * Количество видео при этом не меняется.
+ */
+const videoGridCols = computed(() => {
+    const leftExpanded = showLeft.value && !leftCollapsed.value
+    const rightExpanded = showRight.value && !rightCollapsed.value
+
+    if (leftExpanded && rightExpanded) {
+        return 2
+    }
+
+    if (leftExpanded || rightExpanded) {
+        return 3
+    }
+
+    return 4
+})
+
+/** Сохраняем состояние сайдбаров */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(
+        LEFT_SIDEBAR_KEY,
+        String(leftCollapsed.value)
+    )
+
+    localStorage.setItem(
+        RIGHT_SIDEBAR_KEY,
+        String(rightCollapsed.value)
+    )
+})
+
+/* ===================== FILTERS ===================== */
+
+/** Поисковая строка */
+const q = ref(
+    String(props.filters?.q ?? '')
+)
+
+/** Сортировка по умолчанию */
+const DEFAULT_SORT = 'sortAsc'
+
+/** Текущая сортировка */
+const sort = ref(
+    String(props.filters?.sort ?? DEFAULT_SORT)
+)
+
+/** Ключ режима отображения */
+const VIEW_KEY = 'public_blog_videos_view'
+
+/** Режим отображения */
+const viewMode = ref(
+    String(
+        props.filters?.view
+        || localStorage.getItem(VIEW_KEY)
+        || 'grid'
+    )
+)
+
+/** Сохраняем режим отображения */
 watch(viewMode, (value) => {
     localStorage.setItem(VIEW_KEY, value)
 })
 
-/** Опции сортировки для toolbar */
+/**
+ * Количество видео на странице.
+ *
+ * Источник значения — backend:
+ * PublicSettingsService → resolvePerPage() → filters.per_page.
+ *
+ * 12 используется только как аварийный fallback.
+ */
+const perPage = computed(() => {
+    const value = Number(props.filters?.per_page)
+
+    return Number.isFinite(value) && value > 0
+        ? value
+        : 12
+})
+
+/** Опции сортировки */
 const videoSortOptions = [
     { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
     { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
@@ -141,10 +249,10 @@ const videoSortOptions = [
 
 /* ===================== FRONTEND MODE ===================== */
 
-/** Текущая страница локальной пагинации frontend */
+/** Текущая frontend-страница */
 const frontendCurrentPage = ref(1)
 
-/** Цель плавного скролла при frontend-пагинации */
+/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
     scrollToTarget,
@@ -153,40 +261,44 @@ const {
     duration: 1200,
 })
 
-/** Нормализация текста для локального поиска frontend */
+/** Нормализация текста */
 const normalizeText = (value) => {
     return String(value ?? '').toLowerCase()
 }
 
-/** Получение названия видео из разных возможных структур ресурса */
+/** Название видео */
 const getVideoTitle = (video) => {
-    return video.title
-        || video.name
-        || video.translation?.title
-        || video.current_translation?.title
-        || video.translations?.[0]?.title
+    return video?.title
+        || video?.name
+        || video?.translation?.title
+        || video?.current_translation?.title
+        || video?.translations?.[0]?.title
         || ''
 }
 
-/** Получение краткого текста видео */
+/** Краткий текст видео */
 const getVideoShort = (video) => {
-    return video.short
-        || video.description
-        || video.translation?.short
-        || video.translation?.description
-        || video.current_translation?.short
-        || video.current_translation?.description
-        || video.translations?.[0]?.short
-        || video.translations?.[0]?.description
+    return video?.short
+        || video?.description
+        || video?.translation?.short
+        || video?.translation?.description
+        || video?.current_translation?.short
+        || video?.current_translation?.description
+        || video?.translations?.[0]?.short
+        || video?.translations?.[0]?.description
         || ''
 }
 
-/** Получение продолжительности видео */
+/** Продолжительность видео */
 const getVideoDuration = (video) => {
-    return Number(video.duration ?? video.duration_seconds ?? 0) || 0
+    return Number(
+        video?.duration
+        ?? video?.duration_seconds
+        ?? 0
+    ) || 0
 }
 
-/** Локальный поиск frontend */
+/** Локальный поиск */
 const filteredVideos = computed(() => {
     const query = normalizeText(q.value).trim()
 
@@ -202,11 +314,13 @@ const filteredVideos = computed(() => {
             video.slug,
             video.owner?.name,
             video.owner?.email,
-        ].some((value) => normalizeText(value).includes(query))
+        ].some((value) => {
+            return normalizeText(value).includes(query)
+        })
     })
 })
 
-/** Локальная сортировка frontend */
+/** Локальная сортировка */
 const sortedVideos = computed(() => {
     const list = [...filteredVideos.value]
 
@@ -220,11 +334,15 @@ const sortedVideos = computed(() => {
 
             case 'titleAsc':
                 return normalizeText(getVideoTitle(a))
-                    .localeCompare(normalizeText(getVideoTitle(b)))
+                    .localeCompare(
+                        normalizeText(getVideoTitle(b))
+                    )
 
             case 'titleDesc':
                 return normalizeText(getVideoTitle(b))
-                    .localeCompare(normalizeText(getVideoTitle(a)))
+                    .localeCompare(
+                        normalizeText(getVideoTitle(a))
+                    )
 
             case 'viewsAsc':
                 return (a.views ?? 0) - (b.views ?? 0)
@@ -233,30 +351,36 @@ const sortedVideos = computed(() => {
                 return (b.views ?? 0) - (a.views ?? 0)
 
             case 'likesAsc':
-                return (a.likes_count ?? 0) - (b.likes_count ?? 0)
+                return (a.likes_count ?? 0)
+                    - (b.likes_count ?? 0)
 
             case 'likesDesc':
-                return (b.likes_count ?? 0) - (a.likes_count ?? 0)
+                return (b.likes_count ?? 0)
+                    - (a.likes_count ?? 0)
 
             case 'commentsAsc':
-                return (a.comments_count ?? 0) - (b.comments_count ?? 0)
+                return (a.comments_count ?? 0)
+                    - (b.comments_count ?? 0)
 
             case 'commentsDesc':
-                return (b.comments_count ?? 0) - (a.comments_count ?? 0)
+                return (b.comments_count ?? 0)
+                    - (a.comments_count ?? 0)
 
             case 'durationAsc':
-                return getVideoDuration(a) - getVideoDuration(b)
+                return getVideoDuration(a)
+                    - getVideoDuration(b)
 
             case 'durationDesc':
-                return getVideoDuration(b) - getVideoDuration(a)
+                return getVideoDuration(b)
+                    - getVideoDuration(a)
 
             case 'publishedAtAsc':
-                return new Date(a.published_at ?? a.created_at ?? 0) -
-                    new Date(b.published_at ?? b.created_at ?? 0)
+                return new Date(a.published_at ?? a.created_at ?? 0)
+                    - new Date(b.published_at ?? b.created_at ?? 0)
 
             case 'publishedAtDesc':
-                return new Date(b.published_at ?? b.created_at ?? 0) -
-                    new Date(a.published_at ?? a.created_at ?? 0)
+                return new Date(b.published_at ?? b.created_at ?? 0)
+                    - new Date(a.published_at ?? a.created_at ?? 0)
 
             default:
                 return 0
@@ -264,19 +388,29 @@ const sortedVideos = computed(() => {
     })
 })
 
-/** Локальная пагинация frontend */
+/**
+ * Frontend-пагинация.
+ *
+ * Использует то же per_page,
+ * которое определил backend.
+ */
 const frontendPaginatedVideos = computed(() => {
-    const start = (frontendCurrentPage.value - 1) * perPage.value
+    const start = (
+        frontendCurrentPage.value - 1
+    ) * perPage.value
 
-    return sortedVideos.value.slice(start, start + perPage.value)
+    return sortedVideos.value.slice(
+        start,
+        start + perPage.value
+    )
 })
 
-/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+/** Сбрасываем frontend-пагинацию */
 watch([q, sort, viewMode], () => {
     frontendCurrentPage.value = 1
 })
 
-/** Плавно возвращаемся к началу списка при frontend-пагинации */
+/** Скролл при frontend-пагинации */
 watch(frontendCurrentPage, () => {
     if (!props.useServerProcessing) {
         scrollToTarget()
@@ -285,20 +419,35 @@ watch(frontendCurrentPage, () => {
 
 /* ===================== SERVER MODE ===================== */
 
-/** Текущая страница server-пагинации */
+/** Текущая server-страница */
 const currentPage = computed(() => {
-    return Number(props.videos?.meta?.current_page ?? props.videos?.current_page ?? 1) || 1
+    return Number(
+        props.videos?.meta?.current_page
+        ?? props.videos?.current_page
+        ?? 1
+    ) || 1
 })
 
-/** Последняя страница server-пагинации */
+/** Последняя server-страница */
 const lastPage = computed(() => {
-    return Number(props.videos?.meta?.last_page ?? props.videos?.last_page ?? 1) || 1
+    return Number(
+        props.videos?.meta?.last_page
+        ?? props.videos?.last_page
+        ?? 1
+    ) || 1
 })
 
-/** Маршрут списка видео для server-режима */
-const indexRoute = () => route('public.blogVideos.index')
+/** Маршрут списка видео */
+const indexRoute = () => {
+    return route('public.blogVideos.index')
+}
 
-/** Server-загрузка видео с query-параметрами */
+/**
+ * Server-загрузка видео.
+ *
+ * per_page намеренно не отправляем.
+ * Его всегда определяет backend через PublicSettingsService.
+ */
 const reloadVideos = (page = 1) => {
     router.get(
         indexRoute(),
@@ -306,7 +455,6 @@ const reloadVideos = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            per_page: perPage.value,
             page,
         },
         {
@@ -322,7 +470,7 @@ const submitSearch = () => {
     reloadVideos(1)
 }
 
-/** Сброс поиска и сортировки для обоих режимов */
+/** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
@@ -342,12 +490,13 @@ const updateSort = (value) => {
     }
 }
 
-/** Изменение режима отображения для обоих режимов */
+/** Изменение режима отображения */
 const updateViewMode = (value) => {
     viewMode.value = value || 'grid'
+    frontendCurrentPage.value = 1
 
     if (props.useServerProcessing) {
-        reloadVideos(currentPage.value)
+        reloadVideos(1)
     }
 }
 
@@ -359,12 +508,15 @@ const goToPage = (page) => {
         return
     }
 
-    const safePage = Math.max(1, Math.min(value, lastPage.value))
+    const safePage = Math.max(
+        1,
+        Math.min(value, lastPage.value)
+    )
 
     reloadVideos(safePage)
 }
 
-/** Server-предыдущая страница */
+/** Предыдущая server-страница */
 const goPrev = () => {
     if (currentPage.value <= 1) {
         return
@@ -373,7 +525,7 @@ const goPrev = () => {
     goToPage(currentPage.value - 1)
 }
 
-/** Server-следующая страница */
+/** Следующая server-страница */
 const goNext = () => {
     if (currentPage.value >= lastPage.value) {
         return
@@ -384,66 +536,11 @@ const goNext = () => {
 
 /* ===================== COMMON VIEW ===================== */
 
-/** Итоговый список для отображения: server data или frontend page */
+/** Итоговый список видео */
 const displayedVideos = computed(() => {
     return props.useServerProcessing
         ? videosData.value
         : frontendPaginatedVideos.value
-})
-
-/** Показ левой колонки */
-const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
-})
-
-/** Показ правой колонки */
-const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
-})
-
-/** Ключ localStorage для левого сайдбара */
-const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
-
-/** Ключ localStorage для правого сайдбара */
-const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
-
-/** Получение boolean из localStorage */
-const getStoredBoolean = (key, defaultValue = false) => {
-    const value = localStorage.getItem(key)
-
-    if (value === null) {
-        return defaultValue
-    }
-
-    return value === 'true'
-}
-
-/** Состояние левого сайдбара */
-const leftCollapsed = ref(
-    getStoredBoolean(LEFT_SIDEBAR_KEY, false)
-)
-
-/** Состояние правого сайдбара */
-const rightCollapsed = ref(
-    getStoredBoolean(RIGHT_SIDEBAR_KEY, false)
-)
-
-/** Сохраняем состояние левого сайдбара */
-watch(leftCollapsed, (value) => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
-})
-
-/** Сохраняем состояние правого сайдбара */
-watch(rightCollapsed, (value) => {
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
-})
-
-/** Количество колонок сетки с учётом сайдбаров */
-const videoGridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
-
-    return leftExpanded && rightExpanded ? 2 : 3
 })
 </script>
 

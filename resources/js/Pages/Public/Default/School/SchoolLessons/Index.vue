@@ -3,21 +3,21 @@
  * Страница списка уроков
  * - шапка, центральная часть, подвал
  * - светлый, тёмный режим
- * - серверный поиск
- * - серверная пагинация
- * - серверная сортировка
+ * - серверный и frontend поиск
+ * - серверная и frontend пагинация
+ * - серверная и frontend сортировка
  * - показ карточками, в строку
  * - показ главных видео, баннеров внизу страницы
  * - показ, скрытие колонок
  * - показ дерева треков в левой колонке
- * - показ облако хештегов в правой колонке
+ * - показ облака хештегов в правой колонке
  *
  * @version PulsarCMS 1.0
  * @author Александр
  */
 
+import { computed, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
@@ -28,23 +28,26 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarSchool from '@/Components/Public/Default/Partials/LeftSidebarSchool.vue'
 import RightSidebarSchool from '@/Components/Public/Default/Partials/RightSidebarSchool.vue'
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
+import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
-
 import LessonGrid from '@/Components/Public/Default/School/SchoolLesson/LessonGrid.vue'
 import LessonRows from '@/Components/Public/Default/School/SchoolLesson/LessonRows.vue'
-import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
-import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
+
+/* ===================== PROPS ===================== */
 
 /** Props страницы */
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
-    seo: { type: Object, default: () => ({
+    seo: {
+        type: Object,
+        default: () => ({
             title: '',
             keywords: '',
             description: '',
@@ -70,25 +73,40 @@ const props = defineProps({
     mainBanners: { type: [Array, Object], default: () => [] },
 })
 
+/* ===================== PAGE ===================== */
+
 /** Глобальные данные страницы */
 const page = usePage()
 
 /** Глобальные настройки сайта */
 const siteSettings = page.props?.siteSettings || {}
 
-/** Роль администратора для нижней служебной панели */
+/** Роль администратора */
 const isAdmin = computed(() => page.props?.isAdmin === true)
 
+/** Нормализация массивов */
 const normalizeList = (value) => {
-    if (Array.isArray(value)) return value
-    if (Array.isArray(value?.data)) return value.data
+    if (Array.isArray(value)) {
+        return value
+    }
+
+    if (Array.isArray(value?.data)) {
+        return value.data
+    }
+
     return []
 }
 
-/** Дерево треков для левого аккордеона */
-const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
+/** Дерево треков */
+const trackTree = computed(() => {
+    return Array.isArray(props.trackTree)
+        ? props.trackTree
+        : []
+})
 
-/** Универсальный список уроков: server paginator data или frontend array */
+/* ===================== LESSONS DATA ===================== */
+
+/** Универсальный список уроков */
 const lessonsData = computed(() => {
     if (Array.isArray(props.lessons)) {
         return props.lessons
@@ -101,38 +119,18 @@ const lessonsData = computed(() => {
     return []
 })
 
-/** Поисковая строка для server/frontend */
-const q = ref(String(props.filters?.q ?? ''))
-
-/** Сортировка по умолчанию для server/frontend */
-const DEFAULT_SORT = 'idDesc'
-
-/** Текущая сортировка для server/frontend */
-const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
-
-/** Ключ локального хранения режима отображения */
-const VIEW_KEY = 'public_school_lessons_view'
-
-/** Режим отображения карточки/строки для server/frontend */
-const viewMode = ref(
-    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
-)
-
-/** Сохраняем режим отображения локально */
-watch(viewMode, (value) => {
-    localStorage.setItem(VIEW_KEY, value)
-})
-
 /* ===================== SIDEBARS ===================== */
 
 /** Показ левой колонки */
 const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+    return !siteSettings?.ViewLeftColumn
+        || siteSettings.ViewLeftColumn === 'true'
 })
 
 /** Показ правой колонки */
 const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+    return !siteSettings?.ViewRightColumn
+        || siteSettings.ViewRightColumn === 'true'
 })
 
 /** Ключ левого сайдбара */
@@ -168,6 +166,8 @@ const rightCollapsed = ref(
  * Оба открыты  → 2.
  * Один свернут → 3.
  * Оба свернуты → 4.
+ *
+ * Количество уроков при этом не меняется.
  */
 const gridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
@@ -184,77 +184,68 @@ const gridCols = computed(() => {
     return 4
 })
 
-/**
- * Количество дополнительных карточек.
- *
- * Каждый свернутый или отключенный сайдбар
- * добавляет одну карточку.
- */
-const additionalCards = computed(() => {
-    if (viewMode.value !== 'grid') {
-        return 0
-    }
+/** Сохраняем состояние сайдбаров */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(
+        LEFT_SIDEBAR_KEY,
+        String(leftCollapsed.value)
+    )
 
-    let count = 0
+    localStorage.setItem(
+        RIGHT_SIDEBAR_KEY,
+        String(rightCollapsed.value)
+    )
+})
 
-    if (!showLeft.value || leftCollapsed.value) {
-        count++
-    }
+/* ===================== FILTERS ===================== */
 
-    if (!showRight.value || rightCollapsed.value) {
-        count++
-    }
+/** Поисковая строка */
+const q = ref(
+    String(props.filters?.q ?? '')
+)
 
-    return count
+/** Сортировка по умолчанию */
+const DEFAULT_SORT = 'idDesc'
+
+/** Текущая сортировка */
+const sort = ref(
+    String(props.filters?.sort ?? DEFAULT_SORT)
+)
+
+/** Ключ режима отображения */
+const VIEW_KEY = 'public_school_lessons_view'
+
+/** Режим отображения */
+const viewMode = ref(
+    String(
+        props.filters?.view
+        || localStorage.getItem(VIEW_KEY)
+        || 'grid'
+    )
+)
+
+/** Сохраняем режим отображения */
+watch(viewMode, (value) => {
+    localStorage.setItem(VIEW_KEY, value)
 })
 
 /**
- * Определяем базовое количество уроков.
+ * Количество уроков на странице.
  *
- * Если per_page уже находится в URL,
- * убираем добавочные карточки сайдбаров.
- */
-const resolveBasePerPage = () => {
-    const filterPerPage = Number(props.filters?.per_page ?? 12)
-    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 12
-    const params = new URLSearchParams(window.location.search)
-
-    if (!params.has('per_page')) {
-        return safePerPage
-    }
-
-    if (viewMode.value !== 'grid') {
-        return safePerPage
-    }
-
-    let collapsedCount = 0
-
-    if (!showLeft.value || leftCollapsed.value) {
-        collapsedCount++
-    }
-
-    if (!showRight.value || rightCollapsed.value) {
-        collapsedCount++
-    }
-
-    return Math.max(1, safePerPage - collapsedCount)
-}
-
-/** Базовое количество уроков */
-const basePerPage = ref(resolveBasePerPage())
-
-/**
- * Итоговое количество уроков.
+ * Источник значения — backend:
+ * PublicSettingsService → resolvePerPage() → filters.per_page.
  *
- * 12 — оба сайдбара открыты.
- * 13 — свернут один.
- * 14 — свернуты оба.
+ * 12 используется только как аварийный fallback.
  */
 const perPage = computed(() => {
-    return basePerPage.value + additionalCards.value
+    const value = Number(props.filters?.per_page)
+
+    return Number.isFinite(value) && value > 0
+        ? value
+        : 12
 })
 
-/** Опции сортировки для toolbar */
+/** Опции сортировки */
 const lessonSortOptions = [
     { value: 'idDesc', label: t('idDesc') },
     { value: 'idAsc', label: t('idAsc') },
@@ -319,10 +310,10 @@ const lessonSortOptions = [
 
 /* ===================== FRONTEND MODE ===================== */
 
-/** Текущая страница локальной пагинации frontend */
+/** Текущая frontend-страница */
 const frontendCurrentPage = ref(1)
 
-/** Цель плавного скролла при frontend-пагинации */
+/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
     scrollToTarget,
@@ -331,73 +322,74 @@ const {
     duration: 1200,
 })
 
-/** Нормализация текста для локального поиска frontend */
+/** Нормализация текста */
 const normalizeText = (value) => {
     return String(value ?? '').toLowerCase()
 }
 
-/** Получение названия урока из разных возможных структур ресурса */
+/** Название урока */
 const getLessonTitle = (lesson) => {
-    return lesson.title
-        || lesson.name
-        || lesson.translation?.title
-        || lesson.translation?.name
-        || lesson.current_translation?.title
-        || lesson.current_translation?.name
-        || lesson.translations?.[0]?.title
-        || lesson.translations?.[0]?.name
+    return lesson?.title
+        || lesson?.name
+        || lesson?.translation?.title
+        || lesson?.translation?.name
+        || lesson?.current_translation?.title
+        || lesson?.current_translation?.name
+        || lesson?.translations?.[0]?.title
+        || lesson?.translations?.[0]?.name
         || ''
 }
 
-/** Получение краткого текста урока */
+/** Краткий текст урока */
 const getLessonShort = (lesson) => {
-    return lesson.short
-        || lesson.description
-        || lesson.subtitle
-        || lesson.translation?.short
-        || lesson.translation?.description
-        || lesson.translation?.subtitle
-        || lesson.current_translation?.short
-        || lesson.current_translation?.description
-        || lesson.current_translation?.subtitle
-        || lesson.translations?.[0]?.short
-        || lesson.translations?.[0]?.description
-        || lesson.translations?.[0]?.subtitle
+    return lesson?.short
+        || lesson?.description
+        || lesson?.subtitle
+        || lesson?.translation?.short
+        || lesson?.translation?.description
+        || lesson?.translation?.subtitle
+        || lesson?.current_translation?.short
+        || lesson?.current_translation?.description
+        || lesson?.current_translation?.subtitle
+        || lesson?.translations?.[0]?.short
+        || lesson?.translations?.[0]?.description
+        || lesson?.translations?.[0]?.subtitle
         || ''
 }
 
-/** Получение slug урока */
+/** Slug урока */
 const getLessonSlug = (lesson) => {
-    return lesson.slug
-        || lesson.url
-        || lesson.translation?.slug
-        || lesson.current_translation?.slug
-        || lesson.translations?.[0]?.slug
+    return lesson?.slug
+        || lesson?.url
+        || lesson?.translation?.slug
+        || lesson?.current_translation?.slug
+        || lesson?.translations?.[0]?.slug
         || ''
 }
 
-/** Получение названия модуля из разных возможных структур ресурса */
+/** Название модуля */
 const getModuleTitle = (lesson) => {
-    return lesson.module?.title
-        || lesson.module?.name
-        || lesson.module?.translation?.title
-        || lesson.module?.translation?.name
-        || lesson.module?.translations?.[0]?.title
-        || lesson.module?.translations?.[0]?.name
+    return lesson?.module?.title
+        || lesson?.module?.name
+        || lesson?.module?.translation?.title
+        || lesson?.module?.translation?.name
+        || lesson?.module?.translations?.[0]?.title
+        || lesson?.module?.translations?.[0]?.name
         || ''
 }
 
-/** Получение названия курса из разных возможных структур ресурса */
+/** Название курса */
 const getCourseTitle = (lesson) => {
-    return lesson.module?.course?.title
-        || lesson.module?.course?.name
-        || lesson.module?.course?.translation?.title
-        || lesson.module?.course?.translation?.name
-        || lesson.module?.course?.translations?.[0]?.title
-        || lesson.module?.course?.translations?.[0]?.name
+    return lesson?.module?.course?.title
+        || lesson?.module?.course?.name
+        || lesson?.module?.course?.translation?.title
+        || lesson?.module?.course?.translation?.name
+        || lesson?.module?.course?.translations?.[0]?.title
+        || lesson?.module?.course?.translations?.[0]?.name
         || ''
 }
 
+/** Разбивка поисковой строки */
 const splitSearchWords = (value) => {
     return String(value ?? '')
         .toLowerCase()
@@ -406,8 +398,11 @@ const splitSearchWords = (value) => {
         .filter((word) => word.length >= 2)
 }
 
+/** Текст хештегов */
 const getHashtagText = (lesson) => {
-    const hashtags = Array.isArray(lesson.hashtags) ? lesson.hashtags : []
+    const hashtags = Array.isArray(lesson?.hashtags)
+        ? lesson.hashtags
+        : []
 
     return hashtags.map((hashtag) => {
         return [
@@ -426,7 +421,7 @@ const getHashtagText = (lesson) => {
     }).join(' ')
 }
 
-/** Локальный поиск frontend */
+/** Локальный поиск */
 const filteredLessons = computed(() => {
     const words = splitSearchWords(q.value)
 
@@ -459,149 +454,235 @@ const filteredLessons = computed(() => {
             getHashtagText(lesson),
         ].filter(Boolean).join(' '))
 
-        return words.every((word) => haystack.includes(word))
+        return words.every((word) => {
+            return haystack.includes(word)
+        })
     })
 })
 
-/** Локальная сортировка frontend */
+/** Локальная сортировка */
 const sortedLessons = computed(() => {
     const list = [...filteredLessons.value]
 
     return list.sort((a, b) => {
         switch (sort.value) {
             case 'sortAsc':
-                return (a.sort ?? 0) - (b.sort ?? 0)
+                return (a.sort ?? 0)
+                    - (b.sort ?? 0)
 
             case 'sortDesc':
-                return (b.sort ?? 0) - (a.sort ?? 0)
+                return (b.sort ?? 0)
+                    - (a.sort ?? 0)
 
             case 'idAsc':
-                return (a.id ?? 0) - (b.id ?? 0)
+                return (a.id ?? 0)
+                    - (b.id ?? 0)
 
             case 'idDesc':
-                return (b.id ?? 0) - (a.id ?? 0)
+                return (b.id ?? 0)
+                    - (a.id ?? 0)
 
             case 'titleAsc':
                 return normalizeText(getLessonTitle(a))
-                    .localeCompare(normalizeText(getLessonTitle(b)))
+                    .localeCompare(
+                        normalizeText(getLessonTitle(b))
+                    )
 
             case 'titleDesc':
                 return normalizeText(getLessonTitle(b))
-                    .localeCompare(normalizeText(getLessonTitle(a)))
+                    .localeCompare(
+                        normalizeText(getLessonTitle(a))
+                    )
 
             case 'viewsAsc':
-                return (a.views ?? 0) - (b.views ?? 0)
+                return (a.views ?? 0)
+                    - (b.views ?? 0)
 
             case 'viewsDesc':
-                return (b.views ?? 0) - (a.views ?? 0)
+                return (b.views ?? 0)
+                    - (a.views ?? 0)
 
             case 'likesCountAsc':
             case 'likesAsc':
-                return (a.likes_count ?? a.likes ?? 0) - (b.likes_count ?? b.likes ?? 0)
+                return (a.likes_count ?? a.likes ?? 0)
+                    - (b.likes_count ?? b.likes ?? 0)
 
             case 'likesCountDesc':
             case 'likesDesc':
-                return (b.likes_count ?? b.likes ?? 0) - (a.likes_count ?? a.likes ?? 0)
+                return (b.likes_count ?? b.likes ?? 0)
+                    - (a.likes_count ?? a.likes ?? 0)
 
             case 'ratingAvgAsc':
-                return (a.rating_avg ?? 0) - (b.rating_avg ?? 0)
+                return (a.rating_avg ?? 0)
+                    - (b.rating_avg ?? 0)
 
             case 'ratingAvgDesc':
-                return (b.rating_avg ?? 0) - (a.rating_avg ?? 0)
+                return (b.rating_avg ?? 0)
+                    - (a.rating_avg ?? 0)
 
             case 'ratingCountAsc':
-                return (a.rating_count ?? 0) - (b.rating_count ?? 0)
+                return (a.rating_count ?? 0)
+                    - (b.rating_count ?? 0)
 
             case 'ratingCountDesc':
-                return (b.rating_count ?? 0) - (a.rating_count ?? 0)
+                return (b.rating_count ?? 0)
+                    - (a.rating_count ?? 0)
 
             case 'popularityAsc':
-                return (a.popularity ?? 0) - (b.popularity ?? 0)
+                return (a.popularity ?? 0)
+                    - (b.popularity ?? 0)
 
             case 'popularityDesc':
-                return (b.popularity ?? 0) - (a.popularity ?? 0)
+                return (b.popularity ?? 0)
+                    - (a.popularity ?? 0)
 
             case 'durationAsc':
-                return (a.duration ?? 0) - (b.duration ?? 0)
+                return (a.duration ?? 0)
+                    - (b.duration ?? 0)
 
             case 'durationDesc':
-                return (b.duration ?? 0) - (a.duration ?? 0)
+                return (b.duration ?? 0)
+                    - (a.duration ?? 0)
 
             case 'difficultyAsc':
-                return (a.difficulty ?? 0) - (b.difficulty ?? 0)
+                return (a.difficulty ?? 0)
+                    - (b.difficulty ?? 0)
 
             case 'difficultyDesc':
-                return (b.difficulty ?? 0) - (a.difficulty ?? 0)
+                return (b.difficulty ?? 0)
+                    - (a.difficulty ?? 0)
 
             case 'moduleAsc':
-                return (a.school_module_id ?? a.module_id ?? a.module?.id ?? 0) -
-                    (b.school_module_id ?? b.module_id ?? b.module?.id ?? 0)
+                return (
+                    a.school_module_id
+                    ?? a.module_id
+                    ?? a.module?.id
+                    ?? 0
+                ) - (
+                    b.school_module_id
+                    ?? b.module_id
+                    ?? b.module?.id
+                    ?? 0
+                )
 
             case 'moduleDesc':
-                return (b.school_module_id ?? b.module_id ?? b.module?.id ?? 0) -
-                    (a.school_module_id ?? a.module_id ?? a.module?.id ?? 0)
+                return (
+                    b.school_module_id
+                    ?? b.module_id
+                    ?? b.module?.id
+                    ?? 0
+                ) - (
+                    a.school_module_id
+                    ?? a.module_id
+                    ?? a.module?.id
+                    ?? 0
+                )
 
             case 'statusAsc':
                 return normalizeText(a.status)
-                    .localeCompare(normalizeText(b.status))
+                    .localeCompare(
+                        normalizeText(b.status)
+                    )
 
             case 'statusDesc':
                 return normalizeText(b.status)
-                    .localeCompare(normalizeText(a.status))
+                    .localeCompare(
+                        normalizeText(a.status)
+                    )
 
             case 'availabilityAsc':
                 return normalizeText(a.availability)
-                    .localeCompare(normalizeText(b.availability))
+                    .localeCompare(
+                        normalizeText(b.availability)
+                    )
 
             case 'availabilityDesc':
                 return normalizeText(b.availability)
-                    .localeCompare(normalizeText(a.availability))
+                    .localeCompare(
+                        normalizeText(a.availability)
+                    )
 
             case 'accessTypeAsc':
                 return normalizeText(a.access_type)
-                    .localeCompare(normalizeText(b.access_type))
+                    .localeCompare(
+                        normalizeText(b.access_type)
+                    )
 
             case 'accessTypeDesc':
                 return normalizeText(b.access_type)
-                    .localeCompare(normalizeText(a.access_type))
+                    .localeCompare(
+                        normalizeText(a.access_type)
+                    )
 
             case 'imagesAsc':
-                return (a.images_count ?? 0) - (b.images_count ?? 0)
+                return (a.images_count ?? 0)
+                    - (b.images_count ?? 0)
 
             case 'imagesDesc':
-                return (b.images_count ?? 0) - (a.images_count ?? 0)
+                return (b.images_count ?? 0)
+                    - (a.images_count ?? 0)
 
             case 'hashtagsAsc':
-                return (a.hashtags_count ?? 0) - (b.hashtags_count ?? 0)
+                return (a.hashtags_count ?? 0)
+                    - (b.hashtags_count ?? 0)
 
             case 'hashtagsDesc':
-                return (b.hashtags_count ?? 0) - (a.hashtags_count ?? 0)
+                return (b.hashtags_count ?? 0)
+                    - (a.hashtags_count ?? 0)
 
             case 'publishedAtAsc':
-                return new Date(a.published_at ?? a.created_at ?? 0) -
-                    new Date(b.published_at ?? b.created_at ?? 0)
+                return new Date(
+                    a.published_at
+                    ?? a.created_at
+                    ?? 0
+                ) - new Date(
+                    b.published_at
+                    ?? b.created_at
+                    ?? 0
+                )
 
             case 'publishedAtDesc':
-                return new Date(b.published_at ?? b.created_at ?? 0) -
-                    new Date(a.published_at ?? a.created_at ?? 0)
+                return new Date(
+                    b.published_at
+                    ?? b.created_at
+                    ?? 0
+                ) - new Date(
+                    a.published_at
+                    ?? a.created_at
+                    ?? 0
+                )
 
             case 'dateAsc':
             case 'createdAtAsc':
-                return new Date(a.created_at ?? a.published_at ?? 0) -
-                    new Date(b.created_at ?? b.published_at ?? 0)
+                return new Date(
+                    a.created_at
+                    ?? a.published_at
+                    ?? 0
+                ) - new Date(
+                    b.created_at
+                    ?? b.published_at
+                    ?? 0
+                )
 
             case 'dateDesc':
             case 'createdAtDesc':
-                return new Date(b.created_at ?? b.published_at ?? 0) -
-                    new Date(a.created_at ?? a.published_at ?? 0)
+                return new Date(
+                    b.created_at
+                    ?? b.published_at
+                    ?? 0
+                ) - new Date(
+                    a.created_at
+                    ?? a.published_at
+                    ?? 0
+                )
 
             case 'updatedAtAsc':
-                return new Date(a.updated_at ?? 0) -
-                    new Date(b.updated_at ?? 0)
+                return new Date(a.updated_at ?? 0)
+                    - new Date(b.updated_at ?? 0)
 
             case 'updatedAtDesc':
-                return new Date(b.updated_at ?? 0) -
-                    new Date(a.updated_at ?? 0)
+                return new Date(b.updated_at ?? 0)
+                    - new Date(a.updated_at ?? 0)
 
             default:
                 return 0
@@ -609,19 +690,29 @@ const sortedLessons = computed(() => {
     })
 })
 
-/** Локальная пагинация frontend */
+/**
+ * Frontend-пагинация.
+ *
+ * Использует то же per_page,
+ * которое определил backend.
+ */
 const frontendPaginatedLessons = computed(() => {
-    const start = (frontendCurrentPage.value - 1) * perPage.value
+    const start = (
+        frontendCurrentPage.value - 1
+    ) * perPage.value
 
-    return sortedLessons.value.slice(start, start + perPage.value)
+    return sortedLessons.value.slice(
+        start,
+        start + perPage.value
+    )
 })
 
-/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+/** Сбрасываем frontend-пагинацию */
 watch([q, sort, viewMode], () => {
     frontendCurrentPage.value = 1
 })
 
-/** Плавно возвращаемся к началу списка при frontend-пагинации */
+/** Скролл при frontend-пагинации */
 watch(frontendCurrentPage, () => {
     if (!props.useServerProcessing) {
         scrollToTarget()
@@ -630,20 +721,35 @@ watch(frontendCurrentPage, () => {
 
 /* ===================== SERVER MODE ===================== */
 
-/** Текущая страница server-пагинации */
+/** Текущая server-страница */
 const currentPage = computed(() => {
-    return Number(props.lessons?.meta?.current_page ?? props.lessons?.current_page ?? 1) || 1
+    return Number(
+        props.lessons?.meta?.current_page
+        ?? props.lessons?.current_page
+        ?? 1
+    ) || 1
 })
 
-/** Последняя страница server-пагинации */
+/** Последняя server-страница */
 const lastPage = computed(() => {
-    return Number(props.lessons?.meta?.last_page ?? props.lessons?.last_page ?? 1) || 1
+    return Number(
+        props.lessons?.meta?.last_page
+        ?? props.lessons?.last_page
+        ?? 1
+    ) || 1
 })
 
-/** Маршрут списка курсов для server-режима */
-const indexRoute = () => route('public.schoolLessons.index')
+/** Маршрут списка уроков */
+const indexRoute = () => {
+    return route('public.schoolLessons.index')
+}
 
-/** Server-загрузка курсов с query-параметрами */
+/**
+ * Server-загрузка уроков.
+ *
+ * per_page намеренно не отправляем.
+ * Его всегда определяет backend через PublicSettingsService.
+ */
 const reloadLessons = (page = 1) => {
     router.get(
         indexRoute(),
@@ -651,7 +757,6 @@ const reloadLessons = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            per_page: perPage.value,
             page,
         },
         {
@@ -667,7 +772,7 @@ const submitSearch = () => {
     reloadLessons(1)
 }
 
-/** Сброс поиска и сортировки для обоих режимов */
+/** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
@@ -701,82 +806,54 @@ const updateViewMode = (value) => {
 const goToPage = (page) => {
     const value = Number(page)
 
-    if (!Number.isFinite(value)) return
+    if (!Number.isFinite(value)) {
+        return
+    }
 
-    const safePage = Math.max(1, Math.min(value, lastPage.value))
+    const safePage = Math.max(
+        1,
+        Math.min(value, lastPage.value)
+    )
 
     reloadLessons(safePage)
 }
 
-/** Server-предыдущая страница */
+/** Предыдущая server-страница */
 const goPrev = () => {
-    if (currentPage.value <= 1) return
-    goToPage(currentPage.value - 1)
-}
-
-/** Server-следующая страница */
-const goNext = () => {
-    if (currentPage.value >= lastPage.value) return
-    goToPage(currentPage.value + 1)
-}
-
-/* ===================== SIDEBAR WATCH ===================== */
-
-/**
- * Сохраняем состояние сайдбаров.
- *
- * В server-режиме при сетке
- * запрашиваем новое количество уроков.
- */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
-
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing && viewMode.value === 'grid') {
-        reloadLessons(1)
-    }
-})
-
-/**
- * Синхронизация первого server-запроса
- * с состоянием сайдбаров из localStorage.
- */
-onMounted(() => {
-    if (!props.useServerProcessing || viewMode.value !== 'grid') {
+    if (currentPage.value <= 1) {
         return
     }
 
-    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
+    goToPage(currentPage.value - 1)
+}
 
-    if (serverPerPage !== perPage.value) {
-        reloadLessons(1)
+/** Следующая server-страница */
+const goNext = () => {
+    if (currentPage.value >= lastPage.value) {
+        return
     }
-})
+
+    goToPage(currentPage.value + 1)
+}
 
 /* ===================== COMMON VIEW ===================== */
 
-/** Итоговый список для отображения: server data или frontend page */
+/** Итоговый список уроков */
 const displayedLessons = computed(() => {
     return props.useServerProcessing
         ? lessonsData.value
         : frontendPaginatedLessons.value
 })
 
-/** Сохраняем состояние левого сайдбара */
-watch(leftCollapsed, (value) => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
+/** Видео внизу страницы */
+const mainVideosList = computed(() => {
+    return normalizeList(props.mainVideos)
 })
 
-/** Сохраняем состояние правого сайдбара */
-watch(rightCollapsed, (value) => {
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
+/** Баннеры внизу страницы */
+const mainBannersList = computed(() => {
+    return normalizeList(props.mainBanners)
 })
-
-/** список видео и баннеров */
-const mainVideosList = computed(() => normalizeList(props.mainVideos))
-const mainBannersList = computed(() => normalizeList(props.mainBanners))
 </script>
 
 <template>

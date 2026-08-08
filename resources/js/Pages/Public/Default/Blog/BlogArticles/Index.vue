@@ -6,7 +6,7 @@
  * @author Александр
  */
 
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
@@ -77,7 +77,9 @@ const isAdmin = computed(() => page.props?.isAdmin === true)
 
 /** Дерево рубрик */
 const rubricTree = computed(() => {
-    return Array.isArray(props.rubricTree) ? props.rubricTree : []
+    return Array.isArray(props.rubricTree)
+        ? props.rubricTree
+        : []
 })
 
 /* ===================== ARTICLES DATA ===================== */
@@ -99,12 +101,14 @@ const articlesData = computed(() => {
 
 /** Показ левой колонки */
 const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+    return !siteSettings?.ViewLeftColumn
+        || siteSettings.ViewLeftColumn === 'true'
 })
 
 /** Показ правой колонки */
 const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+    return !siteSettings?.ViewRightColumn
+        || siteSettings.ViewRightColumn === 'true'
 })
 
 /** Ключ левого сайдбара */
@@ -140,6 +144,8 @@ const rightCollapsed = ref(
  * Оба открыты  → 2.
  * Один свернут → 3.
  * Оба свернуты → 4.
+ *
+ * Количество статей при этом не меняется.
  */
 const articleGridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
@@ -156,47 +162,44 @@ const articleGridCols = computed(() => {
     return 4
 })
 
-/**
- * Количество дополнительных карточек.
- *
- * Каждый свернутый или отключенный сайдбар
- * добавляет одну карточку.
- */
-const additionalCards = computed(() => {
-    if (viewMode.value !== 'grid') {
-        return 0
-    }
+/** Сохраняем состояние сайдбаров */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(
+        LEFT_SIDEBAR_KEY,
+        String(leftCollapsed.value)
+    )
 
-    let count = 0
-
-    if (!showLeft.value || leftCollapsed.value) {
-        count++
-    }
-
-    if (!showRight.value || rightCollapsed.value) {
-        count++
-    }
-
-    return count
+    localStorage.setItem(
+        RIGHT_SIDEBAR_KEY,
+        String(rightCollapsed.value)
+    )
 })
 
 /* ===================== FILTERS ===================== */
 
 /** Поисковая строка */
-const q = ref(String(props.filters?.q ?? ''))
+const q = ref(
+    String(props.filters?.q ?? '')
+)
 
 /** Сортировка по умолчанию */
 const DEFAULT_SORT = 'sortAsc'
 
 /** Текущая сортировка */
-const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
+const sort = ref(
+    String(props.filters?.sort ?? DEFAULT_SORT)
+)
 
 /** Ключ режима отображения */
 const VIEW_KEY = 'public_blog_articles_view'
 
 /** Режим отображения */
 const viewMode = ref(
-    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
+    String(
+        props.filters?.view
+        || localStorage.getItem(VIEW_KEY)
+        || 'grid'
+    )
 )
 
 /** Сохраняем режим отображения */
@@ -205,49 +208,19 @@ watch(viewMode, (value) => {
 })
 
 /**
- * Определяем базовое количество статей.
+ * Количество статей на странице.
  *
- * Если per_page уже присутствует в URL,
- * убираем из него добавочные карточки сайдбаров.
- */
-const resolveBasePerPage = () => {
-    const filterPerPage = Number(props.filters?.per_page ?? 6)
-    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 6
-    const params = new URLSearchParams(window.location.search)
-
-    if (!params.has('per_page')) {
-        return safePerPage
-    }
-
-    if (viewMode.value !== 'grid') {
-        return safePerPage
-    }
-
-    let collapsedCount = 0
-
-    if (!showLeft.value || leftCollapsed.value) {
-        collapsedCount++
-    }
-
-    if (!showRight.value || rightCollapsed.value) {
-        collapsedCount++
-    }
-
-    return Math.max(1, safePerPage - collapsedCount)
-}
-
-/** Базовое количество статей */
-const basePerPage = ref(resolveBasePerPage())
-
-/**
- * Итоговое количество статей.
+ * Источник значения — backend:
+ * PublicSettingsService → resolvePerPage() → filters.per_page.
  *
- * 6 — оба сайдбара открыты.
- * 7 — свернут один.
- * 8 — свернуты оба.
+ * 12 используется только как аварийный fallback.
  */
 const perPage = computed(() => {
-    return basePerPage.value + additionalCards.value
+    const value = Number(props.filters?.per_page)
+
+    return Number.isFinite(value) && value > 0
+        ? value
+        : 12
 })
 
 /** Опции сортировки */
@@ -289,24 +262,24 @@ const normalizeText = (value) => {
 
 /** Название статьи */
 const getArticleTitle = (article) => {
-    return article.title
-        || article.name
-        || article.translation?.title
-        || article.current_translation?.title
-        || article.translations?.[0]?.title
+    return article?.title
+        || article?.name
+        || article?.translation?.title
+        || article?.current_translation?.title
+        || article?.translations?.[0]?.title
         || ''
 }
 
 /** Краткий текст статьи */
 const getArticleShort = (article) => {
-    return article.short
-        || article.description
-        || article.translation?.short
-        || article.translation?.description
-        || article.current_translation?.short
-        || article.current_translation?.description
-        || article.translations?.[0]?.short
-        || article.translations?.[0]?.description
+    return article?.short
+        || article?.description
+        || article?.translation?.short
+        || article?.translation?.description
+        || article?.current_translation?.short
+        || article?.current_translation?.description
+        || article?.translations?.[0]?.short
+        || article?.translations?.[0]?.description
         || ''
 }
 
@@ -326,7 +299,9 @@ const filteredArticles = computed(() => {
             article.slug,
             article.owner?.name,
             article.owner?.email,
-        ].some((value) => normalizeText(value).includes(query))
+        ].some((value) => {
+            return normalizeText(value).includes(query)
+        })
     })
 })
 
@@ -344,11 +319,15 @@ const sortedArticles = computed(() => {
 
             case 'titleAsc':
                 return normalizeText(getArticleTitle(a))
-                    .localeCompare(normalizeText(getArticleTitle(b)))
+                    .localeCompare(
+                        normalizeText(getArticleTitle(b))
+                    )
 
             case 'titleDesc':
                 return normalizeText(getArticleTitle(b))
-                    .localeCompare(normalizeText(getArticleTitle(a)))
+                    .localeCompare(
+                        normalizeText(getArticleTitle(a))
+                    )
 
             case 'viewsAsc':
                 return (a.views ?? 0) - (b.views ?? 0)
@@ -376,11 +355,21 @@ const sortedArticles = computed(() => {
     })
 })
 
-/** Frontend-пагинация */
+/**
+ * Frontend-пагинация.
+ *
+ * Использует то же per_page,
+ * которое определил backend.
+ */
 const frontendPaginatedArticles = computed(() => {
-    const start = (frontendCurrentPage.value - 1) * perPage.value
+    const start = (
+        frontendCurrentPage.value - 1
+    ) * perPage.value
 
-    return sortedArticles.value.slice(start, start + perPage.value)
+    return sortedArticles.value.slice(
+        start,
+        start + perPage.value
+    )
 })
 
 /** Сбрасываем frontend-пагинацию */
@@ -399,18 +388,33 @@ watch(frontendCurrentPage, () => {
 
 /** Текущая server-страница */
 const currentPage = computed(() => {
-    return Number(props.articles?.meta?.current_page ?? props.articles?.current_page ?? 1) || 1
+    return Number(
+        props.articles?.meta?.current_page
+        ?? props.articles?.current_page
+        ?? 1
+    ) || 1
 })
 
 /** Последняя server-страница */
 const lastPage = computed(() => {
-    return Number(props.articles?.meta?.last_page ?? props.articles?.last_page ?? 1) || 1
+    return Number(
+        props.articles?.meta?.last_page
+        ?? props.articles?.last_page
+        ?? 1
+    ) || 1
 })
 
 /** Маршрут списка статей */
-const indexRoute = () => route('public.blogArticles.index')
+const indexRoute = () => {
+    return route('public.blogArticles.index')
+}
 
-/** Server-загрузка статей */
+/**
+ * Server-загрузка статей.
+ *
+ * per_page намеренно не отправляем.
+ * Его всегда определяет backend через PublicSettingsService.
+ */
 const reloadArticles = (page = 1) => {
     router.get(
         indexRoute(),
@@ -418,7 +422,6 @@ const reloadArticles = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            per_page: perPage.value,
             page,
         },
         {
@@ -472,7 +475,10 @@ const goToPage = (page) => {
         return
     }
 
-    const safePage = Math.max(1, Math.min(value, lastPage.value))
+    const safePage = Math.max(
+        1,
+        Math.min(value, lastPage.value)
+    )
 
     reloadArticles(safePage)
 }
@@ -494,41 +500,6 @@ const goNext = () => {
 
     goToPage(currentPage.value + 1)
 }
-
-/* ===================== SIDEBAR WATCH ===================== */
-
-/**
- * Сохраняем состояние сайдбаров.
- *
- * В server-режиме при сетке
- * запрашиваем новое количество статей.
- */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
-
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing && viewMode.value === 'grid') {
-        reloadArticles(1)
-    }
-})
-
-/**
- * Синхронизация первого server-запроса
- * с состоянием сайдбаров из localStorage.
- */
-onMounted(() => {
-    if (!props.useServerProcessing || viewMode.value !== 'grid') {
-        return
-    }
-
-    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
-
-    if (serverPerPage !== perPage.value) {
-        reloadArticles(1)
-    }
-})
 
 /* ===================== COMMON VIEW ===================== */
 

@@ -76,6 +76,7 @@ export default {
     printInMenu: 'in the menu',
     privacyPolicy: 'Privacy Policy',
     private: 'Private',
+    products: 'Goods',
     profile: 'Profile',
     profileInformation: 'Profile Information',
     profileInformationDescription: 'Update your account\'s profile information and email address.',

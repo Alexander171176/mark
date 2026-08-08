@@ -3,20 +3,21 @@
  * Страница списка курсов
  * - шапка, центральная часть, подвал
  * - светлый, тёмный режим
- * - серверный поиск
- * - серверная пагинация
- * - серверная сортировка
+ * - серверный и frontend поиск
+ * - серверная и frontend пагинация
+ * - серверная и frontend сортировка
  * - показ карточками, в строку
  * - показ главных видео, баннеров внизу страницы
  * - показ, скрытие колонок
  * - показ дерева треков в левой колонке
- * - показ облако хештегов в правой колонке
+ * - показ облака хештегов в правой колонке
  *
  * @version PulsarCMS 1.0
  * @author Александр
  */
+
+import { computed, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
@@ -27,22 +28,26 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarSchool from '@/Components/Public/Default/Partials/LeftSidebarSchool.vue'
 import RightSidebarSchool from '@/Components/Public/Default/Partials/RightSidebarSchool.vue'
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
+import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
 import InstructorCourseGrid from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseGrid.vue'
 import InstructorCourseRows from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseRows.vue'
-import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
-import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
+
+/* ===================== PROPS ===================== */
 
 /** Props страницы */
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
-    seo: { type: Object, default: () => ({
+    seo: {
+        type: Object,
+        default: () => ({
             title: '',
             keywords: '',
             description: '',
@@ -69,19 +74,27 @@ const props = defineProps({
     mainBanners: { type: [Array, Object], default: () => [] },
 })
 
+/* ===================== PAGE ===================== */
+
 /** Глобальные данные страницы */
 const page = usePage()
 
 /** Глобальные настройки сайта */
 const siteSettings = page.props?.siteSettings || {}
 
-/** Роль администратора для нижней служебной панели */
+/** Роль администратора */
 const isAdmin = computed(() => page.props?.isAdmin === true)
 
-/** Дерево треков для левого аккордеона */
-const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
+/** Дерево треков */
+const trackTree = computed(() => {
+    return Array.isArray(props.trackTree)
+        ? props.trackTree
+        : []
+})
 
-/** Универсальный список курсов: server paginator data или frontend array */
+/* ===================== COURSES DATA ===================== */
+
+/** Универсальный список курсов */
 const coursesData = computed(() => {
     if (Array.isArray(props.courses)) {
         return props.courses
@@ -94,38 +107,18 @@ const coursesData = computed(() => {
     return []
 })
 
-/** Поисковая строка для server/frontend */
-const q = ref(String(props.filters?.q ?? ''))
-
-/** Сортировка по умолчанию для server/frontend */
-const DEFAULT_SORT = 'sortAsc'
-
-/** Текущая сортировка для server/frontend */
-const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
-
-/** Ключ локального хранения режима отображения */
-const VIEW_KEY = 'public_school_courses_view'
-
-/** Режим отображения карточки/строки для server/frontend */
-const viewMode = ref(
-    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
-)
-
-/** Сохраняем режим отображения локально */
-watch(viewMode, (value) => {
-    localStorage.setItem(VIEW_KEY, value)
-})
-
 /* ===================== SIDEBARS ===================== */
 
 /** Показ левой колонки */
 const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+    return !siteSettings?.ViewLeftColumn
+        || siteSettings.ViewLeftColumn === 'true'
 })
 
 /** Показ правой колонки */
 const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+    return !siteSettings?.ViewRightColumn
+        || siteSettings.ViewRightColumn === 'true'
 })
 
 /** Ключ левого сайдбара */
@@ -161,6 +154,8 @@ const rightCollapsed = ref(
  * Оба открыты  → 2.
  * Один свернут → 3.
  * Оба свернуты → 4.
+ *
+ * Количество курсов при этом не меняется.
  */
 const gridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
@@ -177,77 +172,73 @@ const gridCols = computed(() => {
     return 4
 })
 
+/** Сохраняем состояние сайдбаров */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(
+        LEFT_SIDEBAR_KEY,
+        String(leftCollapsed.value)
+    )
+
+    localStorage.setItem(
+        RIGHT_SIDEBAR_KEY,
+        String(rightCollapsed.value)
+    )
+})
+
+/* ===================== FILTERS ===================== */
+
+/** Поисковая строка */
+const q = ref(
+    String(props.filters?.q ?? '')
+)
+
 /**
- * Количество дополнительных карточек.
+ * Сортировка по умолчанию.
  *
- * Каждый свернутый или отключенный сайдбар
- * добавляет одну карточку.
+ * Совпадает с fallback контроллера:
+ * publicSchoolCoursesDefaultSort → idDesc.
  */
-const additionalCards = computed(() => {
-    if (viewMode.value !== 'grid') {
-        return 0
-    }
+const DEFAULT_SORT = 'idDesc'
 
-    let count = 0
+/** Текущая сортировка */
+const sort = ref(
+    String(props.filters?.sort ?? DEFAULT_SORT)
+)
 
-    if (!showLeft.value || leftCollapsed.value) {
-        count++
-    }
+/** Ключ режима отображения */
+const VIEW_KEY = 'public_school_courses_view'
 
-    if (!showRight.value || rightCollapsed.value) {
-        count++
-    }
+/** Режим отображения */
+const viewMode = ref(
+    String(
+        props.filters?.view
+        || localStorage.getItem(VIEW_KEY)
+        || 'grid'
+    )
+)
 
-    return count
+/** Сохраняем режим отображения */
+watch(viewMode, (value) => {
+    localStorage.setItem(VIEW_KEY, value)
 })
 
 /**
- * Определяем базовое количество курсов.
+ * Количество курсов на странице.
  *
- * Если per_page уже находится в URL,
- * убираем добавочные карточки сайдбаров.
- */
-const resolveBasePerPage = () => {
-    const filterPerPage = Number(props.filters?.per_page ?? 6)
-    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 6
-    const params = new URLSearchParams(window.location.search)
-
-    if (!params.has('per_page')) {
-        return safePerPage
-    }
-
-    if (viewMode.value !== 'grid') {
-        return safePerPage
-    }
-
-    let collapsedCount = 0
-
-    if (!showLeft.value || leftCollapsed.value) {
-        collapsedCount++
-    }
-
-    if (!showRight.value || rightCollapsed.value) {
-        collapsedCount++
-    }
-
-    return Math.max(1, safePerPage - collapsedCount)
-}
-
-/** Базовое количество курсов */
-const basePerPage = ref(resolveBasePerPage())
-
-/**
- * Итоговое количество курсов.
+ * Источник значения — backend:
+ * PublicSettingsService → resolvePerPage() → filters.per_page.
  *
- * 6 — оба сайдбара открыты.
- * 7 — свернут один.
- * 8 — свернуты оба.
+ * 12 используется только как аварийный fallback.
  */
 const perPage = computed(() => {
-    return basePerPage.value + additionalCards.value
+    const value = Number(props.filters?.per_page)
+
+    return Number.isFinite(value) && value > 0
+        ? value
+        : 12
 })
 
-/** Опции сортировки для toolbar */
+/** Опции сортировки */
 const courseSortOptions = [
     { value: 'idDesc', label: t('idDesc') },
     { value: 'idAsc', label: t('idAsc') },
@@ -324,10 +315,10 @@ const courseSortOptions = [
 
 /* ===================== FRONTEND MODE ===================== */
 
-/** Текущая страница локальной пагинации frontend */
+/** Текущая frontend-страница */
 const frontendCurrentPage = ref(1)
 
-/** Цель плавного скролла при frontend-пагинации */
+/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
     scrollToTarget,
@@ -336,52 +327,52 @@ const {
     duration: 1200,
 })
 
-/** Нормализация текста для локального поиска frontend */
+/** Нормализация текста */
 const normalizeText = (value) => {
     return String(value ?? '').toLowerCase()
 }
 
-/** Получение названия курса из разных возможных структур ресурса */
+/** Название курса */
 const getCourseTitle = (course) => {
-    return course.title
-        || course.name
-        || course.translation?.title
-        || course.translation?.name
-        || course.current_translation?.title
-        || course.current_translation?.name
-        || course.translations?.[0]?.title
-        || course.translations?.[0]?.name
+    return course?.title
+        || course?.name
+        || course?.translation?.title
+        || course?.translation?.name
+        || course?.current_translation?.title
+        || course?.current_translation?.name
+        || course?.translations?.[0]?.title
+        || course?.translations?.[0]?.name
         || ''
 }
 
-/** Получение краткого текста курса */
+/** Краткий текст курса */
 const getCourseShort = (course) => {
-    return course.short
-        || course.description
-        || course.subtitle
-        || course.translation?.short
-        || course.translation?.description
-        || course.translation?.subtitle
-        || course.current_translation?.short
-        || course.current_translation?.description
-        || course.current_translation?.subtitle
-        || course.translations?.[0]?.short
-        || course.translations?.[0]?.description
-        || course.translations?.[0]?.subtitle
+    return course?.short
+        || course?.description
+        || course?.subtitle
+        || course?.translation?.short
+        || course?.translation?.description
+        || course?.translation?.subtitle
+        || course?.current_translation?.short
+        || course?.current_translation?.description
+        || course?.current_translation?.subtitle
+        || course?.translations?.[0]?.short
+        || course?.translations?.[0]?.description
+        || course?.translations?.[0]?.subtitle
         || ''
 }
 
-/** Получение slug курса */
+/** Slug курса */
 const getCourseSlug = (course) => {
-    return course.slug
-        || course.url
-        || course.translation?.slug
-        || course.current_translation?.slug
-        || course.translations?.[0]?.slug
+    return course?.slug
+        || course?.url
+        || course?.translation?.slug
+        || course?.current_translation?.slug
+        || course?.translations?.[0]?.slug
         || ''
 }
 
-/** Локальный поиск frontend */
+/** Локальный поиск */
 const filteredCourses = computed(() => {
     const query = normalizeText(q.value).trim()
 
@@ -398,27 +389,29 @@ const filteredCourses = computed(() => {
             course.instructor_profile?.title,
             course.instructorProfile?.user?.name,
             course.instructor_profile?.user?.name,
-        ].some((value) => normalizeText(value).includes(query))
+        ].some((value) => {
+            return normalizeText(value).includes(query)
+        })
     })
 })
 
-/** Локальная сортировка frontend */
+/** Локальная сортировка */
 const sortedCourses = computed(() => {
     const list = [...filteredCourses.value]
 
     return list.sort((a, b) => {
         switch (sort.value) {
-            case 'sortAsc':
-                return (a.sort ?? 0) - (b.sort ?? 0)
-
-            case 'sortDesc':
-                return (b.sort ?? 0) - (a.sort ?? 0)
-
             case 'idAsc':
                 return (a.id ?? 0) - (b.id ?? 0)
 
             case 'idDesc':
                 return (b.id ?? 0) - (a.id ?? 0)
+
+            case 'sortAsc':
+                return (a.sort ?? 0) - (b.sort ?? 0)
+
+            case 'sortDesc':
+                return (b.sort ?? 0) - (a.sort ?? 0)
 
             case 'titleAsc':
                 return normalizeText(getCourseTitle(a))
@@ -429,52 +422,68 @@ const sortedCourses = computed(() => {
                     .localeCompare(normalizeText(getCourseTitle(a)))
 
             case 'studentsCountAsc':
-                return (a.students_count ?? 0) - (b.students_count ?? 0)
+                return (a.students_count ?? 0)
+                    - (b.students_count ?? 0)
 
             case 'studentsCountDesc':
-                return (b.students_count ?? 0) - (a.students_count ?? 0)
+                return (b.students_count ?? 0)
+                    - (a.students_count ?? 0)
 
             case 'viewsAsc':
-                return (a.views ?? 0) - (b.views ?? 0)
+                return (a.views ?? 0)
+                    - (b.views ?? 0)
 
             case 'viewsDesc':
-                return (b.views ?? 0) - (a.views ?? 0)
+                return (b.views ?? 0)
+                    - (a.views ?? 0)
 
             case 'likesAsc':
-                return (a.likes_count ?? 0) - (b.likes_count ?? 0)
+                return (a.likes_count ?? 0)
+                    - (b.likes_count ?? 0)
 
             case 'likesDesc':
-                return (b.likes_count ?? 0) - (a.likes_count ?? 0)
+                return (b.likes_count ?? 0)
+                    - (a.likes_count ?? 0)
 
             case 'popularityAsc':
-                return (a.popularity ?? 0) - (b.popularity ?? 0)
+                return (a.popularity ?? 0)
+                    - (b.popularity ?? 0)
 
             case 'popularityDesc':
-                return (b.popularity ?? 0) - (a.popularity ?? 0)
+                return (b.popularity ?? 0)
+                    - (a.popularity ?? 0)
 
             case 'ratingAvgAsc':
-                return (a.rating_avg ?? 0) - (b.rating_avg ?? 0)
+                return (a.rating_avg ?? 0)
+                    - (b.rating_avg ?? 0)
 
             case 'ratingAvgDesc':
-                return (b.rating_avg ?? 0) - (a.rating_avg ?? 0)
+                return (b.rating_avg ?? 0)
+                    - (a.rating_avg ?? 0)
 
             case 'ratingCountAsc':
-                return (a.rating_count ?? 0) - (b.rating_count ?? 0)
+                return (a.rating_count ?? 0)
+                    - (b.rating_count ?? 0)
 
             case 'ratingCountDesc':
-                return (b.rating_count ?? 0) - (a.rating_count ?? 0)
+                return (b.rating_count ?? 0)
+                    - (a.rating_count ?? 0)
 
             case 'difficultyAsc':
-                return (a.difficulty ?? 0) - (b.difficulty ?? 0)
+                return (a.difficulty ?? 0)
+                    - (b.difficulty ?? 0)
 
             case 'difficultyDesc':
-                return (b.difficulty ?? 0) - (a.difficulty ?? 0)
+                return (b.difficulty ?? 0)
+                    - (a.difficulty ?? 0)
 
             case 'durationAsc':
-                return (a.duration ?? 0) - (b.duration ?? 0)
+                return (a.duration ?? 0)
+                    - (b.duration ?? 0)
 
             case 'durationDesc':
-                return (b.duration ?? 0) - (a.duration ?? 0)
+                return (b.duration ?? 0)
+                    - (a.duration ?? 0)
 
             case 'levelAsc':
                 return normalizeText(a.level)
@@ -501,70 +510,84 @@ const sortedCourses = computed(() => {
                     .localeCompare(normalizeText(a.availability))
 
             case 'modulesAsc':
-                return (a.modules_count ?? 0) - (b.modules_count ?? 0)
+                return (a.modules_count ?? 0)
+                    - (b.modules_count ?? 0)
 
             case 'modulesDesc':
-                return (b.modules_count ?? 0) - (a.modules_count ?? 0)
+                return (b.modules_count ?? 0)
+                    - (a.modules_count ?? 0)
 
             case 'lessonsAsc':
-                return (a.lessons_count ?? 0) - (b.lessons_count ?? 0)
+                return (a.lessons_count ?? 0)
+                    - (b.lessons_count ?? 0)
 
             case 'lessonsDesc':
-                return (b.lessons_count ?? 0) - (a.lessons_count ?? 0)
+                return (b.lessons_count ?? 0)
+                    - (a.lessons_count ?? 0)
 
             case 'tracksAsc':
-                return (a.tracks_count ?? 0) - (b.tracks_count ?? 0)
+                return (a.tracks_count ?? 0)
+                    - (b.tracks_count ?? 0)
 
             case 'tracksDesc':
-                return (b.tracks_count ?? 0) - (a.tracks_count ?? 0)
+                return (b.tracks_count ?? 0)
+                    - (a.tracks_count ?? 0)
 
             case 'hashtagsAsc':
-                return (a.hashtags_count ?? 0) - (b.hashtags_count ?? 0)
+                return (a.hashtags_count ?? 0)
+                    - (b.hashtags_count ?? 0)
 
             case 'hashtagsDesc':
-                return (b.hashtags_count ?? 0) - (a.hashtags_count ?? 0)
+                return (b.hashtags_count ?? 0)
+                    - (a.hashtags_count ?? 0)
 
             case 'imagesAsc':
-                return (a.images_count ?? 0) - (b.images_count ?? 0)
+                return (a.images_count ?? 0)
+                    - (b.images_count ?? 0)
 
             case 'imagesDesc':
-                return (b.images_count ?? 0) - (a.images_count ?? 0)
+                return (b.images_count ?? 0)
+                    - (a.images_count ?? 0)
 
             case 'pricesAsc':
-                return (a.prices_count ?? 0) - (b.prices_count ?? 0)
+                return (a.prices_count ?? 0)
+                    - (b.prices_count ?? 0)
 
             case 'pricesDesc':
-                return (b.prices_count ?? 0) - (a.prices_count ?? 0)
+                return (b.prices_count ?? 0)
+                    - (a.prices_count ?? 0)
 
             case 'reviewsAsc':
-                return (a.reviews_count ?? 0) - (b.reviews_count ?? 0)
+                return (a.reviews_count ?? 0)
+                    - (b.reviews_count ?? 0)
 
             case 'reviewsDesc':
-                return (b.reviews_count ?? 0) - (a.reviews_count ?? 0)
+                return (b.reviews_count ?? 0)
+                    - (a.reviews_count ?? 0)
 
             case 'publishedAtAsc':
-                return new Date(a.published_at ?? 0) -
-                    new Date(b.published_at ?? 0)
+                return new Date(a.published_at ?? 0)
+                    - new Date(b.published_at ?? 0)
 
             case 'publishedAtDesc':
-                return new Date(b.published_at ?? 0) -
-                    new Date(a.published_at ?? 0)
+                return new Date(b.published_at ?? 0)
+                    - new Date(a.published_at ?? 0)
 
             case 'createdAtAsc':
-                return new Date(a.created_at ?? 0) -
-                    new Date(b.created_at ?? 0)
+                return new Date(a.created_at ?? 0)
+                    - new Date(b.created_at ?? 0)
 
             case 'createdAtDesc':
-                return new Date(b.created_at ?? 0) -
-                    new Date(a.created_at ?? 0)
+                return new Date(b.created_at ?? 0)
+                    - new Date(a.created_at ?? 0)
 
             case 'updatedAtAsc':
-                return new Date(a.updated_at ?? 0) -
-                    new Date(b.updated_at ?? 0)
+                return new Date(a.updated_at ?? 0)
+                    - new Date(b.updated_at ?? 0)
 
             case 'updatedAtDesc':
-                return new Date(b.updated_at ?? 0) -
-                    new Date(a.updated_at ?? 0)
+                return new Date(b.updated_at ?? 0)
+                    - new Date(a.updated_at ?? 0)
 
             default:
                 return 0
@@ -572,19 +595,29 @@ const sortedCourses = computed(() => {
     })
 })
 
-/** Локальная пагинация frontend */
+/**
+ * Frontend-пагинация.
+ *
+ * Использует то же per_page,
+ * которое определил backend.
+ */
 const frontendPaginatedCourses = computed(() => {
-    const start = (frontendCurrentPage.value - 1) * perPage.value
+    const start = (
+        frontendCurrentPage.value - 1
+    ) * perPage.value
 
-    return sortedCourses.value.slice(start, start + perPage.value)
+    return sortedCourses.value.slice(
+        start,
+        start + perPage.value
+    )
 })
 
-/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+/** Сбрасываем frontend-пагинацию */
 watch([q, sort, viewMode], () => {
     frontendCurrentPage.value = 1
 })
 
-/** Плавно возвращаемся к началу списка при frontend-пагинации */
+/** Скролл при frontend-пагинации */
 watch(frontendCurrentPage, () => {
     if (!props.useServerProcessing) {
         scrollToTarget()
@@ -593,20 +626,35 @@ watch(frontendCurrentPage, () => {
 
 /* ===================== SERVER MODE ===================== */
 
-/** Текущая страница server-пагинации */
+/** Текущая server-страница */
 const currentPage = computed(() => {
-    return Number(props.courses?.meta?.current_page ?? props.courses?.current_page ?? 1) || 1
+    return Number(
+        props.courses?.meta?.current_page
+        ?? props.courses?.current_page
+        ?? 1
+    ) || 1
 })
 
-/** Последняя страница server-пагинации */
+/** Последняя server-страница */
 const lastPage = computed(() => {
-    return Number(props.courses?.meta?.last_page ?? props.courses?.last_page ?? 1) || 1
+    return Number(
+        props.courses?.meta?.last_page
+        ?? props.courses?.last_page
+        ?? 1
+    ) || 1
 })
 
-/** Маршрут списка курсов для server-режима */
-const indexRoute = () => route('public.schoolCourses.index')
+/** Маршрут списка курсов */
+const indexRoute = () => {
+    return route('public.schoolCourses.index')
+}
 
-/** Server-загрузка курсов с query-параметрами */
+/**
+ * Server-загрузка курсов.
+ *
+ * per_page намеренно не отправляем.
+ * Его всегда определяет backend через PublicSettingsService.
+ */
 const reloadCourses = (page = 1) => {
     router.get(
         indexRoute(),
@@ -614,7 +662,6 @@ const reloadCourses = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            per_page: perPage.value,
             page,
         },
         {
@@ -630,7 +677,7 @@ const submitSearch = () => {
     reloadCourses(1)
 }
 
-/** Сброс поиска и сортировки для обоих режимов */
+/** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
@@ -664,77 +711,43 @@ const updateViewMode = (value) => {
 const goToPage = (page) => {
     const value = Number(page)
 
-    if (!Number.isFinite(value)) return
+    if (!Number.isFinite(value)) {
+        return
+    }
 
-    const safePage = Math.max(1, Math.min(value, lastPage.value))
+    const safePage = Math.max(
+        1,
+        Math.min(value, lastPage.value)
+    )
 
     reloadCourses(safePage)
 }
 
-/** Server-предыдущая страница */
+/** Предыдущая server-страница */
 const goPrev = () => {
-    if (currentPage.value <= 1) return
-    goToPage(currentPage.value - 1)
-}
-
-/** Server-следующая страница */
-const goNext = () => {
-    if (currentPage.value >= lastPage.value) return
-    goToPage(currentPage.value + 1)
-}
-
-/* ===================== SIDEBAR WATCH ===================== */
-
-/**
- * Сохраняем состояние сайдбаров.
- *
- * В server-режиме при сетке
- * запрашиваем новое количество курсов.
- */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
-
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing && viewMode.value === 'grid') {
-        reloadCourses(1)
-    }
-})
-
-/**
- * Синхронизация первого server-запроса
- * с состоянием сайдбаров из localStorage.
- */
-onMounted(() => {
-    if (!props.useServerProcessing || viewMode.value !== 'grid') {
+    if (currentPage.value <= 1) {
         return
     }
 
-    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
+    goToPage(currentPage.value - 1)
+}
 
-    if (serverPerPage !== perPage.value) {
-        reloadCourses(1)
+/** Следующая server-страница */
+const goNext = () => {
+    if (currentPage.value >= lastPage.value) {
+        return
     }
-})
+
+    goToPage(currentPage.value + 1)
+}
 
 /* ===================== COMMON VIEW ===================== */
 
-/** Итоговый список для отображения: server data или frontend page */
+/** Итоговый список курсов */
 const displayedCourses = computed(() => {
     return props.useServerProcessing
         ? coursesData.value
         : frontendPaginatedCourses.value
-})
-
-/** Сохраняем состояние левого сайдбара */
-watch(leftCollapsed, (value) => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
-})
-
-/** Сохраняем состояние правого сайдбара */
-watch(rightCollapsed, (value) => {
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
 })
 </script>
 

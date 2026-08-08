@@ -70,6 +70,11 @@ class MarketCategorySharedResource extends JsonResource
                 fn () => (int) $this->children_count
             ),
 
+            'products_count' => $this->when(
+                isset($this->products_count),
+                fn () => (int) $this->products_count
+            ),
+
             'images_count' => $this->when(
                 isset($this->images_count),
                 fn () => (int) $this->images_count

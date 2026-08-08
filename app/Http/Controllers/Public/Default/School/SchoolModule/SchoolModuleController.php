@@ -52,7 +52,7 @@ class SchoolModuleController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            $settings->int('publicSchoolModulesPerPage', 6)
+            $settings->int('publicSchoolModulesPerPage', 12)
         );
 
         $search = $this->resolveSearch($request);

@@ -33,6 +33,14 @@ class MarketTagSharedResource extends JsonResource
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,
 
+            /** Счётчики */
+            'views' => (int) $this->views,
+
+            'products_count' => $this->when(
+                isset($this->products_count),
+                fn () => (int) $this->products_count
+            ),
+
             /** Публикация / модерация */
             'status' => $this->status,
             'moderation_status' => (int) $this->moderation_status,

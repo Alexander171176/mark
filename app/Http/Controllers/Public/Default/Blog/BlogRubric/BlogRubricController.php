@@ -52,7 +52,7 @@ class BlogRubricController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            $settings->int('publicBlogRubricsPerPage', 6)
+            $settings->int('publicBlogRubricsPerPage', 12)
         );
 
         $search = $this->resolveSearch($request);

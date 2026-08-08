@@ -52,7 +52,7 @@ class SchoolTrackController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            $settings->int('publicSchoolTracksPerPage', 6)
+            $settings->int('publicSchoolTracksPerPage', 12)
         );
 
         $search = $this->resolveSearch($request);

@@ -76,6 +76,7 @@ export default {
     printInMenu: 'в меню',
     privacyPolicy: 'Политика конфиденциальности',
     private: 'Приватное',
+    products: 'Товары',
     profile: 'Профиль',
     profileInformation: 'Информация профиля',
     profileInformationDescription: 'Обновите информацию профиля вашей учетной записи и адрес электронной почты.',

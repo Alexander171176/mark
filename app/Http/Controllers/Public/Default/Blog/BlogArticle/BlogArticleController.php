@@ -52,7 +52,7 @@ class BlogArticleController extends Controller
         $settings = app(PublicSettingsService::class);
 
         $perPage = $this->resolvePerPage($request,
-            $settings->int('publicBlogArticlesPerPage', 6));
+            $settings->int('publicBlogArticlesPerPage', 12));
 
         $search = $this->resolveSearch($request);
 

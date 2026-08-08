@@ -979,6 +979,7 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketTag/MarketTagTranslationResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketTag/MarketTagRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketTag/MarketTagController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/Market/MarketTag/MarketTagController` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketTagSeeder` <br>
@@ -999,6 +1000,7 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketProduct/MarketProductImageResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketProduct/MarketProductRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketProduct/MarketProductController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/Market/MarketProduct/MarketProductController` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketProductSeeder` <br>

@@ -51,7 +51,7 @@ class BlogVideoController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            $settings->int('publicBlogVideosPerPage', 6)
+            $settings->int('publicBlogVideosPerPage', 12)
         );
 
         $search = $this->resolveSearch($request);

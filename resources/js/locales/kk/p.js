@@ -76,6 +76,7 @@ export default {
     printInMenu: 'мәзірде',
     privacyPolicy: 'Құпиялылық саясаты',
     private: 'Жеке',
+    products: 'Тауарлар',
     profile: 'Профиль',
     profileInformation: 'Профиль туралы ақпарат',
     profileInformationDescription: 'Тіркелгіңіздің профиль ақпаратын және электрондық поштасын жаңартыңыз.',

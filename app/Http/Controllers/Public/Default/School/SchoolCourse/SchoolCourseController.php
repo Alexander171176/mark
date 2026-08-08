@@ -52,7 +52,7 @@ class SchoolCourseController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            $settings->int('publicSchoolCoursesPerPage', 6)
+            $settings->int('publicSchoolCoursesPerPage', 12)
         );
 
         $search = $this->resolveSearch($request);

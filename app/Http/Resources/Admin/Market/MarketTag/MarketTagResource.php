@@ -47,6 +47,7 @@ class MarketTagResource extends JsonResource
 
             /** Счётчики */
             'views' => (int) $this->views,
+            'products_count' => $this->whenCounted('products'),
 
             /** Текущий перевод */
             'translation' => $currentTranslation

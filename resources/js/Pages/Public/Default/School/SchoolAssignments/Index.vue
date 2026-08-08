@@ -13,7 +13,7 @@
  * - показ данных школы в правой колонке
  */
 
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
@@ -83,16 +83,25 @@ const isAdmin = computed(() => page.props?.isAdmin === true)
 
 /** Дерево треков */
 const trackTree = computed(() => {
-    return Array.isArray(props.trackTree) ? props.trackTree : []
+    return Array.isArray(props.trackTree)
+        ? props.trackTree
+        : []
 })
 
 /** Нормализация списка */
 const normalizeList = (value) => {
-    if (Array.isArray(value)) return value
-    if (Array.isArray(value?.data)) return value.data
+    if (Array.isArray(value)) {
+        return value
+    }
+
+    if (Array.isArray(value?.data)) {
+        return value.data
+    }
 
     return []
 }
+
+/* ===================== ASSIGNMENTS DATA ===================== */
 
 /** Универсальный список заданий */
 const assignmentsData = computed(() => {
@@ -107,40 +116,18 @@ const assignmentsData = computed(() => {
     return []
 })
 
-/* ===================== FILTERS ===================== */
-
-/** Поисковая строка */
-const q = ref(String(props.filters?.q ?? ''))
-
-/** Сортировка по умолчанию */
-const DEFAULT_SORT = 'idDesc'
-
-/** Текущая сортировка */
-const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
-
-/** Ключ режима отображения */
-const VIEW_KEY = 'public_school_assignments_view'
-
-/** Режим отображения */
-const viewMode = ref(
-    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
-)
-
-/** Сохраняем режим отображения */
-watch(viewMode, (value) => {
-    localStorage.setItem(VIEW_KEY, value)
-})
-
 /* ===================== SIDEBARS ===================== */
 
 /** Показ левой колонки */
 const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+    return !siteSettings?.ViewLeftColumn
+        || siteSettings.ViewLeftColumn === 'true'
 })
 
 /** Показ правой колонки */
 const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+    return !siteSettings?.ViewRightColumn
+        || siteSettings.ViewRightColumn === 'true'
 })
 
 /** Ключ левого сайдбара */
@@ -176,6 +163,8 @@ const rightCollapsed = ref(
  * Оба открыты  → 2.
  * Один свернут → 3.
  * Оба свернуты → 4.
+ *
+ * Количество заданий при этом не меняется.
  */
 const gridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
@@ -192,74 +181,65 @@ const gridCols = computed(() => {
     return 4
 })
 
-/**
- * Количество дополнительных карточек.
- *
- * Каждый свернутый или отключенный сайдбар
- * добавляет одну карточку.
- */
-const additionalCards = computed(() => {
-    if (viewMode.value !== 'grid') {
-        return 0
-    }
+/** Сохраняем состояние сайдбаров */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(
+        LEFT_SIDEBAR_KEY,
+        String(leftCollapsed.value)
+    )
 
-    let count = 0
+    localStorage.setItem(
+        RIGHT_SIDEBAR_KEY,
+        String(rightCollapsed.value)
+    )
+})
 
-    if (!showLeft.value || leftCollapsed.value) {
-        count++
-    }
+/* ===================== FILTERS ===================== */
 
-    if (!showRight.value || rightCollapsed.value) {
-        count++
-    }
+/** Поисковая строка */
+const q = ref(
+    String(props.filters?.q ?? '')
+)
 
-    return count
+/** Сортировка по умолчанию */
+const DEFAULT_SORT = 'idDesc'
+
+/** Текущая сортировка */
+const sort = ref(
+    String(props.filters?.sort ?? DEFAULT_SORT)
+)
+
+/** Ключ режима отображения */
+const VIEW_KEY = 'public_school_assignments_view'
+
+/** Режим отображения */
+const viewMode = ref(
+    String(
+        props.filters?.view
+        || localStorage.getItem(VIEW_KEY)
+        || 'grid'
+    )
+)
+
+/** Сохраняем режим отображения */
+watch(viewMode, (value) => {
+    localStorage.setItem(VIEW_KEY, value)
 })
 
 /**
- * Определяем базовое количество заданий.
+ * Количество заданий на странице.
  *
- * Если per_page уже находится в URL,
- * убираем добавочные карточки сайдбаров.
- */
-const resolveBasePerPage = () => {
-    const filterPerPage = Number(props.filters?.per_page ?? 6)
-    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 6
-    const params = new URLSearchParams(window.location.search)
-
-    if (!params.has('per_page')) {
-        return safePerPage
-    }
-
-    if (viewMode.value !== 'grid') {
-        return safePerPage
-    }
-
-    let collapsedCount = 0
-
-    if (!showLeft.value || leftCollapsed.value) {
-        collapsedCount++
-    }
-
-    if (!showRight.value || rightCollapsed.value) {
-        collapsedCount++
-    }
-
-    return Math.max(1, safePerPage - collapsedCount)
-}
-
-/** Базовое количество заданий */
-const basePerPage = ref(resolveBasePerPage())
-
-/**
- * Итоговое количество заданий.
+ * Источник значения — backend:
+ * PublicSettingsService → resolvePerPage() → filters.per_page.
  *
- * 6 — оба сайдбара открыты.
- * 7 — свернут один.
- * 8 — свернуты оба.
+ * 12 используется только как аварийный fallback.
  */
 const perPage = computed(() => {
-    return basePerPage.value + additionalCards.value
+    const value = Number(props.filters?.per_page)
+
+    return Number.isFinite(value) && value > 0
+        ? value
+        : 12
 })
 
 /** Опции сортировки */
@@ -316,41 +296,43 @@ const {
 })
 
 /** Нормализация текста */
-const normalizeText = (value) => String(value ?? '').toLowerCase()
+const normalizeText = (value) => {
+    return String(value ?? '').toLowerCase()
+}
 
 /** Название задания */
 const getAssignmentTitle = (assignment) => {
-    return assignment.title
-        || assignment.name
-        || assignment.translation?.title
-        || assignment.translation?.name
-        || assignment.current_translation?.title
-        || assignment.current_translation?.name
-        || assignment.translations?.[0]?.title
-        || assignment.translations?.[0]?.name
+    return assignment?.title
+        || assignment?.name
+        || assignment?.translation?.title
+        || assignment?.translation?.name
+        || assignment?.current_translation?.title
+        || assignment?.current_translation?.name
+        || assignment?.translations?.[0]?.title
+        || assignment?.translations?.[0]?.name
         || ''
 }
 
 /** Краткий текст задания */
 const getAssignmentShort = (assignment) => {
-    return assignment.short
-        || assignment.description
-        || assignment.translation?.short
-        || assignment.translation?.description
-        || assignment.current_translation?.short
-        || assignment.current_translation?.description
-        || assignment.translations?.[0]?.short
-        || assignment.translations?.[0]?.description
+    return assignment?.short
+        || assignment?.description
+        || assignment?.translation?.short
+        || assignment?.translation?.description
+        || assignment?.current_translation?.short
+        || assignment?.current_translation?.description
+        || assignment?.translations?.[0]?.short
+        || assignment?.translations?.[0]?.description
         || ''
 }
 
 /** Slug задания */
 const getAssignmentSlug = (assignment) => {
-    return assignment.slug
-        || assignment.url
-        || assignment.translation?.slug
-        || assignment.current_translation?.slug
-        || assignment.translations?.[0]?.slug
+    return assignment?.slug
+        || assignment?.url
+        || assignment?.translation?.slug
+        || assignment?.current_translation?.slug
+        || assignment?.translations?.[0]?.slug
         || ''
 }
 
@@ -409,7 +391,9 @@ const filteredAssignments = computed(() => {
             assignment.instructor?.user?.email,
         ].filter(Boolean).join(' '))
 
-        return words.every((word) => haystack.includes(word))
+        return words.every((word) => {
+            return haystack.includes(word)
+        })
     })
 })
 
@@ -433,55 +417,79 @@ const sortedAssignments = computed(() => {
 
             case 'titleAsc':
                 return normalizeText(getAssignmentTitle(a))
-                    .localeCompare(normalizeText(getAssignmentTitle(b)))
+                    .localeCompare(
+                        normalizeText(getAssignmentTitle(b))
+                    )
 
             case 'titleDesc':
                 return normalizeText(getAssignmentTitle(b))
-                    .localeCompare(normalizeText(getAssignmentTitle(a)))
+                    .localeCompare(
+                        normalizeText(getAssignmentTitle(a))
+                    )
 
             case 'statusAsc':
-                return normalizeText(a.status).localeCompare(normalizeText(b.status))
+                return normalizeText(a.status)
+                    .localeCompare(
+                        normalizeText(b.status)
+                    )
 
             case 'statusDesc':
-                return normalizeText(b.status).localeCompare(normalizeText(a.status))
+                return normalizeText(b.status)
+                    .localeCompare(
+                        normalizeText(a.status)
+                    )
 
             case 'gradingTypeAsc':
                 return normalizeText(a.grading_type)
-                    .localeCompare(normalizeText(b.grading_type))
+                    .localeCompare(
+                        normalizeText(b.grading_type)
+                    )
 
             case 'gradingTypeDesc':
                 return normalizeText(b.grading_type)
-                    .localeCompare(normalizeText(a.grading_type))
+                    .localeCompare(
+                        normalizeText(a.grading_type)
+                    )
 
             case 'attemptsLimitAsc':
-                return (a.attempts_limit ?? 0) - (b.attempts_limit ?? 0)
+                return (a.attempts_limit ?? 0)
+                    - (b.attempts_limit ?? 0)
 
             case 'attemptsLimitDesc':
-                return (b.attempts_limit ?? 0) - (a.attempts_limit ?? 0)
+                return (b.attempts_limit ?? 0)
+                    - (a.attempts_limit ?? 0)
 
             case 'maxScoreAsc':
-                return (a.max_score ?? 0) - (b.max_score ?? 0)
+                return (a.max_score ?? 0)
+                    - (b.max_score ?? 0)
 
             case 'maxScoreDesc':
-                return (b.max_score ?? 0) - (a.max_score ?? 0)
+                return (b.max_score ?? 0)
+                    - (a.max_score ?? 0)
 
             case 'submissionsAsc':
-                return (a.submissions_count ?? 0) - (b.submissions_count ?? 0)
+                return (a.submissions_count ?? 0)
+                    - (b.submissions_count ?? 0)
 
             case 'submissionsDesc':
-                return (b.submissions_count ?? 0) - (a.submissions_count ?? 0)
+                return (b.submissions_count ?? 0)
+                    - (a.submissions_count ?? 0)
 
             case 'imagesAsc':
-                return (a.images_count ?? 0) - (b.images_count ?? 0)
+                return (a.images_count ?? 0)
+                    - (b.images_count ?? 0)
 
             case 'imagesDesc':
-                return (b.images_count ?? 0) - (a.images_count ?? 0)
+                return (b.images_count ?? 0)
+                    - (a.images_count ?? 0)
 
             case 'dueAtAsc':
-                return new Date(a.due_at ?? 0) - new Date(b.due_at ?? 0)
+                return new Date(a.due_at ?? 0)
+                    - new Date(b.due_at ?? 0)
 
             case 'dueAtDesc':
-                return new Date(b.due_at ?? 0) - new Date(a.due_at ?? 0)
+                return new Date(b.due_at ?? 0)
+                    - new Date(a.due_at ?? 0)
 
             case 'publishedAtAsc':
                 return new Date(a.published_at ?? a.created_at ?? 0)
@@ -505,11 +513,21 @@ const sortedAssignments = computed(() => {
     })
 })
 
-/** Frontend-пагинация */
+/**
+ * Frontend-пагинация.
+ *
+ * Использует то же per_page,
+ * которое определил backend.
+ */
 const frontendPaginatedAssignments = computed(() => {
-    const start = (frontendCurrentPage.value - 1) * perPage.value
+    const start = (
+        frontendCurrentPage.value - 1
+    ) * perPage.value
 
-    return sortedAssignments.value.slice(start, start + perPage.value)
+    return sortedAssignments.value.slice(
+        start,
+        start + perPage.value
+    )
 })
 
 /** Сбрасываем frontend-пагинацию */
@@ -545,9 +563,16 @@ const lastPage = computed(() => {
 })
 
 /** Маршрут списка заданий */
-const indexRoute = () => route('public.schoolAssignments.index')
+const indexRoute = () => {
+    return route('public.schoolAssignments.index')
+}
 
-/** Server-загрузка заданий */
+/**
+ * Server-загрузка заданий.
+ *
+ * per_page намеренно не отправляем.
+ * Его всегда определяет backend через PublicSettingsService.
+ */
 const reloadAssignments = (page = 1) => {
     router.get(
         indexRoute(),
@@ -555,7 +580,6 @@ const reloadAssignments = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            per_page: perPage.value,
             page,
         },
         {
@@ -609,7 +633,10 @@ const goToPage = (page) => {
         return
     }
 
-    const safePage = Math.max(1, Math.min(value, lastPage.value))
+    const safePage = Math.max(
+        1,
+        Math.min(value, lastPage.value)
+    )
 
     reloadAssignments(safePage)
 }
@@ -632,41 +659,6 @@ const goNext = () => {
     goToPage(currentPage.value + 1)
 }
 
-/* ===================== SIDEBAR WATCH ===================== */
-
-/**
- * Сохраняем состояние сайдбаров.
- *
- * В server-режиме при сетке
- * запрашиваем новое количество заданий.
- */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
-
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing && viewMode.value === 'grid') {
-        reloadAssignments(1)
-    }
-})
-
-/**
- * Синхронизация первого server-запроса
- * с состоянием сайдбаров из localStorage.
- */
-onMounted(() => {
-    if (!props.useServerProcessing || viewMode.value !== 'grid') {
-        return
-    }
-
-    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
-
-    if (serverPerPage !== perPage.value) {
-        reloadAssignments(1)
-    }
-})
-
 /* ===================== COMMON VIEW ===================== */
 
 /** Итоговый список заданий */
@@ -677,10 +669,14 @@ const displayedAssignments = computed(() => {
 })
 
 /** Видео внизу страницы */
-const mainVideosList = computed(() => normalizeList(props.mainVideos))
+const mainVideosList = computed(() => {
+    return normalizeList(props.mainVideos)
+})
 
 /** Баннеры внизу страницы */
-const mainBannersList = computed(() => normalizeList(props.mainBanners))
+const mainBannersList = computed(() => {
+    return normalizeList(props.mainBanners)
+})
 </script>
 
 <template>

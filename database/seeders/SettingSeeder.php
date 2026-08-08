@@ -216,7 +216,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSystemSettingsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SYSTEM_SETTINGS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество параметров в панели администратора',
@@ -257,7 +257,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminImagePresetsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_IMAGE_PRESETS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество вариантов обработки изображений в панели администратора',
@@ -287,7 +287,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminCommentsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_COMMENTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество комментариев в панели администратора',
@@ -317,7 +317,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminReviewsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_REVIEWS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество отзывов в панели администратора',
@@ -347,7 +347,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminFinanceCurrenciesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_FINANCE_CURRENCIES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество Валют в таблице Панели Администратора',
@@ -387,7 +387,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminBlogRubricsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_BLOG_RUBRICS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество рубрик в панели администратора',
@@ -397,7 +397,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicBlogRubricsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_BLOG_RUBRICS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество рубрик в публичной части',
@@ -467,7 +467,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminBlogArticlesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_BLOG_ARTICLES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество статей в панели администратора',
@@ -477,7 +477,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicBlogArticlesPerPage',
-                'value' => '3',
+                'value' => '12',
                 'constant' => 'PUBLIC_BLOG_ARTICLES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество статей в публичной части',
@@ -547,7 +547,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminBlogTagsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_BLOG_TAGS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество тегов в панели администратора',
@@ -557,7 +557,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicBlogTagsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_BLOG_TAGS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество тегов в публичной части',
@@ -617,7 +617,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminBlogBannersPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_BLOG_BANNERS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество баннеров в панели администратора',
@@ -657,7 +657,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminBlogVideosPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_BLOG_VIDEOS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество видео в панели администратора',
@@ -667,7 +667,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicBlogVideosPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_BLOG_VIDEOS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество видео в публичной части',
@@ -717,7 +717,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolHashtagsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_HASHTAGS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество хештегов в панели администратора',
@@ -727,7 +727,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolHashtagsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_HASHTAGS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество хештегов в публичной части',
@@ -797,7 +797,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolInstructorsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_INSTRUCTORS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество преподавателей в панели администратора',
@@ -807,7 +807,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolInstructorsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_INSTRUCTORS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество преподавателей в публичной части',
@@ -877,7 +877,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolTracksPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_TRACKS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество треков в панели администратора',
@@ -887,7 +887,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolTracksPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_TRACKS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество треков в публичной части',
@@ -957,7 +957,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolCoursesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_COURSES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество курсов в панели администратора',
@@ -967,7 +967,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolCoursesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_COURSES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество курсов в публичной части',
@@ -1037,7 +1037,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolModulesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_MODULES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество модулей обучения в панели администратора',
@@ -1047,7 +1047,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolModulesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_MODULES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество модулей обучения в публичной части',
@@ -1117,7 +1117,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolLessonsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_LESSONS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество уроков в панели администратора',
@@ -1127,7 +1127,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolLessonsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_LESSONS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество уроков в публичной части',
@@ -1197,7 +1197,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolAssignmentsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_ASSIGNMENTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество заданий в панели администратора',
@@ -1207,7 +1207,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolAssignmentsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_ASSIGNMENTS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество заданий в публичной части',
@@ -1267,7 +1267,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolCourseSchedulesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_COURSE_SCHEDULES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество расписаний в панели администратора',
@@ -1277,7 +1277,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolCourseSchedulesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_COURSE_SCHEDULES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество расписаний в публичной части',
@@ -1327,7 +1327,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolCohortEnrollmentsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_COHORT_ENROLLMENTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество записей на потоки в панели администратора',
@@ -1367,7 +1367,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolEnrollmentsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_ENROLLMENTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество зачислений на потоки в панели администратора',
@@ -1417,7 +1417,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolQuizzesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_QUIZZES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество викторин в панели администратора',
@@ -1427,7 +1427,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolQuizzesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_QUIZZES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество викторин в публичной части',
@@ -1487,7 +1487,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolQuizQuestionsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_QUESTIONS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество вопросов викторин в панели администратора',
@@ -1527,7 +1527,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolQuizAnswersPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_ANSWERS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество ответов викторин в панели администратора',
@@ -1577,7 +1577,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolQuizAttemptsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_ATTEMPTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество прохождений викторин в панели администратора',
@@ -1587,7 +1587,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolQuizAttemptsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_QUIZ_ATTEMPTS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество прохождений викторин в публичной части',
@@ -1657,7 +1657,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolQuizAttemptItemsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_QUIZ_ATTEMPT_ITEMS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество попыток ответов в панели администратора',
@@ -1667,7 +1667,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolQuizAttemptItemsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_QUIZ_ATTEMPT_ITEMS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество попыток ответов в публичной части',
@@ -1737,7 +1737,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolBundlesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_BUNDLES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество бандлов в панели администратора',
@@ -1747,7 +1747,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicSchoolBundlesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'PUBLIC_SCHOOL_BUNDLES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество бандлов в публичной части',
@@ -1807,7 +1807,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolOrdersPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_ORDERS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество заказов школы в панели администратора',
@@ -1847,7 +1847,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolCoursePricesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_COURSE_PRICES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество прайсов курсов в панели администратора',
@@ -1887,7 +1887,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolBundlePricesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_BUNDLE_PRICES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество прайсов наборов курсов в таблице панели администратора',
@@ -1927,7 +1927,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSchoolSubscriptionPlansPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SCHOOL_SUBSCRIPTION_PLANS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество тарифных планов в панели Администратора',
@@ -1977,7 +1977,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSystemUsersPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SYSTEM_USERS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество пользователей в панели администратора',
@@ -2007,7 +2007,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSystemRolesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SYSTEM_ROLES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество ролей в панели администратора',
@@ -2037,7 +2037,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminSystemPermissionsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_SYSTEM_PERMISSIONS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество разрешений в панели администратора',
@@ -2067,7 +2067,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminCmsPagesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_CMS_PAGES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество страниц CMS в панели администратора',
@@ -2117,7 +2117,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketCompaniesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_COMPANIES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество фирм в панели администратора',
@@ -2127,7 +2127,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicMarketCompaniesPerPage',
-                'value' => '3',
+                'value' => '12',
                 'constant' => 'PUBLIC_MARKET_COMPANIES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество фирм в публичной части',
@@ -2197,7 +2197,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketShopsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_SHOPS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество магазинов в панели администратора',
@@ -2207,7 +2207,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicMarketShopsPerPage',
-                'value' => '3',
+                'value' => '12',
                 'constant' => 'PUBLIC_MARKET_SHOPS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество магазинов в публичной части',
@@ -2277,7 +2277,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketCategoriesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_CATEGORIES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество категорий товаров в панели администратора',
@@ -2287,7 +2287,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicMarketCategoriesPerPage',
-                'value' => '3',
+                'value' => '12',
                 'constant' => 'PUBLIC_MARKET_CATEGORIES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество категорий товаров в публичной части',
@@ -2357,7 +2357,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketBrandsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_BRANDS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество брендов в панели администратора',
@@ -2367,7 +2367,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicMarketBrandsPerPage',
-                'value' => '3',
+                'value' => '12',
                 'constant' => 'PUBLIC_MARKET_BRANDS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество брендов в публичной части',
@@ -2437,7 +2437,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketTagsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_TAGS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество тегов товаров в панели администратора',
@@ -2447,7 +2447,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicMarketTagsPerPage',
-                'value' => '3',
+                'value' => '12',
                 'constant' => 'PUBLIC_MARKET_TAGS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество тегов товаров в публичной части',
@@ -2507,7 +2507,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketAttributeGroupsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_ATTRIBUTE_GROUPS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество групп характеристик в панели администратора',
@@ -2547,7 +2547,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketAttributesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_ATTRIBUTES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество характеристик в панели администратора',
@@ -2587,7 +2587,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketAttributeValuesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_ATTRIBUTE_VALUES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество значений характеристик в панели администратора',
@@ -2637,7 +2637,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketProductsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_PRODUCTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество товаров в панели администратора',
@@ -2647,7 +2647,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicMarketProductsPerPage',
-                'value' => '3',
+                'value' => '12',
                 'constant' => 'PUBLIC_MARKET_PRODUCTS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество товаров в публичной части',
@@ -2717,7 +2717,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketProductVariantsPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_PRODUCT_VARIANTS_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество вариантов товаров в панели администратора',
@@ -2727,7 +2727,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicMarketProductVariantsPerPage',
-                'value' => '3',
+                'value' => '12',
                 'constant' => 'PUBLIC_MARKET_PRODUCT_VARIANTS_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество вариантов товаров в публичной части',
@@ -2797,7 +2797,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'adminMarketProductBundlesPerPage',
-                'value' => '6',
+                'value' => '12',
                 'constant' => 'ADMIN_MARKET_PRODUCT_BUNDLES_PER_PAGE',
                 'category' => 'admin',
                 'description' => 'Показывать количество комплектов товаров в панели администратора',
@@ -2807,7 +2807,7 @@ class SettingSeeder extends Seeder
             [
                 'type' => 'number',
                 'option' => 'publicMarketProductBundlesPerPage',
-                'value' => '3',
+                'value' => '12',
                 'constant' => 'PUBLIC_MARKET_PRODUCT_BUNDLES_PER_PAGE',
                 'category' => 'public',
                 'description' => 'Показывать количество комплектов товаров в публичной части',

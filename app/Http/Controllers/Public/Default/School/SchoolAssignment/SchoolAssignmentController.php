@@ -48,7 +48,7 @@ class SchoolAssignmentController extends Controller
 
         $perPage = $this->resolvePerPage(
             $request,
-            $settings->int('publicSchoolAssignmentsPerPage', 6)
+            $settings->int('publicSchoolAssignmentsPerPage', 12)
         );
 
         $search = $this->resolveSearch($request);

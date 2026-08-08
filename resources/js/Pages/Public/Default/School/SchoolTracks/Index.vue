@@ -3,15 +3,16 @@
  * Страница списка направлений обучения.
  *
  * Логика:
- * - серверный поиск
- * - серверная сортировка
- * - серверная пагинация
+ * - серверный и frontend поиск
+ * - серверная и frontend сортировка
+ * - серверная и frontend пагинация
  * - переключение вида grid/rows
  * - сохранение вида в localStorage
  * - управление колонками через настройки сайта
  */
+
+import { computed, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
@@ -22,23 +23,26 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarSchool from '@/Components/Public/Default/Partials/LeftSidebarSchool.vue'
 import RightSidebarSchool from '@/Components/Public/Default/Partials/RightSidebarSchool.vue'
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
+import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
-
 import TrackGrid from '@/Components/Public/Default/School/SchoolTrack/TrackGrid.vue'
 import TrackRows from '@/Components/Public/Default/School/SchoolTrack/TrackRows.vue'
-import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
-import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
+
+/* ===================== PROPS ===================== */
 
 /** Props страницы */
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
-    seo: { type: Object, default: () => ({
+    seo: {
+        type: Object,
+        default: () => ({
             title: '',
             keywords: '',
             description: '',
@@ -64,19 +68,40 @@ const props = defineProps({
     mainBanners: { type: [Array, Object], default: () => [] },
 })
 
+/* ===================== PAGE ===================== */
+
 /** Глобальные данные страницы */
 const page = usePage()
 
 /** Глобальные настройки сайта */
 const siteSettings = page.props?.siteSettings || {}
 
-/** Роль администратора для нижней служебной панели */
+/** Роль администратора */
 const isAdmin = computed(() => page.props?.isAdmin === true)
 
-/** Дерево треков для левого аккордеона */
-const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
+/** Дерево треков */
+const trackTree = computed(() => {
+    return Array.isArray(props.trackTree)
+        ? props.trackTree
+        : []
+})
 
-/** Универсальный список треков: server paginator data или frontend array */
+/** Нормализация списков */
+const normalizeList = (value) => {
+    if (Array.isArray(value)) {
+        return value
+    }
+
+    if (Array.isArray(value?.data)) {
+        return value.data
+    }
+
+    return []
+}
+
+/* ===================== TRACKS DATA ===================== */
+
+/** Универсальный список треков */
 const tracksData = computed(() => {
     if (Array.isArray(props.tracks)) {
         return props.tracks
@@ -89,38 +114,18 @@ const tracksData = computed(() => {
     return []
 })
 
-/** Поисковая строка для server/frontend */
-const q = ref(String(props.filters?.q ?? ''))
-
-/** Сортировка по умолчанию для server/frontend */
-const DEFAULT_SORT = 'sortAsc'
-
-/** Текущая сортировка для server/frontend */
-const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
-
-/** Ключ локального хранения режима отображения */
-const VIEW_KEY = 'public_school_tracks_view'
-
-/** Режим отображения карточки/строки для server/frontend */
-const viewMode = ref(
-    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
-)
-
-/** Сохраняем режим отображения локально */
-watch(viewMode, (value) => {
-    localStorage.setItem(VIEW_KEY, value)
-})
-
 /* ===================== SIDEBARS ===================== */
 
 /** Показ левой колонки */
 const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+    return !siteSettings?.ViewLeftColumn
+        || siteSettings.ViewLeftColumn === 'true'
 })
 
 /** Показ правой колонки */
 const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+    return !siteSettings?.ViewRightColumn
+        || siteSettings.ViewRightColumn === 'true'
 })
 
 /** Ключ левого сайдбара */
@@ -156,6 +161,8 @@ const rightCollapsed = ref(
  * Оба открыты  → 2.
  * Один свернут → 3.
  * Оба свернуты → 4.
+ *
+ * Количество треков при этом не меняется.
  */
 const trackGridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
@@ -172,77 +179,73 @@ const trackGridCols = computed(() => {
     return 4
 })
 
+/** Сохраняем состояние сайдбаров */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(
+        LEFT_SIDEBAR_KEY,
+        String(leftCollapsed.value)
+    )
+
+    localStorage.setItem(
+        RIGHT_SIDEBAR_KEY,
+        String(rightCollapsed.value)
+    )
+})
+
+/* ===================== FILTERS ===================== */
+
+/** Поисковая строка */
+const q = ref(
+    String(props.filters?.q ?? '')
+)
+
 /**
- * Количество дополнительных карточек.
+ * Сортировка по умолчанию.
  *
- * Каждый свернутый или отключенный сайдбар
- * добавляет одну карточку.
+ * Совпадает с fallback контроллера:
+ * publicSchoolTracksDefaultSort → sortAsc.
  */
-const additionalCards = computed(() => {
-    if (viewMode.value !== 'grid') {
-        return 0
-    }
+const DEFAULT_SORT = 'sortAsc'
 
-    let count = 0
+/** Текущая сортировка */
+const sort = ref(
+    String(props.filters?.sort ?? DEFAULT_SORT)
+)
 
-    if (!showLeft.value || leftCollapsed.value) {
-        count++
-    }
+/** Ключ режима отображения */
+const VIEW_KEY = 'public_school_tracks_view'
 
-    if (!showRight.value || rightCollapsed.value) {
-        count++
-    }
+/** Режим отображения */
+const viewMode = ref(
+    String(
+        props.filters?.view
+        || localStorage.getItem(VIEW_KEY)
+        || 'grid'
+    )
+)
 
-    return count
+/** Сохраняем режим отображения */
+watch(viewMode, (value) => {
+    localStorage.setItem(VIEW_KEY, value)
 })
 
 /**
- * Определяем базовое количество треков.
+ * Количество треков на странице.
  *
- * Если per_page уже находится в URL,
- * убираем добавочные карточки сайдбаров.
- */
-const resolveBasePerPage = () => {
-    const filterPerPage = Number(props.filters?.per_page ?? 6)
-    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 6
-    const params = new URLSearchParams(window.location.search)
-
-    if (!params.has('per_page')) {
-        return safePerPage
-    }
-
-    if (viewMode.value !== 'grid') {
-        return safePerPage
-    }
-
-    let collapsedCount = 0
-
-    if (!showLeft.value || leftCollapsed.value) {
-        collapsedCount++
-    }
-
-    if (!showRight.value || rightCollapsed.value) {
-        collapsedCount++
-    }
-
-    return Math.max(1, safePerPage - collapsedCount)
-}
-
-/** Базовое количество треков */
-const basePerPage = ref(resolveBasePerPage())
-
-/**
- * Итоговое количество треков.
+ * Источник значения — backend:
+ * PublicSettingsService → resolvePerPage() → filters.per_page.
  *
- * 6 — оба сайдбара открыты.
- * 7 — свернут один.
- * 8 — свернуты оба.
+ * 12 используется только как аварийный fallback.
  */
 const perPage = computed(() => {
-    return basePerPage.value + additionalCards.value
+    const value = Number(props.filters?.per_page)
+
+    return Number.isFinite(value) && value > 0
+        ? value
+        : 12
 })
 
-/** Опции сортировки для toolbar */
+/** Опции сортировки */
 const trackSortOptions = [
     { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
     { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
@@ -277,10 +280,10 @@ const trackSortOptions = [
 
 /* ===================== FRONTEND MODE ===================== */
 
-/** Текущая страница локальной пагинации frontend */
+/** Текущая frontend-страница */
 const frontendCurrentPage = ref(1)
 
-/** Цель плавного скролла при frontend-пагинации */
+/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
     scrollToTarget,
@@ -289,48 +292,48 @@ const {
     duration: 1200,
 })
 
-/** Нормализация текста для локального поиска frontend */
+/** Нормализация текста */
 const normalizeText = (value) => {
     return String(value ?? '').toLowerCase()
 }
 
-/** Получение названия трека из разных возможных структур ресурса */
+/** Название трека */
 const getTrackTitle = (track) => {
-    return track.title
-        || track.name
-        || track.translation?.title
-        || track.translation?.name
-        || track.current_translation?.title
-        || track.current_translation?.name
-        || track.translations?.[0]?.title
-        || track.translations?.[0]?.name
+    return track?.title
+        || track?.name
+        || track?.translation?.title
+        || track?.translation?.name
+        || track?.current_translation?.title
+        || track?.current_translation?.name
+        || track?.translations?.[0]?.title
+        || track?.translations?.[0]?.name
         || ''
 }
 
-/** Получение краткого текста рубрики */
+/** Краткий текст трека */
 const getTrackShort = (track) => {
-    return track.short
-        || track.description
-        || track.translation?.short
-        || track.translation?.description
-        || track.current_translation?.short
-        || track.current_translation?.description
-        || track.translations?.[0]?.short
-        || track.translations?.[0]?.description
+    return track?.short
+        || track?.description
+        || track?.translation?.short
+        || track?.translation?.description
+        || track?.current_translation?.short
+        || track?.current_translation?.description
+        || track?.translations?.[0]?.short
+        || track?.translations?.[0]?.description
         || ''
 }
 
-/** Получение slug рубрики */
+/** Slug трека */
 const getTrackSlug = (track) => {
-    return track.slug
-        || track.url
-        || track.translation?.slug
-        || track.current_translation?.slug
-        || track.translations?.[0]?.slug
+    return track?.slug
+        || track?.url
+        || track?.translation?.slug
+        || track?.current_translation?.slug
+        || track?.translations?.[0]?.slug
         || ''
 }
 
-/** Локальный поиск frontend */
+/** Локальный поиск */
 const filteredTracks = computed(() => {
     const query = normalizeText(q.value).trim()
 
@@ -345,83 +348,121 @@ const filteredTracks = computed(() => {
             getTrackSlug(track),
             track.owner?.name,
             track.owner?.email,
-        ].some((value) => normalizeText(value).includes(query))
+        ].some((value) => {
+            return normalizeText(value).includes(query)
+        })
     })
 })
 
-/** Локальная сортировка frontend */
+/** Локальная сортировка */
 const sortedTracks = computed(() => {
     const list = [...filteredTracks.value]
 
     return list.sort((a, b) => {
         switch (sort.value) {
             case 'sortAsc':
-                return (a.sort ?? 0) - (b.sort ?? 0)
+                return (a.sort ?? 0)
+                    - (b.sort ?? 0)
 
             case 'sortDesc':
-                return (b.sort ?? 0) - (a.sort ?? 0)
+                return (b.sort ?? 0)
+                    - (a.sort ?? 0)
 
             case 'idAsc':
-                return (a.id ?? 0) - (b.id ?? 0)
+                return (a.id ?? 0)
+                    - (b.id ?? 0)
 
             case 'idDesc':
-                return (b.id ?? 0) - (a.id ?? 0)
+                return (b.id ?? 0)
+                    - (a.id ?? 0)
 
             case 'nameAsc':
             case 'titleAsc':
                 return normalizeText(getTrackTitle(a))
-                    .localeCompare(normalizeText(getTrackTitle(b)))
+                    .localeCompare(
+                        normalizeText(getTrackTitle(b))
+                    )
 
             case 'nameDesc':
             case 'titleDesc':
                 return normalizeText(getTrackTitle(b))
-                    .localeCompare(normalizeText(getTrackTitle(a)))
+                    .localeCompare(
+                        normalizeText(getTrackTitle(a))
+                    )
 
             case 'slugAsc':
                 return normalizeText(getTrackSlug(a))
-                    .localeCompare(normalizeText(getTrackSlug(b)))
+                    .localeCompare(
+                        normalizeText(getTrackSlug(b))
+                    )
 
             case 'slugDesc':
                 return normalizeText(getTrackSlug(b))
-                    .localeCompare(normalizeText(getTrackSlug(a)))
+                    .localeCompare(
+                        normalizeText(getTrackSlug(a))
+                    )
 
             case 'viewsAsc':
-                return (a.views ?? 0) - (b.views ?? 0)
+                return (a.views ?? 0)
+                    - (b.views ?? 0)
 
             case 'viewsDesc':
-                return (b.views ?? 0) - (a.views ?? 0)
+                return (b.views ?? 0)
+                    - (a.views ?? 0)
 
             case 'likesAsc':
-                return (a.likes_count ?? 0) - (b.likes_count ?? 0)
+                return (a.likes_count ?? 0)
+                    - (b.likes_count ?? 0)
 
             case 'likesDesc':
-                return (b.likes_count ?? 0) - (a.likes_count ?? 0)
+                return (b.likes_count ?? 0)
+                    - (a.likes_count ?? 0)
 
             case 'childrenAsc':
-                return (a.children_count ?? 0) - (b.children_count ?? 0)
+                return (a.children_count ?? 0)
+                    - (b.children_count ?? 0)
 
             case 'childrenDesc':
-                return (b.children_count ?? 0) - (a.children_count ?? 0)
+                return (b.children_count ?? 0)
+                    - (a.children_count ?? 0)
 
             case 'coursesAsc':
-                return (a.courses_count ?? 0) - (b.courses_count ?? 0)
+                return (a.courses_count ?? 0)
+                    - (b.courses_count ?? 0)
 
             case 'coursesDesc':
-                return (b.courses_count ?? 0) - (a.courses_count ?? 0)
+                return (b.courses_count ?? 0)
+                    - (a.courses_count ?? 0)
 
             case 'imagesAsc':
-                return (a.images_count ?? 0) - (b.images_count ?? 0)
+                return (a.images_count ?? 0)
+                    - (b.images_count ?? 0)
 
             case 'imagesDesc':
-                return (b.images_count ?? 0) - (a.images_count ?? 0)
+                return (b.images_count ?? 0)
+                    - (a.images_count ?? 0)
 
             case 'dateAsc':
-                return new Date(a.published_at ?? a.created_at ?? 0) -
-                    new Date(b.published_at ?? b.created_at ?? 0)
+                return new Date(
+                    a.published_at
+                    ?? a.created_at
+                    ?? 0
+                ) - new Date(
+                    b.published_at
+                    ?? b.created_at
+                    ?? 0
+                )
 
             case 'dateDesc':
-                return new Date(b.published_at ?? b.created_at ?? 0) -
-                    new Date(a.published_at ?? a.created_at ?? 0)
+                return new Date(
+                    b.published_at
+                    ?? b.created_at
+                    ?? 0
+                ) - new Date(
+                    a.published_at
+                    ?? a.created_at
+                    ?? 0
+                )
 
             default:
                 return 0
@@ -429,19 +470,29 @@ const sortedTracks = computed(() => {
     })
 })
 
-/** Локальная пагинация frontend */
+/**
+ * Frontend-пагинация.
+ *
+ * Использует то же per_page,
+ * которое определил backend.
+ */
 const frontendPaginatedTracks = computed(() => {
-    const start = (frontendCurrentPage.value - 1) * perPage.value
+    const start = (
+        frontendCurrentPage.value - 1
+    ) * perPage.value
 
-    return sortedTracks.value.slice(start, start + perPage.value)
+    return sortedTracks.value.slice(
+        start,
+        start + perPage.value
+    )
 })
 
-/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+/** Сбрасываем frontend-пагинацию */
 watch([q, sort, viewMode], () => {
     frontendCurrentPage.value = 1
 })
 
-/** Плавно возвращаемся к началу списка при frontend-пагинации */
+/** Скролл при frontend-пагинации */
 watch(frontendCurrentPage, () => {
     if (!props.useServerProcessing) {
         scrollToTarget()
@@ -450,20 +501,35 @@ watch(frontendCurrentPage, () => {
 
 /* ===================== SERVER MODE ===================== */
 
-/** Текущая страница server-пагинации */
+/** Текущая server-страница */
 const currentPage = computed(() => {
-    return Number(props.tracks?.meta?.current_page ?? props.tracks?.current_page ?? 1) || 1
+    return Number(
+        props.tracks?.meta?.current_page
+        ?? props.tracks?.current_page
+        ?? 1
+    ) || 1
 })
 
-/** Последняя страница server-пагинации */
+/** Последняя server-страница */
 const lastPage = computed(() => {
-    return Number(props.tracks?.meta?.last_page ?? props.tracks?.last_page ?? 1) || 1
+    return Number(
+        props.tracks?.meta?.last_page
+        ?? props.tracks?.last_page
+        ?? 1
+    ) || 1
 })
 
-/** Маршрут списка рубрик для server-режима */
-const indexRoute = () => route('public.schoolTracks.index')
+/** Маршрут списка треков */
+const indexRoute = () => {
+    return route('public.schoolTracks.index')
+}
 
-/** Server-загрузка рубрик с query-параметрами */
+/**
+ * Server-загрузка треков.
+ *
+ * per_page намеренно не отправляем.
+ * Его всегда определяет backend через PublicSettingsService.
+ */
 const reloadTracks = (page = 1) => {
     router.get(
         indexRoute(),
@@ -471,7 +537,6 @@ const reloadTracks = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            per_page: perPage.value,
             page,
         },
         {
@@ -487,7 +552,7 @@ const submitSearch = () => {
     reloadTracks(1)
 }
 
-/** Сброс поиска и сортировки для обоих режимов */
+/** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
@@ -521,79 +586,53 @@ const updateViewMode = (value) => {
 const goToPage = (page) => {
     const value = Number(page)
 
-    if (!Number.isFinite(value)) return
+    if (!Number.isFinite(value)) {
+        return
+    }
 
-    const safePage = Math.max(1, Math.min(value, lastPage.value))
+    const safePage = Math.max(
+        1,
+        Math.min(value, lastPage.value)
+    )
 
     reloadTracks(safePage)
 }
 
-/** Server-предыдущая страница */
+/** Предыдущая server-страница */
 const goPrev = () => {
-    if (currentPage.value <= 1) return
+    if (currentPage.value <= 1) {
+        return
+    }
 
     goToPage(currentPage.value - 1)
 }
 
-/** Server-следующая страница */
+/** Следующая server-страница */
 const goNext = () => {
-    if (currentPage.value >= lastPage.value) return
+    if (currentPage.value >= lastPage.value) {
+        return
+    }
 
     goToPage(currentPage.value + 1)
 }
 
-/* ===================== SIDEBAR WATCH ===================== */
-
-/**
- * Сохраняем состояние сайдбаров.
- *
- * В server-режиме при сетке
- * запрашиваем новое количество треков.
- */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
-
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing && viewMode.value === 'grid') {
-        reloadTracks(1)
-    }
-})
-
-/**
- * Синхронизация первого server-запроса
- * с состоянием сайдбаров из localStorage.
- */
-onMounted(() => {
-    if (!props.useServerProcessing || viewMode.value !== 'grid') {
-        return
-    }
-
-    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
-
-    if (serverPerPage !== perPage.value) {
-        reloadTracks(1)
-    }
-})
-
 /* ===================== COMMON VIEW ===================== */
 
-/** Итоговый список для отображения: server data или frontend page */
+/** Итоговый список треков */
 const displayedTracks = computed(() => {
     return props.useServerProcessing
         ? tracksData.value
         : frontendPaginatedTracks.value
 })
 
-/** Сохраняем состояние левого сайдбара */
-watch(leftCollapsed, (value) => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
+/** Видео внизу страницы */
+const mainVideosList = computed(() => {
+    return normalizeList(props.mainVideos)
 })
 
-/** Сохраняем состояние правого сайдбара */
-watch(rightCollapsed, (value) => {
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
+/** Баннеры внизу страницы */
+const mainBannersList = computed(() => {
+    return normalizeList(props.mainBanners)
 })
 </script>
 

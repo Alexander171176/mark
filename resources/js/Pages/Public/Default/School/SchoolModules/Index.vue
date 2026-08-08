@@ -3,20 +3,21 @@
  * Страница списка модулей
  * - шапка, центральная часть, подвал
  * - светлый, тёмный режим
- * - серверный поиск
- * - серверная пагинация
- * - серверная сортировка
+ * - серверный и frontend поиск
+ * - серверная и frontend пагинация
+ * - серверная и frontend сортировка
  * - показ карточками, в строку
  * - показ главных видео, баннеров внизу страницы
  * - показ, скрытие колонок
  * - показ дерева треков в левой колонке
- * - показ облако хештегов в правой колонке
+ * - показ облака хештегов в правой колонке
  *
  * @version PulsarCMS 1.0
  * @author Александр
  */
+
+import { computed, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
@@ -27,23 +28,26 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarSchool from '@/Components/Public/Default/Partials/LeftSidebarSchool.vue'
 import RightSidebarSchool from '@/Components/Public/Default/Partials/RightSidebarSchool.vue'
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
+import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
-
 import CourseModuleGrid from '@/Components/Public/Default/School/SchoolModule/CourseModuleGrid.vue'
 import CourseModuleRows from '@/Components/Public/Default/School/SchoolModule/CourseModuleRows.vue'
-import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
-import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
+
+/* ===================== PROPS ===================== */
 
 /** Props страницы */
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
-    seo: { type: Object, default: () => ({
+    seo: {
+        type: Object,
+        default: () => ({
             title: '',
             keywords: '',
             description: '',
@@ -69,26 +73,40 @@ const props = defineProps({
     mainBanners: { type: [Array, Object], default: () => [] },
 })
 
+/* ===================== PAGE ===================== */
+
 /** Глобальные данные страницы */
 const page = usePage()
 
 /** Глобальные настройки сайта */
 const siteSettings = page.props?.siteSettings || {}
 
-/** Роль администратора для нижней служебной панели */
+/** Роль администратора */
 const isAdmin = computed(() => page.props?.isAdmin === true)
 
 /** Нормализация списков */
 const normalizeList = (value) => {
-    if (Array.isArray(value)) return value
-    if (Array.isArray(value?.data)) return value.data
+    if (Array.isArray(value)) {
+        return value
+    }
+
+    if (Array.isArray(value?.data)) {
+        return value.data
+    }
+
     return []
 }
 
-/** Дерево треков для левого аккордеона */
-const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
+/** Дерево треков */
+const trackTree = computed(() => {
+    return Array.isArray(props.trackTree)
+        ? props.trackTree
+        : []
+})
 
-/** Универсальный список модулей: server paginator data или frontend array */
+/* ===================== MODULES DATA ===================== */
+
+/** Универсальный список модулей */
 const modulesData = computed(() => {
     if (Array.isArray(props.modules)) {
         return props.modules
@@ -101,38 +119,18 @@ const modulesData = computed(() => {
     return []
 })
 
-/** Поисковая строка для server/frontend */
-const q = ref(String(props.filters?.q ?? ''))
-
-/** Сортировка по умолчанию для server/frontend */
-const DEFAULT_SORT = 'sortAsc'
-
-/** Текущая сортировка для server/frontend */
-const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
-
-/** Ключ локального хранения режима отображения */
-const VIEW_KEY = 'public_school_modules_view'
-
-/** Режим отображения карточки/строки для server/frontend */
-const viewMode = ref(
-    String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
-)
-
-/** Сохраняем режим отображения локально */
-watch(viewMode, (value) => {
-    localStorage.setItem(VIEW_KEY, value)
-})
-
 /* ===================== SIDEBARS ===================== */
 
 /** Показ левой колонки */
 const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+    return !siteSettings?.ViewLeftColumn
+        || siteSettings.ViewLeftColumn === 'true'
 })
 
 /** Показ правой колонки */
 const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+    return !siteSettings?.ViewRightColumn
+        || siteSettings.ViewRightColumn === 'true'
 })
 
 /** Ключ левого сайдбара */
@@ -168,6 +166,8 @@ const rightCollapsed = ref(
  * Оба открыты  → 2.
  * Один свернут → 3.
  * Оба свернуты → 4.
+ *
+ * Количество модулей при этом не меняется.
  */
 const gridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
@@ -184,74 +184,70 @@ const gridCols = computed(() => {
     return 4
 })
 
+/** Сохраняем состояние сайдбаров */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(
+        LEFT_SIDEBAR_KEY,
+        String(leftCollapsed.value)
+    )
+
+    localStorage.setItem(
+        RIGHT_SIDEBAR_KEY,
+        String(rightCollapsed.value)
+    )
+})
+
+/* ===================== FILTERS ===================== */
+
+/** Поисковая строка */
+const q = ref(
+    String(props.filters?.q ?? '')
+)
+
 /**
- * Количество дополнительных карточек.
+ * Сортировка по умолчанию.
  *
- * Каждый свернутый или отключенный сайдбар
- * добавляет одну карточку.
+ * Совпадает с fallback контроллера:
+ * publicSchoolModulesDefaultSort → idDesc.
  */
-const additionalCards = computed(() => {
-    if (viewMode.value !== 'grid') {
-        return 0
-    }
+const DEFAULT_SORT = 'idDesc'
 
-    let count = 0
+/** Текущая сортировка */
+const sort = ref(
+    String(props.filters?.sort ?? DEFAULT_SORT)
+)
 
-    if (!showLeft.value || leftCollapsed.value) {
-        count++
-    }
+/** Ключ режима отображения */
+const VIEW_KEY = 'public_school_modules_view'
 
-    if (!showRight.value || rightCollapsed.value) {
-        count++
-    }
+/** Режим отображения */
+const viewMode = ref(
+    String(
+        props.filters?.view
+        || localStorage.getItem(VIEW_KEY)
+        || 'grid'
+    )
+)
 
-    return count
+/** Сохраняем режим отображения */
+watch(viewMode, (value) => {
+    localStorage.setItem(VIEW_KEY, value)
 })
 
 /**
- * Определяем базовое количество модулей.
+ * Количество модулей на странице.
  *
- * Если per_page уже находится в URL,
- * убираем добавочные карточки сайдбаров.
- */
-const resolveBasePerPage = () => {
-    const filterPerPage = Number(props.filters?.per_page ?? 6)
-    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 6
-    const params = new URLSearchParams(window.location.search)
-
-    if (!params.has('per_page')) {
-        return safePerPage
-    }
-
-    if (viewMode.value !== 'grid') {
-        return safePerPage
-    }
-
-    let collapsedCount = 0
-
-    if (!showLeft.value || leftCollapsed.value) {
-        collapsedCount++
-    }
-
-    if (!showRight.value || rightCollapsed.value) {
-        collapsedCount++
-    }
-
-    return Math.max(1, safePerPage - collapsedCount)
-}
-
-/** Базовое количество модулей */
-const basePerPage = ref(resolveBasePerPage())
-
-/**
- * Итоговое количество модулей.
+ * Источник значения — backend:
+ * PublicSettingsService → resolvePerPage() → filters.per_page.
  *
- * 6 — оба сайдбара открыты.
- * 7 — свернут один.
- * 8 — свернуты оба.
+ * 12 используется только как аварийный fallback.
  */
 const perPage = computed(() => {
-    return basePerPage.value + additionalCards.value
+    const value = Number(props.filters?.per_page)
+
+    return Number.isFinite(value) && value > 0
+        ? value
+        : 12
 })
 
 /** Опции сортировки */
@@ -316,10 +312,10 @@ const moduleSortOptions = [
 
 /* ===================== FRONTEND MODE ===================== */
 
-/** Текущая страница локальной пагинации frontend */
+/** Текущая frontend-страница */
 const frontendCurrentPage = ref(1)
 
-/** Цель плавного скролла при frontend-пагинации */
+/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
     scrollToTarget,
@@ -328,63 +324,63 @@ const {
     duration: 1200,
 })
 
-/** Нормализация текста для локального поиска frontend */
+/** Нормализация текста */
 const normalizeText = (value) => {
     return String(value ?? '').toLowerCase()
 }
 
-/** Получение названия модуля из разных возможных структур ресурса */
+/** Название модуля */
 const getModuleTitle = (module) => {
-    return module.title
-        || module.name
-        || module.translation?.title
-        || module.translation?.name
-        || module.current_translation?.title
-        || module.current_translation?.name
-        || module.translations?.[0]?.title
-        || module.translations?.[0]?.name
+    return module?.title
+        || module?.name
+        || module?.translation?.title
+        || module?.translation?.name
+        || module?.current_translation?.title
+        || module?.current_translation?.name
+        || module?.translations?.[0]?.title
+        || module?.translations?.[0]?.name
         || ''
 }
 
-/** Получение краткого текста модуля */
+/** Краткий текст модуля */
 const getModuleShort = (module) => {
-    return module.short
-        || module.description
-        || module.subtitle
-        || module.translation?.short
-        || module.translation?.description
-        || module.translation?.subtitle
-        || module.current_translation?.short
-        || module.current_translation?.description
-        || module.current_translation?.subtitle
-        || module.translations?.[0]?.short
-        || module.translations?.[0]?.description
-        || module.translations?.[0]?.subtitle
+    return module?.short
+        || module?.description
+        || module?.subtitle
+        || module?.translation?.short
+        || module?.translation?.description
+        || module?.translation?.subtitle
+        || module?.current_translation?.short
+        || module?.current_translation?.description
+        || module?.current_translation?.subtitle
+        || module?.translations?.[0]?.short
+        || module?.translations?.[0]?.description
+        || module?.translations?.[0]?.subtitle
         || ''
 }
 
-/** Получение slug модуля */
+/** Slug модуля */
 const getModuleSlug = (module) => {
-    return module.slug
-        || module.url
-        || module.translation?.slug
-        || module.current_translation?.slug
-        || module.translations?.[0]?.slug
+    return module?.slug
+        || module?.url
+        || module?.translation?.slug
+        || module?.current_translation?.slug
+        || module?.translations?.[0]?.slug
         || ''
 }
 
-/** Получение названия курса из разных возможных структур ресурса */
+/** Название курса */
 const getCourseTitle = (module) => {
-    return module.course?.title
-        || module.course?.name
-        || module.course?.translation?.title
-        || module.course?.translation?.name
-        || module.course?.translations?.[0]?.title
-        || module.course?.translations?.[0]?.name
+    return module?.course?.title
+        || module?.course?.name
+        || module?.course?.translation?.title
+        || module?.course?.translation?.name
+        || module?.course?.translations?.[0]?.title
+        || module?.course?.translations?.[0]?.name
         || ''
 }
 
-/** Локальный поиск frontend */
+/** Локальный поиск */
 const filteredModules = computed(() => {
     const query = normalizeText(q.value).trim()
 
@@ -402,139 +398,189 @@ const filteredModules = computed(() => {
             module.course?.instructor_profile?.title,
             module.course?.instructorProfile?.user?.name,
             module.course?.instructor_profile?.user?.name,
-        ].some((value) => normalizeText(value).includes(query))
+        ].some((value) => {
+            return normalizeText(value).includes(query)
+        })
     })
 })
 
-/** Локальная сортировка frontend */
+/** Локальная сортировка */
 const sortedModules = computed(() => {
     const list = [...filteredModules.value]
 
     return list.sort((a, b) => {
         switch (sort.value) {
             case 'sortAsc':
-                return (a.sort ?? 0) - (b.sort ?? 0)
+                return (a.sort ?? 0)
+                    - (b.sort ?? 0)
 
             case 'sortDesc':
-                return (b.sort ?? 0) - (a.sort ?? 0)
+                return (b.sort ?? 0)
+                    - (a.sort ?? 0)
 
             case 'idAsc':
-                return (a.id ?? 0) - (b.id ?? 0)
+                return (a.id ?? 0)
+                    - (b.id ?? 0)
 
             case 'idDesc':
-                return (b.id ?? 0) - (a.id ?? 0)
+                return (b.id ?? 0)
+                    - (a.id ?? 0)
 
             case 'titleAsc':
                 return normalizeText(getModuleTitle(a))
-                    .localeCompare(normalizeText(getModuleTitle(b)))
+                    .localeCompare(
+                        normalizeText(getModuleTitle(b))
+                    )
 
             case 'titleDesc':
                 return normalizeText(getModuleTitle(b))
-                    .localeCompare(normalizeText(getModuleTitle(a)))
+                    .localeCompare(
+                        normalizeText(getModuleTitle(a))
+                    )
 
             case 'courseAsc':
-                return (a.course_id ?? a.course?.id ?? 0) -
-                    (b.course_id ?? b.course?.id ?? 0)
+                return (
+                    a.course_id
+                    ?? a.course?.id
+                    ?? 0
+                ) - (
+                    b.course_id
+                    ?? b.course?.id
+                    ?? 0
+                )
 
             case 'courseDesc':
-                return (b.course_id ?? b.course?.id ?? 0) -
-                    (a.course_id ?? a.course?.id ?? 0)
+                return (
+                    b.course_id
+                    ?? b.course?.id
+                    ?? 0
+                ) - (
+                    a.course_id
+                    ?? a.course?.id
+                    ?? 0
+                )
 
             case 'statusAsc':
                 return normalizeText(a.status)
-                    .localeCompare(normalizeText(b.status))
+                    .localeCompare(
+                        normalizeText(b.status)
+                    )
 
             case 'statusDesc':
                 return normalizeText(b.status)
-                    .localeCompare(normalizeText(a.status))
+                    .localeCompare(
+                        normalizeText(a.status)
+                    )
 
             case 'availabilityAsc':
                 return normalizeText(a.availability)
-                    .localeCompare(normalizeText(b.availability))
+                    .localeCompare(
+                        normalizeText(b.availability)
+                    )
 
             case 'availabilityDesc':
                 return normalizeText(b.availability)
-                    .localeCompare(normalizeText(a.availability))
+                    .localeCompare(
+                        normalizeText(a.availability)
+                    )
 
             case 'viewsAsc':
-                return (a.views ?? 0) - (b.views ?? 0)
+                return (a.views ?? 0)
+                    - (b.views ?? 0)
 
             case 'viewsDesc':
-                return (b.views ?? 0) - (a.views ?? 0)
+                return (b.views ?? 0)
+                    - (a.views ?? 0)
 
             case 'likesAsc':
             case 'likesCountAsc':
-                return (a.likes_count ?? 0) - (b.likes_count ?? 0)
+                return (a.likes_count ?? 0)
+                    - (b.likes_count ?? 0)
 
             case 'likesDesc':
             case 'likesCountDesc':
-                return (b.likes_count ?? 0) - (a.likes_count ?? 0)
+                return (b.likes_count ?? 0)
+                    - (a.likes_count ?? 0)
 
             case 'popularityAsc':
-                return (a.popularity ?? 0) - (b.popularity ?? 0)
+                return (a.popularity ?? 0)
+                    - (b.popularity ?? 0)
 
             case 'popularityDesc':
-                return (b.popularity ?? 0) - (a.popularity ?? 0)
+                return (b.popularity ?? 0)
+                    - (a.popularity ?? 0)
 
             case 'ratingAvgAsc':
-                return (a.rating_avg ?? 0) - (b.rating_avg ?? 0)
+                return (a.rating_avg ?? 0)
+                    - (b.rating_avg ?? 0)
 
             case 'ratingAvgDesc':
-                return (b.rating_avg ?? 0) - (a.rating_avg ?? 0)
+                return (b.rating_avg ?? 0)
+                    - (a.rating_avg ?? 0)
 
             case 'ratingCountAsc':
-                return (a.rating_count ?? 0) - (b.rating_count ?? 0)
+                return (a.rating_count ?? 0)
+                    - (b.rating_count ?? 0)
 
             case 'ratingCountDesc':
-                return (b.rating_count ?? 0) - (a.rating_count ?? 0)
+                return (b.rating_count ?? 0)
+                    - (a.rating_count ?? 0)
 
             case 'difficultyAsc':
-                return (a.difficulty ?? 0) - (b.difficulty ?? 0)
+                return (a.difficulty ?? 0)
+                    - (b.difficulty ?? 0)
 
             case 'difficultyDesc':
-                return (b.difficulty ?? 0) - (a.difficulty ?? 0)
+                return (b.difficulty ?? 0)
+                    - (a.difficulty ?? 0)
 
             case 'durationAsc':
-                return (a.duration ?? 0) - (b.duration ?? 0)
+                return (a.duration ?? 0)
+                    - (b.duration ?? 0)
 
             case 'durationDesc':
-                return (b.duration ?? 0) - (a.duration ?? 0)
+                return (b.duration ?? 0)
+                    - (a.duration ?? 0)
 
             case 'lessonsAsc':
-                return (a.lessons_count ?? 0) - (b.lessons_count ?? 0)
+                return (a.lessons_count ?? 0)
+                    - (b.lessons_count ?? 0)
 
             case 'lessonsDesc':
-                return (b.lessons_count ?? 0) - (a.lessons_count ?? 0)
+                return (b.lessons_count ?? 0)
+                    - (a.lessons_count ?? 0)
 
             case 'imagesAsc':
-                return (a.images_count ?? 0) - (b.images_count ?? 0)
+                return (a.images_count ?? 0)
+                    - (b.images_count ?? 0)
 
             case 'imagesDesc':
-                return (b.images_count ?? 0) - (a.images_count ?? 0)
+                return (b.images_count ?? 0)
+                    - (a.images_count ?? 0)
 
             case 'publishedAtAsc':
-                return new Date(a.published_at ?? 0) -
-                    new Date(b.published_at ?? 0)
+                return new Date(a.published_at ?? 0)
+                    - new Date(b.published_at ?? 0)
 
             case 'publishedAtDesc':
-                return new Date(b.published_at ?? 0) -
-                    new Date(a.published_at ?? 0)
+                return new Date(b.published_at ?? 0)
+                    - new Date(a.published_at ?? 0)
 
             case 'createdAtAsc':
-                return new Date(a.created_at ?? 0) -
-                    new Date(b.created_at ?? 0)
+                return new Date(a.created_at ?? 0)
+                    - new Date(b.created_at ?? 0)
 
             case 'createdAtDesc':
-                return new Date(b.created_at ?? 0) -
-                    new Date(a.created_at ?? 0)
+                return new Date(b.created_at ?? 0)
+                    - new Date(a.created_at ?? 0)
 
             case 'updatedAtAsc':
-                return new Date(a.updated_at ?? 0) -
-                    new Date(b.updated_at ?? 0)
+                return new Date(a.updated_at ?? 0)
+                    - new Date(b.updated_at ?? 0)
 
             case 'updatedAtDesc':
-                return new Date(b.updated_at ?? 0) -
-                    new Date(a.updated_at ?? 0)
+                return new Date(b.updated_at ?? 0)
+                    - new Date(a.updated_at ?? 0)
 
             default:
                 return 0
@@ -542,19 +588,29 @@ const sortedModules = computed(() => {
     })
 })
 
-/** Локальная пагинация frontend */
+/**
+ * Frontend-пагинация.
+ *
+ * Использует то же per_page,
+ * которое определил backend.
+ */
 const frontendPaginatedModules = computed(() => {
-    const start = (frontendCurrentPage.value - 1) * perPage.value
+    const start = (
+        frontendCurrentPage.value - 1
+    ) * perPage.value
 
-    return sortedModules.value.slice(start, start + perPage.value)
+    return sortedModules.value.slice(
+        start,
+        start + perPage.value
+    )
 })
 
-/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+/** Сбрасываем frontend-пагинацию */
 watch([q, sort, viewMode], () => {
     frontendCurrentPage.value = 1
 })
 
-/** Плавно возвращаемся к началу списка при frontend-пагинации */
+/** Скролл при frontend-пагинации */
 watch(frontendCurrentPage, () => {
     if (!props.useServerProcessing) {
         scrollToTarget()
@@ -563,20 +619,35 @@ watch(frontendCurrentPage, () => {
 
 /* ===================== SERVER MODE ===================== */
 
-/** Текущая страница server-пагинации */
+/** Текущая server-страница */
 const currentPage = computed(() => {
-    return Number(props.modules?.meta?.current_page ?? props.modules?.current_page ?? 1) || 1
+    return Number(
+        props.modules?.meta?.current_page
+        ?? props.modules?.current_page
+        ?? 1
+    ) || 1
 })
 
-/** Последняя страница server-пагинации */
+/** Последняя server-страница */
 const lastPage = computed(() => {
-    return Number(props.modules?.meta?.last_page ?? props.modules?.last_page ?? 1) || 1
+    return Number(
+        props.modules?.meta?.last_page
+        ?? props.modules?.last_page
+        ?? 1
+    ) || 1
 })
 
-/** Маршрут списка модулей для server-режима */
-const indexRoute = () => route('public.schoolModules.index')
+/** Маршрут списка модулей */
+const indexRoute = () => {
+    return route('public.schoolModules.index')
+}
 
-/** Server-загрузка модулей с query-параметрами */
+/**
+ * Server-загрузка модулей.
+ *
+ * per_page намеренно не отправляем.
+ * Его всегда определяет backend через PublicSettingsService.
+ */
 const reloadModules = (page = 1) => {
     router.get(
         indexRoute(),
@@ -584,7 +655,6 @@ const reloadModules = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            per_page: perPage.value,
             page,
         },
         {
@@ -600,7 +670,7 @@ const submitSearch = () => {
     reloadModules(1)
 }
 
-/** Сброс поиска и сортировки для обоих режимов */
+/** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
@@ -634,82 +704,54 @@ const updateViewMode = (value) => {
 const goToPage = (page) => {
     const value = Number(page)
 
-    if (!Number.isFinite(value)) return
+    if (!Number.isFinite(value)) {
+        return
+    }
 
-    const safePage = Math.max(1, Math.min(value, lastPage.value))
+    const safePage = Math.max(
+        1,
+        Math.min(value, lastPage.value)
+    )
 
     reloadModules(safePage)
 }
 
-/** Server-предыдущая страница */
+/** Предыдущая server-страница */
 const goPrev = () => {
-    if (currentPage.value <= 1) return
-    goToPage(currentPage.value - 1)
-}
-
-/** Server-следующая страница */
-const goNext = () => {
-    if (currentPage.value >= lastPage.value) return
-    goToPage(currentPage.value + 1)
-}
-
-/* ===================== SIDEBAR WATCH ===================== */
-
-/**
- * Сохраняем состояние сайдбаров.
- *
- * В server-режиме при сетке
- * запрашиваем новое количество модулей.
- */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
-
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing && viewMode.value === 'grid') {
-        reloadModules(1)
-    }
-})
-
-/**
- * Синхронизация первого server-запроса
- * с состоянием сайдбаров из localStorage.
- */
-onMounted(() => {
-    if (!props.useServerProcessing || viewMode.value !== 'grid') {
+    if (currentPage.value <= 1) {
         return
     }
 
-    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
+    goToPage(currentPage.value - 1)
+}
 
-    if (serverPerPage !== perPage.value) {
-        reloadModules(1)
+/** Следующая server-страница */
+const goNext = () => {
+    if (currentPage.value >= lastPage.value) {
+        return
     }
-})
+
+    goToPage(currentPage.value + 1)
+}
 
 /* ===================== COMMON VIEW ===================== */
 
-/** Итоговый список для отображения: server data или frontend page */
+/** Итоговый список модулей */
 const displayedModules = computed(() => {
     return props.useServerProcessing
         ? modulesData.value
         : frontendPaginatedModules.value
 })
 
-/** Сохраняем состояние левого сайдбара */
-watch(leftCollapsed, (value) => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
+/** Видео внизу страницы */
+const mainVideosList = computed(() => {
+    return normalizeList(props.mainVideos)
 })
 
-/** Сохраняем состояние правого сайдбара */
-watch(rightCollapsed, (value) => {
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
+/** Баннеры внизу страницы */
+const mainBannersList = computed(() => {
+    return normalizeList(props.mainBanners)
 })
-
-/** Видео и баннеры */
-const mainVideosList = computed(() => normalizeList(props.mainVideos))
-const mainBannersList = computed(() => normalizeList(props.mainBanners))
 </script>
 
 <template>

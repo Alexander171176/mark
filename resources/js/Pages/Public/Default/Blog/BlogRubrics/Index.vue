@@ -5,8 +5,9 @@
  * @version PulsarCMS 1.0
  * @author Александр
  */
+
+import { computed, onMounted, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
@@ -17,22 +18,26 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebar from '@/Components/Public/Default/Partials/LeftSidebar.vue'
 import RightSidebar from '@/Components/Public/Default/Partials/RightSidebar.vue'
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
+import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 import RubricGrid from '@/Components/Public/Default/Blog/BlogRubric/RubricGrid.vue'
 import RubricRows from '@/Components/Public/Default/Blog/BlogRubric/RubricRows.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
-import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
-import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
+
+/* ===================== PROPS ===================== */
 
 /** Props страницы */
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
-    seo: { type: Object, default: () => ({
+    seo: {
+        type: Object,
+        default: () => ({
             title: '',
             keywords: '',
             description: '',
@@ -59,21 +64,23 @@ const props = defineProps({
     mainBanners: { type: [Array, Object], default: () => [] },
 })
 
+/* ===================== PAGE ===================== */
+
 /** Глобальные данные страницы */
 const page = usePage()
 
 /** Глобальные настройки сайта */
 const siteSettings = page.props?.siteSettings || {}
 
-/** Роль администратора для нижней служебной панели */
+/** Роль администратора */
 const isAdmin = computed(() => page.props?.isAdmin === true)
 
-/** Дерево рубрик для левого аккордеона */
+/** Дерево рубрик */
 const rubricTree = computed(() => {
     return Array.isArray(props.rubricTree) ? props.rubricTree : []
 })
 
-/** Универсальный список рубрик: server paginator data или frontend array */
+/** Универсальный список рубрик */
 const rubricsData = computed(() => {
     if (Array.isArray(props.rubrics)) {
         return props.rubrics
@@ -86,36 +93,162 @@ const rubricsData = computed(() => {
     return []
 })
 
-/** Количество элементов на странице для обоих режимов */
-const perPage = computed(() => {
-    const value = Number(props.filters?.per_page ?? 6)
+/* ===================== FILTERS ===================== */
 
-    return Number.isFinite(value) ? value : 6
-})
-
-/** Поисковая строка для server/frontend */
+/** Поисковая строка */
 const q = ref(String(props.filters?.q ?? ''))
 
-/** Сортировка по умолчанию для server/frontend */
+/** Сортировка по умолчанию */
 const DEFAULT_SORT = 'sortAsc'
 
-/** Текущая сортировка для server/frontend */
+/** Текущая сортировка */
 const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
 
-/** Ключ локального хранения режима отображения */
+/** Ключ режима отображения */
 const VIEW_KEY = 'public_blog_rubrics_view'
 
-/** Режим отображения карточки/строки для server/frontend */
+/** Режим отображения */
 const viewMode = ref(
     String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
 )
 
-/** Сохраняем режим отображения локально */
+/** Сохраняем режим отображения */
 watch(viewMode, (value) => {
     localStorage.setItem(VIEW_KEY, value)
 })
 
-/** Опции сортировки для toolbar */
+/* ===================== SIDEBARS ===================== */
+
+/** Показ левой колонки */
+const showLeft = computed(() => {
+    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+})
+
+/** Показ правой колонки */
+const showRight = computed(() => {
+    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+})
+
+/** Ключ левого сайдбара */
+const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
+
+/** Ключ правого сайдбара */
+const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
+
+/** Получение boolean из localStorage */
+const getStoredBoolean = (key, defaultValue = true) => {
+    const value = localStorage.getItem(key)
+
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+/** Левый сайдбар по умолчанию свернут */
+const leftCollapsed = ref(
+    getStoredBoolean(LEFT_SIDEBAR_KEY, true)
+)
+
+/** Правый сайдбар по умолчанию свернут */
+const rightCollapsed = ref(
+    getStoredBoolean(RIGHT_SIDEBAR_KEY, true)
+)
+
+/**
+ * Количество колонок сетки.
+ *
+ * Оба открыты  → 2.
+ * Один свернут → 3.
+ * Оба свернуты → 4.
+ */
+const rubricGridCols = computed(() => {
+    const leftExpanded = showLeft.value && !leftCollapsed.value
+    const rightExpanded = showRight.value && !rightCollapsed.value
+
+    if (leftExpanded && rightExpanded) {
+        return 2
+    }
+
+    if (leftExpanded || rightExpanded) {
+        return 3
+    }
+
+    return 4
+})
+
+/**
+ * Количество дополнительных карточек.
+ *
+ * Каждый свернутый или отключенный сайдбар
+ * добавляет одну карточку.
+ */
+const additionalCards = computed(() => {
+    if (viewMode.value !== 'grid') {
+        return 0
+    }
+
+    let count = 0
+
+    if (!showLeft.value || leftCollapsed.value) {
+        count++
+    }
+
+    if (!showRight.value || rightCollapsed.value) {
+        count++
+    }
+
+    return count
+})
+
+/**
+ * Определяем базовое количество рубрик.
+ *
+ * Если per_page уже находится в URL,
+ * убираем добавочные карточки сайдбаров.
+ */
+const resolveBasePerPage = () => {
+    const filterPerPage = Number(props.filters?.per_page ?? 6)
+    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 6
+    const params = new URLSearchParams(window.location.search)
+
+    if (!params.has('per_page')) {
+        return safePerPage
+    }
+
+    if (viewMode.value !== 'grid') {
+        return safePerPage
+    }
+
+    let collapsedCount = 0
+
+    if (!showLeft.value || leftCollapsed.value) {
+        collapsedCount++
+    }
+
+    if (!showRight.value || rightCollapsed.value) {
+        collapsedCount++
+    }
+
+    return Math.max(1, safePerPage - collapsedCount)
+}
+
+/** Базовое количество рубрик */
+const basePerPage = ref(resolveBasePerPage())
+
+/**
+ * Итоговое количество рубрик.
+ *
+ * 6 — оба сайдбара открыты.
+ * 7 — свернут один.
+ * 8 — свернуты оба.
+ */
+const perPage = computed(() => {
+    return basePerPage.value + additionalCards.value
+})
+
+/** Опции сортировки */
 const rubricSortOptions = [
     { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
     { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
@@ -135,10 +268,10 @@ const rubricSortOptions = [
 
 /* ===================== FRONTEND MODE ===================== */
 
-/** Текущая страница локальной пагинации frontend */
+/** Текущая frontend-страница */
 const frontendCurrentPage = ref(1)
 
-/** Цель плавного скролла при frontend-пагинации */
+/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
     scrollToTarget,
@@ -147,12 +280,12 @@ const {
     duration: 1200,
 })
 
-/** Нормализация текста для локального поиска frontend */
+/** Нормализация текста */
 const normalizeText = (value) => {
     return String(value ?? '').toLowerCase()
 }
 
-/** Получение названия рубрики из разных возможных структур ресурса */
+/** Название рубрики */
 const getRubricTitle = (rubric) => {
     return rubric.title
         || rubric.name
@@ -165,7 +298,7 @@ const getRubricTitle = (rubric) => {
         || ''
 }
 
-/** Получение краткого текста рубрики */
+/** Краткий текст рубрики */
 const getRubricShort = (rubric) => {
     return rubric.short
         || rubric.description
@@ -178,7 +311,7 @@ const getRubricShort = (rubric) => {
         || ''
 }
 
-/** Локальный поиск frontend */
+/** Локальный поиск */
 const filteredRubrics = computed(() => {
     const query = normalizeText(q.value).trim()
 
@@ -198,7 +331,7 @@ const filteredRubrics = computed(() => {
     })
 })
 
-/** Локальная сортировка frontend */
+/** Локальная сортировка */
 const sortedRubrics = computed(() => {
     const list = [...filteredRubrics.value]
 
@@ -231,12 +364,12 @@ const sortedRubrics = computed(() => {
                 return (b.articles_count ?? 0) - (a.articles_count ?? 0)
 
             case 'dateAsc':
-                return new Date(a.published_at ?? a.created_at ?? 0) -
-                    new Date(b.published_at ?? b.created_at ?? 0)
+                return new Date(a.published_at ?? a.created_at ?? 0)
+                    - new Date(b.published_at ?? b.created_at ?? 0)
 
             case 'dateDesc':
-                return new Date(b.published_at ?? b.created_at ?? 0) -
-                    new Date(a.published_at ?? a.created_at ?? 0)
+                return new Date(b.published_at ?? b.created_at ?? 0)
+                    - new Date(a.published_at ?? a.created_at ?? 0)
 
             default:
                 return 0
@@ -244,19 +377,19 @@ const sortedRubrics = computed(() => {
     })
 })
 
-/** Локальная пагинация frontend */
+/** Frontend-пагинация */
 const frontendPaginatedRubrics = computed(() => {
     const start = (frontendCurrentPage.value - 1) * perPage.value
 
     return sortedRubrics.value.slice(start, start + perPage.value)
 })
 
-/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+/** Сбрасываем frontend-пагинацию */
 watch([q, sort, viewMode], () => {
     frontendCurrentPage.value = 1
 })
 
-/** Плавно возвращаемся к началу списка при frontend-пагинации */
+/** Скролл при frontend-пагинации */
 watch(frontendCurrentPage, () => {
     if (!props.useServerProcessing) {
         scrollToTarget()
@@ -265,20 +398,20 @@ watch(frontendCurrentPage, () => {
 
 /* ===================== SERVER MODE ===================== */
 
-/** Текущая страница server-пагинации */
+/** Текущая server-страница */
 const currentPage = computed(() => {
     return Number(props.rubrics?.meta?.current_page ?? props.rubrics?.current_page ?? 1) || 1
 })
 
-/** Последняя страница server-пагинации */
+/** Последняя server-страница */
 const lastPage = computed(() => {
     return Number(props.rubrics?.meta?.last_page ?? props.rubrics?.last_page ?? 1) || 1
 })
 
-/** Маршрут списка рубрик для server-режима */
+/** Маршрут списка рубрик */
 const indexRoute = () => route('public.blogRubrics.index')
 
-/** Загрузка рубрик с текущими фильтрами */
+/** Server-загрузка рубрик */
 const reloadRubrics = (page = 1) => {
     router.get(
         indexRoute(),
@@ -302,7 +435,7 @@ const submitSearch = () => {
     reloadRubrics(1)
 }
 
-/** Сброс поиска и сортировки для обоих режимов */
+/** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
@@ -322,12 +455,13 @@ const updateSort = (value) => {
     }
 }
 
-/** Изменение режима отображения для обоих режимов */
+/** Изменение режима отображения */
 const updateViewMode = (value) => {
     viewMode.value = value || 'grid'
+    frontendCurrentPage.value = 1
 
     if (props.useServerProcessing) {
-        reloadRubrics(currentPage.value)
+        reloadRubrics(1)
     }
 }
 
@@ -335,89 +469,75 @@ const updateViewMode = (value) => {
 const goToPage = (page) => {
     const value = Number(page)
 
-    if (!Number.isFinite(value)) return
+    if (!Number.isFinite(value)) {
+        return
+    }
 
     const safePage = Math.max(1, Math.min(value, lastPage.value))
 
     reloadRubrics(safePage)
 }
 
-/** Server-предыдущая страница */
+/** Предыдущая server-страница */
 const goPrev = () => {
-    if (currentPage.value <= 1) return
+    if (currentPage.value <= 1) {
+        return
+    }
 
     goToPage(currentPage.value - 1)
 }
 
-/** Server-следующая страница */
+/** Следующая server-страница */
 const goNext = () => {
-    if (currentPage.value >= lastPage.value) return
+    if (currentPage.value >= lastPage.value) {
+        return
+    }
 
     goToPage(currentPage.value + 1)
 }
 
+/* ===================== SIDEBAR WATCH ===================== */
+
+/**
+ * Сохраняем состояние сайдбаров.
+ *
+ * В server-режиме при сетке
+ * запрашиваем новое количество рубрик.
+ */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
+    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
+
+    frontendCurrentPage.value = 1
+
+    if (props.useServerProcessing && viewMode.value === 'grid') {
+        reloadRubrics(1)
+    }
+})
+
+/**
+ * Синхронизация первого server-запроса
+ * с состоянием сайдбаров из localStorage.
+ */
+onMounted(() => {
+    if (!props.useServerProcessing || viewMode.value !== 'grid') {
+        return
+    }
+
+    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
+
+    if (serverPerPage !== perPage.value) {
+        reloadRubrics(1)
+    }
+})
+
 /* ===================== COMMON VIEW ===================== */
 
-/** Итоговый список для отображения: server data или frontend page */
+/** Итоговый список рубрик */
 const displayedRubrics = computed(() => {
     return props.useServerProcessing
         ? rubricsData.value
         : frontendPaginatedRubrics.value
-})
-
-/** Показ левой колонки */
-const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
-})
-
-/** Показ правой колонки */
-const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
-})
-
-/** Ключ localStorage для левого сайдбара */
-const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
-
-/** Ключ localStorage для правого сайдбара */
-const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
-
-/** Получение boolean из localStorage */
-const getStoredBoolean = (key, defaultValue = false) => {
-    const value = localStorage.getItem(key)
-
-    if (value === null) {
-        return defaultValue
-    }
-
-    return value === 'true'
-}
-
-/** Состояние левого сайдбара */
-const leftCollapsed = ref(
-    getStoredBoolean(LEFT_SIDEBAR_KEY, false)
-)
-
-/** Состояние правого сайдбара */
-const rightCollapsed = ref(
-    getStoredBoolean(RIGHT_SIDEBAR_KEY, false)
-)
-
-/** Сохраняем состояние левого сайдбара */
-watch(leftCollapsed, (value) => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
-})
-
-/** Сохраняем состояние правого сайдбара */
-watch(rightCollapsed, (value) => {
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
-})
-
-/** Количество колонок сетки с учётом сайдбаров */
-const rubricGridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
-
-    return leftExpanded && rightExpanded ? 2 : 3
 })
 </script>
 
@@ -447,16 +567,13 @@ const rubricGridCols = computed(() => {
         <meta name="DC.language" :content="locale" />
     </Head>
 
-    <DefaultLayout
-        :title="title"
-        :can-login="canLogin"
-        :can-register="canRegister"
-    >
+    <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
         <Navbar />
 
         <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-                <!-- LEFT -->
+
+                <!-- Левая колонка -->
                 <aside
                     v-if="showLeft"
                     class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
@@ -469,8 +586,11 @@ const rubricGridCols = computed(() => {
                     />
                 </aside>
 
+                <!-- Центральная колонка -->
                 <div class="w-full lg:mt-28 pb-6 slate-1">
                     <div class="mx-auto max-w-6xl">
+
+                        <!-- Хлебные крошки -->
                         <nav class="text-sm" aria-label="Breadcrumb">
                             <ol class="flex flex-wrap items-center font-semibold">
                                 <li>
@@ -492,6 +612,7 @@ const rubricGridCols = computed(() => {
                             </ol>
                         </nav>
 
+                        <!-- Заголовок -->
                         <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
                             <svg
                                 class="h-5 w-5"
@@ -509,10 +630,12 @@ const rubricGridCols = computed(() => {
                             </h1>
                         </div>
 
+                        <!-- Подзаголовок -->
                         <div class="my-1 text-sm subtitle text-center">
                             Изучайте статьи и руководства от экспертов сообщества
                         </div>
 
+                        <!-- Server toolbar -->
                         <EntityPageToolbar
                             v-if="useServerProcessing"
                             v-model="q"
@@ -529,6 +652,7 @@ const rubricGridCols = computed(() => {
                             @update:sortValue="updateSort"
                         />
 
+                        <!-- Frontend toolbar -->
                         <FrontendEntityPageToolbar
                             v-else
                             v-model="q"
@@ -544,8 +668,10 @@ const rubricGridCols = computed(() => {
                             @update:sortValue="updateSort"
                         />
 
+                        <!-- Точка скролла -->
                         <div ref="scrollTarget"></div>
 
+                        <!-- Нет данных -->
                         <div
                             v-if="displayedRubrics.length === 0"
                             class="mt-6 text-center text-slate-700 dark:text-slate-300"
@@ -553,6 +679,7 @@ const rubricGridCols = computed(() => {
                             {{ t('noData') }}
                         </div>
 
+                        <!-- Список -->
                         <div v-else>
                             <RubricGrid
                                 v-if="viewMode === 'grid'"
@@ -566,6 +693,7 @@ const rubricGridCols = computed(() => {
                             />
                         </div>
 
+                        <!-- Server-пагинация -->
                         <Pagination
                             v-if="useServerProcessing"
                             :current-page="currentPage"
@@ -576,6 +704,7 @@ const rubricGridCols = computed(() => {
                             @go="goToPage"
                         />
 
+                        <!-- Frontend-пагинация -->
                         <FrontendPagination
                             v-else
                             v-model:currentPage="frontendCurrentPage"
@@ -583,12 +712,15 @@ const rubricGridCols = computed(() => {
                             :total-items="sortedRubrics.length"
                         />
 
+                        <!-- Видео -->
                         <SectionVideoList :videos="mainVideos" />
+
+                        <!-- Баннеры -->
                         <SectionBanners :banners="mainBanners" />
                     </div>
                 </div>
 
-                <!-- RIGHT -->
+                <!-- Правая колонка -->
                 <aside
                     v-if="showRight"
                     class="shrink-0 lg:mt-28 transition-all duration-300"
@@ -604,7 +736,8 @@ const rubricGridCols = computed(() => {
 
         <FooterBlog />
         <Progress />
-        <!-- Нижняя панель администратора -->
+
+        <!-- Панель администратора -->
         <PublicAdminBottomPanel
             v-if="isAdmin"
             setting-key="publicBlogRubricsProcessingMode"

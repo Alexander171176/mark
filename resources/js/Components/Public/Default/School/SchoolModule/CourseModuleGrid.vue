@@ -26,10 +26,25 @@ const toggleModule = (id) => {
 
 const isOpen = (id) => openedIds.value.includes(id)
 
+/**
+ * Количество колонок карточек.
+ *
+ * 2 — оба сайдбара открыты.
+ * 3 — свернут один.
+ * 4 — свернуты оба.
+ */
 const gridClass = computed(() => {
-    return props.cols === 2
-        ? 'grid-cols-1 sm:grid-cols-2'
-        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+    switch (props.cols) {
+        case 4:
+            return 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'
+
+        case 3:
+            return 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
+
+        case 2:
+        default:
+            return 'grid-cols-1 sm:grid-cols-2'
+    }
 })
 
 const lessonsCount = (module) => {

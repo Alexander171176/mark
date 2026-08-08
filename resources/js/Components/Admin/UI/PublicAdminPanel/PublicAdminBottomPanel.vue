@@ -47,7 +47,7 @@ const togglePanel = () => {
                    text-slate-700 dark:text-slate-300
                    shadow-md backdrop-blur-md
                    hover:text-indigo-600 dark:hover:text-indigo-300"
-            :class="collapsed ? 'bottom-0' : 'bottom-12 sm:bottom-10'"
+            :class="collapsed ? 'bottom-0' : 'bottom-12 sm:bottom-8'"
             :title="collapsed ? t('show') : t('hide')"
             @click="togglePanel"
         >
@@ -78,13 +78,13 @@ const togglePanel = () => {
             <div class="flex items-center justify-center sm:justify-start gap-2">
                 <Link
                     :href="route('admin.index')"
-                    class="bg-gray-200 dark:bg-gray-800 rounded-sm px-2 py-0.5
-                           border-2 border-slate-500 hover:border-indigo-500"
+                    :title="t('adminPanel')"
+                    class="w-fit"
                 >
-                    <span class="text-slate-700 dark:text-slate-300
-                                 hover:text-indigo-700 hover:dark:text-indigo-300">
-                        {{ t('adminPanel') }}
-                    </span>
+                    <svg class="shrink-0 h-7 w-7 fill-current text-cyan-600 dark:text-cyan-400"
+                         viewBox="0 0 512 512">
+                        <path d="M157.52 272h36.96L176 218.78 157.52 272zM352 256c-13.23 0-24 10.77-24 24s10.77 24 24 24 24-10.77 24-24-10.77-24-24-24zM464 64H48C21.5 64 0 85.5 0 112v288c0 26.5 21.5 48 48 48h416c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48zM250.58 352h-16.94c-6.81 0-12.88-4.32-15.12-10.75L211.15 320h-70.29l-7.38 21.25A16 16 0 0 1 118.36 352h-16.94c-11.01 0-18.73-10.85-15.12-21.25L140 176.12A23.995 23.995 0 0 1 162.67 160h26.66A23.99 23.99 0 0 1 212 176.13l53.69 154.62c3.61 10.4-4.11 21.25-15.11 21.25zM424 336c0 8.84-7.16 16-16 16h-16c-4.85 0-9.04-2.27-11.98-5.68-8.62 3.66-18.09 5.68-28.02 5.68-39.7 0-72-32.3-72-72s32.3-72 72-72c8.46 0 16.46 1.73 24 4.42V176c0-8.84 7.16-16 16-16h16c8.84 0 16 7.16 16 16v160z" />
+                    </svg>
                 </Link>
 
                 <slot name="left" />

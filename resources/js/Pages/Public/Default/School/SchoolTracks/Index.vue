@@ -11,7 +11,7 @@
  * - управление колонками через настройки сайта
  */
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
@@ -89,13 +89,6 @@ const tracksData = computed(() => {
     return []
 })
 
-/** Количество элементов на странице для обоих режимов */
-const perPage = computed(() => {
-    const value = Number(props.filters?.per_page ?? 6)
-
-    return Number.isFinite(value) ? value : 6
-})
-
 /** Поисковая строка для server/frontend */
 const q = ref(String(props.filters?.q ?? ''))
 
@@ -116,6 +109,137 @@ const viewMode = ref(
 /** Сохраняем режим отображения локально */
 watch(viewMode, (value) => {
     localStorage.setItem(VIEW_KEY, value)
+})
+
+/* ===================== SIDEBARS ===================== */
+
+/** Показ левой колонки */
+const showLeft = computed(() => {
+    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+})
+
+/** Показ правой колонки */
+const showRight = computed(() => {
+    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+})
+
+/** Ключ левого сайдбара */
+const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
+
+/** Ключ правого сайдбара */
+const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
+
+/** Получение boolean из localStorage */
+const getStoredBoolean = (key, defaultValue = true) => {
+    const value = localStorage.getItem(key)
+
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+/** Левый сайдбар по умолчанию свернут */
+const leftCollapsed = ref(
+    getStoredBoolean(LEFT_SIDEBAR_KEY, true)
+)
+
+/** Правый сайдбар по умолчанию свернут */
+const rightCollapsed = ref(
+    getStoredBoolean(RIGHT_SIDEBAR_KEY, true)
+)
+
+/**
+ * Количество колонок сетки.
+ *
+ * Оба открыты  → 2.
+ * Один свернут → 3.
+ * Оба свернуты → 4.
+ */
+const trackGridCols = computed(() => {
+    const leftExpanded = showLeft.value && !leftCollapsed.value
+    const rightExpanded = showRight.value && !rightCollapsed.value
+
+    if (leftExpanded && rightExpanded) {
+        return 2
+    }
+
+    if (leftExpanded || rightExpanded) {
+        return 3
+    }
+
+    return 4
+})
+
+/**
+ * Количество дополнительных карточек.
+ *
+ * Каждый свернутый или отключенный сайдбар
+ * добавляет одну карточку.
+ */
+const additionalCards = computed(() => {
+    if (viewMode.value !== 'grid') {
+        return 0
+    }
+
+    let count = 0
+
+    if (!showLeft.value || leftCollapsed.value) {
+        count++
+    }
+
+    if (!showRight.value || rightCollapsed.value) {
+        count++
+    }
+
+    return count
+})
+
+/**
+ * Определяем базовое количество треков.
+ *
+ * Если per_page уже находится в URL,
+ * убираем добавочные карточки сайдбаров.
+ */
+const resolveBasePerPage = () => {
+    const filterPerPage = Number(props.filters?.per_page ?? 6)
+    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 6
+    const params = new URLSearchParams(window.location.search)
+
+    if (!params.has('per_page')) {
+        return safePerPage
+    }
+
+    if (viewMode.value !== 'grid') {
+        return safePerPage
+    }
+
+    let collapsedCount = 0
+
+    if (!showLeft.value || leftCollapsed.value) {
+        collapsedCount++
+    }
+
+    if (!showRight.value || rightCollapsed.value) {
+        collapsedCount++
+    }
+
+    return Math.max(1, safePerPage - collapsedCount)
+}
+
+/** Базовое количество треков */
+const basePerPage = ref(resolveBasePerPage())
+
+/**
+ * Итоговое количество треков.
+ *
+ * 6 — оба сайдбара открыты.
+ * 7 — свернут один.
+ * 8 — свернуты оба.
+ */
+const perPage = computed(() => {
+    return basePerPage.value + additionalCards.value
 })
 
 /** Опции сортировки для toolbar */
@@ -383,12 +507,13 @@ const updateSort = (value) => {
     }
 }
 
-/** Изменение режима отображения для обоих режимов */
+/** Изменение режима отображения */
 const updateViewMode = (value) => {
     viewMode.value = value || 'grid'
+    frontendCurrentPage.value = 1
 
     if (props.useServerProcessing) {
-        reloadTracks(currentPage.value)
+        reloadTracks(1)
     }
 }
 
@@ -417,6 +542,41 @@ const goNext = () => {
     goToPage(currentPage.value + 1)
 }
 
+/* ===================== SIDEBAR WATCH ===================== */
+
+/**
+ * Сохраняем состояние сайдбаров.
+ *
+ * В server-режиме при сетке
+ * запрашиваем новое количество треков.
+ */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
+    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
+
+    frontendCurrentPage.value = 1
+
+    if (props.useServerProcessing && viewMode.value === 'grid') {
+        reloadTracks(1)
+    }
+})
+
+/**
+ * Синхронизация первого server-запроса
+ * с состоянием сайдбаров из localStorage.
+ */
+onMounted(() => {
+    if (!props.useServerProcessing || viewMode.value !== 'grid') {
+        return
+    }
+
+    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
+
+    if (serverPerPage !== perPage.value) {
+        reloadTracks(1)
+    }
+})
+
 /* ===================== COMMON VIEW ===================== */
 
 /** Итоговый список для отображения: server data или frontend page */
@@ -426,43 +586,6 @@ const displayedTracks = computed(() => {
         : frontendPaginatedTracks.value
 })
 
-/** Показ левой колонки */
-const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
-})
-
-/** Показ правой колонки */
-const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
-})
-
-/** Ключ localStorage для левого сайдбара */
-const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
-
-/** Ключ localStorage для правого сайдбара */
-const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
-
-/** Получение boolean из localStorage */
-const getStoredBoolean = (key, defaultValue = false) => {
-    const value = localStorage.getItem(key)
-
-    if (value === null) {
-        return defaultValue
-    }
-
-    return value === 'true'
-}
-
-/** Состояние левого сайдбара */
-const leftCollapsed = ref(
-    getStoredBoolean(LEFT_SIDEBAR_KEY, false)
-)
-
-/** Состояние правого сайдбара */
-const rightCollapsed = ref(
-    getStoredBoolean(RIGHT_SIDEBAR_KEY, false)
-)
-
 /** Сохраняем состояние левого сайдбара */
 watch(leftCollapsed, (value) => {
     localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
@@ -471,14 +594,6 @@ watch(leftCollapsed, (value) => {
 /** Сохраняем состояние правого сайдбара */
 watch(rightCollapsed, (value) => {
     localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
-})
-
-/** Количество колонок сетки с учётом сайдбаров */
-const trackGridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
-
-    return leftExpanded && rightExpanded ? 2 : 3
 })
 </script>
 

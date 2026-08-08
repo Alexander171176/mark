@@ -1,26 +1,36 @@
 <script setup>
-import { Link } from '@inertiajs/vue3'
 import { computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import UniversalImageSlider from '@/Components/Public/Default/Images/UniversalImageSlider.vue'
 
 const { t } = useI18n()
 
+/** Props */
 const props = defineProps({
-    instructors: {
-        type: Array,
-        default: () => [],
-    },
-    cols: {
-        type: Number,
-        default: 3,
-    },
+    instructors: { type: Array, default: () => [] },
+    cols: { type: Number, default: 2 },
 })
 
+/**
+ * Количество колонок карточек.
+ *
+ * 2 — оба сайдбара открыты.
+ * 3 — свернут один.
+ * 4 — свернуты оба.
+ */
 const gridClass = computed(() => {
-    return props.cols === 3
-        ? 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'
-        : 'grid grid-cols-1 gap-4 sm:grid-cols-2'
+    switch (props.cols) {
+        case 4:
+            return 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4'
+
+        case 3:
+            return 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'
+
+        case 2:
+        default:
+            return 'grid grid-cols-1 gap-4 sm:grid-cols-2'
+    }
 })
 
 const showRoute = (instructor) => {

@@ -3,18 +3,18 @@
  * Страница списка заданий
  * - шапка, центральная часть, подвал
  * - светлый, тёмный режим
- * - серверный поиск
- * - серверная пагинация
- * - серверная сортировка
+ * - серверный и frontend поиск
+ * - серверная и frontend пагинация
+ * - серверная и frontend сортировка
  * - показ карточками, в строку
  * - показ главных видео, баннеров внизу страницы
  * - показ, скрытие колонок
  * - показ дерева треков в левой колонке
- * - показ облака хештегов в правой колонке
+ * - показ данных школы в правой колонке
  */
 
+import { computed, onMounted, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
@@ -25,23 +25,26 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarSchool from '@/Components/Public/Default/Partials/LeftSidebarSchool.vue'
 import RightSidebarSchool from '@/Components/Public/Default/Partials/RightSidebarSchool.vue'
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
+import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
-
 import AssignmentGrid from '@/Components/Public/Default/School/SchoolAssignment/AssignmentGrid.vue'
 import AssignmentRows from '@/Components/Public/Default/School/SchoolAssignment/AssignmentRows.vue'
-import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
-import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
+
+/* ===================== PROPS ===================== */
 
 /** Props страницы */
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
-    seo: { type: Object, default: () => ({
+    seo: {
+        type: Object,
+        default: () => ({
             title: '',
             keywords: '',
             description: '',
@@ -64,8 +67,10 @@ const props = defineProps({
     filters: { type: Object, default: () => ({}) },
 
     mainVideos: { type: [Array, Object], default: () => [] },
-    mainBanners: { type: [Array, Object], default: () => [] }
+    mainBanners: { type: [Array, Object], default: () => [] },
 })
+
+/* ===================== PAGE ===================== */
 
 /** Глобальные данные страницы */
 const page = usePage()
@@ -73,52 +78,188 @@ const page = usePage()
 /** Глобальные настройки сайта */
 const siteSettings = page.props?.siteSettings || {}
 
-/** Роль администратора для нижней служебной панели */
+/** Роль администратора */
 const isAdmin = computed(() => page.props?.isAdmin === true)
 
-/** Дерево треков для левого аккордеона */
-const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
+/** Дерево треков */
+const trackTree = computed(() => {
+    return Array.isArray(props.trackTree) ? props.trackTree : []
+})
 
-/** нормализация данных */
+/** Нормализация списка */
 const normalizeList = (value) => {
     if (Array.isArray(value)) return value
     if (Array.isArray(value?.data)) return value.data
+
     return []
 }
 
-/** Универсальный список заданий: server paginator data или frontend array */
+/** Универсальный список заданий */
 const assignmentsData = computed(() => {
-    if (Array.isArray(props.assignments)) return props.assignments
-    if (Array.isArray(props.assignments?.data)) return props.assignments.data
+    if (Array.isArray(props.assignments)) {
+        return props.assignments
+    }
+
+    if (Array.isArray(props.assignments?.data)) {
+        return props.assignments.data
+    }
+
     return []
 })
 
-/** Количество элементов на странице для обоих режимов */
-const perPage = computed(() => {
-    const value = Number(props.filters?.per_page ?? 6)
-    return Number.isFinite(value) ? value : 6
-})
+/* ===================== FILTERS ===================== */
 
-/** Поисковая строка для server/frontend */
+/** Поисковая строка */
 const q = ref(String(props.filters?.q ?? ''))
 
-/** Сортировка по умолчанию для server/frontend */
+/** Сортировка по умолчанию */
 const DEFAULT_SORT = 'idDesc'
 
-/** Текущая сортировка для server/frontend */
+/** Текущая сортировка */
 const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
 
-/** Ключ локального хранения режима отображения */
+/** Ключ режима отображения */
 const VIEW_KEY = 'public_school_assignments_view'
 
-/** Режим отображения карточки/строки для server/frontend */
+/** Режим отображения */
 const viewMode = ref(
     String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
 )
 
-/** Сохраняем режим отображения локально */
+/** Сохраняем режим отображения */
 watch(viewMode, (value) => {
     localStorage.setItem(VIEW_KEY, value)
+})
+
+/* ===================== SIDEBARS ===================== */
+
+/** Показ левой колонки */
+const showLeft = computed(() => {
+    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+})
+
+/** Показ правой колонки */
+const showRight = computed(() => {
+    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+})
+
+/** Ключ левого сайдбара */
+const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
+
+/** Ключ правого сайдбара */
+const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
+
+/** Получение boolean из localStorage */
+const getStoredBoolean = (key, defaultValue = true) => {
+    const value = localStorage.getItem(key)
+
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+/** Левый сайдбар по умолчанию свернут */
+const leftCollapsed = ref(
+    getStoredBoolean(LEFT_SIDEBAR_KEY, true)
+)
+
+/** Правый сайдбар по умолчанию свернут */
+const rightCollapsed = ref(
+    getStoredBoolean(RIGHT_SIDEBAR_KEY, true)
+)
+
+/**
+ * Количество колонок сетки.
+ *
+ * Оба открыты  → 2.
+ * Один свернут → 3.
+ * Оба свернуты → 4.
+ */
+const gridCols = computed(() => {
+    const leftExpanded = showLeft.value && !leftCollapsed.value
+    const rightExpanded = showRight.value && !rightCollapsed.value
+
+    if (leftExpanded && rightExpanded) {
+        return 2
+    }
+
+    if (leftExpanded || rightExpanded) {
+        return 3
+    }
+
+    return 4
+})
+
+/**
+ * Количество дополнительных карточек.
+ *
+ * Каждый свернутый или отключенный сайдбар
+ * добавляет одну карточку.
+ */
+const additionalCards = computed(() => {
+    if (viewMode.value !== 'grid') {
+        return 0
+    }
+
+    let count = 0
+
+    if (!showLeft.value || leftCollapsed.value) {
+        count++
+    }
+
+    if (!showRight.value || rightCollapsed.value) {
+        count++
+    }
+
+    return count
+})
+
+/**
+ * Определяем базовое количество заданий.
+ *
+ * Если per_page уже находится в URL,
+ * убираем добавочные карточки сайдбаров.
+ */
+const resolveBasePerPage = () => {
+    const filterPerPage = Number(props.filters?.per_page ?? 6)
+    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 6
+    const params = new URLSearchParams(window.location.search)
+
+    if (!params.has('per_page')) {
+        return safePerPage
+    }
+
+    if (viewMode.value !== 'grid') {
+        return safePerPage
+    }
+
+    let collapsedCount = 0
+
+    if (!showLeft.value || leftCollapsed.value) {
+        collapsedCount++
+    }
+
+    if (!showRight.value || rightCollapsed.value) {
+        collapsedCount++
+    }
+
+    return Math.max(1, safePerPage - collapsedCount)
+}
+
+/** Базовое количество заданий */
+const basePerPage = ref(resolveBasePerPage())
+
+/**
+ * Итоговое количество заданий.
+ *
+ * 6 — оба сайдбара открыты.
+ * 7 — свернут один.
+ * 8 — свернуты оба.
+ */
+const perPage = computed(() => {
+    return basePerPage.value + additionalCards.value
 })
 
 /** Опции сортировки */
@@ -162,22 +303,22 @@ const assignmentSortOptions = [
 
 /* ===================== FRONTEND MODE ===================== */
 
-/** Текущая страница локальной пагинации frontend */
+/** Текущая frontend-страница */
 const frontendCurrentPage = ref(1)
 
-/** Цель плавного скролла при frontend-пагинации */
+/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
-    scrollToTarget
+    scrollToTarget,
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200
+    duration: 1200,
 })
 
-/** Нормализация текста для локального поиска frontend */
+/** Нормализация текста */
 const normalizeText = (value) => String(value ?? '').toLowerCase()
 
-/** Получение названия задания из разных возможных структур ресурса */
+/** Название задания */
 const getAssignmentTitle = (assignment) => {
     return assignment.title
         || assignment.name
@@ -190,7 +331,7 @@ const getAssignmentTitle = (assignment) => {
         || ''
 }
 
-/** Получение краткого текста задания */
+/** Краткий текст задания */
 const getAssignmentShort = (assignment) => {
     return assignment.short
         || assignment.description
@@ -203,7 +344,7 @@ const getAssignmentShort = (assignment) => {
         || ''
 }
 
-/** Получение slug задания */
+/** Slug задания */
 const getAssignmentSlug = (assignment) => {
     return assignment.slug
         || assignment.url
@@ -213,6 +354,7 @@ const getAssignmentSlug = (assignment) => {
         || ''
 }
 
+/** Название связанной сущности */
 const getRelationTitle = (item) => {
     return item?.title
         || item?.name
@@ -223,6 +365,7 @@ const getRelationTitle = (item) => {
         || ''
 }
 
+/** Разбивка поисковой строки */
 const splitSearchWords = (value) => {
     return String(value ?? '')
         .toLowerCase()
@@ -231,7 +374,7 @@ const splitSearchWords = (value) => {
         .filter((word) => word.length >= 2)
 }
 
-/** Локальный поиск frontend */
+/** Локальный поиск */
 const filteredAssignments = computed(() => {
     const words = splitSearchWords(q.value)
 
@@ -263,14 +406,14 @@ const filteredAssignments = computed(() => {
             getRelationTitle(assignment.instructor),
 
             assignment.instructor?.user?.name,
-            assignment.instructor?.user?.email
+            assignment.instructor?.user?.email,
         ].filter(Boolean).join(' '))
 
         return words.every((word) => haystack.includes(word))
     })
 })
 
-/** Локальная сортировка frontend */
+/** Локальная сортировка */
 const sortedAssignments = computed(() => {
     const list = [...filteredAssignments.value]
 
@@ -297,12 +440,10 @@ const sortedAssignments = computed(() => {
                     .localeCompare(normalizeText(getAssignmentTitle(a)))
 
             case 'statusAsc':
-                return normalizeText(a.status)
-                    .localeCompare(normalizeText(b.status))
+                return normalizeText(a.status).localeCompare(normalizeText(b.status))
 
             case 'statusDesc':
-                return normalizeText(b.status)
-                    .localeCompare(normalizeText(a.status))
+                return normalizeText(b.status).localeCompare(normalizeText(a.status))
 
             case 'gradingTypeAsc':
                 return normalizeText(a.grading_type)
@@ -343,20 +484,20 @@ const sortedAssignments = computed(() => {
                 return new Date(b.due_at ?? 0) - new Date(a.due_at ?? 0)
 
             case 'publishedAtAsc':
-                return new Date(a.published_at ?? a.created_at ?? 0) -
-                    new Date(b.published_at ?? b.created_at ?? 0)
+                return new Date(a.published_at ?? a.created_at ?? 0)
+                    - new Date(b.published_at ?? b.created_at ?? 0)
 
             case 'publishedAtDesc':
-                return new Date(b.published_at ?? b.created_at ?? 0) -
-                    new Date(a.published_at ?? a.created_at ?? 0)
+                return new Date(b.published_at ?? b.created_at ?? 0)
+                    - new Date(a.published_at ?? a.created_at ?? 0)
 
             case 'dateAsc':
-                return new Date(a.created_at ?? a.published_at ?? 0) -
-                    new Date(b.created_at ?? b.published_at ?? 0)
+                return new Date(a.created_at ?? a.published_at ?? 0)
+                    - new Date(b.created_at ?? b.published_at ?? 0)
 
             case 'dateDesc':
-                return new Date(b.created_at ?? b.published_at ?? 0) -
-                    new Date(a.created_at ?? a.published_at ?? 0)
+                return new Date(b.created_at ?? b.published_at ?? 0)
+                    - new Date(a.created_at ?? a.published_at ?? 0)
 
             default:
                 return 0
@@ -364,18 +505,19 @@ const sortedAssignments = computed(() => {
     })
 })
 
-/** Локальная пагинация frontend */
+/** Frontend-пагинация */
 const frontendPaginatedAssignments = computed(() => {
     const start = (frontendCurrentPage.value - 1) * perPage.value
+
     return sortedAssignments.value.slice(start, start + perPage.value)
 })
 
-/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+/** Сбрасываем frontend-пагинацию */
 watch([q, sort, viewMode], () => {
     frontendCurrentPage.value = 1
 })
 
-/** Плавно возвращаемся к началу списка при frontend-пагинации */
+/** Скролл при frontend-пагинации */
 watch(frontendCurrentPage, () => {
     if (!props.useServerProcessing) {
         scrollToTarget()
@@ -384,22 +526,28 @@ watch(frontendCurrentPage, () => {
 
 /* ===================== SERVER MODE ===================== */
 
-/** Текущая страница server-пагинации */
+/** Текущая server-страница */
 const currentPage = computed(() => {
     return Number(
-        props.assignments?.meta?.current_page ?? props.assignments?.current_page ?? 1) || 1
+        props.assignments?.meta?.current_page
+        ?? props.assignments?.current_page
+        ?? 1
+    ) || 1
 })
 
-/** Последняя страница server-пагинации */
+/** Последняя server-страница */
 const lastPage = computed(() => {
     return Number(
-        props.assignments?.meta?.last_page ?? props.assignments?.last_page ?? 1) || 1
+        props.assignments?.meta?.last_page
+        ?? props.assignments?.last_page
+        ?? 1
+    ) || 1
 })
 
-/** Маршрут списка заданий для server-режима */
+/** Маршрут списка заданий */
 const indexRoute = () => route('public.schoolAssignments.index')
 
-/** Server-загрузка заданий с query-параметрами */
+/** Server-загрузка заданий */
 const reloadAssignments = (page = 1) => {
     router.get(
         indexRoute(),
@@ -408,12 +556,12 @@ const reloadAssignments = (page = 1) => {
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
             per_page: perPage.value,
-            page
+            page,
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true
+            preserveScroll: true,
         }
     )
 }
@@ -423,7 +571,7 @@ const submitSearch = () => {
     reloadAssignments(1)
 }
 
-/** Сброс поиска и сортировки для обоих режимов */
+/** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
@@ -443,12 +591,13 @@ const updateSort = (value) => {
     }
 }
 
-/** Изменение режима отображения для обоих режимов */
+/** Изменение режима отображения */
 const updateViewMode = (value) => {
     viewMode.value = value || 'grid'
+    frontendCurrentPage.value = 1
 
     if (props.useServerProcessing) {
-        reloadAssignments(currentPage.value)
+        reloadAssignments(1)
     }
 }
 
@@ -456,95 +605,82 @@ const updateViewMode = (value) => {
 const goToPage = (page) => {
     const value = Number(page)
 
-    if (!Number.isFinite(value)) return
+    if (!Number.isFinite(value)) {
+        return
+    }
 
     const safePage = Math.max(1, Math.min(value, lastPage.value))
 
     reloadAssignments(safePage)
 }
 
-/** Server-предыдущая страница */
+/** Предыдущая server-страница */
 const goPrev = () => {
-    if (currentPage.value <= 1) return
+    if (currentPage.value <= 1) {
+        return
+    }
+
     goToPage(currentPage.value - 1)
 }
 
-/** Server-следующая страница */
+/** Следующая server-страница */
 const goNext = () => {
-    if (currentPage.value >= lastPage.value) return
+    if (currentPage.value >= lastPage.value) {
+        return
+    }
+
     goToPage(currentPage.value + 1)
 }
 
+/* ===================== SIDEBAR WATCH ===================== */
+
+/**
+ * Сохраняем состояние сайдбаров.
+ *
+ * В server-режиме при сетке
+ * запрашиваем новое количество заданий.
+ */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
+    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
+
+    frontendCurrentPage.value = 1
+
+    if (props.useServerProcessing && viewMode.value === 'grid') {
+        reloadAssignments(1)
+    }
+})
+
+/**
+ * Синхронизация первого server-запроса
+ * с состоянием сайдбаров из localStorage.
+ */
+onMounted(() => {
+    if (!props.useServerProcessing || viewMode.value !== 'grid') {
+        return
+    }
+
+    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
+
+    if (serverPerPage !== perPage.value) {
+        reloadAssignments(1)
+    }
+})
+
 /* ===================== COMMON VIEW ===================== */
 
-/** Итоговый список для отображения: server data или frontend page */
+/** Итоговый список заданий */
 const displayedAssignments = computed(() => {
     return props.useServerProcessing
         ? assignmentsData.value
         : frontendPaginatedAssignments.value
 })
 
-/** Показ левой колонки */
-const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
-})
-
-/** Показ правой колонки */
-const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
-})
-
-/** Ключ localStorage для левого сайдбара */
-const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
-
-/** Ключ localStorage для правого сайдбара */
-const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
-
-/** Получение boolean из localStorage */
-const getStoredBoolean = (key, defaultValue = false) => {
-    const value = localStorage.getItem(key)
-
-    if (value === null) {
-        return defaultValue
-    }
-
-    return value === 'true'
-}
-
-/** Состояние левого сайдбара */
-const leftCollapsed = ref(
-    getStoredBoolean(LEFT_SIDEBAR_KEY, false)
-)
-
-/** Состояние правого сайдбара */
-const rightCollapsed = ref(
-    getStoredBoolean(RIGHT_SIDEBAR_KEY, false)
-)
-
-/** Сохраняем состояние левого сайдбара */
-watch(leftCollapsed, (value) => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
-})
-
-/** Сохраняем состояние правого сайдбара */
-watch(rightCollapsed, (value) => {
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
-})
-
-/** показ третьей карточки в ряд, если свёрнута колонка */
-const gridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
-
-    return leftExpanded && rightExpanded ? 2 : 3
-})
-
-/** внизу страницы банеры */
+/** Видео внизу страницы */
 const mainVideosList = computed(() => normalizeList(props.mainVideos))
 
-/** внизу страницы видео */
+/** Баннеры внизу страницы */
 const mainBannersList = computed(() => normalizeList(props.mainBanners))
-
 </script>
 
 <template>
@@ -594,10 +730,11 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                     />
                 </aside>
 
-                <!-- CENTER -->
+                <!-- Центральная колонка -->
                 <div class="w-full lg:mt-28 pb-6 slate-1">
                     <div class="mx-auto max-w-6xl">
 
+                        <!-- Хлебные крошки -->
                         <nav class="text-sm" aria-label="Breadcrumb">
                             <ol class="flex flex-wrap items-center font-semibold">
                                 <li>
@@ -608,58 +745,81 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                                         {{ t('home') }}
                                     </Link>
                                 </li>
+
                                 <li><span class="mx-2 breadcrumbs">/</span></li>
+
                                 <li>
-                                    <Link :href="route('public.schoolTracks.index')"
-                                          class="breadcrumb-link hover:underline">
+                                    <Link
+                                        :href="route('public.schoolTracks.index')"
+                                        class="breadcrumb-link hover:underline"
+                                    >
                                         {{ t('tracks') }}
                                     </Link>
                                 </li>
+
                                 <li><span class="mx-2 breadcrumbs">/</span></li>
+
                                 <li>
-                                    <Link :href="route('public.schoolCourses.index')"
-                                          class="breadcrumb-link hover:underline">
+                                    <Link
+                                        :href="route('public.schoolCourses.index')"
+                                        class="breadcrumb-link hover:underline"
+                                    >
                                         {{ t('courses') }}
                                     </Link>
                                 </li>
+
                                 <li><span class="mx-2 breadcrumbs">/</span></li>
+
                                 <li>
-                                    <Link :href="route('public.schoolModules.index')"
-                                          class="breadcrumb-link hover:underline">
+                                    <Link
+                                        :href="route('public.schoolModules.index')"
+                                        class="breadcrumb-link hover:underline"
+                                    >
                                         {{ t('modules') }}
                                     </Link>
                                 </li>
+
                                 <li><span class="mx-2 breadcrumbs">/</span></li>
+
                                 <li>
-                                    <Link :href="route('public.schoolLessons.index')"
-                                          class="breadcrumb-link hover:underline">
+                                    <Link
+                                        :href="route('public.schoolLessons.index')"
+                                        class="breadcrumb-link hover:underline"
+                                    >
                                         {{ t('lessons') }}
                                     </Link>
                                 </li>
+
                                 <li><span class="mx-2 breadcrumbs">/</span></li>
+
                                 <li class="breadcrumbs">
                                     {{ t('assignments') }}
                                 </li>
                             </ol>
                         </nav>
 
+                        <!-- Заголовок -->
                         <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
-                            <svg class="shrink-0 h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
-                                 fill="currentColor"
-                                 viewBox="0 0 24 24">
+                            <svg
+                                class="shrink-0 h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                            >
                                 <path d="M15,18v2H9v-2H1v5c0,0.552,0.448,1,1,1h20c0.552,0,1-0.448,1-1v-5H15z"></path>
-                                <path
-                                    d="M23,4h-6V1c0-0.552-0.448-1-1-1H8C7.448,0,7,0.448,7,1v3H1C0.448,4,0,4.448,0,5v10c0,0.552,0.448,1,1,1h8v-3 h6v3h8c0.552,0,1-0.448,1-1V5C24,4.448,23.552,4,23,4z M15,4H9V2h6V4z"></path>
+                                <path d="M23,4h-6V1c0-0.552-0.448-1-1-1H8C7.448,0,7,0.448,7,1v3H1C0.448,4,0,4.448,0,5v10c0,0.552,0.448,1,1,1h8v-3 h6v3h8c0.552,0,1-0.448,1-1V5C24,4.448,23.552,4,23,4z M15,4H9V2h6V4z"></path>
                             </svg>
+
                             <h1 class="text-2xl font-bold">
                                 {{ t('assignments') }}
                             </h1>
                         </div>
 
+                        <!-- Подзаголовок -->
                         <div class="my-1 text-sm subtitle text-center">
                             Просматривайте задания, сроки сдачи и требования в удобном формате.
                         </div>
 
+                        <!-- Server toolbar -->
                         <EntityPageToolbar
                             v-if="useServerProcessing"
                             v-model="q"
@@ -676,6 +836,7 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                             @update:sortValue="updateSort"
                         />
 
+                        <!-- Frontend toolbar -->
                         <FrontendEntityPageToolbar
                             v-else
                             v-model="q"
@@ -691,8 +852,10 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                             @update:sortValue="updateSort"
                         />
 
+                        <!-- Точка скролла -->
                         <div ref="scrollTarget"></div>
 
+                        <!-- Нет данных -->
                         <div
                             v-if="displayedAssignments.length === 0"
                             class="mt-6 text-center text-slate-700 dark:text-slate-300"
@@ -700,6 +863,7 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                             {{ t('noData') }}
                         </div>
 
+                        <!-- Список -->
                         <div v-else>
                             <AssignmentGrid
                                 v-if="viewMode === 'grid'"
@@ -713,6 +877,7 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                             />
                         </div>
 
+                        <!-- Server-пагинация -->
                         <Pagination
                             v-if="useServerProcessing"
                             :current-page="currentPage"
@@ -723,6 +888,7 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                             @go="goToPage"
                         />
 
+                        <!-- Frontend-пагинация -->
                         <FrontendPagination
                             v-else
                             v-model:currentPage="frontendCurrentPage"
@@ -730,7 +896,10 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                             :total-items="sortedAssignments.length"
                         />
 
+                        <!-- Видео -->
                         <SectionVideoList :videos="mainVideosList" />
+
+                        <!-- Баннеры -->
                         <SectionBanners :banners="mainBannersList" />
                     </div>
                 </div>
@@ -746,7 +915,6 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                         @collapsed="rightCollapsed = $event"
                     />
                 </aside>
-
             </main>
         </div>
 

@@ -12,9 +12,17 @@ const props = defineProps({
 })
 
 const gridClass = computed(() => {
-    return props.cols === 3
-        ? 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'
-        : 'grid grid-cols-1 gap-4 sm:grid-cols-2'
+    switch (props.cols) {
+        case 4:
+            return 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4'
+
+        case 3:
+            return 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'
+
+        case 2:
+        default:
+            return 'grid grid-cols-1 gap-4 sm:grid-cols-2'
+    }
 })
 
 const getTranslation = (rubric) => {

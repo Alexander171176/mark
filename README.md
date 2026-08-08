@@ -950,6 +950,7 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketCategory/MarketCategoryImageResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketCategory/MarketCategoryRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketCategory/MarketCategoryController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/Market/MarketCategory/MarketCategoryController` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketCategorySeeder` <br>
@@ -1048,16 +1049,11 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketProductBundleSeeder` <br>
 
-
+12) 
 
 
 
    
-6) Варианты товаров / Рекомендованные товары / Комплекты товаров 
-`docker exec mark-php-app php artisan make:migration create_market_product_variants_table --create=market_product_variants` <br>
-`docker exec mark-php-app php artisan make:migration create_market_product_recommendations_table --create=market_product_recommendations` <br>
-`docker exec mark-php-app php artisan make:migration create_market_kits_table --create=market_kits` <br>
-`docker exec mark-php-app php artisan make:migration create_market_kit_items_table --create=market_kit_items` <br>
 
 8) Склады / остатки 
 `docker exec mark-php-app php artisan make:migration create_market_warehouses_table --create=market_warehouses` <br>

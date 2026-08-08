@@ -7,6 +7,7 @@ use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseResource;
 use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackResource;
 use App\Models\Admin\School\SchoolTrack\SchoolTrack;
 use App\Services\Admin\ProcessingModeService;
+use App\Services\Public\Cms\CmsPageResolverService;
 use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;

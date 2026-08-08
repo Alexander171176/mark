@@ -5,8 +5,9 @@
  * @version PulsarCMS 1.0
  * @author Александр
  */
+
+import { computed, onMounted, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
@@ -28,11 +29,15 @@ import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/Publi
 
 const { t } = useI18n()
 
+/* ===================== PROPS ===================== */
+
 /** Props страницы */
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
-    seo: { type: Object, default: () => ({
+    seo: {
+        type: Object,
+        default: () => ({
             title: '',
             keywords: '',
             description: '',
@@ -59,21 +64,25 @@ const props = defineProps({
     mainBanners: { type: [Array, Object], default: () => [] },
 })
 
+/* ===================== PAGE ===================== */
+
 /** Глобальные данные страницы */
 const page = usePage()
 
 /** Глобальные настройки сайта */
 const siteSettings = page.props?.siteSettings || {}
 
-/** Роль администратора для нижней служебной панели */
+/** Роль администратора */
 const isAdmin = computed(() => page.props?.isAdmin === true)
 
-/** Дерево рубрик для левого сайдбара */
+/** Дерево рубрик */
 const rubricTree = computed(() => {
     return Array.isArray(props.rubricTree) ? props.rubricTree : []
 })
 
-/** Универсальный список статей: server paginator data или frontend array */
+/* ===================== ARTICLES DATA ===================== */
+
+/** Универсальный список статей */
 const articlesData = computed(() => {
     if (Array.isArray(props.articles)) {
         return props.articles
@@ -86,36 +95,162 @@ const articlesData = computed(() => {
     return []
 })
 
-/** Количество элементов на странице для обоих режимов */
-const perPage = computed(() => {
-    const value = Number(props.filters?.per_page ?? 6)
+/* ===================== SIDEBARS ===================== */
 
-    return Number.isFinite(value) ? value : 6
+/** Показ левой колонки */
+const showLeft = computed(() => {
+    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
 })
 
-/** Поисковая строка для server/frontend */
+/** Показ правой колонки */
+const showRight = computed(() => {
+    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+})
+
+/** Ключ левого сайдбара */
+const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
+
+/** Ключ правого сайдбара */
+const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
+
+/** Получение boolean из localStorage */
+const getStoredBoolean = (key, defaultValue = true) => {
+    const value = localStorage.getItem(key)
+
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+/** Левый сайдбар по умолчанию свернут */
+const leftCollapsed = ref(
+    getStoredBoolean(LEFT_SIDEBAR_KEY, true)
+)
+
+/** Правый сайдбар по умолчанию свернут */
+const rightCollapsed = ref(
+    getStoredBoolean(RIGHT_SIDEBAR_KEY, true)
+)
+
+/**
+ * Количество колонок сетки.
+ *
+ * Оба открыты  → 2.
+ * Один свернут → 3.
+ * Оба свернуты → 4.
+ */
+const articleGridCols = computed(() => {
+    const leftExpanded = showLeft.value && !leftCollapsed.value
+    const rightExpanded = showRight.value && !rightCollapsed.value
+
+    if (leftExpanded && rightExpanded) {
+        return 2
+    }
+
+    if (leftExpanded || rightExpanded) {
+        return 3
+    }
+
+    return 4
+})
+
+/**
+ * Количество дополнительных карточек.
+ *
+ * Каждый свернутый или отключенный сайдбар
+ * добавляет одну карточку.
+ */
+const additionalCards = computed(() => {
+    if (viewMode.value !== 'grid') {
+        return 0
+    }
+
+    let count = 0
+
+    if (!showLeft.value || leftCollapsed.value) {
+        count++
+    }
+
+    if (!showRight.value || rightCollapsed.value) {
+        count++
+    }
+
+    return count
+})
+
+/* ===================== FILTERS ===================== */
+
+/** Поисковая строка */
 const q = ref(String(props.filters?.q ?? ''))
 
-/** Сортировка по умолчанию для server/frontend */
+/** Сортировка по умолчанию */
 const DEFAULT_SORT = 'sortAsc'
 
-/** Текущая сортировка для server/frontend */
+/** Текущая сортировка */
 const sort = ref(String(props.filters?.sort ?? DEFAULT_SORT))
 
-/** Ключ локального хранения режима отображения */
+/** Ключ режима отображения */
 const VIEW_KEY = 'public_blog_articles_view'
 
-/** Режим отображения карточки/строки для server/frontend */
+/** Режим отображения */
 const viewMode = ref(
     String(props.filters?.view || localStorage.getItem(VIEW_KEY) || 'grid')
 )
 
-/** Сохраняем режим отображения локально */
+/** Сохраняем режим отображения */
 watch(viewMode, (value) => {
     localStorage.setItem(VIEW_KEY, value)
 })
 
-/** Опции сортировки для toolbar */
+/**
+ * Определяем базовое количество статей.
+ *
+ * Если per_page уже присутствует в URL,
+ * убираем из него добавочные карточки сайдбаров.
+ */
+const resolveBasePerPage = () => {
+    const filterPerPage = Number(props.filters?.per_page ?? 6)
+    const safePerPage = Number.isFinite(filterPerPage) ? filterPerPage : 6
+    const params = new URLSearchParams(window.location.search)
+
+    if (!params.has('per_page')) {
+        return safePerPage
+    }
+
+    if (viewMode.value !== 'grid') {
+        return safePerPage
+    }
+
+    let collapsedCount = 0
+
+    if (!showLeft.value || leftCollapsed.value) {
+        collapsedCount++
+    }
+
+    if (!showRight.value || rightCollapsed.value) {
+        collapsedCount++
+    }
+
+    return Math.max(1, safePerPage - collapsedCount)
+}
+
+/** Базовое количество статей */
+const basePerPage = ref(resolveBasePerPage())
+
+/**
+ * Итоговое количество статей.
+ *
+ * 6 — оба сайдбара открыты.
+ * 7 — свернут один.
+ * 8 — свернуты оба.
+ */
+const perPage = computed(() => {
+    return basePerPage.value + additionalCards.value
+})
+
+/** Опции сортировки */
 const articleSortOptions = [
     { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
     { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
@@ -135,10 +270,10 @@ const articleSortOptions = [
 
 /* ===================== FRONTEND MODE ===================== */
 
-/** Текущая страница локальной пагинации frontend */
+/** Текущая frontend-страница */
 const frontendCurrentPage = ref(1)
 
-/** Цель плавного скролла при frontend-пагинации */
+/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
     scrollToTarget,
@@ -147,12 +282,12 @@ const {
     duration: 1200,
 })
 
-/** Нормализация текста для локального поиска frontend */
+/** Нормализация текста */
 const normalizeText = (value) => {
     return String(value ?? '').toLowerCase()
 }
 
-/** Получение названия статьи из разных возможных структур ресурса */
+/** Название статьи */
 const getArticleTitle = (article) => {
     return article.title
         || article.name
@@ -162,7 +297,7 @@ const getArticleTitle = (article) => {
         || ''
 }
 
-/** Получение краткого текста статьи */
+/** Краткий текст статьи */
 const getArticleShort = (article) => {
     return article.short
         || article.description
@@ -175,7 +310,7 @@ const getArticleShort = (article) => {
         || ''
 }
 
-/** Локальный поиск frontend */
+/** Локальный поиск */
 const filteredArticles = computed(() => {
     const query = normalizeText(q.value).trim()
 
@@ -195,7 +330,7 @@ const filteredArticles = computed(() => {
     })
 })
 
-/** Локальная сортировка frontend */
+/** Локальная сортировка */
 const sortedArticles = computed(() => {
     const list = [...filteredArticles.value]
 
@@ -228,12 +363,12 @@ const sortedArticles = computed(() => {
                 return (b.likes_count ?? 0) - (a.likes_count ?? 0)
 
             case 'dateAsc':
-                return new Date(a.published_at ?? a.created_at ?? 0) -
-                    new Date(b.published_at ?? b.created_at ?? 0)
+                return new Date(a.published_at ?? a.created_at ?? 0)
+                    - new Date(b.published_at ?? b.created_at ?? 0)
 
             case 'dateDesc':
-                return new Date(b.published_at ?? b.created_at ?? 0) -
-                    new Date(a.published_at ?? a.created_at ?? 0)
+                return new Date(b.published_at ?? b.created_at ?? 0)
+                    - new Date(a.published_at ?? a.created_at ?? 0)
 
             default:
                 return 0
@@ -241,19 +376,19 @@ const sortedArticles = computed(() => {
     })
 })
 
-/** Локальная пагинация frontend */
+/** Frontend-пагинация */
 const frontendPaginatedArticles = computed(() => {
     const start = (frontendCurrentPage.value - 1) * perPage.value
 
     return sortedArticles.value.slice(start, start + perPage.value)
 })
 
-/** Сбрасываем frontend-пагинацию при поиске/сортировке/виде */
+/** Сбрасываем frontend-пагинацию */
 watch([q, sort, viewMode], () => {
     frontendCurrentPage.value = 1
 })
 
-/** Плавно возвращаемся к началу списка при frontend-пагинации */
+/** Скролл при frontend-пагинации */
 watch(frontendCurrentPage, () => {
     if (!props.useServerProcessing) {
         scrollToTarget()
@@ -262,20 +397,20 @@ watch(frontendCurrentPage, () => {
 
 /* ===================== SERVER MODE ===================== */
 
-/** Текущая страница server-пагинации */
+/** Текущая server-страница */
 const currentPage = computed(() => {
     return Number(props.articles?.meta?.current_page ?? props.articles?.current_page ?? 1) || 1
 })
 
-/** Последняя страница server-пагинации */
+/** Последняя server-страница */
 const lastPage = computed(() => {
     return Number(props.articles?.meta?.last_page ?? props.articles?.last_page ?? 1) || 1
 })
 
-/** Маршрут списка статей для server-режима */
+/** Маршрут списка статей */
 const indexRoute = () => route('public.blogArticles.index')
 
-/** Server-загрузка статей с query-параметрами */
+/** Server-загрузка статей */
 const reloadArticles = (page = 1) => {
     router.get(
         indexRoute(),
@@ -299,7 +434,7 @@ const submitSearch = () => {
     reloadArticles(1)
 }
 
-/** Сброс поиска и сортировки для обоих режимов */
+/** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
@@ -319,12 +454,13 @@ const updateSort = (value) => {
     }
 }
 
-/** Изменение режима отображения для обоих режимов */
+/** Изменение режима отображения */
 const updateViewMode = (value) => {
     viewMode.value = value || 'grid'
+    frontendCurrentPage.value = 1
 
     if (props.useServerProcessing) {
-        reloadArticles(currentPage.value)
+        reloadArticles(1)
     }
 }
 
@@ -341,7 +477,7 @@ const goToPage = (page) => {
     reloadArticles(safePage)
 }
 
-/** Server-предыдущая страница */
+/** Предыдущая server-страница */
 const goPrev = () => {
     if (currentPage.value <= 1) {
         return
@@ -350,7 +486,7 @@ const goPrev = () => {
     goToPage(currentPage.value - 1)
 }
 
-/** Server-следующая страница */
+/** Следующая server-страница */
 const goNext = () => {
     if (currentPage.value >= lastPage.value) {
         return
@@ -359,87 +495,71 @@ const goNext = () => {
     goToPage(currentPage.value + 1)
 }
 
+/* ===================== SIDEBAR WATCH ===================== */
+
+/**
+ * Сохраняем состояние сайдбаров.
+ *
+ * В server-режиме при сетке
+ * запрашиваем новое количество статей.
+ */
+watch([leftCollapsed, rightCollapsed], () => {
+    localStorage.setItem(LEFT_SIDEBAR_KEY, String(leftCollapsed.value))
+    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(rightCollapsed.value))
+
+    frontendCurrentPage.value = 1
+
+    if (props.useServerProcessing && viewMode.value === 'grid') {
+        reloadArticles(1)
+    }
+})
+
+/**
+ * Синхронизация первого server-запроса
+ * с состоянием сайдбаров из localStorage.
+ */
+onMounted(() => {
+    if (!props.useServerProcessing || viewMode.value !== 'grid') {
+        return
+    }
+
+    const serverPerPage = Number(props.filters?.per_page ?? basePerPage.value)
+
+    if (serverPerPage !== perPage.value) {
+        reloadArticles(1)
+    }
+})
+
 /* ===================== COMMON VIEW ===================== */
 
-/** Итоговый список для отображения: server data или frontend page */
+/** Итоговый список статей */
 const displayedArticles = computed(() => {
     return props.useServerProcessing
         ? articlesData.value
         : frontendPaginatedArticles.value
-})
-
-/** Показ левой колонки */
-const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
-})
-
-/** Показ правой колонки */
-const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
-})
-
-/** Ключ localStorage для левого сайдбара */
-const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
-
-/** Ключ localStorage для правого сайдбара */
-const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
-
-/** Получение boolean из localStorage */
-const getStoredBoolean = (key, defaultValue = false) => {
-    const value = localStorage.getItem(key)
-
-    if (value === null) {
-        return defaultValue
-    }
-
-    return value === 'true'
-}
-
-/** Состояние левого сайдбара */
-const leftCollapsed = ref(
-    getStoredBoolean(LEFT_SIDEBAR_KEY, false)
-)
-
-/** Состояние правого сайдбара */
-const rightCollapsed = ref(
-    getStoredBoolean(RIGHT_SIDEBAR_KEY, false)
-)
-
-/** Сохраняем состояние левого сайдбара */
-watch(leftCollapsed, (value) => {
-    localStorage.setItem(LEFT_SIDEBAR_KEY, String(value))
-})
-
-/** Сохраняем состояние правого сайдбара */
-watch(rightCollapsed, (value) => {
-    localStorage.setItem(RIGHT_SIDEBAR_KEY, String(value))
-})
-
-/** Количество колонок сетки с учётом сайдбаров */
-const articleGridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
-
-    return leftExpanded && rightExpanded ? 2 : 3
 })
 </script>
 
 <template>
     <Head>
         <title>{{ seo?.title || t('articles') }}</title>
+
         <meta name="title" :content="seo?.title || t('articles')" />
         <meta name="keywords" :content="seo?.keywords || ''" />
         <meta name="description" :content="seo?.description || ''" />
+
         <meta property="og:title" :content="seo?.title || t('articles')" />
         <meta property="og:description" :content="seo?.description || ''" />
         <meta property="og:type" content="website" />
         <meta property="og:url" :content="`/${locale}/blog/articles`" />
         <meta property="og:image" content="" />
         <meta property="og:locale" :content="locale === 'ru' ? 'ru_RU' : locale" />
+
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" :content="seo?.title || t('articles')" />
         <meta name="twitter:description" :content="seo?.description || ''" />
         <meta name="twitter:image" content="" />
+
         <meta name="DC.title" :content="seo?.title || t('articles')" />
         <meta name="DC.description" :content="seo?.description || ''" />
         <meta name="DC.identifier" :content="`/${locale}/blog/articles`" />
@@ -451,7 +571,8 @@ const articleGridCols = computed(() => {
 
         <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-                <!-- LEFT -->
+
+                <!-- Левая колонка -->
                 <aside
                     v-if="showLeft"
                     class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
@@ -464,7 +585,7 @@ const articleGridCols = computed(() => {
                     />
                 </aside>
 
-                <!-- CENTER -->
+                <!-- Центральная колонка -->
                 <div class="w-full lg:mt-28 pb-6 slate-1">
                     <div class="mx-auto max-w-6xl">
 
@@ -479,7 +600,11 @@ const articleGridCols = computed(() => {
                                         {{ t('home') }}
                                     </Link>
                                 </li>
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
+
+                                <li>
+                                    <span class="mx-2 breadcrumbs">/</span>
+                                </li>
+
                                 <li>
                                     <Link
                                         :href="route('public.blogRubrics.index')"
@@ -488,7 +613,11 @@ const articleGridCols = computed(() => {
                                         {{ t('rubrics') }}
                                     </Link>
                                 </li>
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
+
+                                <li>
+                                    <span class="mx-2 breadcrumbs">/</span>
+                                </li>
+
                                 <li class="breadcrumbs">
                                     {{ t('articles') }}
                                 </li>
@@ -504,7 +633,8 @@ const articleGridCols = computed(() => {
                                 fill="currentColor"
                             >
                                 <path
-                                    d="M288 248v28c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-28c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm-12 72H108c-6.6 0-12 5.4-12 12v28c0 6.6 5.4 12 12 12h168c6.6 0 12-5.4 12-12v-28c0-6.6-5.4-12-12-12zm108-188.1V464c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V48C0 21.5 21.5 0 48 0h204.1C264.8 0 277 5.1 286 14.1L369.9 98c9 8.9 14.1 21.2 14.1 33.9zM256 51.9V128h76.1L256 51.9zM336 464V176H232c-13.3 0-24-10.7-24-24V48H48v416h288z" />
+                                    d="M288 248v28c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-28c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm-12 72H108c-6.6 0-12 5.4-12 12v28c0 6.6 5.4 12 12 12h168c6.6 0 12-5.4 12-12v-28c0-6.6-5.4-12-12-12zm108-188.1V464c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V48C0 21.5 21.5 0 48 0h204.1C264.8 0 277 5.1 286 14.1L369.9 98c9 8.9 14.1 21.2 14.1 33.9zM256 51.9V128h76.1L256 51.9zM336 464V176H232c-13.3 0-24-10.7-24-24V48H48v416h288z"
+                                />
                             </svg>
 
                             <h1 class="text-2xl font-bold">
@@ -517,7 +647,7 @@ const articleGridCols = computed(() => {
                             Изучайте статьи и руководства от экспертов сообщества
                         </div>
 
-                        <!-- Поиск, переключатель вида, сортировка -->
+                        <!-- Server toolbar -->
                         <EntityPageToolbar
                             v-if="useServerProcessing"
                             v-model="q"
@@ -534,6 +664,7 @@ const articleGridCols = computed(() => {
                             @update:sortValue="updateSort"
                         />
 
+                        <!-- Frontend toolbar -->
                         <FrontendEntityPageToolbar
                             v-else
                             v-model="q"
@@ -549,9 +680,10 @@ const articleGridCols = computed(() => {
                             @update:sortValue="updateSort"
                         />
 
+                        <!-- Точка скролла -->
                         <div ref="scrollTarget"></div>
 
-                        <!-- Empty -->
+                        <!-- Нет данных -->
                         <div
                             v-if="displayedArticles.length === 0"
                             class="mt-6 text-center text-slate-700 dark:text-slate-300"
@@ -559,20 +691,21 @@ const articleGridCols = computed(() => {
                             {{ t('noData') }}
                         </div>
 
-                        <!-- Views -->
+                        <!-- Список -->
                         <div v-else>
                             <RubricArticleGrid
                                 v-if="viewMode === 'grid'"
                                 :articles="displayedArticles"
                                 :cols="articleGridCols"
                             />
+
                             <RubricArticleRows
                                 v-else
                                 :articles="displayedArticles"
                             />
                         </div>
 
-                        <!-- Пагинация -->
+                        <!-- Server-пагинация -->
                         <Pagination
                             v-if="useServerProcessing"
                             :current-page="currentPage"
@@ -583,6 +716,7 @@ const articleGridCols = computed(() => {
                             @go="goToPage"
                         />
 
+                        <!-- Frontend-пагинация -->
                         <FrontendPagination
                             v-else
                             v-model:currentPage="frontendCurrentPage"
@@ -590,13 +724,15 @@ const articleGridCols = computed(() => {
                             :total-items="sortedArticles.length"
                         />
 
-                        <!-- Нижние блоки -->
+                        <!-- Видео -->
                         <SectionVideoList :videos="mainVideos" />
+
+                        <!-- Баннеры -->
                         <SectionBanners :banners="mainBanners" />
                     </div>
                 </div>
 
-                <!-- RIGHT -->
+                <!-- Правая колонка -->
                 <aside
                     v-if="showRight"
                     class="shrink-0 lg:mt-28 transition-all duration-300"
@@ -612,7 +748,8 @@ const articleGridCols = computed(() => {
 
         <FooterBlog />
         <Progress />
-        <!-- Нижняя панель администратора -->
+
+        <!-- Панель администратора -->
         <PublicAdminBottomPanel
             v-if="isAdmin"
             setting-key="publicBlogArticlesProcessingMode"

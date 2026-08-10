@@ -32,13 +32,14 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarMarket from '@/Components/Public/Default/Partials/LeftSidebarMarket.vue'
 import RightSidebarMarket from '@/Components/Public/Default/Partials/RightSidebarMarket.vue'
 
-import ImageGalleryMain from '@/Components/Public/Default/Media/ImageGalleryMain.vue'
+import MarketProductGallery from '@/Components/Public/Default/Market/MarketProduct/MarketProductGallery.vue'
 import LikeButtonEntity from '@/Components/Public/Like/LikeButtonEntity.vue'
 
 import MarketProductGrid from '@/Components/Public/Default/Market/MarketProduct/MarketProductGrid.vue'
 
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
+import MarketRecommendedProducts from '@/Components/Public/Default/Market/MarketProduct/MarketRecommendedProducts.vue'
 
 const { t } = useI18n()
 const page = usePage()
@@ -317,20 +318,16 @@ watch([leftCollapsed, rightCollapsed], () => {
     )
 })
 
-/** CSS центральной области */
-const contentClass = computed(() => {
+/** Раскладка основного блока товара */
+const productMainGridClass = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
     const rightExpanded = showRight.value && !rightCollapsed.value
 
     if (leftExpanded && rightExpanded) {
-        return 'xl:w-1/2'
+        return 'grid-cols-1'
     }
 
-    if (leftExpanded || rightExpanded) {
-        return 'xl:w-3/4'
-    }
-
-    return 'xl:w-full'
+    return 'grid-cols-1 lg:grid-cols-2'
 })
 
 /** Количество колонок рекомендуемых товаров */
@@ -749,7 +746,7 @@ const hasMarketingFlags = computed(() => {
         <Navbar />
 
         <div class="min-h-screen px-1.5">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
+            <main class="mx-auto flex w-full flex-col lg:flex-row gap-4 tracking-wider">
 
                 <!-- Левая колонка -->
                 <aside
@@ -765,14 +762,13 @@ const hasMarketingFlags = computed(() => {
                 </aside>
 
                 <!-- Центральная колонка -->
-                <div class="w-full lg:mt-28 pb-6 slate-1 min-w-0">
-                    <div class="mx-auto max-w-6xl">
+                <div class="min-w-0 flex-1 lg:mt-28 pb-6 slate-1">
+                    <div class="w-full">
                         <article
                             itemscope
                             itemtype="https://schema.org/Product"
                             :itemid="canonicalUrl"
                             class="selection:bg-red-400 selection:text-white transition-all"
-                            :class="contentClass"
                         >
                             <!-- Мета-данные товара -->
                             <meta
@@ -893,23 +889,17 @@ const hasMarketingFlags = computed(() => {
                                        border border-gray-300 dark:border-gray-600
                                        bg-slate-50 dark:bg-slate-900 shadow-sm"
                             >
-                                <div class="grid gap-6 p-4 lg:grid-cols-2">
+                                <div
+                                    class="grid gap-6 p-4"
+                                    :class="productMainGridClass"
+                                >
 
-                                    <!-- Галерея -->
+                                    <!-- Галерея товара -->
                                     <div class="min-w-0">
-                                        <ImageGalleryMain
-                                            v-if="productImages.length"
+                                        <MarketProductGallery
                                             :images="productImages"
+                                            :title="productTitle"
                                         />
-
-                                        <div
-                                            v-else
-                                            class="flex min-h-80 items-center justify-center
-                                               rounded-md bg-slate-100 text-sm
-                                               text-slate-400 dark:bg-slate-800"
-                                        >
-                                            {{ t('noImages') }}
-                                        </div>
                                     </div>
 
                                     <!-- Информация -->
@@ -929,7 +919,7 @@ const hasMarketingFlags = computed(() => {
                                                        px-3 py-1 text-[10px] font-bold
                                                        uppercase tracking-wide text-white"
                                                 >
-                                                {{ t('new') }}
+                                                NEW
                                             </span>
 
                                                 <!-- Хит -->
@@ -941,7 +931,7 @@ const hasMarketingFlags = computed(() => {
                                                        uppercase tracking-wide text-white
                                                        dark:text-slate-900"
                                                 >
-                                                {{ t('hit') }}
+                                                HIT
                                             </span>
 
                                                 <!-- Распродажа -->
@@ -952,7 +942,7 @@ const hasMarketingFlags = computed(() => {
                                                        px-3 py-1 text-[10px] font-bold
                                                        uppercase tracking-wide text-white"
                                                 >
-                                                {{ t('sale') }}
+                                                SALE
                                             </span>
                                             </div>
 
@@ -1260,9 +1250,9 @@ const hasMarketingFlags = computed(() => {
                             <!-- Описание -->
                             <section
                                 v-if="productDescription"
-                                class="mt-4 rounded-md border border-gray-200
-                                   bg-white p-4 shadow-sm dark:border-gray-700
-                                   dark:bg-gray-900"
+                                class="mt-4 p-4 rounded-sm shadow-sm
+                                       border border-gray-300 dark:border-gray-600
+                                       bg-white dark:bg-gray-900"
                             >
                                 <h2
                                     class="mb-4 text-lg font-semibold
@@ -1280,9 +1270,9 @@ const hasMarketingFlags = computed(() => {
                             <!-- Физические параметры -->
                             <section
                                 v-if="hasPhysicalParameters"
-                                class="mt-4 rounded-md border border-gray-200
-                                   bg-white p-4 shadow-sm dark:border-gray-700
-                                   dark:bg-gray-900"
+                                class="mt-4 p-4 rounded-sm shadow-sm
+                                       border border-gray-300 dark:border-gray-600
+                                       bg-white dark:bg-gray-900"
                             >
                                 <h2
                                     class="mb-4 text-lg font-semibold
@@ -1348,9 +1338,9 @@ const hasMarketingFlags = computed(() => {
                             <!-- Характеристики -->
                             <section
                                 v-if="attributeValues.length"
-                                class="mt-4 rounded-md border border-gray-200
-                                   bg-white p-4 shadow-sm dark:border-gray-700
-                                   dark:bg-gray-900"
+                                class="mt-4 p-4 rounded-sm shadow-sm
+                                       border border-gray-300 dark:border-gray-600
+                                       bg-white dark:bg-gray-900"
                             >
                                 <h2
                                     class="mb-4 text-lg font-semibold
@@ -1385,9 +1375,9 @@ const hasMarketingFlags = computed(() => {
                             <!-- Категории -->
                             <section
                                 v-if="categories.length"
-                                class="mt-4 rounded-md border border-gray-200
-                                   bg-white p-4 shadow-sm dark:border-gray-700
-                                   dark:bg-gray-900"
+                                class="mt-4 p-4 rounded-sm shadow-sm
+                                       border border-gray-300 dark:border-gray-600
+                                       bg-white dark:bg-gray-900"
                             >
                                 <h2
                                     class="mb-3 text-lg font-semibold
@@ -1403,13 +1393,13 @@ const hasMarketingFlags = computed(() => {
                                         :href="route('public.marketCategories.show', {
                                         url: category.url,
                                     })"
-                                        class="rounded-md border border-slate-300
-                                           px-3 py-1 text-xs font-semibold
-                                           text-slate-600 transition
-                                           hover:bg-slate-100
-                                           dark:border-slate-600
-                                           dark:text-slate-300
-                                           dark:hover:bg-slate-800"
+                                        class="rounded-sm border
+                                               border-slate-300 dark:border-slate-600
+                                               px-3 py-1 text-xs font-semibold
+                                               text-slate-600 dark:text-slate-300
+                                               hover:text-blue-600 dark:hover:text-blue-400
+                                               transition bg-slate-50 dark:bg-slate-950
+                                               hover:bg-slate-100 dark:hover:bg-slate-800"
                                     >
                                         {{ category.translation?.title
                                     || category.title }}
@@ -1420,9 +1410,9 @@ const hasMarketingFlags = computed(() => {
                             <!-- Теги -->
                             <section
                                 v-if="tags.length"
-                                class="mt-4 rounded-md border border-gray-200
-                                   bg-white p-4 shadow-sm dark:border-gray-700
-                                   dark:bg-gray-900"
+                                class="mt-4 p-4 rounded-sm shadow-sm
+                                       border border-gray-300 dark:border-gray-600
+                                       bg-white dark:bg-gray-900"
                             >
                                 <h2
                                     class="mb-3 text-lg font-semibold
@@ -1438,13 +1428,13 @@ const hasMarketingFlags = computed(() => {
                                         :href="route('public.marketTags.show', {
                                         url: tag.url,
                                     })"
-                                        class="rounded-md border border-slate-300
-                                           px-3 py-1 text-xs font-semibold
-                                           text-slate-600 transition
-                                           hover:bg-slate-100
-                                           dark:border-slate-600
-                                           dark:text-slate-300
-                                           dark:hover:bg-slate-800"
+                                        class="rounded-sm border
+                                               border-slate-300 dark:border-slate-600
+                                               px-3 py-1 text-xs font-semibold
+                                               text-slate-600 dark:text-slate-300
+                                               hover:text-blue-600 dark:hover:text-blue-400
+                                               transition bg-slate-50 dark:bg-slate-950
+                                               hover:bg-slate-100 dark:hover:bg-slate-800"
                                     >
                                         {{ tag.translation?.title
                                     || tag.title }}
@@ -1458,15 +1448,16 @@ const hasMarketingFlags = computed(() => {
                                 class="mt-6"
                             >
                                 <h2
-                                    class="mb-4 text-xl font-semibold
-                                       text-slate-800 dark:text-slate-200"
+                                    class="mb-4 text-xl font-semibold text-center
+                                           text-slate-800 dark:text-slate-200"
                                 >
                                     {{ t('relatedProducts') }}
                                 </h2>
 
-                                <MarketProductGrid
+                                <MarketRecommendedProducts
                                     :products="relatedProducts"
                                     :cols="relatedGridCols"
+                                    :locale="locale"
                                 />
                             </section>
 

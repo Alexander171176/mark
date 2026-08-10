@@ -37,8 +37,8 @@ const getFooterChildren = (item) => {
 </script>
 
 <template>
-    <footer class="relative bg-gray-100 dark:bg-gray-900
-                   border-t border-gray-200 dark:border-gray-800">
+    <footer class="relative bg-gray-100 dark:bg-gray-900 border-dashed
+                   border-t border-gray-300 dark:border-gray-400">
 
         <!-- MAIN CONTENT -->
         <div class="mx-auto px-3 py-16">

@@ -186,7 +186,7 @@ const hasMarketingFlags = (product) => {
                                text-[9px] font-bold uppercase tracking-wide
                                text-white shadow-sm"
                     >
-                        {{ t('new') }}
+                        NEW
                     </span>
 
                     <span
@@ -195,7 +195,7 @@ const hasMarketingFlags = (product) => {
                                text-[9px] font-bold uppercase tracking-wide
                                text-white shadow-sm"
                     >
-                        {{ t('hit') }}
+                        HIT
                     </span>
 
                     <span
@@ -204,7 +204,7 @@ const hasMarketingFlags = (product) => {
                                text-[9px] font-bold uppercase tracking-wide
                                text-white shadow-sm"
                     >
-                        {{ t('sale') }}
+                        SALE
                     </span>
                 </div>
             </div>

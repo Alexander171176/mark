@@ -200,11 +200,28 @@ class MarketProductController extends Controller
                     ->orderBy('id'),
 
                 /** Только публичные варианты */
-                'publicVariants',
+                'publicVariants' => fn ($query) => $query
+                    ->with([
+                        'translations',
+                        'currency',
+                        'images',
 
-                /** Отзывы */
+                        'values.attribute.translations',
+                        'values.attributeValue.translations',
+                    ])
+                    ->withCount([
+                        'values',
+                        'images',
+                    ]),
+
+                /** Публичные отзывы */
                 'reviews' => fn ($query) => $query
-                    ->with('user:id,name,profile_photo_path')
+                    ->forPublic()
+                    ->with([
+                        'author:id,name,profile_photo_path',
+                        'replier:id,name,profile_photo_path',
+                        'images',
+                    ])
                     ->latest(),
 
                 /** Рекомендуемые / похожие товары */

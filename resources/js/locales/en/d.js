@@ -44,6 +44,7 @@ export default {
     device: 'Device',
     diagrams: 'Diagrams',
     difficulty: 'Difficulty in points',
+    dimensions: 'Dimensions',
     director: 'Director',
     disable: 'Disable',
     disabled: 'Disabled',

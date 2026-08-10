@@ -44,6 +44,7 @@ export default {
     device: 'Устройство',
     diagrams: 'Диаграммы',
     difficulty: 'Сложность в баллах',
+    dimensions: 'Размеры',
     director: 'Директор',
     disable: 'Отключить',
     disabled: 'выключено',

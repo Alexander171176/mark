@@ -44,6 +44,7 @@ export default {
     device: 'Құрылғы',
     diagrams: 'Диаграммалар',
     difficulty: 'Ұпайлардағы қиындық',
+    dimensions: 'Өлшемдері',
     director: 'Директор',
     disable: 'Өшіру',
     disabled: 'Өшірілген',

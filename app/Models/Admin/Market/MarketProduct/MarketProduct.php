@@ -653,70 +653,107 @@ class MarketProduct extends Model
     /** Сортировка по умолчанию */
     public function scopeOrdered(Builder $query): Builder
     {
-        return $query->orderBy('sort')->orderByDesc('id');
+        return $query
+            ->orderBy('market_products.sort')
+            ->orderByDesc('market_products.id');
     }
 
     /** Только активные */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('activity', true);
+        return $query->where(
+            'market_products.activity',
+            true
+        );
     }
 
     /** Только опубликованные */
     public function scopePublished(Builder $query): Builder
     {
         return $query
-            ->where('status', 'published')
-            ->where('activity', true)
-            ->whereNotNull('published_at');
+            ->where(
+                'market_products.status',
+                'published'
+            )
+            ->where(
+                'market_products.activity',
+                true
+            )
+            ->whereNotNull(
+                'market_products.published_at'
+            );
     }
 
     /** Только одобренные */
     public function scopeApproved(Builder $query): Builder
     {
-        return $query->where('moderation_status', 1);
+        return $query->where(
+            'market_products.moderation_status',
+            1
+        );
     }
 
     /** Только товары в наличии */
     public function scopeInStock(Builder $query): Builder
     {
-        return $query->where('in_stock', true);
+        return $query->where(
+            'market_products.in_stock',
+            true
+        );
     }
 
     /** Новинки */
     public function scopeNew(Builder $query): Builder
     {
-        return $query->where('is_new', true);
+        return $query->where(
+            'market_products.is_new',
+            true
+        );
     }
 
     /** Хиты продаж */
     public function scopeHit(Builder $query): Builder
     {
-        return $query->where('is_hit', true);
+        return $query->where(
+            'market_products.is_hit',
+            true
+        );
     }
 
     /** Распродажа */
     public function scopeSale(Builder $query): Builder
     {
-        return $query->where('is_sale', true);
+        return $query->where(
+            'market_products.is_sale',
+            true
+        );
     }
 
     /** Левая рекламная зона */
     public function scopeLeft(Builder $query): Builder
     {
-        return $query->where('left', true);
+        return $query->where(
+            'market_products.left',
+            true
+        );
     }
 
     /** Главная рекламная зона */
     public function scopeMain(Builder $query): Builder
     {
-        return $query->where('main', true);
+        return $query->where(
+            'market_products.main',
+            true
+        );
     }
 
     /** Правая рекламная зона */
     public function scopeRight(Builder $query): Builder
     {
-        return $query->where('right', true);
+        return $query->where(
+            'market_products.right',
+            true
+        );
     }
 
     /** Окно показа */
@@ -724,12 +761,20 @@ class MarketProduct extends Model
     {
         return $query
             ->where(function (Builder $q) {
-                $q->whereNull('show_from_at')
-                    ->orWhere('show_from_at', '<=', now());
+                $q->whereNull('market_products.show_from_at')
+                    ->orWhere(
+                        'market_products.show_from_at',
+                        '<=',
+                        now()
+                    );
             })
             ->where(function (Builder $q) {
-                $q->whereNull('show_to_at')
-                    ->orWhere('show_to_at', '>=', now());
+                $q->whereNull('market_products.show_to_at')
+                    ->orWhere(
+                        'market_products.show_to_at',
+                        '>=',
+                        now()
+                    );
             });
     }
 

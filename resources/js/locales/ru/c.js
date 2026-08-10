@@ -5,6 +5,7 @@ export default {
     capacity: 'Мест',
     caption: 'подпись к изображению',
     cards: 'Карточки',
+    catalogDesc: 'Выбирайте лучшее – выбирайте у нас !',
     categories: 'Категории',
     category: 'Категория',
     certificateIssued: 'Сертификат выдан',

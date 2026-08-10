@@ -25,6 +25,7 @@ export default {
     relatedCourses: 'Recommended courses',
     relatedProducts: 'Recommended products',
     relatedVideos: 'Recommended videos',
+    remainder: 'Remainder',
     rememberMe: 'Remember me',
     remove: 'Remove',
     removeTeamMember: 'Remove Team Member',

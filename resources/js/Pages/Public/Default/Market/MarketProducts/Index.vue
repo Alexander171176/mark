@@ -632,90 +632,23 @@ const displayedProducts = computed(() => {
     <Head>
         <title>{{ seo?.title || t('products') }}</title>
 
-        <meta
-            name="title"
-            :content="seo?.title || t('products')"
-        />
-
-        <meta
-            name="keywords"
-            :content="seo?.keywords || ''"
-        />
-
-        <meta
-            name="description"
-            :content="seo?.description || ''"
-        />
-
-        <meta
-            property="og:title"
-            :content="seo?.title || t('products')"
-        />
-
-        <meta
-            property="og:description"
-            :content="seo?.description || ''"
-        />
-
-        <meta
-            property="og:type"
-            content="website"
-        />
-
-        <meta
-            property="og:url"
-            :content="`/${locale}/catalog/products`"
-        />
-
-        <meta
-            property="og:image"
-            content=""
-        />
-
-        <meta
-            property="og:locale"
-            :content="locale === 'ru' ? 'ru_RU' : locale"
-        />
-
-        <meta
-            name="twitter:card"
-            content="summary_large_image"
-        />
-
-        <meta
-            name="twitter:title"
-            :content="seo?.title || t('products')"
-        />
-
-        <meta
-            name="twitter:description"
-            :content="seo?.description || ''"
-        />
-
-        <meta
-            name="twitter:image"
-            content=""
-        />
-
-        <meta
-            name="DC.title"
-            :content="seo?.title || t('products')"
-        />
-
-        <meta
-            name="DC.description"
-            :content="seo?.description || ''"
-        />
-
-        <meta
-            name="DC.identifier"
-            :content="`/${locale}/catalog/products`"
-        />
-
-        <meta
-            name="DC.language"
-            :content="locale"
-        />
+        <meta name="title" :content="seo?.title || t('products')" />
+        <meta name="keywords" :content="seo?.keywords || ''" />
+        <meta name="description" :content="seo?.description || ''" />
+        <meta property="og:title" :content="seo?.title || t('products')" />
+        <meta property="og:description" :content="seo?.description || ''" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" :content="`/${locale}/catalog/products`" />
+        <meta property="og:image" content="" />
+        <meta property="og:locale" :content="locale === 'ru' ? 'ru_RU' : locale" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" :content="seo?.title || t('products')" />
+        <meta name="twitter:description" :content="seo?.description || ''" />
+        <meta name="twitter:image" content="" />
+        <meta name="DC.title" :content="seo?.title || t('products')" />
+        <meta name="DC.description" :content="seo?.description || ''" />
+        <meta name="DC.identifier" :content="`/${locale}/catalog/products`" />
+        <meta name="DC.language" :content="locale" />
     </Head>
 
     <DefaultLayout
@@ -746,6 +679,7 @@ const displayedProducts = computed(() => {
                 <!-- Центральная колонка -->
                 <div class="w-full lg:mt-28 pb-6 slate-1">
                     <div class="mx-auto max-w-6xl">
+
                         <!-- Хлебные крошки -->
                         <nav
                             class="text-sm"
@@ -796,12 +730,9 @@ const displayedProducts = computed(() => {
                         >
                             <svg
                                 class="h-6 w-6 text-slate-600/85 dark:text-slate-200/85"
-                                viewBox="0 0 24 24"
                                 fill="currentColor"
-                            >
-                                <path
-                                    d="M21 8.5 12 3 3 8.5V19l9 5 9-5V8.5ZM12 5.3l5.8 3.5-2.2 1.3L10 6.8 12 5.3Zm-3.8 2.6 5.8 3.5-2 1.2-5.8-3.5 2-1.2ZM5 10.6l6 3.6v7L5 17.8v-7.2Zm8 10.6v-7l6-3.6v7.2l-6 3.4Z"
-                                />
+                                viewBox="0 0 512 512">
+                                <path d="M239.1 6.3l-208 78c-18.7 7-31.1 25-31.1 45v225.1c0 18.2 10.3 34.8 26.5 42.9l208 104c13.5 6.8 29.4 6.8 42.9 0l208-104c16.3-8.1 26.5-24.8 26.5-42.9V129.3c0-20-12.4-37.9-31.1-44.9l-208-78C262 2.2 250 2.2 239.1 6.3zM256 68.4l192 72v1.1l-192 78-192-78v-1.1l192-72zm32 356V275.5l160-65v133.9l-160 80z" />
                             </svg>
 
                             <h1 class="text-2xl font-bold">
@@ -813,7 +744,7 @@ const displayedProducts = computed(() => {
                         <div
                             class="my-1 text-sm subtitle text-center"
                         >
-                            Выбирайте товары от поставщиков и магазинов каталога
+                            {{ t('catalogDesc') }}
                         </div>
 
                         <!-- Server toolbar -->

@@ -5,6 +5,7 @@ export default {
     capacity: 'Places',
     caption: 'image caption',
     cards: 'Cards',
+    catalogDesc: 'Choose the best – choose from us !',
     categories: 'Categories',
     category: 'Category',
     certificateIssued: 'The certificate has been issued',

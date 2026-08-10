@@ -25,6 +25,7 @@ export default {
     relatedCourses: 'Ұсынылған курстар',
     relatedProducts: 'Ұсынылған өнімдер',
     relatedVideos: 'Ұсынылған бейнелер',
+    remainder: 'Қалдық',
     rememberMe: 'Мені есте сақтау',
     remove: 'Жою',
     removeTeamMember: 'Топ мүшесін жою',

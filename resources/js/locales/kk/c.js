@@ -5,6 +5,7 @@ export default {
     capacity: 'Орындар',
     caption: 'сурет тақырыбы',
     cards: 'Карталар',
+    catalogDesc: 'Ең жақсысын таңдаңыз - бізден таңдаңыз !',
     categories: 'Санаттар',
     category: 'Санат',
     certificateIssued: 'Сертификат берілді',

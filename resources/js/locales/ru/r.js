@@ -25,6 +25,7 @@ export default {
     relatedCourses: 'Рекомендуемые курсы',
     relatedProducts: 'Рекомендуемые товары',
     relatedVideos: 'Рекомендуемые видео',
+    remainder: 'Остаток',
     rememberMe: 'Запомнить меня',
     remove: 'Удалить',
     removeTeamMember: 'Удаление участника из группы',

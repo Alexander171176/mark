@@ -50,11 +50,11 @@ html, body {
 }
 /* Кнопки */
 .btn-default {
-    background: var(--indigo-7);
+    background: var(--blue-7);
     color: var(--white-1);
 }
 .btn-default:hover {
-    background: var(--indigo-9);
+    background: var(--blue-9);
 }
 
 /* ------------------------------------------------------------------- */
@@ -111,10 +111,10 @@ html.dark {
     }
     /* Кнопки */
     .btn-default {
-        background: var(--indigo-7);
+        background: var(--blue-7);
         color: var(--white-1);
     }
     .btn-default:hover {
-        background: var(--indigo-9);
+        background: var(--blue-9);
     }
 }

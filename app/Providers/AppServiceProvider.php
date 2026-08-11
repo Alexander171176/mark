@@ -3,21 +3,18 @@
 namespace App\Providers;
 
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
-use App\Models\Admin\Blog\BlogBanner\BlogBanner;
-use App\Models\Admin\Blog\BlogRubric\BlogRubric;
-use App\Models\Admin\Blog\BlogTag\BlogTag;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
-use App\Models\Admin\Blog\Comment\Comment;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\Admin\School\SchoolBundle\SchoolBundle;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
@@ -36,6 +33,30 @@ class AppServiceProvider extends ServiceProvider
         $this->bootLocale();
         $this->bootInertiaSharedData();
         $this->bootMorphMap();
+        $this->bootDatabaseQueryLogging();
+    }
+
+    /**
+     * Логирование SQL-запросов для анализа производительности.
+     *
+     * Работает только в local-окружении,
+     * чтобы не создавать дополнительную нагрузку
+     * на production.
+     */
+    private function bootDatabaseQueryLogging(): void
+    {
+        if (!App::environment('local')) {
+            return;
+        }
+
+        DB::listen(function (QueryExecuted $query) {
+            Log::debug('SQL QUERY', [
+                'time_ms' => $query->time,
+                'sql' => $query->sql,
+                'bindings' => $query->bindings,
+                'connection' => $query->connectionName,
+            ]);
+        });
     }
 
     private function bootLocale(): void
@@ -54,12 +75,15 @@ class AppServiceProvider extends ServiceProvider
     {
         Inertia::share([
             'locale' => fn () => App::getLocale(),
-            'availableLocales' => fn () => config('app.available_locales', ['ru']),
 
-            'admin' => fn () => $this->adminModerationCounts(),
+            'availableLocales' => fn () =>
+            config('app.available_locales', ['ru']),
 
-            'canLogin' => fn () => Route::has('login'),
-            'canRegister' => fn () => Route::has('register'),
+            'canLogin' => fn () =>
+            Route::has('login'),
+
+            'canRegister' => fn () =>
+            Route::has('register'),
 
             'laravelLang' => fn () => [
                 'admin' => [
@@ -71,44 +95,6 @@ class AppServiceProvider extends ServiceProvider
                 ],
             ],
         ]);
-    }
-
-    private function adminModerationCounts(): array
-    {
-        if (!$this->blogTablesExist()) {
-            return $this->emptyAdminModerationCounts();
-        }
-
-        return Cache::remember('admin_moderation_counts', 60, fn () => [
-            'rubrics_under_moderation_count' => BlogRubric::where('moderation_status', 0)->count(),
-            'articles_under_moderation_count' => BlogArticle::where('moderation_status', 0)->count(),
-            'tags_under_moderation_count' => BlogTag::where('moderation_status', 0)->count(),
-            'banners_under_moderation_count' => BlogBanner::where('moderation_status', 0)->count(),
-            'videos_under_moderation_count' => BlogVideo::where('moderation_status', 0)->count(),
-            'comments_under_moderation_count' => Comment::where('moderation_status', 0)->count(),
-        ]);
-    }
-
-    private function blogTablesExist(): bool
-    {
-        return Schema::hasTable('blog_rubrics')
-            && Schema::hasTable('blog_articles')
-            && Schema::hasTable('blog_tags')
-            && Schema::hasTable('blog_banners')
-            && Schema::hasTable('blog_videos')
-            && Schema::hasTable('comments');
-    }
-
-    private function emptyAdminModerationCounts(): array
-    {
-        return [
-            'rubrics_under_moderation_count' => 0,
-            'articles_under_moderation_count' => 0,
-            'tags_under_moderation_count' => 0,
-            'banners_under_moderation_count' => 0,
-            'videos_under_moderation_count' => 0,
-            'comments_under_moderation_count' => 0,
-        ];
     }
 
     private function bootMorphMap(): void

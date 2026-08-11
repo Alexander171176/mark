@@ -2,6 +2,7 @@ export default {
     label: 'Белгі',
     lastActive: 'Соңғы белсенділік',
     lastName: 'Тегі',
+    lastViewedAt: 'Соңғы қаралған',
     lastUsed: 'Соңғы пайдалану',
     latestNews: 'Соңғы жаңалықтар',
     learningCategories: 'Оқыту санаттары',

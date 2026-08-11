@@ -50,6 +50,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified',
 
         require __DIR__ . '/analytics.php';
 
+        require __DIR__ . '/viewed-product.php';
+
         // --- Маршрут просмотр локалей и другие ---
         require __DIR__ . '/misc.php';
     });

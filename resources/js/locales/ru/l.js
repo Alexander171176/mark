@@ -2,6 +2,7 @@ export default {
     label: 'Лейбл',
     lastActive: 'Последний активный',
     lastName: 'Фамилия',
+    lastViewedAt: 'Последний просмотр',
     lastUsed: 'Последнее использование',
     latestNews: 'Последние новости',
     latitude: 'Широта',

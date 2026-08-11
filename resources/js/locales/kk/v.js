@@ -28,6 +28,7 @@ export default {
     videoUrl: 'Бейне URL',
     videos: 'Бейне',
     view: 'Қарау',
+    viewedAt: 'Қаралды',
     viewingLogs: 'Журналдарды қарау',
     views: 'Көрулер саны',
     vimeo: 'Vimeo көмегімен',

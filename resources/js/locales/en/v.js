@@ -28,6 +28,7 @@ export default {
     videoUrl: 'Video URL',
     videos: 'Videos',
     view: 'View',
+    viewedAt: 'Viewed',
     viewingLogs: 'Viewing logs',
     views: 'Views',
     vimeo: 'with Vimeo',

@@ -28,6 +28,7 @@ export default {
     videoUrl: 'URL Видео',
     videos: 'Видео',
     view: 'Просмотр',
+    viewedAt: 'Просмотрено',
     viewingLogs: 'Просмотр логов',
     views: 'Просмотры',
     vimeo: 'с Vimeo',

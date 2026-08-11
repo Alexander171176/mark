@@ -475,8 +475,8 @@ const submitForm = () => {
                        border border-blue-400 dark:border-blue-200
                        shadow-lg shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95">
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
 
+                <div class="sm:flex sm:justify-between sm:items-center mb-2">
                     <DefaultButton :href="route('admin.marketProducts.index')">
                         <template #icon>
                             <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"

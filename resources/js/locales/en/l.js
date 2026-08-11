@@ -2,6 +2,7 @@ export default {
     label: 'Label',
     lastActive: 'Last active',
     lastName: 'Surname',
+    lastViewedAt: 'Last viewed',
     lastUsed: 'Last used',
     latestNews: 'Latest news',
     learningCategories: 'Training categories',

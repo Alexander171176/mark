@@ -1053,6 +1053,8 @@ Analytics
 
 12) Просмотренные товары <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketRecentlyViewedProduct/MarketRecentlyViewedProduct -mfs` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketRecentlyViewedProduct/MarketRecentlyViewedProductResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Market/MarketRecentlyViewedProduct/MarketRecentlyViewedProductController` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 

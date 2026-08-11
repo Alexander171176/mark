@@ -10,6 +10,7 @@ use App\Models\Admin\Market\MarketProductAttributeValue\MarketProductAttributeVa
 use App\Models\Admin\Market\MarketProductBundle\MarketProductBundle;
 use App\Models\Admin\Market\MarketProductBundle\MarketProductBundleItem;
 use App\Models\Admin\Market\MarketProductVariant\MarketProductVariant;
+use App\Models\Admin\Market\MarketRecentlyViewedProduct\MarketRecentlyViewedProduct;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketTag\MarketTag;
 use App\Models\Admin\Review\Review;
@@ -447,6 +448,17 @@ class MarketProduct extends Model
             'market_product_id',
             'user_id'
         )->withTimestamps();
+    }
+
+    /**
+     * История просмотров товара зарегистрированными пользователями.
+     */
+    public function recentlyViewedByUsers(): HasMany
+    {
+        return $this->hasMany(
+            MarketRecentlyViewedProduct::class,
+            'market_product_id'
+        );
     }
 
     /** Рекомендуемые / похожие товары */

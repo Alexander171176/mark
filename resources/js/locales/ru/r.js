@@ -9,6 +9,7 @@ export default {
     ratio: 'Соотношение',
     readme: 'Инструкция',
     readMore: 'Подробнее',
+    recentlyViewedProducts: 'Просмотренные товары',
     recommended: 'Рекомендуемые',
     recover: 'Восстановить',
     recoverCode: 'Код восстановления',

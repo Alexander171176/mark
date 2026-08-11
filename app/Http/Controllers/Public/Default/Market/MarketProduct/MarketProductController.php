@@ -9,6 +9,7 @@ use App\Http\Resources\Admin\Market\MarketProduct\MarketProductSharedResource;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
+use App\Services\Public\Market\MarketRecentlyViewedProductService;
 use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\Market\BuildsMarketCategoryTreeTrait;
@@ -20,12 +21,19 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+
 class MarketProductController extends Controller
 {
-    use WithUserLikesTrait;
-    use HasPublicIndexFiltersTrait;
-    use BuildsMarketCategoryTreeTrait;
-    use HasMarketSidebarDataTrait;
+    use WithUserLikesTrait;            // трейт лайков
+    use HasPublicIndexFiltersTrait;    // трейт для списка
+    use BuildsMarketCategoryTreeTrait; // трейт дерево категорий для сайдбара
+    use HasMarketSidebarDataTrait;     // трейт сервиса данных сайдбаров
+
+    /** Конструктор с сервисом просмотренных товаров */
+    public function __construct(
+        private readonly MarketRecentlyViewedProductService $recentlyViewedService
+    ) {
+    }
 
     /** Страница списка товаров маркетплейса. */
     public function index(Request $request): Response
@@ -118,6 +126,11 @@ class MarketProductController extends Controller
         /** Данные сайдбаров маркетплейса */
         $sidebarData = $this->getMarketSidebarData($locale);
 
+        /** Недавно просмотренные товары */
+        $recentlyViewedProducts = $this->getRecentlyViewedProducts(
+            locale: $locale
+        );
+
         return Inertia::render('Public/Default/Market/MarketProducts/Index', [
             'seo' => $seo,
 
@@ -136,6 +149,9 @@ class MarketProductController extends Controller
                 $view,
                 $processingMode
             ),
+
+            /** Недавно просмотренные товары */
+            'recentlyViewedProducts' => $recentlyViewedProducts,
 
             'categoryTree' => $categoryTree,
             'locale' => $locale,
@@ -259,6 +275,20 @@ class MarketProductController extends Controller
         /** Увеличиваем просмотры товара */
         $product->increment('views');
 
+        /**
+         * Запоминаем просмотр товара
+         * для авторизованного пользователя.
+         *
+         * Для гостя история будет храниться
+         * на frontend в localStorage.
+         */
+        if (auth()->check()) {
+            $this->recentlyViewedService->remember(
+                userId: (int) auth()->id(),
+                productId: (int) $product->id
+            );
+        }
+
         /** Лайк текущего пользователя */
         $alreadyLiked = auth()->check()
             ? $product->likes()
@@ -300,6 +330,17 @@ class MarketProductController extends Controller
         /** Данные сайдбаров маркетплейса */
         $sidebarData = $this->getMarketSidebarData($locale);
 
+        /**
+         * Недавно просмотренные товары.
+         *
+         * Текущий товар исключаем,
+         * чтобы он не показывался сам у себя.
+         */
+        $recentlyViewedProducts = $this->getRecentlyViewedProducts(
+            locale: $locale,
+            excludeProductId: $product->id
+        );
+
         return Inertia::render('Public/Default/Market/MarketProducts/Show', [
             'product' => $productData,
 
@@ -308,6 +349,9 @@ class MarketProductController extends Controller
                     $breadcrumbCategory
                 ))->resolve()
                 : null,
+
+            /** Недавно просмотренные товары */
+            'recentlyViewedProducts' => $recentlyViewedProducts,
 
             'categoryTree' => $categoryTree,
             'locale' => $locale,
@@ -355,6 +399,248 @@ class MarketProductController extends Controller
             'success' => true,
             'likes' => $product->likes()->count(),
         ]);
+    }
+
+    /**
+     * Получить недавно просмотренные товары.
+     *
+     * Для авторизованного пользователя история берётся из БД.
+     * Для гостя ID товаров передаются с frontend из localStorage.
+     */
+    public function recentlyViewed(Request $request): JsonResponse
+    {
+        $locale = app()->getLocale();
+
+        /**
+         * Авторизованный пользователь:
+         * получаем персональную историю из БД.
+         */
+        if (auth()->check()) {
+            $products = $this->getRecentlyViewedProducts(
+                locale: $locale
+            );
+
+            return response()->json([
+                'success' => true,
+                'products' => $products,
+            ]);
+        }
+
+        /**
+         * Гость:
+         * frontend передаёт ID из localStorage.
+         */
+        $validated = $request->validate([
+            'ids' => [
+                'nullable',
+                'array',
+                'max:50',
+            ],
+
+            'ids.*' => [
+                'integer',
+                'distinct',
+                'min:1',
+            ],
+        ]);
+
+        $ids = collect($validated['ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->take(12)
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'products' => [],
+            ]);
+        }
+
+        /**
+         * Получаем только актуальные публичные товары.
+         */
+        $products = MarketProduct::query()
+            ->forPublic()
+            ->whereIn('market_products.id', $ids)
+            ->with([
+                'translations',
+                'currency',
+                'images',
+
+                'company.translations',
+                'shop.translations',
+                'brand.translations',
+            ])
+            ->withCount([
+                'images',
+                'categories',
+                'tags',
+                'variants',
+                'reviews',
+                'likes',
+            ])
+            ->get();
+
+        /**
+         * whereIn() не гарантирует порядок ID,
+         * поэтому восстанавливаем порядок localStorage:
+         * самый свежий товар должен остаться первым.
+         */
+        $positions = $ids
+            ->flip();
+
+        $products = $products
+            ->sortBy(
+                fn (MarketProduct $product) =>
+                $positions->get($product->id, PHP_INT_MAX)
+            )
+            ->values()
+            ->map(function (MarketProduct $product) {
+                $resolved = (new MarketProductSharedResource(
+                    $product
+                ))->resolve();
+
+                /**
+                 * У гостя лайк не может принадлежать
+                 * текущему пользователю.
+                 */
+                $resolved['already_liked'] = false;
+
+                return $resolved;
+            })
+            ->all();
+
+        return response()->json([
+            'success' => true,
+            'products' => $products,
+        ]);
+    }
+
+    /**
+     * Объединить гостевую историю просмотров
+     * с историей авторизованного пользователя.
+     */
+    public function mergeRecentlyViewed(Request $request): JsonResponse
+    {
+        if (!auth()->check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Необходимо авторизоваться.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'ids' => [
+                'required',
+                'array',
+                'max:50',
+            ],
+
+            'ids.*' => [
+                'required',
+                'integer',
+                'distinct',
+                'min:1',
+            ],
+        ]);
+
+        $ids = collect($validated['ids'])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return response()->json([
+                'success' => true,
+                'products' => [],
+            ]);
+        }
+
+        /**
+         * Передаём гостевую историю сервису.
+         *
+         * Ожидаемый порядок:
+         * первый ID — самый недавно просмотренный товар.
+         */
+        $this->recentlyViewedService->mergeGuestHistory(
+            userId: (int) auth()->id(),
+            productIds: $ids
+        );
+
+        /**
+         * Сразу возвращаем объединённую историю,
+         * чтобы frontend не делал дополнительный запрос.
+         */
+        $products = $this->getRecentlyViewedProducts(
+            locale: app()->getLocale()
+        );
+
+        return response()->json([
+            'success' => true,
+            'products' => $products,
+        ]);
+    }
+
+    /**
+     * Очистить историю недавно просмотренных товаров
+     * авторизованного пользователя.
+     */
+    public function clearRecentlyViewed(): JsonResponse
+    {
+        if (!auth()->check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Необходимо авторизоваться.',
+            ], 401);
+        }
+
+        $this->recentlyViewedService->clear(
+            userId: (int) auth()->id()
+        );
+
+        return response()->json([
+            'success' => true,
+            'products' => [],
+        ]);
+    }
+
+    /**
+     * Получить недавно просмотренные товары
+     * авторизованного пользователя.
+     *
+     * Для гостя возвращается пустой массив:
+     * его история обрабатывается через localStorage.
+     */
+    private function getRecentlyViewedProducts(
+        string $locale,
+        ?int $excludeProductId = null
+    ): array {
+        if (!auth()->check()) {
+            return [];
+        }
+
+        return $this->recentlyViewedService
+            ->getProducts(
+                userId: (int) auth()->id(),
+                excludeProductId: $excludeProductId,
+                limit: 12,
+                locale: $locale
+            )
+            ->map(function (MarketProduct $product) {
+                $resolved = (new MarketProductSharedResource(
+                    $product
+                ))->resolve();
+
+                $resolved['already_liked'] = (bool) $product->already_liked;
+
+                return $resolved;
+            })
+            ->values()
+            ->all();
     }
 
     /** Базовый запрос списка публичных товаров. */

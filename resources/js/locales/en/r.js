@@ -9,6 +9,7 @@ export default {
     ratio: 'Ratio',
     readme: 'Instruction manual',
     readMore: 'Read more',
+    recentlyViewedProducts: 'Viewed products',
     recommended: 'Recommended',
     recover: 'Recover',
     recoverCode: 'Recovery Code',

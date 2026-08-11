@@ -7,6 +7,7 @@ use App\Models\Admin\Blog\Comment\Comment;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\Admin\Market\MarketProductReview\MarketProductReview;
+use App\Models\Admin\Market\MarketRecentlyViewedProduct\MarketRecentlyViewedProduct;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\User\Like\BlogArticleLike;
@@ -190,6 +191,17 @@ class User extends Authenticatable /* implements MustVerifyEmail */
     {
         return $this->hasMany(
             MarketProductReview::class,
+            'user_id'
+        );
+    }
+
+    /**
+     * История просмотренных товаров маркетплейса.
+     */
+    public function recentlyViewedMarketProducts(): HasMany
+    {
+        return $this->hasMany(
+            MarketRecentlyViewedProduct::class,
             'user_id'
         );
     }

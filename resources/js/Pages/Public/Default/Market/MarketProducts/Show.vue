@@ -20,7 +20,7 @@
  * @author Александр
  */
 
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
@@ -34,12 +34,11 @@ import RightSidebarMarket from '@/Components/Public/Default/Partials/RightSideba
 
 import MarketProductGallery from '@/Components/Public/Default/Market/MarketProduct/MarketProductGallery.vue'
 import LikeButtonEntity from '@/Components/Public/Like/LikeButtonEntity.vue'
-
-import MarketProductGrid from '@/Components/Public/Default/Market/MarketProduct/MarketProductGrid.vue'
-
-import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
-import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
 import MarketRecommendedProducts from '@/Components/Public/Default/Market/MarketProduct/MarketRecommendedProducts.vue'
+
+import MarketRecentlyViewedProducts from '@/Components/Public/Default/Market/MarketProduct/MarketRecentlyViewedProducts.vue'
+
+import { useRecentlyViewedProducts } from '@/composables/market/useRecentlyViewedProducts'
 
 const { t } = useI18n()
 const page = usePage()
@@ -56,28 +55,24 @@ const props = defineProps({
 
     product: {
         type: Object,
-        default: () => ({})
+        default: () => ({}),
     },
 
     breadcrumbCategory: {
         type: Object,
-        default: null
+        default: null,
     },
 
     categoryTree: {
         type: Array,
-        default: () => []
+        default: () => [],
     },
 
-    mainVideos: {
+    /** Недавно просмотренные товары */
+    recentlyViewedProducts: {
         type: [Array, Object],
-        default: () => []
+        default: () => [],
     },
-
-    mainBanners: {
-        type: [Array, Object],
-        default: () => []
-    }
 })
 
 /* ===================== PAGE ===================== */
@@ -109,6 +104,78 @@ const normalizeList = (value) => {
 
     return []
 }
+
+/* ===================== RECENTLY VIEWED ===================== */
+
+/**
+ * История недавно просмотренных товаров.
+ *
+ * Авторизованный пользователь:
+ * - начальные данные приходят от Laravel через Inertia.
+ *
+ * Гость:
+ * - история хранится в localStorage;
+ * - карточки загружаются через публичный endpoint.
+ */
+const {
+    products: recentlyViewed,
+    rememberGuestProduct,
+    load: loadRecentlyViewedProducts,
+    mergeGuestHistory,
+    setProducts: setRecentlyViewedProducts,
+} = useRecentlyViewedProducts()
+
+/** Нормализованные данные от Laravel */
+const initialRecentlyViewedProducts = computed(() => {
+    return normalizeList(
+        props.recentlyViewedProducts
+    )
+})
+
+onMounted(async () => {
+    /**
+     * Авторизованный пользователь.
+     *
+     * Laravel уже передал его историю через Inertia,
+     * поэтому повторный запрос делать не нужно.
+     */
+    if (page.props?.auth?.user) {
+        setRecentlyViewedProducts(
+            initialRecentlyViewedProducts.value
+        )
+
+        /**
+         * Если в localStorage осталась гостевая история,
+         * переносим её в БД.
+         *
+         * Текущий товар при этом не показываем
+         * в carousel своей страницы.
+         */
+        await mergeGuestHistory(
+            productData.value?.id
+        )
+
+        return
+    }
+
+    /**
+     * Гость.
+     *
+     * Загружаем предыдущие просмотренные товары,
+     * исключая текущий товар.
+     */
+    await loadRecentlyViewedProducts(
+        productData.value?.id
+    )
+
+    /**
+     * После загрузки предыдущей истории
+     * запоминаем текущий товар.
+     */
+    rememberGuestProduct(
+        productData.value?.id
+    )
+})
 
 /* ===================== TRANSLATION ===================== */
 
@@ -254,16 +321,6 @@ const publicVariants = computed(() => {
 /** Связанные товары */
 const relatedProducts = computed(() => {
     return normalizeList(productData.value?.related_products)
-})
-
-/** Видео внизу страницы */
-const mainVideosList = computed(() => {
-    return normalizeList(props.mainVideos)
-})
-
-/** Баннеры внизу страницы */
-const mainBannersList = computed(() => {
-    return normalizeList(props.mainBanners)
 })
 
 /* ===================== SIDEBARS ===================== */
@@ -1346,10 +1403,10 @@ const hasMarketingFlags = computed(() => {
                                     class="mb-4 text-lg font-semibold
                                        text-slate-800 dark:text-slate-200"
                                 >
-                                    {{ t('characteristics') }}
+                                    {{ t('attributes') }}
                                 </h2>
 
-                                <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <div class="divide-y divide-gray-400 dark:divide-gray-600">
                                     <div
                                         v-for="item in attributeValues"
                                         :key="item.id"
@@ -1461,21 +1518,42 @@ const hasMarketingFlags = computed(() => {
                                 />
                             </section>
 
+                            <!-- Недавно просмотренные товары -->
+                            <section
+                                v-if="recentlyViewed.length"
+                                class="mt-6"
+                            >
+                                <h2
+                                    class="mb-4 flex items-center justify-center
+                                           text-xl font-semibold
+                                           text-slate-800 dark:text-slate-200"
+                                >
+                                    <span>
+                                        {{ t('recentlyViewedProducts') }}
+                                    </span>
+
+                                    <span
+                                        class="ml-2 inline-flex min-w-6 items-center justify-center
+                                               rounded-full border border-teal-200
+                                               bg-teal-50 px-2 py-0.5
+                                               text-xs font-bold text-teal-600
+                                               shadow-sm
+                                               dark:border-teal-700/70
+                                               dark:bg-teal-950/60
+                                               dark:text-teal-300"
+                                    >
+                                        {{ recentlyViewed.length }}
+                                    </span>
+                                </h2>
+
+                                <MarketRecentlyViewedProducts
+                                    :products="recentlyViewed"
+                                    :cols="relatedGridCols"
+                                    :locale="locale"
+                                />
+                            </section>
+
                         </article>
-
-                        <!-- Центральные видео -->
-                        <SectionVideoList
-                            v-if="mainVideosList.length"
-                            class="mt-6"
-                            :videos="mainVideosList"
-                        />
-
-                        <!-- Центральные баннеры -->
-                        <SectionBanners
-                            v-if="mainBannersList.length"
-                            class="mt-6"
-                            :banners="mainBannersList"
-                        />
                     </div>
                 </div>
 

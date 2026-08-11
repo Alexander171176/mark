@@ -21,7 +21,6 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-
 class MarketProductController extends Controller
 {
     use WithUserLikesTrait;            // трейт лайков
@@ -434,7 +433,7 @@ class MarketProductController extends Controller
             'ids' => [
                 'nullable',
                 'array',
-                'max:50',
+                'max:8',
             ],
 
             'ids.*' => [
@@ -448,7 +447,7 @@ class MarketProductController extends Controller
             ->map(fn ($id) => (int) $id)
             ->filter(fn ($id) => $id > 0)
             ->unique()
-            ->take(12)
+            ->take(8)
             ->values();
 
         if ($ids->isEmpty()) {
@@ -535,7 +534,7 @@ class MarketProductController extends Controller
             'ids' => [
                 'required',
                 'array',
-                'max:50',
+                'max:20',
             ],
 
             'ids.*' => [
@@ -627,7 +626,6 @@ class MarketProductController extends Controller
             ->getProducts(
                 userId: (int) auth()->id(),
                 excludeProductId: $excludeProductId,
-                limit: 12,
                 locale: $locale
             )
             ->map(function (MarketProduct $product) {
@@ -635,7 +633,8 @@ class MarketProductController extends Controller
                     $product
                 ))->resolve();
 
-                $resolved['already_liked'] = (bool) $product->already_liked;
+                $resolved['already_liked'] =
+                    (bool) $product->already_liked;
 
                 return $resolved;
             })

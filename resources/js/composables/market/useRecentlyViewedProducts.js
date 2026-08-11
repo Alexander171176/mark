@@ -11,7 +11,7 @@ const STORAGE_KEY = 'market_recently_viewed_products'
  * Максимальное количество ID,
  * которое храним у гостя.
  */
-const STORAGE_LIMIT = 50
+const STORAGE_LIMIT = 8
 
 /**
  * Работа с недавно просмотренными товарами.

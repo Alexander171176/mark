@@ -13,7 +13,7 @@ class MarketRecentlyViewedProductService
      * Максимальное количество просмотренных товаров,
      * которое храним для одного пользователя.
      */
-    protected int $historyLimit = 50;
+    protected int $historyLimit = 20;
 
     /**
      * Количество товаров,

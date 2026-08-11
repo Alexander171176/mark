@@ -173,7 +173,7 @@ class MarketProductController extends Controller
                 'translations',
                 'owner',
                 'currency',
-                'images',
+                'images.media',
 
                 /** Компания / магазин / бренд */
                 'company.translations',
@@ -185,7 +185,7 @@ class MarketProductController extends Controller
                     ->forPublic()
                     ->with([
                         'translations',
-                        'images',
+                        'images.media',
                     ])
                     ->ordered(),
 
@@ -194,7 +194,7 @@ class MarketProductController extends Controller
                     ->forPublic()
                     ->with([
                         'translations',
-                        'images',
+                        'images.media',
                     ])
                     ->ordered(),
 
@@ -219,7 +219,7 @@ class MarketProductController extends Controller
                     ->with([
                         'translations',
                         'currency',
-                        'images',
+                        'images.media',
 
                         'values.attribute.translations',
                         'values.attributeValue.translations',
@@ -235,7 +235,7 @@ class MarketProductController extends Controller
                     ->with([
                         'author:id,name,profile_photo_path',
                         'replier:id,name,profile_photo_path',
-                        'images',
+                        'images.media',
                     ])
                     ->latest(),
 
@@ -245,7 +245,7 @@ class MarketProductController extends Controller
                     ->with([
                         'translations',
                         'currency',
-                        'images',
+                        'images.media',
                         'company.translations',
                         'shop.translations',
                         'brand.translations',
@@ -466,7 +466,7 @@ class MarketProductController extends Controller
             ->with([
                 'translations',
                 'currency',
-                'images',
+                'images.media',
 
                 'company.translations',
                 'shop.translations',
@@ -650,7 +650,7 @@ class MarketProductController extends Controller
             ->with([
                 'translations',
                 'currency',
-                'images',
+                'images.media',
 
                 'company.translations',
                 'shop.translations',

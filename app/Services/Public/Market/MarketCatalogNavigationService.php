@@ -12,6 +12,7 @@ class MarketCatalogNavigationService
         return MarketCategory::query()
             ->with([
                 'translations',
+                'images.media',
                 'publicCatalogChildren',
             ])
             ->withCount([

@@ -99,7 +99,7 @@ class MarketCategory extends Model
             ->with([
                 'translations',
                 'translation',
-                'images',
+                'images.media',
                 'childrenRecursive',
             ])
             ->withCount([
@@ -108,13 +108,16 @@ class MarketCategory extends Model
             ]);
     }
 
-    /** Публичные дочерние категории для каталога */
+    /**
+     * Публичные дочерние категории для каталога.
+     */
     public function publicCatalogChildren(): HasMany
     {
         return $this->children()
             ->forMenu()
             ->with([
                 'translations',
+                'images.media',
                 'publicCatalogChildren',
             ])
             ->withCount([

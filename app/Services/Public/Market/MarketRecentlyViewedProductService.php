@@ -78,7 +78,7 @@ class MarketRecentlyViewedProductService
             )
             ->with([
                 'translations',
-                'images',
+                'images.media',
                 'currency',
 
                 'company.translations',
@@ -128,7 +128,7 @@ class MarketRecentlyViewedProductService
             )
             ->with([
                 'product.translations',
-                'product.images',
+                'product.images.media',
                 'product.currency',
             ])
             ->orderByDesc('viewed_at');

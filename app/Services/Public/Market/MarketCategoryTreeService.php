@@ -7,7 +7,10 @@ use Illuminate\Support\Collection;
 
 class MarketCategoryTreeService
 {
-    /** Получить публичное дерево категорий маркетплейса. */
+    /**
+     * Получить публичное дерево
+     * категорий маркетплейса.
+     */
     public function getTree(string $locale): array
     {
         $categories = MarketCategory::query()
@@ -15,31 +18,41 @@ class MarketCategoryTreeService
             ->root()
             ->with([
                 'translations',
-                'images',
-
-                'publicCatalogChildren' => fn ($query) => $query
-                    ->with([
-                        'translations',
-                        'images',
-                        'publicCatalogChildren',
-                    ]),
+                'images.media',
+                'publicCatalogChildren',
             ])
             ->get();
 
         return $categories
-            ->map(fn (MarketCategory $category) => $this->mapCategory($category, $locale))
+            ->map(
+                fn (MarketCategory $category) =>
+                $this->mapCategory(
+                    $category,
+                    $locale
+                )
+            )
             ->values()
             ->all();
     }
 
-    /** Преобразовать категорию в элемент дерева. */
-    private function mapCategory(MarketCategory $category, string $locale): array
-    {
-        $translation = $category->translationOrFallback($locale);
-        $image = $category->images->first();
+    /**
+     * Преобразовать категорию
+     * в элемент дерева.
+     */
+    private function mapCategory(
+        MarketCategory $category,
+        string $locale
+    ): array {
+        $translation = $category
+            ->translationOrFallback($locale);
+
+        $image = $category
+            ->images
+            ->first();
 
         /** @var Collection $children */
-        $children = $category->publicCatalogChildren;
+        $children = $category
+            ->publicCatalogChildren;
 
         return [
             'id' => $category->id,
@@ -58,7 +71,13 @@ class MarketCategoryTreeService
             'children_count' => $children->count(),
 
             'children' => $children
-                ->map(fn (MarketCategory $child) => $this->mapCategory($child, $locale))
+                ->map(
+                    fn (MarketCategory $child) =>
+                    $this->mapCategory(
+                        $child,
+                        $locale
+                    )
+                )
                 ->values()
                 ->all(),
         ];

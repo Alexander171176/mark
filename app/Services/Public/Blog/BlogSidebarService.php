@@ -93,7 +93,7 @@ class BlogSidebarService
             ->with([
                 'translations',
                 'owner',
-                'images',
+                'images.media',
             ])
             ->sortByParam('sort_desc', $locale)
             ->limit($limit)
@@ -108,7 +108,7 @@ class BlogSidebarService
             ->with([
                 'translations',
                 'owner',
-                'images',
+                'images.media',
             ])
             ->sortByParam('views_desc', $locale)
             ->limit($limit)
@@ -123,7 +123,7 @@ class BlogSidebarService
             ->wherePosition($flag)
             ->with([
                 'translations',
-                'images',
+                'images.media',
             ])
             ->sortByParam('sort_asc', $locale)
             ->limit($limit)
@@ -139,7 +139,7 @@ class BlogSidebarService
             ->with([
                 'translations',
                 'owner',
-                'images',
+                'images.media',
             ])
             ->sortByParam('sort_desc', $locale)
             ->limit($limit)
@@ -154,7 +154,7 @@ class BlogSidebarService
             ->with([
                 'translations',
                 'owner',
-                'images',
+                'images.media',
             ])
             ->sortByParam('views_desc', $locale)
             ->limit($limit)
@@ -170,15 +170,16 @@ class BlogSidebarService
     }
 
     /** Курсы школы по флагу left/main/right. */
-    protected function getCoursesByFlag(string $locale, string $flag, int $limit): Collection
-    {
+    protected function getCoursesByFlag(
+        string $locale,
+        string $flag,
+        int $limit
+    ): Collection {
         return SchoolCourse::query()
             ->forPublic($locale)
             ->where($flag, true)
             ->with([
-                'translation',
-                'translations',
-                'images',
+                'images.media',
                 'instructorProfile',
             ])
             ->sortByParam('sort_desc')
@@ -187,14 +188,14 @@ class BlogSidebarService
     }
 
     /** Популярные курсы школы. */
-    protected function getPopularCourses(string $locale, int $limit): Collection
-    {
+    protected function getPopularCourses(
+        string $locale,
+        int $limit
+    ): Collection {
         return SchoolCourse::query()
             ->forPublic($locale)
             ->with([
-                'translation',
-                'translations',
-                'images',
+                'images.media',
                 'instructorProfile',
             ])
             ->sortByParam('views_desc')

@@ -136,7 +136,7 @@ class BlogArticleController extends Controller
             ->with([
                 'translations',
                 'owner',
-                'images',
+                'images.media',
 
                 'tags' => fn ($query) => $query
                     ->forPublic()
@@ -152,7 +152,7 @@ class BlogArticleController extends Controller
                     ->forPublic()
                     ->with([
                         'translations',
-                        'images',
+                        'images.media',
                     ])
                     ->sortByParam('sortAsc', $locale),
 
@@ -161,7 +161,7 @@ class BlogArticleController extends Controller
                     ->with([
                         'translations',
                         'owner',
-                        'images',
+                        'images.media',
                     ])
                     ->withCount('likes')
                     ->sortByParam('sortAsc', $locale),
@@ -261,7 +261,7 @@ class BlogArticleController extends Controller
             ->with([
                 'translations',
                 'owner',
-                'images',
+                'images.media',
             ])
             ->withCount('likes');
     }

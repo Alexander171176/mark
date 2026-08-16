@@ -268,25 +268,12 @@ const normalizeText = (value) => {
 
 /** Название видео */
 const getVideoTitle = (video) => {
-    return video?.title
-        || video?.name
-        || video?.translation?.title
-        || video?.current_translation?.title
-        || video?.translations?.[0]?.title
-        || ''
+    return video?.translation?.title || ''
 }
 
 /** Краткий текст видео */
 const getVideoShort = (video) => {
-    return video?.short
-        || video?.description
-        || video?.translation?.short
-        || video?.translation?.description
-        || video?.current_translation?.short
-        || video?.current_translation?.description
-        || video?.translations?.[0]?.short
-        || video?.translations?.[0]?.description
-        || ''
+    return video?.translation?.short || ''
 }
 
 /** Продолжительность видео */

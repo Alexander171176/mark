@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Public\Default\Blog\BlogVideo;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
+use App\Http\Resources\Public\Blog\BlogVideo\BlogVideoResource;
+use App\Http\Resources\Public\Blog\BlogVideo\BlogVideoSharedResource;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
@@ -93,9 +94,13 @@ class BlogVideoController extends Controller
             ? $videos->total()
             : $videos->count();
 
-        $videos = $useServerProcessing
-            ? $this->appendUserLikes($videos, BlogVideoResource::class)
-            : BlogVideoResource::collection($videos);
+        /**
+         * Public Index всегда использует
+         * краткий Public Resource.
+         */
+        $videos = BlogVideoSharedResource::collection(
+            $videos
+        );
 
         $rubricTree = $this->getRubricTree($locale);
         $sidebarData = $this->getSidebarData($locale);
@@ -128,67 +133,198 @@ class BlogVideoController extends Controller
     }
 
     /** Страница конкретного видео блога. */
-    public function show(string $url): Response
-    {
+    public function show(
+        string $url
+    ): Response {
         $locale = app()->getLocale();
 
-        $video = BlogVideo::query()
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        /**
+         * Публичные настройки сайта.
+         *
+         * Единственный источник количества
+         * показываемых карточек видео.
+         */
+        $settings = app(
+            PublicSettingsService::class
+        );
+
+        $videosLimit = $settings->int(
+            'publicBlogVideosPerPage',
+            12
+        );
+
+        /**
+         * Основное публичное видео.
+         */
+        $videoQuery = BlogVideo::query()
             ->forPublic()
-            ->where('url', $url)
+            ->where(
+                'url',
+                $url
+            )
+            ->with([
+                /**
+                 * Current locale
+                 * + fallback ru.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * Автор основного видео.
+                 */
+                'owner',
+
+                /**
+                 * Изображения + Spatie Media.
+                 */
+                'images.media',
+
+                /**
+                 * Собственный Media relation
+                 * нужен для source_type = local.
+                 */
+                'media',
+
+                /**
+                 * Связанные публичные видео.
+                 */
+                'relatedVideos' => function ($query) use (
+                    $locale,
+                    $locales,
+                    $videosLimit
+                ) {
+                    $query
+                        ->forPublic()
+                        ->with([
+                            /**
+                             * Current locale
+                             * + fallback ru.
+                             */
+                            'translations' => fn ($translationQuery) =>
+                            $translationQuery->whereIn(
+                                'locale',
+                                $locales
+                            ),
+
+                            /**
+                             * Автор нужен карточке.
+                             */
+                            'owner',
+
+                            /**
+                             * Изображения + Spatie Media.
+                             */
+                            'images.media',
+
+                            /**
+                             * Собственный Media relation
+                             * для local video.
+                             */
+                            'media',
+                        ])
+                        ->withCount([
+                            'likes',
+                        ])
+                        ->sortByParam(
+                            'sortAsc',
+                            $locale
+                        )
+                        ->limit(
+                            $videosLimit
+                        );
+
+                    /**
+                     * already_liked одним EXISTS
+                     * для связанных видео.
+                     */
+                    $this->withUserLike(
+                        $query
+                    );
+                },
+            ])
             ->withCount([
                 'likes',
-                'comments',
-                'images',
-            ])
-            ->with([
-                'translations',
-                'owner',
-                'images',
+            ]);
 
-                'relatedVideos' => fn ($query) => $query
-                    ->forPublic()
-                    ->with([
-                        'translations',
-                        'owner',
-                        'images',
-                    ])
-                    ->withCount('likes')
-                    ->sortByParam('sortAsc', $locale),
-            ])
+        /**
+         * already_liked одним EXISTS
+         * для основного видео.
+         *
+         * Для гостя дополнительного
+         * SQL-подзапроса нет.
+         */
+        $videoQuery = $this->withUserLike(
+            $videoQuery
+        );
+
+        $video = $videoQuery
             ->firstOrFail();
 
+        /**
+         * Увеличиваем просмотры.
+         */
         $video->increment('views');
 
-        $alreadyLiked = auth()->check()
-            ? $video->likes()->where('user_id', auth()->id())->exists()
-            : false;
+        /**
+         * Дерево рубрик.
+         */
+        $rubricTree = $this->getRubricTree(
+            $locale
+        );
 
-        $recommendedVideos = $video->relatedVideos->map(function ($relatedVideo) {
-            $resolved = (new BlogVideoResource($relatedVideo))->resolve();
+        /**
+         * Данные сайдбаров.
+         */
+        $sidebarData = $this->getSidebarData(
+            $locale
+        );
 
-            $resolved['already_liked'] = auth()->check()
-                ? $relatedVideo->likes()->where('user_id', auth()->id())->exists()
-                : false;
+        return Inertia::render(
+            'Public/Default/Blog/BlogVideos/Show',
+            [
+                /**
+                 * Основная сущность страницы
+                 * использует полный Public Resource.
+                 */
+                'video' =>
+                    new BlogVideoResource(
+                        $video
+                    ),
 
-            return $resolved;
-        });
+                /**
+                 * Рекомендованные карточки
+                 * используют SharedResource.
+                 */
+                'recommendedVideos' =>
+                    BlogVideoSharedResource::collection(
+                        $video->relatedVideos
+                    ),
 
-        $rubricTree = $this->getRubricTree($locale);
-        $sidebarData = $this->getSidebarData($locale);
+                'rubricTree' =>
+                    $rubricTree,
 
-        return Inertia::render('Public/Default/Blog/BlogVideos/Show', [
-            'video' => array_merge(
-                (new BlogVideoResource($video))->resolve(),
-                ['already_liked' => $alreadyLiked]
-            ),
+                'locale' =>
+                    $locale,
 
-            'recommendedVideos' => $recommendedVideos,
-
-            'rubricTree' => $rubricTree,
-            'locale' => $locale,
-
-            ...$sidebarData,
-        ]);
+                ...$sidebarData,
+            ]
+        );
     }
 
     /** Лайк видео. */
@@ -230,19 +366,54 @@ class BlogVideoController extends Controller
     }
 
     /** Базовый запрос для списка публичных видео. */
-    private function indexQuery(): Builder
-    {
+    private function indexQuery(
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
         return BlogVideo::query()
             ->forPublic()
             ->with([
-                'translations',
+                /**
+                 * Только current locale
+                 * + fallback ru.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * Автор нужен карточкам
+                 * и frontend-поиску.
+                 */
                 'owner',
-                'images',
+
+                /**
+                 * Изображения + Spatie Media.
+                 */
+                'images.media',
+
+                /**
+                 * Собственный Media relation
+                 * для local video.
+                 */
+                'media',
             ])
             ->withCount([
                 'likes',
                 'comments',
-                'images',
             ]);
     }
 
@@ -254,18 +425,56 @@ class BlogVideoController extends Controller
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
+        /**
+         * already_liked одним EXISTS.
+         *
+         * Для гостя дополнительного
+         * SQL-подзапроса нет.
+         */
+        $query = $this->withUserLike(
+            $query
+        );
+
+        /**
+         * Server mode:
+         * поиск, сортировка и пагинация
+         * выполняются SQL.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend mode:
+         *
+         * отдаём полную публичную коллекцию.
+         * Поиск/сортировку/пагинацию
+         * выполняет Vue.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->orderBy(
+                'sort',
+                'asc'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
     }
 }

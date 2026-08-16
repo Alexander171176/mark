@@ -1,149 +1,279 @@
 <script setup>
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import { usePage } from '@inertiajs/vue3'
+import {
+    computed,
+    ref,
+    watch,
+    onMounted,
+    onBeforeUnmount,
+} from 'vue'
+
 import { unwrap } from '@/composables/useUnwrap.js'
 
 const props = defineProps({
-    leftBanners: { type: [Array, Object], default: () => [] },
-    limit: { type: Number, default: 2 },
+    leftBanners: {
+        type: [Array, Object],
+        default: () => [],
+    },
 
-    intervalMs: { type: Number, default: 4500 },
-    pauseOnHover: { type: Boolean, default: true },
-    pauseOnHidden: { type: Boolean, default: true },
+    intervalMs: {
+        type: Number,
+        default: 4500,
+    },
+
+    pauseOnHover: {
+        type: Boolean,
+        default: true,
+    },
+
+    pauseOnHidden: {
+        type: Boolean,
+        default: true,
+    },
 })
 
-const { appUrl } = usePage().props
-
-const unwrapList = (v) => v?.data ?? v ?? []
-
-const list = computed(() => unwrapList(props.leftBanners).slice(0, props.limit))
-
-/** storage helper */
-const getImgSrc = (imgPath) => {
-    if (!imgPath) return ''
-    const base = appUrl?.endsWith('/') ? appUrl.slice(0, -1) : (appUrl || '')
-    const path = imgPath.startsWith('/') ? imgPath.slice(1) : imgPath
-    return `${base}/storage/${path}`
+const unwrapList = (value) => {
+    return value?.data ?? value ?? []
 }
 
-const normalizeSrc = (raw) => {
-    if (!raw) return ''
-    if (/^https?:\/\//i.test(raw)) return raw
-    if (raw.startsWith('/')) return raw
-    return getImgSrc(raw)
+const list = computed(() => {
+    return unwrapList(
+        props.leftBanners
+    )
+})
+
+/**
+ * Новый Public-контракт перевода.
+ */
+const bannerTranslation = (banner) => {
+    return unwrap(banner)?.translation || {}
 }
 
+const bannerTitle = (banner) => {
+    return bannerTranslation(banner).title || ''
+}
+
+const bannerLink = (banner) => {
+    return bannerTranslation(banner).link || ''
+}
+
+/**
+ * Изображения Public Resource.
+ */
 const bannerImages = (banner) => {
-    const b = unwrap(banner)
-    const imgsRaw = Array.isArray(b?.images) ? b.images : (b?.images?.data ?? [])
-    return (Array.isArray(imgsRaw) ? imgsRaw : [])
+    const entity = unwrap(banner)
+
+    const images = Array.isArray(entity?.images)
+        ? entity.images
+        : (entity?.images?.data ?? [])
+
+    return (Array.isArray(images) ? images : [])
         .slice()
-        .sort((a, c) => Number(a?.order ?? 0) - Number(c?.order ?? 0))
-        .map((img, idx) => {
-            const raw =
-                img?.image_url ||
-                img?.url ||
-                img?.src ||
-                img?.path ||
-                img?.image ||
-                null
+        .sort(
+            (a, b) =>
+                Number(a?.order ?? 0)
+                - Number(b?.order ?? 0)
+        )
+        .map((image, index) => {
+            const src =
+                image?.image_url
+                || image?.webp_url
+                || image?.thumb_url
+                || image?.url
+                || ''
 
             return {
-                id: img?.id ?? `${raw}-${img?.order ?? idx}`,
-                src: normalizeSrc(raw),
-                alt: img?.alt ?? '',
-                title: img?.title ?? img?.alt ?? '',
-                order: Number(img?.order ?? 0),
+                id:
+                    image?.id
+                    ?? `${src}-${image?.order ?? index}`,
+
+                src,
+
+                alt:
+                    image?.alt ?? '',
+
+                title:
+                    image?.caption
+                    || image?.alt
+                    || '',
+
+                order:
+                    Number(
+                        image?.order ?? 0
+                    ),
             }
         })
+        .filter(image => !!image.src)
 }
 
-/** per-banner slider state */
+/**
+ * Состояние слайдера
+ * отдельно для каждого баннера.
+ */
 const currentByBanner = ref({})
 const hoveredByBanner = ref({})
+
 let timer = null
 
-const getCurrent = (bannerId) => Number(currentByBanner.value?.[bannerId] ?? 0)
+const getCurrent = (bannerId) => {
+    return Number(
+        currentByBanner.value?.[bannerId]
+        ?? 0
+    )
+}
 
-const setCurrent = (bannerId, idx, total) => {
-    const n = Number(total) || 0
-    if (n <= 1) {
-        currentByBanner.value = { ...currentByBanner.value, [bannerId]: 0 }
+const setCurrent = (
+    bannerId,
+    index,
+    total
+) => {
+    const count = Number(total) || 0
+
+    if (count <= 1) {
+        currentByBanner.value = {
+            ...currentByBanner.value,
+            [bannerId]: 0,
+        }
+
         return
     }
-    const i = Number(idx)
-    const safe = Number.isFinite(i) ? Math.min(Math.max(0, i), n - 1) : 0
-    currentByBanner.value = { ...currentByBanner.value, [bannerId]: safe }
+
+    const requested = Number(index)
+
+    const safeIndex = Number.isFinite(requested)
+        ? Math.min(
+            Math.max(0, requested),
+            count - 1
+        )
+        : 0
+
+    currentByBanner.value = {
+        ...currentByBanner.value,
+        [bannerId]: safeIndex,
+    }
 }
 
 const canRun = () => {
-    return !(props.pauseOnHidden && typeof document !== 'undefined' && document.hidden);
-
+    return !(
+        props.pauseOnHidden
+        && typeof document !== 'undefined'
+        && document.hidden
+    )
 }
 
 const tick = () => {
     if (!canRun()) return
 
-    const nextState = { ...currentByBanner.value }
+    const nextState = {
+        ...currentByBanner.value,
+    }
 
-    for (const b of list.value) {
-        const id = unwrap(b)?.id
+    for (const banner of list.value) {
+        const entity = unwrap(banner)
+        const id = entity?.id
+
         if (!id) continue
 
-        const imgs = bannerImages(b)
-        if (imgs.length <= 1) continue
+        const images = bannerImages(banner)
 
-        if (props.pauseOnHover && hoveredByBanner.value?.[id]) continue
+        if (images.length <= 1) continue
 
-        const cur = Number(nextState[id] ?? 0)
-        nextState[id] = (cur + 1) % imgs.length
+        if (
+            props.pauseOnHover
+            && hoveredByBanner.value?.[id]
+        ) {
+            continue
+        }
+
+        const current = Number(
+            nextState[id] ?? 0
+        )
+
+        nextState[id] =
+            (current + 1) % images.length
     }
 
     currentByBanner.value = nextState
 }
 
 const stop = () => {
-    if (timer) {
-        clearInterval(timer)
-        timer = null
-    }
+    if (!timer) return
+
+    clearInterval(timer)
+    timer = null
 }
 
 const start = () => {
     stop()
-    const hasAnySlider = list.value.some((b) => bannerImages(b).length > 1)
-    if (!hasAnySlider) return
 
-    timer = setInterval(tick, Math.max(1500, Number(props.intervalMs) || 4500))
+    const hasSlider = list.value.some(
+        banner =>
+            bannerImages(banner).length > 1
+    )
+
+    if (!hasSlider) return
+
+    timer = setInterval(
+        tick,
+        Math.max(
+            1500,
+            Number(props.intervalMs) || 4500
+        )
+    )
 }
 
-const onVisibilityChange = () => start()
+const onVisibilityChange = () => {
+    start()
+}
 
 onMounted(() => {
-    const init = {}
-    for (const b of list.value) {
-        const id = unwrap(b)?.id
-        if (id) init[id] = 0
+    const initialState = {}
+
+    for (const banner of list.value) {
+        const id = unwrap(banner)?.id
+
+        if (id) {
+            initialState[id] = 0
+        }
     }
-    currentByBanner.value = init
+
+    currentByBanner.value =
+        initialState
 
     start()
 
-    if (props.pauseOnHidden && typeof document !== 'undefined') {
-        document.addEventListener('visibilitychange', onVisibilityChange)
+    if (
+        props.pauseOnHidden
+        && typeof document !== 'undefined'
+    ) {
+        document.addEventListener(
+            'visibilitychange',
+            onVisibilityChange
+        )
     }
 })
 
 onBeforeUnmount(() => {
     stop()
-    if (props.pauseOnHidden && typeof document !== 'undefined') {
-        document.removeEventListener('visibilitychange', onVisibilityChange)
+
+    if (
+        props.pauseOnHidden
+        && typeof document !== 'undefined'
+    ) {
+        document.removeEventListener(
+            'visibilitychange',
+            onVisibilityChange
+        )
     }
 })
 
 watch(
-    () => [list.value.length, props.intervalMs],
-    () => start()
+    () => [
+        list.value.length,
+        props.intervalMs,
+    ],
+    () => {
+        start()
+    }
 )
 </script>
 
@@ -168,8 +298,8 @@ watch(
                     @mouseleave="hoveredByBanner = { ...hoveredByBanner, [unwrap(b).id]: false }"
                 >
                     <a
-                        v-if="unwrap(b).link"
-                        :href="unwrap(b).link"
+                        v-if="bannerLink(b)"
+                        :href="bannerLink(b)"
                         target="_blank"
                         rel="noopener noreferrer"
                         class="block w-full h-full"
@@ -218,21 +348,31 @@ watch(
 
                 <!-- Title + optional link -->
                 <div class="p-3">
-                    <div v-if="unwrap(b).title"
-                         class="text-center font-semibold text-sm leading-snug">
+                    <div
+                        v-if="bannerTitle(b)"
+                        class="text-center font-semibold
+                                text-sm leading-snug"
+                    >
                         <a
-                            v-if="unwrap(b).link"
-                            :href="unwrap(b).link"
+                            v-if="bannerLink(b)"
+                            :href="bannerLink(b)"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="hover:underline transition
-                                   text-slate-900/85 dark:text-slate-100/85
-                                   hover:text-indigo-700 dark:hover:text-indigo-300"
+                                   text-slate-900/85
+                                   dark:text-slate-100/85
+                                   hover:text-indigo-700
+                                   dark:hover:text-indigo-300"
                         >
-                            {{ unwrap(b).title }}
+                            {{ bannerTitle(b) }}
                         </a>
-                        <span v-else class="text-slate-900/85 dark:text-slate-100/85">
-                            {{ unwrap(b).title }}
+
+                        <span
+                            v-else
+                            class="text-slate-900/85
+                                    dark:text-slate-100/85"
+                        >
+                            {{ bannerTitle(b) }}
                         </span>
                     </div>
                 </div>

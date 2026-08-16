@@ -10,7 +10,14 @@ class SchoolInstructorProfileSharedResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $firstImage = $this->whenLoaded('images', fn () => $this->images->first());
+        $translation = $this->relationLoaded('translations')
+            ? $this->translations->first()
+            : null;
+
+        $firstImage = $this->whenLoaded(
+            'images',
+            fn () => $this->images->first()
+        );
 
         $thumbnailUrl = !($firstImage instanceof MissingValue) && $firstImage
             ? ($firstImage->thumb_url ?? $firstImage->image_url ?? $firstImage->url ?? null)
@@ -21,8 +28,8 @@ class SchoolInstructorProfileSharedResource extends JsonResource
             'user_id' => $this->user_id,
 
             'slug' => $this->slug,
-            'title' => $this->translation?->title,
-            'short' => $this->translation?->short,
+            'title' => $translation?->title,
+            'short' => $translation?->short,
 
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,

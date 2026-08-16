@@ -57,7 +57,7 @@ const toggleSidebar = () => {
 
         <div v-show="!isCollapsed" class="flex flex-col gap-4">
             <RubricsSidebar :rubrics="props.rubricTree" />
-            <RecentArticlesSidebar :articles="leftArticles" title-key="articles" />
+            <RecentArticlesSidebar :articles="leftArticles" />
             <LeftBannersSidebar :left-banners="leftBanners" />
             <LeftVideosSidebar :videos="leftVideos" />
         </div>

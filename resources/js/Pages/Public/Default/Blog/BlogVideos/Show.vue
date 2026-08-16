@@ -5,7 +5,7 @@
  * @version PulsarCMS 1.0
  * @author Александр
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch, } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
@@ -152,9 +152,76 @@ const showRight = computed(() =>
     !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
 )
 
-/** Состояние сайдбаров */
-const leftCollapsed = ref(false)
-const rightCollapsed = ref(false)
+/** Ключ хранения состояния левого сайдбара */
+const LEFT_SIDEBAR_KEY =
+    'public_left_sidebar_collapsed'
+
+/** Ключ хранения состояния правого сайдбара */
+const RIGHT_SIDEBAR_KEY =
+    'public_right_sidebar_collapsed'
+
+/**
+ * Получение boolean-значения
+ * из localStorage.
+ */
+const getStoredBoolean = (
+    key,
+    defaultValue = true
+) => {
+    const value = localStorage.getItem(
+        key
+    )
+
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+/** Состояние левого сайдбара */
+const leftCollapsed = ref(
+    getStoredBoolean(
+        LEFT_SIDEBAR_KEY,
+        true
+    )
+)
+
+/** Состояние правого сайдбара */
+const rightCollapsed = ref(
+    getStoredBoolean(
+        RIGHT_SIDEBAR_KEY,
+        true
+    )
+)
+
+/**
+ * Сохраняем состояние сайдбаров.
+ *
+ * Используются общие ключи для всех
+ * публичных страниц блога.
+ */
+watch(
+    [
+        leftCollapsed,
+        rightCollapsed,
+    ],
+    () => {
+        localStorage.setItem(
+            LEFT_SIDEBAR_KEY,
+            String(
+                leftCollapsed.value
+            )
+        )
+
+        localStorage.setItem(
+            RIGHT_SIDEBAR_KEY,
+            String(
+                rightCollapsed.value
+            )
+        )
+    }
+)
 </script>
 
 <template>
@@ -196,17 +263,18 @@ const rightCollapsed = ref(false)
                 <!-- LEFT -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 pl-3 transition-all duration-300"
+                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebar
                         :rubric-tree="rubricTree"
+                        :collapsed="leftCollapsed"
                         @collapsed="leftCollapsed = $event"
                     />
                 </aside>
 
                 <!-- CENTER -->
-                <section class="w-full lg:mt-28 pb-6 slate-1 min-w-0">
+                <section class="w-full lg:mt-28 pb-6 slate-1">
                     <div class="mx-auto max-w-6xl">
                         <article
                             itemscope
@@ -366,10 +434,13 @@ const rightCollapsed = ref(false)
                 <!-- RIGHT -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-28 pr-3 transition-all duration-300"
+                    class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
-                    <RightSidebar @collapsed="rightCollapsed = $event" />
+                    <RightSidebar
+                        :collapsed="rightCollapsed"
+                        @collapsed="rightCollapsed = $event"
+                    />
                 </aside>
             </main>
         </div>

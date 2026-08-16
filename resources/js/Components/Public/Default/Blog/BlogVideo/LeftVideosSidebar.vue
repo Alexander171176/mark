@@ -1,46 +1,74 @@
 <script setup>
+import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
+
 import VideoPlayer from '@/Components/Public/Default/Blog/BlogVideo/VideoPlayer.vue'
 
-defineProps({
+const props = defineProps({
     videos: {
         type: Array,
-        default: () => []
-    }
+        default: () => [],
+    },
 })
 
-const formatDate = (dateString) => {
-    if (!dateString) return ''
-    const d = new Date(dateString)
-    if (Number.isNaN(d.getTime())) return ''
-    return d.toLocaleDateString()
+/**
+ * Нормализованный список видео.
+ */
+const normalizedVideos = computed(() => {
+    return Array.isArray(props.videos)
+        ? props.videos
+        : []
+})
+
+/**
+ * Название из нового Public-контракта.
+ */
+const videoTitle = (video) => {
+    return video?.translation?.title || ''
+}
+
+/**
+ * URL публичной страницы видео.
+ */
+const videoShowRoute = (video) => {
+    return route(
+        'public.blogVideos.show',
+        {
+            url: video?.url,
+        }
+    )
 }
 </script>
 
 <template>
     <!-- Блок видео -->
-    <div v-if="videos.length">
+    <div v-if="normalizedVideos.length">
         <ul>
             <li
-                v-for="video in videos"
+                v-for="video in normalizedVideos"
                 :key="video.id"
                 class="mb-4 overflow-hidden rounded-sm
                        border border-gray-200 dark:border-gray-700
                        bg-white dark:bg-gray-900
                        shadow-sm hover:shadow-md transition-shadow"
             >
-                <VideoPlayer :video="video" />
+                <VideoPlayer
+                    :video="video"
+                />
 
                 <div class="px-3 pb-3">
-                    <div class="text-center font-semibold text-sm leading-snug">
+                    <div
+                        class="text-center font-semibold
+                               text-sm leading-snug"
+                    >
                         <Link
-                            target="_blank"
-                            :href="`/videos/${video.url}`"
+                            :href="videoShowRoute(video)"
                             class="hover:underline transition
                                    text-slate-900/85 dark:text-slate-100/85
-                                   hover:text-indigo-700 dark:hover:text-indigo-300"
+                                   hover:text-indigo-700
+                                   dark:hover:text-indigo-300"
                         >
-                            {{ video.title }}
+                            {{ videoTitle(video) }}
                         </Link>
                     </div>
                 </div>

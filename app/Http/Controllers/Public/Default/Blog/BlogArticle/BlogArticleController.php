@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Public\Default\Blog\BlogArticle;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleResource;
-use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
+use App\Http\Resources\Public\Blog\BlogArticle\BlogArticleResource;
+use App\Http\Resources\Public\Blog\BlogArticle\BlogArticleSharedResource;
+use App\Http\Resources\Public\Blog\BlogRubric\BlogRubricSharedResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
@@ -90,9 +91,13 @@ class BlogArticleController extends Controller
             ? $articles->total()
             : $articles->count();
 
-        $articles = $useServerProcessing
-            ? $this->appendUserLikes($articles, BlogArticleResource::class)
-            : BlogArticleResource::collection($articles);
+        /**
+         * Public Index всегда использует
+         * краткий публичный Resource.
+         */
+        $articles = BlogArticleSharedResource::collection(
+            $articles
+        );
 
         $rubricTree = $this->getRubricTree($locale);
         $sidebarData = $this->getSidebarData($locale);
@@ -129,43 +134,140 @@ class BlogArticleController extends Controller
     {
         $locale = app()->getLocale();
 
-        $article = BlogArticle::query()
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        $articleQuery = BlogArticle::query()
             ->forPublic()
-            ->where('url', $url)
-            ->withCount('likes')
+            ->where(
+                'url',
+                $url
+            )
             ->with([
-                'translations',
+                /**
+                 * Текущая locale + fallback ru.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
                 'owner',
+
+                /**
+                 * Изображения + Spatie Media.
+                 */
                 'images.media',
 
+                /**
+                 * Публичные теги статьи.
+                 *
+                 * Загружаем только текущую локаль
+                 * + fallback ru.
+                 */
                 'tags' => fn ($query) => $query
                     ->forPublic()
-                    ->with('translations')
+                    ->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->whereIn(
+                            'locale',
+                            $locales
+                        ),
+                    ])
                     ->ordered($locale),
 
+                /**
+                 * Рубрики статьи.
+                 */
                 'rubrics' => fn ($query) => $query
                     ->forPublic()
-                    ->with('translations')
-                    ->ordered(),
+                    ->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->whereIn(
+                            'locale',
+                            $locales
+                        ),
+                    ]),
 
+                /**
+                 * Видео статьи.
+                 *
+                 * Public Video Resource сделаем,
+                 * когда дойдём до BlogVideo.
+                 */
                 'videos' => fn ($query) => $query
                     ->forPublic()
                     ->with([
-                        'translations',
-                        'images.media',
-                    ])
-                    ->sortByParam('sortAsc', $locale),
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->whereIn(
+                            'locale',
+                            $locales
+                        ),
 
-                'relatedArticles' => fn ($query) => $query
-                    ->forPublic()
-                    ->with([
-                        'translations',
-                        'owner',
                         'images.media',
                     ])
-                    ->withCount('likes')
-                    ->sortByParam('sortAsc', $locale),
+                    ->sortByParam(
+                        'sortAsc',
+                        $locale
+                    ),
+
+                /**
+                 * Рекомендованные статьи.
+                 */
+                'relatedArticles' => function ($query) use (
+                    $locale,
+                    $locales
+                ) {
+                    $query
+                        ->forPublic()
+                        ->with([
+                            'translations' => fn ($translationQuery) =>
+                            $translationQuery->whereIn(
+                                'locale',
+                                $locales
+                            ),
+
+                            'owner',
+
+                            'images.media',
+                        ])
+                        ->withCount([
+                            'likes',
+                        ]);
+
+                    /**
+                     * already_liked одним EXISTS
+                     * для всей выборки relatedArticles.
+                     */
+                    $this->withUserLike(
+                        $query
+                    );
+
+                    $query->sortByParam(
+                        'sortAsc',
+                        $locale
+                    );
+                },
             ])
+            ->withCount([
+                'likes',
+            ]);
+
+        $articleQuery = $this->withUserLike(
+            $articleQuery
+        );
+
+        $article = $articleQuery
             ->firstOrFail();
 
         $article->increment('views');
@@ -175,44 +277,52 @@ class BlogArticleController extends Controller
             ->sortBy('sort')
             ->first();
 
-        $alreadyLiked = auth()->check()
-            ? $article->likes()->where('user_id', auth()->id())->exists()
-            : false;
+        $recommendedArticles =
+            BlogArticleSharedResource::collection(
+                $article->relatedArticles
+            );
 
-        $recommendedArticles = $article->relatedArticles->map(function ($relatedArticle) {
-            $resolved = (new BlogArticleResource($relatedArticle))->resolve();
+        $rubricTree = $this->getRubricTree(
+            $locale
+        );
 
-            $resolved['already_liked'] = auth()->check()
-                ? $relatedArticle->likes()->where('user_id', auth()->id())->exists()
-                : false;
+        $sidebarData = $this->getSidebarData(
+            $locale
+        );
 
-            return $resolved;
-        });
+        return Inertia::render(
+            'Public/Default/Blog/BlogArticles/Show',
+            [
+                'article' =>
+                    new BlogArticleResource(
+                        $article
+                    ),
 
-        $rubricTree = $this->getRubricTree($locale);
-        $sidebarData = $this->getSidebarData($locale);
+                'breadcrumbRubric' =>
+                    $breadcrumbRubric
+                        ? new BlogRubricSharedResource(
+                        $breadcrumbRubric
+                    )
+                        : null,
 
-        return Inertia::render('Public/Default/Blog/BlogArticles/Show', [
-            'article' => array_merge(
-                (new BlogArticleResource($article))->resolve(),
-                ['already_liked' => $alreadyLiked]
-            ),
+                'recommendedArticles' =>
+                    $recommendedArticles,
 
-            'breadcrumbRubric' => $breadcrumbRubric
-                ? (new BlogRubricResource($breadcrumbRubric))->resolve()
-                : null,
+                /**
+                 * Временно Admin Resource.
+                 * Заменим после BlogVideo refactor.
+                 */
+                'articleVideos' =>
+                    BlogVideoResource::collection(
+                        $article->videos
+                    ),
 
-            'recommendedArticles' => $recommendedArticles,
+                'rubricTree' => $rubricTree,
+                'locale' => $locale,
 
-            'articleVideos' => BlogVideoResource::collection(
-                $article->videos
-            ),
-
-            'rubricTree' => $rubricTree,
-            'locale' => $locale,
-
-            ...$sidebarData,
-        ]);
+                ...$sidebarData,
+            ]
+        );
     }
 
     /** Лайк статьи. */
@@ -254,16 +364,58 @@ class BlogArticleController extends Controller
     }
 
     /** Базовый запрос для списка публичных статей. */
-    private function indexQuery(): Builder
-    {
-        return BlogArticle::query()
+    private function indexQuery(
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        $query = BlogArticle::query()
             ->forPublic()
             ->with([
-                'translations',
+                /**
+                 * Текущая locale + fallback ru.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * Автор нужен карточкам
+                 * и frontend-поиску.
+                 */
                 'owner',
+
+                /**
+                 * Изображения + Spatie Media
+                 * одним пакетным eager loading.
+                 */
                 'images.media',
             ])
-            ->withCount('likes');
+            ->withCount([
+                'likes',
+            ]);
+
+        /**
+         * Для авторизованного пользователя
+         * добавляем already_liked через EXISTS.
+         *
+         * Для гостя дополнительного SQL нет.
+         */
+        return $this->withUserLike(
+            $query
+        );
     }
 
     /** Получение списка публичных статей по активному режиму обработки. */
@@ -274,18 +426,40 @@ class BlogArticleController extends Controller
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
+        /**
+         * Server:
+         * SQL выполняет поиск,
+         * сортировку и пагинацию.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend:
+         * отдаём всю публичную коллекцию.
+         *
+         * Поиск, сортировку и пагинацию
+         * выполняет Vue.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->ordered()
             ->get();
     }
 }

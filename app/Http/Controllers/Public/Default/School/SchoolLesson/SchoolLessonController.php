@@ -11,7 +11,6 @@ use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
-use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +19,6 @@ use Inertia\Response;
 
 class SchoolLessonController extends Controller
 {
-    use WithUserLikesTrait;
     use HasPublicIndexFiltersTrait;
     use BuildsTrackTreeTrait;
     use HasSidebarDataTrait;
@@ -67,17 +65,28 @@ class SchoolLessonController extends Controller
         );
 
         $processingMode = $this->resolveProcessingMode(
-            $settings->string('publicSchoolLessonsProcessingMode', 'server')
+            $settings->string(
+                'publicSchoolLessonsProcessingMode',
+                'server'
+            )
         );
 
-        $lessonsCount = SchoolLesson::query()
-            ->forPublic($locale)
-            ->count();
+        /**
+         * Предварительный COUNT нужен только
+         * для автоматического режима.
+         */
+        $lessonsCount = null;
+
+        if ($processingMode === 'auto') {
+            $lessonsCount = SchoolLesson::query()
+                ->forPublic($locale)
+                ->count();
+        }
 
         $useServerProcessing = app(ProcessingModeService::class)
             ->shouldUseServer(
                 $processingMode,
-                $lessonsCount,
+                $lessonsCount ?? 0,
                 300
             );
 
@@ -89,13 +98,22 @@ class SchoolLessonController extends Controller
             search: $search,
         );
 
+        /**
+         * Количество найденных записей.
+         */
         $lessonsFound = $useServerProcessing
             ? $lessons->total()
             : $lessons->count();
 
-        $lessons = $useServerProcessing
-            ? $this->appendUserLikes($lessons, SchoolLessonResource::class)
-            : SchoolLessonResource::collection($lessons);
+        /**
+         * Если предварительный COUNT не выполнялся,
+         * используем уже полученные данные.
+         */
+        if ($lessonsCount === null) {
+            $lessonsCount = $lessonsFound;
+        }
+
+        $lessons = SchoolLessonResource::collection($lessons);
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
@@ -131,6 +149,7 @@ class SchoolLessonController extends Controller
     public function show(string $slug): Response
     {
         $locale = app()->getLocale();
+        $userId = auth()->id();
 
         $lesson = SchoolLesson::query()
             ->forPublic($locale)
@@ -138,21 +157,24 @@ class SchoolLessonController extends Controller
             ->with([
                 'translation',
                 'translations',
-                'images',
+                'images.media',
                 'content',
 
                 'module.translation',
                 'module.translations',
-                'module.images',
+                'module.images.media',
 
                 'module.course.translation',
                 'module.course.translations',
-                'module.course.images',
+                'module.course.images.media',
+
                 'module.course.instructorProfile.translation',
                 'module.course.instructorProfile.translations',
-                'module.course.instructorProfile.images',
+                'module.course.instructorProfile.images.media',
+
                 'module.course.tracks.translation',
                 'module.course.tracks.translations',
+
                 'module.course.hashtags.translation',
                 'module.course.hashtags.translations',
 
@@ -164,27 +186,36 @@ class SchoolLessonController extends Controller
                 'hashtags',
                 'images',
             ])
+            ->when(
+                $userId,
+                fn ($query) => $query->withExists([
+                    'likes as already_liked' => fn ($likesQuery) =>
+                    $likesQuery->where(
+                        'user_id',
+                        $userId
+                    ),
+                ])
+            )
             ->firstOrFail();
 
         $lesson->increment('views');
 
         $lessonData = (new SchoolLessonResource($lesson))->resolve();
 
-        $lessonData['already_liked'] = auth()->check()
-            ? $lesson->likes()->where('user_id', auth()->id())->exists()
-            : false;
-
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/SchoolLessons/Show', [
-            'lesson' => $lessonData,
+        return Inertia::render(
+            'Public/Default/School/SchoolLessons/Show',
+            [
+                'lesson' => $lessonData,
 
-            'trackTree' => $trackTree,
-            'locale' => $locale,
+                'trackTree' => $trackTree,
+                'locale' => $locale,
 
-            ...$sidebarData,
-        ]);
+                ...$sidebarData,
+            ]
+        );
     }
 
     /** Лайк урока. */
@@ -224,33 +255,38 @@ class SchoolLessonController extends Controller
     /** Базовый запрос для списка публичных уроков. */
     private function indexQuery(string $locale): Builder
     {
+        $userId = auth()->id();
+
         return SchoolLesson::query()
             ->forPublic($locale)
             ->with([
-                'translation',
                 'translations',
-                'images',
+                'images.media',
                 'content',
 
-                'module.translation',
                 'module.translations',
-                'module.images',
+                'module.images.media',
 
-                'module.course.translation',
                 'module.course.translations',
-                'module.course.images',
-                'module.course.instructorProfile.translation',
-                'module.course.instructorProfile.translations',
-                'module.course.instructorProfile.images',
+                'module.course.images.media',
 
-                'hashtags.translation',
+                'module.course.instructorProfile.translations',
+                'module.course.instructorProfile.images.media',
+
                 'hashtags.translations',
             ])
             ->withCount([
                 'likes',
                 'hashtags',
                 'images',
-            ]);
+            ])
+            ->when(
+                $userId,
+                fn ($query) => $query->withExists([
+                    'likes as already_liked' => fn ($likesQuery) =>
+                    $likesQuery->where('user_id', $userId),
+                ])
+            );
     }
 
     /** Получение списка публичных уроков по активному режиму обработки. */

@@ -262,28 +262,12 @@ const normalizeText = (value) => {
 
 /** Название рубрики */
 const getRubricTitle = (rubric) => {
-    return rubric?.title
-        || rubric?.name
-        || rubric?.translation?.title
-        || rubric?.translation?.name
-        || rubric?.current_translation?.title
-        || rubric?.current_translation?.name
-        || rubric?.translations?.[0]?.title
-        || rubric?.translations?.[0]?.name
-        || ''
+    return rubric?.translation?.title || ''
 }
 
 /** Краткий текст рубрики */
 const getRubricShort = (rubric) => {
-    return rubric?.short
-        || rubric?.description
-        || rubric?.translation?.short
-        || rubric?.translation?.description
-        || rubric?.current_translation?.short
-        || rubric?.current_translation?.description
-        || rubric?.translations?.[0]?.short
-        || rubric?.translations?.[0]?.description
-        || ''
+    return rubric?.translation?.short || ''
 }
 
 /** Локальный поиск */

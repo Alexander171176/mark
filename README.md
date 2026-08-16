@@ -290,6 +290,8 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Blog/BlogRubric/BlogRubricSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Blog/BlogRubric/BlogRubricController --resource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/Blog/BlogRubric/BlogRubricController` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/BlogRubric/BlogRubricResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/BlogRubric/BlogRubricSharedResource` <br>
 
 2) creating business logic app BlogArticle <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogArticle/BlogArticle -mfs` <br>
@@ -310,6 +312,8 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Blog/BlogArticle/BlogArticleSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Blog/BlogArticle/BlogArticleController --resource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/Blog/BlogArticle/BlogArticleController` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/BlogArticle/BlogArticleResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/BlogArticle/BlogArticleSharedResource` <br>
 `docker exec mark-php-app php artisan make:model User/Like/BlogArticleLike -m` <br>
 
 3) creating business logic app BlogTag <br>
@@ -324,6 +328,8 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Blog/BlogTag/BlogTagSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Blog/BlogTag/BlogTagController --resource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/Blog/BlogTag/BlogTagController` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/BlogTag/BlogTagResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/BlogTag/BlogTagSharedResource` <br>
 
 4) creating business logic app BlogBanner <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogBanner/BlogBanner -mfs` <br>
@@ -338,6 +344,7 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Blog/BlogBanner/BlogBannerImageResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Blog/BlogBanner/BlogBannerSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Blog/BlogBanner/BlogBannerController --resource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/BlogBanner/BlogBannerSharedResource` <br>
 
 5) creating business logic app BlogVideo <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogVideo/BlogVideo -mfs` <br>
@@ -356,6 +363,8 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Blog/BlogVideo/BlogVideoImageResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Blog/BlogVideo/BlogVideoController --resource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/Blog/BlogVideo/BlogVideoController` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/BlogVideo/BlogVideoResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/BlogVideo/BlogVideoSharedResource` <br>
 -------------------------------------------------------------------------------------
 
 1) creating business logic app Comment <br>
@@ -370,6 +379,8 @@ Analytics
 `docker exec mark-php-app php artisan make:request Admin/Blog/Comment/ApproveCommentRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Blog/Comment/CommentController --resource` <br>
 `docker exec mark-php-app php artisan make:controller Public/CommentController --resource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/Comment/CommentResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Blog/Comment/CommentSharedResource` <br>
 -------------------------------------------------------------------------------------
 
 1) creating business logic app Report <br>

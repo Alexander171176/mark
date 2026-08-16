@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Blog\BlogBanner;
 use App\Http\Controllers\Admin\Blog\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogBanner\BlogBannerRequest;
 use App\Http\Resources\Admin\Blog\BlogBanner\BlogBannerResource;
+use App\Http\Resources\Admin\Blog\BlogBanner\BlogBannerSharedResource;
 use App\Models\Admin\Blog\BlogBanner\BlogBanner;
 use App\Models\Admin\Blog\BlogBanner\BlogBannerImage;
 use App\Services\Admin\ProcessingModeService;
@@ -97,7 +98,7 @@ class BlogBannerController extends BaseBlogAdminController
                 'adminBlogBannersDefaultSort' => $defaultSort,
                 'adminBlogBannersProcessingMode' => $processingMode,
 
-                'banners' => BlogBannerResource::collection($banners),
+                'banners' => BlogBannerSharedResource::collection($banners),
                 'bannersCount' => $bannersCount,
 
                 'sortParam' => $sortParam,
@@ -199,25 +200,48 @@ class BlogBannerController extends BaseBlogAdminController
     }
 
     /** Страница редактирования баннера */
-    public function edit(int $blogBanner, Request $request): Response
-    {
+    public function edit(
+        int $blogBanner,
+        Request $request
+    ): Response {
         $banner = $this->baseQuery()
             ->with([
-                'owner',
-                'moderator',
+                /**
+                 * Для Edit нужны все переводы,
+                 * потому что форма работает
+                 * с языковыми вкладками.
+                 */
                 'translations',
-                'images',
+
+                /**
+                 * Изображения + Spatie Media
+                 * нужны форме редактирования.
+                 */
+                'images.media',
             ])
-            ->withCount(['images'])
-            ->findOrFail($blogBanner);
+            ->findOrFail(
+                $blogBanner
+            );
 
-        $currentLocale = $this->resolveLocale($request);
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        return Inertia::render('Admin/Blog/BlogBanners/Edit', [
-            'banner' => new BlogBannerResource($banner),
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+        return Inertia::render(
+            'Admin/Blog/BlogBanners/Edit',
+            [
+                'banner' =>
+                    new BlogBannerResource(
+                        $banner
+                    ),
+
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+            ]
+        );
     }
 
     /** Обновление баннера */
@@ -354,15 +378,39 @@ class BlogBannerController extends BaseBlogAdminController
         }
     }
 
-    /** Базовый запрос списка баннеров */
-    private function indexBannersQuery(): Builder
-    {
+    /** Базовый запрос списка баннеров. */
+    private function indexBannersQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
+                /**
+                 * Для Admin Index нужен только
+                 * перевод выбранной локали.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                /**
+                 * Владелец нужен отображению,
+                 * поиску и сортировке.
+                 */
                 'owner',
+
+                /**
+                 * Модератор нужен
+                 * frontend-поиску.
+                 */
                 'moderator',
-                'translations',
-                'images',
+
+                /**
+                 * Изображения + Spatie Media
+                 * загружаются пакетно.
+                 */
+                'images.media',
             ])
             ->withCount([
                 'images',
@@ -377,18 +425,47 @@ class BlogBannerController extends BaseBlogAdminController
         string $sort,
         string $search = '',
     ) {
-        $query = $this->indexBannersQuery();
+        $query = $this->indexBannersQuery(
+            $locale
+        );
 
+        /**
+         * Server mode:
+         * поиск, фильтрация, сортировка
+         * и пагинация выполняются SQL.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend mode:
+         *
+         * backend отдаёт полную коллекцию,
+         * а Vue выполняет поиск,
+         * фильтрацию, сортировку
+         * и локальную пагинацию.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->orderBy(
+                'sort',
+                'asc'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
     }
 }

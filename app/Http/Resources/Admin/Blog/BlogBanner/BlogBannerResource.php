@@ -11,11 +11,28 @@ class BlogBannerResource extends JsonResource
     {
         $currentLocale = app()->getLocale();
 
-        $currentTranslation = $this->whenLoaded('translations', function () use ($currentLocale) {
-            return $this->translations->firstWhere('locale', $currentLocale)
-                ?: $this->translations->firstWhere('locale', config('app.fallback_locale', 'ru'))
-                    ?: $this->translations->first();
-        });
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $currentTranslation = $this->relationLoaded('translations')
+            ? (
+            $this->translations->firstWhere(
+                'locale',
+                $currentLocale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
+            : null;
+
+        $cover = $this->relationLoaded('images')
+            ? $this->images->first()
+            : null;
 
         $cover = null;
 

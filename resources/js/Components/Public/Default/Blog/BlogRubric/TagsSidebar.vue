@@ -2,23 +2,39 @@
 import { Link } from '@inertiajs/vue3'
 import { computed } from 'vue'
 import { unwrap, unwrapList } from '@/composables/useUnwrap'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const props = defineProps({
-    tags: { type: [Array, Object], default: () => [] },
+    tags: {
+        type: [Array, Object],
+        default: () => [],
+    },
 })
 
+/** Нормализованный список тегов */
 const list = computed(() => unwrapList(props.tags))
+
+/** Имя тега из Public Resource */
+const getTagName = (tag) => {
+    const item = unwrap(tag)
+
+    return item?.translation?.name || ''
+}
+
+/** URL страницы тега */
+const getTagUrl = (tag) => {
+    const item = unwrap(tag)
+
+    return `/blog/tags/${item?.slug || ''}`
+}
 </script>
 
 <template>
-    <!-- Блок тегов блога -->
+    <!-- Облако тегов блога -->
     <div class="flex flex-wrap items-center gap-2">
         <Link
             v-for="tag in list"
             :key="unwrap(tag).id"
-            :href="`/blog/tags/${unwrap(tag).slug}`"
+            :href="getTagUrl(tag)"
             aria-current="page"
             class="flex items-center justify-start gap-2
                    px-3 py-1 transition rounded-md
@@ -27,7 +43,7 @@ const list = computed(() => unwrapList(props.tags))
                    border border-gray-400 dark:border-gray-400
                    hover:bg-slate-200 dark:hover:bg-slate-800"
         >
-            {{ unwrap(tag).name }}
+            {{ getTagName(tag) }}
         </Link>
     </div>
 </template>

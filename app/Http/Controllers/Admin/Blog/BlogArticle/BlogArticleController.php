@@ -69,41 +69,140 @@ class BlogArticleController extends BaseBlogAdminController
     ];
 
     /** Общие данные для create/edit */
-    private function sharedSelects(string $locale, ?int $excludeArticleId = null): array
-    {
+    private function sharedSelects(
+        string $locale,
+        ?int $excludeArticleId = null
+    ): array {
+        /**
+         * Рубрики для multiselect.
+         */
         $rubrics = BlogRubric::query()
-            ->with(['translations'])
-            ->orderBy('sort')
-            ->orderByDesc('id')
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+            ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
+        /**
+         * Теги для multiselect.
+         */
         $tags = BlogTag::query()
-            ->with(['translations'])
-            ->orderBy('sort')
-            ->orderByDesc('id')
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+            ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
+        /**
+         * Видео для multiselect.
+         */
         $videos = BlogVideo::query()
-            ->with(['translations', 'images'])
-            ->whereHas('translations', fn (Builder $query) => $query->where('locale', $locale))
-            ->orderBy('sort')
-            ->orderByDesc('id')
+            ->whereHas(
+                'translations',
+                fn (Builder $query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                )
+            )
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+            ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
+        /**
+         * Связанные статьи для multiselect.
+         */
         $relatedArticles = $this->baseQuery()
-            ->with(['translations', 'images'])
-            ->whereHas('translations', fn (Builder $query) => $query->where('locale', $locale))
-            ->when($excludeArticleId, fn (Builder $query) => $query->where('id', '<>', $excludeArticleId))
-            ->orderBy('sort')
-            ->orderByDesc('id')
+            ->whereHas(
+                'translations',
+                fn (Builder $query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                )
+            )
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+            ])
+            ->when(
+                $excludeArticleId,
+                fn (Builder $query) =>
+                $query->where(
+                    'id',
+                    '<>',
+                    $excludeArticleId
+                )
+            )
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
         return [
-            'rubrics' => BlogRubricSharedResource::collection($rubrics),
-            'tags' => BlogTagSharedResource::collection($tags),
-            'videos' => BlogVideoSharedResource::collection($videos),
-            'related_articles' => BlogArticleSharedResource::collection($relatedArticles),
-            'relatedArticles' => BlogArticleSharedResource::collection($relatedArticles),
+            'rubrics' =>
+                BlogRubricSharedResource::collection(
+                    $rubrics
+                ),
+
+            'tags' =>
+                BlogTagSharedResource::collection(
+                    $tags
+                ),
+
+            'videos' =>
+                BlogVideoSharedResource::collection(
+                    $videos
+                ),
+
+            'related_articles' =>
+                BlogArticleSharedResource::collection(
+                    $relatedArticles
+                ),
+
+            /**
+             * Пока оставляем второй ключ,
+             * потому что Edit поддерживает оба.
+             */
+            'relatedArticles' =>
+                BlogArticleSharedResource::collection(
+                    $relatedArticles
+                ),
         ];
     }
 
@@ -197,7 +296,7 @@ class BlogArticleController extends BaseBlogAdminController
                 'adminBlogArticlesDefaultSort' => $defaultSort,
                 'adminBlogArticlesProcessingMode' => $processingMode,
 
-                'articles' => BlogArticleResource::collection($articles),
+                'articles' => BlogArticleSharedResource::collection($articles),
                 'articlesCount' => $articlesCount,
 
                 'sortParam' => $sortParam,
@@ -318,39 +417,94 @@ class BlogArticleController extends BaseBlogAdminController
     }
 
     /** Страница редактирования статьи */
-    public function edit(int $blogArticle, Request $request): Response
-    {
+    public function edit(
+        int $blogArticle,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
+
+        /**
+         * Основная редактируемая статья.
+         *
+         * Все переводы нужны TranslationTabs.
+         * Вложенным multiselect-связям нужен
+         * только перевод текущей locale.
+         */
         $article = $this->baseQuery()
             ->with([
-                'owner',
-                'moderator',
+                /**
+                 * Все переводы основной статьи.
+                 */
                 'translations',
-                'images',
-                'rubrics.translations',
-                'tags.translations',
-                'videos.translations',
-                'videos.images',
-                'relatedArticles.translations',
-                'relatedArticles.images',
-            ])
-            ->withCount([
-                'comments',
-                'rubrics',
-                'tags',
-                'images',
-                'videos',
-                'likes',
-                'relatedArticles',
-            ])
-            ->findOrFail($blogArticle);
 
-        $currentLocale = $this->resolveLocale($request);
+                /**
+                 * Изображения основной статьи.
+                 */
+                'images.media',
 
-        return Inertia::render('Admin/Blog/BlogArticles/Edit', array_merge([
-            'article' => new BlogArticleResource($article),
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ], $this->sharedSelects($currentLocale, $article->id)));
+                /**
+                 * Уже выбранные рубрики.
+                 */
+                'rubrics.translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $currentLocale
+                ),
+
+                /**
+                 * Уже выбранные теги.
+                 */
+                'tags.translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $currentLocale
+                ),
+
+                /**
+                 * Уже выбранные видео.
+                 */
+                'videos.translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $currentLocale
+                ),
+
+                /**
+                 * Уже выбранные связанные статьи.
+                 */
+                'relatedArticles.translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $currentLocale
+                ),
+            ])
+            ->findOrFail(
+                $blogArticle
+            );
+
+        return Inertia::render(
+            'Admin/Blog/BlogArticles/Edit',
+            array_merge(
+                [
+                    'article' =>
+                        new BlogArticleResource(
+                            $article
+                        ),
+
+                    'currentLocale' =>
+                        $currentLocale,
+
+                    'availableLocales' =>
+                        $this->availableLocales(),
+                ],
+                $this->sharedSelects(
+                    $currentLocale,
+                    $article->id
+                )
+            )
+        );
     }
 
     /** Обновление статьи */
@@ -515,20 +669,43 @@ class BlogArticleController extends BaseBlogAdminController
     }
 
     /** Базовый запрос для списка статей. */
-    private function indexQuery(): Builder
-    {
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
+                /**
+                 * Автор реально используется
+                 * таблицей, карточками,
+                 * поиском и сортировкой.
+                 */
                 'owner',
-                'moderator',
-                'translations',
-                'images',
-                'rubrics.translations',
-                'tags.translations',
-                'videos.translations',
-                'videos.images',
-                'relatedArticles.translations',
-                'relatedArticles.images',
+
+                /**
+                 * Только выбранная locale
+                 * для административного Index.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                /**
+                 * Изображения + Spatie Media
+                 * пакетным eager loading.
+                 */
+                'images.media',
+
+                /**
+                 * Рубрики реально показываются
+                 * в таблице и карточках.
+                 */
+                'rubrics.translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
             ->withCount([
                 'comments',
@@ -541,7 +718,10 @@ class BlogArticleController extends BaseBlogAdminController
             ]);
     }
 
-    /** Получение списка статей по активному режиму обработки. */
+    /**
+     * Получение списка статей
+     * по активному режиму обработки.
+     */
     private function getIndexArticles(
         string $locale,
         bool $useServerProcessing,
@@ -549,16 +729,38 @@ class BlogArticleController extends BaseBlogAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
+        /**
+         * Server:
+         * поиск, фильтрация, сортировка
+         * и пагинация выполняются в БД.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend:
+         * отдаём всю коллекцию.
+         *
+         * Поиск, фильтрация, сортировка
+         * и пагинация выполняются в Vue.
+         */
         return $query
             ->ordered()
             ->get();

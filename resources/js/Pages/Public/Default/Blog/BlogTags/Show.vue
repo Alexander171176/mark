@@ -98,13 +98,6 @@ const lastPage = computed(() => {
     return Number(props.articles?.meta?.last_page ?? props.articles?.last_page ?? 1) || 1
 })
 
-/** Количество статей на странице */
-const perPageArticles = computed(() => {
-    const value = Number(props.filters?.per_page_articles ?? 3)
-
-    return Number.isFinite(value) ? value : 3
-})
-
 /** Поиск по статьям */
 const qArticles = ref(String(props.filters?.q_articles ?? ''))
 
@@ -153,7 +146,6 @@ const reloadArticles = (page = 1) => {
         {
             q_articles: qArticles.value || undefined,
             sort_articles: sortArticles.value || undefined,
-            per_page_articles: perPageArticles.value,
             page_articles: page,
             view: viewMode.value || undefined,
         },
@@ -230,24 +222,86 @@ const showRight = computed(() =>
     !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
 )
 
-/** Состояние сайдбаров */
-const leftCollapsed = ref(false)
-const rightCollapsed = ref(false)
-
-/** Количество колонок сетки */
-const articleGridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
-
-    return leftExpanded && rightExpanded ? 2 : 3
-})
-
 /** Проверка что иконка является SVG */
 const hasSvgIcon = computed(() => {
     if (!tag.value?.icon) return false
 
     return /^\s*<svg[\s\S]*<\/svg>\s*$/i.test(String(tag.value.icon))
 })
+
+const LEFT_SIDEBAR_KEY =
+    'public_left_sidebar_collapsed'
+
+const RIGHT_SIDEBAR_KEY =
+    'public_right_sidebar_collapsed'
+
+const getStoredBoolean = (
+    key,
+    defaultValue = true
+) => {
+    const value = localStorage.getItem(key)
+
+    if (value === null) {
+        return defaultValue
+    }
+
+    return value === 'true'
+}
+
+const leftCollapsed = ref(
+    getStoredBoolean(
+        LEFT_SIDEBAR_KEY,
+        true
+    )
+)
+
+const rightCollapsed = ref(
+    getStoredBoolean(
+        RIGHT_SIDEBAR_KEY,
+        true
+    )
+)
+
+const articleGridCols = computed(() => {
+    const leftExpanded =
+        showLeft.value
+        && !leftCollapsed.value
+
+    const rightExpanded =
+        showRight.value
+        && !rightCollapsed.value
+
+    if (
+        leftExpanded
+        && rightExpanded
+    ) {
+        return 2
+    }
+
+    if (
+        leftExpanded
+        || rightExpanded
+    ) {
+        return 3
+    }
+
+    return 4
+})
+
+watch(
+    [leftCollapsed, rightCollapsed],
+    () => {
+        localStorage.setItem(
+            LEFT_SIDEBAR_KEY,
+            String(leftCollapsed.value)
+        )
+
+        localStorage.setItem(
+            RIGHT_SIDEBAR_KEY,
+            String(rightCollapsed.value)
+        )
+    }
+)
 </script>
 
 <template>
@@ -279,16 +333,17 @@ const hasSvgIcon = computed(() => {
     <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
+        <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
                 <!-- LEFT -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 pl-3 transition-all duration-300"
+                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebar
                         :rubric-tree="rubricTree"
+                        :collapsed="leftCollapsed"
                         @collapsed="leftCollapsed = $event"
                     />
                 </aside>
@@ -450,10 +505,13 @@ const hasSvgIcon = computed(() => {
                 <!-- RIGHT -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-28 pr-3 transition-all duration-300"
+                    class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
-                    <RightSidebar @collapsed="rightCollapsed = $event" />
+                    <RightSidebar
+                        :collapsed="rightCollapsed"
+                        @collapsed="rightCollapsed = $event"
+                    />
                 </aside>
             </main>
         </div>

@@ -9,6 +9,14 @@ class SchoolTrackResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        /**
+         * scopeForPublic() уже загружает translations
+         * только для текущей локали.
+         */
+        $translation = $this->relationLoaded('translations')
+            ? $this->translations->first()
+            : null;
+
         return [
             'id' => $this->id,
 
@@ -18,13 +26,13 @@ class SchoolTrackResource extends JsonResource
 
             'slug' => $this->slug,
 
-            'name' => $this->translation?->name,
-            'short' => $this->translation?->short,
-            'description' => $this->translation?->description,
+            'name' => $translation?->name,
+            'short' => $translation?->short,
+            'description' => $translation?->description,
 
-            'meta_title' => $this->translation?->meta_title,
-            'meta_keywords' => $this->translation?->meta_keywords,
-            'meta_desc' => $this->translation?->meta_desc,
+            'meta_title' => $translation?->meta_title,
+            'meta_keywords' => $translation?->meta_keywords,
+            'meta_desc' => $translation?->meta_desc,
 
             'views' => (int) $this->views,
 

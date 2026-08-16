@@ -3,15 +3,9 @@
 namespace App\Http\Resources\Admin\Blog\Comment;
 
 use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleSharedResource;
-use App\Http\Resources\Admin\Blog\BlogBanner\BlogBannerSharedResource;
-use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricSharedResource;
-use App\Http\Resources\Admin\Blog\BlogTag\BlogTagSharedResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoSharedResource;
 use App\Http\Resources\Admin\System\User\UserSharedResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
-use App\Models\Admin\Blog\BlogBanner\BlogBanner;
-use App\Models\Admin\Blog\BlogRubric\BlogRubric;
-use App\Models\Admin\Blog\BlogTag\BlogTag;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -20,81 +14,183 @@ class CommentResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $commentableTitle = null;
+        $locale = app()->getLocale();
 
-        if ($this->relationLoaded('commentable') && $this->commentable) {
-            if ($this->commentable instanceof BlogArticle) {
-                $commentableTitle = $this->commentable->getTranslatedTitle();
-            } elseif ($this->commentable instanceof BlogVideo) {
-                $commentableTitle = $this->commentable->getTranslatedTitle();
-            } elseif ($this->commentable instanceof BlogRubric) {
-                $commentableTitle = $this->commentable->getTranslatedTitle();
-            } elseif ($this->commentable instanceof BlogTag) {
-                $commentableTitle = $this->commentable->getTranslatedName();
-            } elseif ($this->commentable instanceof BlogBanner) {
-                $commentableTitle = $this->commentable->getTranslatedTitle();
-            } else {
-                $commentableTitle = $this->commentable->title
-                    ?? $this->commentable->name
-                    ?? null;
-            }
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        /**
+         * Перевод объекта комментария.
+         *
+         * Поддерживаются только:
+         * - BlogArticle;
+         * - BlogVideo.
+         *
+         * Resource не выполняет
+         * дополнительных SQL-запросов.
+         */
+        $commentableTranslation = null;
+
+        if (
+            $this->relationLoaded('commentable')
+            && $this->commentable
+            && $this->commentable->relationLoaded('translations')
+        ) {
+            $commentableTranslation =
+                $this->commentable
+                    ->translations
+                    ->firstWhere(
+                        'locale',
+                        $locale
+                    )
+                    ?: $this->commentable
+                    ->translations
+                    ->firstWhere(
+                        'locale',
+                        $fallbackLocale
+                    )
+                    ?: $this->commentable
+                        ->translations
+                        ->first();
         }
+
+        /**
+         * Название статьи или видео.
+         */
+        $commentableTitle = match (true) {
+            $this->commentable instanceof BlogArticle,
+                $this->commentable instanceof BlogVideo =>
+            $commentableTranslation?->title,
+
+            default =>
+            null,
+        };
 
         return [
             'id' => $this->id,
 
-            // keys
-            'user_id' => $this->user_id,
-            'parent_id' => $this->parent_id,
+            /**
+             * Keys.
+             */
+            'user_id' =>
+                $this->user_id,
 
-            // content
-            'content' => $this->content,
-            'activity' => $this->activity,
+            'parent_id' =>
+                $this->parent_id,
 
-            // moderation
-            'moderation_status' => $this->moderation_status,
-            'is_approved' => (int) $this->moderation_status === 1,
-            'moderated_by' => $this->moderated_by,
-            'moderated_at' => $this->moderated_at?->toISOString(),
-            'moderation_note' => $this->moderation_note,
+            /**
+             * Content.
+             */
+            'content' =>
+                $this->content,
 
-            // timestamps
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            'activity' =>
+                (bool) $this->activity,
 
-            // relations
-            'user' => new UserSharedResource($this->whenLoaded('user')),
+            /**
+             * Moderation.
+             */
+            'moderation_status' =>
+                (int) $this->moderation_status,
 
-            'moderator' => $this->whenLoaded('moderator', function () {
-                return new UserSharedResource($this->moderator);
-            }),
+            'is_approved' =>
+                (int) $this->moderation_status === 1,
 
-            // polymorphic
-            'commentable_type' => $this->commentable_type,
-            'commentable_id' => $this->commentable_id,
-            'commentable_title' => $commentableTitle,
+            'moderated_by' =>
+                $this->moderated_by,
 
-            'commentable' => $this->whenLoaded('commentable', function () {
-                if (!$this->commentable) {
-                    return null;
+            'moderated_at' =>
+                $this->moderated_at?->toISOString(),
+
+            'moderation_note' =>
+                $this->moderation_note,
+
+            /**
+             * Timestamps.
+             */
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
+
+            /**
+             * Автор комментария.
+             */
+            'user' => $this->whenLoaded(
+                'user',
+                fn () => $this->user
+                    ? new UserSharedResource(
+                        $this->user
+                    )
+                    : null
+            ),
+
+            /**
+             * Модератор.
+             */
+            'moderator' => $this->whenLoaded(
+                'moderator',
+                fn () => $this->moderator
+                    ? new UserSharedResource(
+                        $this->moderator
+                    )
+                    : null
+            ),
+
+            /**
+             * Polymorphic object.
+             */
+            'commentable_type' =>
+                $this->commentable_type,
+
+            'commentable_id' =>
+                $this->commentable_id,
+
+            'commentable_title' =>
+                $commentableTitle,
+
+            /**
+             * Краткий объект статьи или видео.
+             */
+            'commentable' => $this->whenLoaded(
+                'commentable',
+                function () {
+                    if (!$this->commentable) {
+                        return null;
+                    }
+
+                    return match (true) {
+                        $this->commentable instanceof BlogArticle =>
+                        new BlogArticleSharedResource(
+                            $this->commentable
+                        ),
+
+                        $this->commentable instanceof BlogVideo =>
+                        new BlogVideoSharedResource(
+                            $this->commentable
+                        ),
+
+                        default =>
+                        null,
+                    };
                 }
+            ),
 
-                return match (true) {
-                    $this->commentable instanceof BlogArticle => new BlogArticleSharedResource($this->commentable),
-                    $this->commentable instanceof BlogVideo => new BlogVideoSharedResource($this->commentable),
-                    $this->commentable instanceof BlogRubric => new BlogRubricSharedResource($this->commentable),
-                    $this->commentable instanceof BlogTag => new BlogTagSharedResource($this->commentable),
-                    $this->commentable instanceof BlogBanner => new BlogBannerSharedResource($this->commentable),
-                    default => [
-                        'id' => $this->commentable_id,
-                        'type' => class_basename((string) $this->commentable_type),
-                    ],
-                };
-            }),
+            /**
+             * Replies.
+             */
+            'replies' =>
+                CommentSharedResource::collection(
+                    $this->whenLoaded('replies')
+                ),
 
-            // replies
-            'replies' => CommentSharedResource::collection($this->whenLoaded('replies')),
-            'replies_count' => $this->whenCounted('replies'),
+            'replies_count' => $this->when(
+                isset($this->replies_count),
+                fn () => (int) $this->replies_count
+            ),
         ];
     }
 }

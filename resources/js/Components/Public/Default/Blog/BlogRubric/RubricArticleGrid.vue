@@ -30,23 +30,18 @@ const normalizedArticles = computed(() => {
     return Array.isArray(props.articles) ? props.articles : []
 })
 
-const getTranslation = (article) => {
-    return article?.translation || {}
-}
-
 const getTitle = (article) => {
-    return getTranslation(article).title || article?.title || ''
+    return article?.translation?.title || ''
 }
 
 const getShort = (article) => {
-    return getTranslation(article).short || article?.short || ''
+    return article?.translation?.short || ''
 }
 
 const getAuthorName = (article) => {
-    return getTranslation(article).pseudonym ||
-        article?.pseudonym ||
-        article?.owner?.name ||
-        ''
+    return article?.translation?.pseudonym
+        || article?.owner?.name
+        || ''
 }
 
 const getShowRoute = (article) => {

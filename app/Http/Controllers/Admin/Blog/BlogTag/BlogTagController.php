@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Blog\BlogTag;
 use App\Http\Controllers\Admin\Blog\BaseBlogAdminController;
 use App\Http\Requests\Admin\Blog\BlogTag\BlogTagRequest;
 use App\Http\Resources\Admin\Blog\BlogTag\BlogTagResource;
+use App\Http\Resources\Admin\Blog\BlogTag\BlogTagSharedResource;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
@@ -92,7 +93,7 @@ class BlogTagController extends BaseBlogAdminController
                 'adminBlogTagsDefaultSort' => $defaultSort,
                 'adminBlogTagsProcessingMode' => $processingMode,
 
-                'tags' => BlogTagResource::collection($tags),
+                'tags' => BlogTagSharedResource::collection($tags),
                 'tagsCount' => $tagsCount,
 
                 'sortParam' => $sortParam,
@@ -196,11 +197,13 @@ class BlogTagController extends BaseBlogAdminController
     {
         $tag = $this->baseQuery()
             ->with([
-                'owner',
-                'moderator',
+                /**
+                 * Для Edit нужны все переводы:
+                 * TranslationTabs позволяет динамически
+                 * переключать, добавлять и удалять локали.
+                 */
                 'translations',
             ])
-            ->withCount(['articles'])
             ->findOrFail($blogTag);
 
         $currentLocale = $this->resolveLocale($request);
@@ -323,14 +326,34 @@ class BlogTagController extends BaseBlogAdminController
         }
     }
 
-    /** Базовый запрос списка тегов */
-    private function indexTagsQuery(): Builder
-    {
+    /**
+     * Базовый запрос списка тегов.
+     */
+    private function indexTagsQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
+                /**
+                 * Автор нужен UI,
+                 * frontend-поиску и сортировке.
+                 */
                 'owner',
+
+                /**
+                 * Модератор пока нужен
+                 * frontend-поиску.
+                 */
                 'moderator',
-                'translations',
+
+                /**
+                 * Только выбранная локаль.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
             ->withCount([
                 'articles',
@@ -345,18 +368,42 @@ class BlogTagController extends BaseBlogAdminController
         string $sort,
         string $search = '',
     ) {
-        $query = $this->indexTagsQuery();
+        $query = $this->indexTagsQuery(
+            $locale
+        );
 
+        /**
+         * Server:
+         * поиск, фильтрация, сортировка
+         * и пагинация выполняются в SQL.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend:
+         * отдаём всю доступную коллекцию.
+         *
+         * Поиск, фильтрацию, сортировку
+         * и пагинацию выполняет Vue.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->ordered(
+                $locale
+            )
             ->get();
     }
 }

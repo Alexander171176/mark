@@ -2,10 +2,10 @@
 
 namespace App\Services\Public\Blog;
 
-use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleSharedResource;
-use App\Http\Resources\Admin\Blog\BlogBanner\BlogBannerSharedResource;
-use App\Http\Resources\Admin\Blog\BlogTag\BlogTagSharedResource;
-use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoSharedResource;
+use App\Http\Resources\Public\Blog\BlogArticle\BlogArticleSharedResource;
+use App\Http\Resources\Public\Blog\BlogTag\BlogTagSharedResource;
+use App\Http\Resources\Public\Blog\BlogBanner\BlogBannerSharedResource;
+use App\Http\Resources\Public\Blog\BlogVideo\BlogVideoSharedResource;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
 use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagSharedResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
@@ -52,112 +52,242 @@ class BlogSidebarService
         return [
             'tags' => BlogTagSharedResource::collection($this->getTags($locale)),
 
-            'leftArticles' => BlogArticleSharedResource::collection($this->getArticlesByFlag($locale, 'left', 3)),
-            'mainArticles' => BlogArticleSharedResource::collection($this->getArticlesByFlag($locale, 'main', 6)),
-            'rightArticles' => BlogArticleSharedResource::collection($this->getArticlesByFlag($locale, 'right', 3)),
-            'popularArticles' => BlogArticleSharedResource::collection($this->getPopularArticles($locale, 6)),
+            'leftArticles' => BlogArticleSharedResource::collection($this->getArticlesByFlag($locale, 'left', 2)),
+            'mainArticles' => BlogArticleSharedResource::collection($this->getArticlesByFlag($locale, 'main', 2)),
+            'rightArticles' => BlogArticleSharedResource::collection($this->getArticlesByFlag($locale, 'right', 2)),
+            'popularArticles' => BlogArticleSharedResource::collection($this->getPopularArticles($locale, 12)),
 
-            'leftBanners' => BlogBannerSharedResource::collection($this->getBannersByFlag($locale, 'left', 3)),
-            'mainBanners' => BlogBannerSharedResource::collection($this->getBannersByFlag($locale, 'main', 6)),
-            'rightBanners' => BlogBannerSharedResource::collection($this->getBannersByFlag($locale, 'right', 3)),
+            'leftBanners' => BlogBannerSharedResource::collection($this->getBannersByFlag($locale, 'left', 2)),
+            'mainBanners' => BlogBannerSharedResource::collection($this->getBannersByFlag($locale, 'main', 2)),
+            'rightBanners' => BlogBannerSharedResource::collection($this->getBannersByFlag($locale, 'right', 2)),
 
-            'leftVideos' => BlogVideoSharedResource::collection($this->getVideosByFlag($locale, 'left', 3)),
-            'mainVideos' => BlogVideoSharedResource::collection($this->getVideosByFlag($locale, 'main', 6)),
-            'rightVideos' => BlogVideoSharedResource::collection($this->getVideosByFlag($locale, 'right', 3)),
-            'popularVideos' => BlogVideoSharedResource::collection($this->getPopularVideos($locale, 6)),
+            'leftVideos' => BlogVideoSharedResource::collection($this->getVideosByFlag($locale, 'left', 2)),
+            'mainVideos' => BlogVideoSharedResource::collection($this->getVideosByFlag($locale, 'main', 2)),
+            'rightVideos' => BlogVideoSharedResource::collection($this->getVideosByFlag($locale, 'right', 2)),
+            'popularVideos' => BlogVideoSharedResource::collection($this->getPopularVideos($locale, 12)),
 
             'hashtags' => SchoolHashtagSharedResource::collection($this->getHashtags($locale)),
 
-            'leftCourses' => SchoolCourseSharedResource::collection($this->getCoursesByFlag($locale, 'left', 3)),
-            'mainCourses' => SchoolCourseSharedResource::collection($this->getCoursesByFlag($locale, 'main', 6)),
-            'rightCourses' => SchoolCourseSharedResource::collection($this->getCoursesByFlag($locale, 'right', 3)),
-            'popularCourses' => SchoolCourseSharedResource::collection($this->getPopularCourses($locale, 6)),
+            'leftCourses' => SchoolCourseSharedResource::collection($this->getCoursesByFlag($locale, 'left', 2)),
+            'mainCourses' => SchoolCourseSharedResource::collection($this->getCoursesByFlag($locale, 'main', 2)),
+            'rightCourses' => SchoolCourseSharedResource::collection($this->getCoursesByFlag($locale, 'right', 2)),
+            'popularCourses' => SchoolCourseSharedResource::collection($this->getPopularCourses($locale, 12)),
         ];
     }
 
     /** Облако тегов блога. */
-    protected function getTags(string $locale): Collection
-    {
+    protected function getTags(
+        string $locale
+    ): Collection {
+        $locales = $this->publicLocales(
+            $locale
+        );
+
         return BlogTag::query()
-            ->with('translations')
-            ->forTagCloud(0, $locale)
+            ->with([
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+            ])
+            ->forTagCloud(
+                0,
+                $locale
+            )
             ->get();
     }
 
     /** Статьи блога по флагу left/main/right. */
-    protected function getArticlesByFlag(string $locale, string $flag, int $limit): Collection
-    {
+    protected function getArticlesByFlag(
+        string $locale,
+        string $flag,
+        int $limit
+    ): Collection {
+        $locales = $this->publicLocales(
+            $locale
+        );
+
         return BlogArticle::query()
             ->forPublic()
-            ->where($flag, true)
+            ->where(
+                $flag,
+                true
+            )
             ->with([
-                'translations',
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
                 'owner',
+
                 'images.media',
             ])
-            ->sortByParam('sort_desc', $locale)
-            ->limit($limit)
+            ->sortByParam(
+                'sortDesc',
+                $locale
+            )
+            ->limit(
+                $limit
+            )
             ->get();
     }
 
     /** Популярные статьи блога. */
-    protected function getPopularArticles(string $locale, int $limit): Collection
-    {
+    protected function getPopularArticles(
+        string $locale,
+        int $limit
+    ): Collection {
+        $locales = $this->publicLocales(
+            $locale
+        );
+
         return BlogArticle::query()
             ->forPublic()
             ->with([
-                'translations',
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
                 'owner',
+
                 'images.media',
             ])
-            ->sortByParam('views_desc', $locale)
-            ->limit($limit)
+            ->sortByParam(
+                'viewsDesc',
+                $locale
+            )
+            ->limit(
+                $limit
+            )
             ->get();
     }
 
     /** Баннеры блога по флагу left/main/right. */
-    protected function getBannersByFlag(string $locale, string $flag, int $limit): Collection
-    {
+    protected function getBannersByFlag(
+        string $locale,
+        string $flag,
+        int $limit
+    ): Collection {
+        $locales = $this->publicLocales(
+            $locale
+        );
+
         return BlogBanner::query()
             ->forPublic()
-            ->wherePosition($flag)
+            ->wherePosition(
+                $flag
+            )
             ->with([
-                'translations',
+                /**
+                 * Current locale
+                 * + fallback ru.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * Изображения + Spatie Media
+                 * загружаются пакетно.
+                 */
                 'images.media',
             ])
-            ->sortByParam('sort_asc', $locale)
-            ->limit($limit)
+            ->sortByParam(
+                'sortAsc',
+                $locale
+            )
+            ->limit(
+                $limit
+            )
             ->get();
     }
 
     /** Видео блога по флагу left/main/right. */
-    protected function getVideosByFlag(string $locale, string $flag, int $limit): Collection
-    {
+    protected function getVideosByFlag(
+        string $locale,
+        string $flag,
+        int $limit
+    ): Collection {
+        $locales = $this->publicLocales(
+            $locale
+        );
+
         return BlogVideo::query()
             ->forPublic()
-            ->where($flag, true)
+            ->where(
+                $flag,
+                true
+            )
             ->with([
-                'translations',
+                /**
+                 * Current locale
+                 * + fallback ru.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
                 'owner',
+
+                /**
+                 * Изображения + их Media.
+                 */
                 'images.media',
+
+                /**
+                 * Собственный Media relation
+                 * нужен local video.
+                 */
+                'media',
             ])
-            ->sortByParam('sort_desc', $locale)
-            ->limit($limit)
+            ->sortByParam(
+                'sortAsc',
+                $locale
+            )
+            ->limit(
+                $limit
+            )
             ->get();
     }
 
     /** Популярные видео блога. */
-    protected function getPopularVideos(string $locale, int $limit): Collection
-    {
+    protected function getPopularVideos(
+        string $locale,
+        int $limit
+    ): Collection {
+        $locales = $this->publicLocales(
+            $locale
+        );
+
         return BlogVideo::query()
             ->forPublic()
             ->with([
-                'translations',
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
                 'owner',
                 'images.media',
+                'media',
             ])
-            ->sortByParam('views_desc', $locale)
-            ->limit($limit)
+            ->sortByParam(
+                'viewsDesc',
+                $locale
+            )
+            ->limit(
+                $limit
+            )
             ->get();
     }
 
@@ -201,6 +331,21 @@ class BlogSidebarService
             ->sortByParam('views_desc')
             ->limit($limit)
             ->get();
+    }
+
+    /** Локали публичного запроса: current + fallback. */
+    protected function publicLocales(
+        string $locale
+    ): array {
+        return array_values(
+            array_unique([
+                $locale,
+                config(
+                    'app.fallback_locale',
+                    'ru'
+                ),
+            ])
+        );
     }
 
     /** Ключ кэша для sidebar-данных. */

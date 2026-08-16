@@ -80,15 +80,13 @@ class BlogRubric extends Model
             ->orderByDesc('id');
     }
 
-    /** Рекурсивная загрузка дочерних рубрик */
+    /**
+     * Рекурсивная загрузка дочерних рубрик.
+     */
     public function childrenRecursive(): HasMany
     {
-        return $this->children()->with([
-            'owner',
-            'images',
-            'translations',
-            'childrenRecursive',
-        ]);
+        return $this->children()
+            ->with('childrenRecursive');
     }
 
     /** Переводы рубрики */
@@ -359,7 +357,7 @@ class BlogRubric extends Model
                 })
                 ->orderBy('brt_sort.title', 'asc')
                 ->orderByDesc('blog_rubrics.id')
-                ->select('blog_rubrics.*'),
+                ->addSelect('blog_rubrics.*'),
 
             'titleDesc' => $query
                 ->leftJoin('blog_rubric_translations as brt_sort', function ($join) use ($locale) {
@@ -368,31 +366,31 @@ class BlogRubric extends Model
                 })
                 ->orderBy('brt_sort.title', 'desc')
                 ->orderByDesc('blog_rubrics.id')
-                ->select('blog_rubrics.*'),
+                ->addSelect('blog_rubrics.*'),
 
             'ownerNameAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_rubrics.user_id')
                 ->orderBy('owner_sort.name', 'asc')
                 ->orderByDesc('blog_rubrics.id')
-                ->select('blog_rubrics.*'),
+                ->addSelect('blog_rubrics.*'),
 
             'ownerNameDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_rubrics.user_id')
                 ->orderBy('owner_sort.name', 'desc')
                 ->orderByDesc('blog_rubrics.id')
-                ->select('blog_rubrics.*'),
+                ->addSelect('blog_rubrics.*'),
 
             'ownerEmailAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_rubrics.user_id')
                 ->orderBy('owner_sort.email', 'asc')
                 ->orderByDesc('blog_rubrics.id')
-                ->select('blog_rubrics.*'),
+                ->addSelect('blog_rubrics.*'),
 
             'ownerEmailDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_rubrics.user_id')
                 ->orderBy('owner_sort.email', 'desc')
                 ->orderByDesc('blog_rubrics.id')
-                ->select('blog_rubrics.*'),
+                ->addSelect('blog_rubrics.*'),
 
             default => $query->ordered(),
         };

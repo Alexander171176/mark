@@ -10,11 +10,30 @@ class SchoolTrackSharedResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $firstImage = $this->whenLoaded('images', fn () => $this->images->first());
-
-        $thumbnailUrl = !($firstImage instanceof MissingValue) && $firstImage
-            ? $firstImage->thumb_url
+        /**
+         * В публичных запросах translations
+         * уже загружаются для нужной локали.
+         */
+        $translation = $this->relationLoaded('translations')
+            ? $this->translations->first()
             : null;
+
+        /**
+         * Первое изображение направления.
+         */
+        $firstImage = $this->whenLoaded(
+            'images',
+            fn () => $this->images->first()
+        );
+
+        /**
+         * Миниатюра направления.
+         */
+        $thumbnailUrl =
+            !($firstImage instanceof MissingValue)
+            && $firstImage
+                ? $firstImage->thumb_url
+                : null;
 
         return [
             'id' => $this->id,
@@ -25,8 +44,9 @@ class SchoolTrackSharedResource extends JsonResource
 
             'slug' => $this->slug,
 
-            'name' => $this->translation?->name,
-            'short' => $this->translation?->short,
+            /** Перевод */
+            'name' => $translation?->name,
+            'short' => $translation?->short,
 
             'views' => (int) $this->views,
 
@@ -56,8 +76,13 @@ class SchoolTrackSharedResource extends JsonResource
                 fn () => (int) $this->images_count
             ),
 
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            'created_at' => optional(
+                $this->created_at
+            )->toIso8601String(),
+
+            'updated_at' => optional(
+                $this->updated_at
+            )->toIso8601String(),
         ];
     }
 }

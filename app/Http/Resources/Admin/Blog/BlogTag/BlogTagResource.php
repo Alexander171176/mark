@@ -12,11 +12,24 @@ class BlogTagResource extends JsonResource
     {
         $currentLocale = app()->getLocale();
 
-        $currentTranslation = $this->whenLoaded('translations', function () use ($currentLocale) {
-            return $this->translations->firstWhere('locale', $currentLocale)
-                ?: $this->translations->firstWhere('locale', config('app.fallback_locale', 'ru'))
-                    ?: $this->translations->first();
-        });
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $currentTranslation = $this->relationLoaded('translations')
+            ? (
+            $this->translations->firstWhere(
+                'locale',
+                $currentLocale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
+            : null;
 
         return [
             'id' => $this->id,
@@ -45,7 +58,10 @@ class BlogTagResource extends JsonResource
             'views' => (int) $this->views,
 
             /**
-             * Текущий перевод
+             * Текущий перевод с fallback.
+             *
+             * На Edit relation translations содержит
+             * все локали для TranslationTabs.
              */
             'translation' => $currentTranslation
                 ? new BlogTagTranslationResource($currentTranslation)

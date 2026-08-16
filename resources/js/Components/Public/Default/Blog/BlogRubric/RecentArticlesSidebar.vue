@@ -1,183 +1,308 @@
 <script setup>
-import { Link, usePage } from '@inertiajs/vue3'
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import { unwrap, unwrapList } from '@/composables/useUnwrap.js'
+import { Link } from '@inertiajs/vue3'
+import {
+    computed,
+    ref,
+    watch,
+    onMounted,
+    onBeforeUnmount,
+} from 'vue'
+
+import {
+    unwrap,
+    unwrapList,
+} from '@/composables/useUnwrap.js'
 
 const props = defineProps({
-    titleKey: { type: String, default: 'articles' },
-    articles: { type: [Array, Object], default: () => [] },
-    intervalMs: { type: Number, default: 4200 },
-    pauseOnHover: { type: Boolean, default: true },
-    pauseOnHidden: { type: Boolean, default: true },
+    articles: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    intervalMs: {
+        type: Number,
+        default: 4200,
+    },
+
+    pauseOnHover: {
+        type: Boolean,
+        default: true,
+    },
+
+    pauseOnHidden: {
+        type: Boolean,
+        default: true,
+    },
 })
 
-const { appUrl } = usePage().props
-const list = computed(() => unwrapList(props.articles))
+/** Нормализованный список статей */
+const list = computed(() =>
+    unwrapList(props.articles)
+)
 
-const getImgSrc = (imgPath) => {
-    if (!imgPath) return ''
+/**
+ * Заголовок статьи
+ * из Public BlogArticleSharedResource.
+ */
+const getArticleTitle = (article) => {
+    const item = unwrap(article)
 
-    const base = appUrl?.endsWith('/')
-        ? appUrl.slice(0, -1)
-        : (appUrl || '')
-
-    const path = imgPath.startsWith('/')
-        ? imgPath.slice(1)
-        : imgPath
-
-    return `${base}/storage/${path}`
+    return item?.translation?.title || ''
 }
 
-const normalizeSrc = (raw) => {
-    if (!raw) return ''
-    if (/^https?:\/\//i.test(raw)) return raw
-    if (raw.startsWith('/')) return raw
-    return getImgSrc(raw)
+/** URL страницы статьи */
+const getArticleUrl = (article) => {
+    const item = unwrap(article)
+
+    return `/blog/articles/${item?.url || ''}`
 }
 
+/**
+ * Изображения статьи.
+ *
+ * Public Resource уже отдаёт готовые
+ * URL изображений через BlogArticleImageResource.
+ */
 const articleImages = (article) => {
-    const a = unwrap(article)
+    const item = unwrap(article)
 
-    const imgsRaw = Array.isArray(a?.images)
-        ? a.images
-        : (a?.images?.data ?? [])
+    const imagesRaw = Array.isArray(item?.images)
+        ? item.images
+        : (item?.images?.data ?? [])
 
-    return (Array.isArray(imgsRaw) ? imgsRaw : [])
+    return (Array.isArray(imagesRaw) ? imagesRaw : [])
         .slice()
-        .sort((x, y) => Number(x?.order ?? 0) - Number(y?.order ?? 0))
-        .map((img, idx) => {
-            const raw =
-                img?.image_url ||
-                img?.url ||
-                img?.src ||
-                img?.path ||
-                img?.image ||
-                null
-
-            const src = normalizeSrc(raw)
+        .sort(
+            (a, b) =>
+                Number(a?.order ?? 0)
+                - Number(b?.order ?? 0)
+        )
+        .map((image, index) => {
+            const src =
+                image?.image_url
+                || image?.url
+                || image?.src
+                || image?.path
+                || image?.image
+                || ''
 
             return {
-                id: img?.id ?? `${raw ?? 'img'}-${img?.order ?? idx}`,
+                id:
+                    image?.id
+                    ?? `${src || 'image'}-${image?.order ?? index}`,
+
                 src,
-                alt: img?.alt ?? '',
-                title: img?.title ?? img?.alt ?? '',
-                order: Number(img?.order ?? 0),
+
+                alt:
+                    image?.alt
+                    || getArticleTitle(article),
+
+                title:
+                    image?.title
+                    || image?.alt
+                    || getArticleTitle(article),
+
+                order: Number(
+                    image?.order ?? 0
+                ),
             }
         })
-        .filter(img => !!img.src)
+        .filter(image => Boolean(image.src))
 }
 
 const currentByArticle = ref({})
 const hoveredByArticle = ref({})
+
 let timer = null
 
-const getCurrent = (articleId) => Number(currentByArticle.value?.[articleId] ?? 0)
+/** Текущий индекс изображения статьи */
+const getCurrent = (articleId) =>
+    Number(
+        currentByArticle.value?.[articleId] ?? 0
+    )
 
-const setCurrent = (articleId, idx, total) => {
-    const n = Number(total) || 0
+/** Установить текущее изображение */
+const setCurrent = (
+    articleId,
+    index,
+    total
+) => {
+    const count = Number(total) || 0
 
-    if (n <= 1) {
+    if (count <= 1) {
         currentByArticle.value = {
             ...currentByArticle.value,
             [articleId]: 0,
         }
+
         return
     }
 
-    const i = Number(idx)
-    const safe = Number.isFinite(i)
-        ? Math.min(Math.max(0, i), n - 1)
+    const value = Number(index)
+
+    const safeIndex = Number.isFinite(value)
+        ? Math.min(
+            Math.max(0, value),
+            count - 1
+        )
         : 0
 
     currentByArticle.value = {
         ...currentByArticle.value,
-        [articleId]: safe,
+        [articleId]: safeIndex,
     }
 }
 
+/** Можно ли запускать автопрокрутку */
 const canRun = () => {
-    return !(props.pauseOnHidden && typeof document !== 'undefined' && document.hidden)
+    return !(
+        props.pauseOnHidden
+        && typeof document !== 'undefined'
+        && document.hidden
+    )
 }
 
+/** Следующее изображение */
 const tick = () => {
-    if (!canRun()) return
+    if (!canRun()) {
+        return
+    }
 
-    const nextState = { ...currentByArticle.value }
+    const nextState = {
+        ...currentByArticle.value,
+    }
 
-    for (const a of list.value) {
-        const article = unwrap(a)
+    for (const articleItem of list.value) {
+        const article = unwrap(articleItem)
         const id = article?.id
 
-        if (!id) continue
+        if (!id) {
+            continue
+        }
 
-        const imgs = articleImages(a)
+        const images =
+            articleImages(articleItem)
 
-        if (imgs.length <= 1) continue
-        if (props.pauseOnHover && hoveredByArticle.value?.[id]) continue
+        if (images.length <= 1) {
+            continue
+        }
 
-        const cur = Number(nextState[id] ?? 0)
-        nextState[id] = (cur + 1) % imgs.length
+        if (
+            props.pauseOnHover
+            && hoveredByArticle.value?.[id]
+        ) {
+            continue
+        }
+
+        const current =
+            Number(nextState[id] ?? 0)
+
+        nextState[id] =
+            (current + 1) % images.length
     }
 
-    currentByArticle.value = nextState
+    currentByArticle.value =
+        nextState
 }
 
+/** Остановить таймер */
 const stop = () => {
-    if (timer) {
-        clearInterval(timer)
-        timer = null
+    if (!timer) {
+        return
     }
+
+    clearInterval(timer)
+    timer = null
 }
 
+/** Запустить таймер */
 const start = () => {
     stop()
 
-    const hasAnySlider = list.value.some((a) => articleImages(a).length > 1)
-    if (!hasAnySlider) return
+    const hasAnySlider =
+        list.value.some(
+            article =>
+                articleImages(article).length > 1
+        )
 
-    timer = setInterval(tick, Math.max(1500, Number(props.intervalMs) || 4200))
+    if (!hasAnySlider) {
+        return
+    }
+
+    timer = setInterval(
+        tick,
+        Math.max(
+            1500,
+            Number(props.intervalMs) || 4200
+        )
+    )
 }
 
+/** Изменение видимости вкладки */
 const onVisibilityChange = () => {
     start()
 }
 
 onMounted(() => {
-    const init = {}
+    const initialState = {}
 
-    for (const a of list.value) {
-        const id = unwrap(a)?.id
-        if (id) init[id] = 0
+    for (const article of list.value) {
+        const id = unwrap(article)?.id
+
+        if (id) {
+            initialState[id] = 0
+        }
     }
 
-    currentByArticle.value = init
+    currentByArticle.value =
+        initialState
 
     start()
 
-    if (props.pauseOnHidden && typeof document !== 'undefined') {
-        document.addEventListener('visibilitychange', onVisibilityChange)
+    if (
+        props.pauseOnHidden
+        && typeof document !== 'undefined'
+    ) {
+        document.addEventListener(
+            'visibilitychange',
+            onVisibilityChange
+        )
     }
 })
 
 onBeforeUnmount(() => {
     stop()
 
-    if (props.pauseOnHidden && typeof document !== 'undefined') {
-        document.removeEventListener('visibilitychange', onVisibilityChange)
+    if (
+        props.pauseOnHidden
+        && typeof document !== 'undefined'
+    ) {
+        document.removeEventListener(
+            'visibilitychange',
+            onVisibilityChange
+        )
     }
 })
 
 watch(
-    () => [list.value.length, props.intervalMs],
+    () => [
+        list.value.length,
+        props.intervalMs,
+    ],
     () => {
-        const init = {}
+        const initialState = {}
 
-        for (const a of list.value) {
-            const id = unwrap(a)?.id
-            if (id) init[id] = 0
+        for (const article of list.value) {
+            const id = unwrap(article)?.id
+
+            if (id) {
+                initialState[id] = 0
+            }
         }
 
-        currentByArticle.value = init
+        currentByArticle.value =
+            initialState
+
         start()
     }
 )
@@ -186,49 +311,103 @@ watch(
 <template>
     <!-- Блок статей -->
     <div v-if="list.length !== 0">
-        <div v-for="a in list" :key="unwrap(a).id">
+        <div
+            v-for="article in list"
+            :key="unwrap(article).id"
+        >
             <div class="mb-4">
                 <Link
-                    :href="`/blog/articles/${unwrap(a).url}`"
+                    :href="getArticleUrl(article)"
                     class="flex gap-2"
                 >
                     <!-- IMAGE + DOTS -->
                     <div
-                        v-if="articleImages(a).length > 0"
+                        v-if="articleImages(article).length > 0"
                         class="post-image relative overflow-hidden rounded-md
                                bg-slate-100 dark:bg-slate-900
                                w-auto h-[64px] shrink-0"
-                        @mouseenter="hoveredByArticle = { ...hoveredByArticle, [unwrap(a).id]: true }"
-                        @mouseleave="hoveredByArticle = { ...hoveredByArticle, [unwrap(a).id]: false }"
+                        @mouseenter="
+                            hoveredByArticle = {
+                                ...hoveredByArticle,
+                                [unwrap(article).id]: true
+                            }
+                        "
+                        @mouseleave="
+                            hoveredByArticle = {
+                                ...hoveredByArticle,
+                                [unwrap(article).id]: false
+                            }
+                        "
                     >
-                        <Transition name="imgfx" mode="out-in">
+                        <Transition
+                            name="imgfx"
+                            mode="out-in"
+                        >
                             <img
-                                :key="articleImages(a)[getCurrent(unwrap(a).id)]?.id"
+                                :key="
+                                    articleImages(article)[
+                                        getCurrent(
+                                            unwrap(article).id
+                                        )
+                                    ]?.id
+                                "
                                 class="w-full h-full object-cover"
-                                :src="articleImages(a)[getCurrent(unwrap(a).id)]?.src"
-                                :alt="articleImages(a)[getCurrent(unwrap(a).id)]?.alt"
-                                :title="articleImages(a)[getCurrent(unwrap(a).id)]?.title"
+                                :src="
+                                    articleImages(article)[
+                                        getCurrent(
+                                            unwrap(article).id
+                                        )
+                                    ]?.src
+                                "
+                                :alt="
+                                    articleImages(article)[
+                                        getCurrent(
+                                            unwrap(article).id
+                                        )
+                                    ]?.alt
+                                "
+                                :title="
+                                    articleImages(article)[
+                                        getCurrent(
+                                            unwrap(article).id
+                                        )
+                                    ]?.title
+                                "
                                 loading="lazy"
                             />
                         </Transition>
 
                         <!-- DOTS -->
                         <div
-                            v-if="articleImages(a).length > 1"
+                            v-if="
+                                articleImages(article).length > 1
+                            "
                             class="absolute left-0 right-0 bottom-0 px-1 pb-1"
                         >
-                            <div class="flex items-center justify-center gap-1">
+                            <div
+                                class="flex items-center justify-center gap-1"
+                            >
                                 <button
-                                    v-for="(img, idx) in articleImages(a)"
-                                    :key="img.id"
+                                    v-for="(image, index) in articleImages(article)"
+                                    :key="image.id"
                                     type="button"
                                     class="h-1.5 w-1.5 rounded-full transition-all"
-                                    :class="idx === getCurrent(unwrap(a).id)
-                                        ? 'bg-orange-400 shadow ring-1 ring-black/40'
-                                        : 'bg-white/60 hover:bg-orange-400/80'"
-                                    @click.prevent.stop="setCurrent(unwrap(a).id, idx, articleImages(a).length)"
-                                    :aria-label="`image ${idx + 1}`"
-                                    :title="img.title"
+                                    :class="
+                                        index === getCurrent(
+                                            unwrap(article).id
+                                        )
+                                            ? 'bg-orange-400 shadow ring-1 ring-black/40'
+                                            : 'bg-white/60 hover:bg-orange-400/80'
+                                    "
+                                    :aria-label="`image ${index + 1}`"
+                                    :title="image.title"
+                                    @click.prevent.stop="
+                                        setCurrent(
+                                            unwrap(article).id,
+                                            index,
+                                            articleImages(article).length
+                                        )
+                                    "
                                 />
                             </div>
                         </div>
@@ -236,9 +415,12 @@ watch(
 
                     <!-- CONTENT -->
                     <h3 class="title">
-                        <span class="font-semibold text-xs
-                                     text-gray-700 dark:text-gray-300 hover:text-indigo-600">
-                            {{ unwrap(a).title }}
+                        <span
+                            class="font-semibold text-xs
+                                   text-gray-700 dark:text-gray-300
+                                   hover:text-indigo-600"
+                        >
+                            {{ getArticleTitle(article) }}
                         </span>
                     </h3>
                 </Link>

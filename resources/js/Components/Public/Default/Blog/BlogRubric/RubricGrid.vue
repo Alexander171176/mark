@@ -30,11 +30,11 @@ const getTranslation = (rubric) => {
 }
 
 const getTitle = (rubric) => {
-    return getTranslation(rubric).title || rubric?.title || ''
+    return getTranslation(rubric).title || ''
 }
 
 const getShort = (rubric) => {
-    return getTranslation(rubric).short || rubric?.short || ''
+    return getTranslation(rubric).short || ''
 }
 
 const getShowRoute = (rubric) => {

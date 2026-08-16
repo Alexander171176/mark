@@ -146,18 +146,38 @@ class BlogTag extends Model
     /* ======================== Scopes ======================== */
 
     /** Сортировка по умолчанию */
-    public function scopeOrdered(Builder $query, ?string $locale = null): Builder
-    {
+    public function scopeOrdered(
+        Builder $query,
+        ?string $locale = null
+    ): Builder {
         $locale = $locale ?: app()->getLocale();
 
         return $query
-            ->leftJoin('blog_tag_translations as btt_order', function ($join) use ($locale) {
-                $join->on('btt_order.tag_id', '=', 'blog_tags.id')
-                    ->where('btt_order.locale', '=', $locale);
-            })
-            ->orderBy('blog_tags.sort', 'asc')
-            ->orderBy('btt_order.name', 'asc')
-            ->select('blog_tags.*');
+            ->leftJoin(
+                'blog_tag_translations as btt_order',
+                function ($join) use ($locale) {
+                    $join
+                        ->on(
+                            'btt_order.tag_id',
+                            '=',
+                            'blog_tags.id'
+                        )
+                        ->where(
+                            'btt_order.locale',
+                            '=',
+                            $locale
+                        );
+                }
+            )
+            ->orderBy(
+                'blog_tags.sort',
+                'asc'
+            )
+            ->orderBy(
+                'btt_order.name',
+                'asc'
+            )
+            ->addSelect('blog_tags.*');
     }
 
     /** Только активные */
@@ -304,7 +324,7 @@ class BlogTag extends Model
                 })
                 ->orderBy('btt_sort.name', 'asc')
                 ->orderByDesc('blog_tags.id')
-                ->select('blog_tags.*'),
+                ->addSelect('blog_tags.*'),
 
             'nameDesc' => $query
                 ->leftJoin('blog_tag_translations as btt_sort', function ($join) use ($locale) {
@@ -313,31 +333,31 @@ class BlogTag extends Model
                 })
                 ->orderBy('btt_sort.name', 'desc')
                 ->orderByDesc('blog_tags.id')
-                ->select('blog_tags.*'),
+                ->addSelect('blog_tags.*'),
 
             'ownerNameAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_tags.user_id')
                 ->orderBy('owner_sort.name', 'asc')
                 ->orderByDesc('blog_tags.id')
-                ->select('blog_tags.*'),
+                ->addSelect('blog_tags.*'),
 
             'ownerNameDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_tags.user_id')
                 ->orderBy('owner_sort.name', 'desc')
                 ->orderByDesc('blog_tags.id')
-                ->select('blog_tags.*'),
+                ->addSelect('blog_tags.*'),
 
             'ownerEmailAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_tags.user_id')
                 ->orderBy('owner_sort.email', 'asc')
                 ->orderByDesc('blog_tags.id')
-                ->select('blog_tags.*'),
+                ->addSelect('blog_tags.*'),
 
             'ownerEmailDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_tags.user_id')
                 ->orderBy('owner_sort.email', 'desc')
                 ->orderByDesc('blog_tags.id')
-                ->select('blog_tags.*'),
+                ->addSelect('blog_tags.*'),
 
             default => $query->ordered($locale),
         };

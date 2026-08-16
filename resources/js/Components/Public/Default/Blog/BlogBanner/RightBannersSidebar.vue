@@ -5,7 +5,6 @@ import { unwrap } from '@/composables/useUnwrap.js'
 
 const props = defineProps({
     rightBanners: { type: [Array, Object], default: () => [] },
-    limit: { type: Number, default: 2 },
 
     intervalMs: { type: Number, default: 4500 },
     pauseOnHover: { type: Boolean, default: true },
@@ -17,9 +16,25 @@ const { appUrl } = usePage().props
 const unwrapList = (v) => v?.data ?? v ?? []
 
 const list = computed(() => {
-    const all = unwrapList(props.rightBanners)
-    return all.slice(Math.max(0, all.length - props.limit))
+    return unwrapList(
+        props.rightBanners
+    )
 })
+
+/**
+ * Новый Public-контракт перевода.
+ */
+const bannerTranslation = (banner) => {
+    return unwrap(banner)?.translation || {}
+}
+
+const bannerTitle = (banner) => {
+    return bannerTranslation(banner).title || ''
+}
+
+const bannerLink = (banner) => {
+    return bannerTranslation(banner).link || ''
+}
 
 /** storage helper */
 const getImgSrc = (imgPath) => {
@@ -170,8 +185,8 @@ watch(
                     @mouseleave="hoveredByBanner = { ...hoveredByBanner, [unwrap(b).id]: false }"
                 >
                     <a
-                        v-if="unwrap(b).link"
-                        :href="unwrap(b).link"
+                        v-if="bannerLink(b)"
+                        :href="bannerLink(b)"
                         target="_blank"
                         rel="noopener noreferrer"
                         class="block w-full h-full"
@@ -218,21 +233,21 @@ watch(
                 </div>
 
                 <div class="p-3">
-                    <div v-if="unwrap(b).title"
+                    <div v-if="bannerTitle(b)"
                          class="text-center font-semibold text-sm leading-snug">
                         <a
-                            v-if="unwrap(b).link"
-                            :href="unwrap(b).link"
+                            v-if="bannerLink(b)"
+                            :href="bannerLink(b)"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="hover:underline transition
                                    text-slate-900/85 dark:text-slate-100/85
                                    hover:text-indigo-700 dark:hover:text-indigo-300"
                         >
-                            {{ unwrap(b).title }}
+                            {{ bannerTitle(b) }}
                         </a>
                         <span v-else class="text-slate-900/85 dark:text-slate-100/85">
-                            {{ unwrap(b).title }}
+                            {{ bannerTitle(b) }}
                         </span>
                     </div>
                 </div>

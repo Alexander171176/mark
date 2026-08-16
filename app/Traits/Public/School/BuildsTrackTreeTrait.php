@@ -13,9 +13,7 @@ trait BuildsTrackTreeTrait
         $tracks = SchoolTrack::query()
             ->forPublic($locale)
             ->with([
-                'translation',
-                'translations',
-                'images',
+                'images.media',
             ])
             ->withCount([
                 'children',
@@ -38,7 +36,10 @@ trait BuildsTrackTreeTrait
         $tree = [];
 
         foreach ($indexed as $id => &$item) {
-            if (!empty($item['parent_id']) && isset($indexed[$item['parent_id']])) {
+            if (
+                !empty($item['parent_id'])
+                && isset($indexed[$item['parent_id']])
+            ) {
                 $indexed[$item['parent_id']]['children'][] = &$item;
             } else {
                 $tree[] = &$item;

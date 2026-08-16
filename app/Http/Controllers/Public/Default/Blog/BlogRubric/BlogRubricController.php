@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Public\Default\Blog\BlogRubric;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleResource;
-use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricResource;
+use App\Http\Resources\Public\Blog\BlogArticle\BlogArticleSharedResource;
+use App\Http\Resources\Public\Blog\BlogRubric\BlogRubricResource;
+use App\Http\Resources\Public\Blog\BlogRubric\BlogRubricSharedResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogRubric\BlogRubric;
 use App\Services\Admin\ProcessingModeService;
@@ -94,7 +95,7 @@ class BlogRubricController extends Controller
             ? $rubrics->total()
             : $rubrics->count();
 
-        $rubrics = BlogRubricResource::collection($rubrics);
+        $rubrics = BlogRubricSharedResource::collection($rubrics);
 
         $rubricTree = $this->getRubricTree($locale);
         $sidebarData = $this->getSidebarData($locale);
@@ -127,97 +128,306 @@ class BlogRubricController extends Controller
     }
 
     /** Страница конкретной рубрики блога. */
-    public function show(Request $request, string $url): Response
-    {
+    /** Страница конкретной рубрики блога. */
+    public function show(
+        Request $request,
+        string $url
+    ): Response {
         $locale = app()->getLocale();
 
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        /**
+         * Публичные настройки сайта.
+         *
+         * Единственный источник настроек
+         * количества и сортировки статей.
+         */
+        $settings = app(
+            PublicSettingsService::class
+        );
+
+        /**
+         * Основная рубрика.
+         */
         $rubric = BlogRubric::query()
             ->forPublic()
-            ->where('url', $url)
+            ->where(
+                'url',
+                $url
+            )
             ->with([
-                'translations',
+                /**
+                 * Текущая локаль
+                 * + fallback ru.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * Автор основной рубрики.
+                 */
                 'owner',
-                'images',
+
+                /**
+                 * Изображения + Spatie Media.
+                 */
+                'images.media',
+
+                /**
+                 * Дочерние публичные рубрики.
+                 */
                 'children' => fn ($query) => $query
                     ->forPublic()
                     ->with([
-                        'translations',
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->whereIn(
+                            'locale',
+                            $locales
+                        ),
+
                         'owner',
-                        'images',
+
+                        'images.media',
                     ])
-                    ->withCount('articles')
-                    ->ordered(),
+                    ->withCount([
+                        'articles',
+                    ]),
             ])
-            ->withCount('articles')
+            ->withCount([
+                'articles',
+            ])
             ->firstOrFail();
 
+        /**
+         * Увеличиваем просмотры рубрики.
+         */
         $rubric->increment('views');
 
-        $articlesSearch = $this->resolveSearch($request, 'q_articles');
+        /**
+         * Поиск по статьям рубрики.
+         */
+        $articlesSearch = $this->resolveSearch(
+            $request,
+            'q_articles'
+        );
 
+        /**
+         * Количество статей на странице
+         * берётся только из публичных настроек.
+         */
         $perPageArticles = $this->resolvePerPage(
             $request,
-            (int) config('site_settings.publicBlogArticlesPerPage', 3),
-            3,
+            $settings->int(
+                'publicBlogArticlesPerPage',
+                12
+            ),
+            1,
             60
         );
 
+        /**
+         * Сортировка по умолчанию
+         * также берётся из публичных настроек.
+         */
         $articlesSort = (string) $request->query(
             'sort_articles',
-            config('site_settings.publicBlogArticlesDefaultSort', 'sortAsc')
+            $settings->string(
+                'publicBlogArticlesDefaultSort',
+                'sortAsc'
+            )
         );
 
-        $articles = BlogArticle::query()
+        /**
+         * Статьи текущей рубрики.
+         */
+        $articlesQuery = BlogArticle::query()
             ->forPublic()
-            ->whereHas('rubrics', function ($query) use ($rubric) {
-                $query->where('blog_rubrics.id', $rubric->id);
-            })
-            ->search($articlesSearch, $locale)
+            ->whereHas(
+                'rubrics',
+                function ($query) use ($rubric) {
+                    $query->where(
+                        'blog_rubrics.id',
+                        $rubric->id
+                    );
+                }
+            )
+            ->search(
+                $articlesSearch,
+                $locale
+            )
             ->with([
-                'translations',
+                /**
+                 * Текущая локаль
+                 * + fallback ru.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * Автор нужен карточкам.
+                 */
                 'owner',
-                'images',
+
+                /**
+                 * Изображения + Spatie Media.
+                 */
+                'images.media',
             ])
-            ->withCount('likes')
-            ->sortByParam($articlesSort, $locale)
-            ->paginate($perPageArticles, ['*'], 'page_articles')
+            ->withCount([
+                'likes',
+            ]);
+
+        /**
+         * already_liked одним EXISTS.
+         *
+         * Для гостя дополнительного
+         * SQL-подзапроса нет.
+         */
+        $articlesQuery = $this->withUserLike(
+            $articlesQuery
+        );
+
+        /**
+         * Серверная сортировка
+         * и пагинация.
+         */
+        $articles = $articlesQuery
+            ->sortByParam(
+                $articlesSort,
+                $locale
+            )
+            ->paginate(
+                $perPageArticles,
+                ['*'],
+                'page_articles'
+            )
             ->withQueryString();
 
-        $articles = $this->appendUserLikes($articles, BlogArticleResource::class);
+        /**
+         * total() сохраняем до ResourceCollection.
+         */
+        $articlesFound = $articles->total();
 
-        $rubricTree = $this->getRubricTree($locale);
-        $sidebarData = $this->getSidebarData($locale);
+        /**
+         * Карточки статей используют
+         * краткий Public Resource.
+         */
+        $articles = BlogArticleSharedResource::collection(
+            $articles
+        );
 
-        return Inertia::render('Public/Default/Blog/BlogRubrics/Show', [
-            'rubric' => new BlogRubricResource($rubric),
+        /**
+         * Дерево рубрик.
+         */
+        $rubricTree = $this->getRubricTree(
+            $locale
+        );
 
-            'articles' => $articles,
-            'articlesFound' => $articles->total(),
+        /**
+         * Данные сайдбаров.
+         */
+        $sidebarData = $this->getSidebarData(
+            $locale
+        );
 
-            'filters' => [
-                'q_articles' => $articlesSearch,
-                'per_page_articles' => $perPageArticles,
-                'sort_articles' => $articlesSort,
-            ],
+        return Inertia::render(
+            'Public/Default/Blog/BlogRubrics/Show',
+            [
+                /**
+                 * Полный Public Resource рубрики.
+                 */
+                'rubric' => new BlogRubricResource(
+                    $rubric
+                ),
 
-            'rubricTree' => $rubricTree,
-            'locale' => $locale,
+                /**
+                 * Статьи рубрики.
+                 */
+                'articles' => $articles,
+                'articlesFound' => $articlesFound,
 
-            ...$sidebarData,
-        ]);
+                /**
+                 * Только интерактивные фильтры.
+                 *
+                 * Размер страницы Vue не управляет.
+                 */
+                'filters' => [
+                    'q_articles' =>
+                        $articlesSearch,
+
+                    'sort_articles' =>
+                        $articlesSort,
+                ],
+
+                'rubricTree' => $rubricTree,
+                'locale' => $locale,
+
+                ...$sidebarData,
+            ]
+        );
     }
 
     /** Базовый запрос для списка публичных рубрик. */
-    private function indexQuery(): Builder
-    {
+    private function indexQuery(
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
         return BlogRubric::query()
             ->forPublic()
             ->with([
-                'translations',
+                /**
+                 * Только текущая локаль
+                 * и fallback-язык.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * Автор нужен карточке
+                 * и frontend-поиску.
+                 */
                 'owner',
-                'images',
+
+                /**
+                 * Изображения + Spatie Media
+                 * загружаются пакетно.
+                 */
+                'images.media',
             ])
-            ->withCount('articles');
+            ->withCount([
+                'articles',
+            ]);
     }
 
     /** Получение списка публичных рубрик по активному режиму обработки. */
@@ -228,7 +438,9 @@ class BlogRubricController extends Controller
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query

@@ -7,10 +7,13 @@ use App\Http\Requests\Admin\Blog\Comment\ApproveCommentRequest;
 use App\Http\Requests\Admin\Blog\Comment\CommentRequest;
 use App\Http\Requests\Admin\System\UpdateActivityRequest;
 use App\Http\Resources\Admin\Blog\Comment\CommentResource;
+use App\Models\Admin\Blog\BlogArticle\BlogArticle;
+use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Blog\Comment\Comment;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,75 +56,142 @@ class CommentController extends Controller
     }
 
     /** Список комментариев */
-    public function index(Request $request): Response
-    {
-        $settings = app(AdminSettingsService::class);
+    public function index(
+        Request $request
+    ): Response {
+        $locale = app()->getLocale();
 
-        $perPage = $settings->int('adminCommentsPerPage', 6);
-        $defaultSort = $settings->string('adminCommentsDefaultSort', 'idDesc');
+        $settings = app(
+            AdminSettingsService::class
+        );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $perPage = $settings->int(
+            'adminCommentsPerPage',
+            6
+        );
 
-        $processingMode = $settings->string('adminCommentsProcessingMode', 'frontend');
+        $defaultSort = $settings->string(
+            'adminCommentsDefaultSort',
+            'idDesc'
+        );
 
-        $commentsCount = $this->baseQuery()->count();
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
-                $processingMode,
-                $commentsCount,
-                300
-            );
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
+
+        $processingMode = $settings->string(
+            'adminCommentsProcessingMode',
+            'frontend'
+        );
+
+        $commentsCount = $this->baseQuery()
+            ->count();
+
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $commentsCount,
+            300
+        );
 
         $user = auth()->user();
-        $isAdmin = (bool) ($user && $user->hasRole('admin'));
+
+        $isAdmin = (bool) (
+            $user
+            && $user->hasRole('admin')
+        );
 
         try {
             $comments = $this->getIndexComments(
+                locale: $locale,
                 useServerProcessing: $useServerProcessing,
                 perPage: $perPage,
                 sort: $sortParam,
                 search: $search,
             );
 
-            return Inertia::render('Admin/Blog/Comments/Index', [
-                'comments' => CommentResource::collection($comments),
-                'commentsCount' => $commentsCount,
+            return Inertia::render(
+                'Admin/Blog/Comments/Index',
+                [
+                    'comments' =>
+                        CommentResource::collection(
+                            $comments
+                        ),
 
-                'useServerProcessing' => $useServerProcessing,
+                    'commentsCount' =>
+                        $commentsCount,
 
-                'adminCommentsProcessingMode' => $processingMode,
-                'adminCommentsPerPage' => $perPage,
-                'adminCommentsDefaultSort' => $defaultSort,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminCommentsProcessingMode' =>
+                        $processingMode,
 
-                'isAdmin' => $isAdmin,
-            ]);
+                    'adminCommentsPerPage' =>
+                        $perPage,
+
+                    'adminCommentsDefaultSort' =>
+                        $defaultSort,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'isAdmin' =>
+                        $isAdmin,
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки комментариев для Index: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки комментариев для Index: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return Inertia::render('Admin/Blog/Comments/Index', [
-                'comments' => [],
-                'commentsCount' => 0,
+            return Inertia::render(
+                'Admin/Blog/Comments/Index',
+                [
+                    'comments' => [],
+                    'commentsCount' => 0,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'adminCommentsProcessingMode' => $processingMode,
-                'adminCommentsPerPage' => $perPage,
-                'adminCommentsDefaultSort' => $defaultSort,
+                    'adminCommentsProcessingMode' =>
+                        $processingMode,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminCommentsPerPage' =>
+                        $perPage,
 
-                'isAdmin' => $isAdmin,
+                    'adminCommentsDefaultSort' =>
+                        $defaultSort,
 
-                'error' => __('admin/controllers.index_error'),
-            ]);
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'isAdmin' =>
+                        $isAdmin,
+
+                    'error' =>
+                        __('admin/controllers.index_error'),
+                ]
+            );
         }
     }
 
@@ -408,37 +478,123 @@ class CommentController extends Controller
     }
 
     /** Базовый запрос списка комментариев */
-    private function indexCommentsQuery(): Builder
-    {
+    private function indexCommentsQuery(
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
         return $this->baseQuery()
             ->with([
+                /**
+                 * Автор нужен таблице,
+                 * карточкам и frontend-поиску.
+                 */
                 'user:id,name,email',
+
+                /**
+                 * Модератор нужен
+                 * frontend-поиску.
+                 */
                 'moderator:id,name,email',
-                'commentable',
-                'parent' => fn ($q) => $q->with('user:id,name'),
+
+                /**
+                 * Родительский комментарий.
+                 */
+                'parent' => fn ($query) =>
+                $query->with([
+                    'user:id,name',
+                ]),
+
+                /**
+                 * Полиморфный объект комментария.
+                 *
+                 * Для поддерживаемых Blog-сущностей
+                 * заранее загружаем только:
+                 *
+                 * current locale + fallback ru.
+                 */
+                'commentable' => function (
+                    MorphTo $morphTo
+                ) use ($locales) {
+                    $morphTo->morphWith([
+                        BlogArticle::class => [
+                            'translations' =>
+                                fn ($query) =>
+                                $query->whereIn(
+                                    'locale',
+                                    $locales
+                                ),
+                        ],
+                        BlogVideo::class => [
+                            'translations' =>
+                                fn ($query) =>
+                                $query->whereIn(
+                                    'locale',
+                                    $locales
+                                ),
+                        ],
+                    ]);
+                },
             ])
-            ->withCount('replies');
+            ->withCount([
+                'replies',
+            ]);
     }
 
     /** Получение списка комментариев по режиму обработки */
     private function getIndexComments(
+        string $locale,
         bool $useServerProcessing,
         int $perPage,
         string $sort,
         string $search = '',
     ) {
-        $query = $this->indexCommentsQuery();
+        $query = $this->indexCommentsQuery(
+            $locale
+        );
 
+        /**
+         * Server mode:
+         *
+         * поиск, фильтрация, сортировка
+         * и пагинация выполняются SQL.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search)
-                ->sortByParam($sort)
-                ->paginate($perPage)
+                ->search(
+                    $search
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend mode:
+         *
+         * отдаём полную коллекцию.
+         * Поиск, фильтрацию, сортировку
+         * и локальную пагинацию выполняет Vue.
+         */
         return $query
-            ->sortByParam($sort)
+            ->orderByDesc(
+                'comments.id'
+            )
             ->get();
     }
 }

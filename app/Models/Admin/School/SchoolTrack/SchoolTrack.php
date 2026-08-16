@@ -69,7 +69,7 @@ class SchoolTrack extends Model
             ->with([
                 'translation',
                 'translations',
-                'images',
+                'images.media',
                 'childrenRecursive',
             ])
             ->withCount([

@@ -12,6 +12,14 @@ class SchoolCourseResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        /**
+         * В публичных запросах scopeForPublic()
+         * уже загружает translations текущей локали.
+         */
+        $translation = $this->relationLoaded('translations')
+            ? $this->translations->first()
+            : null;
+
         return [
             'id' => $this->id,
             'school_instructor_profile_id' => $this->school_instructor_profile_id,
@@ -29,14 +37,14 @@ class SchoolCourseResource extends JsonResource
 
             'slug' => $this->slug,
 
-            'title' => $this->translation?->title,
-            'subtitle' => $this->translation?->subtitle,
-            'short' => $this->translation?->short,
-            'description' => $this->translation?->description,
+            'title' => $translation?->title,
+            'subtitle' => $translation?->subtitle,
+            'short' => $translation?->short,
+            'description' => $translation?->description,
 
-            'meta_title' => $this->translation?->meta_title,
-            'meta_keywords' => $this->translation?->meta_keywords,
-            'meta_desc' => $this->translation?->meta_desc,
+            'meta_title' => $translation?->meta_title,
+            'meta_keywords' => $translation?->meta_keywords,
+            'meta_desc' => $translation?->meta_desc,
 
             'published_at' => optional($this->published_at)->format('Y-m-d'),
 
@@ -53,9 +61,7 @@ class SchoolCourseResource extends JsonResource
             'views' => (int) $this->views,
             'likes' => (int) $this->likes,
 
-            'already_liked' => auth()->check()
-                ? $this->likes()->where('user_id', auth()->id())->exists()
-                : false,
+            'already_liked' => (bool) ($this->already_liked ?? false),
 
             'primary_image' => $this->whenLoaded(
                 'images',

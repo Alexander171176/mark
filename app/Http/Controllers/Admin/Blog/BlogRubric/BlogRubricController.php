@@ -84,19 +84,6 @@ class BlogRubricController extends BaseBlogAdminController
         }
     }
 
-    /** Подготовка childrenRecursive для Vue */
-    private function prepareTreeChildren($nodes): void
-    {
-        $nodes->each(function ($node) {
-            if ($node->relationLoaded('childrenRecursive')) {
-                $node->setRelation('children', $node->childrenRecursive);
-                $this->prepareTreeChildren($node->childrenRecursive);
-            } elseif ($node->relationLoaded('children')) {
-                $this->prepareTreeChildren($node->children);
-            }
-        });
-    }
-
     /** Список рубрик */
     public function index(Request $request): Response
     {
@@ -125,9 +112,9 @@ class BlogRubricController extends BaseBlogAdminController
             );
 
         try {
-            $rubricsTree = $this->getIndexRubricsTree();
-
-            $this->prepareTreeChildren($rubricsTree);
+            $rubricsTree = $this->getIndexRubricsTree(
+                $currentLocale
+            );
 
             $rubricsFlat = $this->getIndexRubrics(
                 locale: $currentLocale,
@@ -138,8 +125,8 @@ class BlogRubricController extends BaseBlogAdminController
             );
 
             return Inertia::render('Admin/Blog/BlogRubrics/Index', [
-                'rubricsTree' => BlogRubricResource::collection($rubricsTree),
-                'rubrics' => BlogRubricResource::collection($rubricsFlat),
+                'rubricsTree' => BlogRubricSharedResource::collection($rubricsTree),
+                'rubrics' => BlogRubricSharedResource::collection($rubricsFlat),
                 'rubricsCount' => $rubricsCount,
 
                 'useServerProcessing' => $useServerProcessing,
@@ -187,7 +174,9 @@ class BlogRubricController extends BaseBlogAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $parents = $this->baseQuery()
-            ->with(['translations'])
+            ->with([
+                'translations',
+            ])
             ->ordered()
             ->get();
 
@@ -264,32 +253,66 @@ class BlogRubricController extends BaseBlogAdminController
     }
 
     /** Страница редактирования рубрики */
-    public function edit(int $blogRubric, Request $request): Response
-    {
+    public function edit(
+        int $blogRubric,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
+
+        /**
+         * Основная редактируемая рубрика.
+         *
+         * - все переводы нужны TranslationTabs;
+         * - images.media нужны существующим изображениям.
+         */
         $rubric = $this->baseQuery()
             ->with([
-                'owner',
-                'moderator',
-                'images',
+                'translations',
+                'images.media',
+            ])
+            ->findOrFail(
+                $blogRubric
+            );
+
+        /**
+         * Возможные родители.
+         *
+         * Все переводы оставляем,
+         * потому что select должен корректно
+         * менять подписи при переключении языка.
+         */
+        $parents = $this->baseQuery()
+            ->where(
+                'id',
+                '!=',
+                $rubric->id
+            )
+            ->with([
                 'translations',
             ])
-            ->withCount(['articles', 'images'])
-            ->findOrFail($blogRubric);
-
-        $currentLocale = $this->resolveLocale($request);
-
-        $parents = $this->baseQuery()
-            ->where('id', '!=', $rubric->id)
-            ->with(['translations'])
             ->ordered()
             ->get();
 
-        return Inertia::render('Admin/Blog/BlogRubrics/Edit', [
-            'rubric' => new BlogRubricResource($rubric),
-            'parents' => BlogRubricSharedResource::collection($parents),
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+        return Inertia::render(
+            'Admin/Blog/BlogRubrics/Edit',
+            [
+                'rubric' =>
+                    new BlogRubricResource($rubric),
+
+                'parents' =>
+                    BlogRubricSharedResource::collection(
+                        $parents
+                    ),
+
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+            ]
+        );
     }
 
     /** Обновление рубрики */
@@ -574,16 +597,49 @@ class BlogRubricController extends BaseBlogAdminController
     }
 
     /** Дерево рубрик для drag-and-drop */
-    private function getIndexRubricsTree()
-    {
+    private function getIndexRubricsTree(
+        string $locale
+    ) {
         return $this->baseQuery()
             ->roots()
             ->with([
                 'owner',
-                'moderator',
-                'images',
-                'translations',
-                'childrenRecursive',
+                'images.media',
+
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'children' => fn ($query) => $query
+                    ->with([
+                        'owner',
+                        'images.media',
+
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $locale
+                        ),
+
+                        'children' => fn ($childQuery) =>
+                        $childQuery->with([
+                            'owner',
+                            'images.media',
+
+                            'translations' => fn ($translationQuery) =>
+                            $translationQuery->where(
+                                'locale',
+                                $locale
+                            ),
+                        ])
+                            ->withCount([
+                                'articles',
+                                'images',
+                            ]),
+                    ])
+                    ->withCount([
+                        'articles',
+                        'images',
+                    ]),
             ])
             ->withCount([
                 'articles',
@@ -594,15 +650,31 @@ class BlogRubricController extends BaseBlogAdminController
     }
 
     /** Базовый запрос плоского списка рубрик */
-    private function indexRubricsQuery(): Builder
-    {
+    private function indexRubricsQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
                 'owner',
                 'moderator',
-                'parent.translations',
-                'images',
-                'translations',
+
+                'images.media',
+
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                /**
+                 * Родитель нужен плоскому списку
+                 * для frontend-поиска по его названию.
+                 */
+                'parent.translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
             ->withCount([
                 'articles',
@@ -616,9 +688,11 @@ class BlogRubricController extends BaseBlogAdminController
         bool $useServerProcessing,
         int $perPage,
         string $sort,
-        string $search = '',
+        string $search = ''
     ) {
-        $query = $this->indexRubricsQuery();
+        $query = $this->indexRubricsQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query

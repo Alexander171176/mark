@@ -211,8 +211,12 @@ class Comment extends Model
     }
 
     /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $query, ?string $sort): Builder
-    {
+    public function scopeSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale ??= app()->getLocale();
         return match ($sort) {
             'idAsc' => $query->orderBy('comments.id', 'asc'),
             'idDesc' => $query->orderBy('comments.id', 'desc'),
@@ -221,25 +225,25 @@ class Comment extends Model
                 ->leftJoin('users as user_sort', 'user_sort.id', '=', 'comments.user_id')
                 ->orderBy('user_sort.name', 'asc')
                 ->orderByDesc('comments.id')
-                ->select('comments.*'),
+                ->addSelect('comments.*'),
 
             'userNameDesc' => $query
                 ->leftJoin('users as user_sort', 'user_sort.id', '=', 'comments.user_id')
                 ->orderBy('user_sort.name', 'desc')
                 ->orderByDesc('comments.id')
-                ->select('comments.*'),
+                ->addSelect('comments.*'),
 
             'userEmailAsc' => $query
                 ->leftJoin('users as user_sort', 'user_sort.id', '=', 'comments.user_id')
                 ->orderBy('user_sort.email', 'asc')
                 ->orderByDesc('comments.id')
-                ->select('comments.*'),
+                ->addSelect('comments.*'),
 
             'userEmailDesc' => $query
                 ->leftJoin('users as user_sort', 'user_sort.id', '=', 'comments.user_id')
                 ->orderBy('user_sort.email', 'desc')
                 ->orderByDesc('comments.id')
-                ->select('comments.*'),
+                ->addSelect('comments.*'),
 
             'contentAsc' => $query->orderBy('comments.content', 'asc')->orderByDesc('comments.id'),
             'contentDesc' => $query->orderBy('comments.content', 'desc')->orderByDesc('comments.id'),
@@ -248,30 +252,110 @@ class Comment extends Model
             'typeDesc' => $query->orderBy('comments.commentable_type', 'desc')->orderByDesc('comments.id'),
 
             'commentableTitleAsc' => $query
-                ->leftJoin('blog_article_translations as bat_sort', function ($join) {
-                    $join->on('bat_sort.article_id', '=', 'comments.commentable_id')
-                        ->where('comments.commentable_type', '=', BlogArticle::class);
-                })
-                ->leftJoin('blog_video_translations as bvt_sort', function ($join) {
-                    $join->on('bvt_sort.video_id', '=', 'comments.commentable_id')
-                        ->where('comments.commentable_type', '=', BlogVideo::class);
-                })
-                ->orderByRaw('COALESCE(bat_sort.title, bvt_sort.title) asc')
-                ->orderByDesc('comments.id')
-                ->select('comments.*'),
+                ->leftJoin(
+                    'blog_article_translations as bat_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'bat_sort.article_id',
+                                '=',
+                                'comments.commentable_id'
+                            )
+                            ->where(
+                                'comments.commentable_type',
+                                '=',
+                                BlogArticle::class
+                            )
+                            ->where(
+                                'bat_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->leftJoin(
+                    'blog_video_translations as bvt_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'bvt_sort.video_id',
+                                '=',
+                                'comments.commentable_id'
+                            )
+                            ->where(
+                                'comments.commentable_type',
+                                '=',
+                                BlogVideo::class
+                            )
+                            ->where(
+                                'bvt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->orderByRaw(
+                    'COALESCE(bat_sort.title, bvt_sort.title) asc'
+                )
+                ->orderByDesc(
+                    'comments.id'
+                )
+                ->addSelect(
+                    'comments.*'
+                ),
 
             'commentableTitleDesc' => $query
-                ->leftJoin('blog_article_translations as bat_sort', function ($join) {
-                    $join->on('bat_sort.article_id', '=', 'comments.commentable_id')
-                        ->where('comments.commentable_type', '=', BlogArticle::class);
-                })
-                ->leftJoin('blog_video_translations as bvt_sort', function ($join) {
-                    $join->on('bvt_sort.video_id', '=', 'comments.commentable_id')
-                        ->where('comments.commentable_type', '=', BlogVideo::class);
-                })
-                ->orderByRaw('COALESCE(bat_sort.title, bvt_sort.title) desc')
-                ->orderByDesc('comments.id')
-                ->select('comments.*'),
+                ->leftJoin(
+                    'blog_article_translations as bat_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'bat_sort.article_id',
+                                '=',
+                                'comments.commentable_id'
+                            )
+                            ->where(
+                                'comments.commentable_type',
+                                '=',
+                                BlogArticle::class
+                            )
+                            ->where(
+                                'bat_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->leftJoin(
+                    'blog_video_translations as bvt_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'bvt_sort.video_id',
+                                '=',
+                                'comments.commentable_id'
+                            )
+                            ->where(
+                                'comments.commentable_type',
+                                '=',
+                                BlogVideo::class
+                            )
+                            ->where(
+                                'bvt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->orderByRaw(
+                    'COALESCE(bat_sort.title, bvt_sort.title) desc'
+                )
+                ->orderByDesc(
+                    'comments.id'
+                )
+                ->addSelect(
+                    'comments.*'
+                ),
 
             'repliesAsc' => $query->withCount('replies')->orderBy('replies_count', 'asc')->orderByDesc('comments.id'),
             'repliesDesc' => $query->withCount('replies')->orderBy('replies_count', 'desc')->orderByDesc('comments.id'),

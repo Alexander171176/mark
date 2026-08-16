@@ -360,7 +360,7 @@ class BlogArticle extends Model
                 })
                 ->orderBy('bat_sort.title', 'asc')
                 ->orderByDesc('blog_articles.id')
-                ->select('blog_articles.*'),
+                ->addSelect('blog_articles.*'),
 
             'titleDesc' => $query
                 ->leftJoin('blog_article_translations as bat_sort', function ($join) use ($locale) {
@@ -369,7 +369,7 @@ class BlogArticle extends Model
                 })
                 ->orderBy('bat_sort.title', 'desc')
                 ->orderByDesc('blog_articles.id')
-                ->select('blog_articles.*'),
+                ->addSelect('blog_articles.*'),
 
             'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
             'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
@@ -450,25 +450,25 @@ class BlogArticle extends Model
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
                 ->orderBy('owner_sort.name', 'asc')
                 ->orderByDesc('blog_articles.id')
-                ->select('blog_articles.*'),
+                ->addSelect('blog_articles.*'),
 
             'ownerNameDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
                 ->orderBy('owner_sort.name', 'desc')
                 ->orderByDesc('blog_articles.id')
-                ->select('blog_articles.*'),
+                ->addSelect('blog_articles.*'),
 
             'ownerEmailAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
                 ->orderBy('owner_sort.email', 'asc')
                 ->orderByDesc('blog_articles.id')
-                ->select('blog_articles.*'),
+                ->addSelect('blog_articles.*'),
 
             'ownerEmailDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
                 ->orderBy('owner_sort.email', 'desc')
                 ->orderByDesc('blog_articles.id')
-                ->select('blog_articles.*'),
+                ->addSelect('blog_articles.*'),
 
             default => $query->ordered(),
         };

@@ -287,7 +287,7 @@ class BlogBanner extends Model
                 })
                 ->orderBy('bbt_sort.title', 'asc')
                 ->orderBy('blog_banners.id', 'asc')
-                ->select('blog_banners.*'),
+                ->addSelect('blog_banners.*'),
 
             'titleDesc' => $query
                 ->leftJoin('blog_banner_translations as bbt_sort', function ($join) use ($locale) {
@@ -296,34 +296,41 @@ class BlogBanner extends Model
                 })
                 ->orderBy('bbt_sort.title', 'desc')
                 ->orderByDesc('blog_banners.id')
-                ->select('blog_banners.*'),
+                ->addSelect('blog_banners.*'),
 
             'ownerNameAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_banners.user_id')
                 ->orderBy('owner_sort.name', 'asc')
                 ->orderByDesc('blog_banners.id')
-                ->select('blog_banners.*'),
+                ->addSelect('blog_banners.*'),
 
             'ownerNameDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_banners.user_id')
                 ->orderBy('owner_sort.name', 'desc')
                 ->orderByDesc('blog_banners.id')
-                ->select('blog_banners.*'),
+                ->addSelect('blog_banners.*'),
 
             'ownerEmailAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_banners.user_id')
                 ->orderBy('owner_sort.email', 'asc')
                 ->orderByDesc('blog_banners.id')
-                ->select('blog_banners.*'),
+                ->addSelect('blog_banners.*'),
 
             'ownerEmailDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_banners.user_id')
                 ->orderBy('owner_sort.email', 'desc')
                 ->orderByDesc('blog_banners.id')
-                ->select('blog_banners.*'),
+                ->addSelect('blog_banners.*'),
 
-            'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('blog_banners.id'),
-            'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('blog_banners.id'),
+            'imagesAsc' => $query
+                ->withCount('images')
+                ->orderBy('images_count', 'asc')
+                ->orderByDesc('blog_banners.id'),
+
+            'imagesDesc' => $query
+                ->withCount('images')
+                ->orderBy('images_count', 'desc')
+                ->orderByDesc('blog_banners.id'),
 
             'activityAsc' => $query->orderBy('blog_banners.activity', 'asc')->orderByDesc('blog_banners.id'),
             'activityDesc' => $query->orderBy('blog_banners.activity', 'desc')->orderByDesc('blog_banners.id'),

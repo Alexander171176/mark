@@ -9,6 +9,11 @@ class SchoolInstructorProfileResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+
+        $translation = $this->relationLoaded('translations')
+            ? $this->translations->first()
+            : null;
+
         return [
             'id' => $this->id,
 
@@ -18,13 +23,13 @@ class SchoolInstructorProfileResource extends JsonResource
             'user_id' => $this->user_id,
             'slug' => $this->slug,
 
-            'title' => $this->translation?->title,
-            'short' => $this->translation?->short,
-            'bio' => $this->translation?->bio,
+            'title' => $translation?->title,
+            'short' => $translation?->short,
+            'bio' => $translation?->bio,
 
-            'meta_title' => $this->translation?->meta_title,
-            'meta_keywords' => $this->translation?->meta_keywords,
-            'meta_desc' => $this->translation?->meta_desc,
+            'meta_title' => $translation?->meta_title,
+            'meta_keywords' => $translation?->meta_keywords,
+            'meta_desc' => $translation?->meta_desc,
 
             'experience_years' => $this->experience_years !== null
                 ? (int) $this->experience_years

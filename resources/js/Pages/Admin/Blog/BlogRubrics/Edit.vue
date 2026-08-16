@@ -556,8 +556,10 @@ const submitForm = () => {
                             <InputError class="mt-2" :message="getError('meta_desc')" />
                         </div>
 
-                        <div class="flex justify-end mt-4">
-                            <ClearMetaButton @clear="clearMetaFields" class="mr-4" />
+                        <div class="flex justify-end gap-2 mt-4">
+                            <ClearMetaButton @click.prevent="clearMetaFields">
+                                {{ t('clearMetaFields') }}
+                            </ClearMetaButton>
                             <MetatagsButton @click.prevent="generateMetaFields">
                                 {{ t('generateMetaTags') }}
                             </MetatagsButton>

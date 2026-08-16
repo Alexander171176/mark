@@ -239,9 +239,15 @@ class SchoolInstructorProfile extends Model
     /** Публичное имя */
     public function getPublicNameAttribute(): string
     {
-        $title = $this->relationLoaded('translation')
-            ? $this->translation?->title
-            : $this->translation()->value('title');
+        $title = null;
+
+        if ($this->relationLoaded('translations')) {
+            $title = $this->translations->first()?->title;
+        } elseif ($this->relationLoaded('translation')) {
+            $title = $this->translation?->title;
+        } else {
+            $title = $this->translation()->value('title');
+        }
 
         return $title ?: ($this->user->name ?? 'Инструктор');
     }

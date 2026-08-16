@@ -224,10 +224,12 @@ const multiLabel = (item) => {
     if (!item) return ''
 
     const id = item?.id ?? '-'
-    const owner = ownerLabel(item)
-    const loc = upperLocale(item?.locale || item?.translation?.locale)
+    const loc = upperLocale(
+        item?.locale
+        || item?.translation?.locale
+    )
 
-    return `[ID:${id}] [${owner}] [${loc}] ${baseName(item)}`
+    return `[ID:${id}] [${loc}] ${baseName(item)}`
 }
 
 /**

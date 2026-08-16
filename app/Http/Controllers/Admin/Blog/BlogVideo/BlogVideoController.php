@@ -125,7 +125,7 @@ class BlogVideoController extends BaseBlogAdminController
                 'adminBlogVideosDefaultSort' => $defaultSort,
                 'adminBlogVideosProcessingMode' => $processingMode,
 
-                'videos' => BlogVideoResource::collection($videos),
+                'videos' => BlogVideoSharedResource::collection($videos),
                 'videosCount' => $videosCount,
 
                 'sortParam' => $sortParam,
@@ -158,22 +158,57 @@ class BlogVideoController extends BaseBlogAdminController
     }
 
     /** Страница создания видео */
-    public function create(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
+        /**
+         * Видео для multiselect.
+         *
+         * Нужен только перевод выбранной локали.
+         */
         $relatedVideos = $this->baseQuery()
-            ->with(['translations', 'images'])
-            ->whereHas('translations', fn (Builder $q) => $q->where('locale', $currentLocale))
-            ->orderBy('sort')
-            ->orderByDesc('id')
+            ->whereHas(
+                'translations',
+                fn (Builder $query) =>
+                $query->where(
+                    'locale',
+                    $currentLocale
+                )
+            )
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $currentLocale
+                ),
+            ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
-        return Inertia::render('Admin/Blog/BlogVideos/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-            'relatedVideos' => BlogVideoSharedResource::collection($relatedVideos),
-        ]);
+        return Inertia::render(
+            'Admin/Blog/BlogVideos/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'relatedVideos' =>
+                    BlogVideoSharedResource::collection(
+                        $relatedVideos
+                    ),
+            ]
+        );
     }
 
     /** Создание видео */
@@ -242,37 +277,128 @@ class BlogVideoController extends BaseBlogAdminController
     }
 
     /** Страница редактирования видео */
-    public function edit(int $blogVideo, Request $request): Response
-    {
+    public function edit(
+        int $blogVideo,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
+
+        /**
+         * Основное видео.
+         *
+         * Для Edit нужны:
+         * - все переводы для TranslationTabs;
+         * - изображения + media;
+         * - выбранные связанные видео;
+         * - media локального видео.
+         */
         $video = $this->baseQuery()
             ->with([
-                'owner',
-                'moderator',
+                /**
+                 * Все переводы основной сущности.
+                 *
+                 * Ограничивать locale здесь нельзя:
+                 * TranslationTabs позволяет добавлять,
+                 * удалять и редактировать языки.
+                 */
                 'translations',
-                'images',
-                'relatedVideos.translations',
-                'relatedVideos.images',
+
+                /**
+                 * Изображения + Spatie Media
+                 * загружаются пакетно.
+                 */
+                'images.media',
+
+                /**
+                 * Собственный Spatie Media
+                 * для source_type = local.
+                 */
+                'media',
+
+                /**
+                 * Выбранные связанные видео.
+                 *
+                 * Для multiselect нужен только
+                 * перевод текущей локали.
+                 */
+                'relatedVideos' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
             ])
-            ->withCount(['images', 'comments', 'likes'])
-            ->findOrFail($blogVideo);
+            ->findOrFail(
+                $blogVideo
+            );
 
-        $currentLocale = $this->resolveLocale($request);
-
+        /**
+         * Все доступные видео для multiselect.
+         *
+         * Нужен только перевод текущей локали.
+         * Изображения multiselect не использует.
+         */
         $relatedVideos = $this->baseQuery()
-            ->with(['translations', 'images'])
-            ->where('id', '<>', $video->id)
-            ->whereHas('translations', fn (Builder $q) => $q->where('locale', $currentLocale))
-            ->orderBy('sort')
-            ->orderByDesc('id')
+            ->where(
+                'id',
+                '<>',
+                $video->id
+            )
+            ->whereHas(
+                'translations',
+                fn (Builder $query) =>
+                $query->where(
+                    'locale',
+                    $currentLocale
+                )
+            )
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $currentLocale
+                ),
+            ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
-        return Inertia::render('Admin/Blog/BlogVideos/Edit', [
-            'video' => new BlogVideoResource($video),
-            'videoUrl' => $video->getFirstMediaUrl('videos') ?: null,
-            'relatedVideos' => BlogVideoSharedResource::collection($relatedVideos),
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+        return Inertia::render(
+            'Admin/Blog/BlogVideos/Edit',
+            [
+                'video' => new BlogVideoResource(
+                    $video
+                ),
+
+                /**
+                 * URL локального видео.
+                 *
+                 * Relation media уже eager-loaded.
+                 */
+                'videoUrl' =>
+                    $video->getFirstMediaUrl('videos')
+                        ?: null,
+
+                'relatedVideos' =>
+                    BlogVideoSharedResource::collection(
+                        $relatedVideos
+                    ),
+
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+            ]
+        );
     }
 
     /** Обновление видео */
@@ -417,17 +543,48 @@ class BlogVideoController extends BaseBlogAdminController
         }
     }
 
-    /** Базовый запрос списка видео */
-    private function indexVideosQuery(): Builder
-    {
+    /** Базовый запрос списка видео. */
+    private function indexVideosQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
+                /**
+                 * Для Admin Index нужен только
+                 * перевод выбранной локали.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                /**
+                 * Владелец нужен отображению,
+                 * поиску и сортировке.
+                 */
                 'owner',
+
+                /**
+                 * Модератор нужен
+                 * frontend-поиску.
+                 */
                 'moderator',
-                'translations',
-                'images',
-                'relatedVideos.translations',
-                'relatedVideos.images',
+
+                /**
+                 * Изображения + Spatie Media
+                 * загружаются пакетно.
+                 */
+                'images.media',
+
+                /**
+                 * Сам BlogVideo тоже использует
+                 * Spatie Media для локального видео.
+                 *
+                 * Это защищает video_url
+                 * от потенциального N+1.
+                 */
+                'media',
             ])
             ->withCount([
                 'images',
@@ -446,18 +603,47 @@ class BlogVideoController extends BaseBlogAdminController
         string $sort,
         string $search = '',
     ) {
-        $query = $this->indexVideosQuery();
+        $query = $this->indexVideosQuery(
+            $locale
+        );
 
+        /**
+         * Server mode:
+         * поиск, сортировка и пагинация
+         * выполняются SQL.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend mode:
+         *
+         * backend отдаёт полную коллекцию,
+         * Vue сам выполняет поиск,
+         * фильтрацию, сортировку
+         * и локальную пагинацию.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->orderBy(
+                'sort',
+                'asc'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
     }
 }

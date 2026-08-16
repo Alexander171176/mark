@@ -502,7 +502,7 @@ class BlogVideo extends Model implements HasMedia
                 })
                 ->orderBy('bvt_sort.title', 'asc')
                 ->orderByDesc('blog_videos.id')
-                ->select('blog_videos.*'),
+                ->addSelect('blog_videos.*'),
 
             'titleDesc' => $query
                 ->leftJoin('blog_video_translations as bvt_sort', function ($join) use ($locale) {
@@ -511,31 +511,31 @@ class BlogVideo extends Model implements HasMedia
                 })
                 ->orderBy('bvt_sort.title', 'desc')
                 ->orderByDesc('blog_videos.id')
-                ->select('blog_videos.*'),
+                ->addSelect('blog_videos.*'),
 
             'ownerNameAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
                 ->orderBy('owner_sort.name', 'asc')
                 ->orderByDesc('blog_videos.id')
-                ->select('blog_videos.*'),
+                ->addSelect('blog_videos.*'),
 
             'ownerNameDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
                 ->orderBy('owner_sort.name', 'desc')
                 ->orderByDesc('blog_videos.id')
-                ->select('blog_videos.*'),
+                ->addSelect('blog_videos.*'),
 
             'ownerEmailAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
                 ->orderBy('owner_sort.email', 'asc')
                 ->orderByDesc('blog_videos.id')
-                ->select('blog_videos.*'),
+                ->addSelect('blog_videos.*'),
 
             'ownerEmailDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
                 ->orderBy('owner_sort.email', 'desc')
                 ->orderByDesc('blog_videos.id')
-                ->select('blog_videos.*'),
+                ->addSelect('blog_videos.*'),
 
             default => $query->orderBy('sort', 'asc')->orderByDesc('id'),
         };

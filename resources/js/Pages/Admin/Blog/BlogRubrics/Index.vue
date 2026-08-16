@@ -209,32 +209,24 @@ const moderationNum = (value) => {
  * ========================================================== */
 
 const getRubricTranslation = (rubric) => {
-    return rubric?.translation || rubric?.translations?.[0] || {}
+    return rubric?.translation || {}
 }
 
 const getRubricTitle = (rubric) => {
-    return rubric?.title
-        || getRubricTranslation(rubric)?.title
+    return getRubricTranslation(rubric)?.title
         || `ID: ${rubric?.id}`
 }
 
 const getRubricShort = (rubric) => {
-    return rubric?.short
-        || getRubricTranslation(rubric)?.short
-        || ''
+    return getRubricTranslation(rubric)?.short || ''
 }
 
 const getRubricDescription = (rubric) => {
-    return rubric?.description
-        || getRubricTranslation(rubric)?.description
-        || ''
+    return getRubricTranslation(rubric)?.description || ''
 }
 
 const getParentTitle = (rubric) => {
-    return rubric?.parent?.title
-        || rubric?.parent?.translation?.title
-        || rubric?.parent?.translations?.[0]?.title
-        || ''
+    return rubric?.parent?.title || ''
 }
 
 const getOwnerName = (rubric) => rubric?.owner?.name || ''

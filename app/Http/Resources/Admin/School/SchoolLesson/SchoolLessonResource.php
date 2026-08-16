@@ -11,6 +11,25 @@ class SchoolLessonResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $translation = $this->relationLoaded('translations')
+            ? $this->translations->first()
+            : null;
+
+        $courseTranslation = null;
+
+        if (
+            $this->relationLoaded('module')
+            && $this->module
+            && $this->module->relationLoaded('course')
+            && $this->module->course
+            && $this->module->course->relationLoaded('translations')
+        ) {
+            $courseTranslation = $this->module
+                ->course
+                ->translations
+                ->first();
+        }
+
         return [
             'id' => $this->id,
             'school_module_id' => $this->school_module_id,
@@ -20,14 +39,14 @@ class SchoolLessonResource extends JsonResource
 
             'slug' => $this->slug,
 
-            'title' => $this->translation?->title,
-            'subtitle' => $this->translation?->subtitle,
-            'short' => $this->translation?->short,
-            'description' => $this->translation?->description,
+            'title' => $translation?->title,
+            'subtitle' => $translation?->subtitle,
+            'short' => $translation?->short,
+            'description' => $translation?->description,
 
-            'meta_title' => $this->translation?->meta_title,
-            'meta_keywords' => $this->translation?->meta_keywords,
-            'meta_desc' => $this->translation?->meta_desc,
+            'meta_title' => $translation?->meta_title,
+            'meta_keywords' => $translation?->meta_keywords,
+            'meta_desc' => $translation?->meta_desc,
 
             'content_type' => $this->content_type,
             'content_id' => $this->content_id,
@@ -50,9 +69,7 @@ class SchoolLessonResource extends JsonResource
             'views' => (int) $this->views,
             'likes' => (int) $this->likes,
 
-            'already_liked' => auth()->check()
-                ? $this->likes()->where('user_id', auth()->id())->exists()
-                : false,
+            'already_liked' => (bool) ($this->already_liked ?? false),
 
             'primary_image' => $this->whenLoaded(
                 'images',
@@ -81,7 +98,7 @@ class SchoolLessonResource extends JsonResource
                 fn () => [
                     'id' => $this->module->course->id,
                     'slug' => $this->module->course->slug,
-                    'title' => $this->module->course->translation?->title,
+                    'title' => $courseTranslation?->title,
                 ]
             ),
 

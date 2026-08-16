@@ -11,21 +11,43 @@ class CommentSharedResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'user_id' => $this->user_id,
-            'parent_id' => $this->parent_id,
+            'id' =>
+                $this->id,
 
-            'content' => $this->content,
-            'activity' => $this->activity,
+            'user_id' =>
+                $this->user_id,
 
-            'moderation_status' => $this->moderation_status,
-            'is_approved' => (int) $this->moderation_status === 1,
+            'parent_id' =>
+                $this->parent_id,
 
-            'created_at' => $this->created_at?->toISOString(),
+            'content' =>
+                $this->content,
 
-            'user' => new UserSharedResource($this->whenLoaded('user')),
+            'activity' =>
+                (bool) $this->activity,
 
-            'replies_count' => $this->whenCounted('replies'),
+            'moderation_status' =>
+                (int) $this->moderation_status,
+
+            'is_approved' =>
+                (int) $this->moderation_status === 1,
+
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'user' => $this->whenLoaded(
+                'user',
+                fn () => $this->user
+                    ? new UserSharedResource(
+                        $this->user
+                    )
+                    : null
+            ),
+
+            'replies_count' => $this->when(
+                isset($this->replies_count),
+                fn () => (int) $this->replies_count
+            ),
         ];
     }
 }

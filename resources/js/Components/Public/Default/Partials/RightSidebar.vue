@@ -61,7 +61,7 @@ const toggleSidebar = () => {
         <!-- содержимое только когда развернуто -->
         <div v-show="!isCollapsed" class="flex flex-col gap-4">
             <TagsSidebar :tags="tags" />
-            <RecentArticlesSidebar :articles="rightArticles" title-key="articles" />
+            <RecentArticlesSidebar :articles="rightArticles" />
             <RightBannersSidebar :right-banners="rightBanners" />
             <RightVideosSidebar :videos="rightVideos" />
         </div>

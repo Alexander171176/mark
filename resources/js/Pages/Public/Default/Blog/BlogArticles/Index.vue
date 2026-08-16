@@ -262,25 +262,12 @@ const normalizeText = (value) => {
 
 /** Название статьи */
 const getArticleTitle = (article) => {
-    return article?.title
-        || article?.name
-        || article?.translation?.title
-        || article?.current_translation?.title
-        || article?.translations?.[0]?.title
-        || ''
+    return article?.translation?.title || ''
 }
 
 /** Краткий текст статьи */
 const getArticleShort = (article) => {
-    return article?.short
-        || article?.description
-        || article?.translation?.short
-        || article?.translation?.description
-        || article?.current_translation?.short
-        || article?.current_translation?.description
-        || article?.translations?.[0]?.short
-        || article?.translations?.[0]?.description
-        || ''
+    return article?.translation?.short || ''
 }
 
 /** Локальный поиск */
@@ -296,7 +283,6 @@ const filteredArticles = computed(() => {
             getArticleTitle(article),
             getArticleShort(article),
             article.url,
-            article.slug,
             article.owner?.name,
             article.owner?.email,
         ].some((value) => {

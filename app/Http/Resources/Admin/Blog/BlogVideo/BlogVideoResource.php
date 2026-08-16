@@ -11,17 +11,41 @@ class BlogVideoResource extends JsonResource
     {
         $currentLocale = app()->getLocale();
 
-        $currentTranslation = $this->whenLoaded('translations', function () use ($currentLocale) {
-            return $this->translations->firstWhere('locale', $currentLocale)
-                ?: $this->translations->firstWhere('locale', config('app.fallback_locale', 'ru'))
-                    ?: $this->translations->first();
-        });
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
 
-        $cover = null;
+        /**
+         * Основная сущность Edit получает
+         * все переводы для TranslationTabs.
+         *
+         * Здесь выбираем текущий перевод
+         * только для удобства frontend.
+         */
+        $currentTranslation = $this->relationLoaded('translations')
+            ? (
+            $this->translations->firstWhere(
+                'locale',
+                $currentLocale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
+            : null;
 
-        if ($this->relationLoaded('images') && $this->images?->count()) {
-            $cover = $this->images->first();
-        }
+        /**
+         * Первое изображение.
+         *
+         * Контроллер Edit должен заранее
+         * загрузить images.media.
+         */
+        $cover = $this->relationLoaded('images')
+            ? $this->images->first()
+            : null;
 
         return [
             'id' => $this->id,

@@ -9,34 +9,55 @@ class SchoolHashtagResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        /**
+         * Первый из фактически загруженных переводов.
+         *
+         * В публичной части обычно загружается
+         * только текущая локаль.
+         *
+         * В административной части могут быть
+         * загружены все переводы.
+         */
+        $translation = $this->relationLoaded('translations')
+            ? $this->translations->first()
+            : null;
+
         return [
             'id' => $this->id,
 
-            'sort' => $this->sort,
+            'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,
 
             'slug' => $this->slug,
             'color' => $this->color,
 
-            // 🔥 Главный перевод (как в блоге)
-            'name'        => $this->translation?->name,
-            'short'       => $this->translation?->short,
-            'description' => $this->translation?->description,
+            /**
+             * Основной перевод.
+             */
+            'name' => $translation?->name,
+            'short' => $translation?->short,
+            'description' => $translation?->description,
 
-            'meta_title'    => $this->translation?->meta_title,
-            'meta_keywords' => $this->translation?->meta_keywords,
-            'meta_desc'     => $this->translation?->meta_desc,
+            'meta_title' => $translation?->meta_title,
+            'meta_keywords' => $translation?->meta_keywords,
+            'meta_desc' => $translation?->meta_desc,
 
-            // 🔥 Полный список переводов (если нужен)
+            /**
+             * Все фактически загруженные переводы.
+             *
+             * Admin:
+             * ru / en / kk / zh ...
+             *
+             * Public:
+             * обычно только текущая локаль.
+             */
             'translations' => SchoolHashtagTranslationResource::collection(
                 $this->whenLoaded('translations')
             ),
 
-            // 📊 Статистика
             'views' => (int) $this->views,
             'likes' => (int) $this->likes,
 
-            // 🔗 Counts (если есть withCount)
             'courses_count' => $this->when(
                 isset($this->courses_count),
                 fn () => (int) $this->courses_count
@@ -52,9 +73,13 @@ class SchoolHashtagResource extends JsonResource
                 fn () => (int) $this->lessons_count
             ),
 
-            // ⏱ Таймстемпы
-            'created_at' => optional($this->created_at)->toDateTimeString(),
-            'updated_at' => optional($this->updated_at)->toDateTimeString(),
+            'created_at' => optional(
+                $this->created_at
+            )->toIso8601String(),
+
+            'updated_at' => optional(
+                $this->updated_at
+            )->toIso8601String(),
         ];
     }
 }

@@ -1,13 +1,13 @@
 <script setup>
+import { computed, ref, onMounted } from 'vue'
+import { Link } from '@inertiajs/vue3'
+
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 defineOptions({
     name: 'RubricTreeItem',
 })
-
-import { computed, ref, onMounted } from 'vue'
-import { Link } from '@inertiajs/vue3'
 
 const props = defineProps({
     item: { type: Object, required: true },
@@ -51,7 +51,9 @@ const saveState = (open) => {
         const raw = localStorage.getItem(STORAGE_KEY)
         let openIds = raw ? JSON.parse(raw) : []
 
-        if (!Array.isArray(openIds)) openIds = []
+        if (!Array.isArray(openIds)) {
+            openIds = []
+        }
 
         if (open) {
             if (!openIds.includes(props.item.id)) {

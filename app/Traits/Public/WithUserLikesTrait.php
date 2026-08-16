@@ -2,30 +2,41 @@
 
 namespace App\Traits\Public;
 
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 
 trait WithUserLikesTrait
 {
-    /** Добавляет признак лайка текущего пользователя к каждому элементу пагинации. */
-    protected function appendUserLikes(
-        LengthAwarePaginator $paginator,
-        string $resourceClass
-    ): LengthAwarePaginator {
+    /**
+     * Добавить к запросу признак лайка
+     * текущего авторизованного пользователя.
+     *
+     * Поддерживает:
+     * - обычный Eloquent Builder;
+     * - relation-запросы внутри eager loading.
+     *
+     * Для гостя дополнительный SQL EXISTS
+     * не добавляется.
+     */
+    protected function withUserLike(
+        Builder|Relation $query,
+        string $relation = 'likes'
+    ): Builder|Relation {
         $userId = Auth::id();
 
-        $items = $paginator->getCollection()->map(function ($item) use ($resourceClass, $userId) {
-            $resolved = (new $resourceClass($item))->resolve();
+        if (!$userId) {
+            return $query;
+        }
 
-            $resolved['already_liked'] = $userId
-                ? $item->likes()->where('user_id', $userId)->exists()
-                : false;
+        $query->withExists([
+            "{$relation} as already_liked" => fn ($likesQuery) =>
+            $likesQuery->where(
+                'user_id',
+                $userId
+            ),
+        ]);
 
-            return $resolved;
-        });
-
-        $paginator->setCollection(collect($items));
-
-        return $paginator;
+        return $query;
     }
 }

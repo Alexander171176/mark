@@ -62,16 +62,16 @@ class SchoolTrack extends Model
         return $this->hasMany(self::class, 'parent_id')->orderBy('sort');
     }
 
-    /** Дочерние треки рекурсивно */
+    /**
+     * Дочерние треки.
+     *
+     * Глубину дерева определяет Controller,
+     * чтобы не выполнять лишний запрос
+     * следующего несуществующего уровня.
+     */
     public function childrenRecursive(): HasMany
     {
         return $this->children()
-            ->with([
-                'translation',
-                'translations',
-                'images.media',
-                'childrenRecursive',
-            ])
             ->withCount([
                 'children',
                 'courses',
@@ -140,15 +140,50 @@ class SchoolTrack extends Model
         ]);
     }
 
-    /** Публичный набор */
-    public function scopeForPublic(Builder $q, ?string $locale = null): Builder
-    {
-        $locale = $locale ?: app()->getLocale();
+    /**
+     * Публичный набор.
+     *
+     * Сущность доступна, если существует
+     * перевод текущей или fallback-локали.
+     *
+     * Загружаем максимум две локали:
+     * current + fallback.
+     */
+    public function scopeForPublic(
+        Builder $q,
+        ?string $locale = null
+    ): Builder {
+        $locale ??= app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
 
         return $q
             ->active()
-            ->whereHas('translations', fn ($qq) => $qq->where('locale', $locale))
-            ->withLocale($locale);
+            ->whereHas(
+                'translations',
+                fn (Builder $query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                )
+            )
+            ->with([
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+            ]);
     }
 
     /** Поиск */
@@ -198,7 +233,7 @@ class SchoolTrack extends Model
                 })
                 ->orderBy('parent_stt_sort.name', 'asc')
                 ->orderByDesc('school_tracks.id')
-                ->select('school_tracks.*'),
+                ->addSelect('school_tracks.*'),
 
             'parentNameDesc' => $q
                 ->leftJoin('school_tracks as parent_tracks_sort', function ($join) {
@@ -210,7 +245,7 @@ class SchoolTrack extends Model
                 })
                 ->orderBy('parent_stt_sort.name', 'desc')
                 ->orderByDesc('school_tracks.id')
-                ->select('school_tracks.*'),
+                ->addSelect('school_tracks.*'),
 
             'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
             'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),
@@ -248,7 +283,7 @@ class SchoolTrack extends Model
                 })
                 ->orderBy('stt_sort.name', 'asc')
                 ->orderByDesc('school_tracks.id')
-                ->select('school_tracks.*'),
+                ->addSelect('school_tracks.*'),
 
             'nameDesc' => $q
                 ->leftJoin('school_track_translations as stt_sort', function ($join) use ($locale) {
@@ -257,7 +292,7 @@ class SchoolTrack extends Model
                 })
                 ->orderBy('stt_sort.name', 'desc')
                 ->orderByDesc('school_tracks.id')
-                ->select('school_tracks.*'),
+                ->addSelect('school_tracks.*'),
 
             default => $q->ordered(),
         };

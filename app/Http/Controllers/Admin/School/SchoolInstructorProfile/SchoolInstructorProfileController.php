@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\School\SchoolInstructorProfile;
 use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileRequest;
 use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileResource;
+use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileSharedResource;
 use App\Http\Resources\Admin\System\User\UserResource;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileImage;
@@ -104,7 +105,10 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
                 'adminSchoolInstructorsDefaultSort' => $defaultSort,
                 'adminSchoolInstructorsProcessingMode' => $processingMode,
 
-                'instructorProfiles' => SchoolInstructorProfileResource::collection($instructorProfiles),
+                'instructorProfiles' =>
+                    SchoolInstructorProfileSharedResource::collection(
+                        $instructorProfiles
+                    ),
                 'instructorProfilesCount' => $instructorProfilesCount,
 
                 'sortParam' => $sortParam,
@@ -137,17 +141,43 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
     }
 
     /** Страница создания */
-    public function create(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        $users = User::select('id', 'name')->orderBy('name')->get();
+        /**
+         * Один и тот же список пользователей
+         * используется Create / Edit.
+         */
+        $users = User::query()
+            ->select([
+                'id',
+                'name',
+            ])
+            ->orderBy(
+                'name',
+                'asc'
+            )
+            ->get();
 
-        return Inertia::render('Admin/School/SchoolInstructorProfiles/Create', [
-            'users' => UserResource::collection($users),
-            'targetLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+        return Inertia::render(
+            'Admin/School/SchoolInstructorProfiles/Create',
+            [
+                'users' =>
+                    UserResource::collection(
+                        $users
+                    ),
+
+                'targetLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+            ]
+        );
     }
 
     /** Создание */
@@ -191,22 +221,71 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
     }
 
     /** Страница редактирования */
-    public function edit(int $id, Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function edit(
+        int $id,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
+        /**
+         * Для Edit нужны:
+         *
+         * - все переводы для TranslationTabs;
+         * - изображения вместе со Spatie Media;
+         * - связанный пользователь.
+         *
+         * Отдельная relation translation
+         * здесь не нужна.
+         */
         $model = $this->baseQuery()
-            ->with(['translation', 'translations', 'images', 'user'])
-            ->findOrFail($id);
+            ->with([
+                'translations',
 
-        $users = User::select('id', 'name')->orderBy('name')->get();
+                'images.media',
 
-        return Inertia::render('Admin/School/SchoolInstructorProfiles/Edit', [
-            'instructorProfile' => new SchoolInstructorProfileResource($model),
-            'users' => UserResource::collection($users),
-            'targetLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+                'user:id,name,email',
+            ])
+            ->findOrFail(
+                $id
+            );
+
+        /**
+         * Один и тот же список пользователей
+         * используется Create / Edit.
+         */
+        $users = User::query()
+            ->select([
+                'id',
+                'name',
+            ])
+            ->orderBy(
+                'name',
+                'asc'
+            )
+            ->get();
+
+        return Inertia::render(
+            'Admin/School/SchoolInstructorProfiles/Edit',
+            [
+                'instructorProfile' =>
+                    new SchoolInstructorProfileResource(
+                        $model
+                    ),
+
+                'users' =>
+                    UserResource::collection(
+                        $users
+                    ),
+
+                'targetLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+            ]
+        );
     }
 
     /** Обновление */
@@ -261,17 +340,52 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
         }
     }
 
-    /** Базовый запрос для списка инструкторов. */
-    private function indexQuery(): Builder
-    {
+    /** Базовый запрос для Admin Index инструкторов. */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'translation',
-                'translations',
+                /**
+                 * Для Admin Index нужен
+                 * только перевод выбранной локали.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                /**
+                 * Пользователь нужен таблице,
+                 * карточкам и frontend-поиску.
+                 */
                 'user:id,name,email',
-                'courses.translation',
-                'courses.translations',
-                'images',
+
+                /**
+                 * Курсы нужны frontend-поиску.
+                 *
+                 * Не загружаем их полный граф.
+                 */
+                'courses' => fn ($query) =>
+                $query->select([
+                    'id',
+                    'school_instructor_profile_id',
+                    'slug',
+                ])
+                    ->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $locale
+                        ),
+                    ]),
+
+                /**
+                 * Изображения + Spatie Media
+                 * одним пакетным eager loading.
+                 */
+                'images.media',
             ])
             ->withCount([
                 'courses',
@@ -288,7 +402,7 @@ class SchoolInstructorProfileController extends BaseSchoolAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery($locale);
 
         if ($useServerProcessing) {
             return $query

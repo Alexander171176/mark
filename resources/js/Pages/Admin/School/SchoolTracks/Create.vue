@@ -104,26 +104,54 @@ const handleNewImagesUpdate = (images) => {
 
 // ======================== Родительские треки ========================
 // строит список parent_id с иерархией
-function buildParentOptions(flatTracks, parentId = null, level = 0) {
+function buildParentOptions(
+    flatTracks,
+    parentId = null,
+    level = 0
+) {
     let result = []
 
     ;(flatTracks || [])
-        .filter(track => track.parent_id === parentId)
-        .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+        .filter(
+            track =>
+                track.parent_id === parentId
+        )
+        .sort(
+            (a, b) =>
+                (a.sort || 0)
+                - (b.sort || 0)
+        )
         .forEach(track => {
+            const name =
+                track?.translation?.name
+                || `ID: ${track.id}`
+
             result.push({
                 id: track.id,
-                name: `${'— '.repeat(level)}${track.name || `ID: ${track.id}`}`,
+
+                name:
+                    `${'— '.repeat(level)}${name}`,
             })
 
-            result = result.concat(buildParentOptions(flatTracks, track.id, level + 1))
+            result = result.concat(
+                buildParentOptions(
+                    flatTracks,
+                    track.id,
+                    level + 1
+                )
+            )
         })
 
     return result
 }
 
 // готовые options для select
-const parentOptions = computed(() => buildParentOptions(props.parents || []))
+const parentOptions = computed(
+    () =>
+        buildParentOptions(
+            props.parents || []
+        )
+)
 
 // ======================== Slug ========================
 // автогенерация slug из названия

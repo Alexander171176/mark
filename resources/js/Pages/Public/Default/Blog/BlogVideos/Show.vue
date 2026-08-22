@@ -1,20 +1,23 @@
 <script setup>
 /**
- * Страница конкретного видео.
+ * Страница конкретного видео блога.
  *
  * @version PulsarCMS 1.0
  * @author Александр
  */
-import { computed, ref, watch, } from 'vue'
+
+import { computed, onMounted, ref } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
 import DefaultLayout from '@/Layouts/DefaultLayout.vue'
 import Navbar from '@/Partials/Default/Navbar.vue'
 import FooterBlog from '@/Partials/Default/FooterBlog.vue'
+
 import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebar from '@/Components/Public/Default/Partials/LeftSidebar.vue'
 import RightSidebar from '@/Components/Public/Default/Partials/RightSidebar.vue'
+
 import VideoPlayer from '@/Components/Public/Default/Blog/BlogVideo/VideoPlayer.vue'
 import VideoGrid from '@/Components/Public/Default/Blog/BlogVideo/VideoGrid.vue'
 import CommentThread from '@/Components/Public/Default/Blog/Comment/CommentThread.vue'
@@ -25,24 +28,44 @@ import LikeButtonEntity from '@/Components/Public/Like/LikeButtonEntity.vue'
 const { t } = useI18n()
 const page = usePage()
 
-/** Props страницы */
 const props = defineProps({
     title: { type: String, default: '' },
     canLogin: { type: Boolean, default: false },
     canRegister: { type: Boolean, default: false },
 
-    video: { type: Object, default: () => ({}) },
-    recommendedVideos: { type: [Array, Object], default: () => [] },
+    video: {
+        type: Object,
+        default: () => ({}),
+    },
 
-    rubricTree: { type: Array, default: () => [] },
+    recommendedVideos: {
+        type: [Array, Object],
+        default: () => [],
+    },
 
-    mainVideos: { type: [Array, Object], default: () => [] },
-    mainBanners: { type: [Array, Object], default: () => [] },
+    rubricTree: {
+        type: Array,
+        default: () => [],
+    },
 
-    locale: { type: String, default: 'ru' },
+    mainVideos: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    mainBanners: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    locale: {
+        type: String,
+        default: 'ru',
+    },
 })
 
-/** Нормализация массива */
+/* ======================== Helpers ======================== */
+
 const normalizeList = (value) => {
     if (Array.isArray(value)) return value
     if (Array.isArray(value?.data)) return value.data
@@ -50,217 +73,533 @@ const normalizeList = (value) => {
     return []
 }
 
-/** Текущее видео */
-const videoData = computed(() => props.video || {})
+const settingEnabled = (
+    value,
+    defaultValue = true
+) => {
+    if (
+        value === undefined
+        || value === null
+        || value === ''
+    ) {
+        return defaultValue
+    }
 
-/** Активный перевод */
-const videoTranslation = computed(() => videoData.value.translation || {})
+    if (typeof value === 'boolean') {
+        return value
+    }
 
-/** Заголовок видео */
-const videoTitle = computed(() => {
-    return videoTranslation.value.title || videoData.value.title || ''
-})
+    return String(value) === 'true'
+}
 
-/** Краткое описание */
-const videoShort = computed(() => {
-    return videoTranslation.value.short || videoData.value.short || ''
-})
+/* ======================== Video ======================== */
 
-/** Полное описание */
-const videoDescription = computed(() => {
-    return videoTranslation.value.description || videoData.value.description || ''
-})
+const videoData = computed(() =>
+    props.video ?? {}
+)
 
-/** SEO заголовок */
-const videoMetaTitle = computed(() => {
-    return videoTranslation.value.meta_title || videoData.value.meta_title || videoTitle.value
-})
+const videoTranslation = computed(() =>
+    videoData.value?.translation ?? {}
+)
 
-/** SEO ключевые слова */
-const videoMetaKeywords = computed(() => {
-    return videoTranslation.value.meta_keywords || videoData.value.meta_keywords || ''
-})
+const videoTitle = computed(() =>
+    videoTranslation.value?.title || ''
+)
 
-/** SEO описание */
-const videoMetaDesc = computed(() => {
-    return videoTranslation.value.meta_desc || videoData.value.meta_desc || videoShort.value || ''
-})
+const videoShort = computed(() =>
+    videoTranslation.value?.short || ''
+)
 
-/** Псевдоним автора */
-const videoPseudonym = computed(() => {
-    return videoTranslation.value.pseudonym || ''
-})
+const videoDescription = computed(() =>
+    videoTranslation.value?.description
+    || videoShort.value
+    || ''
+)
 
-/** Дерево рубрик */
-const rubricTree = computed(() => Array.isArray(props.rubricTree) ? props.rubricTree : [])
+const videoPseudonym = computed(() =>
+    videoTranslation.value?.pseudonym || ''
+)
 
-/** Рекомендуемые видео */
-const recommendedVideosList = computed(() => normalizeList(props.recommendedVideos))
+const videoLocale = computed(() =>
+    videoTranslation.value?.locale
+    || props.locale
+    || 'ru'
+)
 
-/** Видео нижнего блока */
-const mainVideosList = computed(() => normalizeList(props.mainVideos))
+const videoAuthor = computed(() =>
+    videoPseudonym.value
+    || videoData.value?.owner?.name
+    || ''
+)
 
-/** Баннеры нижнего блока */
-const mainBannersList = computed(() => normalizeList(props.mainBanners))
+/* ======================== Relations ======================== */
 
-/** Текущий пользователь */
-const authUser = computed(() => page.props.auth?.user ?? null)
+const rubricTree = computed(() =>
+    Array.isArray(props.rubricTree)
+        ? props.rubricTree
+        : []
+)
 
-/** Изображения видео */
-const videoImages = computed(() => normalizeList(videoData.value.images))
+const recommendedVideosList = computed(() =>
+    normalizeList(
+        props.recommendedVideos
+    )
+)
 
-/** Главное изображение */
-const firstImage = computed(() => {
-    if (videoImages.value.length) {
-        return videoImages.value[0]
+const mainVideosList = computed(() =>
+    normalizeList(
+        props.mainVideos
+    )
+)
+
+const mainBannersList = computed(() =>
+    normalizeList(
+        props.mainBanners
+    )
+)
+
+const authUser = computed(() =>
+    page.props?.auth?.user ?? null
+)
+
+/* ======================== Images ======================== */
+
+const videoImages = computed(() =>
+    normalizeList(
+        videoData.value?.images
+    )
+)
+
+const firstImage = computed(() =>
+    videoImages.value[0] ?? null
+)
+
+const firstImageUrl = computed(() =>
+    firstImage.value?.webp_url
+    || firstImage.value?.image_url
+    || firstImage.value?.thumb_url
+    || firstImage.value?.url
+    || ''
+)
+
+/* ======================== Video source ======================== */
+
+const contentUrl = computed(() =>
+    videoData.value?.video_url || ''
+)
+
+const embedUrl = computed(() =>
+    videoData.value?.embed_url || ''
+)
+
+/**
+ * Schema.org принимает duration
+ * в ISO 8601.
+ *
+ * Backend duration хранит секунды.
+ */
+const schemaDuration = computed(() => {
+    const seconds = Number(
+        videoData.value?.duration ?? 0
+    )
+
+    if (
+        !Number.isFinite(seconds)
+        || seconds <= 0
+    ) {
+        return ''
+    }
+
+    const hours = Math.floor(
+        seconds / 3600
+    )
+
+    const minutes = Math.floor(
+        (seconds % 3600) / 60
+    )
+
+    const remainingSeconds =
+        Math.floor(seconds % 60)
+
+    let value = 'PT'
+
+    if (hours > 0) {
+        value += `${hours}H`
+    }
+
+    if (minutes > 0) {
+        value += `${minutes}M`
     }
 
     if (
-        videoData.value?.cover_webp_url ||
-        videoData.value?.cover_image_url ||
-        videoData.value?.cover_thumb_url
+        remainingSeconds > 0
+        || (
+            hours === 0
+            && minutes === 0
+        )
     ) {
-        return {
-            webp_url: videoData.value.cover_webp_url,
-            image_url: videoData.value.cover_image_url,
-            thumb_url: videoData.value.cover_thumb_url,
-        }
+        value += `${remainingSeconds}S`
     }
 
-    return null
+    return value
 })
 
-/** URL главного изображения */
-const firstImageUrl = computed(() => {
-    return firstImage.value?.webp_url ||
-        firstImage.value?.url ||
-        firstImage.value?.image_url ||
-        firstImage.value?.thumb_url ||
-        ''
+/* ======================== SEO ======================== */
+
+const seoTitle = computed(() =>
+    videoTranslation.value?.meta_title
+    || videoTitle.value
+)
+
+const seoKeywords = computed(() =>
+    videoTranslation.value?.meta_keywords
+    || ''
+)
+
+const seoDescription = computed(() =>
+    videoTranslation.value?.meta_desc
+    || videoShort.value
+    || ''
+)
+
+const canonicalUrl = computed(() => {
+    if (!videoData.value?.url) {
+        return ''
+    }
+
+    return String(
+        route('public.blogVideos.show', {
+            url: videoData.value.url,
+        })
+    )
 })
 
-/** Настройки сайта */
-const { siteSettings } = page.props
+const ogLocale = computed(() =>
+    videoLocale.value === 'ru'
+        ? 'ru_RU'
+        : videoLocale.value
+)
 
-/** Показ левой колонки */
+const publishedAt = computed(() =>
+    videoData.value?.published_at
+    || videoData.value?.created_at
+    || ''
+)
+
+const dcSubject = computed(() =>
+    seoKeywords.value
+    || videoTitle.value
+)
+
+/* ======================== Sidebars ======================== */
+
+const siteSettings = computed(() =>
+    page.props?.siteSettings ?? {}
+)
+
 const showLeft = computed(() =>
-    !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+    settingEnabled(
+        siteSettings.value?.ViewLeftColumn,
+        true
+    )
 )
 
-/** Показ правой колонки */
 const showRight = computed(() =>
-    !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+    settingEnabled(
+        siteSettings.value?.ViewRightColumn,
+        true
+    )
 )
 
-/** Ключ хранения состояния левого сайдбара */
 const LEFT_SIDEBAR_KEY =
     'public_left_sidebar_collapsed'
 
-/** Ключ хранения состояния правого сайдбара */
 const RIGHT_SIDEBAR_KEY =
     'public_right_sidebar_collapsed'
 
 /**
- * Получение boolean-значения
- * из localStorage.
+ * Первый render — sidebar свёрнуты.
+ *
+ * После mounted восстанавливаем
+ * сохранённое состояние.
  */
-const getStoredBoolean = (
+const leftCollapsed = ref(true)
+const rightCollapsed = ref(true)
+
+const readStoredBoolean = (
     key,
-    defaultValue = true
+    fallback = true
 ) => {
-    const value = localStorage.getItem(
-        key
-    )
+    try {
+        const value =
+            localStorage.getItem(key)
 
-    if (value === null) {
-        return defaultValue
+        return value === null
+            ? fallback
+            : value === 'true'
+    } catch {
+        return fallback
     }
-
-    return value === 'true'
 }
 
-/** Состояние левого сайдбара */
-const leftCollapsed = ref(
-    getStoredBoolean(
-        LEFT_SIDEBAR_KEY,
-        true
-    )
-)
+const writeStoredBoolean = (
+    key,
+    value
+) => {
+    try {
+        localStorage.setItem(
+            key,
+            String(Boolean(value))
+        )
+    } catch {
+        //
+    }
+}
 
-/** Состояние правого сайдбара */
-const rightCollapsed = ref(
-    getStoredBoolean(
-        RIGHT_SIDEBAR_KEY,
-        true
+onMounted(() => {
+    leftCollapsed.value =
+        readStoredBoolean(
+            LEFT_SIDEBAR_KEY,
+            true
+        )
+
+    rightCollapsed.value =
+        readStoredBoolean(
+            RIGHT_SIDEBAR_KEY,
+            true
+        )
+})
+
+const setLeftCollapsed = (value) => {
+    leftCollapsed.value =
+        Boolean(value)
+
+    writeStoredBoolean(
+        LEFT_SIDEBAR_KEY,
+        leftCollapsed.value
     )
-)
+}
+
+const setRightCollapsed = (value) => {
+    rightCollapsed.value =
+        Boolean(value)
+
+    writeStoredBoolean(
+        RIGHT_SIDEBAR_KEY,
+        rightCollapsed.value
+    )
+}
 
 /**
- * Сохраняем состояние сайдбаров.
+ * Рекомендованные видео:
  *
- * Используются общие ключи для всех
- * публичных страниц блога.
+ * оба sidebar открыты → 2;
+ * один открыт → 3;
+ * оба закрыты → 4.
  */
-watch(
-    [
-        leftCollapsed,
-        rightCollapsed,
-    ],
-    () => {
-        localStorage.setItem(
-            LEFT_SIDEBAR_KEY,
-            String(
-                leftCollapsed.value
-            )
-        )
+const videoGridCols = computed(() => {
+    const leftExpanded =
+        showLeft.value
+        && !leftCollapsed.value
 
-        localStorage.setItem(
-            RIGHT_SIDEBAR_KEY,
-            String(
-                rightCollapsed.value
-            )
-        )
+    const rightExpanded =
+        showRight.value
+        && !rightCollapsed.value
+
+    if (
+        leftExpanded
+        && rightExpanded
+    ) {
+        return 2
     }
-)
+
+    if (
+        leftExpanded
+        || rightExpanded
+    ) {
+        return 3
+    }
+
+    return 4
+})
 </script>
 
 <template>
     <Head>
-        <title>{{ videoMetaTitle }}</title>
+        <!-- Basic SEO -->
+        <title>{{ seoTitle }}</title>
 
-        <meta name="title" :content="videoMetaTitle" />
-        <meta name="description" :content="videoMetaDesc" />
-        <meta name="keywords" :content="videoMetaKeywords" />
-        <meta name="author" :content="videoPseudonym || videoData.owner?.name || ''" />
+        <meta
+            name="title"
+            :content="seoTitle"
+        >
 
-        <meta property="og:title" :content="videoMetaTitle" />
-        <meta property="og:description" :content="videoMetaDesc" />
-        <meta property="og:type" content="video.other" />
-        <meta property="og:url" :content="`/blog/videos/${videoData.url || ''}`" />
-        <meta property="og:image" :content="firstImageUrl" />
-        <meta property="og:locale" :content="locale" />
+        <meta
+            v-if="seoDescription"
+            name="description"
+            :content="seoDescription"
+        >
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="videoMetaTitle" />
-        <meta name="twitter:description" :content="videoMetaDesc" />
-        <meta name="twitter:image" :content="firstImageUrl" />
+        <meta
+            v-if="seoKeywords"
+            name="keywords"
+            :content="seoKeywords"
+        >
 
-        <meta name="DC.Title" :content="videoMetaTitle" />
-        <meta name="DC.Description" :content="videoMetaDesc" />
-        <meta name="DC.Subject" :content="videoMetaKeywords" />
-        <meta name="DC.Creator" :content="videoPseudonym || videoData.owner?.name || ''" />
-        <meta name="DC.Type" content="MovingImage" />
-        <meta name="DC.Format" content="text/html" />
-        <meta name="DC.Language" :content="locale" />
-        <meta name="DC.Identifier" :content="`/blog/videos/${videoData.url || ''}`" />
+        <meta
+            v-if="videoAuthor"
+            name="author"
+            :content="videoAuthor"
+        >
+
+        <meta
+            name="robots"
+            content="index, follow, max-image-preview:large"
+        >
+
+        <!-- Canonical -->
+        <link
+            v-if="canonicalUrl"
+            rel="canonical"
+            :href="canonicalUrl"
+        >
+
+        <!-- Open Graph -->
+        <meta
+            property="og:type"
+            content="video.other"
+        >
+
+        <meta
+            property="og:title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            property="og:description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="canonicalUrl"
+            property="og:url"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            property="og:locale"
+            :content="ogLocale"
+        >
+
+        <meta
+            v-if="firstImageUrl"
+            property="og:image"
+            :content="firstImageUrl"
+        >
+
+        <meta
+            v-if="contentUrl"
+            property="og:video"
+            :content="contentUrl"
+        >
+
+        <meta
+            v-else-if="embedUrl"
+            property="og:video"
+            :content="embedUrl"
+        >
+
+        <!-- Twitter / X -->
+        <meta
+            name="twitter:card"
+            :content="
+                firstImageUrl
+                    ? 'summary_large_image'
+                    : 'summary'
+            "
+        >
+
+        <meta
+            name="twitter:title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            name="twitter:description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="firstImageUrl"
+            name="twitter:image"
+            :content="firstImageUrl"
+        >
+
+        <!-- Dublin Core -->
+        <meta
+            name="DC.title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            name="DC.description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="dcSubject"
+            name="DC.subject"
+            :content="dcSubject"
+        >
+
+        <meta
+            v-if="videoAuthor"
+            name="DC.creator"
+            :content="videoAuthor"
+        >
+
+        <meta
+            name="DC.type"
+            content="MovingImage"
+        >
+
+        <meta
+            name="DC.format"
+            content="text/html"
+        >
+
+        <meta
+            name="DC.language"
+            :content="videoLocale"
+        >
+
+        <meta
+            v-if="canonicalUrl"
+            name="DC.identifier"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            v-if="publishedAt"
+            name="DCTERMS.issued"
+            :content="publishedAt"
+        >
     </Head>
 
-    <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
+    <DefaultLayout
+        :title="title"
+        :can-login="canLogin"
+        :can-register="canRegister"
+    >
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
+        <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-                <!-- LEFT -->
+
+                <!-- Left sidebar -->
                 <aside
                     v-if="showLeft"
                     class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
@@ -269,43 +608,161 @@ watch(
                     <LeftSidebar
                         :rubric-tree="rubricTree"
                         :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
+                        @collapsed="setLeftCollapsed"
                     />
                 </aside>
 
-                <!-- CENTER -->
-                <section class="w-full lg:mt-28 pb-6 slate-1">
+                <!-- Content -->
+                <section class="w-full lg:mt-28 pb-6 slate-1 min-w-0">
                     <div class="mx-auto max-w-6xl">
+
                         <article
                             itemscope
                             itemtype="https://schema.org/VideoObject"
+                            :itemid="canonicalUrl"
                             class="selection:bg-red-400 selection:text-white"
                         >
+                            <!-- VideoObject metadata -->
+                            <meta
+                                itemprop="name"
+                                :content="videoTitle"
+                            >
+
+                            <meta
+                                v-if="seoDescription"
+                                itemprop="description"
+                                :content="seoDescription"
+                            >
+
+                            <meta
+                                itemprop="inLanguage"
+                                :content="videoLocale"
+                            >
+
+                            <meta
+                                v-if="canonicalUrl"
+                                itemprop="mainEntityOfPage"
+                                :content="canonicalUrl"
+                            >
+
+                            <meta
+                                v-if="firstImageUrl"
+                                itemprop="thumbnailUrl"
+                                :content="firstImageUrl"
+                            >
+
+                            <meta
+                                v-if="publishedAt"
+                                itemprop="uploadDate"
+                                :content="publishedAt"
+                            >
+
+                            <meta
+                                v-if="schemaDuration"
+                                itemprop="duration"
+                                :content="schemaDuration"
+                            >
+
+                            <meta
+                                v-if="contentUrl"
+                                itemprop="contentUrl"
+                                :content="contentUrl"
+                            >
+
+                            <meta
+                                v-if="embedUrl"
+                                itemprop="embedUrl"
+                                :content="embedUrl"
+                            >
+
                             <!-- Breadcrumbs -->
-                            <nav class="text-sm" aria-label="Breadcrumb">
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
                                 <ol class="flex flex-wrap items-center font-semibold">
-                                    <li>
+
+                                    <!-- Home -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                    >
                                         <Link
+                                            itemprop="item"
                                             :href="route('home')"
                                             class="breadcrumb-link hover:underline"
                                         >
-                                            {{ t('home') }}
+                                            <span itemprop="name">
+                                                {{ t('home') }}
+                                            </span>
                                         </Link>
+
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        >
                                     </li>
-                                    <li><span class="mx-2 breadcrumbs">/</span></li>
-                                    <li>
+
+                                    <!-- Videos -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                    >
+                                        <span class="mx-2 breadcrumbs">
+                                            /
+                                        </span>
+
                                         <Link
+                                            itemprop="item"
                                             :href="route('public.blogVideos.index')"
                                             class="breadcrumb-link hover:underline"
                                         >
-                                            {{ t('videos') }}
+                                            <span itemprop="name">
+                                                {{ t('videos') }}
+                                            </span>
                                         </Link>
+
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        >
                                     </li>
 
-                                    <li><span class="mx-2 breadcrumbs">/</span></li>
+                                    <!-- Current video -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
+                                    >
+                                        <span class="mx-2 breadcrumbs">
+                                            /
+                                        </span>
 
-                                    <li class="breadcrumbs">
-                                        {{ videoTitle }}
+                                        <span
+                                            itemprop="name"
+                                            class="breadcrumbs"
+                                        >
+                                            {{ videoTitle }}
+                                        </span>
+
+                                        <meta
+                                            v-if="canonicalUrl"
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        >
+
+                                        <meta
+                                            itemprop="position"
+                                            content="3"
+                                        >
                                     </li>
                                 </ol>
                             </nav>
@@ -322,27 +779,11 @@ watch(
                             </div>
 
                             <!-- Title / stats -->
-                            <div class="flex flex-wrap items-center justify-between
-                                        gap-3 title my-3">
-
-                                <div
-                                    v-if="videoData.likes_count > 0"
-                                    :title="t('likes')"
-                                    class="flex items-center justify-center gap-2"
-                                >
-                                    <svg
-                                        class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                        fill="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path d="M3,9H1a1,1,0,0,0-1,1V22a1,1,0,0,0,1,1H4V10A1,1,0,0,0,3,9Z"></path><path d="M21.882,8.133A2.986,2.986,0,0,0,21,8H15V5c0-3.824-2.589-4.942-3.958-5a1.017,1.017,0,0,0-.734.277A1,1,0,0,0,10,1V5.638l-4,4.8V23H18.23A2.985,2.985,0,0,0,21.1,20.882l2.769-9A3,3,0,0,0,21.882,8.133Z"></path>
-                                    </svg>
-                                    <span class="text-center text-sm text-gray-500">
-                                        {{ videoData.likes_count }} ·
-                                    </span>
-                                </div>
-
+                            <div
+                                class="my-3 flex flex-wrap items-center
+                                       justify-center gap-3 title"
+                            >
                                 <h1
-                                    itemprop="name"
                                     class="text-2xl font-bold"
                                 >
                                     {{ videoTitle }}
@@ -350,11 +791,13 @@ watch(
 
                                 <div
                                     :title="t('views')"
-                                    class="flex items-center justify-center gap-2"
+                                    class="flex items-center justify-center gap-1"
+                                    itemprop="interactionStatistic"
+                                    itemscope
+                                    itemtype="https://schema.org/InteractionCounter"
                                 >
                                     <svg
                                         class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                        xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 576 512"
                                         fill="currentColor"
                                     >
@@ -362,8 +805,19 @@ watch(
                                             d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
                                         />
                                     </svg>
-                                    <span class="text-center text-sm text-gray-500">
-                                        {{ videoData.views || 0 }} ·
+
+                                    <meta
+                                        itemprop="interactionType"
+                                        content="https://schema.org/WatchAction"
+                                    >
+
+                                    <meta
+                                        itemprop="userInteractionCount"
+                                        :content="videoData.views || 0"
+                                    >
+
+                                    <span class="text-sm text-gray-500">
+                                        {{ videoData.views || 0 }}
                                     </span>
                                 </div>
                             </div>
@@ -373,7 +827,6 @@ watch(
                                 v-if="videoDescription"
                                 class="my-4 text-sm subtitle text-center"
                                 v-html="videoDescription"
-                                itemprop="description"
                             />
 
                             <!-- Like -->
@@ -388,20 +841,33 @@ watch(
                                 />
                             </div>
 
-                            <!-- Owner -->
+                            <!-- Author -->
                             <div
-                                v-if="videoData?.owner"
+                                v-if="videoData.owner"
+                                itemprop="author"
+                                itemscope
+                                itemtype="https://schema.org/Person"
                                 class="mt-4 flex items-center justify-center gap-2"
                             >
+                                <meta
+                                    itemprop="name"
+                                    :content="videoAuthor"
+                                >
+
                                 <img
                                     v-if="videoData.owner?.profile_photo_url"
                                     :src="videoData.owner.profile_photo_url"
-                                    :alt="videoData.owner.name"
+                                    :alt="videoAuthor"
                                     loading="lazy"
-                                    class="h-8 w-8 rounded-full object-cover ring-1 ring-gray-200 dark:ring-gray-700"
-                                />
-                                <div class="min-w-0 text-sm font-semibold text-slate-700/85 dark:text-slate-300/85">
-                                    {{ videoPseudonym || videoData.owner?.name }}
+                                    class="h-8 w-8 rounded-full object-cover
+                                           ring-1 ring-gray-200 dark:ring-gray-700"
+                                >
+
+                                <div
+                                    class="min-w-0 text-sm font-semibold
+                                           text-slate-700/85 dark:text-slate-300/85"
+                                >
+                                    {{ videoAuthor }}
                                 </div>
                             </div>
 
@@ -413,25 +879,37 @@ watch(
                             />
 
                             <!-- Related videos -->
-                            <div v-if="recommendedVideosList.length" class="mt-6">
-                                <h2 class="mb-4 tracking-wide text-center font-semibold text-lg text-gray-700 dark:text-gray-300">
+                            <div
+                                v-if="recommendedVideosList.length"
+                                class="mt-8"
+                            >
+                                <h2
+                                    class="mb-4 text-center text-lg
+                                           font-semibold text-gray-700
+                                           dark:text-gray-300"
+                                >
                                     {{ t('relatedVideos') }}
                                 </h2>
 
                                 <VideoGrid
                                     :videos="recommendedVideosList"
-                                    :cols="2"
+                                    :cols="videoGridCols"
                                 />
                             </div>
                         </article>
 
                         <!-- Bottom main blocks -->
-                        <SectionVideoList :videos="mainVideosList" />
-                        <SectionBanners :banners="mainBannersList" />
+                        <SectionVideoList
+                            :videos="mainVideosList"
+                        />
+
+                        <SectionBanners
+                            :banners="mainBannersList"
+                        />
                     </div>
                 </section>
 
-                <!-- RIGHT -->
+                <!-- Right sidebar -->
                 <aside
                     v-if="showRight"
                     class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
@@ -439,7 +917,7 @@ watch(
                 >
                     <RightSidebar
                         :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
+                        @collapsed="setRightCollapsed"
                     />
                 </aside>
             </main>

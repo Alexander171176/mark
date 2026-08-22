@@ -55,15 +55,22 @@ const truncateText = (text, maxLength = 80) => {
 }
 
 const parentName = (track) => {
-    return track?.parent?.name || t('noData')
+    return track?.parent?.translation?.name
+        || t('noData')
 }
 
 const parentTitle = (track) => {
     const parent = track?.parent
 
-    if (!parent) return t('noData')
+    if (!parent) {
+        return t('noData')
+    }
 
-    return `${parent.name || ''}${parent.slug ? ' — ' + parent.slug : ''}`.trim()
+    const name =
+        parent?.translation?.name
+        || ''
+
+    return `${name}${parent.slug ? ' — ' + parent.slug : ''}`.trim()
 }
 </script>
 
@@ -170,12 +177,12 @@ const parentTitle = (track) => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="text-sm font-semibold
-                                           text-sky-700 dark:text-sky-200
-                                           hover:text-amber-700 dark:hover:text-amber-200
-                                           hover:underline line-clamp-2 text-center"
-                                :title="track.name"
+                                       text-sky-700 dark:text-sky-200
+                                       hover:text-amber-700 dark:hover:text-amber-200
+                                       hover:underline line-clamp-2 text-center"
+                                :title="track.translation?.name || `ID: ${track.id}`"
                             >
-                                {{ truncateText(track.name) }}
+                                {{ truncateText(track.translation?.name || `ID: ${track.id}`) }}
                             </a>
                         </div>
 
@@ -198,11 +205,11 @@ const parentTitle = (track) => {
                         </div>
 
                         <div
-                            v-if="track.short"
+                            v-if="track.translation?.short"
                             class="font-semibold text-[12px] text-center
-                                       text-teal-700 dark:text-teal-200"
+                                   text-teal-700 dark:text-teal-200"
                         >
-                            {{ truncateText(track.short) }}
+                            {{ truncateText(track.translation.short) }}
                         </div>
 
                         <div

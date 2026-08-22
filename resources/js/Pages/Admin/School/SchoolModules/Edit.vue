@@ -3,9 +3,9 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Редактирование курса (паттерн)
+ * Редактирование модуля (паттерн)
  */
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -177,21 +177,33 @@ const dynamicOptionsLimit = (items) => {
 }
 
 // Список курсов для multiselect
-const courseOptions = computed(() =>
-    props.courses.map((item) => ({
-        id: item.id,
-        label: `[ID: ${item.id}] ${item.title || item.slug || `#${item.id}`}`,
+const courseOptions = computed(() => {
+    return (props.courses || []).map((course) => ({
+        id: course.id,
+
+        label:
+            `[ID: ${course.id}] ${
+                course?.translation?.title
+                || course?.slug
+                || `#${course.id}`
+            }`,
     }))
-)
+})
 
 // Выбранный курс
-const selectedCourse = ref(
-    courseOptions.value.find(item => item.id === form.school_course_id) || null
-)
+const selectedCourse = computed({
+    get() {
+        return courseOptions.value.find(
+            option =>
+                Number(option.id)
+                === Number(form.school_course_id)
+        ) || null
+    },
 
-// Синхронизация выбранного курса с формой
-watch(selectedCourse, (val) => {
-    form.school_course_id = val?.id ?? null
+    set(value) {
+        form.school_course_id =
+            value?.id ?? null
+    },
 })
 
 // Существующие изображения модуля

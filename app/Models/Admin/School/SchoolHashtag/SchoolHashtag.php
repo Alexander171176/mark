@@ -120,14 +120,34 @@ class SchoolHashtag extends Model
     }
 
     /** Публичный набор */
-    public function scopeForPublic(Builder $q, ?string $locale = null): Builder
-    {
-        $locale = $locale ?: app()->getLocale();
+    public function scopeForPublic(
+        Builder $q,
+        ?string $locale = null
+    ): Builder {
+        $locale ??= app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
 
         return $q
             ->active()
-            ->whereHas('translations', fn ($qq) => $qq->where('locale', $locale))
-            ->withLocale($locale);
+            ->whereHas(
+                'translations',
+                fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                )
+            );
     }
 
     /** Облако тегов */
@@ -140,19 +160,43 @@ class SchoolHashtag extends Model
     }
 
     /** Поиск */
-    public function scopeSearch(Builder $q, ?string $term, ?string $locale = null): Builder
-    {
-        if (!$term) return $q;
+    public function scopeSearch(
+        Builder $q,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        $term = trim((string) $term);
 
-        $locale = $locale ?: app()->getLocale();
+        if ($term === '') {
+            return $q;
+        }
 
-        return $q->whereHas('translations', function ($qq) use ($term, $locale) {
-            $qq->where('locale', $locale)
-                ->where(function ($sub) use ($term) {
-                    $sub->where('name', 'like', "%{$term}%")
-                        ->orWhere('short', 'like', "%{$term}%")
-                        ->orWhere('description', 'like', "%{$term}%");
-                });
+        $locale ??= app()->getLocale();
+
+        return $q->where(function (Builder $query) use ($term, $locale) {
+            /**
+             * Поля основной таблицы.
+             */
+            $query
+                ->where('school_hashtags.slug', 'like', "%{$term}%")
+                ->orWhere('school_hashtags.color', 'like', "%{$term}%")
+
+                /**
+                 * Перевод выбранной локали.
+                 */
+                ->orWhereHas(
+                    'translations',
+                    function (Builder $translationQuery) use ($term, $locale) {
+                        $translationQuery
+                            ->where('locale', $locale)
+                            ->where(function (Builder $subQuery) use ($term) {
+                                $subQuery
+                                    ->where('name', 'like', "%{$term}%")
+                                    ->orWhere('short', 'like', "%{$term}%")
+                                    ->orWhere('description', 'like', "%{$term}%");
+                            });
+                    }
+                );
         });
     }
 
@@ -180,7 +224,7 @@ class SchoolHashtag extends Model
                 })
                 ->orderBy('sht_sort.name', 'asc')
                 ->orderByDesc('school_hashtags.id')
-                ->select('school_hashtags.*'),
+                ->addSelect('school_hashtags.*'),
 
             'nameDesc' => $q
                 ->leftJoin('school_hashtag_translations as sht_sort', function ($join) use ($locale) {
@@ -189,7 +233,7 @@ class SchoolHashtag extends Model
                 })
                 ->orderBy('sht_sort.name', 'desc')
                 ->orderByDesc('school_hashtags.id')
-                ->select('school_hashtags.*'),
+                ->addSelect('school_hashtags.*'),
 
             'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
             'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),

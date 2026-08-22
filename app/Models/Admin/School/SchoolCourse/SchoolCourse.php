@@ -297,15 +297,42 @@ class SchoolCourse extends Model
     }
 
     /** Публичный набор */
-    public function scopeForPublic(Builder $q, ?string $locale = null): Builder
-    {
-        $locale = $locale ?: app()->getLocale();
+    public function scopeForPublic(
+        Builder $q,
+        ?string $locale = null
+    ): Builder {
+        $locale ??= app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
 
         return $q
             ->active()
             ->published()
-            ->whereHas('translations', fn ($qq) => $qq->where('locale', $locale))
-            ->withLocale($locale);
+            ->whereHas(
+                'translations',
+                fn (Builder $query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                )
+            )
+            ->with([
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+            ]);
     }
 
     /** Поиск */

@@ -5,50 +5,80 @@
  * @version PulsarCMS 1.0
  * @author Александр
  */
-import { computed, ref, watch } from 'vue'
+
+import { computed, onMounted, ref } from 'vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
 import DefaultLayout from '@/Layouts/DefaultLayout.vue'
 import Navbar from '@/Partials/Default/Navbar.vue'
 import FooterBlog from '@/Partials/Default/FooterBlog.vue'
+
 import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebar from '@/Components/Public/Default/Partials/LeftSidebar.vue'
 import RightSidebar from '@/Components/Public/Default/Partials/RightSidebar.vue'
+
 import LikeButtonEntity from '@/Components/Public/Like/LikeButtonEntity.vue'
 import ImageGalleryMain from '@/Components/Public/Default/Media/ImageGalleryMain.vue'
 import CommentThread from '@/Components/Public/Default/Blog/Comment/CommentThread.vue'
+
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
+
 import RubricArticleGrid from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleGrid.vue'
 import RecommendedVideos from '@/Components/Public/Default/Blog/BlogVideo/RecommendedVideos.vue'
 
 const { t } = useI18n()
 const page = usePage()
 
-/** Props страницы */
 const props = defineProps({
     title: { type: String, default: '' },
     canLogin: { type: Boolean, default: false },
     canRegister: { type: Boolean, default: false },
 
-    article: { type: Object, default: () => ({}) },
-    breadcrumbRubric: { type: Object, default: () => null },
+    article: {
+        type: Object,
+        default: () => ({}),
+    },
 
-    recommendedArticles: { type: [Array, Object], default: () => [] },
-    articleVideos: { type: [Array, Object], default: () => [] },
+    breadcrumbRubric: {
+        type: Object,
+        default: () => null,
+    },
 
-    rubricTree: { type: Array, default: () => [] },
+    recommendedArticles: {
+        type: [Array, Object],
+        default: () => [],
+    },
 
-    tags: { type: Array, default: () => [] },
+    articleVideos: {
+        type: [Array, Object],
+        default: () => [],
+    },
 
-    mainVideos: { type: [Array, Object], default: () => [] },
-    mainBanners: { type: [Array, Object], default: () => [] },
+    rubricTree: {
+        type: Array,
+        default: () => [],
+    },
 
-    locale: { type: String, default: 'ru' },
+    mainVideos: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    mainBanners: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    locale: {
+        type: String,
+        default: 'ru',
+    },
 })
 
-/** Нормализация массивов и ResourceCollection */
+/* ======================== Helpers ======================== */
+
 const normalizeList = (value) => {
     if (Array.isArray(value)) return value
     if (Array.isArray(value?.data)) return value.data
@@ -56,227 +86,505 @@ const normalizeList = (value) => {
     return []
 }
 
-/** Текущая статья */
-const articleData = computed(() => props.article || {})
+const settingEnabled = (
+    value,
+    defaultValue = true
+) => {
+    if (
+        value === undefined
+        || value === null
+        || value === ''
+    ) {
+        return defaultValue
+    }
 
-/** Текущий перевод статьи */
-const articleTranslation = computed(() => articleData.value.translation || {})
+    if (typeof value === 'boolean') {
+        return value
+    }
 
-/** Заголовок статьи */
-const articleTitle = computed(() => {
-    return articleTranslation.value.title || ''
+    return String(value) === 'true'
+}
+
+/* ======================== Article ======================== */
+
+const articleData = computed(() =>
+    props.article ?? {}
+)
+
+const articleTranslation = computed(() =>
+    articleData.value?.translation ?? {}
+)
+
+const articleTitle = computed(() =>
+    articleTranslation.value?.title || ''
+)
+
+const articleShort = computed(() =>
+    articleTranslation.value?.short || ''
+)
+
+const articleDescription = computed(() =>
+    articleTranslation.value?.description
+    || articleShort.value
+    || ''
+)
+
+const articlePseudonym = computed(() =>
+    articleTranslation.value?.pseudonym || ''
+)
+
+const articleLocale = computed(() =>
+    articleTranslation.value?.locale
+    || props.locale
+    || 'ru'
+)
+
+const articleAuthor = computed(() =>
+    articlePseudonym.value
+    || articleData.value?.owner?.name
+    || ''
+)
+
+/* ======================== Relations ======================== */
+
+const rubricTree = computed(() =>
+    Array.isArray(props.rubricTree)
+        ? props.rubricTree
+        : []
+)
+
+const breadcrumbRubricData = computed(() =>
+    props.breadcrumbRubric ?? null
+)
+
+const breadcrumbRubricTranslation = computed(() =>
+    breadcrumbRubricData.value?.translation ?? {}
+)
+
+const breadcrumbRubricTitle = computed(() =>
+    breadcrumbRubricTranslation.value?.title || ''
+)
+
+const hasBreadcrumbRubric = computed(() =>
+    Boolean(
+        breadcrumbRubricData.value?.id
+        && breadcrumbRubricData.value?.url
+    )
+)
+
+const articleImages = computed(() =>
+    normalizeList(
+        articleData.value?.images
+    )
+)
+
+const hasArticleImages = computed(() =>
+    articleImages.value.length > 0
+)
+
+const activeTags = computed(() =>
+    normalizeList(
+        articleData.value?.tags
+    )
+)
+
+const recommendedArticlesList = computed(() =>
+    normalizeList(
+        props.recommendedArticles
+    )
+)
+
+const articleVideosList = computed(() =>
+    normalizeList(
+        props.articleVideos
+    )
+)
+
+const mainVideosList = computed(() =>
+    normalizeList(
+        props.mainVideos
+    )
+)
+
+const mainBannersList = computed(() =>
+    normalizeList(
+        props.mainBanners
+    )
+)
+
+/* ======================== Auth ======================== */
+
+const authUser = computed(() =>
+    page.props?.auth?.user ?? null
+)
+
+/* ======================== SEO ======================== */
+
+const seoTitle = computed(() =>
+    articleTranslation.value?.meta_title
+    || articleTitle.value
+)
+
+const seoKeywords = computed(() =>
+    articleTranslation.value?.meta_keywords
+    || ''
+)
+
+const seoDescription = computed(() =>
+    articleTranslation.value?.meta_desc
+    || articleShort.value
+    || ''
+)
+
+const canonicalUrl = computed(() => {
+    if (!articleData.value?.url) {
+        return ''
+    }
+
+    return String(
+        route('public.blogArticles.show', {
+            url: articleData.value.url,
+        })
+    )
 })
 
-/** Краткое описание статьи */
-const articleShort = computed(() => {
-    return articleTranslation.value.short || ''
-})
+const ogLocale = computed(() =>
+    articleLocale.value === 'ru'
+        ? 'ru_RU'
+        : articleLocale.value
+)
 
-/** Полное описание статьи */
-const articleDescription = computed(() => {
-    return articleTranslation.value.description
-        || articleShort.value
-        || ''
-})
+const firstImage = computed(() =>
+    articleImages.value[0] ?? null
+)
 
-/** SEO title */
-const articleMetaTitle = computed(() => {
-    return articleTranslation.value.meta_title
-        || articleTitle.value
-})
+const firstImageUrl = computed(() =>
+    firstImage.value?.webp_url
+    || firstImage.value?.image_url
+    || firstImage.value?.thumb_url
+    || firstImage.value?.url
+    || ''
+)
 
-/** SEO keywords */
-const articleMetaKeywords = computed(() => {
-    return articleTranslation.value.meta_keywords
-        || ''
-})
+const publishedAt = computed(() =>
+    articleData.value?.published_at
+    || articleData.value?.created_at
+    || ''
+)
 
-/** SEO description */
-const articleMetaDesc = computed(() => {
-    return articleTranslation.value.meta_desc
-        || articleShort.value
-        || ''
-})
+const modifiedAt = computed(() =>
+    articleData.value?.updated_at
+    || ''
+)
 
-/** Псевдоним автора из перевода */
-const articlePseudonym = computed(() => {
-    return articleTranslation.value.pseudonym || ''
-})
+const dcSubject = computed(() =>
+    seoKeywords.value
+    || articleTitle.value
+)
 
-/** Рубрика для хлебных крошек */
-const breadcrumbRubricData = computed(() => props.breadcrumbRubric || null)
+/* ======================== Sidebars ======================== */
 
-/** Перевод рубрики хлебных крошек */
-const breadcrumbRubricTranslation = computed(() => {
-    return breadcrumbRubricData.value?.translation || {}
-})
+const siteSettings = computed(() =>
+    page.props?.siteSettings ?? {}
+)
 
-/** Заголовок рубрики хлебных крошек */
-const breadcrumbRubricTitle = computed(() => {
-    return breadcrumbRubricTranslation.value.title || ''
-})
-
-/** Есть ли рубрика для хлебных крошек */
-const hasBreadcrumbRubric = computed(() => !!breadcrumbRubricData.value?.id)
-
-/** Дерево рубрик для левого аккордеона */
-const rubricTree = computed(() => Array.isArray(props.rubricTree) ? props.rubricTree : [])
-
-/** Видео статьи */
-const articleVideosList = computed(() => normalizeList(props.articleVideos))
-
-/** Рекомендованные статьи */
-const recommendedArticlesList = computed(() => normalizeList(props.recommendedArticles))
-
-/** Нижний блок видео */
-const mainVideosList = computed(() => normalizeList(props.mainVideos))
-
-/** Нижний блок баннеров */
-const mainBannersList = computed(() => normalizeList(props.mainBanners))
-
-/** Текущий пользователь */
-const authUser = computed(() => page.props.auth?.user ?? null)
-
-/** Активные теги статьи */
-const activeTags = computed(() => {
-    return normalizeList(articleData.value.tags).filter(tag => tag?.activity)
-})
-
-/** Изображения статьи */
-const articleImages = computed(() => {
-    return normalizeList(articleData.value.images)
-})
-
-/** Есть ли изображения статьи */
-const hasArticleImages = computed(() => articleImages.value.length > 0)
-
-/** Первое изображение для SEO */
-const firstImage = computed(() => {
-    return articleImages.value.length ? articleImages.value[0] : null
-})
-
-/** URL первого изображения */
-const firstImageUrl = computed(() => {
-    return firstImage.value?.webp_url ||
-        firstImage.value?.url ||
-        firstImage.value?.image_url ||
-        firstImage.value?.thumb_url ||
-        ''
-})
-
-/** Глобальные настройки сайта */
-const { siteSettings } = page.props
-
-/** Показ левой колонки */
 const showLeft = computed(() =>
-    !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
+    settingEnabled(
+        siteSettings.value?.ViewLeftColumn,
+        true
+    )
 )
 
-/** Показ правой колонки */
 const showRight = computed(() =>
-    !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
+    settingEnabled(
+        siteSettings.value?.ViewRightColumn,
+        true
+    )
 )
 
-/** Ключ хранения состояния левого сайдбара */
 const LEFT_SIDEBAR_KEY =
     'public_left_sidebar_collapsed'
 
-/** Ключ хранения состояния правого сайдбара */
 const RIGHT_SIDEBAR_KEY =
     'public_right_sidebar_collapsed'
 
 /**
- * Получение boolean-значения
- * из localStorage.
+ * Первый render всегда происходит
+ * со свёрнутыми sidebar.
+ *
+ * После mounted восстанавливаем
+ * сохранённое состояние.
  */
-const getStoredBoolean = (
+const leftCollapsed = ref(true)
+const rightCollapsed = ref(true)
+
+const readStoredBoolean = (
     key,
-    defaultValue = true
+    fallback = true
 ) => {
-    const value = localStorage.getItem(key)
+    try {
+        const value =
+            localStorage.getItem(key)
 
-    if (value === null) {
-        return defaultValue
+        return value === null
+            ? fallback
+            : value === 'true'
+    } catch {
+        return fallback
     }
-
-    return value === 'true'
 }
 
-/** Состояние левого сайдбара */
-const leftCollapsed = ref(
-    getStoredBoolean(
-        LEFT_SIDEBAR_KEY,
-        true
-    )
-)
+const writeStoredBoolean = (
+    key,
+    value
+) => {
+    try {
+        localStorage.setItem(
+            key,
+            String(Boolean(value))
+        )
+    } catch {
+        //
+    }
+}
 
-/** Состояние правого сайдбара */
-const rightCollapsed = ref(
-    getStoredBoolean(
-        RIGHT_SIDEBAR_KEY,
-        true
+onMounted(() => {
+    leftCollapsed.value =
+        readStoredBoolean(
+            LEFT_SIDEBAR_KEY,
+            true
+        )
+
+    rightCollapsed.value =
+        readStoredBoolean(
+            RIGHT_SIDEBAR_KEY,
+            true
+        )
+})
+
+const setLeftCollapsed = (value) => {
+    leftCollapsed.value =
+        Boolean(value)
+
+    writeStoredBoolean(
+        LEFT_SIDEBAR_KEY,
+        leftCollapsed.value
     )
-)
+}
+
+const setRightCollapsed = (value) => {
+    rightCollapsed.value =
+        Boolean(value)
+
+    writeStoredBoolean(
+        RIGHT_SIDEBAR_KEY,
+        rightCollapsed.value
+    )
+}
 
 /**
- * Сохраняем состояние сайдбаров.
+ * Рекомендованные статьи:
  *
- * Используются общие ключи для всех
- * публичных страниц блога.
+ * оба sidebar открыты → 2;
+ * один открыт → 3;
+ * оба закрыты → 4.
  */
-watch(
-    [leftCollapsed, rightCollapsed],
-    () => {
-        localStorage.setItem(
-            LEFT_SIDEBAR_KEY,
-            String(leftCollapsed.value)
-        )
+const articleGridCols = computed(() => {
+    const leftExpanded =
+        showLeft.value
+        && !leftCollapsed.value
 
-        localStorage.setItem(
-            RIGHT_SIDEBAR_KEY,
-            String(rightCollapsed.value)
-        )
+    const rightExpanded =
+        showRight.value
+        && !rightCollapsed.value
+
+    if (leftExpanded && rightExpanded) {
+        return 2
     }
-)
+
+    if (leftExpanded || rightExpanded) {
+        return 3
+    }
+
+    return 4
+})
 </script>
 
 <template>
     <Head>
-        <title>{{ articleMetaTitle }}</title>
+        <!-- Basic SEO -->
+        <title>{{ seoTitle }}</title>
 
-        <meta name="title" :content="articleMetaTitle" />
-        <meta name="description" :content="articleMetaDesc" />
-        <meta name="keywords" :content="articleMetaKeywords" />
-        <meta name="author" :content="articlePseudonym || articleData.owner?.name || ''" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            name="title"
+            :content="seoTitle"
+        >
 
-        <meta property="og:title" :content="articleMetaTitle" />
-        <meta property="og:description" :content="articleMetaDesc" />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" :content="`/blog/articles/${articleData.url || ''}`" />
-        <meta property="og:image" :content="firstImageUrl" />
-        <meta property="og:locale" :content="locale" />
+        <meta
+            v-if="seoDescription"
+            name="description"
+            :content="seoDescription"
+        >
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="articleMetaTitle" />
-        <meta name="twitter:description" :content="articleMetaDesc" />
-        <meta name="twitter:image" :content="firstImageUrl" />
+        <meta
+            v-if="seoKeywords"
+            name="keywords"
+            :content="seoKeywords"
+        >
 
-        <meta itemprop="name" :content="articleMetaTitle" />
-        <meta itemprop="description" :content="articleMetaDesc" />
-        <meta itemprop="image" :content="firstImageUrl" />
+        <meta
+            v-if="articleAuthor"
+            name="author"
+            :content="articleAuthor"
+        >
 
-        <meta name="DC.Title" :content="articleMetaTitle" />
-        <meta name="DC.Description" :content="articleMetaDesc" />
-        <meta name="DC.Subject" :content="articleMetaKeywords" />
-        <meta name="DC.Creator" :content="articlePseudonym || articleData.owner?.name || ''" />
-        <meta name="DC.Type" content="Text" />
-        <meta name="DC.Format" content="text/html" />
-        <meta name="DC.Language" :content="locale" />
-        <meta name="DC.Identifier" :content="`/blog/articles/${articleData.url || ''}`" />
+        <meta
+            name="robots"
+            content="index, follow, max-image-preview:large"
+        >
 
-        <meta name="DCTERMS.Issued" :content="articleData.published_at || articleData.created_at || ''" />
-        <meta name="DCTERMS.Modified" :content="articleData.updated_at || ''" />
+        <!-- Canonical -->
+        <link
+            v-if="canonicalUrl"
+            rel="canonical"
+            :href="canonicalUrl"
+        >
+
+        <!-- Open Graph -->
+        <meta
+            property="og:type"
+            content="article"
+        >
+
+        <meta
+            property="og:title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            property="og:description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="canonicalUrl"
+            property="og:url"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            property="og:locale"
+            :content="ogLocale"
+        >
+
+        <meta
+            v-if="firstImageUrl"
+            property="og:image"
+            :content="firstImageUrl"
+        >
+
+        <meta
+            v-if="publishedAt"
+            property="article:published_time"
+            :content="publishedAt"
+        >
+
+        <meta
+            v-if="modifiedAt"
+            property="article:modified_time"
+            :content="modifiedAt"
+        >
+
+        <meta
+            v-if="articleAuthor"
+            property="article:author"
+            :content="articleAuthor"
+        >
+
+        <!-- Twitter / X -->
+        <meta
+            name="twitter:card"
+            :content="
+                firstImageUrl
+                    ? 'summary_large_image'
+                    : 'summary'
+            "
+        >
+
+        <meta
+            name="twitter:title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            name="twitter:description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="firstImageUrl"
+            name="twitter:image"
+            :content="firstImageUrl"
+        >
+
+        <!-- Dublin Core -->
+        <meta
+            name="DC.title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            name="DC.description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="dcSubject"
+            name="DC.subject"
+            :content="dcSubject"
+        >
+
+        <meta
+            v-if="articleAuthor"
+            name="DC.creator"
+            :content="articleAuthor"
+        >
+
+        <meta
+            name="DC.type"
+            content="Text"
+        >
+
+        <meta
+            name="DC.format"
+            content="text/html"
+        >
+
+        <meta
+            name="DC.language"
+            :content="articleLocale"
+        >
+
+        <meta
+            v-if="canonicalUrl"
+            name="DC.identifier"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            v-if="publishedAt"
+            name="DCTERMS.issued"
+            :content="publishedAt"
+        >
+
+        <meta
+            v-if="modifiedAt"
+            name="DCTERMS.modified"
+            :content="modifiedAt"
+        >
     </Head>
 
     <DefaultLayout
@@ -288,6 +596,8 @@ watch(
 
         <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
+
+                <!-- Left sidebar -->
                 <aside
                     v-if="showLeft"
                     class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
@@ -296,60 +606,188 @@ watch(
                     <LeftSidebar
                         :rubric-tree="rubricTree"
                         :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
+                        @collapsed="setLeftCollapsed"
                     />
                 </aside>
 
-                <section class="w-full lg:mt-28 pb-6 slate-1">
+                <!-- Main content -->
+                <section class="w-full lg:mt-28 pb-6 slate-1 min-w-0">
                     <div class="mx-auto max-w-6xl">
+
                         <article
                             itemscope
                             itemtype="https://schema.org/BlogPosting"
+                            :itemid="canonicalUrl"
                             class="selection:bg-red-400 selection:text-white"
                         >
-                            <nav class="text-sm mb-3" aria-label="Breadcrumb">
+                            <!-- BlogPosting metadata -->
+                            <meta
+                                itemprop="mainEntityOfPage"
+                                :content="canonicalUrl"
+                            >
+
+                            <meta
+                                itemprop="inLanguage"
+                                :content="articleLocale"
+                            >
+
+                            <meta
+                                v-if="publishedAt"
+                                itemprop="datePublished"
+                                :content="publishedAt"
+                            >
+
+                            <meta
+                                v-if="modifiedAt"
+                                itemprop="dateModified"
+                                :content="modifiedAt"
+                            >
+
+                            <meta
+                                v-if="firstImageUrl"
+                                itemprop="image"
+                                :content="firstImageUrl"
+                            >
+
+                            <meta
+                                v-if="seoDescription"
+                                itemprop="description"
+                                :content="seoDescription"
+                            >
+
+                            <meta
+                                v-if="seoKeywords"
+                                itemprop="keywords"
+                                :content="seoKeywords"
+                            >
+
+                            <!-- Breadcrumbs -->
+                            <nav
+                                class="text-sm mb-3"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
                                 <ol class="flex flex-wrap items-center font-semibold">
-                                    <li>
+
+                                    <!-- Home -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                    >
                                         <Link
+                                            itemprop="item"
                                             :href="route('home')"
                                             class="breadcrumb-link hover:underline"
                                         >
-                                            {{ t('home') }}
+                                            <span itemprop="name">
+                                                {{ t('home') }}
+                                            </span>
                                         </Link>
+
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        >
                                     </li>
 
-                                    <li><span class="mx-2 breadcrumbs">/</span></li>
+                                    <!-- Rubrics -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                    >
+                                        <span class="mx-2 breadcrumbs">
+                                            /
+                                        </span>
 
-                                    <li>
                                         <Link
+                                            itemprop="item"
                                             :href="route('public.blogRubrics.index')"
                                             class="breadcrumb-link hover:underline"
                                         >
-                                            {{ t('rubrics') }}
+                                            <span itemprop="name">
+                                                {{ t('rubrics') }}
+                                            </span>
                                         </Link>
+
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        >
                                     </li>
 
-                                    <template v-if="hasBreadcrumbRubric">
-                                        <li><span class="mx-2 breadcrumbs">/</span></li>
+                                    <!-- Current rubric -->
+                                    <li
+                                        v-if="hasBreadcrumbRubric"
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                    >
+                                        <span class="mx-2 breadcrumbs">
+                                            /
+                                        </span>
 
-                                        <li>
-                                            <Link
-                                                :href="route('public.blogRubrics.show', { url: breadcrumbRubricData.url })"
-                                                class="breadcrumb-link hover:underline"
-                                            >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('public.blogRubrics.show', {
+                                                url: breadcrumbRubricData.url
+                                            })"
+                                            class="breadcrumb-link hover:underline"
+                                        >
+                                            <span itemprop="name">
                                                 {{ breadcrumbRubricTitle }}
-                                            </Link>
-                                        </li>
-                                    </template>
+                                            </span>
+                                        </Link>
 
-                                    <li><span class="mx-2 breadcrumbs">/</span></li>
+                                        <meta
+                                            itemprop="position"
+                                            content="3"
+                                        >
+                                    </li>
 
-                                    <li class="breadcrumbs">
-                                        {{ articleTitle }}
+                                    <!-- Article -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
+                                    >
+                                        <span class="mx-2 breadcrumbs">
+                                            /
+                                        </span>
+
+                                        <span
+                                            itemprop="name"
+                                            class="breadcrumbs"
+                                        >
+                                            {{ articleTitle }}
+                                        </span>
+
+                                        <meta
+                                            v-if="canonicalUrl"
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        >
+
+                                        <meta
+                                            itemprop="position"
+                                            :content="
+                                                hasBreadcrumbRubric
+                                                    ? '4'
+                                                    : '3'
+                                            "
+                                        >
                                     </li>
                                 </ol>
                             </nav>
 
+                            <!-- Images -->
                             <div
                                 v-if="hasArticleImages"
                                 class="flex items-center justify-center"
@@ -365,7 +803,11 @@ watch(
                                 </div>
                             </div>
 
-                            <div class="flex flex-wrap items-center justify-center gap-3 title my-3">
+                            <!-- Header -->
+                            <div
+                                class="my-3 flex flex-wrap items-center
+                                       justify-center gap-3 title"
+                            >
                                 <h1
                                     itemprop="headline"
                                     class="text-2xl font-bold"
@@ -373,42 +815,58 @@ watch(
                                     {{ articleTitle }}
                                 </h1>
 
+                                <!-- Views -->
                                 <div
                                     :title="t('views')"
                                     class="flex items-center justify-center gap-1"
                                     itemprop="interactionStatistic"
                                     itemscope
-                                    itemtype="http://schema.org/InteractionCounter"
+                                    itemtype="https://schema.org/InteractionCounter"
                                 >
                                     <svg
                                         class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                        xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 576 512"
                                         fill="currentColor"
                                     >
-                                        <path d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z" />
+                                        <path
+                                            d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
+                                        />
                                     </svg>
 
-                                    <meta itemprop="interactionType" content="http://schema.org/ViewAction" />
-                                    <meta itemprop="userInteractionCount" :content="articleData.views || 0" />
+                                    <meta
+                                        itemprop="interactionType"
+                                        content="https://schema.org/ViewAction"
+                                    >
 
-                                    <span class="text-center text-sm text-gray-500">
-                                        {{ articleData.views || 0 }} ·
+                                    <meta
+                                        itemprop="userInteractionCount"
+                                        :content="articleData.views || 0"
+                                    >
+
+                                    <span class="text-sm text-gray-500">
+                                        {{ articleData.views || 0 }}
                                     </span>
                                 </div>
                             </div>
 
+                            <!-- Article body -->
                             <div
                                 v-if="articleDescription"
-                                class="my-3 text-sm subtitle text-center"
-                                v-html="articleDescription"
                                 itemprop="articleBody"
+                                class="my-3 text-sm subtitle"
+                                v-html="articleDescription"
                             />
 
-                            <div class="flex flex-wrap items-center justify-center gap-3">
+                            <!-- Tags + like -->
+                            <div
+                                class="flex flex-wrap items-center
+                                       justify-center gap-3"
+                            >
                                 <div
                                     v-if="activeTags.length"
-                                    class="flex flex-wrap justify-center items-center gap-1 font-semibold italic"
+                                    class="flex flex-wrap items-center
+                                           justify-center gap-1
+                                           font-semibold italic"
                                 >
                                     <template
                                         v-for="(tag, index) in activeTags"
@@ -418,9 +876,10 @@ watch(
                                             :href="route('public.blogTags.show', {
                                                 url: tag.slug
                                             })"
-                                            itemprop="keywords"
-                                            class="text-sm text-blue-500 dark:text-violet-300
-                                                    hover:text-rose-400 hover:dark:text-rose-300"
+                                            class="text-sm text-blue-500
+                                                   dark:text-violet-300
+                                                   hover:text-rose-400
+                                                   dark:hover:text-rose-300"
                                         >
                                             {{ tag.translation?.name || tag.name }}
                                         </Link>
@@ -434,54 +893,75 @@ watch(
                                     </template>
                                 </div>
 
-                                <div class="flex justify-center items-center">
-                                    <LikeButtonEntity
-                                        :likes-count="articleData.likes_count || 0"
-                                        :already-liked="articleData.already_liked || false"
-                                        route-name="public.blogArticles.like"
-                                        :route-params="{ id: articleData.id }"
-                                        :title="t('like')"
-                                        icon-class="w-4 h-4"
-                                    />
-                                </div>
+                                <LikeButtonEntity
+                                    :likes-count="articleData.likes_count || 0"
+                                    :already-liked="articleData.already_liked || false"
+                                    route-name="public.blogArticles.like"
+                                    :route-params="{ id: articleData.id }"
+                                    :title="t('like')"
+                                    icon-class="w-4 h-4"
+                                />
                             </div>
 
+                            <!-- Author -->
                             <div
                                 v-if="articleData.owner"
+                                itemprop="author"
+                                itemscope
+                                itemtype="https://schema.org/Person"
                                 class="mt-4 flex items-center justify-center gap-2"
                             >
+                                <meta
+                                    itemprop="name"
+                                    :content="articleAuthor"
+                                >
+
                                 <img
                                     v-if="articleData.owner?.profile_photo_url"
                                     :src="articleData.owner.profile_photo_url"
-                                    :alt="articleData.owner.name"
+                                    :alt="articleAuthor"
                                     loading="lazy"
                                     class="h-8 w-8 rounded-full object-cover
                                            ring-1 ring-gray-200 dark:ring-gray-700"
-                                />
+                                >
 
-                                <div class="min-w-0 text-sm font-semibold text-slate-700/85 dark:text-slate-300/85">
-                                    {{ articlePseudonym || articleData.owner?.name }}
+                                <div
+                                    class="min-w-0 text-sm font-semibold
+                                           text-slate-700/85 dark:text-slate-300/85"
+                                >
+                                    {{ articleAuthor }}
                                 </div>
                             </div>
 
+                            <!-- Recommended articles -->
                             <div
                                 v-if="recommendedArticlesList.length"
                                 class="mt-8"
                             >
-                                <h2 class="mb-4 text-center text-lg font-semibold text-gray-700 dark:text-gray-300">
+                                <h2
+                                    class="mb-4 text-center text-lg font-semibold
+                                           text-gray-700 dark:text-gray-300"
+                                >
                                     {{ t('relatedArticles') }}
                                 </h2>
 
                                 <RubricArticleGrid
                                     :articles="recommendedArticlesList"
-                                    :cols="2"
+                                    :cols="articleGridCols"
                                 />
                             </div>
 
-                            <div v-if="articleVideosList.length">
-                                <RecommendedVideos :videos="articleVideosList" />
+                            <!-- Article videos -->
+                            <div
+                                v-if="articleVideosList.length"
+                                class="mt-8"
+                            >
+                                <RecommendedVideos
+                                    :videos="articleVideosList"
+                                />
                             </div>
 
+                            <!-- Comments -->
                             <CommentThread
                                 commentable-type="App\Models\Admin\Blog\BlogArticle\BlogArticle"
                                 :commentable-id="articleData.id"
@@ -489,11 +969,18 @@ watch(
                             />
                         </article>
 
-                        <SectionVideoList :videos="mainVideosList" />
-                        <SectionBanners :banners="mainBannersList" />
+                        <!-- Bottom content -->
+                        <SectionVideoList
+                            :videos="mainVideosList"
+                        />
+
+                        <SectionBanners
+                            :banners="mainBannersList"
+                        />
                     </div>
                 </section>
 
+                <!-- Right sidebar -->
                 <aside
                     v-if="showRight"
                     class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
@@ -501,7 +988,7 @@ watch(
                 >
                     <RightSidebar
                         :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
+                        @collapsed="setRightCollapsed"
                     />
                 </aside>
             </main>

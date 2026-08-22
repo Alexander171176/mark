@@ -118,7 +118,6 @@ const currentTranslation = computed(() => {
 const pageTitle = computed(() => {
     return currentTranslation.value.name
         || props.hashtag.translation?.name
-        || props.hashtag.name
         || `ID: ${props.hashtag.id}`
 })
 

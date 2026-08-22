@@ -3,7 +3,7 @@
 namespace App\Http\Resources\Admin\School\SchoolCourse;
 
 use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagSharedResource;
-use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileResource;
+use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileSharedResource;
 use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackSharedResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -12,75 +12,126 @@ class SchoolCourseResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        /**
-         * В публичных запросах scopeForPublic()
-         * уже загружает translations текущей локали.
-         */
+        $locale = app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
         $translation = $this->relationLoaded('translations')
-            ? $this->translations->first()
+            ? (
+            $this->translations->firstWhere(
+                'locale',
+                $locale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
             : null;
 
         return [
-            'id' => $this->id,
-            'school_instructor_profile_id' => $this->school_instructor_profile_id,
+            'id' =>
+                $this->id,
 
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
+            'school_instructor_profile_id' =>
+                $this->school_instructor_profile_id,
 
-            'is_new' => (bool) $this->is_new,
-            'is_hit' => (bool) $this->is_hit,
-            'is_sale' => (bool) $this->is_sale,
+            'sort' =>
+                (int) $this->sort,
 
-            'left' => (bool) $this->left,
-            'main' => (bool) $this->main,
-            'right' => (bool) $this->right,
+            'activity' =>
+                (bool) $this->activity,
 
-            'slug' => $this->slug,
+            'is_new' =>
+                (bool) $this->is_new,
 
-            'title' => $translation?->title,
-            'subtitle' => $translation?->subtitle,
-            'short' => $translation?->short,
-            'description' => $translation?->description,
+            'is_hit' =>
+                (bool) $this->is_hit,
 
-            'meta_title' => $translation?->meta_title,
-            'meta_keywords' => $translation?->meta_keywords,
-            'meta_desc' => $translation?->meta_desc,
+            'is_sale' =>
+                (bool) $this->is_sale,
 
-            'published_at' => optional($this->published_at)->format('Y-m-d'),
+            'left' =>
+                (bool) $this->left,
 
-            'level' => $this->level,
-            'status' => $this->status,
-            'availability' => $this->availability,
-            'difficulty' => $this->difficulty !== null ? (int) $this->difficulty : null,
-            'duration' => $this->duration !== null ? (int) $this->duration : null,
+            'main' =>
+                (bool) $this->main,
 
-            'students_count' => (int) $this->students_count,
-            'popularity' => (int) $this->popularity,
-            'rating_count' => (int) $this->rating_count,
-            'rating_avg' => $this->rating_avg !== null ? (float) $this->rating_avg : null,
-            'views' => (int) $this->views,
-            'likes' => (int) $this->likes,
+            'right' =>
+                (bool) $this->right,
 
-            'already_liked' => (bool) ($this->already_liked ?? false),
+            'slug' =>
+                $this->slug,
 
-            'primary_image' => $this->whenLoaded(
-                'images',
-                fn () => $this->primary_image
-                    ? new SchoolCourseImageResource($this->primary_image)
-                    : null
-            ),
+            /**
+             * Публикация / состояние курса.
+             */
+            'published_at' =>
+                $this->published_at?->format('Y-m-d'),
 
-            'images' => SchoolCourseImageResource::collection(
-                $this->whenLoaded('images')
-            ),
+            'level' =>
+                $this->level,
 
-            'translations' => SchoolCourseTranslationResource::collection(
-                $this->whenLoaded('translations')
-            ),
+            'status' =>
+                $this->status,
 
-            'instructorProfile' => new SchoolInstructorProfileResource(
-                $this->whenLoaded('instructorProfile')
-            ),
+            'availability' =>
+                $this->availability,
+
+            'difficulty' =>
+                $this->difficulty !== null
+                    ? (int) $this->difficulty
+                    : null,
+
+            'duration' =>
+                $this->duration !== null
+                    ? (int) $this->duration
+                    : null,
+
+            /**
+             * Текущий перевод.
+             *
+             * Только из уже загруженной
+             * коллекции translations.
+             */
+            'translation' => $translation
+                ? new SchoolCourseTranslationResource(
+                    $translation
+                )
+                : null,
+
+            /**
+             * Все переводы нужны Edit.
+             */
+            'translations' =>
+                SchoolCourseTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
+
+            /**
+             * Изображения нужны Edit.
+             *
+             * Controller уже загружает images.media.
+             */
+            'images' =>
+                SchoolCourseImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
+
+            'instructorProfile' =>
+                new SchoolInstructorProfileSharedResource(
+                    $this->whenLoaded(
+                        'instructorProfile'
+                    )
+                ),
 
             'tracks' => SchoolTrackSharedResource::collection(
                 $this->whenLoaded('tracks')

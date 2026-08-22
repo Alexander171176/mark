@@ -6,8 +6,8 @@ use App\Http\Resources\Public\Blog\BlogArticle\BlogArticleSharedResource;
 use App\Http\Resources\Public\Blog\BlogTag\BlogTagSharedResource;
 use App\Http\Resources\Public\Blog\BlogBanner\BlogBannerSharedResource;
 use App\Http\Resources\Public\Blog\BlogVideo\BlogVideoSharedResource;
-use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
-use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagSharedResource;
+use App\Http\Resources\Public\School\SchoolCourse\SchoolCourseSharedResource;
+use App\Http\Resources\Public\School\SchoolHashtag\SchoolHashtagSharedResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogBanner\BlogBanner;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
@@ -292,10 +292,24 @@ class BlogSidebarService
     }
 
     /** Облако хештегов школы. */
-    protected function getHashtags(string $locale): Collection
-    {
+    protected function getHashtags(
+        string $locale
+    ): Collection {
+        $locales = $this->publicLocales(
+            $locale
+        );
+
         return SchoolHashtag::query()
-            ->forTagCloud($locale)
+            ->forTagCloud(
+                $locale
+            )
+            ->with([
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+            ])
             ->get();
     }
 
@@ -305,15 +319,44 @@ class BlogSidebarService
         string $flag,
         int $limit
     ): Collection {
+        $locales = $this->publicLocales(
+            $locale
+        );
+
         return SchoolCourse::query()
-            ->forPublic($locale)
-            ->where($flag, true)
+            ->forPublic(
+                $locale
+            )
+            ->where(
+                $flag,
+                true
+            )
             ->with([
+                /**
+                 * Перевод:
+                 *
+                 * current locale
+                 * + fallback locale.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * RecentCoursesSidebar
+                 * использует только изображения курса.
+                 */
                 'images.media',
-                'instructorProfile',
             ])
-            ->sortByParam('sort_desc')
-            ->limit($limit)
+            ->sortByParam(
+                'sortDesc',
+                $locale
+            )
+            ->limit(
+                $limit
+            )
             ->get();
     }
 
@@ -322,14 +365,40 @@ class BlogSidebarService
         string $locale,
         int $limit
     ): Collection {
+        $locales = $this->publicLocales(
+            $locale
+        );
+
         return SchoolCourse::query()
-            ->forPublic($locale)
+            ->forPublic(
+                $locale
+            )
             ->with([
+                /**
+                 * Перевод:
+                 *
+                 * current locale
+                 * + fallback locale.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * Для sidebar нужны
+                 * только изображения курса.
+                 */
                 'images.media',
-                'instructorProfile',
             ])
-            ->sortByParam('views_desc')
-            ->limit($limit)
+            ->sortByParam(
+                'viewsDesc',
+                $locale
+            )
+            ->limit(
+                $limit
+            )
             ->get();
     }
 

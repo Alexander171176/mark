@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Public\Default\School\SchoolInstructor;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseResource;
-use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileResource;
+use App\Http\Resources\Public\School\SchoolCourse\SchoolCourseSharedResource;
+use App\Http\Resources\Public\School\SchoolInstructorProfile\SchoolInstructorProfileResource;
+use App\Http\Resources\Public\School\SchoolInstructorProfile\SchoolInstructorProfileSharedResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Services\Admin\ProcessingModeService;
@@ -31,6 +32,8 @@ class SchoolInstructorController extends Controller
     {
         $locale = app()->getLocale();
 
+        /* ======================== SEO ======================== */
+
         $cmsSeoPage = app(CmsPageResolverService::class)
             ->resolveSeo($request->path());
 
@@ -50,37 +53,76 @@ class SchoolInstructorController extends Controller
 
         $settings = app(PublicSettingsService::class);
 
-        $perPage = $this->resolvePerPage(
-            $request,
-            $settings->int('publicSchoolInstructorsPerPage', 12)
+        /* ======================== Filters ======================== */
+
+        /**
+         * Единственный источник истины.
+         *
+         * Public-пользователь количество
+         * инструкторов не регулирует.
+         */
+        $perPage = $settings->int(
+            'publicSchoolInstructorsPerPage',
+            12
         );
 
         $search = $this->resolveSearch($request);
 
         $sort = $this->resolveSort(
             $request,
-            $settings->string('publicSchoolInstructorsDefaultSort', 'idDesc')
+            $settings->string(
+                'publicSchoolInstructorsDefaultSort',
+                'idDesc'
+            )
         );
 
+        /**
+         * Пока сохраняем в filters,
+         * чтобы Index.vue получил backend default.
+         *
+         * Само переключение grid/rows
+         * будет храниться в localStorage.
+         */
         $view = $this->resolveView(
             $request,
-            $settings->string('publicSchoolInstructorsDefaultView', 'grid')
+            $settings->string(
+                'publicSchoolInstructorsDefaultView',
+                'grid'
+            )
         );
 
         $processingMode = $this->resolveProcessingMode(
-            $settings->string('publicSchoolInstructorsProcessingMode', 'server')
+            $settings->string(
+                'publicSchoolInstructorsProcessingMode',
+                'server'
+            )
         );
 
-        $instructorProfilesCount = SchoolInstructorProfile::query()
-            ->forPublic($locale)
-            ->count();
+        /* ======================== Processing mode ======================== */
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
+        $processingModeService = app(ProcessingModeService::class);
+
+        $instructorProfilesCount = null;
+
+        /**
+         * Предварительный COUNT нужен
+         * только режиму auto.
+         */
+        if ($processingMode === 'auto') {
+            $instructorProfilesCount = SchoolInstructorProfile::query()
+                ->forPublic($locale)
+                ->count();
+
+            $useServerProcessing = $processingModeService->shouldUseServer(
                 $processingMode,
                 $instructorProfilesCount,
                 300
             );
+        } else {
+            $useServerProcessing = $processingMode === 'server';
+        }
+
+        /* ======================== Instructors ======================== */
 
         $instructorProfiles = $this->getIndexInstructorProfiles(
             locale: $locale,
@@ -90,40 +132,84 @@ class SchoolInstructorController extends Controller
             search: $search,
         );
 
-        $instructorProfilesFound = $useServerProcessing
-            ? $instructorProfiles->total()
-            : $instructorProfiles->count();
+        if ($useServerProcessing) {
+            /**
+             * paginate() уже выполнил COUNT.
+             */
+            $instructorProfilesFound = $instructorProfiles->total();
 
-        $instructorProfiles = SchoolInstructorProfileResource::collection($instructorProfiles);
+            /**
+             * Без поиска paginator total
+             * является одновременно общим
+             * количеством Public-инструкторов.
+             */
+            if (
+                $instructorProfilesCount === null
+                && $search === ''
+            ) {
+                $instructorProfilesCount = $instructorProfilesFound;
+            }
+
+            /**
+             * При поиске paginator total
+             * содержит только найденные записи.
+             *
+             * Общий Public count нужен
+             * административной панели.
+             */
+            if ($instructorProfilesCount === null) {
+                $instructorProfilesCount = SchoolInstructorProfile::query()
+                    ->forPublic($locale)
+                    ->count();
+            }
+        } else {
+            /**
+             * Frontend уже получил
+             * весь Public-набор.
+             */
+            $instructorProfilesFound = $instructorProfiles->count();
+
+            $instructorProfilesCount ??= $instructorProfilesFound;
+        }
+
+        $instructorProfiles =
+            SchoolInstructorProfileSharedResource::collection(
+                $instructorProfiles
+            );
+
+        /* ======================== Sidebars ======================== */
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/SchoolInstructors/Index', [
+        /* ======================== Response ======================== */
 
-            'seo' => $seo,
+        return Inertia::render(
+            'Public/Default/School/SchoolInstructors/Index',
+            [
+                'seo' => $seo,
 
-            'publicSchoolInstructorsProcessingMode' => $processingMode,
-            'useServerProcessing' => $useServerProcessing,
+                'publicSchoolInstructorsProcessingMode' => $processingMode,
+                'useServerProcessing' => $useServerProcessing,
 
-            'instructorProfiles' => $instructorProfiles,
+                'instructorProfiles' => $instructorProfiles,
+                'instructorProfilesCount' => $instructorProfilesCount,
+                'instructorProfilesFound' => $instructorProfilesFound,
 
-            'instructorProfilesCount' => $instructorProfilesCount,
-            'instructorProfilesFound' => $instructorProfilesFound,
+                'filters' => $this->buildIndexFilters(
+                    $search,
+                    $perPage,
+                    $sort,
+                    $view,
+                    $processingMode
+                ),
 
-            'filters' => $this->buildIndexFilters(
-                $search,
-                $perPage,
-                $sort,
-                $view,
-                $processingMode
-            ),
+                'trackTree' => $trackTree,
+                'locale' => $locale,
 
-            'trackTree' => $trackTree,
-            'locale' => $locale,
-
-            ...$sidebarData,
-        ]);
+                ...$sidebarData,
+            ]
+        );
     }
 
     /** Страница конкретного инструктора. */
@@ -131,53 +217,342 @@ class SchoolInstructorController extends Controller
     {
         $locale = app()->getLocale();
 
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(array_unique([
+            $locale,
+            $fallbackLocale,
+        ]));
+
+        $settings = app(PublicSettingsService::class);
+
+        /* ======================== Instructor ======================== */
+
         $instructorProfile = SchoolInstructorProfile::query()
             ->forPublic($locale)
             ->where('slug', $slug)
             ->with([
-                'translation',
-                'translations',
-                'user:id,name,email',
-                'images',
+                'translations' => fn ($query) =>
+                $query->whereIn('locale', $locales),
+
+                'user:id,name',
+
+                'images.media',
             ])
             ->withCount([
-                'courses',
-                'payouts',
+                'courses as courses_count' => fn ($query) =>
+                $query->forPublic($locale),
             ])
             ->firstOrFail();
 
         $instructorProfile->increment('views');
 
-        $coursesSearch = $this->resolveSearch($request, 'q_courses');
+        /* ======================== Course settings ======================== */
 
-        $perPageCourses = $this->resolvePerPage(
+        /**
+         * Единственный источник истины.
+         */
+        $perPageCourses = $settings->int(
+            'publicSchoolCoursesPerPage',
+            12
+        );
+
+        $coursesSearch = $this->resolveSearch(
             $request,
-            (int) config('site_settings.publicSchoolCoursesPerPage', 6),
-            3,
-            60
+            'q_courses'
         );
 
         $coursesSort = (string) $request->query(
             'sort_courses',
-            config('site_settings.publicSchoolCoursesDefaultSort', 'sortAsc')
+            $settings->string(
+                'publicSchoolCoursesDefaultSort',
+                'sortAsc'
+            )
         );
 
-        $courses = SchoolCourse::query()
+        $processingMode = $this->resolveProcessingMode(
+            $settings->string(
+                'publicSchoolCoursesProcessingMode',
+                'server'
+            )
+        );
+
+        /* ======================== Processing mode ======================== */
+
+        $processingModeService = app(ProcessingModeService::class);
+
+        $coursesCount = null;
+
+        /**
+         * Decision COUNT нужен
+         * только режиму auto.
+         */
+        if ($processingMode === 'auto') {
+            $coursesCount = SchoolCourse::query()
+                ->forPublic($locale)
+                ->where(
+                    'school_instructor_profile_id',
+                    $instructorProfile->id
+                )
+                ->count();
+
+            $useServerProcessing = $processingModeService->shouldUseServer(
+                $processingMode,
+                $coursesCount,
+                300
+            );
+        } else {
+            $useServerProcessing = $processingMode === 'server';
+        }
+
+        /* ======================== Courses ======================== */
+
+        $courses = $this->getInstructorCourses(
+            instructorProfile: $instructorProfile,
+            locale: $locale,
+            locales: $locales,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPageCourses,
+            sort: $coursesSort,
+            search: $coursesSearch,
+        );
+
+        if ($useServerProcessing) {
+            $coursesFound = $courses->total();
+
+            /**
+             * Без поиска используем
+             * уже выполненный paginator COUNT.
+             */
+            if (
+                $coursesCount === null
+                && $coursesSearch === ''
+            ) {
+                $coursesCount = $coursesFound;
+            }
+
+            /**
+             * При поиске paginator total
+             * является количеством найденных,
+             * поэтому общий count считаем отдельно.
+             */
+            if ($coursesCount === null) {
+                $coursesCount = SchoolCourse::query()
+                    ->forPublic($locale)
+                    ->where(
+                        'school_instructor_profile_id',
+                        $instructorProfile->id
+                    )
+                    ->count();
+            }
+        } else {
+            $coursesFound = $courses->count();
+            $coursesCount ??= $coursesFound;
+        }
+
+        $courses =
+            SchoolCourseSharedResource::collection(
+                $courses
+            );
+
+        /* ======================== Sidebars ======================== */
+
+        $trackTree = $this->buildTrackTree($locale);
+        $sidebarData = $this->getSidebarData($locale);
+
+        /* ======================== Response ======================== */
+
+        return Inertia::render(
+            'Public/Default/School/SchoolInstructors/Show',
+            [
+                'instructorProfile' =>
+                    new SchoolInstructorProfileResource(
+                        $instructorProfile
+                    ),
+
+                'publicSchoolCoursesProcessingMode' => $processingMode,
+                'useServerProcessing' => $useServerProcessing,
+
+                'courses' => $courses,
+                'coursesCount' => $coursesCount,
+                'coursesFound' => $coursesFound,
+
+                'filters' => [
+                    'q_courses' => $coursesSearch,
+                    'per_page_courses' => $perPageCourses,
+                    'sort_courses' => $coursesSort,
+                ],
+
+                'trackTree' => $trackTree,
+                'locale' => $locale,
+
+                ...$sidebarData,
+            ]
+        );
+    }
+
+    /**
+     * Базовый запрос Public Index
+     * инструкторов.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(array_unique([
+            $locale,
+            $fallbackLocale,
+        ]));
+
+        return SchoolInstructorProfile::query()
             ->forPublic($locale)
-            ->where('school_instructor_profile_id', $instructorProfile->id)
-            ->search($coursesSearch, $locale)
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'instructorProfile',
-                'instructorProfile.translation',
-                'instructorProfile.translations',
-                'instructorProfile.images',
-                'tracks.translation',
-                'tracks.translations',
-                'hashtags.translation',
-                'hashtags.translations',
+                /**
+                 * Только current + fallback.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * Public email не нужен.
+                 */
+                'user:id,name',
+
+                /**
+                 * Изображения пакетно
+                 * вместе со Spatie Media.
+                 */
+                'images.media',
+            ])
+            ->withCount([
+                /**
+                 * В Public Index показываем
+                 * именно количество публично
+                 * доступных курсов.
+                 */
+                'courses as courses_count' => fn ($query) =>
+                $query->forPublic($locale),
+            ]);
+    }
+
+    /**
+     * Получение списка Public-инструкторов
+     * по активному режиму обработки.
+     */
+    private function getIndexInstructorProfiles(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery(
+            $locale
+        );
+
+        /**
+         * Server:
+         * search / sort / pagination
+         * выполняются backend.
+         */
+        if ($useServerProcessing) {
+            return $query
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
+                ->withQueryString();
+        }
+
+        /**
+         * Frontend:
+         * отдаём полный Public-набор.
+         */
+        return $query
+            ->sortByParam(
+                $sort,
+                $locale
+            )
+            ->get();
+    }
+
+    /**
+     * Базовый запрос публичных курсов
+     * конкретного инструктора.
+     */
+    private function instructorCoursesQuery(
+        SchoolInstructorProfile $instructorProfile,
+        string $locale,
+        array $locales
+    ): Builder {
+        $query = SchoolCourse::query()
+            ->forPublic($locale)
+            ->where(
+                'school_instructor_profile_id',
+                $instructorProfile->id
+            )
+            ->with([
+                /**
+                 * Current locale + fallback locale.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                'images.media',
+
+                /**
+                 * Инструктор нужен единому
+                 * SchoolCourseSharedResource.
+                 */
+                'instructorProfile.translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                'instructorProfile.images.media',
+
+                /**
+                 * Треки.
+                 */
+                'tracks.translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                /**
+                 * Хештеги.
+                 */
+                'hashtags.translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
                 'prices',
             ])
             ->withCount([
@@ -189,75 +564,64 @@ class SchoolInstructorController extends Controller
                 'prices',
                 'reviews',
                 'likes',
-            ])
-            ->sortByParam($coursesSort, $locale)
-            ->paginate($perPageCourses, ['*'], 'page_courses')
-            ->withQueryString();
-
-        $courses = $this->appendUserLikes(
-            $courses,
-            SchoolCourseResource::class
-        );
-
-        $trackTree = $this->buildTrackTree($locale);
-        $sidebarData = $this->getSidebarData($locale);
-
-        return Inertia::render('Public/Default/School/SchoolInstructors/Show', [
-            'instructorProfile' => new SchoolInstructorProfileResource($instructorProfile),
-
-            'courses' => $courses,
-            'coursesFound' => $courses->total(),
-
-            'filters' => [
-                'q_courses' => $coursesSearch,
-                'per_page_courses' => $perPageCourses,
-                'sort_courses' => $coursesSort,
-            ],
-
-            'trackTree' => $trackTree,
-            'locale' => $locale,
-
-            ...$sidebarData,
-        ]);
-    }
-
-    /** Базовый запрос для списка публичных инструкторов. */
-    private function indexQuery(string $locale): Builder
-    {
-        return SchoolInstructorProfile::query()
-            ->forPublic($locale)
-            ->with([
-                'translation',
-                'translations',
-                'user:id,name,email',
-                'images',
-            ])
-            ->withCount([
-                'courses',
-                'payouts',
             ]);
+
+        /**
+         * already_liked одним EXISTS.
+         */
+        return $this->withUserLike(
+            $query
+        );
     }
 
-    /** Получение списка публичных инструкторов по активному режиму обработки. */
-    private function getIndexInstructorProfiles(
+    /**
+     * Получение курсов инструктора
+     * по активному режиму обработки.
+     */
+    private function getInstructorCourses(
+        SchoolInstructorProfile $instructorProfile,
         string $locale,
+        array $locales,
         bool $useServerProcessing,
         int $perPage,
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery($locale);
+        $query = $this->instructorCoursesQuery(
+            instructorProfile: $instructorProfile,
+            locale: $locale,
+            locales: $locales,
+        );
 
+        /**
+         * Server.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage,
+                    ['*'],
+                    'page_courses'
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

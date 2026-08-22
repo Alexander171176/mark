@@ -138,7 +138,6 @@ const currentTranslation = computed(() => {
 const pageTitle = computed(() => {
     return currentTranslation.value.name
         || props.track.translation?.name
-        || props.track.name
         || `ID: ${props.track.id}`
 })
 
@@ -150,19 +149,42 @@ const getError = (key) => {
 
 // ======================== Родительские треки ========================
 // строит select с отступами по иерархии
-function buildParentOptions(flatTracks, parentId = null, level = 0) {
+function buildParentOptions(
+    flatTracks,
+    parentId = null,
+    level = 0
+) {
     let result = []
 
     ;(flatTracks || [])
-        .filter(track => track.parent_id === parentId)
-        .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+        .filter(
+            track =>
+                track.parent_id === parentId
+        )
+        .sort(
+            (a, b) =>
+                (a.sort || 0)
+                - (b.sort || 0)
+        )
         .forEach(track => {
+            const name =
+                track?.translation?.name
+                || `ID: ${track.id}`
+
             result.push({
                 id: track.id,
-                name: `${'— '.repeat(level)}${track.name || `ID: ${track.id}`}`,
+
+                name:
+                    `${'— '.repeat(level)}${name}`,
             })
 
-            result = result.concat(buildParentOptions(flatTracks, track.id, level + 1))
+            result = result.concat(
+                buildParentOptions(
+                    flatTracks,
+                    track.id,
+                    level + 1
+                )
+            )
         })
 
     return result

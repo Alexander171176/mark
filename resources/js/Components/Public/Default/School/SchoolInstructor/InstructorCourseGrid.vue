@@ -81,10 +81,14 @@ const getInstructorImageUrl = (course) => {
 }
 
 const getInstructorName = (course) => {
-    const instructorProfile = getInstructorProfile(course)
-
-    return instructorProfile?.public_name
-        || instructorProfile?.title
+    return course
+            ?.instructorProfile
+            ?.translation
+            ?.title
+        || course
+            ?.instructorProfile
+            ?.user
+            ?.name
         || t('instructor')
 }
 </script>
@@ -119,16 +123,18 @@ const getInstructorName = (course) => {
                         <span class="text-base font-semibold
                                      text-slate-900/85 group-hover:opacity-75
                                      dark:text-slate-100/85 dark:group-hover:opacity-75">
-                            {{ course.title }}
+                            {{ course.translation?.title }}
                         </span>
                     </Link>
                 </div>
 
                 <div
-                    v-if="course.short"
-                    class="mt-3 line-clamp-3 text-sm text-slate-700 dark:text-slate-300"
+                    v-if="course.translation?.short"
+                    class="mt-3 line-clamp-3
+                           text-sm text-slate-700
+                           dark:text-slate-300"
                 >
-                    {{ course.short }}
+                    {{ course.translation.short }}
                 </div>
 
                 <!-- Данные -->
@@ -210,7 +216,7 @@ const getInstructorName = (course) => {
                 <div class="mt-3 flex items-center justify-center">
                     <EntityStats
                         :views="course.views || 0"
-                        :likes-count="course.likes_count || course.likes || 0"
+                        :likes-count="course.likes_count || 0"
                         :already-liked="course.already_liked || false"
                         route-name="public.schoolCourses.like"
                         :route-params="course.id"

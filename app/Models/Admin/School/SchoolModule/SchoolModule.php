@@ -197,7 +197,7 @@ class SchoolModule extends Model
                 })
                 ->orderBy('smt_sort.title', 'asc')
                 ->orderByDesc('school_modules.id')
-                ->select('school_modules.*'),
+                ->addSelect('school_modules.*'),
 
             'titleDesc' => $q
                 ->leftJoin('school_module_translations as smt_sort', function ($join) use ($locale) {
@@ -206,7 +206,7 @@ class SchoolModule extends Model
                 })
                 ->orderBy('smt_sort.title', 'desc')
                 ->orderByDesc('school_modules.id')
-                ->select('school_modules.*'),
+                ->addSelect('school_modules.*'),
 
             'statusAsc' => $q->orderBy('status', 'asc')->orderByDesc('id'),
             'statusDesc' => $q->orderBy('status', 'desc')->orderByDesc('id'),

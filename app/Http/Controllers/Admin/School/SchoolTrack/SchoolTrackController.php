@@ -127,7 +127,7 @@ class SchoolTrackController extends BaseSchoolAdminController
             );
 
         try {
-            $tracksTree = $this->getIndexTracksTree();
+            $tracksTree = $this->getIndexTracksTree($currentLocale);
 
             $this->prepareTreeChildren($tracksTree);
 
@@ -140,8 +140,16 @@ class SchoolTrackController extends BaseSchoolAdminController
             );
 
             return Inertia::render('Admin/School/SchoolTracks/Index', [
-                'tracksTree' => SchoolTrackResource::collection($tracksTree),
-                'tracks' => SchoolTrackResource::collection($tracksFlat),
+
+                'tracksTree' =>
+                    SchoolTrackSharedResource::collection(
+                        $tracksTree
+                    ),
+
+                'tracks' =>
+                    SchoolTrackSharedResource::collection(
+                        $tracksFlat
+                    ),
                 'tracksCount' => $tracksCount,
 
                 'useServerProcessing' => $useServerProcessing,
@@ -184,21 +192,43 @@ class SchoolTrackController extends BaseSchoolAdminController
     }
 
     /** Страница создания трека */
-    public function create(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
+        /**
+         * Родители используют тот же контракт,
+         * что и Edit.
+         */
         $parents = $this->baseQuery()
-            ->with(['translation', 'translations'])
-            ->withCount(['children', 'courses'])
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $currentLocale
+                ),
+            ])
             ->ordered()
             ->get();
 
-        return Inertia::render('Admin/School/SchoolTracks/Create', [
-            'currentLocale' => $currentLocale,
-            'parents' => SchoolTrackSharedResource::collection($parents),
-            'availableLocales' => $this->availableLocales(),
-        ]);
+        return Inertia::render(
+            'Admin/School/SchoolTracks/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
+
+                'parents' =>
+                    SchoolTrackSharedResource::collection(
+                        $parents
+                    ),
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+            ]
+        );
     }
 
     /** Создание трека */
@@ -252,39 +282,75 @@ class SchoolTrackController extends BaseSchoolAdminController
     }
 
     /** Страница редактирования трека */
-    public function edit(int $schoolTrack, Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function edit(
+        int $schoolTrack,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
+        /**
+         * Редактируемая сущность.
+         *
+         * Для Edit нужны:
+         * - все переводы;
+         * - все изображения + Media.
+         *
+         * translation, courses, parent
+         * и counts здесь не нужны.
+         */
         $track = $this->baseQuery()
             ->with([
-                'translation',
                 'translations',
-                'parent.translation',
-                'images',
-                'courses.translation',
+                'images.media',
             ])
-            ->withCount([
-                'children',
-                'courses',
-                'images',
-                'likes',
-            ])
-            ->findOrFail($schoolTrack);
+            ->findOrFail(
+                $schoolTrack
+            );
 
+        /**
+         * Возможные родители.
+         *
+         * Для Select нужен только
+         * перевод выбранной локали.
+         */
         $parents = $this->baseQuery()
-            ->where('id', '!=', $track->id)
-            ->with(['translation', 'translations'])
-            ->withCount(['children', 'courses'])
+            ->where(
+                'id',
+                '!=',
+                $track->id
+            )
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $currentLocale
+                ),
+            ])
             ->ordered()
             ->get();
 
-        return Inertia::render('Admin/School/SchoolTracks/Edit', [
-            'track' => new SchoolTrackResource($track),
-            'parents' => SchoolTrackSharedResource::collection($parents),
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+        return Inertia::render(
+            'Admin/School/SchoolTracks/Edit',
+            [
+                'track' =>
+                    new SchoolTrackResource(
+                        $track
+                    ),
+
+                'parents' =>
+                    SchoolTrackSharedResource::collection(
+                        $parents
+                    ),
+
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+            ]
+        );
     }
 
     /** Обновление трека */
@@ -444,16 +510,56 @@ class SchoolTrackController extends BaseSchoolAdminController
         }
     }
 
-    /** Базовый запрос для дерева треков. */
-    private function treeQuery(): Builder
-    {
+    /**
+     * Базовый запрос
+     * для Admin-дерева треков.
+     */
+    private function treeQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->root()
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'childrenRecursive',
+                /**
+                 * Корневые треки.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                'images.media',
+
+                /**
+                 * Второй уровень.
+                 */
+                'childrenRecursive' => function ($query) use ($locale) {
+                    $query->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $locale
+                        ),
+
+                        'images.media',
+
+                        /**
+                         * Третий уровень.
+                         */
+                        'childrenRecursive' => function ($childQuery) use ($locale) {
+                            $childQuery->with([
+                                'translations' => fn ($translationQuery) =>
+                                $translationQuery->where(
+                                    'locale',
+                                    $locale
+                                ),
+
+                                'images.media',
+                            ]);
+                        },
+                    ]);
+                },
             ])
             ->withCount([
                 'children',
@@ -463,18 +569,41 @@ class SchoolTrackController extends BaseSchoolAdminController
             ]);
     }
 
-    /** Базовый запрос для плоского списка треков. */
-    private function indexQuery(): Builder
-    {
+    /**
+     * Базовый запрос
+     * для плоского Admin Index.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'translation',
-                'translations',
-                'parent.translation',
-                'parent.translations',
-                'images',
-                'courses.translation',
-                'courses.translations',
+                /**
+                 * Только выбранная локаль.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                /**
+                 * Родитель +
+                 * его выбранная локаль.
+                 */
+                'parent' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
+
+                /**
+                 * Изображения + Media.
+                 */
+                'images.media',
             ])
             ->withCount([
                 'children',
@@ -485,9 +614,12 @@ class SchoolTrackController extends BaseSchoolAdminController
     }
 
     /** Получение дерева треков. */
-    private function getIndexTracksTree()
-    {
-        return $this->treeQuery()
+    private function getIndexTracksTree(
+        string $locale
+    ) {
+        return $this->treeQuery(
+            $locale
+        )
             ->ordered()
             ->get();
     }
@@ -500,18 +632,31 @@ class SchoolTrackController extends BaseSchoolAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

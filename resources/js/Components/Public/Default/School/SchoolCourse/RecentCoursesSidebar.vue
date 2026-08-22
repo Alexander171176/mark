@@ -1,241 +1,676 @@
 <script setup>
-import { Link, usePage } from '@inertiajs/vue3'
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import { unwrap, unwrapList } from '@/composables/useUnwrap.js'
+import {
+    computed,
+    ref,
+    watch,
+    onMounted,
+    onBeforeUnmount,
+} from 'vue'
+
+import {
+    Link,
+} from '@inertiajs/vue3'
+
+import {
+    unwrap,
+    unwrapList,
+} from '@/composables/useUnwrap.js'
 
 const props = defineProps({
-    titleKey: { type: String, default: 'courses' },
-    courses: { type: [Array, Object], default: () => [] },
-    intervalMs: { type: Number, default: 4200 },
-    pauseOnHover: { type: Boolean, default: true },
-    pauseOnHidden: { type: Boolean, default: true },
+    titleKey: {
+        type: String,
+        default: 'courses',
+    },
+
+    courses: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    intervalMs: {
+        type: Number,
+        default: 4200,
+    },
+
+    pauseOnHover: {
+        type: Boolean,
+        default: true,
+    },
+
+    pauseOnHidden: {
+        type: Boolean,
+        default: true,
+    },
 })
 
-const { appUrl } = usePage().props
-const list = computed(() => unwrapList(props.courses))
+/* ===================== COURSES ===================== */
 
-const getImgSrc = (imgPath) => {
-    if (!imgPath) return ''
+/**
+ * Нормализованный список курсов.
+ *
+ * Поддерживает:
+ * - обычный массив;
+ * - Laravel ResourceCollection.
+ */
+const list = computed(() =>
+    unwrapList(
+        props.courses
+    )
+)
 
-    const base = appUrl?.endsWith('/')
-        ? appUrl.slice(0, -1)
-        : (appUrl || '')
-
-    const path = imgPath.startsWith('/')
-        ? imgPath.slice(1)
-        : imgPath
-
-    return `${base}/storage/${path}`
+/**
+ * Получить нормализованный объект курса.
+ */
+const getCourse = (course) => {
+    return unwrap(course) ?? {}
 }
 
-const normalizeSrc = (raw) => {
-    if (!raw) return ''
-    if (/^https?:\/\//i.test(raw)) return raw
-    if (raw.startsWith('/')) return raw
-    return getImgSrc(raw)
+/**
+ * Заголовок курса.
+ *
+ * Новый Public-контракт:
+ *
+ * course.translation.title
+ *
+ * Backend уже выполняет:
+ *
+ * current locale
+ * → fallback locale
+ * → первый доступный.
+ */
+const getCourseTitle = (course) => {
+    const item =
+        getCourse(course)
+
+    return item?.translation?.title
+        || item?.slug
+        || `ID: ${item?.id ?? ''}`
 }
 
+/**
+ * Ссылка на Public Show курса.
+ */
+const getCourseLink = (course) => {
+    const item =
+        getCourse(course)
+
+    if (!item?.slug) {
+        return '#'
+    }
+
+    return route(
+        'public.schoolCourses.show',
+        {
+            slug: item.slug,
+        }
+    )
+}
+
+/* ===================== IMAGES ===================== */
+
+/**
+ * Изображения курса.
+ *
+ * Новый Public Resource уже отдаёт
+ * готовые URL изображений.
+ *
+ * Frontend больше не строит
+ * /storage/... самостоятельно.
+ */
 const courseImages = (course) => {
-    const c = unwrap(course)
+    const item =
+        getCourse(course)
 
-    const imgsRaw = Array.isArray(c?.images)
-        ? c.images
-        : (c?.images?.data ?? [])
+    const images =
+        Array.isArray(item?.images)
+            ? item.images
+            : Array.isArray(item?.images?.data)
+                ? item.images.data
+                : []
 
-    return (Array.isArray(imgsRaw) ? imgsRaw : [])
+    return images
         .slice()
-        .sort((x, y) => Number(x?.order ?? 0) - Number(y?.order ?? 0))
-        .map((img, idx) => {
-            const raw =
-                img?.webp_url ||
-                img?.image_url ||
-                img?.url ||
-                img?.src ||
-                img?.path ||
-                img?.image ||
-                null
+        .sort(
+            (a, b) =>
+                Number(
+                    a?.order ?? 0
+                )
+                -
+                Number(
+                    b?.order ?? 0
+                )
+        )
+        .map(
+            (image, index) => {
+                const src =
+                    image?.webp_url
+                    || image?.image_url
+                    || image?.url
+                    || image?.thumb_url
+                    || ''
 
-            const src = normalizeSrc(raw)
+                return {
+                    id:
+                        image?.id
+                        ?? `course-image-${index}`,
 
-            return {
-                id: img?.id ?? `${raw ?? 'img'}-${img?.order ?? idx}`,
-                src,
-                alt: img?.alt ?? '',
-                title: img?.title ?? img?.caption ?? img?.alt ?? '',
-                order: Number(img?.order ?? 0),
+                    src,
+
+                    alt:
+                        image?.alt
+                        || getCourseTitle(
+                            course
+                        ),
+
+                    title:
+                        image?.title
+                        || image?.caption
+                        || image?.alt
+                        || getCourseTitle(
+                            course
+                        ),
+
+                    order:
+                        Number(
+                            image?.order ?? 0
+                        ),
+                }
             }
-        })
-        .filter(img => !!img.src)
+        )
+        .filter(
+            image =>
+                Boolean(
+                    image.src
+                )
+        )
 }
 
-const currentByCourse = ref({})
-const hoveredByCourse = ref({})
+/* ===================== SLIDER STATE ===================== */
+
+/**
+ * Текущий индекс изображения
+ * для каждого курса.
+ */
+const currentByCourse =
+    ref({})
+
+/**
+ * Состояние hover
+ * для каждого курса.
+ */
+const hoveredByCourse =
+    ref({})
+
 let timer = null
 
-const getCurrent = (courseId) => Number(currentByCourse.value?.[courseId] ?? 0)
+/**
+ * Получить текущий индекс
+ * изображения курса.
+ */
+const getCurrent = (
+    courseId
+) => {
+    return Number(
+        currentByCourse.value?.[
+            courseId
+            ]
+        ?? 0
+    )
+}
 
-const setCurrent = (courseId, idx, total) => {
-    const n = Number(total) || 0
+/**
+ * Установить текущий индекс.
+ */
+const setCurrent = (
+    courseId,
+    index,
+    total
+) => {
+    const count =
+        Number(total)
+        || 0
 
-    if (n <= 1) {
+    if (count <= 1) {
         currentByCourse.value = {
             ...currentByCourse.value,
+
             [courseId]: 0,
         }
+
         return
     }
 
-    const i = Number(idx)
-    const safe = Number.isFinite(i)
-        ? Math.min(Math.max(0, i), n - 1)
-        : 0
+    const value =
+        Number(index)
+
+    const safeIndex =
+        Number.isFinite(value)
+            ? Math.min(
+                Math.max(
+                    0,
+                    value
+                ),
+                count - 1
+            )
+            : 0
 
     currentByCourse.value = {
         ...currentByCourse.value,
-        [courseId]: safe,
+
+        [courseId]:
+        safeIndex,
     }
 }
 
+/* ===================== AUTOPLAY ===================== */
+
+/**
+ * Можно ли сейчас
+ * выполнять autoplay.
+ */
 const canRun = () => {
-    return !(props.pauseOnHidden && typeof document !== 'undefined' && document.hidden)
+    if (
+        props.pauseOnHidden
+        && typeof document !== 'undefined'
+        && document.hidden
+    ) {
+        return false
+    }
+
+    return true
 }
 
+/**
+ * Следующий кадр
+ * для всех активных слайдеров.
+ */
 const tick = () => {
-    if (!canRun()) return
-
-    const nextState = { ...currentByCourse.value }
-
-    for (const c of list.value) {
-        const course = unwrap(c)
-        const id = course?.id
-
-        if (!id) continue
-
-        const imgs = courseImages(c)
-
-        if (imgs.length <= 1) continue
-        if (props.pauseOnHover && hoveredByCourse.value?.[id]) continue
-
-        const cur = Number(nextState[id] ?? 0)
-        nextState[id] = (cur + 1) % imgs.length
+    if (!canRun()) {
+        return
     }
 
-    currentByCourse.value = nextState
+    const nextState = {
+        ...currentByCourse.value,
+    }
+
+    for (
+        const course
+        of list.value
+        ) {
+        const item =
+            getCourse(course)
+
+        const id =
+            item?.id
+
+        if (!id) {
+            continue
+        }
+
+        const images =
+            courseImages(
+                course
+            )
+
+        if (
+            images.length <= 1
+        ) {
+            continue
+        }
+
+        if (
+            props.pauseOnHover
+            && hoveredByCourse.value?.[
+                id
+                ]
+        ) {
+            continue
+        }
+
+        const current =
+            Number(
+                nextState[id]
+                ?? 0
+            )
+
+        nextState[id] =
+            (
+                current + 1
+            )
+            % images.length
+    }
+
+    currentByCourse.value =
+        nextState
 }
 
+/**
+ * Остановить autoplay.
+ */
 const stop = () => {
-    if (timer) {
-        clearInterval(timer)
-        timer = null
+    if (!timer) {
+        return
     }
+
+    clearInterval(
+        timer
+    )
+
+    timer = null
 }
 
+/**
+ * Запустить autoplay.
+ */
 const start = () => {
     stop()
 
-    const hasAnySlider = list.value.some((c) => courseImages(c).length > 1)
-    if (!hasAnySlider) return
+    const hasAnySlider =
+        list.value.some(
+            course =>
+                courseImages(
+                    course
+                ).length > 1
+        )
 
-    timer = setInterval(tick, Math.max(1500, Number(props.intervalMs) || 4200))
+    if (!hasAnySlider) {
+        return
+    }
+
+    timer = setInterval(
+        tick,
+        Math.max(
+            1500,
+            Number(
+                props.intervalMs
+            )
+            || 4200
+        )
+    )
 }
 
+/**
+ * Обработка изменения
+ * видимости вкладки.
+ */
 const onVisibilityChange = () => {
     start()
 }
 
-onMounted(() => {
-    const init = {}
+/**
+ * Сбросить состояния
+ * текущих изображений.
+ */
+const resetCurrentState = () => {
+    const state = {}
 
-    for (const c of list.value) {
-        const id = unwrap(c)?.id
-        if (id) init[id] = 0
+    for (
+        const course
+        of list.value
+        ) {
+        const id =
+            getCourse(
+                course
+            )?.id
+
+        if (id) {
+            state[id] = 0
+        }
     }
 
-    currentByCourse.value = init
+    currentByCourse.value =
+        state
+}
+
+/* ===================== LIFECYCLE ===================== */
+
+onMounted(() => {
+    resetCurrentState()
 
     start()
 
-    if (props.pauseOnHidden && typeof document !== 'undefined') {
-        document.addEventListener('visibilitychange', onVisibilityChange)
+    if (
+        props.pauseOnHidden
+        && typeof document !== 'undefined'
+    ) {
+        document.addEventListener(
+            'visibilitychange',
+            onVisibilityChange
+        )
     }
 })
 
 onBeforeUnmount(() => {
     stop()
 
-    if (props.pauseOnHidden && typeof document !== 'undefined') {
-        document.removeEventListener('visibilitychange', onVisibilityChange)
+    if (
+        props.pauseOnHidden
+        && typeof document !== 'undefined'
+    ) {
+        document.removeEventListener(
+            'visibilitychange',
+            onVisibilityChange
+        )
     }
 })
 
+/**
+ * При изменении списка курсов
+ * или интервала перезапускаем
+ * локальное состояние слайдеров.
+ */
 watch(
-    () => [list.value.length, props.intervalMs],
+    () => [
+        list.value.length,
+        props.intervalMs,
+    ],
     () => {
-        const init = {}
+        resetCurrentState()
 
-        for (const c of list.value) {
-            const id = unwrap(c)?.id
-            if (id) init[id] = 0
-        }
-
-        currentByCourse.value = init
         start()
     }
 )
 </script>
 
 <template>
-    <div v-if="list.length !== 0">
-        <div v-for="c in list" :key="unwrap(c).id">
+    <div
+        v-if="list.length"
+        class="w-full"
+    >
+        <div
+            v-for="course in list"
+            :key="getCourse(course).id"
+        >
             <div class="mb-4">
                 <Link
-                    :href="`/school/courses/${unwrap(c).slug}`"
+                    :href="
+                        getCourseLink(
+                            course
+                        )
+                    "
                     class="flex gap-2"
                 >
+                    <!-- Images -->
                     <div
-                        v-if="courseImages(c).length > 0"
-                        class="post-image relative overflow-hidden rounded-md
-                               bg-slate-100 dark:bg-slate-900
-                               w-auto h-[64px] shrink-0"
-                        @mouseenter="hoveredByCourse = { ...hoveredByCourse, [unwrap(c).id]: true }"
-                        @mouseleave="hoveredByCourse = { ...hoveredByCourse, [unwrap(c).id]: false }"
+                        v-if="
+                            courseImages(
+                                course
+                            ).length > 0
+                        "
+                        class="
+                            post-image
+                            relative
+                            overflow-hidden
+                            rounded-md
+                            bg-slate-100
+                            dark:bg-slate-900
+                            w-auto
+                            h-[64px]
+                            shrink-0
+                        "
+                        @mouseenter="
+                            hoveredByCourse = {
+                                ...hoveredByCourse,
+
+                                [getCourse(course).id]:
+                                    true,
+                            }
+                        "
+                        @mouseleave="
+                            hoveredByCourse = {
+                                ...hoveredByCourse,
+
+                                [getCourse(course).id]:
+                                    false,
+                            }
+                        "
                     >
-                        <Transition name="imgfx" mode="out-in">
+                        <Transition
+                            name="imgfx"
+                            mode="out-in"
+                        >
                             <img
-                                :key="courseImages(c)[getCurrent(unwrap(c).id)]?.id"
-                                class="w-full h-full object-cover"
-                                :src="courseImages(c)[getCurrent(unwrap(c).id)]?.src"
-                                :alt="courseImages(c)[getCurrent(unwrap(c).id)]?.alt"
-                                :title="courseImages(c)[getCurrent(unwrap(c).id)]?.title"
+                                :key="
+                                    courseImages(
+                                        course
+                                    )[
+                                        getCurrent(
+                                            getCourse(
+                                                course
+                                            ).id
+                                        )
+                                    ]?.id
+                                "
+                                class="
+                                    w-full
+                                    h-full
+                                    object-cover
+                                "
+                                :src="
+                                    courseImages(
+                                        course
+                                    )[
+                                        getCurrent(
+                                            getCourse(
+                                                course
+                                            ).id
+                                        )
+                                    ]?.src
+                                "
+                                :alt="
+                                    courseImages(
+                                        course
+                                    )[
+                                        getCurrent(
+                                            getCourse(
+                                                course
+                                            ).id
+                                        )
+                                    ]?.alt
+                                "
+                                :title="
+                                    courseImages(
+                                        course
+                                    )[
+                                        getCurrent(
+                                            getCourse(
+                                                course
+                                            ).id
+                                        )
+                                    ]?.title
+                                "
                                 loading="lazy"
                             />
                         </Transition>
 
+                        <!-- Slider dots -->
                         <div
-                            v-if="courseImages(c).length > 1"
-                            class="absolute left-0 right-0 bottom-0 px-1 pb-1"
+                            v-if="
+                                courseImages(
+                                    course
+                                ).length > 1
+                            "
+                            class="
+                                absolute
+                                left-0
+                                right-0
+                                bottom-0
+                                px-1
+                                pb-1
+                            "
                         >
-                            <div class="flex items-center justify-center gap-1">
+                            <div
+                                class="
+                                    flex
+                                    items-center
+                                    justify-center
+                                    gap-1
+                                "
+                            >
                                 <button
-                                    v-for="(img, idx) in courseImages(c)"
-                                    :key="img.id"
+                                    v-for="(
+                                        image,
+                                        index
+                                    ) in courseImages(
+                                        course
+                                    )"
+                                    :key="image.id"
                                     type="button"
-                                    class="h-1.5 w-1.5 rounded-full transition-all"
-                                    :class="idx === getCurrent(unwrap(c).id)
-                                        ? 'bg-orange-400 shadow ring-1 ring-black/40'
-                                        : 'bg-white/60 hover:bg-orange-400/80'"
-                                    @click.prevent.stop="setCurrent(unwrap(c).id, idx, courseImages(c).length)"
-                                    :aria-label="`image ${idx + 1}`"
-                                    :title="img.title"
+                                    class="
+                                        h-1.5
+                                        w-1.5
+                                        rounded-full
+                                        transition-all
+                                    "
+                                    :class="
+                                        index
+                                        ===
+                                        getCurrent(
+                                            getCourse(
+                                                course
+                                            ).id
+                                        )
+                                            ? 'bg-orange-400 shadow ring-1 ring-black/40'
+                                            : 'bg-white/60 hover:bg-orange-400/80'
+                                    "
+                                    @click.prevent.stop="
+                                        setCurrent(
+                                            getCourse(
+                                                course
+                                            ).id,
+                                            index,
+                                            courseImages(
+                                                course
+                                            ).length
+                                        )
+                                    "
+                                    :aria-label="
+                                        `image ${index + 1}`
+                                    "
+                                    :title="
+                                        image.title
+                                    "
                                 />
                             </div>
                         </div>
                     </div>
 
+                    <!-- Title -->
                     <h3 class="title">
-                        <span class="font-semibold text-xs
-                                     text-gray-700 dark:text-gray-300 hover:text-indigo-600">
-                            {{ unwrap(c).title }}
+                        <span
+                            class="
+                                font-semibold
+                                text-xs
+                                text-gray-700
+                                dark:text-gray-300
+                                hover:text-indigo-600
+                            "
+                        >
+                            {{
+                                getCourseTitle(
+                                    course
+                                )
+                            }}
                         </span>
                     </h3>
                 </Link>
@@ -246,13 +681,23 @@ watch(
 
 <style scoped>
 .imgfx-enter-active {
-    transition: opacity 520ms ease, filter 520ms ease;
-    will-change: opacity, filter;
+    transition:
+        opacity 520ms ease,
+        filter 520ms ease;
+
+    will-change:
+        opacity,
+        filter;
 }
 
 .imgfx-leave-active {
-    transition: opacity 280ms ease, filter 280ms ease;
-    will-change: opacity, filter;
+    transition:
+        opacity 280ms ease,
+        filter 280ms ease;
+
+    will-change:
+        opacity,
+        filter;
 }
 
 .imgfx-enter-from {

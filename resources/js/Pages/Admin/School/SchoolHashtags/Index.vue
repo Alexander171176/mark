@@ -214,33 +214,25 @@ const safeDate = (value) => {
 
 /** Получение названия хештега */
 const getHashtagName = (hashtag) => {
-    return hashtag?.name
-        || hashtag?.translation?.name
-        || hashtag?.translations?.[0]?.name
+    return hashtag?.translation?.name
         || `ID: ${hashtag?.id}`
 }
 
 /** Получение краткого описания хештега */
 const getHashtagShort = (hashtag) => {
-    return hashtag?.short
-        || hashtag?.translation?.short
-        || hashtag?.translations?.[0]?.short
+    return hashtag?.translation?.short
         || ''
 }
 
 /** Получение описания хештега */
 const getHashtagDescription = (hashtag) => {
-    return hashtag?.description
-        || hashtag?.translation?.description
-        || hashtag?.translations?.[0]?.description
+    return hashtag?.translation?.description
         || ''
 }
 
 /** Получение slug хештега */
 const getHashtagSlug = (hashtag) => {
     return hashtag?.slug
-        || hashtag?.translation?.slug
-        || hashtag?.translations?.[0]?.slug
         || ''
 }
 

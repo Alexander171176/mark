@@ -152,17 +152,17 @@ const toggleAll = (event) => {
                                     rel="noopener noreferrer"
                                     :title="hashtag.slug"
                                 >
-                                    {{ hashtag.name }}
+                                    {{ hashtag.translation?.name || `ID: ${hashtag.id}` }}
                                 </a>
                             </div>
 
                             <!-- Короткое описание -->
                             <div
-                                v-if="hashtag.short"
+                                v-if="hashtag.translation?.short"
                                 class="text-[11px] text-slate-700 dark:text-slate-100
                                        text-center line-clamp-3"
                             >
-                                {{ hashtag.short }}
+                                {{ hashtag.translation.short }}
                             </div>
 
                             <!-- Статистика -->

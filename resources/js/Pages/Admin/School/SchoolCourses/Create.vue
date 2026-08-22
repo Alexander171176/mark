@@ -5,7 +5,7 @@
  *
  * Редактирование курса (мультиязычная архитектура)
  */
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -119,8 +119,16 @@ const dynamicOptionsLimit = (items) => {
 // Опции инструкторов
 const instructorProfileOptions = computed(() =>
     props.instructorProfiles.map((item) => {
-        const title = item.public_name || item.title || item.name || `#${item.id}`
-        const userName = item.user?.name ? ` — ${item.user.name}` : ''
+        const title =
+            item?.translation?.title
+            || item?.user?.name
+            || `#${item.id}`
+
+        const userName =
+            item?.user?.name
+            && item.user.name !== title
+                ? ` — ${item.user.name}`
+                : ''
 
         return {
             id: item.id,
@@ -133,7 +141,13 @@ const instructorProfileOptions = computed(() =>
 const trackOptions = computed(() =>
     props.tracks.map((item) => ({
         id: item.id,
-        label: `[ID: ${item.id}] ${item.name || item.slug || `#${item.id}`}`,
+
+        label:
+            `[ID: ${item.id}] ${
+                item?.translation?.name
+                || item?.slug
+                || `#${item.id}`
+            }`,
     }))
 )
 
@@ -141,8 +155,17 @@ const trackOptions = computed(() =>
 const hashtagOptions = computed(() =>
     props.hashtags.map((item) => ({
         id: item.id,
-        label: `[ID: ${item.id}] ${item.name || item.slug || `#${item.id}`}`,
-        color: item.color || null,
+
+        label:
+            `[ID: ${item.id}] ${
+                item?.translation?.name
+                || item?.slug
+                || `#${item.id}`
+            }`,
+
+        color:
+            item?.color
+            || null,
     }))
 )
 
@@ -150,35 +173,27 @@ const hashtagOptions = computed(() =>
 const relatedCourseOptions = computed(() =>
     props.courses.map((item) => ({
         id: item.id,
-        label: `[ID: ${item.id}] ${item.title || item.slug || `#${item.id}`}`,
+
+        label:
+            `[ID: ${item.id}] ${
+                item?.translation?.title
+                || item?.slug
+                || `#${item.id}`
+            }`,
     }))
 )
 
-// Выбранный инструктор, Выбранные треки, Выбранные хештеги, Выбранные связанные курсы
+// Выбранный инструктор
 const selectedInstructorProfile = ref(null)
+
+// Выбранные треки
 const selectedTracks = ref([])
+
+// Выбранные хештеги
 const selectedHashtags = ref([])
+
+// Выбранные связанные курсы
 const selectedRelatedCourses = ref([])
-
-// Синхронизация инструктора с формой
-watch(selectedInstructorProfile, (val) => {
-    form.school_instructor_profile_id = val?.id ?? null
-})
-
-// Синхронизация треков с формой
-watch(selectedTracks, (val) => {
-    form.track_ids = Array.isArray(val) ? val.map(v => v.id) : []
-})
-
-// Синхронизация хештегов с формой
-watch(selectedHashtags, (val) => {
-    form.hashtag_ids = Array.isArray(val) ? val.map(v => v.id) : []
-})
-
-// Синхронизация связанных курсов с формой
-watch(selectedRelatedCourses, (val) => {
-    form.related_course_ids = Array.isArray(val) ? val.map(v => v.id) : []
-})
 
 // Новые изображения курса
 const newImages = ref([])

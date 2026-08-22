@@ -9,81 +9,116 @@ class SchoolInstructorProfileResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-
-        $translation = $this->relationLoaded('translations')
-            ? $this->translations->first()
-            : null;
-
         return [
-            'id' => $this->id,
+            'id' =>
+                $this->id,
 
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
+            /**
+             * Основные поля.
+             */
+            'sort' =>
+                (int) $this->sort,
 
-            'user_id' => $this->user_id,
-            'slug' => $this->slug,
+            'activity' =>
+                (bool) $this->activity,
 
-            'title' => $translation?->title,
-            'short' => $translation?->short,
-            'bio' => $translation?->bio,
+            'user_id' =>
+                $this->user_id,
 
-            'meta_title' => $translation?->meta_title,
-            'meta_keywords' => $translation?->meta_keywords,
-            'meta_desc' => $translation?->meta_desc,
+            'slug' =>
+                $this->slug,
 
-            'experience_years' => $this->experience_years !== null
-                ? (int) $this->experience_years
-                : null,
+            /**
+             * Профессиональные данные.
+             */
+            'experience_years' =>
+                $this->experience_years !== null
+                    ? (int) $this->experience_years
+                    : null,
 
-            'hourly_rate' => $this->hourly_rate !== null
-                ? (string) $this->hourly_rate
-                : null,
+            'hourly_rate' =>
+                $this->hourly_rate !== null
+                    ? (string) $this->hourly_rate
+                    : null,
 
-            'views' => (int) $this->views,
+            /**
+             * Рейтинг.
+             *
+             * Оставляем плоский контракт,
+             * совпадающий с моделью
+             * и Admin Index.
+             */
+            'rating_count' =>
+                (int) $this->rating_count,
 
-            'rating' => [
-                'avg' => $this->rating_avg !== null ? (float) $this->rating_avg : null,
-                'count' => (int) $this->rating_count,
-            ],
+            'rating_avg' =>
+                $this->rating_avg !== null
+                    ? (float) $this->rating_avg
+                    : null,
 
-            'social_links' => $this->social_links ?? [],
+            /**
+             * Статистика.
+             */
+            'views' =>
+                (int) $this->views,
 
-            'public_name' => $this->public_name,
+            /**
+             * Социальные ссылки.
+             */
+            'social_links' =>
+                $this->social_links ?? [],
 
-            'primary_image' => new SchoolInstructorProfileImageResource(
-                $this->whenLoaded('images', fn () => $this->primary_image)
+            /**
+             * Все переводы.
+             *
+             * Для Edit контроллер
+             * загружает все локали.
+             */
+            'translations' =>
+                SchoolInstructorProfileTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
+
+            /**
+             * Пользователь.
+             */
+            'user' => $this->whenLoaded(
+                'user',
+                fn () => $this->user
+                    ? [
+                        'id' =>
+                            $this->user->id,
+
+                        'name' =>
+                            $this->user->name,
+
+                        'email' =>
+                            $this->user->email,
+                    ]
+                    : null
             ),
 
-            'images' => SchoolInstructorProfileImageResource::collection(
-                $this->whenLoaded('images')
-            ),
+            /**
+             * Изображения.
+             *
+             * Контроллер обязан загрузить
+             * images.media.
+             */
+            'images' =>
+                SchoolInstructorProfileImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
 
-            'translations' => SchoolInstructorProfileTranslationResource::collection(
-                $this->whenLoaded('translations')
-            ),
-
-            'user' => $this->whenLoaded('user', fn () => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
-                'email' => $this->user->email,
-            ]),
-
-            'courses' => $this->whenLoaded('courses', fn () => $this->courses->map(fn ($course) => [
-                'id' => $course->id,
-                'slug' => $course->slug,
-                'title' => $course->translation?->title,
-            ])),
-
-            'payouts' => $this->whenLoaded('payouts', fn () => $this->payouts->map(fn ($payout) => [
-                'id' => $payout->id,
-                'number' => $payout->number,
-                'status' => $payout->status,
-                'currency' => $payout->currency,
-                'amount_gross' => (string) $payout->amount_gross,
-                'amount_net' => (string) $payout->amount_net,
-                'paid_at' => optional($payout->paid_at)->toIso8601String(),
-            ])),
-
+            /**
+             * Counts.
+             *
+             * Появляются только там,
+             * где контроллер их запросил.
+             */
             'courses_count' => $this->when(
                 isset($this->courses_count),
                 fn () => (int) $this->courses_count
@@ -94,8 +129,19 @@ class SchoolInstructorProfileResource extends JsonResource
                 fn () => (int) $this->payouts_count
             ),
 
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            'images_count' => $this->when(
+                isset($this->images_count),
+                fn () => (int) $this->images_count
+            ),
+
+            /**
+             * Timestamps.
+             */
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

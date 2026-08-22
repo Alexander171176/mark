@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Public\Default\School\SchoolCourse;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseResource;
+use App\Http\Resources\Public\School\SchoolCourse\SchoolCourseResource;
+use App\Http\Resources\Public\School\SchoolCourse\SchoolCourseSharedResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Services\Admin\ProcessingModeService;
@@ -94,9 +95,18 @@ class SchoolCourseController extends Controller
             ? $courses->total()
             : $courses->count();
 
-        $courses = $useServerProcessing
-            ? $this->appendUserLikes($courses, SchoolCourseResource::class)
-            : SchoolCourseResource::collection($courses);
+        /**
+         * Public Index всегда использует
+         * краткий Public Resource.
+         *
+         * already_liked уже находится
+         * внутри моделей благодаря
+         * withUserLike().
+         */
+        $courses =
+            SchoolCourseSharedResource::collection(
+                $courses
+            );
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
@@ -129,70 +139,180 @@ class SchoolCourseController extends Controller
     }
 
     /** Страница конкретного курса. */
-    public function show(string $slug): Response
-    {
+    public function show(
+        string $slug
+    ): Response {
         $locale = app()->getLocale();
 
-        $course = SchoolCourse::query()
-            ->forPublic($locale)
-            ->where('slug', $slug)
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        /**
+         * Основной запрос курса.
+         */
+        $courseQuery = SchoolCourse::query()
+            ->forPublic(
+                $locale
+            )
+            ->where(
+                'slug',
+                $slug
+            )
             ->with([
-                'translation',
-                'translations',
-                'images',
+                /**
+                 * translations курса уже
+                 * загружает forPublic().
+                 */
 
-                'instructorProfile',
-                'instructorProfile.translation',
-                'instructorProfile.translations',
-                'instructorProfile.images',
+                /**
+                 * Изображения курса.
+                 */
+                'images.media',
 
-                'tracks.translation',
-                'tracks.translations',
-                'tracks.images',
+                /**
+                 * Инструктор.
+                 */
+                'instructorProfile.translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
 
-                'hashtags.translation',
-                'hashtags.translations',
+                'instructorProfile.images.media',
 
+                /**
+                 * Треки.
+                 */
+                'tracks.translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                'tracks.images.media',
+
+                /**
+                 * Хештеги.
+                 */
+                'hashtags.translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                /**
+                 * Цены.
+                 */
                 'prices',
 
-                'reviews' => fn ($query) => $query
-                    ->with('user:id,name')
-                    ->latest(),
+                /**
+                 * Отзывы.
+                 */
+                'reviews' =>
+                    fn ($query) =>
+                    $query
+                        ->with(
+                            'user:id,name'
+                        )
+                        ->latest(),
 
-                'relatedCourses' => fn ($query) => $query
-                    ->forPublic($locale)
-                    ->with([
-                        'translation',
-                        'translations',
-                        'images',
-                        'instructorProfile.translation',
-                        'instructorProfile.translations',
-                        'instructorProfile.images',
-                    ])
-                    ->withCount('likes')
-                    ->ordered(),
+                /**
+                 * Рекомендованные курсы.
+                 */
+                'relatedCourses' =>
+                    function ($query) use (
+                        $locale,
+                        $locales
+                    ) {
+                        $query
+                            ->forPublic(
+                                $locale
+                            )
+                            ->with([
+                                'images.media',
 
-                'modules' => fn ($query) => $query
-                    ->forPublic($locale)
-                    ->with([
-                        'translation',
-                        'translations',
-                        'images',
+                                'instructorProfile.translations' =>
+                                    fn ($translationQuery) =>
+                                    $translationQuery->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
 
-                        'lessons' => fn ($lessonQuery) => $lessonQuery
-                            ->forPublic($locale)
+                                'instructorProfile.images.media',
+                            ])
+                            ->withCount([
+                                'likes',
+                            ])
+                            ->ordered();
+
+                        /**
+                         * already_liked для всех
+                         * related courses одним EXISTS.
+                         */
+                        $this->withUserLike(
+                            $query
+                        );
+                    },
+
+                /**
+                 * Модули.
+                 *
+                 * Пока оставляем их текущий
+                 * ресурс до отдельного
+                 * рефакторинга SchoolModule.
+                 */
+                'modules' =>
+                    function ($query) use (
+                        $locale
+                    ) {
+                        $query
+                            ->forPublic(
+                                $locale
+                            )
                             ->with([
                                 'translation',
                                 'translations',
                                 'images',
+
+                                'lessons' =>
+                                    fn ($lessonQuery) =>
+                                    $lessonQuery
+                                        ->forPublic(
+                                            $locale
+                                        )
+                                        ->with([
+                                            'translation',
+                                            'translations',
+                                            'images',
+                                        ])
+                                        ->ordered(),
                             ])
-                            ->ordered(),
-                    ])
-                    ->withCount([
-                        'lessons',
-                        'likes',
-                    ])
-                    ->ordered(),
+                            ->withCount([
+                                'lessons',
+                                'likes',
+                            ])
+                            ->ordered();
+
+                        /**
+                         * already_liked сразу
+                         * для всех модулей.
+                         */
+                        $this->withUserLike(
+                            $query
+                        );
+                    },
             ])
             ->withCount([
                 'modules',
@@ -203,55 +323,75 @@ class SchoolCourseController extends Controller
                 'prices',
                 'reviews',
                 'likes',
-            ])
-            ->firstOrFail();
+            ]);
 
-        $course->increment('views');
+        /**
+         * already_liked курса
+         * добавляется в основной SQL.
+         */
+        $courseQuery = $this->withUserLike(
+            $courseQuery
+        );
 
-        $courseData = (new SchoolCourseResource($course))->resolve();
+        $course =
+            $courseQuery->firstOrFail();
 
-        $courseData['already_liked'] = auth()->check()
-            ? $course->likes()->where('user_id', auth()->id())->exists()
-            : false;
+        /**
+         * Просмотр.
+         */
+        $course->increment(
+            'views'
+        );
 
-        $courseData['related_courses'] = $course->relatedCourses
-            ->map(function ($relatedCourse) {
-                $resolved = (new SchoolCourseResource($relatedCourse))->resolve();
+        /**
+         * Полный Public Resource.
+         */
+        $courseData =
+            new SchoolCourseResource(
+                $course
+            );
 
-                $resolved['already_liked'] = auth()->check()
-                    ? $relatedCourse->likes()->where('user_id', auth()->id())->exists()
-                    : false;
+        /**
+         * SchoolModule пока ещё
+         * не прошёл новый Public Resource
+         * refactoring.
+         *
+         * already_liked уже присутствует
+         * на модели благодаря withUserLike().
+         */
+        $modules =
+            SchoolModuleResource::collection(
+                $course->modules
+            );
 
-                return $resolved;
-            })
-            ->values()
-            ->all();
+        $trackTree =
+            $this->buildTrackTree(
+                $locale
+            );
 
-        $modules = $course->modules
-            ->map(function ($module) {
-                $resolved = (new SchoolModuleResource($module))->resolve();
+        $sidebarData =
+            $this->getSidebarData(
+                $locale
+            );
 
-                $resolved['already_liked'] = auth()->check()
-                    ? $module->likes()->where('user_id', auth()->id())->exists()
-                    : false;
+        return Inertia::render(
+            'Public/Default/School/SchoolCourses/Show',
+            [
+                'course' =>
+                    $courseData,
 
-                return $resolved;
-            })
-            ->values()
-            ->all();
+                'modules' =>
+                    $modules,
 
-        $trackTree = $this->buildTrackTree($locale);
-        $sidebarData = $this->getSidebarData($locale);
+                'trackTree' =>
+                    $trackTree,
 
-        return Inertia::render('Public/Default/School/SchoolCourses/Show', [
-            'course' => $courseData,
-            'modules' => $modules,
+                'locale' =>
+                    $locale,
 
-            'trackTree' => $trackTree,
-            'locale' => $locale,
-
-            ...$sidebarData,
-        ]);
+                ...$sidebarData,
+            ]
+        );
     }
 
     /** Лайк курса. */
@@ -288,40 +428,73 @@ class SchoolCourseController extends Controller
         ]);
     }
 
-    /** Базовый запрос для списка публичных курсов. */
-    private function indexQuery(string $locale): Builder
-    {
-        return SchoolCourse::query()
-            ->forPublic($locale)
+    /** Базовый запрос Public Index курсов. */
+    private function indexQuery(
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        $query = SchoolCourse::query()
+            ->forPublic(
+                $locale
+            )
             ->with([
-                'translation',
-                'translations',
-                'images',
+                /**
+                 * Сам forPublic() уже загружает
+                 * translations current + fallback.
+                 *
+                 * Здесь повторно translations
+                 * указывать не нужно.
+                 */
 
-                'instructorProfile',
-                'instructorProfile.translation',
-                'instructorProfile.translations',
-                'instructorProfile.images',
+                /**
+                 * Изображения курса + Spatie Media.
+                 */
+                'images.media',
 
-                'tracks.translation',
-                'tracks.translations',
-                'tracks.images',
+                /**
+                 * Инструктор:
+                 * current + fallback.
+                 */
+                'instructorProfile.translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
 
-                'hashtags.translation',
-                'hashtags.translations',
-
-                'prices',
+                /**
+                 * Изображения инструктора.
+                 */
+                'instructorProfile.images.media',
             ])
             ->withCount([
                 'modules',
                 'lessons',
                 'tracks',
                 'hashtags',
-                'images',
-                'prices',
                 'reviews',
                 'likes',
             ]);
+
+        /**
+         * already_liked одним EXISTS.
+         *
+         * Для гостя SQL не добавляется.
+         */
+        return $this->withUserLike(
+            $query
+        );
     }
 
     /** Получение списка публичных курсов по активному режиму обработки. */
@@ -332,18 +505,32 @@ class SchoolCourseController extends Controller
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery($locale);
+        $query =
+            $this->indexQuery(
+                $locale
+            );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

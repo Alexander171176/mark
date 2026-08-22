@@ -9,83 +9,105 @@ class SchoolTrackResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $currentLocale =
+            app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
         /**
-         * scopeForPublic() уже загружает translations
-         * только для текущей локали.
+         * Текущий перевод нужен только
+         * как удобный административный
+         * resolved-перевод.
+         *
+         * Все переводы всё равно
+         * передаются отдельно ниже.
          */
-        $translation = $this->relationLoaded('translations')
-            ? $this->translations->first()
-            : null;
+        $translation =
+            $this->relationLoaded('translations')
+                ? (
+            $this->translations->firstWhere(
+                'locale',
+                $currentLocale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
+                : null;
 
         return [
-            'id' => $this->id,
+            'id' =>
+                $this->id,
 
-            'parent_id' => $this->parent_id,
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
+            /**
+             * Основные поля.
+             */
+            'parent_id' =>
+                $this->parent_id,
 
-            'slug' => $this->slug,
+            'sort' =>
+                (int) $this->sort,
 
-            'name' => $translation?->name,
-            'short' => $translation?->short,
-            'description' => $translation?->description,
+            'activity' =>
+                (bool) $this->activity,
 
-            'meta_title' => $translation?->meta_title,
-            'meta_keywords' => $translation?->meta_keywords,
-            'meta_desc' => $translation?->meta_desc,
+            'slug' =>
+                $this->slug,
 
-            'views' => (int) $this->views,
+            'views' =>
+                (int) $this->views,
 
-            'translations' => SchoolTrackTranslationResource::collection(
-                $this->whenLoaded('translations')
-            ),
+            /**
+             * Текущий перевод.
+             */
+            'translation' => $translation
+                ? new SchoolTrackTranslationResource(
+                    $translation
+                )
+                : null,
 
-            'images' => SchoolTrackImageResource::collection(
-                $this->whenLoaded('images')
-            ),
+            /**
+             * Все переводы.
+             *
+             * Они нужны Create/Edit
+             * TranslationTabs.
+             */
+            'translations' =>
+                SchoolTrackTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
 
-            'parent' => new SchoolTrackSharedResource(
-                $this->whenLoaded('parent')
-            ),
+            /**
+             * Изображения.
+             *
+             * Controller обязан загрузить:
+             * images.media.
+             */
+            'images' =>
+                SchoolTrackImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
 
-            'children' => SchoolTrackSharedResource::collection(
-                $this->whenLoaded('children')
-            ),
+            /**
+             * Служебные поля.
+             */
+            'is_root' =>
+                $this->parent_id === null,
 
-            'children_recursive' => SchoolTrackSharedResource::collection(
-                $this->whenLoaded('childrenRecursive')
-            ),
+            'created_at' =>
+                $this->created_at?->toISOString(),
 
-            'courses' => $this->whenLoaded('courses', fn () => $this->courses->map(fn ($course) => [
-                'id' => $course->id,
-                'slug' => $course->slug,
-                'title' => $course->translation?->title,
-            ])),
-
-            'likes_count' => $this->when(
-                isset($this->likes_count),
-                fn () => (int) $this->likes_count
-            ),
-
-            'children_count' => $this->when(
-                isset($this->children_count),
-                fn () => (int) $this->children_count
-            ),
-
-            'courses_count' => $this->when(
-                isset($this->courses_count),
-                fn () => (int) $this->courses_count
-            ),
-
-            'images_count' => $this->when(
-                isset($this->images_count),
-                fn () => (int) $this->images_count
-            ),
-
-            'is_root' => $this->parent_id === null,
-
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

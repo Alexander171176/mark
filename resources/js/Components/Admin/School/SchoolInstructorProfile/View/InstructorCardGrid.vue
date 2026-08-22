@@ -235,29 +235,49 @@ const getPrimaryImage = (instructorProfile) => {
                                 </div>
 
                                 <div
-                                    v-if="instructorProfile.rating?.count > 0"
+                                    v-if="Number(instructorProfile.rating_count ?? 0) > 0"
                                     :title="t('ratingCount')"
                                     class="flex flex-row items-center"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24"
-                                         viewBox="0 0 24 24" class="shrink-0 h-4 w-4">
-                                        <path class="fill-current text-red-400 dark:text-red-300"
-                                              d="M14.586,9.439S15.7,2.858,11.138,0A8.055,8.055,0,0,1,8.1,5.831C6.149,7.546,2.481,11.4,2.52,15.51A9.435,9.435,0,0,0,7.7,24a5.975,5.975,0,0,1,2.091-4.132,4.877,4.877,0,0,0,1.869-3.278,8.786,8.786,0,0,1,4.652,7.322v.02a8.827,8.827,0,0,0,5.137-7.659c.324-3.863-1.792-9.112-3.668-10.828A10.192,10.192,0,0,1,14.586,9.439Z"></path>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        height="24"
+                                        width="24"
+                                        viewBox="0 0 24 24"
+                                        class="shrink-0 h-4 w-4"
+                                    >
+                                        <path
+                                            class="fill-current text-red-400 dark:text-red-300"
+                                            d="M14.586,9.439S15.7,2.858,11.138,0A8.055,8.055,0,0,1,8.1,5.831C6.149,7.546,2.481,11.4,2.52,15.51A9.435,9.435,0,0,0,7.7,24a5.975,5.975,0,0,1,2.091-4.132,4.877,4.877,0,0,0,1.869-3.278,8.786,8.786,0,0,1,4.652,7.322v.02a8.827,8.827,0,0,0,5.137-7.659c.324-3.863-1.792-9.112-3.668-10.828A10.192,10.192,0,0,1,14.586,9.439Z"
+                                        />
                                     </svg>
-                                    <span class="ml-1">{{ instructorProfile.rating.count }}</span>
+
+                                    <span class="ml-1">
+                                        {{ instructorProfile.rating_count }}
+                                    </span>
                                 </div>
 
                                 <div
-                                    v-if="instructorProfile.rating?.avg"
+                                    v-if="Number(instructorProfile.rating_avg ?? 0) > 0"
                                     :title="t('ratingAvg')"
                                     class="flex flex-row items-center"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24"
-                                         viewBox="0 0 24 24" class="shrink-0 h-4 w-4">
-                                        <path class="fill-current text-red-400 dark:text-red-300"
-                                              d="M12.746,1.464l3.11,6.3L22.81,8.776a.831.831,0,0,1,.461,1.418l-5.033,4.9,1.188,6.926a.832.832,0,0,1-1.207.877L12,19.632,5.78,22.9a.833.833,0,0,1-1.207-.878L5.761,15.1l-5.033-4.9a.831.831,0,0,1,.461-1.418L8.143,7.765l3.11-6.3A.833.833,0,0,1,12.746,1.464Z"></path>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        height="24"
+                                        width="24"
+                                        viewBox="0 0 24 24"
+                                        class="shrink-0 h-4 w-4"
+                                    >
+                                        <path
+                                            class="fill-current text-red-400 dark:text-red-300"
+                                            d="M12.746,1.464l3.11,6.3L22.81,8.776a.831.831,0,0,1,.461,1.418l-5.033,4.9,1.188,6.926a.832.832,0,0,1-1.207.877L12,19.632,5.78,22.9a.833.833,0,0,1-1.207-.878L5.761,15.1l-5.033-4.9a.831.831,0,0,1,.461-1.418L8.143,7.765l3.11-6.3A.833.833,0,0,1,12.746,1.464Z"
+                                        />
                                     </svg>
-                                    <span class="ml-1">{{ instructorProfile.rating.avg }}</span>
+
+                                    <span class="ml-1">
+                                        {{ instructorProfile.rating_avg }}
+                                    </span>
                                 </div>
                             </div>
 

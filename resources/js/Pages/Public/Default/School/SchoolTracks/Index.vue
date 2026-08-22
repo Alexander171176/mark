@@ -1,17 +1,5 @@
 <script setup>
-/**
- * Страница списка направлений обучения.
- *
- * Логика:
- * - серверный и frontend поиск
- * - серверная и frontend сортировка
- * - серверная и frontend пагинация
- * - переключение вида grid/rows
- * - сохранение вида в localStorage
- * - управление колонками через настройки сайта
- */
-
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
@@ -19,24 +7,27 @@ import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 import DefaultLayout from '@/Layouts/DefaultLayout.vue'
 import Navbar from '@/Partials/Default/Navbar.vue'
 import FooterBlog from '@/Partials/Default/FooterBlog.vue'
+
 import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarSchool from '@/Components/Public/Default/Partials/LeftSidebarSchool.vue'
 import RightSidebarSchool from '@/Components/Public/Default/Partials/RightSidebarSchool.vue'
+
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
-import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
 import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
+
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
+
 import TrackGrid from '@/Components/Public/Default/School/SchoolTrack/TrackGrid.vue'
 import TrackRows from '@/Components/Public/Default/School/SchoolTrack/TrackRows.vue'
-import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
+
+import PublicAdminBottomPanel
+    from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
+const page = usePage()
 
-/* ===================== PROPS ===================== */
-
-/** Props страницы */
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
@@ -49,203 +40,218 @@ const props = defineProps({
         }),
     },
 
-    useServerProcessing: { type: Boolean, default: false },
-    publicSchoolTracksProcessingMode: { type: String, default: 'server' },
+    publicSchoolTracksProcessingMode: {
+        type: String,
+        default: 'server',
+    },
 
-    title: { type: String, default: '' },
-    canLogin: { type: Boolean, default: false },
-    canRegister: { type: Boolean, default: false },
+    useServerProcessing: {
+        type: Boolean,
+        default: false,
+    },
 
-    trackTree: { type: Array, default: () => [] },
+    title: {
+        type: String,
+        default: '',
+    },
 
-    tracks: { type: [Array, Object], default: () => [] },
-    tracksCount: { type: Number, default: 0 },
-    tracksFound: { type: Number, default: 0 },
+    canLogin: {
+        type: Boolean,
+        default: false,
+    },
 
-    filters: { type: Object, default: () => ({}) },
+    canRegister: {
+        type: Boolean,
+        default: false,
+    },
 
-    mainVideos: { type: [Array, Object], default: () => [] },
-    mainBanners: { type: [Array, Object], default: () => [] },
+    tracks: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    tracksCount: {
+        type: Number,
+        default: 0,
+    },
+
+    tracksFound: {
+        type: Number,
+        default: 0,
+    },
+
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+
+    trackTree: {
+        type: Array,
+        default: () => [],
+    },
+
+    mainVideos: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    mainBanners: {
+        type: [Array, Object],
+        default: () => [],
+    },
 })
 
-/* ===================== PAGE ===================== */
+/* ======================== Helpers ======================== */
 
-/** Глобальные данные страницы */
-const page = usePage()
+const normalizeList = (value) => {
+    if (Array.isArray(value)) return value
+    if (Array.isArray(value?.data)) return value.data
 
-/** Глобальные настройки сайта */
-const siteSettings = page.props?.siteSettings || {}
+    return []
+}
 
-/** Роль администратора */
-const isAdmin = computed(() => page.props?.isAdmin === true)
+const normalizeText = (value) =>
+    String(value ?? '').trim().toLocaleLowerCase()
 
-/** Дерево треков */
-const trackTree = computed(() => {
-    return Array.isArray(props.trackTree)
+const safeNumber = (value) => {
+    const number = Number(value)
+
+    return Number.isFinite(number)
+        ? number
+        : 0
+}
+
+const safeDate = (value) => {
+    const time = value
+        ? Date.parse(value)
+        : 0
+
+    return Number.isFinite(time)
+        ? time
+        : 0
+}
+
+/* ======================== Page ======================== */
+
+const siteSettings = computed(() =>
+    page.props?.siteSettings ?? {}
+)
+
+const isAdmin = computed(() =>
+    page.props?.isAdmin === true
+)
+
+const trackTree = computed(() =>
+    Array.isArray(props.trackTree)
         ? props.trackTree
         : []
-})
-
-/** Нормализация списков */
-const normalizeList = (value) => {
-    if (Array.isArray(value)) {
-        return value
-    }
-
-    if (Array.isArray(value?.data)) {
-        return value.data
-    }
-
-    return []
-}
-
-/* ===================== TRACKS DATA ===================== */
-
-/** Универсальный список треков */
-const tracksData = computed(() => {
-    if (Array.isArray(props.tracks)) {
-        return props.tracks
-    }
-
-    if (Array.isArray(props.tracks?.data)) {
-        return props.tracks.data
-    }
-
-    return []
-})
-
-/* ===================== SIDEBARS ===================== */
-
-/** Показ левой колонки */
-const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn
-        || siteSettings.ViewLeftColumn === 'true'
-})
-
-/** Показ правой колонки */
-const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn
-        || siteSettings.ViewRightColumn === 'true'
-})
-
-/** Ключ левого сайдбара */
-const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
-
-/** Ключ правого сайдбара */
-const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
-
-/** Получение boolean из localStorage */
-const getStoredBoolean = (key, defaultValue = true) => {
-    const value = localStorage.getItem(key)
-
-    if (value === null) {
-        return defaultValue
-    }
-
-    return value === 'true'
-}
-
-/** Левый сайдбар по умолчанию свернут */
-const leftCollapsed = ref(
-    getStoredBoolean(LEFT_SIDEBAR_KEY, true)
 )
 
-/** Правый сайдбар по умолчанию свернут */
-const rightCollapsed = ref(
-    getStoredBoolean(RIGHT_SIDEBAR_KEY, true)
+const mainVideos = computed(() =>
+    normalizeList(props.mainVideos)
 )
 
-/**
- * Количество колонок сетки.
- *
- * Оба открыты  → 2.
- * Один свернут → 3.
- * Оба свернуты → 4.
- *
- * Количество треков при этом не меняется.
- */
-const trackGridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
+const mainBanners = computed(() =>
+    normalizeList(props.mainBanners)
+)
 
-    if (leftExpanded && rightExpanded) {
-        return 2
+/* ======================== Tracks ======================== */
+
+const tracksData = computed(() =>
+    normalizeList(props.tracks)
+)
+
+const getTrackTitle = (track) =>
+    track?.translation?.name || ''
+
+const getTrackShort = (track) =>
+    track?.translation?.short || ''
+
+const getTrackDescription = (track) =>
+    track?.translation?.description || ''
+
+const getTrackSlug = (track) =>
+    track?.slug || ''
+
+/* ======================== SEO ======================== */
+
+const seoTitle = computed(() =>
+    props.seo?.title || t('learningCategories')
+)
+
+const seoDescription = computed(() =>
+    props.seo?.description || t('learningCategories')
+)
+
+const seoKeywords = computed(() =>
+    props.seo?.keywords || ''
+)
+
+const contentLocale = computed(() =>
+    props.locale || 'ru'
+)
+
+const ogLocale = computed(() =>
+    contentLocale.value === 'ru'
+        ? 'ru_RU'
+        : contentLocale.value
+)
+
+const canonicalUrl = computed(() =>
+    String(route('public.schoolTracks.index'))
+)
+
+const seoImage = computed(() => {
+    for (const track of tracksData.value) {
+        const images = Array.isArray(track?.images)
+            ? track.images
+            : []
+
+        const image = images[0]
+
+        const url =
+            image?.webp_url
+            || image?.image_url
+            || image?.thumb_url
+            || image?.url
+            || ''
+
+        if (url) return url
     }
 
-    if (leftExpanded || rightExpanded) {
-        return 3
-    }
-
-    return 4
+    return ''
 })
 
-/** Сохраняем состояние сайдбаров */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(
-        LEFT_SIDEBAR_KEY,
-        String(leftCollapsed.value)
-    )
+const dcSubject = computed(() =>
+    seoKeywords.value || seoTitle.value
+)
 
-    localStorage.setItem(
-        RIGHT_SIDEBAR_KEY,
-        String(rightCollapsed.value)
-    )
-})
+/* ======================== Filters ======================== */
 
-/* ===================== FILTERS ===================== */
-
-/** Поисковая строка */
 const q = ref(
     String(props.filters?.q ?? '')
 )
 
-/**
- * Сортировка по умолчанию.
- *
- * Совпадает с fallback контроллера:
- * publicSchoolTracksDefaultSort → sortAsc.
- */
 const DEFAULT_SORT = 'sortAsc'
 
-/** Текущая сортировка */
 const sort = ref(
     String(props.filters?.sort ?? DEFAULT_SORT)
 )
 
-/** Ключ режима отображения */
-const VIEW_KEY = 'public_school_tracks_view'
-
-/** Режим отображения */
-const viewMode = ref(
-    String(
-        props.filters?.view
-        || localStorage.getItem(VIEW_KEY)
-        || 'grid'
-    )
-)
-
-/** Сохраняем режим отображения */
-watch(viewMode, (value) => {
-    localStorage.setItem(VIEW_KEY, value)
-})
-
 /**
- * Количество треков на странице.
- *
- * Источник значения — backend:
- * PublicSettingsService → resolvePerPage() → filters.per_page.
- *
- * 12 используется только как аварийный fallback.
+ * Количество элементов приходит только
+ * от backend-настройки publicSchoolTracksPerPage.
  */
 const perPage = computed(() => {
-    const value = Number(props.filters?.per_page)
+    const value = Number(
+        props.filters?.per_page
+    )
 
     return Number.isFinite(value) && value > 0
         ? value
         : 12
 })
 
-/** Опции сортировки */
 const trackSortOptions = [
     { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
     { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
@@ -278,12 +284,262 @@ const trackSortOptions = [
     { value: 'dateAsc', label: t('sortOldestFirst') },
 ]
 
-/* ===================== FRONTEND MODE ===================== */
+/* ======================== View ======================== */
 
-/** Текущая frontend-страница */
+const VIEW_KEY = 'public_school_tracks_view'
+
+const viewMode = ref(
+    String(props.filters?.view || 'grid')
+)
+
+onMounted(() => {
+    try {
+        const storedView = localStorage.getItem(VIEW_KEY)
+
+        if (['grid', 'rows'].includes(storedView)) {
+            viewMode.value = storedView
+        }
+    } catch {
+        //
+    }
+})
+
+watch(viewMode, (value) => {
+    try {
+        localStorage.setItem(VIEW_KEY, value)
+    } catch {
+        //
+    }
+})
+
+/* ======================== Frontend search ======================== */
+
+const filteredTracks = computed(() => {
+    if (props.useServerProcessing) {
+        return tracksData.value
+    }
+
+    const query = normalizeText(q.value)
+
+    if (!query) {
+        return tracksData.value
+    }
+
+    return tracksData.value.filter((track) => {
+        const parentTitle =
+            track?.parent?.translation?.name
+            || track?.parent?.name
+            || ''
+
+        return [
+            track?.id,
+            getTrackTitle(track),
+            getTrackShort(track),
+            getTrackDescription(track),
+            getTrackSlug(track),
+            parentTitle,
+        ].some((value) =>
+            normalizeText(value).includes(query)
+        )
+    })
+})
+
+/* ======================== Frontend sort ======================== */
+
+const compareText = (a, b) =>
+    String(a ?? '').localeCompare(
+        String(b ?? ''),
+        props.locale,
+        { sensitivity: 'base' }
+    )
+
+const compareNumber = (a, b) =>
+    safeNumber(a) - safeNumber(b)
+
+const sortedTracks = computed(() => {
+    if (props.useServerProcessing) {
+        return filteredTracks.value
+    }
+
+    const list = [...filteredTracks.value]
+
+    switch (sort.value) {
+        case 'sortAsc':
+            list.sort((a, b) =>
+                compareNumber(a?.sort, b?.sort)
+                || compareNumber(b?.id, a?.id)
+            )
+            break
+
+        case 'sortDesc':
+            list.sort((a, b) =>
+                compareNumber(b?.sort, a?.sort)
+                || compareNumber(b?.id, a?.id)
+            )
+            break
+
+        case 'idAsc':
+            list.sort((a, b) =>
+                compareNumber(a?.id, b?.id)
+            )
+            break
+
+        case 'idDesc':
+            list.sort((a, b) =>
+                compareNumber(b?.id, a?.id)
+            )
+            break
+
+        case 'nameAsc':
+        case 'titleAsc':
+            list.sort((a, b) =>
+                compareText(
+                    getTrackTitle(a),
+                    getTrackTitle(b)
+                )
+            )
+            break
+
+        case 'nameDesc':
+        case 'titleDesc':
+            list.sort((a, b) =>
+                compareText(
+                    getTrackTitle(b),
+                    getTrackTitle(a)
+                )
+            )
+            break
+
+        case 'slugAsc':
+            list.sort((a, b) =>
+                compareText(
+                    getTrackSlug(a),
+                    getTrackSlug(b)
+                )
+            )
+            break
+
+        case 'slugDesc':
+            list.sort((a, b) =>
+                compareText(
+                    getTrackSlug(b),
+                    getTrackSlug(a)
+                )
+            )
+            break
+
+        case 'viewsAsc':
+            list.sort((a, b) =>
+                compareNumber(
+                    a?.views,
+                    b?.views
+                )
+            )
+            break
+
+        case 'viewsDesc':
+            list.sort((a, b) =>
+                compareNumber(
+                    b?.views,
+                    a?.views
+                )
+            )
+            break
+
+        case 'likesAsc':
+            list.sort((a, b) =>
+                compareNumber(
+                    a?.likes_count,
+                    b?.likes_count
+                )
+            )
+            break
+
+        case 'likesDesc':
+            list.sort((a, b) =>
+                compareNumber(
+                    b?.likes_count,
+                    a?.likes_count
+                )
+            )
+            break
+
+        case 'childrenAsc':
+            list.sort((a, b) =>
+                compareNumber(
+                    a?.children_count,
+                    b?.children_count
+                )
+            )
+            break
+
+        case 'childrenDesc':
+            list.sort((a, b) =>
+                compareNumber(
+                    b?.children_count,
+                    a?.children_count
+                )
+            )
+            break
+
+        case 'coursesAsc':
+            list.sort((a, b) =>
+                compareNumber(
+                    a?.courses_count,
+                    b?.courses_count
+                )
+            )
+            break
+
+        case 'coursesDesc':
+            list.sort((a, b) =>
+                compareNumber(
+                    b?.courses_count,
+                    a?.courses_count
+                )
+            )
+            break
+
+        case 'imagesAsc':
+            list.sort((a, b) =>
+                compareNumber(
+                    a?.images_count,
+                    b?.images_count
+                )
+            )
+            break
+
+        case 'imagesDesc':
+            list.sort((a, b) =>
+                compareNumber(
+                    b?.images_count,
+                    a?.images_count
+                )
+            )
+            break
+
+        case 'dateAsc':
+            list.sort((a, b) =>
+                safeDate(a?.created_at)
+                - safeDate(b?.created_at)
+            )
+            break
+
+        case 'dateDesc':
+            list.sort((a, b) =>
+                safeDate(b?.created_at)
+                - safeDate(a?.created_at)
+            )
+            break
+    }
+
+    return list
+})
+
+/* ======================== Frontend pagination ======================== */
+
 const frontendCurrentPage = ref(1)
 
-/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
     scrollToTarget,
@@ -292,194 +548,32 @@ const {
     duration: 1200,
 })
 
-/** Нормализация текста */
-const normalizeText = (value) => {
-    return String(value ?? '').toLowerCase()
-}
+watch([q, sort], () => {
+    if (!props.useServerProcessing) {
+        frontendCurrentPage.value = 1
+    }
+})
 
-/** Название трека */
-const getTrackTitle = (track) => {
-    return track?.title
-        || track?.name
-        || track?.translation?.title
-        || track?.translation?.name
-        || track?.current_translation?.title
-        || track?.current_translation?.name
-        || track?.translations?.[0]?.title
-        || track?.translations?.[0]?.name
-        || ''
-}
+watch(frontendCurrentPage, () => {
+    if (!props.useServerProcessing) {
+        scrollToTarget()
+    }
+})
 
-/** Краткий текст трека */
-const getTrackShort = (track) => {
-    return track?.short
-        || track?.description
-        || track?.translation?.short
-        || track?.translation?.description
-        || track?.current_translation?.short
-        || track?.current_translation?.description
-        || track?.translations?.[0]?.short
-        || track?.translations?.[0]?.description
-        || ''
-}
+const effectiveTracksFound = computed(() =>
+    props.useServerProcessing
+        ? Number(props.tracksFound ?? 0)
+        : sortedTracks.value.length
+)
 
-/** Slug трека */
-const getTrackSlug = (track) => {
-    return track?.slug
-        || track?.url
-        || track?.translation?.slug
-        || track?.current_translation?.slug
-        || track?.translations?.[0]?.slug
-        || ''
-}
-
-/** Локальный поиск */
-const filteredTracks = computed(() => {
-    const query = normalizeText(q.value).trim()
-
-    if (!query) {
+const frontendPaginatedTracks = computed(() => {
+    if (props.useServerProcessing) {
         return tracksData.value
     }
 
-    return tracksData.value.filter((track) => {
-        return [
-            getTrackTitle(track),
-            getTrackShort(track),
-            getTrackSlug(track),
-            track.owner?.name,
-            track.owner?.email,
-        ].some((value) => {
-            return normalizeText(value).includes(query)
-        })
-    })
-})
-
-/** Локальная сортировка */
-const sortedTracks = computed(() => {
-    const list = [...filteredTracks.value]
-
-    return list.sort((a, b) => {
-        switch (sort.value) {
-            case 'sortAsc':
-                return (a.sort ?? 0)
-                    - (b.sort ?? 0)
-
-            case 'sortDesc':
-                return (b.sort ?? 0)
-                    - (a.sort ?? 0)
-
-            case 'idAsc':
-                return (a.id ?? 0)
-                    - (b.id ?? 0)
-
-            case 'idDesc':
-                return (b.id ?? 0)
-                    - (a.id ?? 0)
-
-            case 'nameAsc':
-            case 'titleAsc':
-                return normalizeText(getTrackTitle(a))
-                    .localeCompare(
-                        normalizeText(getTrackTitle(b))
-                    )
-
-            case 'nameDesc':
-            case 'titleDesc':
-                return normalizeText(getTrackTitle(b))
-                    .localeCompare(
-                        normalizeText(getTrackTitle(a))
-                    )
-
-            case 'slugAsc':
-                return normalizeText(getTrackSlug(a))
-                    .localeCompare(
-                        normalizeText(getTrackSlug(b))
-                    )
-
-            case 'slugDesc':
-                return normalizeText(getTrackSlug(b))
-                    .localeCompare(
-                        normalizeText(getTrackSlug(a))
-                    )
-
-            case 'viewsAsc':
-                return (a.views ?? 0)
-                    - (b.views ?? 0)
-
-            case 'viewsDesc':
-                return (b.views ?? 0)
-                    - (a.views ?? 0)
-
-            case 'likesAsc':
-                return (a.likes_count ?? 0)
-                    - (b.likes_count ?? 0)
-
-            case 'likesDesc':
-                return (b.likes_count ?? 0)
-                    - (a.likes_count ?? 0)
-
-            case 'childrenAsc':
-                return (a.children_count ?? 0)
-                    - (b.children_count ?? 0)
-
-            case 'childrenDesc':
-                return (b.children_count ?? 0)
-                    - (a.children_count ?? 0)
-
-            case 'coursesAsc':
-                return (a.courses_count ?? 0)
-                    - (b.courses_count ?? 0)
-
-            case 'coursesDesc':
-                return (b.courses_count ?? 0)
-                    - (a.courses_count ?? 0)
-
-            case 'imagesAsc':
-                return (a.images_count ?? 0)
-                    - (b.images_count ?? 0)
-
-            case 'imagesDesc':
-                return (b.images_count ?? 0)
-                    - (a.images_count ?? 0)
-
-            case 'dateAsc':
-                return new Date(
-                    a.published_at
-                    ?? a.created_at
-                    ?? 0
-                ) - new Date(
-                    b.published_at
-                    ?? b.created_at
-                    ?? 0
-                )
-
-            case 'dateDesc':
-                return new Date(
-                    b.published_at
-                    ?? b.created_at
-                    ?? 0
-                ) - new Date(
-                    a.published_at
-                    ?? a.created_at
-                    ?? 0
-                )
-
-            default:
-                return 0
-        }
-    })
-})
-
-/**
- * Frontend-пагинация.
- *
- * Использует то же per_page,
- * которое определил backend.
- */
-const frontendPaginatedTracks = computed(() => {
-    const start = (
-        frontendCurrentPage.value - 1
-    ) * perPage.value
+    const start =
+        (frontendCurrentPage.value - 1)
+        * perPage.value
 
     return sortedTracks.value.slice(
         start,
@@ -487,57 +581,41 @@ const frontendPaginatedTracks = computed(() => {
     )
 })
 
-/** Сбрасываем frontend-пагинацию */
-watch([q, sort, viewMode], () => {
-    frontendCurrentPage.value = 1
-})
+const displayedTracks = computed(() =>
+    props.useServerProcessing
+        ? tracksData.value
+        : frontendPaginatedTracks.value
+)
 
-/** Скролл при frontend-пагинации */
-watch(frontendCurrentPage, () => {
-    if (!props.useServerProcessing) {
-        scrollToTarget()
-    }
-})
+/* ======================== Server pagination ======================== */
 
-/* ===================== SERVER MODE ===================== */
-
-/** Текущая server-страница */
-const currentPage = computed(() => {
-    return Number(
+const currentPage = computed(() =>
+    Number(
         props.tracks?.meta?.current_page
         ?? props.tracks?.current_page
         ?? 1
     ) || 1
-})
+)
 
-/** Последняя server-страница */
-const lastPage = computed(() => {
-    return Number(
+const lastPage = computed(() =>
+    Number(
         props.tracks?.meta?.last_page
         ?? props.tracks?.last_page
         ?? 1
     ) || 1
-})
+)
 
-/** Маршрут списка треков */
-const indexRoute = () => {
-    return route('public.schoolTracks.index')
-}
+const reloadTracks = (pageNumber = 1) => {
+    if (!props.useServerProcessing) {
+        return
+    }
 
-/**
- * Server-загрузка треков.
- *
- * per_page намеренно не отправляем.
- * Его всегда определяет backend через PublicSettingsService.
- */
-const reloadTracks = (page = 1) => {
     router.get(
-        indexRoute(),
+        route('public.schoolTracks.index'),
         {
             q: q.value || undefined,
             sort: sort.value || undefined,
-            view: viewMode.value || undefined,
-            page,
+            page: pageNumber,
         },
         {
             preserveState: true,
@@ -547,220 +625,523 @@ const reloadTracks = (page = 1) => {
     )
 }
 
-/** Server-поиск */
-const submitSearch = () => {
-    reloadTracks(1)
-}
-
-/** Сброс поиска и сортировки */
-const resetSearch = () => {
-    q.value = ''
-    sort.value = DEFAULT_SORT
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing) {
-        reloadTracks(1)
-    }
-}
-
-/** Server-изменение сортировки */
-const updateSort = (value) => {
-    sort.value = value || DEFAULT_SORT
-
-    if (props.useServerProcessing) {
-        reloadTracks(1)
-    }
-}
-
-/** Изменение режима отображения */
-const updateViewMode = (value) => {
-    viewMode.value = value || 'grid'
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing) {
-        reloadTracks(1)
-    }
-}
-
-/** Server-переход на страницу */
-const goToPage = (page) => {
-    const value = Number(page)
-
-    if (!Number.isFinite(value)) {
-        return
-    }
-
-    const safePage = Math.max(
-        1,
-        Math.min(value, lastPage.value)
+const goToPage = (pageNumber) => {
+    const target = Math.min(
+        Math.max(
+            1,
+            Number(pageNumber) || 1
+        ),
+        lastPage.value
     )
 
-    reloadTracks(safePage)
+    reloadTracks(target)
 }
 
-/** Предыдущая server-страница */
 const goPrev = () => {
-    if (currentPage.value <= 1) {
-        return
+    if (currentPage.value > 1) {
+        goToPage(
+            currentPage.value - 1
+        )
     }
-
-    goToPage(currentPage.value - 1)
 }
 
-/** Следующая server-страница */
 const goNext = () => {
-    if (currentPage.value >= lastPage.value) {
-        return
+    if (currentPage.value < lastPage.value) {
+        goToPage(
+            currentPage.value + 1
+        )
     }
-
-    goToPage(currentPage.value + 1)
 }
 
-/* ===================== COMMON VIEW ===================== */
+/* ======================== Toolbar ======================== */
 
-/** Итоговый список треков */
-const displayedTracks = computed(() => {
-    return props.useServerProcessing
-        ? tracksData.value
-        : frontendPaginatedTracks.value
+const applyFilters = () => {
+    if (props.useServerProcessing) {
+        reloadTracks(1)
+    } else {
+        frontendCurrentPage.value = 1
+    }
+}
+
+const resetFilters = () => {
+    if (props.useServerProcessing) {
+        reloadTracks(1)
+    } else {
+        frontendCurrentPage.value = 1
+    }
+}
+
+/* ======================== Sidebars ======================== */
+
+const settingEnabled = (
+    value,
+    defaultValue = true
+) => {
+    if (
+        value === undefined
+        || value === null
+        || value === ''
+    ) {
+        return defaultValue
+    }
+
+    if (typeof value === 'boolean') {
+        return value
+    }
+
+    return String(value) === 'true'
+}
+
+const showLeft = computed(() =>
+    settingEnabled(
+        siteSettings.value?.ViewLeftColumn,
+        true
+    )
+)
+
+const showRight = computed(() =>
+    settingEnabled(
+        siteSettings.value?.ViewRightColumn,
+        true
+    )
+)
+
+const LEFT_SIDEBAR_KEY =
+    'public_left_sidebar_collapsed'
+
+const RIGHT_SIDEBAR_KEY =
+    'public_right_sidebar_collapsed'
+
+const leftCollapsed = ref(true)
+const rightCollapsed = ref(true)
+
+const readStoredBoolean = (
+    key,
+    fallback = true
+) => {
+    try {
+        const value = localStorage.getItem(key)
+
+        return value === null
+            ? fallback
+            : value === 'true'
+    } catch {
+        return fallback
+    }
+}
+
+const writeStoredBoolean = (
+    key,
+    value
+) => {
+    try {
+        localStorage.setItem(
+            key,
+            String(Boolean(value))
+        )
+    } catch {
+        //
+    }
+}
+
+onMounted(() => {
+    leftCollapsed.value =
+        readStoredBoolean(
+            LEFT_SIDEBAR_KEY,
+            true
+        )
+
+    rightCollapsed.value =
+        readStoredBoolean(
+            RIGHT_SIDEBAR_KEY,
+            true
+        )
 })
 
-/** Видео внизу страницы */
-const mainVideosList = computed(() => {
-    return normalizeList(props.mainVideos)
-})
+const setLeftCollapsed = (value) => {
+    leftCollapsed.value =
+        Boolean(value)
 
-/** Баннеры внизу страницы */
-const mainBannersList = computed(() => {
-    return normalizeList(props.mainBanners)
+    writeStoredBoolean(
+        LEFT_SIDEBAR_KEY,
+        leftCollapsed.value
+    )
+}
+
+const setRightCollapsed = (value) => {
+    rightCollapsed.value =
+        Boolean(value)
+
+    writeStoredBoolean(
+        RIGHT_SIDEBAR_KEY,
+        rightCollapsed.value
+    )
+}
+
+/**
+ * Оба открыты  → 2.
+ * Один открыт  → 3.
+ * Оба закрыты  → 4.
+ */
+const trackGridCols = computed(() => {
+    const leftExpanded =
+        showLeft.value
+        && !leftCollapsed.value
+
+    const rightExpanded =
+        showRight.value
+        && !rightCollapsed.value
+
+    if (leftExpanded && rightExpanded) {
+        return 2
+    }
+
+    if (leftExpanded || rightExpanded) {
+        return 3
+    }
+
+    return 4
 })
 </script>
 
 <template>
-    <!-- SEO -->
     <Head>
-        <title>{{ seo?.title || t('learningCategories') }}</title>
+        <!-- Основные SEO -->
+        <title>{{ seoTitle }}</title>
 
-        <meta name="title" :content="seo?.title || t('learningCategories')" />
-        <meta name="keywords" :content="seo?.keywords || ''" />
-        <meta name="description" :content="seo?.description || t('learningCategories')" />
+        <meta
+            name="title"
+            :content="seoTitle"
+        >
 
-        <meta property="og:title" :content="seo?.title || t('learningCategories')" />
-        <meta property="og:description" :content="seo?.description || t('learningCategories')" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" :content="`/${locale}/school/tracks`" />
-        <meta property="og:image" content="" />
-        <meta property="og:locale" :content="locale === 'ru' ? 'ru_RU' : locale" />
+        <meta
+            v-if="seoDescription"
+            name="description"
+            :content="seoDescription"
+        >
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="seo?.title || t('learningCategories')" />
-        <meta name="twitter:description" :content="seo?.description || t('learningCategories')" />
-        <meta name="twitter:image" content="" />
+        <meta
+            v-if="seoKeywords"
+            name="keywords"
+            :content="seoKeywords"
+        >
 
-        <meta name="DC.title" :content="seo?.title || t('learningCategories')" />
-        <meta name="DC.description" :content="seo?.description || t('learningCategories')" />
-        <meta name="DC.identifier" :content="`/${locale}/school/tracks`" />
-        <meta name="DC.language" :content="locale" />
+        <meta
+            name="robots"
+            content="index, follow, max-image-preview:large"
+        >
+
+        <!-- Canonical -->
+        <link
+            rel="canonical"
+            :href="canonicalUrl"
+        >
+
+        <!-- Open Graph -->
+        <meta
+            property="og:type"
+            content="website"
+        >
+
+        <meta
+            property="og:title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            property="og:description"
+            :content="seoDescription"
+        >
+
+        <meta
+            property="og:url"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            property="og:locale"
+            :content="ogLocale"
+        >
+
+        <meta
+            v-if="seoImage"
+            property="og:image"
+            :content="seoImage"
+        >
+
+        <!-- Twitter / X -->
+        <meta
+            name="twitter:card"
+            :content="
+                seoImage
+                    ? 'summary_large_image'
+                    : 'summary'
+            "
+        >
+
+        <meta
+            name="twitter:title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            name="twitter:description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="seoImage"
+            name="twitter:image"
+            :content="seoImage"
+        >
+
+        <!-- Dublin Core -->
+        <meta
+            name="DC.title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            name="DC.description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="dcSubject"
+            name="DC.subject"
+            :content="dcSubject"
+        >
+
+        <meta
+            name="DC.language"
+            :content="contentLocale"
+        >
+
+        <meta
+            name="DC.identifier"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            name="DC.type"
+            content="Collection"
+        >
+
+        <meta
+            name="DC.format"
+            content="text/html"
+        >
     </Head>
 
-    <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
-        <!-- Шапка -->
+    <DefaultLayout
+        :title="title"
+        :can-login="canLogin"
+        :can-register="canRegister"
+    >
         <Navbar />
 
         <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-                <!-- LEFT -->
+
+                <!-- Left sidebar -->
                 <aside
                     v-if="showLeft"
                     class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+                    :class="
+                        leftCollapsed
+                            ? 'lg:w-10'
+                            : 'lg:w-64'
+                    "
                 >
                     <LeftSidebarSchool
                         :track-tree="trackTree"
                         :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
+                        @collapsed="setLeftCollapsed"
                     />
                 </aside>
 
-                <!-- CENTER -->
-                <div class="w-full lg:mt-28 pb-6 slate-1">
+                <!-- Content -->
+                <article
+                    itemscope
+                    itemtype="https://schema.org/CollectionPage"
+                    :itemid="canonicalUrl"
+                    class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
+                >
+                    <!-- Schema.org -->
+                    <meta
+                        itemprop="name"
+                        :content="seoTitle"
+                    >
+
+                    <meta
+                        v-if="seoDescription"
+                        itemprop="description"
+                        :content="seoDescription"
+                    >
+
+                    <meta
+                        v-if="seoKeywords"
+                        itemprop="keywords"
+                        :content="seoKeywords"
+                    >
+
+                    <meta
+                        itemprop="url"
+                        :content="canonicalUrl"
+                    >
+
+                    <meta
+                        itemprop="inLanguage"
+                        :content="contentLocale"
+                    >
+
                     <div class="mx-auto max-w-6xl">
 
-                        <!-- Хлебные крошки -->
-                        <nav class="text-sm" aria-label="Breadcrumb">
+                        <!-- Breadcrumbs -->
+                        <nav
+                            class="text-sm"
+                            aria-label="Breadcrumb"
+                            itemscope
+                            itemtype="https://schema.org/BreadcrumbList"
+                        >
                             <ol class="flex flex-wrap items-center font-semibold">
-                                <li>
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                >
                                     <Link
+                                        itemprop="item"
                                         :href="route('home')"
                                         class="breadcrumb-link hover:underline"
                                     >
-                                        {{ t('home') }}
+                                        <span itemprop="name">
+                                            {{ t('home') }}
+                                        </span>
                                     </Link>
+
+                                    <meta
+                                        itemprop="position"
+                                        content="1"
+                                    >
                                 </li>
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
-                                <li class="breadcrumbs">
-                                    {{ t('tracks') }}
+
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                >
+                                    <span class="mx-2 breadcrumbs">
+                                        /
+                                    </span>
+
+                                    <Link
+                                        itemprop="item"
+                                        :href="route('public.schoolInstructors.index')"
+                                        class="breadcrumb-link hover:underline"
+                                    >
+                                        <span itemprop="name">
+                                            {{ t('instructors') }}
+                                        </span>
+                                    </Link>
+
+                                    <meta
+                                        itemprop="position"
+                                        content="2"
+                                    >
+                                </li>
+
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                    aria-current="page"
+                                >
+                                    <span class="mx-2 breadcrumbs">
+                                        /
+                                    </span>
+
+                                    <span
+                                        itemprop="name"
+                                        class="breadcrumbs"
+                                    >
+                                        {{ t('tracks') }}
+                                    </span>
+
+                                    <meta
+                                        itemprop="item"
+                                        :content="canonicalUrl"
+                                    >
+
+                                    <meta
+                                        itemprop="position"
+                                        content="3"
+                                    >
                                 </li>
                             </ol>
                         </nav>
 
-                        <!-- Заголовок -->
-                        <div class="my-3 flex flex-wrap
-                                    items-center justify-center gap-3 title">
-                            <svg class="shrink-0 h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
-                                 fill="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path d="M23.58.424A1,1,0,0,0,22.819.13C8.791.862,3.609,13.358,3.559,13.484a1,1,0,0,0,.22,1.08l5.657,5.657a1,1,0,0,0,1.085.218c.125-.051,12.554-5.291,13.348-19.253A1,1,0,0,0,23.58.424Zm-8.166,10.99a2,2,0,1,1,0-2.828A2,2,0,0,1,15.414,11.414Z"></path>
-                                <path d="M1.113,18.844a2.844,2.844,0,1,1,4.022,4.022C4.024,23.977,0,24,0,24S0,19.954,1.113,18.844Z"></path>
-                                <path d="M10.357,2.341A8.911,8.911,0,0,0,2.522,4.825a9.084,9.084,0,0,0-1.384,1.8,1,1,0,0,0,.155,1.215l1.989,1.99A26.623,26.623,0,0,1,10.357,2.341Z"></path>
-                                <path d="M21.659,13.643a8.911,8.911,0,0,1-2.484,7.835,9.084,9.084,0,0,1-1.8,1.384,1,1,0,0,1-1.215-.155l-1.99-1.989A26.623,26.623,0,0,0,21.659,13.643Z"></path>
+                        <!-- Header -->
+                        <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
+                            <svg
+                                class="shrink-0 h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M23.58.424A1,1,0,0,0,22.819.13C8.791.862,3.609,13.358,3.559,13.484a1,1,0,0,0,.22,1.08l5.657,5.657a1,1,0,0,0,1.085.218c.125-.051,12.554-5.291,13.348-19.253A1,1,0,0,0,23.58.424Zm-8.166,10.99a2,2,0,1,1,0-2.828A2,2,0,0,1,15.414,11.414Z"
+                                />
+                                <path
+                                    d="M1.113,18.844a2.844,2.844,0,1,1,4.022,4.022C4.024,23.977,0,24,0,24S0,19.954,1.113,18.844Z"
+                                />
+                                <path
+                                    d="M10.357,2.341A8.911,8.911,0,0,0,2.522,4.825a9.084,9.084,0,0,0-1.384,1.8,1,1,0,0,0,.155,1.215l1.989,1.99A26.623,26.623,0,0,1,10.357,2.341Z"
+                                />
+                                <path
+                                    d="M21.659,13.643a8.911,8.911,0,0,1-2.484,7.835,9.084,9.084,0,0,1-1.8,1.384,1,1,0,0,1-1.215-.155l-1.99-1.989A26.623,26.623,0,0,0,21.659,13.643Z"
+                                />
                             </svg>
-                            <h1 class="text-2xl font-bold">
+
+                            <h1
+                                itemprop="headline"
+                                class="text-2xl font-bold"
+                            >
                                 {{ t('tracks') }}
                             </h1>
                         </div>
 
-                        <!-- Подзаголовок -->
-                        <div class="my-1 text-sm subtitle text-center">
-                            Изучите краткое содержание каждого трека и выберите путь,
-                            который соответствует вашим целям и интересам в IT-сфере
+                        <!-- Description -->
+                        <div
+                            v-if="seoDescription"
+                            itemprop="abstract"
+                            class="my-1 text-sm subtitle text-center"
+                        >
+                            {{ seoDescription }}
                         </div>
 
-                        <!-- Поиск, количество, сортировка, вид -->
+                        <!-- Toolbar -->
                         <EntityPageToolbar
-                            v-if="useServerProcessing"
                             v-model="q"
-                            :found="tracksFound"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
+                            v-model:view-mode="viewMode"
+                            v-model:sort-value="sort"
+                            :found="effectiveTracksFound"
                             :sort-options="trackSortOptions"
                             :default-sort="DEFAULT_SORT"
                             :found-label="t('tracks')"
                             :search-placeholder="t('searchByName')"
-                            @submit="submitSearch"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
-
-                        <FrontendEntityPageToolbar
-                            v-else
-                            v-model="q"
-                            :found="sortedTracks.length"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="trackSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('tracks')"
-                            :search-placeholder="t('searchByName')"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
+                            @submit="applyFilters"
+                            @reset="resetFilters"
                         />
 
                         <div ref="scrollTarget"></div>
 
-                        <!-- Нет данных -->
+                        <!-- Empty -->
                         <div
                             v-if="displayedTracks.length === 0"
                             class="mt-6 text-center text-slate-700 dark:text-slate-300"
@@ -768,7 +1149,7 @@ const mainBannersList = computed(() => {
                             {{ t('noData') }}
                         </div>
 
-                        <!-- Показ grid/rows -->
+                        <!-- Tracks -->
                         <div v-else>
                             <TrackGrid
                                 v-if="viewMode === 'grid'"
@@ -782,9 +1163,9 @@ const mainBannersList = computed(() => {
                             />
                         </div>
 
-                        <!-- Пагинация -->
+                        <!-- Server pagination -->
                         <Pagination
-                            v-if="useServerProcessing"
+                            v-if="useServerProcessing && lastPage > 1"
                             :current-page="currentPage"
                             :last-page="lastPage"
                             :found="tracksFound"
@@ -793,38 +1174,47 @@ const mainBannersList = computed(() => {
                             @go="goToPage"
                         />
 
+                        <!-- Frontend pagination -->
                         <FrontendPagination
-                            v-else
+                            v-if="!useServerProcessing && effectiveTracksFound > perPage"
                             v-model:currentPage="frontendCurrentPage"
                             :items-per-page="perPage"
-                            :total-items="sortedTracks.length"
+                            :total-items="effectiveTracksFound"
                         />
 
-                        <!-- Главные видео, баннеры -->
-                        <SectionVideoList :videos="mainVideos" />
-                        <SectionBanners :banners="mainBanners" />
-                    </div>
-                </div>
+                        <!-- Main content -->
+                        <SectionVideoList
+                            :videos="mainVideos"
+                        />
 
-                <!-- RIGHT -->
+                        <SectionBanners
+                            :banners="mainBanners"
+                        />
+                    </div>
+                </article>
+
+                <!-- Right sidebar -->
                 <aside
                     v-if="showRight"
                     class="shrink-0 lg:mt-28 transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
+                    :class="
+                        rightCollapsed
+                            ? 'lg:w-10'
+                            : 'lg:w-64'
+                    "
                 >
                     <RightSidebarSchool
                         :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
+                        @collapsed="setRightCollapsed"
                     />
                 </aside>
             </main>
         </div>
 
-        <!-- Подвал и кнопка с прогрессом -->
         <FooterBlog />
         <Progress />
 
-        <!-- Нижняя панель администратора -->
+        <!-- Admin bottom panel -->
         <PublicAdminBottomPanel
             v-if="isAdmin"
             setting-key="publicSchoolTracksProcessingMode"

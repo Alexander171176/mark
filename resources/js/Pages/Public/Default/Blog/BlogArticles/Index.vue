@@ -6,7 +6,7 @@
  * @author Александр
  */
 
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
@@ -14,24 +14,27 @@ import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 import DefaultLayout from '@/Layouts/DefaultLayout.vue'
 import Navbar from '@/Partials/Default/Navbar.vue'
 import FooterBlog from '@/Partials/Default/FooterBlog.vue'
+
 import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebar from '@/Components/Public/Default/Partials/LeftSidebar.vue'
 import RightSidebar from '@/Components/Public/Default/Partials/RightSidebar.vue'
+
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
-import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
-import RubricArticleGrid from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleGrid.vue'
-import RubricArticleRows from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleRows.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
 import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
+
+import RubricArticleGrid from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleGrid.vue'
+import RubricArticleRows from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleRows.vue'
+
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
-import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
+
+import PublicAdminBottomPanel
+    from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
+const page = usePage()
 
-/* ===================== PROPS ===================== */
-
-/** Props страницы */
 const props = defineProps({
     locale: { type: String, default: 'ru' },
 
@@ -44,189 +47,237 @@ const props = defineProps({
         }),
     },
 
-    useServerProcessing: { type: Boolean, default: false },
-    publicBlogArticlesProcessingMode: { type: String, default: 'server' },
+    publicBlogArticlesProcessingMode: {
+        type: String,
+        default: 'server',
+    },
+
+    useServerProcessing: {
+        type: Boolean,
+        default: false,
+    },
 
     title: { type: String, default: '' },
     canLogin: { type: Boolean, default: false },
     canRegister: { type: Boolean, default: false },
 
-    rubricTree: { type: Array, default: () => [] },
+    rubricTree: {
+        type: Array,
+        default: () => [],
+    },
 
-    articles: { type: [Array, Object], default: () => [] },
-    articlesCount: { type: Number, default: 0 },
-    articlesFound: { type: Number, default: 0 },
+    articles: {
+        type: [Array, Object],
+        default: () => [],
+    },
 
-    filters: { type: Object, default: () => ({}) },
+    articlesCount: {
+        type: Number,
+        default: 0,
+    },
 
-    tags: { type: Array, default: () => [] },
-    mainVideos: { type: [Array, Object], default: () => [] },
-    mainBanners: { type: [Array, Object], default: () => [] },
+    articlesFound: {
+        type: Number,
+        default: 0,
+    },
+
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+
+    mainVideos: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    mainBanners: {
+        type: [Array, Object],
+        default: () => [],
+    },
 })
 
-/* ===================== PAGE ===================== */
+/* ======================== Helpers ======================== */
 
-/** Глобальные данные страницы */
-const page = usePage()
-
-/** Глобальные настройки сайта */
-const siteSettings = page.props?.siteSettings || {}
-
-/** Роль администратора */
-const isAdmin = computed(() => page.props?.isAdmin === true)
-
-/** Дерево рубрик */
-const rubricTree = computed(() => {
-    return Array.isArray(props.rubricTree)
-        ? props.rubricTree
-        : []
-})
-
-/* ===================== ARTICLES DATA ===================== */
-
-/** Универсальный список статей */
-const articlesData = computed(() => {
-    if (Array.isArray(props.articles)) {
-        return props.articles
-    }
-
-    if (Array.isArray(props.articles?.data)) {
-        return props.articles.data
-    }
+const normalizeList = (value) => {
+    if (Array.isArray(value)) return value
+    if (Array.isArray(value?.data)) return value.data
 
     return []
-})
-
-/* ===================== SIDEBARS ===================== */
-
-/** Показ левой колонки */
-const showLeft = computed(() => {
-    return !siteSettings?.ViewLeftColumn
-        || siteSettings.ViewLeftColumn === 'true'
-})
-
-/** Показ правой колонки */
-const showRight = computed(() => {
-    return !siteSettings?.ViewRightColumn
-        || siteSettings.ViewRightColumn === 'true'
-})
-
-/** Ключ левого сайдбара */
-const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
-
-/** Ключ правого сайдбара */
-const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
-
-/** Получение boolean из localStorage */
-const getStoredBoolean = (key, defaultValue = true) => {
-    const value = localStorage.getItem(key)
-
-    if (value === null) {
-        return defaultValue
-    }
-
-    return value === 'true'
 }
 
-/** Левый сайдбар по умолчанию свернут */
-const leftCollapsed = ref(
-    getStoredBoolean(LEFT_SIDEBAR_KEY, true)
+const normalizeText = (value) =>
+    String(value ?? '').trim().toLocaleLowerCase()
+
+const safeNumber = (value) => {
+    const number = Number(value)
+
+    return Number.isFinite(number)
+        ? number
+        : 0
+}
+
+const safeDate = (value) => {
+    const time = value
+        ? Date.parse(value)
+        : 0
+
+    return Number.isFinite(time)
+        ? time
+        : 0
+}
+
+/* ======================== Shared data ======================== */
+
+const siteSettings = computed(() =>
+    page.props?.siteSettings ?? {}
 )
 
-/** Правый сайдбар по умолчанию свернут */
-const rightCollapsed = ref(
-    getStoredBoolean(RIGHT_SIDEBAR_KEY, true)
+const isAdmin = computed(() =>
+    page.props?.isAdmin === true
+)
+
+const rubricTree = computed(() =>
+    Array.isArray(props.rubricTree)
+        ? props.rubricTree
+        : []
+)
+
+const articlesData = computed(() =>
+    normalizeList(props.articles)
+)
+
+const mainVideos = computed(() =>
+    normalizeList(props.mainVideos)
+)
+
+const mainBanners = computed(() =>
+    normalizeList(props.mainBanners)
+)
+
+/* ======================== Article helpers ======================== */
+
+const getArticleTitle = (article) =>
+    article?.translation?.title || ''
+
+const getArticleSubtitle = (article) =>
+    article?.translation?.subtitle || ''
+
+const getArticleShort = (article) =>
+    article?.translation?.short || ''
+
+const getArticleDescription = (article) =>
+    article?.translation?.description || ''
+
+const getArticleAuthor = (article) =>
+    article?.translation?.pseudonym
+    || article?.owner?.name
+    || ''
+
+/* ======================== SEO ======================== */
+
+const seoTitle = computed(() =>
+    props.seo?.title
+    || t('articles')
+)
+
+const seoDescription = computed(() =>
+    props.seo?.description
+    || ''
+)
+
+const seoKeywords = computed(() =>
+    props.seo?.keywords
+    || ''
+)
+
+const contentLocale = computed(() =>
+    props.locale || 'ru'
+)
+
+const ogLocale = computed(() =>
+    contentLocale.value === 'ru'
+        ? 'ru_RU'
+        : contentLocale.value
+)
+
+const canonicalUrl = computed(() =>
+    String(
+        route('public.blogArticles.index')
+    )
+)
+
+const dcSubject = computed(() =>
+    seoKeywords.value
+    || seoTitle.value
 )
 
 /**
- * Количество колонок сетки.
- *
- * Оба открыты  → 2.
- * Один свернут → 3.
- * Оба свернуты → 4.
- *
- * Количество статей при этом не меняется.
+ * Для Index используем первое доступное
+ * изображение статьи как social preview.
  */
-const articleGridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
+const seoImage = computed(() => {
+    for (const article of articlesData.value) {
+        const images = normalizeList(
+            article?.images
+        )
 
-    if (leftExpanded && rightExpanded) {
-        return 2
+        const image = images[0]
+
+        const url =
+            image?.webp_url
+            || image?.image_url
+            || image?.thumb_url
+            || image?.url
+            || ''
+
+        if (url) {
+            return url
+        }
     }
 
-    if (leftExpanded || rightExpanded) {
-        return 3
-    }
-
-    return 4
+    return ''
 })
 
-/** Сохраняем состояние сайдбаров */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(
-        LEFT_SIDEBAR_KEY,
-        String(leftCollapsed.value)
-    )
+/* ======================== Filters ======================== */
 
-    localStorage.setItem(
-        RIGHT_SIDEBAR_KEY,
-        String(rightCollapsed.value)
-    )
-})
-
-/* ===================== FILTERS ===================== */
-
-/** Поисковая строка */
 const q = ref(
-    String(props.filters?.q ?? '')
+    String(
+        props.filters?.q
+        ?? ''
+    )
 )
 
-/** Сортировка по умолчанию */
 const DEFAULT_SORT = 'sortAsc'
 
-/** Текущая сортировка */
 const sort = ref(
-    String(props.filters?.sort ?? DEFAULT_SORT)
-)
-
-/** Ключ режима отображения */
-const VIEW_KEY = 'public_blog_articles_view'
-
-/** Режим отображения */
-const viewMode = ref(
     String(
-        props.filters?.view
-        || localStorage.getItem(VIEW_KEY)
-        || 'grid'
+        props.filters?.sort
+        ?? DEFAULT_SORT
     )
 )
 
-/** Сохраняем режим отображения */
-watch(viewMode, (value) => {
-    localStorage.setItem(VIEW_KEY, value)
-})
-
 /**
- * Количество статей на странице.
- *
- * Источник значения — backend:
- * PublicSettingsService → resolvePerPage() → filters.per_page.
- *
- * 12 используется только как аварийный fallback.
+ * Единственный источник истины —
+ * backend PublicSettingsService.
  */
 const perPage = computed(() => {
-    const value = Number(props.filters?.per_page)
+    const value = Number(
+        props.filters?.per_page
+    )
 
-    return Number.isFinite(value) && value > 0
+    return Number.isFinite(value)
+    && value > 0
         ? value
         : 12
 })
 
-/** Опции сортировки */
 const articleSortOptions = [
     { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
     { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+
+    { value: 'idDesc', label: t('idDesc') },
+    { value: 'idAsc', label: t('idAsc') },
 
     { value: 'titleAsc', label: `${t('title')} A→Z` },
     { value: 'titleDesc', label: `${t('title')} Z→A` },
@@ -241,12 +292,224 @@ const articleSortOptions = [
     { value: 'dateAsc', label: `${t('publishedAt')} ↑` },
 ]
 
-/* ===================== FRONTEND MODE ===================== */
+/* ======================== View mode ======================== */
 
-/** Текущая frontend-страница */
+const VIEW_KEY =
+    'public_blog_articles_view'
+
+const viewMode = ref(
+    String(
+        props.filters?.view
+        || 'grid'
+    )
+)
+
+/**
+ * localStorage читаем только после mount.
+ *
+ * Именно это даёт тот же аккуратный
+ * client-side эффект, что и у сайдбаров.
+ */
+onMounted(() => {
+    try {
+        const storedView =
+            localStorage.getItem(VIEW_KEY)
+
+        if (
+            storedView === 'grid'
+            || storedView === 'rows'
+        ) {
+            viewMode.value = storedView
+        }
+    } catch {
+        //
+    }
+})
+
+watch(
+    viewMode,
+    (value) => {
+        try {
+            localStorage.setItem(
+                VIEW_KEY,
+                value
+            )
+        } catch {
+            //
+        }
+    }
+)
+
+/* ======================== Frontend search ======================== */
+
+const filteredArticles = computed(() => {
+    if (props.useServerProcessing) {
+        return articlesData.value
+    }
+
+    const query =
+        normalizeText(q.value)
+
+    if (!query) {
+        return articlesData.value
+    }
+
+    return articlesData.value.filter(
+        (article) => {
+            return [
+                article?.id,
+                getArticleTitle(article),
+                getArticleSubtitle(article),
+                getArticleShort(article),
+                getArticleDescription(article),
+                article?.url,
+                getArticleAuthor(article),
+                article?.owner?.name,
+            ].some((value) =>
+                normalizeText(value).includes(query)
+            )
+        }
+    )
+})
+
+/* ======================== Frontend sort ======================== */
+
+const compareText = (a, b) =>
+    String(a ?? '').localeCompare(
+        String(b ?? ''),
+        props.locale,
+        { sensitivity: 'base' }
+    )
+
+const compareNumber = (a, b) =>
+    safeNumber(a) - safeNumber(b)
+
+const sortedArticles = computed(() => {
+    if (props.useServerProcessing) {
+        return filteredArticles.value
+    }
+
+    const list = [
+        ...filteredArticles.value,
+    ]
+
+    switch (sort.value) {
+        case 'sortAsc':
+            list.sort((a, b) =>
+                compareNumber(a?.sort, b?.sort)
+                || compareNumber(a?.id, b?.id)
+            )
+            break
+
+        case 'sortDesc':
+            list.sort((a, b) =>
+                compareNumber(b?.sort, a?.sort)
+                || compareNumber(b?.id, a?.id)
+            )
+            break
+
+        case 'idAsc':
+            list.sort((a, b) =>
+                compareNumber(a?.id, b?.id)
+            )
+            break
+
+        case 'idDesc':
+            list.sort((a, b) =>
+                compareNumber(b?.id, a?.id)
+            )
+            break
+
+        case 'titleAsc':
+            list.sort((a, b) =>
+                compareText(
+                    getArticleTitle(a),
+                    getArticleTitle(b)
+                )
+            )
+            break
+
+        case 'titleDesc':
+            list.sort((a, b) =>
+                compareText(
+                    getArticleTitle(b),
+                    getArticleTitle(a)
+                )
+            )
+            break
+
+        case 'viewsAsc':
+            list.sort((a, b) =>
+                compareNumber(
+                    a?.views,
+                    b?.views
+                )
+            )
+            break
+
+        case 'viewsDesc':
+            list.sort((a, b) =>
+                compareNumber(
+                    b?.views,
+                    a?.views
+                )
+            )
+            break
+
+        case 'likesAsc':
+            list.sort((a, b) =>
+                compareNumber(
+                    a?.likes_count,
+                    b?.likes_count
+                )
+            )
+            break
+
+        case 'likesDesc':
+            list.sort((a, b) =>
+                compareNumber(
+                    b?.likes_count,
+                    a?.likes_count
+                )
+            )
+            break
+
+        case 'dateAsc':
+            list.sort((a, b) =>
+                safeDate(
+                    a?.published_at
+                    || a?.created_at
+                )
+                -
+                safeDate(
+                    b?.published_at
+                    || b?.created_at
+                )
+            )
+            break
+
+        case 'dateDesc':
+            list.sort((a, b) =>
+                safeDate(
+                    b?.published_at
+                    || b?.created_at
+                )
+                -
+                safeDate(
+                    a?.published_at
+                    || a?.created_at
+                )
+            )
+            break
+    }
+
+    return list
+})
+
+/* ======================== Frontend pagination ======================== */
+
 const frontendCurrentPage = ref(1)
 
-/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
     scrollToTarget,
@@ -255,102 +518,41 @@ const {
     duration: 1200,
 })
 
-/** Нормализация текста */
-const normalizeText = (value) => {
-    return String(value ?? '').toLowerCase()
-}
+watch(
+    [q, sort],
+    () => {
+        if (!props.useServerProcessing) {
+            frontendCurrentPage.value = 1
+        }
+    }
+)
 
-/** Название статьи */
-const getArticleTitle = (article) => {
-    return article?.translation?.title || ''
-}
+watch(
+    frontendCurrentPage,
+    () => {
+        if (!props.useServerProcessing) {
+            scrollToTarget()
+        }
+    }
+)
 
-/** Краткий текст статьи */
-const getArticleShort = (article) => {
-    return article?.translation?.short || ''
-}
+const effectiveArticlesFound = computed(() =>
+    props.useServerProcessing
+        ? safeNumber(
+            props.articlesFound
+        )
+        : sortedArticles.value.length
+)
 
-/** Локальный поиск */
-const filteredArticles = computed(() => {
-    const query = normalizeText(q.value).trim()
-
-    if (!query) {
+const frontendPaginatedArticles = computed(() => {
+    if (props.useServerProcessing) {
         return articlesData.value
     }
 
-    return articlesData.value.filter((article) => {
-        return [
-            getArticleTitle(article),
-            getArticleShort(article),
-            article.url,
-            article.owner?.name,
-            article.owner?.email,
-        ].some((value) => {
-            return normalizeText(value).includes(query)
-        })
-    })
-})
-
-/** Локальная сортировка */
-const sortedArticles = computed(() => {
-    const list = [...filteredArticles.value]
-
-    return list.sort((a, b) => {
-        switch (sort.value) {
-            case 'sortAsc':
-                return (a.sort ?? 0) - (b.sort ?? 0)
-
-            case 'sortDesc':
-                return (b.sort ?? 0) - (a.sort ?? 0)
-
-            case 'titleAsc':
-                return normalizeText(getArticleTitle(a))
-                    .localeCompare(
-                        normalizeText(getArticleTitle(b))
-                    )
-
-            case 'titleDesc':
-                return normalizeText(getArticleTitle(b))
-                    .localeCompare(
-                        normalizeText(getArticleTitle(a))
-                    )
-
-            case 'viewsAsc':
-                return (a.views ?? 0) - (b.views ?? 0)
-
-            case 'viewsDesc':
-                return (b.views ?? 0) - (a.views ?? 0)
-
-            case 'likesAsc':
-                return (a.likes_count ?? 0) - (b.likes_count ?? 0)
-
-            case 'likesDesc':
-                return (b.likes_count ?? 0) - (a.likes_count ?? 0)
-
-            case 'dateAsc':
-                return new Date(a.published_at ?? a.created_at ?? 0)
-                    - new Date(b.published_at ?? b.created_at ?? 0)
-
-            case 'dateDesc':
-                return new Date(b.published_at ?? b.created_at ?? 0)
-                    - new Date(a.published_at ?? a.created_at ?? 0)
-
-            default:
-                return 0
-        }
-    })
-})
-
-/**
- * Frontend-пагинация.
- *
- * Использует то же per_page,
- * которое определил backend.
- */
-const frontendPaginatedArticles = computed(() => {
-    const start = (
-        frontendCurrentPage.value - 1
-    ) * perPage.value
+    const start =
+        (
+            frontendCurrentPage.value - 1
+        ) * perPage.value
 
     return sortedArticles.value.slice(
         start,
@@ -358,57 +560,50 @@ const frontendPaginatedArticles = computed(() => {
     )
 })
 
-/** Сбрасываем frontend-пагинацию */
-watch([q, sort, viewMode], () => {
-    frontendCurrentPage.value = 1
-})
+const displayedArticles = computed(() =>
+    props.useServerProcessing
+        ? articlesData.value
+        : frontendPaginatedArticles.value
+)
 
-/** Скролл при frontend-пагинации */
-watch(frontendCurrentPage, () => {
-    if (!props.useServerProcessing) {
-        scrollToTarget()
-    }
-})
+/* ======================== Server pagination ======================== */
 
-/* ===================== SERVER MODE ===================== */
-
-/** Текущая server-страница */
-const currentPage = computed(() => {
-    return Number(
+const currentPage = computed(() =>
+    Number(
         props.articles?.meta?.current_page
         ?? props.articles?.current_page
         ?? 1
     ) || 1
-})
+)
 
-/** Последняя server-страница */
-const lastPage = computed(() => {
-    return Number(
+const lastPage = computed(() =>
+    Number(
         props.articles?.meta?.last_page
         ?? props.articles?.last_page
         ?? 1
     ) || 1
-})
+)
 
-/** Маршрут списка статей */
-const indexRoute = () => {
-    return route('public.blogArticles.index')
-}
+const reloadArticles = (
+    pageNumber = 1
+) => {
+    if (!props.useServerProcessing) {
+        return
+    }
 
-/**
- * Server-загрузка статей.
- *
- * per_page намеренно не отправляем.
- * Его всегда определяет backend через PublicSettingsService.
- */
-const reloadArticles = (page = 1) => {
     router.get(
-        indexRoute(),
+        canonicalUrl.value,
         {
-            q: q.value || undefined,
-            sort: sort.value || undefined,
-            view: viewMode.value || undefined,
-            page,
+            q:
+                q.value
+                || undefined,
+
+            sort:
+                sort.value
+                || undefined,
+
+            page:
+            pageNumber,
         },
         {
             preserveState: true,
@@ -418,174 +613,488 @@ const reloadArticles = (page = 1) => {
     )
 }
 
-/** Server-поиск */
-const submitSearch = () => {
-    reloadArticles(1)
-}
-
-/** Сброс поиска и сортировки */
-const resetSearch = () => {
-    q.value = ''
-    sort.value = DEFAULT_SORT
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing) {
-        reloadArticles(1)
-    }
-}
-
-/** Server-изменение сортировки */
-const updateSort = (value) => {
-    sort.value = value || DEFAULT_SORT
-
-    if (props.useServerProcessing) {
-        reloadArticles(1)
-    }
-}
-
-/** Изменение режима отображения */
-const updateViewMode = (value) => {
-    viewMode.value = value || 'grid'
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing) {
-        reloadArticles(1)
-    }
-}
-
-/** Server-переход на страницу */
-const goToPage = (page) => {
-    const value = Number(page)
-
-    if (!Number.isFinite(value)) {
-        return
-    }
-
-    const safePage = Math.max(
-        1,
-        Math.min(value, lastPage.value)
+const goToPage = (pageNumber) => {
+    const target = Math.min(
+        Math.max(
+            1,
+            Number(pageNumber) || 1
+        ),
+        lastPage.value
     )
 
-    reloadArticles(safePage)
+    reloadArticles(target)
 }
 
-/** Предыдущая server-страница */
 const goPrev = () => {
-    if (currentPage.value <= 1) {
-        return
+    if (currentPage.value > 1) {
+        goToPage(
+            currentPage.value - 1
+        )
     }
-
-    goToPage(currentPage.value - 1)
 }
 
-/** Следующая server-страница */
 const goNext = () => {
-    if (currentPage.value >= lastPage.value) {
-        return
+    if (
+        currentPage.value
+        < lastPage.value
+    ) {
+        goToPage(
+            currentPage.value + 1
+        )
     }
-
-    goToPage(currentPage.value + 1)
 }
 
-/* ===================== COMMON VIEW ===================== */
+/* ======================== Toolbar ======================== */
 
-/** Итоговый список статей */
-const displayedArticles = computed(() => {
-    return props.useServerProcessing
-        ? articlesData.value
-        : frontendPaginatedArticles.value
+const applyFilters = () => {
+    if (props.useServerProcessing) {
+        reloadArticles(1)
+    } else {
+        frontendCurrentPage.value = 1
+    }
+}
+
+const resetFilters = () => {
+    if (props.useServerProcessing) {
+        reloadArticles(1)
+    } else {
+        frontendCurrentPage.value = 1
+    }
+}
+
+/* ======================== Sidebars ======================== */
+
+const settingEnabled = (
+    value,
+    defaultValue = true
+) => {
+    if (
+        value === undefined
+        || value === null
+        || value === ''
+    ) {
+        return defaultValue
+    }
+
+    if (typeof value === 'boolean') {
+        return value
+    }
+
+    return String(value) === 'true'
+}
+
+const showLeft = computed(() =>
+    settingEnabled(
+        siteSettings.value?.ViewLeftColumn,
+        true
+    )
+)
+
+const showRight = computed(() =>
+    settingEnabled(
+        siteSettings.value?.ViewRightColumn,
+        true
+    )
+)
+
+const LEFT_SIDEBAR_KEY =
+    'public_left_sidebar_collapsed'
+
+const RIGHT_SIDEBAR_KEY =
+    'public_right_sidebar_collapsed'
+
+/**
+ * Первый render:
+ * sidebar свёрнуты.
+ *
+ * После mounted восстанавливаем
+ * сохранённое состояние.
+ */
+const leftCollapsed = ref(true)
+const rightCollapsed = ref(true)
+
+const readStoredBoolean = (
+    key,
+    fallback = true
+) => {
+    try {
+        const value =
+            localStorage.getItem(key)
+
+        return value === null
+            ? fallback
+            : value === 'true'
+    } catch {
+        return fallback
+    }
+}
+
+const writeStoredBoolean = (
+    key,
+    value
+) => {
+    try {
+        localStorage.setItem(
+            key,
+            String(Boolean(value))
+        )
+    } catch {
+        //
+    }
+}
+
+onMounted(() => {
+    leftCollapsed.value =
+        readStoredBoolean(
+            LEFT_SIDEBAR_KEY,
+            true
+        )
+
+    rightCollapsed.value =
+        readStoredBoolean(
+            RIGHT_SIDEBAR_KEY,
+            true
+        )
+})
+
+const setLeftCollapsed = (value) => {
+    leftCollapsed.value =
+        Boolean(value)
+
+    writeStoredBoolean(
+        LEFT_SIDEBAR_KEY,
+        leftCollapsed.value
+    )
+}
+
+const setRightCollapsed = (value) => {
+    rightCollapsed.value =
+        Boolean(value)
+
+    writeStoredBoolean(
+        RIGHT_SIDEBAR_KEY,
+        rightCollapsed.value
+    )
+}
+
+/**
+ * Оба открыты → 2.
+ * Один открыт → 3.
+ * Оба закрыты → 4.
+ */
+const articleGridCols = computed(() => {
+    const leftExpanded =
+        showLeft.value
+        && !leftCollapsed.value
+
+    const rightExpanded =
+        showRight.value
+        && !rightCollapsed.value
+
+    if (
+        leftExpanded
+        && rightExpanded
+    ) {
+        return 2
+    }
+
+    if (
+        leftExpanded
+        || rightExpanded
+    ) {
+        return 3
+    }
+
+    return 4
 })
 </script>
 
 <template>
     <Head>
-        <title>{{ seo?.title || t('articles') }}</title>
+        <!-- Basic SEO -->
+        <title>{{ seoTitle }}</title>
 
-        <meta name="title" :content="seo?.title || t('articles')" />
-        <meta name="keywords" :content="seo?.keywords || ''" />
-        <meta name="description" :content="seo?.description || ''" />
+        <meta
+            name="title"
+            :content="seoTitle"
+        >
 
-        <meta property="og:title" :content="seo?.title || t('articles')" />
-        <meta property="og:description" :content="seo?.description || ''" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" :content="`/${locale}/blog/articles`" />
-        <meta property="og:image" content="" />
-        <meta property="og:locale" :content="locale === 'ru' ? 'ru_RU' : locale" />
+        <meta
+            v-if="seoDescription"
+            name="description"
+            :content="seoDescription"
+        >
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="seo?.title || t('articles')" />
-        <meta name="twitter:description" :content="seo?.description || ''" />
-        <meta name="twitter:image" content="" />
+        <meta
+            v-if="seoKeywords"
+            name="keywords"
+            :content="seoKeywords"
+        >
 
-        <meta name="DC.title" :content="seo?.title || t('articles')" />
-        <meta name="DC.description" :content="seo?.description || ''" />
-        <meta name="DC.identifier" :content="`/${locale}/blog/articles`" />
-        <meta name="DC.language" :content="locale" />
+        <meta
+            name="robots"
+            content="index, follow, max-image-preview:large"
+        >
+
+        <!-- Canonical -->
+        <link
+            rel="canonical"
+            :href="canonicalUrl"
+        >
+
+        <!-- Open Graph -->
+        <meta
+            property="og:type"
+            content="website"
+        >
+
+        <meta
+            property="og:title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            property="og:description"
+            :content="seoDescription"
+        >
+
+        <meta
+            property="og:url"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            property="og:locale"
+            :content="ogLocale"
+        >
+
+        <meta
+            v-if="seoImage"
+            property="og:image"
+            :content="seoImage"
+        >
+
+        <!-- Twitter / X -->
+        <meta
+            name="twitter:card"
+            :content="
+                seoImage
+                    ? 'summary_large_image'
+                    : 'summary'
+            "
+        >
+
+        <meta
+            name="twitter:title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            name="twitter:description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="seoImage"
+            name="twitter:image"
+            :content="seoImage"
+        >
+
+        <!-- Dublin Core -->
+        <meta
+            name="DC.title"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoDescription"
+            name="DC.description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="dcSubject"
+            name="DC.subject"
+            :content="dcSubject"
+        >
+
+        <meta
+            name="DC.language"
+            :content="contentLocale"
+        >
+
+        <meta
+            name="DC.identifier"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            name="DC.type"
+            content="Collection"
+        >
+
+        <meta
+            name="DC.format"
+            content="text/html"
+        >
     </Head>
 
-    <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
+    <DefaultLayout
+        :title="title"
+        :can-login="canLogin"
+        :can-register="canRegister"
+    >
         <Navbar />
 
         <div class="min-h-screen px-3 max-w-full">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
 
-                <!-- Левая колонка -->
+                <!-- Left sidebar -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
+                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebar
                         :rubric-tree="rubricTree"
                         :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
+                        @collapsed="setLeftCollapsed"
                     />
                 </aside>
 
-                <!-- Центральная колонка -->
-                <div class="w-full lg:mt-28 pb-6 slate-1">
+                <!-- Content -->
+                <article
+                    itemscope
+                    itemtype="https://schema.org/CollectionPage"
+                    :itemid="canonicalUrl"
+                    class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
+                >
+                    <meta
+                        itemprop="name"
+                        :content="seoTitle"
+                    >
+
+                    <meta
+                        v-if="seoDescription"
+                        itemprop="description"
+                        :content="seoDescription"
+                    >
+
+                    <meta
+                        v-if="seoKeywords"
+                        itemprop="keywords"
+                        :content="seoKeywords"
+                    >
+
+                    <meta
+                        itemprop="url"
+                        :content="canonicalUrl"
+                    >
+
+                    <meta
+                        itemprop="inLanguage"
+                        :content="contentLocale"
+                    >
+
                     <div class="mx-auto max-w-6xl">
 
-                        <!-- Хлебные крошки -->
-                        <nav class="text-sm" aria-label="Breadcrumb">
+                        <!-- Breadcrumbs -->
+                        <nav
+                            class="text-sm"
+                            aria-label="Breadcrumb"
+                            itemscope
+                            itemtype="https://schema.org/BreadcrumbList"
+                        >
                             <ol class="flex flex-wrap items-center font-semibold">
-                                <li>
+
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                >
                                     <Link
+                                        itemprop="item"
                                         :href="route('home')"
                                         class="breadcrumb-link hover:underline"
                                     >
-                                        {{ t('home') }}
+                                        <span itemprop="name">
+                                            {{ t('home') }}
+                                        </span>
                                     </Link>
+
+                                    <meta
+                                        itemprop="position"
+                                        content="1"
+                                    >
                                 </li>
 
-                                <li>
-                                    <span class="mx-2 breadcrumbs">/</span>
-                                </li>
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                >
+                                    <span class="mx-2 breadcrumbs">
+                                        /
+                                    </span>
 
-                                <li>
                                     <Link
+                                        itemprop="item"
                                         :href="route('public.blogRubrics.index')"
                                         class="breadcrumb-link hover:underline"
                                     >
-                                        {{ t('rubrics') }}
+                                        <span itemprop="name">
+                                            {{ t('rubrics') }}
+                                        </span>
                                     </Link>
+
+                                    <meta
+                                        itemprop="position"
+                                        content="2"
+                                    >
                                 </li>
 
-                                <li>
-                                    <span class="mx-2 breadcrumbs">/</span>
-                                </li>
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                    aria-current="page"
+                                >
+                                    <span class="mx-2 breadcrumbs">
+                                        /
+                                    </span>
 
-                                <li class="breadcrumbs">
-                                    {{ t('articles') }}
+                                    <span
+                                        itemprop="name"
+                                        class="breadcrumbs"
+                                    >
+                                        {{ t('articles') }}
+                                    </span>
+
+                                    <meta
+                                        itemprop="item"
+                                        :content="canonicalUrl"
+                                    >
+
+                                    <meta
+                                        itemprop="position"
+                                        content="3"
+                                    >
                                 </li>
                             </ol>
                         </nav>
 
-                        <!-- Заголовок -->
-                        <div class="my-3 flex flex-wrap items-center justify-center gap-2 title">
+                        <!-- Header -->
+                        <div
+                            class="my-3 flex flex-wrap items-center
+                                   justify-center gap-2 title"
+                        >
                             <svg
                                 class="h-5 w-5"
-                                xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 384 512"
                                 fill="currentColor"
                             >
@@ -594,53 +1103,39 @@ const displayedArticles = computed(() => {
                                 />
                             </svg>
 
-                            <h1 class="text-2xl font-bold">
+                            <h1
+                                itemprop="headline"
+                                class="text-2xl font-bold"
+                            >
                                 {{ t('articles') }}
                             </h1>
                         </div>
 
-                        <!-- Подзаголовок -->
-                        <div class="my-1 text-sm subtitle text-center">
-                            Изучайте статьи и руководства от экспертов сообщества
+                        <div
+                            v-if="seoDescription"
+                            itemprop="abstract"
+                            class="my-1 text-sm subtitle text-center"
+                        >
+                            {{ seoDescription }}
                         </div>
 
-                        <!-- Server toolbar -->
+                        <!-- One toolbar -->
                         <EntityPageToolbar
-                            v-if="useServerProcessing"
                             v-model="q"
-                            :found="articlesFound"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
+                            v-model:view-mode="viewMode"
+                            v-model:sort-value="sort"
+                            :found="effectiveArticlesFound"
                             :sort-options="articleSortOptions"
                             :default-sort="DEFAULT_SORT"
                             :found-label="t('articles')"
                             :search-placeholder="t('searchByName')"
-                            @submit="submitSearch"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
+                            @submit="applyFilters"
+                            @reset="resetFilters"
                         />
 
-                        <!-- Frontend toolbar -->
-                        <FrontendEntityPageToolbar
-                            v-else
-                            v-model="q"
-                            :found="sortedArticles.length"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="articleSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('articles')"
-                            :search-placeholder="t('searchByName')"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
-
-                        <!-- Точка скролла -->
                         <div ref="scrollTarget"></div>
 
-                        <!-- Нет данных -->
+                        <!-- Empty -->
                         <div
                             v-if="displayedArticles.length === 0"
                             class="mt-6 text-center text-slate-700 dark:text-slate-300"
@@ -648,7 +1143,7 @@ const displayedArticles = computed(() => {
                             {{ t('noData') }}
                         </div>
 
-                        <!-- Список -->
+                        <!-- Articles -->
                         <div v-else>
                             <RubricArticleGrid
                                 v-if="viewMode === 'grid'"
@@ -662,9 +1157,9 @@ const displayedArticles = computed(() => {
                             />
                         </div>
 
-                        <!-- Server-пагинация -->
+                        <!-- Server pagination -->
                         <Pagination
-                            v-if="useServerProcessing"
+                            v-if="useServerProcessing && lastPage > 1"
                             :current-page="currentPage"
                             :last-page="lastPage"
                             :found="articlesFound"
@@ -673,31 +1168,33 @@ const displayedArticles = computed(() => {
                             @go="goToPage"
                         />
 
-                        <!-- Frontend-пагинация -->
+                        <!-- Frontend pagination -->
                         <FrontendPagination
-                            v-else
+                            v-if="!useServerProcessing && effectiveArticlesFound > perPage"
                             v-model:currentPage="frontendCurrentPage"
                             :items-per-page="perPage"
-                            :total-items="sortedArticles.length"
+                            :total-items="effectiveArticlesFound"
                         />
 
-                        <!-- Видео -->
-                        <SectionVideoList :videos="mainVideos" />
+                        <SectionVideoList
+                            :videos="mainVideos"
+                        />
 
-                        <!-- Баннеры -->
-                        <SectionBanners :banners="mainBanners" />
+                        <SectionBanners
+                            :banners="mainBanners"
+                        />
                     </div>
-                </div>
+                </article>
 
-                <!-- Правая колонка -->
+                <!-- Right sidebar -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300"
+                    class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <RightSidebar
                         :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
+                        @collapsed="setRightCollapsed"
                     />
                 </aside>
             </main>
@@ -706,7 +1203,6 @@ const displayedArticles = computed(() => {
         <FooterBlog />
         <Progress />
 
-        <!-- Панель администратора -->
         <PublicAdminBottomPanel
             v-if="isAdmin"
             setting-key="publicBlogArticlesProcessingMode"

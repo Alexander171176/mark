@@ -60,7 +60,15 @@ const courseLevelLabelKeyMap = {
     advanced: 'levelAdvanced'
 }
 
-// --- Хелперы ---
+// 🔹 Хелперы
+const getCourseTitle = (course) => {
+    return course?.translation?.title || ''
+}
+
+const getCourseSubtitle = (course) => {
+    return course?.translation?.subtitle || ''
+}
+
 const getCourseStatusLabel = (status) => {
     if (!status) return '—'
     const key = courseStatusLabelKeyMap[status]
@@ -147,10 +155,11 @@ const getInstructorImageUrl = (course) => {
 }
 
 const getInstructorName = (course) => {
-    const instructorProfile = getInstructorProfile(course)
+    const instructor =
+        course?.instructorProfile
 
-    return instructorProfile?.public_name
-        || instructorProfile?.title
+    return instructor?.translation?.title
+        || instructor?.user?.name
         || '—'
 }
 
@@ -279,9 +288,9 @@ const formatDate = (dateStr) => {
                                 rel="noopener noreferrer"
                                 class="text-sm font-semibold text-sky-700 dark:text-sky-200
                                        hover:underline line-clamp-2 text-center"
-                                :title="course.subtitle || course.title"
+                                :title="getCourseSubtitle(course) || getCourseTitle(course)"
                             >
-                                {{ course.title }}
+                                {{ getCourseTitle(course) }}
                             </a>
 
                             <!-- Бейджи: статус / уровень -->

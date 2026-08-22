@@ -113,32 +113,44 @@ class BlogRubricSharedResource extends JsonResource
 
             /**
              * Родительская рубрика.
-             *
-             * Используется плоским списком,
-             * например для поиска по названию родителя.
              */
-            'parent' => $this->whenLoaded('parent', function () {
-                if (!$this->parent) {
-                    return null;
+            'parent' => $this->whenLoaded(
+                'parent',
+                function () {
+                    if (!$this->parent) {
+                        return null;
+                    }
+
+                    $translation = $this->parent->relationLoaded('translations')
+                        ? (
+                        $this->parent->translations->firstWhere(
+                            'locale',
+                            app()->getLocale()
+                        )
+                            ?: $this->parent->translations->firstWhere(
+                            'locale',
+                            config('app.fallback_locale', 'ru')
+                        )
+                            ?: $this->parent->translations->first()
+                        )
+                        : null;
+
+                    return [
+                        'id' =>
+                            $this->parent->id,
+
+                        'translation' => $translation
+                            ? [
+                                'locale' =>
+                                    $translation->locale,
+
+                                'title' =>
+                                    $translation->title,
+                            ]
+                            : null,
+                    ];
                 }
-
-                $translation = $this->parent->relationLoaded('translations')
-                    ? $this->parent->translations->firstWhere(
-                    'locale',
-                    app()->getLocale()
-                )
-                    ?? $this->parent->translations->firstWhere(
-                    'locale',
-                    config('app.fallback_locale', 'ru')
-                )
-                    ?? $this->parent->translations->first()
-                    : null;
-
-                return [
-                    'id' => $this->parent->id,
-                    'title' => $translation?->title,
-                ];
-            }),
+            ),
 
             /**
              * Изображения.

@@ -61,7 +61,8 @@ const onSortChange = () => {
 </script>
 
 <template>
-    <div class="my-3">
+    <div class="my-3 p-3 rounded-md shadow-sm bg-white dark:bg-gray-900
+               border border-gray-200 dark:border-gray-700">
         <form @submit.prevent="onSubmit">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div class="relative w-full">

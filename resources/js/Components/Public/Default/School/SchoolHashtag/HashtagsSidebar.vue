@@ -1,34 +1,60 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import { computed } from 'vue'
-import { unwrap, unwrapList } from '@/composables/useUnwrap'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
+import {
+    unwrap,
+    unwrapList,
+} from '@/composables/useUnwrap'
 
 const props = defineProps({
-    hashtags: { type: [Array, Object], default: () => [] },
+    hashtags: {
+        type: [Array, Object],
+        default: () => [],
+    },
 })
 
-const list = computed(() => unwrapList(props.hashtags))
+const list = computed(() =>
+    unwrapList(
+        props.hashtags
+    )
+)
+
+const hashtagName = (hashtag) => {
+    const item = unwrap(hashtag)
+
+    return item?.translation?.name
+        || ''
+}
 </script>
 
 <template>
-    <!-- Блок хештегов школы -->
-    <div class="flex flex-wrap items-center gap-2">
+    <!-- Облако хештегов школы -->
+    <div
+        v-if="list.length"
+        class="flex flex-wrap items-center gap-2"
+    >
         <Link
             v-for="hashtag in list"
             :key="unwrap(hashtag).id"
-            :href="`/school/hashtags/${unwrap(hashtag).slug}`"
-            aria-current="page"
+            :href="route(
+                'public.schoolHashtags.show',
+                {
+                    slug:
+                        unwrap(hashtag).slug,
+                }
+            )"
             class="flex items-center justify-start gap-2
-                   px-3 py-1 transition rounded-md
-                   font-semibold text-xs text-gray-700 dark:text-gray-300
-                   dark:hover:text-slate-300
-                   border border-gray-400 dark:border-gray-400
-                   hover:bg-slate-200 dark:hover:bg-slate-800"
+                   rounded-md border border-gray-400
+                   px-3 py-1 text-xs font-semibold
+                   text-gray-700 transition
+                   hover:bg-slate-200
+                   dark:border-gray-400
+                   dark:text-gray-300
+                   dark:hover:bg-slate-800
+                   dark:hover:text-slate-300"
         >
-            {{ unwrap(hashtag).name }}
+            {{ hashtagName(hashtag) }}
         </Link>
     </div>
 </template>

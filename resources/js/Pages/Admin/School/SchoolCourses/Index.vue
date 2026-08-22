@@ -212,46 +212,34 @@ const safeDate = (value) => {
  * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ РЕСУРСОВ
  * ========================================================== */
 
-/** Получение заголовка курса */
+/** Заголовок курса */
 const getCourseTitle = (course) => {
-    return course?.title
-        || course?.translation?.title
-        || course?.translations?.[0]?.title
+    return course?.translation?.title
         || `ID: ${course?.id}`
 }
 
-/** Получение подзаголовка курса */
+/** Подзаголовок курса */
 const getCourseSubtitle = (course) => {
-    return course?.subtitle
-        || course?.translation?.subtitle
-        || course?.translations?.[0]?.subtitle
+    return course?.translation?.subtitle
         || ''
 }
 
-/** Получение краткого описания курса */
+/** Краткое описание */
 const getCourseShort = (course) => {
-    return course?.short
-        || course?.translation?.short
-        || course?.translations?.[0]?.short
+    return course?.translation?.short
         || ''
 }
 
-/** Получение описания курса */
+/** Описание */
 const getCourseDescription = (course) => {
-    return course?.description
-        || course?.translation?.description
-        || course?.translations?.[0]?.description
+    return course?.translation?.description
         || ''
 }
 
 /** Получение заголовка связанной сущности */
 const getNestedTitle = (item) => {
-    return item?.title
-        || item?.name
-        || item?.translation?.title
+    return item?.translation?.title
         || item?.translation?.name
-        || item?.translations?.[0]?.title
-        || item?.translations?.[0]?.name
         || item?.user?.name
         || ''
 }

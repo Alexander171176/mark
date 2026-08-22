@@ -7,7 +7,7 @@ use App\Http\Requests\Admin\School\SchoolCourse\SchoolCourseRequest;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseResource;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
 use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagSharedResource;
-use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileResource;
+use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileSharedResource;
 use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackSharedResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolCourse\SchoolCourseImage;
@@ -115,7 +115,13 @@ class SchoolCourseController extends BaseSchoolAdminController
                 'adminSchoolCoursesDefaultSort' => $defaultSort,
                 'adminSchoolCoursesProcessingMode' => $processingMode,
 
-                'courses' => SchoolCourseResource::collection($courses),
+                /**
+                 * Admin Index всегда использует
+                 * краткий Shared Resource.
+                 */
+                'courses' => SchoolCourseSharedResource::collection(
+                    $courses
+                ),
                 'coursesCount' => $coursesCount,
 
                 'sortParam' => $sortParam,
@@ -148,19 +154,43 @@ class SchoolCourseController extends BaseSchoolAdminController
     }
 
     /** Страница создания курса. */
-    public function create(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        return Inertia::render('Admin/School/SchoolCourses/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+        return Inertia::render(
+            'Admin/School/SchoolCourses/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
 
-            'instructorProfiles' => $this->instructorProfilesForSelect(),
-            'tracks' => $this->tracksForSelect(),
-            'hashtags' => $this->hashtagsForSelect(),
-            'courses' => $this->coursesForSelect(),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'instructorProfiles' =>
+                    $this->instructorProfilesForSelect(
+                        $currentLocale
+                    ),
+
+                'tracks' =>
+                    $this->tracksForSelect(
+                        $currentLocale
+                    ),
+
+                'hashtags' =>
+                    $this->hashtagsForSelect(
+                        $currentLocale
+                    ),
+
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Сохранение нового курса. */
@@ -232,20 +262,99 @@ class SchoolCourseController extends BaseSchoolAdminController
     }
 
     /** Страница редактирования курса. */
-    public function edit(int $schoolCourse, Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function edit(
+        int $schoolCourse,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
         $course = $this->baseQuery()
             ->with([
-                'translation',
+                /**
+                 * Edit требует все переводы.
+                 *
+                 * Отдельная relation translation
+                 * больше не нужна.
+                 */
                 'translations',
-                'images',
-                'instructorProfile.translation',
-                'tracks.translation',
-                'hashtags.translation',
-                'relatedCourses.translation',
-                'relatedBy.translation',
+
+                /**
+                 * Изображения + Spatie Media
+                 * одним пакетным eager loading.
+                 */
+                'images.media',
+
+                /**
+                 * Для отображения выбранного
+                 * инструктора достаточно
+                 * выбранной локали.
+                 */
+                'instructorProfile' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+
+                    'user:id,name',
+
+                    'images.media',
+                ]),
+
+                /**
+                 * Выбранные треки курса.
+                 */
+                'tracks' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
+
+                /**
+                 * Выбранные хештеги курса.
+                 */
+                'hashtags' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
+
+                /**
+                 * Связанные курсы.
+                 */
+                'relatedCourses' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
+
+                /**
+                 * Обратная связь нужна только если
+                 * действительно отображается в Edit.
+                 *
+                 * Ниже предложу её убрать.
+                 */
+                'relatedBy' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
+
                 'prices',
             ])
             ->withCount([
@@ -261,19 +370,46 @@ class SchoolCourseController extends BaseSchoolAdminController
                 'quizzes',
                 'likes',
             ])
-            ->findOrFail($schoolCourse);
+            ->findOrFail(
+                $schoolCourse
+            );
 
-        return Inertia::render('Admin/School/SchoolCourses/Edit', [
-            'course' => new SchoolCourseResource($course),
+        return Inertia::render(
+            'Admin/School/SchoolCourses/Edit',
+            [
+                'course' =>
+                    new SchoolCourseResource(
+                        $course
+                    ),
 
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+                'currentLocale' =>
+                    $currentLocale,
 
-            'instructorProfiles' => $this->instructorProfilesForSelect(),
-            'tracks' => $this->tracksForSelect(),
-            'hashtags' => $this->hashtagsForSelect(),
-            'courses' => $this->coursesForSelect($course->id),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'instructorProfiles' =>
+                    $this->instructorProfilesForSelect(
+                        $currentLocale
+                    ),
+
+                'tracks' =>
+                    $this->tracksForSelect(
+                        $currentLocale
+                    ),
+
+                'hashtags' =>
+                    $this->hashtagsForSelect(
+                        $currentLocale
+                    ),
+
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale,
+                        $course->id
+                    ),
+            ]
+        );
     }
 
     /** Обновление курса. */
@@ -474,73 +610,159 @@ class SchoolCourseController extends BaseSchoolAdminController
     }
 
     /** Список инструкторов для select. */
-    private function instructorProfilesForSelect(): AnonymousResourceCollection
-    {
+    private function instructorProfilesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $instructors = SchoolInstructorProfile::query()
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'user:id,name,email',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                'user:id,name',
             ])
+            ->orderBy('id')
             ->get();
 
-        return SchoolInstructorProfileResource::collection($instructors);
+        return SchoolInstructorProfileSharedResource::collection(
+            $instructors
+        );
     }
 
     /** Список треков для select. */
-    private function tracksForSelect(): AnonymousResourceCollection
-    {
+    private function tracksForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $tracks = SchoolTrack::query()
-            ->with(['translation', 'translations'])
-            ->withCount(['children', 'courses'])
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+            ])
+            ->ordered()
             ->get();
 
-        return SchoolTrackSharedResource::collection($tracks);
+        return SchoolTrackSharedResource::collection(
+            $tracks
+        );
     }
 
     /** Список хештегов для select. */
-    private function hashtagsForSelect(): AnonymousResourceCollection
-    {
+    private function hashtagsForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $hashtags = SchoolHashtag::query()
-            ->with(['translation', 'translations'])
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+            ])
+            ->ordered()
             ->get();
 
-        return SchoolHashtagSharedResource::collection($hashtags);
+        return SchoolHashtagSharedResource::collection(
+            $hashtags
+        );
     }
 
     /** Список курсов для select связанных курсов. */
-    private function coursesForSelect(?int $excludeId = null): AnonymousResourceCollection
-    {
+    private function coursesForSelect(
+        string $locale,
+        ?int $excludeId = null
+    ): AnonymousResourceCollection {
         $courses = SchoolCourse::query()
-            ->when($excludeId, fn ($query) => $query->whereKeyNot($excludeId))
+            ->when(
+                $excludeId,
+                fn ($query) =>
+                $query->whereKeyNot(
+                    $excludeId
+                )
+            )
             ->with([
-                'translation',
-                'translations',
-                'images',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
+            ->orderBy('id')
             ->get();
 
-        return SchoolCourseSharedResource::collection($courses);
+        return SchoolCourseSharedResource::collection(
+            $courses
+        );
     }
 
-    /** Базовый запрос для списка курсов. */
-    private function indexQuery(): Builder
-    {
+    /** Базовый запрос для Admin Index курсов. */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'instructorProfile.translation',
-                'instructorProfile.translations',
-                'instructorProfile.images',
-                'tracks.translation',
-                'tracks.translations',
-                'hashtags.translation',
-                'hashtags.translations',
-                'relatedCourses.translation',
-                'prices',
+                /**
+                 * Admin Index:
+                 * только выбранная локаль.
+                 *
+                 * Все переводы здесь не нужны.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                /**
+                 * Изображения курса +
+                 * Spatie Media пакетным запросом.
+                 */
+                'images.media',
+
+                /**
+                 * Инструктор.
+                 *
+                 * Для Index нужен только
+                 * выбранный перевод и изображения.
+                 */
+                'instructorProfile' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+
+                    'images.media',
+                ]),
+
+                /**
+                 * Треки нужны frontend-поиску.
+                 */
+                'tracks' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
+
+                /**
+                 * Хештеги нужны frontend-поиску.
+                 */
+                'hashtags' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
             ])
             ->withCount([
                 'modules',
@@ -551,9 +773,6 @@ class SchoolCourseController extends BaseSchoolAdminController
                 'prices',
                 'reviews',
                 'enrollments',
-                'schedules',
-                'quizzes',
-                'likes',
             ]);
     }
 
@@ -565,18 +784,31 @@ class SchoolCourseController extends BaseSchoolAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

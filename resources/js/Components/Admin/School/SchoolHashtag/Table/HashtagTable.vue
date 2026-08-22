@@ -173,14 +173,17 @@ const truncateText = (text, maxLength = 30) => {
                                            px-2 py-0.5 rounded border-2"
                                     :style="{ borderColor: hashtag.color || '#666666' }"
                                     target="_blank"
-                                    rel="noopener noreferrer">
-                                    {{ hashtag.name }}
+                                    rel="noopener noreferrer"
+                                >
+                                    {{ hashtag.translation?.name || `ID: ${hashtag.id}` }}
                                 </a>
                             </td>
                             <td class="px-2 py-3 first:pl-7 last:pr-7 whitespace-nowrap">
-                                <div class="text-left text-xs
-                                            text-teal-600 dark:text-teal-300">
-                                    {{ truncateText(hashtag.short, 30) }}
+                                <div
+                                    class="text-left text-xs
+                                           text-teal-600 dark:text-teal-300"
+                                >
+                                    {{ truncateText(hashtag.translation?.short, 30) }}
                                 </div>
                             </td>
                             <td class="px-2 py-3 first:pl-7 last:pr-7 whitespace-nowrap">

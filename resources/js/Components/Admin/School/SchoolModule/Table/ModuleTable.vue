@@ -73,15 +73,41 @@ const toggleAll = (event) => {
 }
 
 const getPrimaryImage = (module) => {
-    if (module.images && module.images.length) {
-        return [...module.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0]
+    if (module?.primary_image) {
+        return module.primary_image
+    }
+
+    if (Array.isArray(module?.images) && module.images.length) {
+        return [...module.images]
+            .sort((a, b) => Number(a?.order ?? 0) - Number(b?.order ?? 0))[0]
     }
 
     return null
 }
 
+const getModuleTitle = (module) => {
+    return module?.translation?.title || `ID: ${module?.id}`
+}
+
+const getModuleSubtitle = (module) => {
+    return module?.translation?.subtitle || ''
+}
+
+const getModuleShort = (module) => {
+    return module?.translation?.short || ''
+}
+
 const getCourseTitle = (module) => {
-    return module?.course?.title || `ID: ${module?.school_course_id || '-'}`
+    return module?.course?.translation?.title
+        || `ID: ${module?.school_course_id || '-'}`
+}
+
+const getImageUrl = (image) => {
+    return image?.thumb_url
+        || image?.webp_url
+        || image?.image_url
+        || image?.url
+        || ''
 }
 
 const formatDate = (dateStr) => {
@@ -271,10 +297,10 @@ const formatDate = (dateStr) => {
                             </td>
                             <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="flex justify-center"
-                                     :title="module.title || ''">
+                                     :title="getModuleTitle(module)">
                                     <template v-if="module.images && module.images.length">
                                         <img
-                                            :src="getPrimaryImage(module)?.webp_url || getPrimaryImage(module)?.url"
+                                            :src="getImageUrl(getPrimaryImage(module))"
                                             :alt="getPrimaryImage(module)?.alt || t('defaultImageAlt')"
                                             :title="getPrimaryImage(module)?.caption || t('currentImage')"
                                             class="h-8 w-12 object-cover rounded-sm"
@@ -298,9 +324,9 @@ const formatDate = (dateStr) => {
                                                dark:hover:text-sky-200"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        :title="module.subtitle || module.short"
+                                        :title="getModuleSubtitle(module) || getModuleShort(module)"
                                     >
-                                        {{ module.title || `ID: ${module.id}` }}
+                                        {{ getModuleTitle(module) }}
                                     </a>
                                     <div
                                         class="text-xs text-slate-700 dark:text-slate-200"

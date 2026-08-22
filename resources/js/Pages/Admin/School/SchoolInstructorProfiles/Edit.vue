@@ -92,9 +92,7 @@ const buildTranslations = () => {
     })
 
     const defaultLocale =
-        props.targetLocale ||
-        props.instructorProfile.translation?.locale ||
-        'ru'
+        props.targetLocale || 'ru'
 
     if (!Object.keys(result).length) {
         result[defaultLocale] = makeTranslation()
@@ -109,9 +107,7 @@ const buildTranslations = () => {
 
 // локаль по умолчанию
 const defaultLocale =
-    props.targetLocale ||
-    props.instructorProfile.translation?.locale ||
-    'ru'
+    props.targetLocale || 'ru'
 
 // активная вкладка перевода
 const activeLocale = ref(defaultLocale)
@@ -148,12 +144,17 @@ const form = useForm({
     slug: props.instructorProfile.slug ?? '',
 
     experience_years: Number(props.instructorProfile.experience_years ?? 0),
+
     hourly_rate: props.instructorProfile.hourly_rate != null
         ? String(props.instructorProfile.hourly_rate)
         : '',
-    rating_count: Number(props.instructorProfile.rating?.count ?? props.instructorProfile.rating_count ?? 0),
-    rating_avg: props.instructorProfile.rating?.avg != null
-        ? String(props.instructorProfile.rating.avg)
+
+    rating_count: Number(
+        props.instructorProfile.rating_count ?? 0
+    ),
+
+    rating_avg: props.instructorProfile.rating_avg != null
+        ? String(props.instructorProfile.rating_avg)
         : '',
 
     social_links: props.instructorProfile.social_links ?? {},
@@ -181,8 +182,6 @@ const currentTranslation = computed(() => {
 // заголовок страницы
 const pageTitle = computed(() => {
     return currentTranslation.value.title
-        || props.instructorProfile.translation?.title
-        || props.instructorProfile.title
         || `ID: ${props.instructorProfile.id}`
 })
 

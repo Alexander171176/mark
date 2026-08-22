@@ -10,85 +10,183 @@ class SchoolModuleResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        /**
+         * Edit заранее загружает
+         * все translations.
+         *
+         * Resource выбирает текущий перевод
+         * только из памяти:
+         *
+         * current locale
+         * → fallback locale
+         * → первый доступный.
+         */
+        $translation = $this->relationLoaded('translations')
+            ? (
+            $this->translations->firstWhere(
+                'locale',
+                $locale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
+            : null;
+
+        /**
+         * Первое изображение уже соответствует
+         * pivot order связи images().
+         */
+        $primaryImage = $this->relationLoaded('images')
+            ? $this->images->first()
+            : null;
+
         return [
-            'id' => $this->id,
-            'school_course_id' => $this->school_course_id,
+            'id' =>
+                $this->id,
 
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
+            'school_course_id' =>
+                $this->school_course_id,
 
-            'slug' => $this->slug,
+            /**
+             * Основные поля.
+             */
+            'sort' =>
+                (int) $this->sort,
 
-            'title' => $this->translation?->title,
-            'subtitle' => $this->translation?->subtitle,
-            'short' => $this->translation?->short,
-            'description' => $this->translation?->description,
+            'activity' =>
+                (bool) $this->activity,
 
-            'meta_title' => $this->translation?->meta_title,
-            'meta_keywords' => $this->translation?->meta_keywords,
-            'meta_desc' => $this->translation?->meta_desc,
+            'slug' =>
+                $this->slug,
 
-            'published_at' => optional($this->published_at)->format('Y-m-d'),
+            /**
+             * Публикация / состояние.
+             */
+            'published_at' =>
+                $this->published_at?->format('Y-m-d'),
 
-            'status' => $this->status,
-            'availability' => $this->availability,
+            'status' =>
+                $this->status,
 
-            'difficulty' => $this->difficulty !== null ? (int) $this->difficulty : null,
-            'duration' => $this->duration !== null ? (int) $this->duration : null,
+            'availability' =>
+                $this->availability,
 
-            'lessons_count' => (int) $this->lessons_count,
-            'popularity' => (int) $this->popularity,
-            'rating_count' => (int) $this->rating_count,
-            'rating_avg' => $this->rating_avg !== null ? (float) $this->rating_avg : null,
-            'views' => (int) $this->views,
-            'likes' => (int) $this->likes,
+            'difficulty' =>
+                $this->difficulty !== null
+                    ? (int) $this->difficulty
+                    : null,
 
-            'already_liked' => auth()->check()
-                ? $this->likes()->where('user_id', auth()->id())->exists()
-                : false,
+            'duration' =>
+                $this->duration !== null
+                    ? (int) $this->duration
+                    : null,
 
-            'primary_image' => $this->whenLoaded(
-                'images',
-                fn () => $this->primary_image
-                    ? new SchoolModuleImageResource($this->primary_image)
-                    : null
+            /**
+             * Статистика.
+             */
+            'lessons_count' =>
+                (int) $this->lessons_count,
+
+            'popularity' =>
+                (int) $this->popularity,
+
+            'rating_count' =>
+                (int) $this->rating_count,
+
+            'rating_avg' =>
+                $this->rating_avg !== null
+                    ? (float) $this->rating_avg
+                    : null,
+
+            'views' =>
+                (int) $this->views,
+
+            'likes' =>
+                (int) $this->likes,
+
+            /**
+             * Текущий resolved-перевод.
+             *
+             * Только из уже загруженной
+             * коллекции translations.
+             */
+            'translation' => $translation
+                ? new SchoolModuleTranslationResource(
+                    $translation
+                )
+                : null,
+
+            /**
+             * Все переводы нужны Edit
+             * для TranslationTabs.
+             */
+            'translations' =>
+                SchoolModuleTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
+
+            /**
+             * Изображения.
+             *
+             * Controller обязан загрузить
+             * images.media.
+             */
+            'primary_image' => $primaryImage
+                ? new SchoolModuleImageResource(
+                    $primaryImage
+                )
+                : null,
+
+            'images' =>
+                SchoolModuleImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
+
+            /**
+             * Родительский курс.
+             */
+            'course' =>
+                new SchoolCourseSharedResource(
+                    $this->whenLoaded(
+                        'course'
+                    )
+                ),
+
+            /**
+             * Counts.
+             */
+            'images_count' => $this->when(
+                isset($this->images_count),
+                fn () => (int) $this->images_count
             ),
 
-            'images' => SchoolModuleImageResource::collection(
-                $this->whenLoaded('images')
+            'likes_count' => $this->when(
+                isset($this->likes_count),
+                fn () => (int) $this->likes_count
             ),
 
-            'translations' => SchoolModuleTranslationResource::collection(
-                $this->whenLoaded('translations')
-            ),
+            /**
+             * Даты.
+             */
+            'created_at' =>
+                $this->created_at?->toISOString(),
 
-            'course' => new SchoolCourseSharedResource(
-                $this->whenLoaded('course')
-            ),
-
-            'lessons' => $this->whenLoaded('lessons', fn () => $this->lessons->map(fn ($lesson) => [
-                'id' => $lesson->id,
-                'school_module_id' => $lesson->school_module_id,
-                'slug' => $lesson->slug,
-                'title' => $lesson->translation?->title,
-                'subtitle' => $lesson->translation?->subtitle,
-                'short' => $lesson->translation?->short,
-                'sort' => (int) $lesson->sort,
-                'activity' => (bool) $lesson->activity,
-                'status' => $lesson->status,
-                'availability' => $lesson->availability,
-                'access_type' => $lesson->access_type,
-                'difficulty' => $lesson->difficulty !== null ? (int) $lesson->difficulty : null,
-                'duration' => $lesson->duration !== null ? (int) $lesson->duration : null,
-                'views' => (int) $lesson->views,
-                'likes' => (int) $lesson->likes,
-            ])),
-
-            'likes_count' => $this->when(isset($this->likes_count), fn () => (int) $this->likes_count),
-            'images_count' => $this->when(isset($this->images_count), fn () => (int) $this->images_count),
-
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

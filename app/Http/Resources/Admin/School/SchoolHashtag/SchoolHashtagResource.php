@@ -9,55 +9,95 @@ class SchoolHashtagResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $currentLocale = app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
         /**
-         * Первый из фактически загруженных переводов.
+         * Текущий перевод.
          *
-         * В публичной части обычно загружается
-         * только текущая локаль.
+         * Все переводы уже должны быть
+         * загружены контроллером одним запросом.
          *
-         * В административной части могут быть
-         * загружены все переводы.
+         * Дополнительных SQL-запросов
+         * Resource не выполняет.
          */
-        $translation = $this->relationLoaded('translations')
-            ? $this->translations->first()
-            : null;
+        $currentTranslation =
+            $this->relationLoaded('translations')
+                ? (
+            $this->translations->firstWhere(
+                'locale',
+                $currentLocale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
+                : null;
 
         return [
-            'id' => $this->id,
-
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
-
-            'slug' => $this->slug,
-            'color' => $this->color,
+            'id' =>
+                (int) $this->id,
 
             /**
-             * Основной перевод.
+             * Основные поля.
              */
-            'name' => $translation?->name,
-            'short' => $translation?->short,
-            'description' => $translation?->description,
+            'sort' =>
+                (int) $this->sort,
 
-            'meta_title' => $translation?->meta_title,
-            'meta_keywords' => $translation?->meta_keywords,
-            'meta_desc' => $translation?->meta_desc,
+            'activity' =>
+                (bool) $this->activity,
+
+            'slug' =>
+                $this->slug,
+
+            'color' =>
+                $this->color,
+
+            'views' =>
+                (int) $this->views,
+
+            'likes' =>
+                (int) $this->likes,
 
             /**
-             * Все фактически загруженные переводы.
+             * Текущий перевод:
              *
-             * Admin:
-             * ru / en / kk / zh ...
-             *
-             * Public:
-             * обычно только текущая локаль.
+             * current locale
+             * → fallback locale
+             * → первый доступный.
              */
-            'translations' => SchoolHashtagTranslationResource::collection(
-                $this->whenLoaded('translations')
-            ),
+            'translation' => $currentTranslation
+                ? new SchoolHashtagTranslationResource(
+                    $currentTranslation
+                )
+                : null,
 
-            'views' => (int) $this->views,
-            'likes' => (int) $this->likes,
+            /**
+             * Все переводы.
+             *
+             * Нужны Create/Edit-форме
+             * для TranslationTabs.
+             */
+            'translations' =>
+                SchoolHashtagTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
 
+            /**
+             * Counts.
+             *
+             * Возвращаются только если
+             * контроллер их действительно
+             * предварительно загрузил.
+             */
             'courses_count' => $this->when(
                 isset($this->courses_count),
                 fn () => (int) $this->courses_count
@@ -73,13 +113,14 @@ class SchoolHashtagResource extends JsonResource
                 fn () => (int) $this->lessons_count
             ),
 
-            'created_at' => optional(
-                $this->created_at
-            )->toIso8601String(),
+            /**
+             * Timestamps.
+             */
+            'created_at' =>
+                $this->created_at?->toISOString(),
 
-            'updated_at' => optional(
-                $this->updated_at
-            )->toIso8601String(),
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

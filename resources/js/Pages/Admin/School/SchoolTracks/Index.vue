@@ -218,41 +218,31 @@ const safeDate = (value) => {
 
 /** Получение названия трека */
 const getTrackName = (track) => {
-    return track?.name
-        || track?.translation?.name
-        || track?.translations?.[0]?.name
+    return track?.translation?.name
         || `ID: ${track?.id}`
 }
 
 /** Получение краткого описания */
 const getTrackShort = (track) => {
-    return track?.short
-        || track?.translation?.short
-        || track?.translations?.[0]?.short
+    return track?.translation?.short
         || ''
 }
 
 /** Получение описания */
 const getTrackDescription = (track) => {
-    return track?.description
-        || track?.translation?.description
-        || track?.translations?.[0]?.description
+    return track?.translation?.description
         || ''
 }
 
 /** Получение slug */
 const getTrackSlug = (track) => {
     return track?.slug
-        || track?.translation?.slug
-        || track?.translations?.[0]?.slug
         || ''
 }
 
 /** Получение названия родителя */
 const getParentName = (track) => {
-    return track?.parent?.name
-        || track?.parent?.translation?.name
-        || track?.parent?.translations?.[0]?.name
+    return track?.parent?.translation?.name
         || ''
 }
 
@@ -291,16 +281,6 @@ const byNumberAsc = (field) => (a, b) =>
 /** Сортировка чисел ↓ */
 const byNumberDesc = (field) => (a, b) =>
     safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
-
-/** Сортировка строк ↑ */
-const byStringAsc = (field) => (a, b) =>
-    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
-    || safeNumber(a?.id) - safeNumber(b?.id)
-
-/** Сортировка строк ↓ */
-const byStringDesc = (field) => (a, b) =>
-    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
     || safeNumber(b?.id) - safeNumber(a?.id)
 
 /** Сортировка треков */

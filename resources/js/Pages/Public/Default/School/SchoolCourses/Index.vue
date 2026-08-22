@@ -28,14 +28,18 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarSchool from '@/Components/Public/Default/Partials/LeftSidebarSchool.vue'
 import RightSidebarSchool from '@/Components/Public/Default/Partials/RightSidebarSchool.vue'
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
-import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
+import FrontendEntityPageToolbar
+    from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
 import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
-import InstructorCourseGrid from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseGrid.vue'
-import InstructorCourseRows from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseRows.vue'
-import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
+import InstructorCourseGrid
+    from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseGrid.vue'
+import InstructorCourseRows
+    from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseRows.vue'
+import PublicAdminBottomPanel
+    from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
 
@@ -334,41 +338,19 @@ const normalizeText = (value) => {
 
 /** Название курса */
 const getCourseTitle = (course) => {
-    return course?.title
-        || course?.name
-        || course?.translation?.title
-        || course?.translation?.name
-        || course?.current_translation?.title
-        || course?.current_translation?.name
-        || course?.translations?.[0]?.title
-        || course?.translations?.[0]?.name
+    return course?.translation?.title
         || ''
 }
 
 /** Краткий текст курса */
 const getCourseShort = (course) => {
-    return course?.short
-        || course?.description
-        || course?.subtitle
-        || course?.translation?.short
-        || course?.translation?.description
-        || course?.translation?.subtitle
-        || course?.current_translation?.short
-        || course?.current_translation?.description
-        || course?.current_translation?.subtitle
-        || course?.translations?.[0]?.short
-        || course?.translations?.[0]?.description
-        || course?.translations?.[0]?.subtitle
+    return course?.translation?.short
         || ''
 }
 
 /** Slug курса */
 const getCourseSlug = (course) => {
     return course?.slug
-        || course?.url
-        || course?.translation?.slug
-        || course?.current_translation?.slug
-        || course?.translations?.[0]?.slug
         || ''
 }
 
@@ -385,13 +367,18 @@ const filteredCourses = computed(() => {
             getCourseTitle(course),
             getCourseShort(course),
             getCourseSlug(course),
-            course.instructorProfile?.title,
-            course.instructor_profile?.title,
-            course.instructorProfile?.user?.name,
-            course.instructor_profile?.user?.name,
-        ].some((value) => {
-            return normalizeText(value).includes(query)
-        })
+
+            course?.instructorProfile
+                ?.translation
+                ?.title,
+
+            course?.instructorProfile
+                ?.user
+                ?.name,
+        ].some((value) =>
+            normalizeText(value)
+                .includes(query)
+        )
     })
 })
 

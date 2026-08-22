@@ -72,15 +72,37 @@ const toggleAll = (event) => {
 }
 
 const getPrimaryImage = (module) => {
-    if (module.images && module.images.length) {
-        return [...module.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0]
+    if (module?.primary_image) {
+        return module.primary_image
+    }
+
+    if (Array.isArray(module?.images) && module.images.length) {
+        return [...module.images]
+            .sort((a, b) => Number(a?.order ?? 0) - Number(b?.order ?? 0))[0]
     }
 
     return null
 }
 
+const getModuleTitle = (module) => {
+    return module?.translation?.title || `ID: ${module?.id}`
+}
+
+const getModuleSubtitle = (module) => {
+    return module?.translation?.subtitle || ''
+}
+
 const getCourseTitle = (module) => {
-    return module?.course?.title || `ID: ${module?.school_course_id || '-'}`
+    return module?.course?.translation?.title
+        || `ID: ${module?.school_course_id || '-'}`
+}
+
+const getImageUrl = (image) => {
+    return image?.thumb_url
+        || image?.webp_url
+        || image?.image_url
+        || image?.url
+        || ''
 }
 
 const formatDate = (dateStr) => {
@@ -188,7 +210,7 @@ const formatDate = (dateStr) => {
                         <div class="relative w-full h-32 bg-slate-200 dark:bg-slate-900">
                             <template v-if="module.images && module.images.length">
                                 <img
-                                    :src="getPrimaryImage(module)?.webp_url || getPrimaryImage(module)?.url"
+                                    :src="getImageUrl(getPrimaryImage(module))"
                                     :alt="getPrimaryImage(module)?.alt || t('defaultImageAlt')"
                                     :title="getPrimaryImage(module)?.caption || t('moduleImage')"
                                     class="w-full h-full object-cover"
@@ -211,9 +233,9 @@ const formatDate = (dateStr) => {
                                 rel="noopener noreferrer"
                                 class="text-sm font-semibold text-sky-700 dark:text-sky-200
                                        hover:underline line-clamp-2 text-center"
-                                :title="module.subtitle || module.title"
+                                :title="getModuleSubtitle(module) || getModuleTitle(module)"
                             >
-                                {{ module.title || `ID: ${module.id}` }}
+                                {{ getModuleTitle(module) }}
                             </a>
 
                             <div

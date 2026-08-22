@@ -156,7 +156,6 @@ const currentTranslation = computed(() => {
 const pageTitle = computed(() => {
     return currentTranslation.value.title
         || props.course.translation?.title
-        || props.course.title
         || `ID: ${props.course.id}`
 })
 
@@ -187,8 +186,16 @@ const dynamicOptionsLimit = (items) => {
 // Опции инструкторов
 const instructorProfileOptions = computed(() =>
     props.instructorProfiles.map((item) => {
-        const title = item.public_name || item.title || item.name || `#${item.id}`
-        const userName = item.user?.name ? ` — ${item.user.name}` : ''
+        const title =
+            item?.translation?.title
+            || item?.user?.name
+            || `#${item.id}`
+
+        const userName =
+            item?.user?.name
+            && item.user.name !== title
+                ? ` — ${item.user.name}`
+                : ''
 
         return {
             id: item.id,
@@ -199,82 +206,178 @@ const instructorProfileOptions = computed(() =>
 
 // Выбранный инструктор
 const selectedInstructorProfile = ref(
-    instructorProfileOptions.value.find(item => item.id === form.school_instructor_profile_id) || null
+    instructorProfileOptions.value.find(
+        item =>
+            Number(item.id)
+            === Number(form.school_instructor_profile_id)
+    ) || null
 )
 
 // Синхронизация инструктора с формой
-watch(selectedInstructorProfile, (val) => {
-    form.school_instructor_profile_id = val?.id ?? null
-})
+watch(
+    selectedInstructorProfile,
+    (value) => {
+        form.school_instructor_profile_id =
+            value?.id
+            ?? null
+    }
+)
 
 // Опции треков
 const trackOptions = computed(() =>
     props.tracks.map((item) => ({
         id: item.id,
-        label: `[ID: ${item.id}] ${item.name || item.slug || `#${item.id}`}`,
+
+        label:
+            `[ID: ${item.id}] ${
+                item?.translation?.name
+                || item?.slug
+                || `#${item.id}`
+            }`,
     }))
 )
 
 // Выбранные треки
+/**
+ * Выбранные треки.
+ *
+ * Важно:
+ * используем те же объекты,
+ * что уже созданы в trackOptions.
+ *
+ * Таким образом единственным источником
+ * отображаемого названия остаётся
+ * локализованный список props.tracks.
+ */
+const selectedTrackIds = new Set(
+    (props.course.tracks || [])
+        .map(item => Number(item.id))
+)
+
 const selectedTracks = ref(
-    (props.course.tracks || []).map((item) => ({
-        id: item.id,
-        label: `[ID: ${item.id}] ${item.name || item.slug || `#${item.id}`}`,
-    }))
+    trackOptions.value.filter(
+        option =>
+            selectedTrackIds.has(
+                Number(option.id)
+            )
+    )
 )
 
 // Синхронизация треков с формой
-watch(selectedTracks, (val) => {
-    form.track_ids = Array.isArray(val) ? val.map(item => item.id) : []
-})
+watch(
+    selectedTracks,
+    (value) => {
+        form.track_ids =
+            Array.isArray(value)
+                ? value.map(item => item.id)
+                : []
+    }
+)
 
 // Опции хештегов
 const hashtagOptions = computed(() =>
     props.hashtags.map((item) => ({
         id: item.id,
-        label: `[ID: ${item.id}] ${item.name || item.slug || `#${item.id}`}`,
-        color: item.color || null,
+
+        label:
+            `[ID: ${item.id}] ${
+                item?.translation?.name
+                || item?.slug
+                || `#${item.id}`
+            }`,
+
+        color:
+            item?.color
+            || null,
     }))
 )
 
-// Выбранные хештеги
+/**
+ * Выбранные хештеги.
+ *
+ * Источником отображаемого названия
+ * является только hashtagOptions.
+ */
+const selectedHashtagIds = new Set(
+    (props.course.hashtags || [])
+        .map(item => Number(item.id))
+)
+
 const selectedHashtags = ref(
-    (props.course.hashtags || []).map((item) => ({
-        id: item.id,
-        label: `[ID: ${item.id}] ${item.name || item.slug || `#${item.id}`}`,
-        color: item.color || null,
-    }))
+    hashtagOptions.value.filter(
+        option =>
+            selectedHashtagIds.has(
+                Number(option.id)
+            )
+    )
 )
 
 // Синхронизация хештегов с формой
-watch(selectedHashtags, (val) => {
-    form.hashtag_ids = Array.isArray(val) ? val.map(item => item.id) : []
-})
+watch(
+    selectedHashtags,
+    (value) => {
+        form.hashtag_ids =
+            Array.isArray(value)
+                ? value.map(item => item.id)
+                : []
+    }
+)
 
 // Опции связанных курсов
 const relatedCourseOptions = computed(() =>
     props.courses
-        .filter(item => item.id !== props.course.id)
+        .filter(
+            item =>
+                Number(item.id)
+                !== Number(props.course.id)
+        )
         .map((item) => ({
             id: item.id,
-            label: `[ID: ${item.id}] ${item.title || item.slug || `#${item.id}`}`,
+
+            label:
+                `[ID: ${item.id}] ${
+                    item?.translation?.title
+                    || item?.slug
+                    || `#${item.id}`
+                }`,
         }))
 )
 
-// Выбранные связанные курсы
-const selectedRelatedCourses = ref(
+/**
+ * Выбранные связанные курсы.
+ *
+ * Используем объекты непосредственно
+ * из relatedCourseOptions.
+ */
+const selectedRelatedCourseIds = new Set(
     (props.course.related_courses || [])
-        .filter(item => item.id !== props.course.id)
-        .map((item) => ({
-            id: item.id,
-            label: `[ID: ${item.id}] ${item.title || item.slug || `#${item.id}`}`,
-        }))
+        .filter(
+            item =>
+                Number(item.id)
+                !== Number(props.course.id)
+        )
+        .map(item => Number(item.id))
+)
+
+const selectedRelatedCourses = ref(
+    relatedCourseOptions.value.filter(
+        option =>
+            selectedRelatedCourseIds.has(
+                Number(option.id)
+            )
+    )
 )
 
 // Синхронизация связанных курсов с формой
-watch(selectedRelatedCourses, (val) => {
-    form.related_course_ids = Array.isArray(val) ? val.map(item => item.id) : []
-})
+watch(
+    selectedRelatedCourses,
+    (value) => {
+        form.related_course_ids =
+            Array.isArray(value)
+                ? value.map(item => item.id)
+                : []
+    }
+)
 
 // Существующие изображения курса
 const existingImages = ref(

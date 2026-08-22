@@ -3,8 +3,8 @@
 namespace App\Http\Resources\Admin\Blog\BlogArticle;
 
 use App\Http\Resources\Admin\Blog\BlogRubric\BlogRubricSharedResource;
-use App\Http\Resources\Admin\Blog\BlogTag\BlogTagResource;
-use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoResource;
+use App\Http\Resources\Admin\Blog\BlogTag\BlogTagSharedResource;
+use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoSharedResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -102,9 +102,9 @@ class BlogArticleResource extends JsonResource
             }),
 
             'rubrics' => BlogRubricSharedResource::collection($this->whenLoaded('rubrics')),
-            'tags' => BlogTagResource::collection($this->whenLoaded('tags')),
+            'tags' => BlogTagSharedResource::collection($this->whenLoaded('tags')),
             'images' => BlogArticleImageResource::collection($this->whenLoaded('images')),
-            'videos' => BlogVideoResource::collection($this->whenLoaded('videos')),
+            'videos' => BlogVideoSharedResource::collection($this->whenLoaded('videos')),
 
             /**
              * Важно: relation называется relatedArticles

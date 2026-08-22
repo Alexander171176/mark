@@ -31,7 +31,7 @@ import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingM
 import SortSelect from '@/Components/Admin/School/SchoolInstructorProfile/Sort/SortSelect.vue'
 import BulkActionSelect from '@/Components/Admin/School/SchoolInstructorProfile/Select/BulkActionSelect.vue'
 import InstructorProfileTable from '@/Components/Admin/School/SchoolInstructorProfile/Table/InstructorProfileTable.vue'
-import InstuctorCardGrid from '@/Components/Admin/School/SchoolInstructorProfile/View/InstuctorCardGrid.vue'
+import InstructorCardGrid from '@/Components/Admin/School/SchoolInstructorProfile/View/InstructorCardGrid.vue'
 
 /* ==========================================================
  * БАЗОВЫЕ СЕРВИСЫ И PROPS
@@ -215,65 +215,50 @@ const safeDate = (value) => {
 /** Получение имени/заголовка инструктора */
 const getInstructorTitle = (instructorProfile) => {
     return instructorProfile?.title
-        || instructorProfile?.public_name
-        || instructorProfile?.translation?.title
-        || instructorProfile?.translations?.[0]?.title
         || instructorProfile?.user?.name
         || `ID: ${instructorProfile?.id}`
 }
 
-/** Получение краткого описания инструктора */
+/** Краткое описание */
 const getInstructorShort = (instructorProfile) => {
-    return instructorProfile?.short
-        || instructorProfile?.translation?.short
-        || instructorProfile?.translations?.[0]?.short
-        || ''
+    return instructorProfile?.short || ''
 }
 
-/** Получение биографии инструктора */
+/** Биография */
 const getInstructorBio = (instructorProfile) => {
-    return instructorProfile?.bio
-        || instructorProfile?.translation?.bio
-        || instructorProfile?.translations?.[0]?.bio
-        || ''
+    return instructorProfile?.bio || ''
 }
 
-/** Получение slug инструктора */
+/** Slug */
 const getInstructorSlug = (instructorProfile) => {
-    return instructorProfile?.slug
-        || instructorProfile?.translation?.slug
-        || instructorProfile?.translations?.[0]?.slug
-        || ''
+    return instructorProfile?.slug || ''
 }
 
-/** Получение имени пользователя */
+/** Имя пользователя */
 const getUserName = (instructorProfile) => {
     return instructorProfile?.user?.name || ''
 }
 
-/** Получение email пользователя */
+/** Email пользователя */
 const getUserEmail = (instructorProfile) => {
     return instructorProfile?.user?.email || ''
 }
 
-/** Получение заголовка связанной сущности */
+/** Название связанного курса */
 const getNestedTitle = (item) => {
-    return item?.title
-        || item?.name
-        || item?.translation?.title
-        || item?.translation?.name
-        || item?.translations?.[0]?.title
-        || item?.translations?.[0]?.name
-        || ''
+    return item?.title || ''
 }
 
-/** Получение текста курсов инструктора */
+/** Текст курсов инструктора */
 const getCoursesText = (instructorProfile) => {
     const courses = Array.isArray(instructorProfile?.courses)
         ? instructorProfile.courses
         : []
 
-    return courses.map(getNestedTitle).filter(Boolean).join(' ')
+    return courses
+        .map(getNestedTitle)
+        .filter(Boolean)
+        .join(' ')
 }
 
 /* ==========================================================
@@ -759,7 +744,7 @@ const toggleActivity = (instructorProfile) => {
                     @toggle-all="toggleAll"
                 />
 
-                <InstuctorCardGrid
+                <InstructorCardGrid
                     v-else
                     :instructor-profiles="displayedInstructorProfiles"
                     :selected-instructor-profiles="selectedInstructorProfiles"

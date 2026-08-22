@@ -1,182 +1,374 @@
 <script setup>
-/**
- * Страница конкретного хештега
- * - SEO
- * - хлебные крошки
- * - показ главных видео, баннеров внизу страницы
- * - показ, скрытие колонок
- * - показ дерева треков в левой колонке
- * - показ облако хештегов в правой колонке
- *
- * @version PulsarCMS 1.0
- * @author Александр
- */
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
 
 import DefaultLayout from '@/Layouts/DefaultLayout.vue'
 import Navbar from '@/Partials/Default/Navbar.vue'
 import FooterBlog from '@/Partials/Default/FooterBlog.vue'
+import PublicAdminBottomPanel
+    from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
+
 import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarSchool from '@/Components/Public/Default/Partials/LeftSidebarSchool.vue'
 import RightSidebarSchool from '@/Components/Public/Default/Partials/RightSidebarSchool.vue'
-import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
-import InstructorCourseGrid from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseGrid.vue'
-import InstructorCourseRows from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseRows.vue'
+
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
+import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
+
+import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
+import InstructorCourseGrid
+    from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseGrid.vue'
+import InstructorCourseRows
+    from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseRows.vue'
+
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
 
 const { t } = useI18n()
+const page = usePage()
 
 const props = defineProps({
-    title: String,
-    canLogin: Boolean,
-    canRegister: Boolean,
+    title: { type: String, default: '' },
+    canLogin: { type: Boolean, default: false },
+    canRegister: { type: Boolean, default: false },
+
+    locale: { type: String, default: 'ru' },
 
     hashtag: { type: Object, default: () => ({}) },
 
-    courses: { type: Object, default: () => ({}) },
-    coursesFound: { type: Number, default: 0 },
-    filters: { type: Object, default: () => ({}) },
+    useServerProcessing: { type: Boolean, default: false },
+    publicSchoolCoursesProcessingMode: { type: String, default: 'server' },
 
+    courses: { type: [Array, Object], default: () => [] },
+    coursesCount: { type: Number, default: 0 },
+    coursesFound: { type: Number, default: 0 },
+
+    filters: { type: Object, default: () => ({}) },
     trackTree: { type: Array, default: () => [] },
 
-    mainVideos: { type: Array, default: () => [] },
-    mainBanners: { type: Array, default: () => [] },
+    mainVideos: { type: [Array, Object], default: () => [] },
+    mainBanners: { type: [Array, Object], default: () => [] },
 })
 
-/** Иерархия треков */
-const trackTree = computed(() => Array.isArray(props.trackTree) ? props.trackTree : [])
+/* ======================== Helpers ======================== */
 
-/** Режим показа */
-const VIEW_KEY = 'public_hashtag_courses_view'
-const viewMode = ref(localStorage.getItem(VIEW_KEY) || 'grid')
+const normalizeList = (value) => {
+    if (Array.isArray(value)) return value
+    if (Array.isArray(value?.data)) return value.data
+    return []
+}
 
-watch(viewMode, (v) => {
-    localStorage.setItem(VIEW_KEY, v)
+const normalizeText = (value) => String(value ?? '').trim().toLocaleLowerCase()
+
+/* ======================== Hashtag ======================== */
+
+const hashtag = computed(() => props.hashtag ?? {})
+const translation = computed(() => hashtag.value?.translation ?? {})
+
+const hashtagName = computed(() =>
+    translation.value?.name || hashtag.value?.slug || t('hashtags')
+)
+
+const hashtagShort = computed(() => translation.value?.short || '')
+const hashtagDescription = computed(() => translation.value?.description || '')
+
+/* ======================== SEO ======================== */
+
+const seoTitle = computed(() =>
+    translation.value?.meta_title || hashtagName.value
+)
+
+const seoDescription = computed(() =>
+    translation.value?.meta_desc || hashtagShort.value || ''
+)
+
+const seoKeywords = computed(() =>
+    translation.value?.meta_keywords || ''
+)
+
+const contentLocale = computed(() =>
+    translation.value?.locale || props.locale || 'ru'
+)
+
+const ogLocale = computed(() =>
+    contentLocale.value === 'ru' ? 'ru_RU' : contentLocale.value
+)
+
+/** Канонический URL */
+const canonicalUrl = computed(() => {
+    if (!hashtag.value?.slug) return ''
+
+    return String(route('public.schoolHashtags.show', {
+        slug: hashtag.value.slug,
+    }))
 })
 
-/** Данные курсов */
-const coursesData = computed(() => {
-    const data = props.courses?.data
-    return Array.isArray(data) ? data : []
-})
+/** Дата создания сущности */
+const seoCreatedAt = computed(() =>
+    hashtag.value?.created_at || ''
+)
 
-/** Пагинация */
-const currentPage = computed(() => {
-    return Number(props.courses?.meta?.current_page ?? props.courses?.current_page ?? 1) || 1
-})
+/**
+ * Dublin Core subject.
+ *
+ * Если meta_keywords заполнены —
+ * используем их.
+ * Иначе название хештега.
+ */
+const dcSubject = computed(() =>
+    seoKeywords.value || hashtagName.value
+)
 
-const lastPage = computed(() => {
-    return Number(props.courses?.meta?.last_page ?? props.courses?.last_page ?? 1) || 1
-})
+/* ======================== Courses ======================== */
 
-const perPageCourses = computed(() => {
-    const val = Number(props.filters?.per_page_courses ?? 12)
-    return Number.isFinite(val) ? val : 12
-})
+const coursesData = computed(() => normalizeList(props.courses))
 
-/** Поиск */
 const qCourses = ref(String(props.filters?.q_courses ?? ''))
 
-/** Сортировка */
-const DEFAULT_SORT = 'sortAsc'
+/**
+ * Количество элементов задаётся
+ * только backend-настройкой
+ * publicSchoolCoursesPerPage.
+ */
+const perPageCourses = computed(() =>
+    Number(props.filters?.per_page_courses ?? 12)
+)
+
+const DEFAULT_SORT = 'idDesc'
 const sortCourses = ref(String(props.filters?.sort_courses ?? DEFAULT_SORT))
 
-const courseSortOptions = [
-    { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
-    { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+const courseSortOptions = computed(() => [
+    { value: 'idDesc', label: t('idDesc') },
+    { value: 'idAsc', label: t('idAsc') },
+    { value: 'sortAsc', label: t('sortDefault') },
+    { value: 'sortDesc', label: t('sortReverse') },
+    { value: 'titleAsc', label: t('sortNameAsc') },
+    { value: 'titleDesc', label: t('sortNameDesc') },
+    { value: 'viewsDesc', label: t('views') },
+    { value: 'ratingAvgDesc', label: t('rating') },
+    { value: 'studentsDesc', label: t('students') },
+])
 
-    { value: 'titleAsc', label: `${t('title')} A→Z` },
-    { value: 'titleDesc', label: `${t('title')} Z→A` },
+/* ======================== View ======================== */
 
-    { value: 'viewsDesc', label: `${t('views')} 9→0` },
-    { value: 'viewsAsc', label: `${t('views')} 0→9` },
+const VIEW_KEY = 'public_school_courses_view'
 
-    { value: 'likesDesc', label: `${t('likes')} 9→0` },
-    { value: 'likesAsc', label: `${t('likes')} 0→9` },
+const getStoredView = () => {
+    if (typeof window === 'undefined') return 'grid'
 
-    { value: 'ratingAvgDesc', label: `${t('rating')} 9→0` },
-    { value: 'ratingAvgAsc', label: `${t('rating')} 0→9` },
+    const value = localStorage.getItem(VIEW_KEY)
+    return ['grid', 'rows'].includes(value) ? value : 'grid'
+}
 
-    { value: 'ratingCountDesc', label: `${t('rating')} count 9→0` },
-    { value: 'ratingCountAsc', label: `${t('rating')} count 0→9` },
+const viewMode = ref(getStoredView())
 
-    { value: 'popularityDesc', label: `${t('sortPopularFirst')}` },
-    { value: 'popularityAsc', label: `${t('sortUnpopularFirst')}` },
+watch(viewMode, (value) => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem(VIEW_KEY, value)
+    }
+})
 
-    { value: 'studentsCountDesc', label: `${t('students')} 9→0` },
-    { value: 'studentsCountAsc', label: `${t('students')} 0→9` },
+/* ======================== Frontend search ======================== */
 
-    { value: 'durationDesc', label: `${t('duration')} 9→0` },
-    { value: 'durationAsc', label: `${t('duration')} 0→9` },
+const getCourseTitle = (course) => course?.translation?.title || ''
+const getCourseShort = (course) => course?.translation?.short || ''
 
-    { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
-    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
-]
+const getInstructorName = (course) =>
+    course?.instructorProfile?.translation?.title ||
+    course?.instructorProfile?.user?.name ||
+    ''
 
-/** Поиск */
-const submitCourseSearch = () => {
+const frontendFilteredCourses = computed(() => {
+    if (props.useServerProcessing) return coursesData.value
+
+    const query = normalizeText(qCourses.value)
+    if (!query) return coursesData.value
+
+    return coursesData.value.filter((course) => {
+        return [
+            course?.id,
+            course?.slug,
+            getCourseTitle(course),
+            getCourseShort(course),
+            getInstructorName(course),
+            course?.level,
+            course?.availability,
+        ].some((value) => normalizeText(value).includes(query))
+    })
+})
+
+/* ======================== Frontend sort ======================== */
+
+const compareText = (a, b) =>
+    String(a ?? '').localeCompare(String(b ?? ''),
+        props.locale,
+        { sensitivity: 'base' })
+
+const compareNumber = (a, b) => Number(a ?? 0) - Number(b ?? 0)
+
+const frontendSortedCourses = computed(() => {
+    if (props.useServerProcessing) return frontendFilteredCourses.value
+
+    const list = [...frontendFilteredCourses.value]
+
+    list.sort((a, b) => {
+        switch (sortCourses.value) {
+            case 'idAsc':
+                return compareNumber(a?.id, b?.id)
+
+            case 'idDesc':
+                return compareNumber(b?.id, a?.id)
+
+            case 'sortAsc':
+                return compareNumber(a?.sort, b?.sort) || compareNumber(b?.id, a?.id)
+
+            case 'sortDesc':
+                return compareNumber(b?.sort, a?.sort) || compareNumber(b?.id, a?.id)
+
+            case 'titleAsc':
+                return compareText(getCourseTitle(a), getCourseTitle(b))
+
+            case 'titleDesc':
+                return compareText(getCourseTitle(b), getCourseTitle(a))
+
+            case 'viewsAsc':
+                return compareNumber(a?.views, b?.views)
+
+            case 'viewsDesc':
+                return compareNumber(b?.views, a?.views)
+
+            case 'ratingAvgAsc':
+                return compareNumber(a?.rating_avg, b?.rating_avg)
+
+            case 'ratingAvgDesc':
+                return compareNumber(b?.rating_avg, a?.rating_avg)
+
+            case 'studentsAsc':
+                return compareNumber(a?.students_count, b?.students_count)
+
+            case 'studentsDesc':
+                return compareNumber(b?.students_count, a?.students_count)
+
+            case 'durationAsc':
+                return compareNumber(a?.duration, b?.duration)
+
+            case 'durationDesc':
+                return compareNumber(b?.duration, a?.duration)
+
+            case 'createdAtAsc':
+            case 'dateAsc':
+                return compareText(a?.created_at, b?.created_at)
+
+            case 'createdAtDesc':
+            case 'dateDesc':
+                return compareText(b?.created_at, a?.created_at)
+
+            default:
+                return 0
+        }
+    })
+
+    return list
+})
+
+/* ======================== Frontend pagination ======================== */
+
+const frontendCurrentPage = ref(1)
+
+watch([qCourses, sortCourses], () => {
+    if (!props.useServerProcessing) {
+        frontendCurrentPage.value = 1
+    }
+})
+
+const effectiveCoursesFound = computed(() =>
+    props.useServerProcessing
+        ? Number(props.coursesFound ?? 0)
+        : frontendSortedCourses.value.length
+)
+
+const frontendPaginatedCourses = computed(() => {
+    if (props.useServerProcessing) return coursesData.value
+
+    const perPage = Math.max(1, perPageCourses.value)
+    const start = (frontendCurrentPage.value - 1) * perPage
+
+    return frontendSortedCourses.value.slice(start, start + perPage)
+})
+
+const displayedCourses = computed(() =>
+    props.useServerProcessing ? coursesData.value : frontendPaginatedCourses.value
+)
+
+/* ======================== Server pagination ======================== */
+
+const currentPage = computed(() =>
+    Number(props.courses?.meta?.current_page ?? props.courses?.current_page ?? 1) || 1
+)
+
+const lastPage = computed(() =>
+    Number(props.courses?.meta?.last_page ?? props.courses?.last_page ?? 1) || 1
+)
+
+/* ======================== Server requests ======================== */
+
+const loadServerCourses = (pageNumber = 1) => {
+    if (!props.useServerProcessing) return
+
     router.get(
-        route('public.schoolHashtags.show', { slug: props.hashtag.slug }),
+        canonicalUrl.value,
         {
             q_courses: qCourses.value || undefined,
-            sort_courses: sortCourses.value || undefined,
-            per_page_courses: perPageCourses.value,
-            page_courses: 1,
+            sort_courses: sortCourses.value,
+            page_courses: pageNumber,
         },
-        { preserveState: true, replace: true, preserveScroll: true }
+        {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        }
     )
 }
 
-const resetCourseSearch = () => {
+const applyFilters = () => {
+    if (props.useServerProcessing) {
+        loadServerCourses(1)
+    } else {
+        frontendCurrentPage.value = 1
+    }
+}
+
+const resetFilters = () => {
     qCourses.value = ''
     sortCourses.value = DEFAULT_SORT
 
-    router.get(
-        route('public.schoolHashtags.show', { slug: props.hashtag.slug }),
-        {
-            per_page_courses: perPageCourses.value,
-            sort_courses: sortCourses.value,
-            page_courses: 1,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+    if (props.useServerProcessing) {
+        loadServerCourses(1)
+    } else {
+        frontendCurrentPage.value = 1
+    }
 }
 
-/** Пагинация */
-const goToPage = (page) => {
-    const p = Number(page)
-    if (!Number.isFinite(p)) return
-
-    const safe = Math.max(1, Math.min(p, lastPage.value))
-
-    router.get(
-        route('public.schoolHashtags.show', { slug: props.hashtag.slug }),
-        {
-            q_courses: qCourses.value || undefined,
-            sort_courses: sortCourses.value || undefined,
-            per_page_courses: perPageCourses.value,
-            page_courses: safe,
-        },
-        { preserveState: true, replace: true, preserveScroll: true }
-    )
+const goToPage = (pageNumber) => {
+    const target = Math.min(Math.max(1, Number(pageNumber) || 1), lastPage.value)
+    loadServerCourses(target)
 }
 
 const goPrev = () => {
-    if (currentPage.value <= 1) return
-    goToPage(currentPage.value - 1)
+    if (currentPage.value > 1) goToPage(currentPage.value - 1)
 }
 
 const goNext = () => {
-    if (currentPage.value >= lastPage.value) return
-    goToPage(currentPage.value + 1)
+    if (currentPage.value < lastPage.value) goToPage(currentPage.value + 1)
 }
 
-/** Колонки */
-const { siteSettings } = usePage().props
+/* ======================== Sidebars ======================== */
+
+const siteSettings = page.props?.siteSettings || {}
+
+/** Администратор */
+const isAdmin = computed(() => page.props?.isAdmin === true)
 
 const showLeft = computed(() =>
     !siteSettings?.ViewLeftColumn || siteSettings.ViewLeftColumn === 'true'
@@ -186,65 +378,198 @@ const showRight = computed(() =>
     !siteSettings?.ViewRightColumn || siteSettings.ViewRightColumn === 'true'
 )
 
-const leftCollapsed = ref(false)
-const rightCollapsed = ref(false)
+const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
+const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
 
-const gridCols = computed(() => {
+/**
+ * На первом render сайдбары свёрнуты.
+ * После mounted восстанавливаем состояние
+ * из localStorage.
+ *
+ * transition-all создаёт естественный
+ * эффект раскрытия страницы.
+ */
+const leftCollapsed = ref(true)
+const rightCollapsed = ref(true)
+
+const readStoredBoolean = (key, fallback = true) => {
+    try {
+        const value = localStorage.getItem(key)
+        return value === null ? fallback : value === 'true'
+    } catch {
+        return fallback
+    }
+}
+
+const writeStoredBoolean = (key, value) => {
+    try {
+        localStorage.setItem(key, String(Boolean(value)))
+    } catch {
+        //
+    }
+}
+
+onMounted(() => {
+    leftCollapsed.value = readStoredBoolean(
+        LEFT_SIDEBAR_KEY,
+        true
+    )
+
+    rightCollapsed.value = readStoredBoolean(
+        RIGHT_SIDEBAR_KEY,
+        true
+    )
+})
+
+const setLeftCollapsed = (value) => {
+    leftCollapsed.value = Boolean(value)
+    writeStoredBoolean(LEFT_SIDEBAR_KEY, leftCollapsed.value)
+}
+
+const setRightCollapsed = (value) => {
+    rightCollapsed.value = Boolean(value)
+    writeStoredBoolean(RIGHT_SIDEBAR_KEY, rightCollapsed.value)
+}
+
+/**
+ * 2 — оба сайдбара открыты.
+ * 3 — открыт один.
+ * 4 — оба закрыты.
+ */
+const courseGridCols = computed(() => {
     const leftExpanded = showLeft.value && !leftCollapsed.value
     const rightExpanded = showRight.value && !rightCollapsed.value
 
-    return leftExpanded && rightExpanded ? 2 : 3
+    if (leftExpanded && rightExpanded) return 2
+    if (leftExpanded || rightExpanded) return 3
+
+    return 4
 })
 
-/** Количество курсов */
-const coursesCount = computed(() => {
-    return Number(props.hashtag?.courses_count ?? props.coursesFound ?? 0) || 0
-})
+/* ======================== Sidebar data ======================== */
 
-const hasCourses = computed(() => coursesCount.value > 0)
+const trackTree = computed(() =>
+    Array.isArray(props.trackTree) ? props.trackTree : []
+)
 
-const normalizeList = (value) => {
-    if (Array.isArray(value)) return value
-    if (Array.isArray(value?.data)) return value.data
-    return []
-}
-
-/** нормализация массивов банеров и видео */
-const mainVideosList = computed(() => normalizeList(props.mainVideos))
-const mainBannersList = computed(() => normalizeList(props.mainBanners))
+const mainVideos = computed(() => normalizeList(props.mainVideos))
+const mainBanners = computed(() => normalizeList(props.mainBanners))
 </script>
 
 <template>
     <Head>
-        <title>{{ hashtag.name || '' }}</title>
-        <meta name="title" :content="hashtag.meta_title || hashtag.name || ''" />
-        <meta name="keywords" :content="hashtag.meta_keywords || ''" />
-        <meta name="description" :content="hashtag.meta_desc || hashtag.short || ''" />
+        <!-- Основные SEO -->
+        <title>{{ seoTitle }}</title>
 
-        <meta property="og:title" :content="hashtag.meta_title || hashtag.name || ''" />
-        <meta property="og:description" :content="hashtag.meta_desc || hashtag.short || ''" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" :content="`/school/hashtags/${hashtag.slug || ''}`" />
-        <meta property="og:image" content="" />
-        <meta property="og:locale" :content="hashtag.locale || 'ru_RU'" />
+        <meta
+            v-if="seoDescription"
+            name="description"
+            :content="seoDescription"
+        >
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="hashtag.meta_title || hashtag.name || ''" />
-        <meta name="twitter:description" :content="hashtag.meta_desc || hashtag.short || ''" />
-        <meta name="twitter:image" content="" />
+        <meta
+            v-if="seoKeywords"
+            name="keywords"
+            :content="seoKeywords"
+        >
 
-        <meta name="DC.title" :content="hashtag.meta_title || hashtag.name || ''" />
-        <meta name="DC.description" :content="hashtag.meta_desc || hashtag.short || ''" />
-        <meta name="DC.identifier" :content="`/school/hashtags/${hashtag.slug || ''}`" />
-        <meta name="DC.language" :content="hashtag.locale || 'ru'" />
+        <meta
+            name="robots"
+            content="index, follow, max-image-preview:large"
+        >
+
+        <!-- Canonical -->
+        <link
+            v-if="canonicalUrl"
+            rel="canonical"
+            :href="canonicalUrl"
+        >
+
+        <!-- Open Graph -->
+        <meta property="og:type" content="website">
+        <meta property="og:title" :content="seoTitle">
+
+        <meta
+            v-if="seoDescription"
+            property="og:description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="canonicalUrl"
+            property="og:url"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            property="og:locale"
+            :content="ogLocale"
+        >
+
+        <!-- Twitter / X -->
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" :content="seoTitle">
+
+        <meta
+            v-if="seoDescription"
+            name="twitter:description"
+            :content="seoDescription"
+        >
+
+        <!-- Dublin Core -->
+        <meta name="DC.title" :content="seoTitle">
+
+        <meta
+            v-if="seoDescription"
+            name="DC.description"
+            :content="seoDescription"
+        >
+
+        <meta
+            v-if="dcSubject"
+            name="DC.subject"
+            :content="dcSubject"
+        >
+
+        <meta
+            name="DC.language"
+            :content="contentLocale"
+        >
+
+        <meta
+            v-if="canonicalUrl"
+            name="DC.identifier"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            name="DC.type"
+            content="Collection"
+        >
+
+        <meta
+            name="DC.format"
+            content="text/html"
+        >
+
+        <meta
+            v-if="seoCreatedAt"
+            name="DC.date"
+            :content="seoCreatedAt"
+        >
     </Head>
 
-    <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
+    <DefaultLayout
+        :title="title"
+        :can-login="canLogin"
+        :can-register="canRegister"
+    >
         <Navbar />
 
         <div class="min-h-screen px-1.5">
             <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-                <!-- LEFT -->
+
+                <!-- Left sidebar -->
                 <aside
                     v-if="showLeft"
                     class="shrink-0 mt-12 lg:mt-28 pl-3 transition-all duration-300"
@@ -252,144 +577,226 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                 >
                     <LeftSidebarSchool
                         :track-tree="trackTree"
-                        @collapsed="leftCollapsed = $event"
+                        :collapsed="leftCollapsed"
+                        @collapsed="setLeftCollapsed"
                     />
                 </aside>
 
-                <!-- CENTER -->
-                <div class="w-full lg:mt-28 pb-6 slate-1">
+                <!-- Content -->
+                <article
+                    itemscope
+                    itemtype="https://schema.org/CollectionPage"
+                    :itemid="canonicalUrl"
+                    class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
+                >
+                    <!-- Schema.org metadata -->
+                    <meta itemprop="name" :content="hashtagName">
+
+                    <meta
+                        v-if="seoDescription"
+                        itemprop="description"
+                        :content="seoDescription"
+                    >
+
+                    <meta
+                        v-if="seoKeywords"
+                        itemprop="keywords"
+                        :content="seoKeywords"
+                    >
+
+                    <meta
+                        v-if="canonicalUrl"
+                        itemprop="url"
+                        :content="canonicalUrl"
+                    >
+
+                    <meta
+                        itemprop="inLanguage"
+                        :content="contentLocale"
+                    >
+
+                    <meta
+                        v-if="seoCreatedAt"
+                        itemprop="dateCreated"
+                        :content="seoCreatedAt"
+                    >
+
                     <div class="mx-auto max-w-6xl">
 
                         <!-- Breadcrumbs -->
-                        <nav class="text-sm mb-3" aria-label="Breadcrumb">
+                        <nav
+                            class="mb-3 text-sm"
+                            aria-label="Breadcrumb"
+                            itemscope
+                            itemtype="https://schema.org/BreadcrumbList"
+                        >
                             <ol class="flex flex-wrap items-center font-semibold">
-                                <li>
-                                    <Link :href="route('home')"
-                                          class="breadcrumb-link hover:underline">
-                                        {{ t('home') }}
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                >
+                                    <Link itemprop="item" :href="route('home')" class="breadcrumb-link hover:underline">
+                                        <span itemprop="name">{{ t('home') }}</span>
                                     </Link>
+                                    <meta itemprop="position" content="1">
                                 </li>
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
-                                <li>
-                                    <Link :href="route('public.schoolTracks.index')"
-                                          class="breadcrumb-link hover:underline">
-                                        {{ t('tracks') }}
+
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                >
+                                    <span class="mx-2 breadcrumbs">/</span>
+
+                                    <Link
+                                        itemprop="item"
+                                        :href="route('public.schoolInstructors.index')"
+                                        class="breadcrumb-link hover:underline"
+                                    >
+                                        <span itemprop="name">{{ t('instructors') }}</span>
                                     </Link>
+
+                                    <meta itemprop="position" content="2">
                                 </li>
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
-                                <li>
-                                    <Link :href="route('public.schoolCourses.index')"
-                                          class="breadcrumb-link hover:underline">
-                                        {{ t('courses') }}
+
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                >
+                                    <span class="mx-2 breadcrumbs">/</span>
+
+                                    <Link
+                                        itemprop="item"
+                                        :href="route('public.schoolTracks.index')"
+                                        class="breadcrumb-link hover:underline"
+                                    >
+                                        <span itemprop="name">{{ t('tracks') }}</span>
                                     </Link>
+
+                                    <meta itemprop="position" content="3">
                                 </li>
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
-                                <li class="breadcrumbs">
-                                    {{ t('hashtags') }}: #{{ hashtag.name }}
+
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                >
+                                    <span class="mx-2 breadcrumbs">/</span>
+
+                                    <Link
+                                        itemprop="item"
+                                        :href="route('public.schoolCourses.index')"
+                                        class="breadcrumb-link hover:underline"
+                                    >
+                                        <span itemprop="name">{{ t('courses') }}</span>
+                                    </Link>
+
+                                    <meta itemprop="position" content="4">
+                                </li>
+
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                    aria-current="page"
+                                >
+                                    <span class="mx-2 breadcrumbs">/</span>
+                                    <span itemprop="name" class="breadcrumbs">{{ hashtagName }}</span>
+
+                                    <meta
+                                        v-if="canonicalUrl"
+                                        itemprop="item"
+                                        :content="canonicalUrl"
+                                    >
+
+                                    <meta itemprop="position" content="5">
                                 </li>
                             </ol>
                         </nav>
 
-                        <!-- Header panel -->
-                        <div class="flex items-center justify-between gap-1">
-                            <!-- courses count -->
-                            <div
-                                :title="t('courses')"
-                                class="flex items-center justify-center gap-1"
-                            >
-                                <svg
-                                    class="h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
+                        <!-- Hashtag -->
+                        <div
+                            class="mb-5 rounded-md border border-gray-200 bg-white p-4 shadow-sm
+                                   dark:border-gray-700 dark:bg-gray-900"
+                        >
+                            <div class="flex flex-wrap items-center justify-center gap-3">
+                                <h1
+                                    itemprop="headline"
+                                    class="text-2xl font-bold text-slate-800 dark:text-slate-100"
                                 >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-                                    />
-                                </svg>
-                                <span v-if="hasCourses" class="text-center text-sm text-gray-500">
-                                    {{ coursesCount }} ·
-                                </span>
-                            </div>
-
-                            <!-- title -->
-                            <div class="flex flex-wrap items-center justify-center gap-3 title my-3">
-                                <h1 class="text-2xl font-bold">
-                                    #{{ hashtag.name }}
+                                    #{{ hashtagName }}
                                 </h1>
+
+                                <span
+                                    v-if="hashtag.color"
+                                    class="h-4 w-4 rounded-full border border-slate-400"
+                                    :style="{ backgroundColor: hashtag.color }"
+                                />
                             </div>
 
-                            <!-- views -->
                             <div
-                                :title="t('views')"
-                                class="flex items-center justify-center gap-1"
+                                v-if="hashtagShort"
+                                itemprop="abstract"
+                                class="mt-2 text-center text-sm text-slate-600 dark:text-slate-300"
                             >
-                                <svg
-                                    class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 576 512"
-                                    fill="currentColor"
-                                >
-                                    <path
-                                        d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
-                                    />
-                                </svg>
-                                <span class="text-center text-sm text-gray-500">
-                                    {{ hashtag.views || 0 }} ·
-                                </span>
+                                {{ hashtagShort }}
                             </div>
+
+                            <div
+                                v-if="hashtagDescription"
+                                itemprop="text"
+                                class="mt-4 text-sm text-slate-700 dark:text-slate-300"
+                                v-html="hashtagDescription"
+                            />
                         </div>
 
-                        <!-- description -->
-                        <div
-                            v-if="hashtag.description"
-                            class="mt-1 mb-3 text-sm subtitle text-center"
-                            v-html="hashtag.description"
-                        />
-
-                        <!-- Toolbar -->
+                        <!-- Controls -->
                         <EntityPageToolbar
-                            v-if="hasCourses"
                             v-model="qCourses"
-                            :found="coursesFound"
-                            :view-mode="viewMode"
-                            :sort-value="sortCourses"
+                            v-model:view-mode="viewMode"
+                            v-model:sort-value="sortCourses"
+                            :found="effectiveCoursesFound"
                             :sort-options="courseSortOptions"
                             :default-sort="DEFAULT_SORT"
                             :found-label="t('courses')"
                             :search-placeholder="t('searchByName')"
-                            @submit="submitCourseSearch"
-                            @reset="resetCourseSearch"
-                            @update:viewMode="viewMode = $event"
-                            @update:sortValue="sortCourses = $event"
+                            @submit="applyFilters"
+                            @reset="resetFilters"
                         />
 
                         <!-- Empty -->
                         <div
-                            v-if="coursesData.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            v-if="!displayedCourses.length"
+                            class="rounded-md border border-gray-200 bg-white p-8 text-center text-sm
+                                   text-slate-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-400"
                         >
-                            {{ t('noData') }}
+                            {{ t('nothingFound') }}
                         </div>
 
-                        <!-- Views -->
-                        <div v-else>
+                        <!-- Courses -->
+                        <template v-else>
                             <InstructorCourseGrid
                                 v-if="viewMode === 'grid'"
-                                :courses="coursesData"
-                                :cols="gridCols"
+                                :courses="displayedCourses"
+                                :cols="courseGridCols"
                             />
 
                             <InstructorCourseRows
                                 v-else
-                                :courses="coursesData"
+                                :courses="displayedCourses"
                             />
-                        </div>
+                        </template>
 
-                        <!-- Pagination -->
+                        <!-- Server pagination -->
                         <Pagination
-                            v-if="hasCourses"
+                            v-if="useServerProcessing && lastPage > 1"
                             :current-page="currentPage"
                             :last-page="lastPage"
                             :found="coursesFound"
@@ -398,24 +805,44 @@ const mainBannersList = computed(() => normalizeList(props.mainBanners))
                             @go="goToPage"
                         />
 
-                        <!-- Bottom blocks -->
-                        <SectionVideoList :videos="mainVideosList" />
-                        <SectionBanners :banners="mainBannersList" />
-                    </div>
-                </div>
+                        <!-- Frontend pagination -->
+                        <FrontendPagination
+                            v-if="!useServerProcessing && effectiveCoursesFound > perPageCourses"
+                            v-model:currentPage="frontendCurrentPage"
+                            :items-per-page="perPageCourses"
+                            :total-items="effectiveCoursesFound"
+                        />
 
-                <!-- RIGHT -->
+                        <SectionVideoList :videos="mainVideos" />
+                        <SectionBanners :banners="mainBanners" />
+                    </div>
+                </article>
+
+                <!-- Right sidebar -->
                 <aside
                     v-if="showRight"
                     class="shrink-0 lg:mt-28 pr-3 transition-all duration-300"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
-                    <RightSidebarSchool @collapsed="rightCollapsed = $event" />
+                    <RightSidebarSchool
+                        :collapsed="rightCollapsed"
+                        @collapsed="setRightCollapsed"
+                    />
                 </aside>
+
             </main>
         </div>
 
         <FooterBlog />
         <Progress />
+
+        <!-- Нижняя панель администратора -->
+        <PublicAdminBottomPanel
+            v-if="isAdmin"
+            setting-key="publicSchoolCoursesProcessingMode"
+            :mode="publicSchoolCoursesProcessingMode"
+            :use-server-processing="useServerProcessing"
+            :total="coursesCount"
+        />
     </DefaultLayout>
 </template>

@@ -44,20 +44,12 @@ const trackLink = (track) => {
 
 /** Название трека */
 const getTrackName = (track) => {
-    return track?.name
-        || track?.title
-        || track?.translation?.name
-        || track?.translation?.title
-        || ''
+    return track?.translation?.name || ''
 }
 
 /** Краткое описание */
 const getTrackShort = (track) => {
-    return track?.short
-        || track?.description
-        || track?.translation?.short
-        || track?.translation?.description
-        || ''
+    return track?.translation?.short || ''
 }
 
 /** Количество подразделов */

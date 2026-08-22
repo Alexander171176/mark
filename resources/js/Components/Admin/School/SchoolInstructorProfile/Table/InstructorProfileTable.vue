@@ -293,14 +293,22 @@ const getPrimaryImage = (instructorProfile) => {
                                 <div class="text-center">{{ instructorProfile.views }}</div>
                             </td>
                             <td class="px-2 first:pl-11 last:pr-11 py-1 whitespace-nowrap">
-                                <div v-if="Number(instructorProfile.rating.count) > 0"
-                                     class="text-left uppercase text-slate-700 dark:text-slate-200">
-                                    {{ instructorProfile.rating.count }}
+                                <div
+                                    v-if="Number(instructorProfile.rating_count ?? 0) > 0"
+                                    class="text-left uppercase text-slate-700 dark:text-slate-200"
+                                >
+                                    {{ instructorProfile.rating_count }}
+                                </div>
+                                <div
+                                    v-else
+                                    class="text-left text-slate-400 dark:text-slate-500"
+                                >
+                                    0
                                 </div>
                             </td>
                             <td class="px-2 first:pl-11 last:pr-11 py-1 whitespace-nowrap">
                                 <div class="text-left uppercase text-rose-500 dark:text-rose-300">
-                                    {{ instructorProfile.rating.avg }}
+                                    {{ instructorProfile.rating_avg ?? 0 }}
                                 </div>
                             </td>
                             <td class="px-2 first:pl-11 last:pr-11 py-1 whitespace-nowrap">

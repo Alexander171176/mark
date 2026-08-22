@@ -46,6 +46,14 @@ const courseLevelLabelKeyMap = {
 }
 
 // 🔹 Хелперы
+const getCourseTitle = (course) => {
+    return course?.translation?.title || ''
+}
+
+const getCourseSubtitle = (course) => {
+    return course?.translation?.subtitle || ''
+}
+
 const getCourseStatusLabel = (status) => {
     return t(courseStatusLabelKeyMap[status] || status || 'no')
 }
@@ -105,16 +113,13 @@ const getPrimaryImage = (course) => {
 }
 
 /** Инструктор */
-const getInstructorProfile = (course) => {
-    return course?.instructorProfile || null
-}
-
 const getInstructorName = (course) => {
-    const instructorProfile = getInstructorProfile(course)
+    const instructor =
+        course?.instructorProfile
 
-    return instructorProfile?.public_name
-        || instructorProfile?.title
-        || 'no'
+    return instructor?.translation?.title
+        || instructor?.user?.name
+        || '—'
 }
 
 /** Функция форматирования даты */
@@ -364,8 +369,9 @@ const formatDate = (dateStr) => {
                                         class="text-xs text-sky-600 dark:text-sky-200 hover:underline
                                                    hover:text-sky-600 dark:hover:text-sky-200"
                                         target="_blank"
-                                        rel="noopener noreferrer" :title="course.subtitle">
-                                        {{ course.title }}
+                                        rel="noopener noreferrer"
+                                        :title="getCourseSubtitle(course) || getCourseTitle(course)">
+                                        {{ getCourseTitle(course) }}
                                     </a>
 
                                     <div

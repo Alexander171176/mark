@@ -17,16 +17,20 @@ const showRoute = (instructor) => {
 }
 
 const getInstructorName = (instructor) => {
-    return instructor?.public_name || instructor?.title || instructor?.user?.name || t('instructor')
+    return instructor?.translation?.title
+        || instructor?.user?.name
+        || t('instructor')
 }
 
 const getInstructorShort = (instructor) => {
-    return instructor?.short || ''
+    return instructor?.translation?.short || ''
 }
 
 const getRatingText = (instructor) => {
-    const avg = instructor?.rating?.avg
-    const count = instructor?.rating?.count ?? 0
+    const avg = instructor?.rating_avg
+    const count = Number(
+        instructor?.rating_count ?? 0
+    )
 
     if (avg === null || avg === undefined) {
         return '—'

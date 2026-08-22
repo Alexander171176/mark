@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Public\Default\School\SchoolTrack;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseResource;
-use App\Http\Resources\Admin\School\SchoolTrack\SchoolTrackResource;
+use App\Http\Resources\Public\School\SchoolCourse\SchoolCourseSharedResource;
+use App\Http\Resources\Public\School\SchoolTrack\SchoolTrackResource;
+use App\Http\Resources\Public\School\SchoolTrack\SchoolTrackSharedResource;
 use App\Models\Admin\School\SchoolTrack\SchoolTrack;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
@@ -12,7 +13,9 @@ use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
+use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,16 +23,17 @@ use Inertia\Response;
 
 class SchoolTrackController extends Controller
 {
+    use WithUserLikesTrait;
     use HasPublicIndexFiltersTrait;
     use BuildsTrackTreeTrait;
     use HasSidebarDataTrait;
 
-    /**
-     * Страница списка направлений обучения.
-     */
+    /** Страница списка направлений обучения. */
     public function index(Request $request): Response
     {
         $locale = app()->getLocale();
+
+        /* ======================== SEO ======================== */
 
         $cmsSeoPage = app(CmsPageResolverService::class)
             ->resolveSeo($request->path());
@@ -38,13 +42,9 @@ class SchoolTrackController extends Controller
 
         $seo = $cmsSeoTranslation
             ? [
-                'title' => $cmsSeoTranslation->meta_title
-                    ?: $cmsSeoTranslation->title,
-
+                'title' => $cmsSeoTranslation->meta_title ?: $cmsSeoTranslation->title,
                 'keywords' => $cmsSeoTranslation->meta_keywords,
-
-                'description' => $cmsSeoTranslation->meta_desc
-                    ?: $cmsSeoTranslation->short,
+                'description' => $cmsSeoTranslation->meta_desc ?: $cmsSeoTranslation->short,
             ]
             : [
                 'title' => __('Направления обучения'),
@@ -54,12 +54,17 @@ class SchoolTrackController extends Controller
 
         $settings = app(PublicSettingsService::class);
 
-        $perPage = $this->resolvePerPage(
-            $request,
-            $settings->int(
-                'publicSchoolTracksPerPage',
-                12
-            )
+        /* ======================== Filters ======================== */
+
+        /**
+         * Единственный источник истины.
+         *
+         * Public-пользователь количество
+         * элементов не регулирует.
+         */
+        $perPage = $settings->int(
+            'publicSchoolTracksPerPage',
+            12
         );
 
         $search = $this->resolveSearch($request);
@@ -87,24 +92,30 @@ class SchoolTrackController extends Controller
             )
         );
 
-        /**
-         * Предварительный COUNT нужен только
-         * для автоматического режима.
-         */
+        /* ======================== Processing mode ======================== */
+
+        $processingModeService = app(ProcessingModeService::class);
         $tracksCount = null;
 
+        /**
+         * Предварительный COUNT нужен
+         * только режиму auto.
+         */
         if ($processingMode === 'auto') {
             $tracksCount = SchoolTrack::query()
                 ->forPublic($locale)
                 ->count();
-        }
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
+            $useServerProcessing = $processingModeService->shouldUseServer(
                 $processingMode,
-                $tracksCount ?? 0,
+                $tracksCount,
                 300
             );
+        } else {
+            $useServerProcessing = $processingMode === 'server';
+        }
+
+        /* ======================== Tracks ======================== */
 
         $tracks = $this->getIndexTracks(
             locale: $locale,
@@ -114,104 +125,107 @@ class SchoolTrackController extends Controller
             search: $search,
         );
 
-        /**
-         * Количество найденных направлений.
-         */
-        $tracksFound = $useServerProcessing
-            ? $tracks->total()
-            : $tracks->count();
+        if ($useServerProcessing) {
+            /**
+             * paginate() уже выполнил COUNT.
+             */
+            $tracksFound = $tracks->total();
 
-        /**
-         * Если предварительного COUNT не было,
-         * используем уже полученный результат.
-         */
-        if ($tracksCount === null) {
-            $tracksCount = $tracksFound;
+            /**
+             * Без поиска paginator total является
+             * одновременно общим количеством.
+             */
+            if ($tracksCount === null && $search === '') {
+                $tracksCount = $tracksFound;
+            }
+
+            /**
+             * При поиске total содержит только
+             * количество найденных треков.
+             */
+            if ($tracksCount === null) {
+                $tracksCount = SchoolTrack::query()
+                    ->forPublic($locale)
+                    ->count();
+            }
+        } else {
+            /**
+             * get() уже получил весь Public-набор.
+             */
+            $tracksFound = $tracks->count();
+            $tracksCount ??= $tracksFound;
         }
 
-        $tracks = SchoolTrackResource::collection(
-            $tracks
-        );
+        $tracks = SchoolTrackSharedResource::collection($tracks);
+
+        /* ======================== Sidebars ======================== */
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render(
-            'Public/Default/School/SchoolTracks/Index',
-            [
-                'seo' => $seo,
+        /* ======================== Response ======================== */
 
-                'publicSchoolTracksProcessingMode' =>
-                    $processingMode,
+        return Inertia::render('Public/Default/School/SchoolTracks/Index', [
+            'seo' => $seo,
 
-                'useServerProcessing' =>
-                    $useServerProcessing,
+            'publicSchoolTracksProcessingMode' => $processingMode,
+            'useServerProcessing' => $useServerProcessing,
 
-                'tracks' => $tracks,
+            'tracks' => $tracks,
+            'tracksCount' => $tracksCount,
+            'tracksFound' => $tracksFound,
 
-                'tracksCount' => $tracksCount,
-                'tracksFound' => $tracksFound,
+            'filters' => $this->buildIndexFilters(
+                $search,
+                $perPage,
+                $sort,
+                $view,
+                $processingMode
+            ),
 
-                'filters' => $this->buildIndexFilters(
-                    $search,
-                    $perPage,
-                    $sort,
-                    $view,
-                    $processingMode
-                ),
+            'trackTree' => $trackTree,
+            'locale' => $locale,
 
-                'trackTree' => $trackTree,
-                'locale' => $locale,
-
-                ...$sidebarData,
-            ]
-        );
+            ...$sidebarData,
+        ]);
     }
 
-    /**
-     * Страница конкретного направления обучения.
-     */
-    public function show(
-        Request $request,
-        string $slug
-    ): Response {
+    /** Страница конкретного направления обучения. */
+    public function show(Request $request, string $slug): Response
+    {
         $locale = app()->getLocale();
-        $userId = auth()->id();
+        $fallbackLocale = config('app.fallback_locale', 'ru');
 
-        /**
-         * Основное направление.
-         */
-        $track = SchoolTrack::query()
+        $locales = array_values(array_unique([
+            $locale,
+            $fallbackLocale,
+        ]));
+
+        $settings = app(PublicSettingsService::class);
+
+        /* ======================== Track ======================== */
+
+        $trackQuery = SchoolTrack::query()
             ->forPublic($locale)
             ->where('slug', $slug)
             ->with([
-                'parent.translations' => fn ($query) => $query->where('locale', $locale),
+                'parent.translations' => fn ($query) => $query->whereIn('locale', $locales),
                 'images.media',
 
-                'children' => fn ($query) => $query
-                    ->forPublic($locale)
-                    ->with([
-                        'images.media',
-                    ])
-                    ->withCount([
-                        'children',
-                        'courses',
-                        'likes',
-                        'images',
-                    ])
-                    ->when(
-                        $userId,
-                        fn ($childQuery) =>
-                        $childQuery->withExists([
-                            'likes as already_liked' =>
-                                fn ($likesQuery) =>
-                                $likesQuery->where(
-                                    'user_id',
-                                    $userId
-                                ),
+                'children' => function ($query) use ($locale) {
+                    $query
+                        ->forPublic($locale)
+                        ->with(['images.media'])
+                        ->withCount([
+                            'children',
+                            'courses',
+                            'likes',
+                            'images',
                         ])
-                    )
-                    ->ordered(),
+                        ->ordered();
+
+                    $this->withUserLike($query);
+                },
             ])
             ->withCount([
                 'children',
@@ -219,97 +233,164 @@ class SchoolTrackController extends Controller
                 'likes',
                 'images',
             ])
-            ->when(
-                $userId,
-                fn ($query) => $query->withExists([
-                    'likes as already_liked' =>
-                        fn ($likesQuery) =>
-                        $likesQuery->where(
-                            'user_id',
-                            $userId
-                        ),
-                ])
-            )
-            ->firstOrFail();
+            ->orderByDesc('id');
 
+        $trackQuery = $this->withUserLike($trackQuery);
+
+        $track = $trackQuery->firstOrFail();
         $track->increment('views');
 
-        /**
-         * SchoolTrackResource теперь получает
-         * already_liked уже из основного SQL.
-         */
-        $trackData = (
-        new SchoolTrackResource($track)
-        )->resolve();
+        /* ======================== Course settings ======================== */
 
         /**
-         * Дочерние направления уже содержат
-         * already_liked благодаря withExists().
+         * Единственный источник истины.
+         *
+         * Public-пользователь количество
+         * элементов не регулирует.
          */
-        if ($track->relationLoaded('children')) {
-            $trackData['children'] = $track->children
-                ->map(
-                    fn ($child) =>
-                    (new SchoolTrackResource(
-                        $child
-                    ))->resolve()
-                )
-                ->values()
-                ->all();
-        }
+        $perPageCourses = $settings->int(
+            'publicSchoolCoursesPerPage',
+            12
+        );
 
-        /**
-         * Фильтры курсов направления.
-         */
         $coursesSearch = $this->resolveSearch(
             $request,
             'q_courses'
         );
 
-        $perPageCourses = $this->resolvePerPage(
-            $request,
-            (int) config(
-                'site_settings.publicSchoolCoursesPerPage',
-                6
-            ),
-            3,
-            60
-        );
-
         $coursesSort = (string) $request->query(
             'sort_courses',
-            config(
-                'site_settings.publicSchoolCoursesDefaultSort',
-                'sortAsc'
-            )
+            $settings->string('publicSchoolCoursesDefaultSort', 'idDesc')
         );
 
-        /**
-         * Курсы направления.
-         *
-         * scopeForPublic() уже загружает translations
-         * текущей локали.
-         *
-         * already_liked получаем через withExists(),
-         * изображения — вместе с media.
-         */
+        $processingMode = $this->resolveProcessingMode(
+            $settings->string('publicSchoolCoursesProcessingMode', 'server')
+        );
 
-        $courses = $track->courses()
+        /* ======================== Processing mode ======================== */
+
+        $processingModeService = app(ProcessingModeService::class);
+        $coursesCount = null;
+
+        /**
+         * Предварительный COUNT нужен только auto.
+         */
+        if ($processingMode === 'auto') {
+            $coursesCount = $track
+                ->courses()
+                ->forPublic($locale)
+                ->count();
+
+            $useServerProcessing = $processingModeService->shouldUseServer(
+                $processingMode,
+                $coursesCount,
+                300
+            );
+        } else {
+            $useServerProcessing = $processingMode === 'server';
+        }
+
+        /* ======================== Courses ======================== */
+
+        $courses = $this->getTrackCourses(
+            track: $track,
+            locale: $locale,
+            locales: $locales,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPageCourses,
+            sort: $coursesSort,
+            search: $coursesSearch,
+        );
+
+        if ($useServerProcessing) {
+            $coursesFound = $courses->total();
+
+            /**
+             * Без поиска paginator total одновременно
+             * является общим количеством Public-курсов.
+             */
+            if ($coursesCount === null && $coursesSearch === '') {
+                $coursesCount = $coursesFound;
+            }
+
+            /**
+             * При поиске total содержит только найденное,
+             * поэтому общий coursesCount считаем отдельно.
+             */
+            if ($coursesCount === null) {
+                $coursesCount = $track
+                    ->courses()
+                    ->forPublic($locale)
+                    ->count();
+            }
+        } else {
+            /**
+             * Во frontend mode get() уже получил
+             * весь публичный набор.
+             */
+            $coursesFound = $courses->count();
+            $coursesCount ??= $coursesFound;
+        }
+
+        $courses = SchoolCourseSharedResource::collection($courses);
+
+        /* ======================== Sidebars ======================== */
+
+        $trackTree = $this->buildTrackTree($locale);
+        $sidebarData = $this->getSidebarData($locale);
+
+        /* ======================== Response ======================== */
+
+        return Inertia::render('Public/Default/School/SchoolTracks/Show', [
+            'track' => new SchoolTrackResource($track),
+
+            'publicSchoolCoursesProcessingMode' => $processingMode,
+            'useServerProcessing' => $useServerProcessing,
+
+            'courses' => $courses,
+            'coursesCount' => $coursesCount,
+            'coursesFound' => $coursesFound,
+
+            'filters' => [
+                'q_courses' => $coursesSearch,
+                'per_page_courses' => $perPageCourses,
+                'sort_courses' => $coursesSort,
+            ],
+
+            'trackTree' => $trackTree,
+            'locale' => $locale,
+
+            ...$sidebarData,
+        ]);
+    }
+
+    /**
+     * Базовый запрос публичных курсов
+     * текущего направления.
+     */
+    private function coursesQuery(
+        SchoolTrack $track,
+        string $locale,
+        array $locales
+    ): Builder|Relation {
+        $query = $track
+            ->courses()
             ->forPublic($locale)
-            ->search($coursesSearch, $locale)
             ->with([
+                'translations' => fn ($query) => $query->whereIn('locale', $locales),
+
                 'images.media',
 
-                'instructorProfile.translations' => fn ($query) =>
-                $query->where('locale', $locale),
+                'instructorProfile.translations' =>
+                    fn ($query) => $query->whereIn('locale', $locales),
 
                 'instructorProfile.images.media',
 
-                'tracks.translations' => fn ($query) =>
-                $query->where('locale', $locale),
+                'tracks.translations' =>
+                    fn ($query) => $query->whereIn('locale', $locales),
 
-                'hashtags.translations' => fn ($query) =>
-                $query->where('locale', $locale),
+                'hashtags.translations' =>
+                    fn ($query) => $query->whereIn('locale', $locales),
 
                 'prices',
             ])
@@ -322,59 +403,45 @@ class SchoolTrackController extends Controller
                 'prices',
                 'reviews',
                 'likes',
-            ])
-            ->when(
-                $userId,
-                fn ($query) => $query->withExists([
-                    'likes as already_liked' => fn ($likesQuery) =>
-                    $likesQuery->where(
-                        'user_id',
-                        $userId
-                    ),
-                ])
-            )
-            ->sortByParam(
-                $coursesSort,
-                $locale
-            )
-            ->paginate(
-                $perPageCourses,
-                ['*'],
-                'page_courses'
-            )
-            ->withQueryString();
+            ]);
 
-        /**
-         * Сериализуем курсы.
-         *
-         * already_liked уже получен
-         * основным SQL-запросом.
-         */
-        $courses = SchoolCourseResource::collection($courses);
+        return $this->withUserLike($query);
+    }
 
-        $trackTree = $this->buildTrackTree($locale);
-        $sidebarData = $this->getSidebarData($locale);
-
-        return Inertia::render(
-            'Public/Default/School/SchoolTracks/Show',
-            [
-                'track' => $trackData,
-
-                'courses' => $courses,
-                'coursesFound' => $courses->total(),
-
-                'filters' => [
-                    'q_courses' => $coursesSearch,
-                    'per_page_courses' => $perPageCourses,
-                    'sort_courses' => $coursesSort,
-                ],
-
-                'trackTree' => $trackTree,
-                'locale' => $locale,
-
-                ...$sidebarData,
-            ]
+    /**
+     * Получение курсов направления
+     * по активному режиму обработки.
+     */
+    private function getTrackCourses(
+        SchoolTrack $track,
+        string $locale,
+        array $locales,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->coursesQuery(
+            track: $track,
+            locale: $locale,
+            locales: $locales,
         );
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate(
+                    $perPage,
+                    ['*'],
+                    'page_courses'
+                )
+                ->withQueryString();
+        }
+
+        return $query
+            ->sortByParam($sort, $locale)
+            ->get();
     }
 
     /**
@@ -422,20 +489,19 @@ class SchoolTrackController extends Controller
     }
 
     /**
-     * Базовый запрос для списка
-     * публичных направлений обучения.
+     * Базовый запрос Public Index.
      */
     private function indexQuery(
         string $locale
     ): Builder {
-        $userId = auth()->id();
-
-        return SchoolTrack::query()
-            ->forPublic($locale)
+        $query = SchoolTrack::query()
+            ->forPublic(
+                $locale
+            )
             ->with([
-                'parent.translations' => fn ($query) =>
-                $query->where('locale', $locale),
-
+                /**
+                 * Изображения + Media.
+                 */
                 'images.media',
             ])
             ->withCount([
@@ -443,18 +509,17 @@ class SchoolTrackController extends Controller
                 'courses',
                 'likes',
                 'images',
-            ])
-            ->when(
-                $userId,
-                fn ($query) => $query->withExists([
-                    'likes as already_liked' =>
-                        fn ($likesQuery) =>
-                        $likesQuery->where(
-                            'user_id',
-                            $userId
-                        ),
-                ])
-            );
+            ]);
+
+        /**
+         * already_liked одним EXISTS.
+         *
+         * Для гостя дополнительного
+         * SQL-подзапроса нет.
+         */
+        return $this->withUserLike(
+            $query
+        );
     }
 
     /**

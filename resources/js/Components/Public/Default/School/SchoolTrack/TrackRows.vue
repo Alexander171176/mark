@@ -46,16 +46,16 @@ defineProps({
                             class="truncate text-lg font-semibold
                                    text-slate-900/85 dark:text-slate-100/85
                                    group-hover:opacity-75">
-                            {{ track.name }}
+                            {{ track.translation?.name }}
                         </span>
                     </Link>
                 </div>
 
                 <div
-                    v-if="track.short"
+                    v-if="track.translation?.short"
                     class="mt-2 line-clamp-2 text-sm text-slate-700 dark:text-slate-300"
                 >
-                    {{ track.short }}
+                    {{ track.translation.short }}
                 </div>
 
                 <!-- Данные -->

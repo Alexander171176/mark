@@ -116,14 +116,38 @@ class SchoolInstructorProfile extends Model
     }
 
     /** Публичный набор */
-    public function scopeForPublic(Builder $q, ?string $locale = null): Builder
-    {
-        $locale = $locale ?: app()->getLocale();
+    public function scopeForPublic(
+        Builder $query,
+        ?string $locale = null,
+        ?string $fallbackLocale = null
+    ): Builder {
+        $locale ??= app()->getLocale();
 
-        return $q
-            ->active()
-            ->whereHas('translations', fn ($qq) => $qq->where('locale', $locale))
-            ->withLocale($locale);
+        $fallbackLocale ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        return $query
+            ->where(
+                'activity',
+                true
+            )
+            ->whereHas(
+                'translations',
+                fn (Builder $translationQuery) =>
+                $translationQuery->whereIn(
+                    'locale',
+                    $locales
+                )
+            );
     }
 
     /** По рейтингу */
@@ -135,31 +159,114 @@ class SchoolInstructorProfile extends Model
     }
 
     /** Поиск */
-    public function scopeSearch(Builder $q, ?string $term, ?string $locale = null): Builder
-    {
-        if (!$term) {
+    public function scopeSearch(
+        Builder $q,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        $term = trim(
+            (string) $term
+        );
+
+        if ($term === '') {
             return $q;
         }
 
-        $locale = $locale ?: app()->getLocale();
+        $locale ??= app()->getLocale();
 
-        return $q->where(function (Builder $query) use ($term, $locale) {
-            $query->where('slug', 'like', "%{$term}%")
-                ->orWhereHas('translations', function (Builder $qq) use ($term, $locale) {
-                    $qq->where('locale', $locale)
-                        ->where(function (Builder $sub) use ($term) {
-                            $sub->where('title', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('bio', 'like', "%{$term}%");
-                        });
-                });
-        });
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        return $q->where(
+            function (Builder $query) use (
+                $term,
+                $locales
+            ) {
+                /**
+                 * Основная таблица.
+                 */
+                $query
+                    ->where(
+                        'school_instructor_profiles.slug',
+                        'like',
+                        "%{$term}%"
+                    )
+
+                    /**
+                     * Current locale
+                     * + fallback locale.
+                     */
+                    ->orWhereHas(
+                        'translations',
+                        function (Builder $translationQuery) use (
+                            $term,
+                            $locales
+                        ) {
+                            $translationQuery
+                                ->whereIn(
+                                    'locale',
+                                    $locales
+                                )
+                                ->where(
+                                    function (Builder $subQuery) use ($term) {
+                                        $subQuery
+                                            ->where(
+                                                'title',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'short',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'bio',
+                                                'like',
+                                                "%{$term}%"
+                                            );
+                                    }
+                                );
+                        }
+                    )
+
+                    /**
+                     * Пользователь.
+                     */
+                    ->orWhereHas(
+                        'user',
+                        fn (Builder $userQuery) =>
+                        $userQuery->where(
+                            'name',
+                            'like',
+                            "%{$term}%"
+                        )
+                    );
+            }
+        );
     }
 
     /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
-    {
-        $locale = $locale ?: app()->getLocale();
+    public function scopeSortByParam(
+        Builder $q,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale ??= app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
 
         return match ($sort) {
             'idAsc' => $q->orderBy('id', 'asc'),
@@ -172,22 +279,119 @@ class SchoolInstructorProfile extends Model
             'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),
 
             'titleAsc' => $q
-                ->leftJoin('school_instructor_profile_translations as sipt_sort', function ($join) use ($locale) {
-                    $join->on('sipt_sort.school_instructor_profile_id', '=', 'school_instructor_profiles.id')
-                        ->where('sipt_sort.locale', '=', $locale);
-                })
-                ->orderBy('sipt_sort.title', 'asc')
-                ->orderByDesc('school_instructor_profiles.id')
-                ->select('school_instructor_profiles.*'),
+                /**
+                 * Перевод текущей локали.
+                 */
+                ->leftJoin(
+                    'school_instructor_profile_translations as sipt_current',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'sipt_current.school_instructor_profile_id',
+                                '=',
+                                'school_instructor_profiles.id'
+                            )
+                            ->where(
+                                'sipt_current.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+
+                /**
+                 * Fallback-перевод.
+                 */
+                ->leftJoin(
+                    'school_instructor_profile_translations as sipt_fallback',
+                    function ($join) use ($fallbackLocale) {
+                        $join
+                            ->on(
+                                'sipt_fallback.school_instructor_profile_id',
+                                '=',
+                                'school_instructor_profiles.id'
+                            )
+                            ->where(
+                                'sipt_fallback.locale',
+                                '=',
+                                $fallbackLocale
+                            );
+                    }
+                )
+
+                /**
+                 * Приоритет:
+                 *
+                 * current locale
+                 * → fallback locale.
+                 */
+                ->orderByRaw(
+                    'COALESCE(sipt_current.title, sipt_fallback.title) ASC'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                )
+                ->addSelect(
+                    'school_instructor_profiles.*'
+                ),
+
 
             'titleDesc' => $q
-                ->leftJoin('school_instructor_profile_translations as sipt_sort', function ($join) use ($locale) {
-                    $join->on('sipt_sort.school_instructor_profile_id', '=', 'school_instructor_profiles.id')
-                        ->where('sipt_sort.locale', '=', $locale);
-                })
-                ->orderBy('sipt_sort.title', 'desc')
-                ->orderByDesc('school_instructor_profiles.id')
-                ->select('school_instructor_profiles.*'),
+                /**
+                 * Перевод текущей локали.
+                 */
+                ->leftJoin(
+                    'school_instructor_profile_translations as sipt_current',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'sipt_current.school_instructor_profile_id',
+                                '=',
+                                'school_instructor_profiles.id'
+                            )
+                            ->where(
+                                'sipt_current.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+
+                /**
+                 * Fallback-перевод.
+                 */
+                ->leftJoin(
+                    'school_instructor_profile_translations as sipt_fallback',
+                    function ($join) use ($fallbackLocale) {
+                        $join
+                            ->on(
+                                'sipt_fallback.school_instructor_profile_id',
+                                '=',
+                                'school_instructor_profiles.id'
+                            )
+                            ->where(
+                                'sipt_fallback.locale',
+                                '=',
+                                $fallbackLocale
+                            );
+                    }
+                )
+
+                /**
+                 * Приоритет:
+                 *
+                 * current locale
+                 * → fallback locale.
+                 */
+                ->orderByRaw(
+                    'COALESCE(sipt_current.title, sipt_fallback.title) DESC'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                )
+                ->addSelect(
+                    'school_instructor_profiles.*'
+                ),
 
             'viewsAsc' => $q->orderBy('views', 'asc')->orderByDesc('id'),
             'viewsDesc' => $q->orderBy('views', 'desc')->orderByDesc('id'),

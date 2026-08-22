@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\School\SchoolHashtag;
 use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolHashtag\SchoolHashtagRequest;
 use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagResource;
+use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagSharedResource;
 use App\Models\Admin\School\SchoolHashtag\SchoolHashtag;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
@@ -96,7 +97,7 @@ class SchoolHashtagController extends BaseSchoolAdminController
                 'adminSchoolHashtagsDefaultSort' => $defaultSort,
                 'adminSchoolHashtagsProcessingMode' => $processingMode,
 
-                'hashtags' => SchoolHashtagResource::collection($hashtags),
+                'hashtags' => SchoolHashtagSharedResource::collection($hashtags),
                 'hashtagsCount' => $hashtagsCount,
 
                 'sortParam' => $sortParam,
@@ -170,20 +171,41 @@ class SchoolHashtagController extends BaseSchoolAdminController
     }
 
     /** Страница редактирования хештега */
-    public function edit(int $schoolHashtag, Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function edit(
+        int $schoolHashtag,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
         $hashtag = $this->baseQuery()
-            ->with(['translation', 'translations'])
-            ->withCount(['courses', 'modules', 'lessons'])
-            ->findOrFail($schoolHashtag);
+            ->with([
+                /**
+                 * Edit должен получить
+                 * все переводы одной выборкой.
+                 */
+                'translations',
+            ])
+            ->findOrFail(
+                $schoolHashtag
+            );
 
-        return Inertia::render('Admin/School/SchoolHashtags/Edit', [
-            'hashtag' => new SchoolHashtagResource($hashtag),
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+        return Inertia::render(
+            'Admin/School/SchoolHashtags/Edit',
+            [
+                'hashtag' =>
+                    new SchoolHashtagResource(
+                        $hashtag
+                    ),
+
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+            ]
+        );
     }
 
     /** Обновление хештега */
@@ -272,12 +294,20 @@ class SchoolHashtagController extends BaseSchoolAdminController
     }
 
     /** Базовый запрос для списка хештегов. */
-    private function indexQuery(): Builder
-    {
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'translation',
-                'translations',
+                /**
+                 * Для Admin Index нужен
+                 * только выбранный перевод.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
             ->withCount([
                 'courses',
@@ -294,18 +324,39 @@ class SchoolHashtagController extends BaseSchoolAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
+        /**
+         * Server mode:
+         * поиск, сортировка и пагинация — SQL.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend mode:
+         * Vue выполняет поиск,
+         * сортировку и пагинацию.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->orderByDesc(
+                'school_hashtags.id'
+            )
             ->get();
     }
 }

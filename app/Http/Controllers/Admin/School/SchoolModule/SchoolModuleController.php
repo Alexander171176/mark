@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolModule\SchoolModuleRequest;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
+use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleSharedResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
 use App\Models\Admin\School\SchoolModule\SchoolModuleImage;
@@ -108,7 +109,13 @@ class SchoolModuleController extends BaseSchoolAdminController
                 'adminSchoolModulesDefaultSort' => $defaultSort,
                 'adminSchoolModulesProcessingMode' => $processingMode,
 
-                'modules' => SchoolModuleResource::collection($modules),
+                /**
+                 * Admin Index всегда использует
+                 * краткий Shared Resource.
+                 */
+                'modules' => SchoolModuleSharedResource::collection(
+                    $modules
+                ),
                 'modulesCount' => $modulesCount,
 
                 'sortParam' => $sortParam,
@@ -141,16 +148,28 @@ class SchoolModuleController extends BaseSchoolAdminController
     }
 
     /** Страница создания модуля. */
-    public function create(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        return Inertia::render('Admin/School/SchoolModules/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+        return Inertia::render(
+            'Admin/School/SchoolModules/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
 
-            'courses' => $this->coursesForSelect(),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Сохранение нового модуля. */
@@ -209,33 +228,75 @@ class SchoolModuleController extends BaseSchoolAdminController
     }
 
     /** Страница редактирования модуля. */
-    public function edit(int $schoolModule, Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function edit(
+        int $schoolModule,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
         $module = $this->baseQuery()
             ->with([
-                'translation',
+                /**
+                 * Все переводы нужны Edit
+                 * для TranslationTabs.
+                 *
+                 * Отдельную relation translation
+                 * не загружаем.
+                 */
                 'translations',
-                'images',
-                'course.translation',
-                'lessons.translation',
+
+                /**
+                 * Изображения +
+                 * Spatie Media.
+                 */
+                'images.media',
+
+                /**
+                 * Родительский курс.
+                 *
+                 * Для отображения достаточно
+                 * выбранной административной локали.
+                 */
+                'course' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
             ])
             ->withCount([
                 'lessons',
                 'images',
                 'likes',
             ])
-            ->findOrFail($schoolModule);
+            ->findOrFail(
+                $schoolModule
+            );
 
-        return Inertia::render('Admin/School/SchoolModules/Edit', [
-            'module' => new SchoolModuleResource($module),
+        return Inertia::render(
+            'Admin/School/SchoolModules/Edit',
+            [
+                'module' =>
+                    new SchoolModuleResource(
+                        $module
+                    ),
 
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+                'currentLocale' =>
+                    $currentLocale,
 
-            'courses' => $this->coursesForSelect(),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Обновление модуля. */
@@ -323,31 +384,72 @@ class SchoolModuleController extends BaseSchoolAdminController
         }
     }
 
-    /** Список курсов для select. */
-    private function coursesForSelect(): AnonymousResourceCollection
-    {
+    /** Список курсов для select Create/Edit. */
+    private function coursesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $courses = SchoolCourse::query()
             ->with([
-                'translation',
-                'translations',
-                'images',
+                /**
+                 * Для select нужен только
+                 * перевод выбранной локали.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
+            ->orderBy('sort')
+            ->orderByDesc('id')
             ->get();
 
-        return SchoolCourseSharedResource::collection($courses);
+        return SchoolCourseSharedResource::collection(
+            $courses
+        );
     }
 
-    /** Базовый запрос для списка модулей. */
-    private function indexQuery(): Builder
-    {
+    /** Базовый запрос для Admin Index модулей. */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'course.translation',
-                'course.translations',
-                'lessons.translation',
+                /**
+                 * Admin Index:
+                 * только выбранная локаль.
+                 *
+                 * Все переводы здесь не нужны.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                /**
+                 * Изображения модуля +
+                 * Spatie Media пакетным запросом.
+                 */
+                'images.media',
+
+                /**
+                 * Родительский курс.
+                 *
+                 * Для Index нужен только
+                 * перевод выбранной локали.
+                 *
+                 * Курс также нужен
+                 * frontend-поиску.
+                 */
+                'course' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
             ])
             ->withCount([
                 'lessons',
@@ -364,18 +466,31 @@ class SchoolModuleController extends BaseSchoolAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

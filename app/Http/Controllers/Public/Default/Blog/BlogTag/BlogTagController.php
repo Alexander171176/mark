@@ -7,11 +7,13 @@ use App\Http\Resources\Public\Blog\BlogArticle\BlogArticleSharedResource;
 use App\Http\Resources\Public\Blog\BlogTag\BlogTagResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogTag\BlogTag;
+use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\Blog\BuildsRubricTreeTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,10 +26,8 @@ class BlogTagController extends Controller
     use BuildsRubricTreeTrait;
 
     /** Страница конкретного тега блога. */
-    public function show(
-        Request $request,
-        string $slug
-    ): Response {
+    public function show(Request $request, string $slug): Response
+    {
         $locale = app()->getLocale();
 
         $fallbackLocale = config(
@@ -35,81 +35,48 @@ class BlogTagController extends Controller
             'ru'
         );
 
-        $locales = array_values(
-            array_unique([
-                $locale,
-                $fallbackLocale,
-            ])
-        );
+        $locales = array_values(array_unique([
+            $locale,
+            $fallbackLocale,
+        ]));
 
-        /**
-         * Публичные настройки сайта.
-         *
-         * Это единственный источник настроек
-         * количества и сортировки статей.
-         */
-        $settings = app(
-            PublicSettingsService::class
-        );
+        $settings = app(PublicSettingsService::class);
 
-        /**
-         * Основной тег.
-         */
+        /* ======================== Tag ======================== */
+
         $tag = BlogTag::query()
             ->forPublic()
-            ->whereSlug(
-                $slug
-            )
+            ->whereSlug($slug)
             ->with([
-                /**
-                 * Только текущая локаль
-                 * + fallback ru.
-                 */
                 'translations' => fn ($query) =>
-                $query->whereIn(
-                    'locale',
-                    $locales
-                ),
+                $query->whereIn('locale', $locales),
             ])
             ->withCount([
-                'articles',
+                'articles as articles_count' => fn ($query) =>
+                $query->forPublic(),
             ])
             ->firstOrFail();
 
-        /**
-         * Увеличиваем просмотры тега.
-         */
         $tag->increment('views');
 
+        /* ======================== Article settings ======================== */
+
         /**
-         * Поиск по статьям тега.
+         * Единственный источник истины.
+         *
+         * Public-пользователь количество
+         * статей не регулирует.
          */
+        $perPageArticles = $settings->int(
+            'publicBlogArticlesPerPage',
+            12
+        );
+
         $articlesSearch = $this->resolveSearch(
             $request,
             'q_articles'
         );
 
-        /**
-         * Количество статей на странице.
-         *
-         * Значение берётся из PublicSettingsService.
-         * Например, если в настройках указано 12,
-         * paginator получает именно 12.
-         */
-        $perPageArticles = $this->resolvePerPage(
-            $request,
-            $settings->int(
-                'publicBlogArticlesPerPage',
-                12
-            ),
-            1,
-            60
-        );
-
-        /**
-         * Сортировка статей по умолчанию
-         * также берётся из публичных настроек.
-         */
         $articlesSort = (string) $request->query(
             'sort_articles',
             $settings->string(
@@ -118,127 +85,146 @@ class BlogTagController extends Controller
             )
         );
 
+        $processingMode = $this->resolveProcessingMode(
+            $settings->string(
+                'publicBlogArticlesProcessingMode',
+                'server'
+            )
+        );
+
+        /* ======================== Processing mode ======================== */
+
+        $processingModeService = app(ProcessingModeService::class);
+
+        $articlesCount = null;
+
         /**
-         * Базовый запрос статей текущего тега.
+         * Предварительный COUNT нужен
+         * только режиму auto.
          */
-        $articlesQuery = BlogArticle::query()
-            ->forPublic()
-            ->whereHas(
-                'tags',
-                function ($query) use ($tag) {
+        if ($processingMode === 'auto') {
+            $articlesCount = BlogArticle::query()
+                ->forPublic()
+                ->whereHas(
+                    'tags',
+                    fn ($query) =>
                     $query->where(
                         'blog_tags.id',
                         $tag->id
-                    );
-                }
-            )
-            ->search(
-                $articlesSearch,
-                $locale
-            )
-            ->with([
-                /**
-                 * Текущая локаль
-                 * + fallback ru.
-                 */
-                'translations' => fn ($query) =>
-                $query->whereIn(
-                    'locale',
-                    $locales
-                ),
+                    )
+                )
+                ->count();
 
-                /**
-                 * Автор нужен карточкам статей.
-                 */
-                'owner',
+            $useServerProcessing = $processingModeService->shouldUseServer(
+                $processingMode,
+                $articlesCount,
+                300
+            );
+        } else {
+            $useServerProcessing = $processingMode === 'server';
+        }
 
-                /**
-                 * Изображения + Spatie Media
-                 * загружаются пакетно.
-                 */
-                'images.media',
-            ])
-            ->withCount([
-                'likes',
-            ]);
+        /* ======================== Articles ======================== */
 
-        /**
-         * already_liked добавляется одним EXISTS.
-         *
-         * Для гостя дополнительный EXISTS
-         * вообще не создаётся.
-         */
-        $articlesQuery = $this->withUserLike(
-            $articlesQuery
+        $articles = $this->getTagArticles(
+            tag: $tag,
+            locale: $locale,
+            locales: $locales,
+            useServerProcessing: $useServerProcessing,
+            perPage: $perPageArticles,
+            sort: $articlesSort,
+            search: $articlesSearch,
         );
 
-        /**
-         * Серверная сортировка
-         * и пагинация статей тега.
-         */
-        $articles = $articlesQuery
-            ->sortByParam(
-                $articlesSort,
-                $locale
-            )
-            ->paginate(
-                $perPageArticles,
-                ['*'],
-                'page_articles'
-            )
-            ->withQueryString();
+        if ($useServerProcessing) {
+            /**
+             * paginate() уже выполнил COUNT.
+             */
+            $articlesFound = $articles->total();
+
+            /**
+             * Без поиска paginator total
+             * одновременно является общим
+             * количеством Public-статей тега.
+             */
+            if (
+                $articlesCount === null
+                && $articlesSearch === ''
+            ) {
+                $articlesCount = $articlesFound;
+            }
+
+            /**
+             * При поиске paginator total
+             * содержит только найденные записи.
+             *
+             * Общий count нужен нижней
+             * административной панели.
+             */
+            if ($articlesCount === null) {
+                $articlesCount = BlogArticle::query()
+                    ->forPublic()
+                    ->whereHas(
+                        'tags',
+                        fn ($query) =>
+                        $query->where(
+                            'blog_tags.id',
+                            $tag->id
+                        )
+                    )
+                    ->count();
+            }
+        } else {
+            /**
+             * Frontend уже получил
+             * весь Public-набор.
+             */
+            $articlesFound = $articles->count();
+            $articlesCount ??= $articlesFound;
+        }
 
         /**
-         * Сохраняем total до преобразования
-         * paginator в ResourceCollection.
-         */
-        $articlesFound = $articles->total();
-
-        /**
-         * Для карточек используется
-         * краткий Public Resource статьи.
+         * Для карточек достаточно
+         * краткого Public Resource.
          */
         $articles = BlogArticleSharedResource::collection(
             $articles
         );
 
-        /**
-         * Дерево рубрик.
-         */
+        /* ======================== Sidebars ======================== */
+
         $rubricTree = $this->getRubricTree(
             $locale
         );
 
-        /**
-         * Данные сайдбаров.
-         */
         $sidebarData = $this->getSidebarData(
             $locale
         );
 
+        /* ======================== Response ======================== */
+
         return Inertia::render(
             'Public/Default/Blog/BlogTags/Show',
             [
-                /**
-                 * Полный публичный ресурс тега.
-                 */
                 'tag' => new BlogTagResource(
                     $tag
                 ),
 
-                /**
-                 * Статьи тега.
-                 */
-                'articles' => $articles,
-                'articlesFound' => $articlesFound,
+                'publicBlogArticlesProcessingMode' =>
+                    $processingMode,
 
-                /**
-                 * Только реальные фильтры страницы.
-                 *
-                 * per_page_articles возвращаем
-                 * для информации frontend,
-                 * но Show.vue больше не управляет им.
-                 */
+                'useServerProcessing' =>
+                    $useServerProcessing,
+
+                'articles' =>
+                    $articles,
+
+                'articlesCount' =>
+                    $articlesCount,
+
+                'articlesFound' =>
+                    $articlesFound,
+
                 'filters' => [
                     'q_articles' =>
                         $articlesSearch,
@@ -250,11 +236,133 @@ class BlogTagController extends Controller
                         $articlesSort,
                 ],
 
-                'rubricTree' => $rubricTree,
-                'locale' => $locale,
+                'rubricTree' =>
+                    $rubricTree,
+
+                'locale' =>
+                    $locale,
 
                 ...$sidebarData,
             ]
         );
+    }
+
+    /**
+     * Базовый запрос Public-статей
+     * конкретного тега.
+     */
+    private function tagArticlesQuery(
+        BlogTag $tag,
+        string $locale,
+        array $locales
+    ): Builder {
+        $query = BlogArticle::query()
+            ->forPublic()
+            ->whereHas(
+                'tags',
+                fn ($query) =>
+                $query->where(
+                    'blog_tags.id',
+                    $tag->id
+                )
+            )
+            ->with([
+                /**
+                 * Current locale + fallback.
+                 */
+                'translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+
+                /**
+                 * Автор нужен карточкам.
+                 */
+                'owner',
+
+                /**
+                 * Изображения + Spatie Media.
+                 */
+                'images.media',
+
+                /**
+                 * Рубрики нужны карточкам,
+                 * поиску и отображению статьи.
+                 */
+                'rubrics.translations' => fn ($query) =>
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
+            ])
+            ->withCount([
+                'likes',
+            ]);
+
+        /**
+         * already_liked одним EXISTS
+         * для авторизованного пользователя.
+         */
+        return $this->withUserLike(
+            $query
+        );
+    }
+
+    /**
+     * Получение статей тега
+     * по активному режиму обработки.
+     */
+    private function getTagArticles(
+        BlogTag $tag,
+        string $locale,
+        array $locales,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->tagArticlesQuery(
+            tag: $tag,
+            locale: $locale,
+            locales: $locales,
+        );
+
+        /**
+         * Server:
+         * поиск, сортировка и пагинация
+         * выполняются backend.
+         */
+        if ($useServerProcessing) {
+            return $query
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage,
+                    ['*'],
+                    'page_articles'
+                )
+                ->withQueryString();
+        }
+
+        /**
+         * Frontend:
+         * backend отдаёт весь Public-набор.
+         *
+         * Поиск и пагинация уже выполняются
+         * внутри Show.vue.
+         */
+        return $query
+            ->sortByParam(
+                $sort,
+                $locale
+            )
+            ->get();
     }
 }

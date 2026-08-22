@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
@@ -60,7 +60,7 @@ const toggleSidebar = () => {
 
         <div v-show="!isCollapsed" class="flex flex-col gap-4">
             <TracksSidebar :tracks="props.trackTree" />
-            <RecentCoursesSidebar :courses="leftCourses" title-key="courses" />
+            <RecentCoursesSidebar :courses="leftCourses" />
             <LeftBannersSidebar :left-banners="leftBanners" />
             <LeftVideosSidebar :videos="leftVideos" />
         </div>

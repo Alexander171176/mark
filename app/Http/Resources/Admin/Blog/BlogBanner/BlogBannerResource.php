@@ -34,8 +34,6 @@ class BlogBannerResource extends JsonResource
             ? $this->images->first()
             : null;
 
-        $cover = null;
-
         if ($this->relationLoaded('images') && $this->images?->count()) {
             $cover = $this->images->first();
         }

@@ -100,7 +100,8 @@ const getPrimaryImage = (track) => {
 }
 
 const trackName = (track) => {
-    return track?.name || `ID: ${track?.id}`
+    return track?.translation?.name
+        || `ID: ${track?.id}`
 }
 </script>
 

@@ -171,6 +171,7 @@ export default {
     stanceSouthpaw: 'Lefty (Southpaw)',
     stanceSwitch: 'Replaceable (Switch)',
     stampPng: 'Stamp PNG',
+    start: 'Start',
     statistics: 'Statistics',
     status: 'Status',
     statusArchived: 'Archive',

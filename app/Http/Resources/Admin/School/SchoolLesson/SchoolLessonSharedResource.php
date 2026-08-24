@@ -2,92 +2,216 @@
 
 namespace App\Http\Resources\Admin\School\SchoolLesson;
 
+use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagSharedResource;
+use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleSharedResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Http\Resources\MissingValue;
 
 class SchoolLessonSharedResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
         /**
-         * В публичных запросах translations
-         * обычно уже загружены для нужной локали.
+         * Admin Index заранее загружает
+         * только выбранную локаль.
          */
         $translation = $this->relationLoaded('translations')
             ? $this->translations->first()
             : null;
 
         /**
-         * Первое изображение урока.
+         * Первое изображение уже соответствует
+         * pivot order связи images().
          */
-        $firstImage = $this->whenLoaded(
-            'images',
-            fn () => $this->images->first()
-        );
-
-        /**
-         * Миниатюра урока.
-         */
-        $thumbnailUrl =
-            !($firstImage instanceof MissingValue)
-            && $firstImage
-                ? (
-                $firstImage->thumb_url
-                ?? $firstImage->image_url
-                ?? $firstImage->url
-                ?? null
-            )
-                : null;
+        $primaryImage = $this->relationLoaded('images')
+            ? $this->images->first()
+            : null;
 
         return [
-            'id' => $this->id,
-            'school_module_id' => $this->school_module_id,
+            'id' =>
+                $this->id,
 
-            'slug' => $this->slug,
+            'school_module_id' =>
+                $this->school_module_id,
 
-            /** Перевод */
-            'title' => $translation?->title,
-            'subtitle' => $translation?->subtitle,
-            'short' => $translation?->short,
+            /**
+             * Основные поля.
+             */
+            'sort' =>
+                (int) $this->sort,
 
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
+            'activity' =>
+                (bool) $this->activity,
 
-            'status' => $this->status,
-            'availability' => $this->availability,
+            'slug' =>
+                $this->slug,
 
-            'published_at' => optional(
-                $this->published_at
-            )->format('Y-m-d'),
+            /**
+             * Перевод выбранной локали.
+             */
+            'translation' => $translation
+                ? [
+                    'locale' =>
+                        $translation->locale,
 
-            'access_type' => $this->access_type,
+                    'title' =>
+                        $translation->title,
 
-            'difficulty' => $this->difficulty !== null
-                ? (int) $this->difficulty
+                    'subtitle' =>
+                        $translation->subtitle,
+
+                    'short' =>
+                        $translation->short,
+
+                    /**
+                     * Нужен frontend-поиску.
+                     */
+                    'description' =>
+                        $translation->description,
+                ]
                 : null,
 
-            'duration' => $this->duration !== null
-                ? (int) $this->duration
+            /**
+             * Привязанный контент.
+             *
+             * Для Admin Index достаточно
+             * типа и ID.
+             */
+            'content_type' =>
+                $this->content_type,
+
+            'content_id' =>
+                $this->content_id !== null
+                    ? (int) $this->content_id
+                    : null,
+
+            /**
+             * Публикация / состояние.
+             */
+            'published_at' =>
+                $this->published_at?->format(
+                    'Y-m-d'
+                ),
+
+            'status' =>
+                $this->status,
+
+            'availability' =>
+                $this->availability,
+
+            'access_type' =>
+                $this->access_type,
+
+            'difficulty' =>
+                $this->difficulty !== null
+                    ? (int) $this->difficulty
+                    : null,
+
+            'duration' =>
+                $this->duration !== null
+                    ? (int) $this->duration
+                    : null,
+
+            /**
+             * Preview.
+             */
+            'preview_mode' =>
+                $this->preview_mode,
+
+            'preview_value' =>
+                $this->preview_value !== null
+                    ? (int) $this->preview_value
+                    : null,
+
+            /**
+             * Статистика.
+             */
+            'popularity' =>
+                (int) $this->popularity,
+
+            'rating_count' =>
+                (int) $this->rating_count,
+
+            'rating_avg' =>
+                $this->rating_avg !== null
+                    ? (float) $this->rating_avg
+                    : null,
+
+            'views' =>
+                (int) $this->views,
+
+            'likes' =>
+                (int) $this->likes,
+
+            /**
+             * Изображения.
+             *
+             * Controller обязан загрузить
+             * images.media.
+             */
+            'primary_image' => $primaryImage
+                ? new SchoolLessonImageResource(
+                    $primaryImage
+                )
                 : null,
 
-            'preview_mode' => $this->preview_mode,
+            'images' =>
+                SchoolLessonImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
 
-            'preview_value' => $this->preview_value !== null
-                ? (int) $this->preview_value
-                : null,
+            /**
+             * Родительский модуль.
+             *
+             * Внутри него также доступен
+             * родительский курс.
+             */
+            'module' =>
+                new SchoolModuleSharedResource(
+                    $this->whenLoaded(
+                        'module'
+                    )
+                ),
 
-            'popularity' => (int) $this->popularity,
-            'rating_count' => (int) $this->rating_count,
+            /**
+             * Хештеги нужны
+             * frontend-поиску.
+             */
+            'hashtags' =>
+                SchoolHashtagSharedResource::collection(
+                    $this->whenLoaded(
+                        'hashtags'
+                    )
+                ),
 
-            'rating_avg' => $this->rating_avg !== null
-                ? (float) $this->rating_avg
-                : null,
+            /**
+             * Counts.
+             */
+            'likes_count' => $this->when(
+                isset($this->likes_count),
+                fn () => (int) $this->likes_count
+            ),
 
-            'views' => (int) $this->views,
-            'likes' => (int) $this->likes,
+            'hashtags_count' => $this->when(
+                isset($this->hashtags_count),
+                fn () => (int) $this->hashtags_count
+            ),
 
-            'thumbnail_url' => $thumbnailUrl,
+            'images_count' => $this->when(
+                isset($this->images_count),
+                fn () => (int) $this->images_count
+            ),
+
+            /**
+             * Даты нужны frontend-сортировке.
+             */
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

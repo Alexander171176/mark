@@ -27,6 +27,7 @@ export default {
     title: 'Title',
     titleItemsPerPage: 'Number of items per page',
     titleProperty: 'Property Name',
+    to: 'to',
     toggleDarkMode: 'Toggle light/dark mode',
     toggleSidebar: 'Expand / Collapse Sidebar',
     total: 'Total',

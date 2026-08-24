@@ -3,140 +3,323 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Записи пользователей на потоки
- * - режимы обработки: frontend | server | auto
- * - локальный поиск/сортировка/пагинация
- * - серверный поиск/сортировка/пагинация
+ * Записи пользователей на потоки.
+ *
+ * Новый Admin Index-контракт:
+ *
+ * - SchoolCohortEnrollmentSharedResource;
+ * - server / frontend / auto;
+ * - frontend search / sort / pagination;
+ * - server search / sort / pagination;
+ * - schedule.translation;
+ * - schedule.course.translation;
+ * - user;
+ *
+ * Никаких:
+ *
+ * - schedule.title;
+ * - schedule.translations[0];
+ * - course.title;
+ * - course.translations[0];
+ * - schedules/users selector props на Index.
  */
 
-import { computed, defineProps, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+
 import Pagination from '@/Components/Admin/UI/Pagination/Pagination.vue'
 import AdminServerPagination from '@/Components/Admin/UI/Pagination/AdminServerPagination.vue'
+
 import SearchInput from '@/Components/Admin/UI/Search/SearchInput.vue'
 import ServerSearchInput from '@/Components/Admin/UI/Search/ServerSearchInput.vue'
+
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
+
 import ItemsPerPageSelect from '@/Components/Admin/UI/Select/ItemsPerPageSelect.vue'
 import ServerItemsPerPageSelect from '@/Components/Admin/UI/Select/ServerItemsPerPageSelect.vue'
+
 import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
+
 import ProcessingModeSwitcher from '@/Components/Admin/UI/Processing/ProcessingModeSwitcher.vue'
 
-import CohortEnrollmentTable from '@/Components/Admin/School/SchoolCohortEnrollment/Table/CohortEnrollmentTable.vue'
+import CohortEnrollmentTable
+    from '@/Components/Admin/School/SchoolCohortEnrollment/Table/CohortEnrollmentTable.vue'
+
 import CohortEnrollmentCardGrid
     from '@/Components/Admin/School/SchoolCohortEnrollment/View/CohortEnrollmentCardGrid.vue'
-import SortSelect from '@/Components/Admin/School/SchoolCohortEnrollment/Sort/SortSelect.vue'
+
+import SortSelect
+    from '@/Components/Admin/School/SchoolCohortEnrollment/Sort/SortSelect.vue'
 
 /* ==========================================================
- * БАЗОВЫЕ СЕРВИСЫ И PROPS
+ * BASE
  * ========================================================== */
 
-/** Локализация интерфейса */
 const { t } = useI18n()
-
-/** Уведомления */
 const toast = useToast()
 
-/** Данные страницы из Inertia */
+/* ==========================================================
+ * PROPS
+ * ========================================================== */
+
 const props = defineProps({
-    adminSchoolCohortEnrollmentsProcessingMode: { type: String, default: 'frontend' },
-    useServerProcessing: { type: Boolean, default: false },
+    /**
+     * Текущая locale.
+     */
+    currentLocale: {
+        type: String,
+        default: '',
+    },
 
-    enrollments: { type: [Array, Object], default: () => [] },
-    enrollmentsCount: { type: Number, default: 0 },
+    /**
+     * Processing mode.
+     */
+    adminSchoolCohortEnrollmentsProcessingMode: {
+        type: String,
+        default: 'frontend',
+    },
 
-    adminSchoolCohortEnrollmentsPerPage: { type: Number, default: 10 },
-    adminSchoolCohortEnrollmentsDefaultSort: { type: String, default: 'idDesc' },
+    useServerProcessing: {
+        type: Boolean,
+        default: false,
+    },
 
-    sortParam: { type: String, default: '' },
-    search: { type: String, default: '' },
+    /**
+     * Может быть:
+     *
+     * frontend:
+     *   Array / ResourceCollection;
+     *
+     * server:
+     *   paginator object.
+     */
+    enrollments: {
+        type: [Array, Object],
+        default: () => [],
+    },
 
-    filters: { type: Object, default: () => ({}) },
-    schedules: { type: [Array, Object], default: () => [] },
-    users: { type: [Array, Object], default: () => [] },
+    enrollmentsCount: {
+        type: Number,
+        default: 0,
+    },
 
-    errors: { type: Object, default: () => ({}) },
+    /**
+     * Admin settings.
+     */
+    adminSchoolCohortEnrollmentsPerPage: {
+        type: Number,
+        default: 10,
+    },
+
+    adminSchoolCohortEnrollmentsDefaultSort: {
+        type: String,
+        default: 'idDesc',
+    },
+
+    /**
+     * Текущие query-параметры.
+     */
+    sortParam: {
+        type: String,
+        default: '',
+    },
+
+    search: {
+        type: String,
+        default: '',
+    },
+
+    /**
+     * Реальные серверные фильтры.
+     */
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+
+    errors: {
+        type: Object,
+        default: () => ({}),
+    },
 })
 
 /* ==========================================================
- * РЕЖИМ ОТОБРАЖЕНИЯ
+ * VIEW MODE
  * ========================================================== */
 
-/** Текущий режим отображения */
-const viewMode = ref(localStorage.getItem('admin_view_mode_cohort_enrollments') || 'table')
+const viewMode = ref(
+    localStorage.getItem(
+        'admin_view_mode_cohort_enrollments'
+    ) || 'table'
+)
 
-/** Сохраняем выбранный вид локально */
-watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode_cohort_enrollments', val)
+watch(viewMode, (value) => {
+    localStorage.setItem(
+        'admin_view_mode_cohort_enrollments',
+        value
+    )
 })
 
 /* ==========================================================
- * ИСТОЧНИК ДАННЫХ
+ * DATA SOURCE
  * ========================================================== */
 
-/** Унифицированный список записей */
+/**
+ * Унифицированный список.
+ *
+ * frontend:
+ * props.enrollments может быть массивом.
+ *
+ * server:
+ * props.enrollments.data.
+ */
 const enrollmentsList = computed(() => {
     if (Array.isArray(props.enrollments)) {
         return props.enrollments
     }
 
-    if (Array.isArray(props.enrollments?.data)) {
+    if (
+        props.enrollments
+        && Array.isArray(
+            props.enrollments.data
+        )
+    ) {
         return props.enrollments.data
     }
 
     return []
 })
 
-/* ==========================================================
- * ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ДАННЫХ
- * ========================================================== */
-
-/** Локальная копия списка */
+/**
+ * Локальная копия нужна frontend-режиму.
+ *
+ * Также дочерние компоненты могут локально
+ * изменять status/notes после действий.
+ */
 const localEnrollments = ref([])
 
 watch(
     enrollmentsList,
-    (newVal) => {
-        localEnrollments.value = JSON.parse(JSON.stringify(newVal || []))
+    (items) => {
+        localEnrollments.value =
+            JSON.parse(
+                JSON.stringify(
+                    items || []
+                )
+            )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
 /* ==========================================================
- * НАСТРОЙКИ ПАГИНАЦИИ И СОРТИРОВКИ
+ * ITEMS PER PAGE
  * ========================================================== */
 
-/** Количество элементов на странице */
-const itemsPerPage = ref(props.adminSchoolCohortEnrollmentsPerPage || 10)
+const itemsPerPage = ref(
+    props.adminSchoolCohortEnrollmentsPerPage
+    || 10
+)
 
-/** Сохраняем количество элементов */
-watch(itemsPerPage, (newVal) => {
+/**
+ * В frontend режиме настройка сохраняется
+ * здесь.
+ *
+ * В server режиме этим занимается
+ * ServerItemsPerPageSelect.
+ */
+watch(itemsPerPage, (value) => {
+    if (props.useServerProcessing) {
+        return
+    }
+
+    currentPage.value = 1
+
     router.put(
-        route('admin.settings.updateAdminCountSchoolCohortEnrollments'),
-        { value: newVal },
+        route(
+            'admin.settings.updateAdminCountSchoolCohortEnrollments'
+        ),
+        {
+            value,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+
+            onSuccess: () => {
+                toast.info(
+                    `Показ ${value} элементов на странице.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления кол-ва элементов.'
+                )
+            },
         }
     )
 })
 
-/** Текущий параметр сортировки */
-const sortParam = ref(props.sortParam || props.adminSchoolCohortEnrollmentsDefaultSort || 'idDesc')
+/* ==========================================================
+ * SORT
+ * ========================================================== */
 
-/** Сохраняем сортировку и при server-режиме перезагружаем список */
-watch(sortParam, (newVal) => {
+const sortParam = ref(
+    props.sortParam
+    || props.adminSchoolCohortEnrollmentsDefaultSort
+    || 'idDesc'
+)
+
+/**
+ * При изменении props после Inertia navigation
+ * синхронизируем локальный sort.
+ */
+watch(
+    () => props.sortParam,
+    (value) => {
+        if (
+            value
+            && value !== sortParam.value
+        ) {
+            sortParam.value = value
+        }
+    }
+)
+
+/**
+ * Сохраняем сортировку.
+ *
+ * FRONTEND:
+ * после сохранения Vue просто пересортирует
+ * текущую коллекцию.
+ *
+ * SERVER:
+ * после сохранения выполняем GET Index
+ * с новым sort.
+ */
+watch(sortParam, (value, oldValue) => {
+    if (value === oldValue) {
+        return
+    }
+
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortSchoolCohortEnrollments'),
-        { value: newVal },
+        route(
+            'admin.settings.updateAdminSortSchoolCohortEnrollments'
+        ),
+        {
+            value,
+        },
         {
             preserveScroll: true,
             preserveState: true,
@@ -146,9 +329,17 @@ watch(sortParam, (newVal) => {
                     router.get(
                         window.location.pathname,
                         {
-                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
-                            sort: newVal || undefined,
-                            page: undefined,
+                            ...Object.fromEntries(
+                                new URLSearchParams(
+                                    window.location.search
+                                )
+                            ),
+
+                            sort:
+                                value || undefined,
+
+                            page:
+                            undefined,
                         },
                         {
                             preserveScroll: true,
@@ -158,207 +349,473 @@ watch(sortParam, (newVal) => {
                     )
                 }
 
-                toast.info('Сортировка успешно изменена')
+                toast.info(
+                    'Сортировка успешно изменена'
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления сортировки.')
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления сортировки.'
+                )
             },
         }
     )
 })
 
 /* ==========================================================
- * ПОИСК И ПАГИНАЦИЯ
+ * SEARCH
  * ========================================================== */
 
-/** Поисковый запрос */
-const searchQuery = ref(props.search || '')
+const searchQuery = ref(
+    props.search || ''
+)
 
-/** Текущая страница frontend-пагинации */
-const currentPage = ref(1)
+/**
+ * При server navigation синхронизируем
+ * значение поля поиска с query.
+ */
+watch(
+    () => props.search,
+    (value) => {
+        const normalized =
+            value || ''
+
+        if (
+            normalized
+            !== searchQuery.value
+        ) {
+            searchQuery.value =
+                normalized
+        }
+    }
+)
 
 /* ==========================================================
- * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+ * FRONTEND PAGINATION
  * ========================================================== */
 
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+const currentPage = ref(1)
+
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+    ],
+    () => {
+        currentPage.value = 1
+    }
+)
+
+/* ==========================================================
+ * HELPERS
+ * ========================================================== */
+
+const normalize = (value) => {
+    return (value ?? '')
+        .toString()
+        .trim()
+        .toLowerCase()
+}
 
 const safeNumber = (value) => {
-    const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+    const number =
+        Number(value)
+
+    return Number.isFinite(number)
+        ? number
+        : 0
 }
 
 const safeDate = (value) => {
-    const time = new Date(value || 0).getTime()
-    return Number.isFinite(time) ? time : 0
+    if (!value) {
+        return 0
+    }
+
+    const time =
+        new Date(value)
+            .getTime()
+
+    return Number.isFinite(time)
+        ? time
+        : 0
 }
 
 /* ==========================================================
- * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ РЕСУРСОВ
+ * NEW SHARED RESOURCE CONTRACT
  * ========================================================== */
 
-const getUserName = (enrollment) => enrollment?.user?.name || ''
+const getUserName = (enrollment) => {
+    return enrollment?.user?.name || ''
+}
 
-const getUserEmail = (enrollment) => enrollment?.user?.email || ''
+const getUserEmail = (enrollment) => {
+    return enrollment?.user?.email || ''
+}
 
+/**
+ * Schedule.
+ */
 const getScheduleTitle = (enrollment) => {
-    return enrollment?.schedule?.title
-        || enrollment?.schedule?.translation?.title
-        || enrollment?.schedule?.translations?.[0]?.title
+    return enrollment
+            ?.schedule
+            ?.translation
+            ?.title
         || ''
 }
 
 const getScheduleDescription = (enrollment) => {
-    return enrollment?.schedule?.description
-        || enrollment?.schedule?.translation?.description
-        || enrollment?.schedule?.translations?.[0]?.description
+    return enrollment
+            ?.schedule
+            ?.translation
+            ?.description
         || ''
 }
 
+/**
+ * Course связанного Schedule.
+ */
 const getCourseTitle = (enrollment) => {
-    const course = enrollment?.schedule?.course
-
-    return course?.title
-        || course?.translation?.title
-        || course?.translations?.[0]?.title
+    return enrollment
+            ?.schedule
+            ?.course
+            ?.translation
+            ?.title
         || ''
 }
 
 const getCourseShort = (enrollment) => {
-    const course = enrollment?.schedule?.course
-
-    return course?.short
-        || course?.translation?.short
-        || course?.translations?.[0]?.short
+    return enrollment
+            ?.schedule
+            ?.course
+            ?.translation
+            ?.short
         || ''
 }
 
 const getCourseDescription = (enrollment) => {
-    const course = enrollment?.schedule?.course
-
-    return course?.description
-        || course?.translation?.description
-        || course?.translations?.[0]?.description
+    return enrollment
+            ?.schedule
+            ?.course
+            ?.translation
+            ?.description
         || ''
 }
 
 /* ==========================================================
- * СОРТИРОВКА FRONTEND
+ * FRONTEND SORT
  * ========================================================== */
 
-const byNumberAsc = (field) => (a, b) =>
-    safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+const byNumberAsc = (field) =>
+    (a, b) =>
+        safeNumber(a?.[field])
+        - safeNumber(b?.[field])
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
 
-const byNumberDesc = (field) => (a, b) =>
-    safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byNumberDesc = (field) =>
+    (a, b) =>
+        safeNumber(b?.[field])
+        - safeNumber(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
 
-const byStringGetterAsc = (getter) => (a, b) =>
-    normalize(getter(a)).localeCompare(normalize(getter(b)))
-    || safeNumber(a?.id) - safeNumber(b?.id)
+const byStringGetterAsc = (getter) =>
+    (a, b) =>
+        normalize(
+            getter(a)
+        ).localeCompare(
+            normalize(
+                getter(b)
+            )
+        )
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
 
-const byStringGetterDesc = (getter) => (a, b) =>
-    normalize(getter(b)).localeCompare(normalize(getter(a)))
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byStringGetterDesc = (getter) =>
+    (a, b) =>
+        normalize(
+            getter(b)
+        ).localeCompare(
+            normalize(
+                getter(a)
+            )
+        )
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
 
-const byDateAsc = (field) => (a, b) =>
-    safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+const byDateAsc = (field) =>
+    (a, b) =>
+        safeDate(a?.[field])
+        - safeDate(b?.[field])
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
 
-const byDateDesc = (field) => (a, b) =>
-    safeDate(b?.[field]) - safeDate(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byDateDesc = (field) =>
+    (a, b) =>
+        safeDate(b?.[field])
+        - safeDate(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
 
-/** Сортировка записей */
+/**
+ * Frontend-сортировка.
+ *
+ * Набор параметров должен совпадать
+ * с applySort() Controller.
+ */
 const sortEnrollments = (items) => {
-    const list = (items || []).slice()
+    const list =
+        (items || []).slice()
 
     const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
+        idAsc:
+            byNumberAsc('id'),
 
-        enrolledAtAsc: byDateAsc('enrolled_at'),
-        enrolledAtDesc: byDateDesc('enrolled_at'),
+        idDesc:
+            byNumberDesc('id'),
 
-        statusAsc: (a, b) =>
-            normalize(a?.status).localeCompare(normalize(b?.status))
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        enrolledAtAsc:
+            byDateAsc(
+                'enrolled_at'
+            ),
 
-        statusDesc: (a, b) =>
-            normalize(b?.status).localeCompare(normalize(a?.status))
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        enrolledAtDesc:
+            byDateDesc(
+                'enrolled_at'
+            ),
 
-        userNameAsc: byStringGetterAsc(getUserName),
-        userNameDesc: byStringGetterDesc(getUserName),
+        statusAsc:
+            (a, b) =>
+                normalize(
+                    a?.status
+                ).localeCompare(
+                    normalize(
+                        b?.status
+                    )
+                )
+                || safeNumber(a?.id)
+                - safeNumber(b?.id),
 
-        userEmailAsc: byStringGetterAsc(getUserEmail),
-        userEmailDesc: byStringGetterDesc(getUserEmail),
+        statusDesc:
+            (a, b) =>
+                normalize(
+                    b?.status
+                ).localeCompare(
+                    normalize(
+                        a?.status
+                    )
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        scheduleTitleAsc: byStringGetterAsc(getScheduleTitle),
-        scheduleTitleDesc: byStringGetterDesc(getScheduleTitle),
+        userNameAsc:
+            byStringGetterAsc(
+                getUserName
+            ),
 
-        createdAtAsc: byDateAsc('created_at'),
-        createdAtDesc: byDateDesc('created_at'),
+        userNameDesc:
+            byStringGetterDesc(
+                getUserName
+            ),
 
-        updatedAtAsc: byDateAsc('updated_at'),
-        updatedAtDesc: byDateDesc('updated_at'),
+        userEmailAsc:
+            byStringGetterAsc(
+                getUserEmail
+            ),
+
+        userEmailDesc:
+            byStringGetterDesc(
+                getUserEmail
+            ),
+
+        scheduleTitleAsc:
+            byStringGetterAsc(
+                getScheduleTitle
+            ),
+
+        scheduleTitleDesc:
+            byStringGetterDesc(
+                getScheduleTitle
+            ),
+
+        createdAtAsc:
+            byDateAsc(
+                'created_at'
+            ),
+
+        createdAtDesc:
+            byDateDesc(
+                'created_at'
+            ),
+
+        updatedAtAsc:
+            byDateAsc(
+                'updated_at'
+            ),
+
+        updatedAtDesc:
+            byDateDesc(
+                'updated_at'
+            ),
     }
 
-    return sortMap[sortParam.value]
-        ? list.sort(sortMap[sortParam.value])
+    const sorter =
+        sortMap[
+            sortParam.value
+            ]
+
+    return sorter
+        ? list.sort(sorter)
         : list
 }
 
 /* ==========================================================
- * ПОИСК FRONTEND
+ * FRONTEND SEARCH
  * ========================================================== */
 
-/** Фильтрация записей */
 const filteredEnrollments = computed(() => {
-    let filtered = localEnrollments.value || []
-    const query = normalize(searchQuery.value)
+    const query =
+        normalize(
+            searchQuery.value
+        )
 
-    if (!query) {
-        return sortEnrollments(filtered)
+    let items =
+        localEnrollments.value || []
+
+    if (query) {
+        items = items.filter(
+            (enrollment) => {
+                const status =
+                    normalize(
+                        enrollment?.status
+                    )
+
+                const notes =
+                    normalize(
+                        enrollment?.notes
+                    )
+
+                const userName =
+                    normalize(
+                        getUserName(
+                            enrollment
+                        )
+                    )
+
+                const userEmail =
+                    normalize(
+                        getUserEmail(
+                            enrollment
+                        )
+                    )
+
+                const scheduleTitle =
+                    normalize(
+                        getScheduleTitle(
+                            enrollment
+                        )
+                    )
+
+                const scheduleDescription =
+                    normalize(
+                        getScheduleDescription(
+                            enrollment
+                        )
+                    )
+
+                const courseTitle =
+                    normalize(
+                        getCourseTitle(
+                            enrollment
+                        )
+                    )
+
+                const courseShort =
+                    normalize(
+                        getCourseShort(
+                            enrollment
+                        )
+                    )
+
+                const courseDescription =
+                    normalize(
+                        getCourseDescription(
+                            enrollment
+                        )
+                    )
+
+                return (
+                    status.includes(query)
+                    || notes.includes(query)
+                    || userName.includes(query)
+                    || userEmail.includes(query)
+                    || scheduleTitle.includes(query)
+                    || scheduleDescription.includes(query)
+                    || courseTitle.includes(query)
+                    || courseShort.includes(query)
+                    || courseDescription.includes(query)
+                )
+            }
+        )
     }
 
-    filtered = filtered.filter((enrollment) => {
-        const status = normalize(enrollment?.status)
-        const notes = normalize(enrollment?.notes)
-        const userName = normalize(getUserName(enrollment))
-        const userEmail = normalize(getUserEmail(enrollment))
-        const scheduleTitle = normalize(getScheduleTitle(enrollment))
-        const scheduleDescription = normalize(getScheduleDescription(enrollment))
-        const courseTitle = normalize(getCourseTitle(enrollment))
-        const courseShort = normalize(getCourseShort(enrollment))
-        const courseDescription = normalize(getCourseDescription(enrollment))
-
-        return status.includes(query)
-            || notes.includes(query)
-            || userName.includes(query)
-            || userEmail.includes(query)
-            || scheduleTitle.includes(query)
-            || scheduleDescription.includes(query)
-            || courseTitle.includes(query)
-            || courseShort.includes(query)
-            || courseDescription.includes(query)
-    })
-
-    return sortEnrollments(filtered)
+    return sortEnrollments(
+        items
+    )
 })
 
 /* ==========================================================
- * ЛОКАЛЬНАЯ ПАГИНАЦИЯ
+ * FRONTEND PAGINATION
  * ========================================================== */
 
 const paginatedEnrollments = computed(() => {
-    const per = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * per
+    const perPage =
+        Math.max(
+            1,
+            Number(
+                itemsPerPage.value
+                || 10
+            )
+        )
 
-    return filteredEnrollments.value.slice(start, start + per)
+    const totalPages =
+        Math.max(
+            1,
+            Math.ceil(
+                filteredEnrollments.value.length
+                / perPage
+            )
+        )
+
+    /**
+     * Если после поиска/смены perPage
+     * текущая страница стала недоступна,
+     * возвращаемся на последнюю существующую.
+     */
+    if (
+        currentPage.value
+        > totalPages
+    ) {
+        currentPage.value =
+            totalPages
+    }
+
+    const start =
+        (
+            currentPage.value - 1
+        ) * perPage
+
+    return filteredEnrollments.value.slice(
+        start,
+        start + perPage
+    )
 })
+
+/* ==========================================================
+ * DISPLAYED DATA
+ * ========================================================== */
 
 const displayedEnrollments = computed(() => {
     return props.useServerProcessing
@@ -366,53 +823,102 @@ const displayedEnrollments = computed(() => {
         : paginatedEnrollments.value
 })
 
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
+/* ==========================================================
+ * COUNTS
+ * ========================================================== */
+
+/**
+ * Общее количество сущностей,
+ * пришедшее от backend.
+ */
+const totalCount = computed(() => {
+    return Number(
+        props.enrollmentsCount
+        ?? 0
+    )
+})
+
+/**
+ * Для frontend-поиска полезно отдельно
+ * знать количество найденных записей.
+ */
+const filteredCount = computed(() => {
+    return props.useServerProcessing
+        ? totalCount.value
+        : filteredEnrollments.value.length
 })
 </script>
 
 <template>
-    <AdminLayout :title="t('cohortEnrollments')">
+    <AdminLayout
+        :title="t('cohortEnrollments')"
+    >
         <template #header>
             <TitlePage>
                 {{ t('cohortEnrollments') }}
             </TitlePage>
         </template>
 
-        <div class="px-2 py-2 w-full max-w-12xl mx-auto">
+        <div
+            class="px-2 py-2
+                   w-full max-w-12xl mx-auto"
+        >
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
-                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                class="p-4
+                       bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       overflow-hidden
+                       shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-end sm:items-center mb-3 gap-3">
+                <!-- Processing mode -->
+                <div
+                    class="sm:flex
+                           sm:justify-end
+                           sm:items-center
+                           mb-3 gap-3"
+                >
                     <ProcessingModeSwitcher
                         setting-key="adminSchoolCohortEnrollmentsProcessingMode"
                         :mode="adminSchoolCohortEnrollmentsProcessingMode"
                         :use-server-processing="useServerProcessing"
-                        :total="enrollmentsCount"
+                        :total="totalCount"
                     />
                 </div>
 
+                <!-- Search -->
                 <SearchInput
-                    v-if="enrollmentsCount && !useServerProcessing"
+                    v-if="
+                        totalCount
+                        && !useServerProcessing
+                    "
                     v-model="searchQuery"
                     :placeholder="t('search')"
                 />
 
                 <ServerSearchInput
-                    v-if="enrollmentsCount && useServerProcessing"
+                    v-if="
+                        totalCount
+                        && useServerProcessing
+                    "
                     v-model="searchQuery"
                 />
 
+                <!-- Per page / sort -->
                 <div
-                    v-if="enrollmentsCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                    v-if="totalCount"
+                    class="flex
+                           justify-between
+                           items-center
+                           flex-col md:flex-row
+                           my-3 gap-3"
                 >
                     <ItemsPerPageSelect
                         v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
-                        @update:itemsPerPage="itemsPerPage = $event"
+                        @update:itemsPerPage="
+                            itemsPerPage = $event
+                        "
                     />
 
                     <ServerItemsPerPageSelect
@@ -423,31 +929,60 @@ watch([itemsPerPage, searchQuery], () => {
 
                     <SortSelect
                         :sortParam="sortParam"
-                        @update:sortParam="val => sortParam = val"
+                        @update:sortParam="
+                            sortParam = $event
+                        "
                     />
                 </div>
 
+                <!-- Count / view -->
                 <div
-                    v-if="enrollmentsCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                    v-if="totalCount"
+                    class="flex
+                           justify-between
+                           items-center
+                           flex-col md:flex-row
+                           my-3 gap-3"
                 >
                     <CountTable>
-                        {{ enrollmentsCount }}
+                        <template
+                            v-if="
+                                !useServerProcessing
+                                && searchQuery
+                            "
+                        >
+                            {{ filteredCount }}
+                            /
+                            {{ totalCount }}
+                        </template>
+
+                        <template v-else>
+                            {{ totalCount }}
+                        </template>
                     </CountTable>
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
+                <!-- Top pagination -->
                 <div
-                    v-if="enrollmentsCount"
-                    class="flex justify-center items-center flex-col md:flex-row mb-3"
+                    v-if="totalCount"
+                    class="flex
+                           justify-center
+                           items-center
+                           flex-col md:flex-row
+                           mb-3"
                 >
                     <Pagination
                         v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
-                        :total-items="filteredEnrollments.length"
-                        @update:currentPage="currentPage = $event"
+                        :total-items="filteredCount"
+                        @update:currentPage="
+                            currentPage = $event
+                        "
                     />
 
                     <AdminServerPagination
@@ -456,32 +991,73 @@ watch([itemsPerPage, searchQuery], () => {
                     />
                 </div>
 
+                <!-- Table -->
                 <CohortEnrollmentTable
-                    v-if="viewMode === 'table'"
-                    :enrollments="displayedEnrollments"
+                    v-if="
+                        viewMode === 'table'
+                    "
+                    :enrollments="
+                        displayedEnrollments
+                    "
                 />
 
+                <!-- Cards -->
                 <CohortEnrollmentCardGrid
                     v-else
-                    :enrollments="displayedEnrollments"
+                    :enrollments="
+                        displayedEnrollments
+                    "
                 />
 
+                <!-- Bottom pagination -->
                 <div
-                    v-if="enrollmentsCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                    v-if="totalCount"
+                    class="flex
+                           justify-center
+                           items-center
+                           flex-col md:flex-row
+                           mt-3"
                 >
                     <Pagination
                         v-if="!useServerProcessing"
                         :current-page="currentPage"
                         :items-per-page="itemsPerPage"
-                        :total-items="filteredEnrollments.length"
-                        @update:currentPage="currentPage = $event"
+                        :total-items="filteredCount"
+                        @update:currentPage="
+                            currentPage = $event
+                        "
                     />
 
                     <AdminServerPagination
                         v-else
                         :pagination="enrollments"
                     />
+                </div>
+
+                <!-- Empty database -->
+                <div
+                    v-if="!totalCount"
+                    class="py-8 text-center
+                           text-sm font-semibold
+                           text-slate-500
+                           dark:text-slate-300"
+                >
+                    {{ t('noData') }}
+                </div>
+
+                <!-- Frontend search empty -->
+                <div
+                    v-else-if="
+                        !useServerProcessing
+                        && searchQuery
+                        && filteredCount === 0
+                    "
+                    class="py-4 text-center
+                           text-sm font-semibold
+                           text-slate-500
+                           dark:text-slate-300"
+                >
+                    {{ t('noData') }}
                 </div>
             </div>
         </div>

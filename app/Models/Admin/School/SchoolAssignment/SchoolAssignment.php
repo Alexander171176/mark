@@ -213,8 +213,11 @@ class SchoolAssignment extends Model
     }
 
     /** Поиск */
-    public function scopeSearch(Builder $q, ?string $term, ?string $locale = null): Builder
-    {
+    public function scopeSearch(
+        Builder $q,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
         $term = trim((string) $term);
 
         if ($term === '') {
@@ -223,7 +226,12 @@ class SchoolAssignment extends Model
 
         $locale = $locale ?: app()->getLocale();
 
-        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|]+/u', $term))
+        $words = collect(
+            preg_split(
+                '/[\s:#№,"\'«»(){}\[\].!?\/\\\\|]+/u',
+                $term
+            )
+        )
             ->map(fn ($word) => trim($word))
             ->filter(fn ($word) => mb_strlen($word) >= 2)
             ->values();
@@ -236,247 +244,1106 @@ class SchoolAssignment extends Model
             foreach ($words as $word) {
                 $query->where(function (Builder $query) use ($word, $locale) {
                     $query
-                        ->where('school_assignments.slug', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.id', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.sort', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.school_course_id', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.school_module_id', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.school_lesson_id', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.school_instructor_profile_id', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.status', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.visibility', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.grading_type', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.max_score', 'like', "%{$word}%")
-                        ->orWhere('school_assignments.attempts_limit', 'like', "%{$word}%")
+                        /**
+                         * Основные поля задания.
+                         */
+                        ->where(
+                            'school_assignments.slug',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.id',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.sort',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.school_course_id',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.school_module_id',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.school_lesson_id',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.school_instructor_profile_id',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.status',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.visibility',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.grading_type',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.max_score',
+                            'like',
+                            "%{$word}%"
+                        )
+                        ->orWhere(
+                            'school_assignments.attempts_limit',
+                            'like',
+                            "%{$word}%"
+                        )
 
-                        ->orWhereHas('translations', function (Builder $qq) use ($word, $locale) {
-                            $qq->where('locale', $locale)
-                                ->where(function (Builder $sub) use ($word) {
-                                    $sub->where('title', 'like', "%{$word}%")
-                                        ->orWhere('slug', 'like', "%{$word}%")
-                                        ->orWhere('short', 'like', "%{$word}%")
-                                        ->orWhere('instructions', 'like', "%{$word}%");
-                                });
-                        })
+                        /**
+                         * Перевод задания.
+                         */
+                        ->orWhereHas(
+                            'translations',
+                            function (Builder $qq) use ($word, $locale) {
+                                $qq
+                                    ->where('locale', $locale)
+                                    ->where(function (Builder $sub) use ($word) {
+                                        $sub
+                                            ->where(
+                                                'title',
+                                                'like',
+                                                "%{$word}%"
+                                            )
+                                            ->orWhere(
+                                                'subtitle',
+                                                'like',
+                                                "%{$word}%"
+                                            )
+                                            ->orWhere(
+                                                'short',
+                                                'like',
+                                                "%{$word}%"
+                                            )
+                                            ->orWhere(
+                                                'description',
+                                                'like',
+                                                "%{$word}%"
+                                            )
+                                            ->orWhere(
+                                                'instructions',
+                                                'like',
+                                                "%{$word}%"
+                                            );
+                                    });
+                            }
+                        )
 
-                        ->orWhereHas('course.translations', function (Builder $qq) use ($word, $locale) {
-                            $qq->where('locale', $locale)
-                                ->where(function (Builder $sub) use ($word) {
-                                    $sub->where('title', 'like', "%{$word}%")
-                                        ->orWhere('slug', 'like', "%{$word}%")
-                                        ->orWhere('short', 'like', "%{$word}%");
-                                });
-                        })
+                        /**
+                         * Курс.
+                         *
+                         * slug лежит в school_courses,
+                         * title/short/... — в translations.
+                         */
+                        ->orWhereHas(
+                            'course',
+                            function (Builder $qq) use ($word, $locale) {
+                                $qq
+                                    ->where(
+                                        'school_courses.slug',
+                                        'like',
+                                        "%{$word}%"
+                                    )
+                                    ->orWhereHas(
+                                        'translations',
+                                        function (Builder $translationQuery) use ($word, $locale) {
+                                            $translationQuery
+                                                ->where('locale', $locale)
+                                                ->where(function (Builder $sub) use ($word) {
+                                                    $sub
+                                                        ->where(
+                                                            'title',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'subtitle',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'short',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'description',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        );
+                                                });
+                                        }
+                                    );
+                            }
+                        )
 
-                        ->orWhereHas('module.translations', function (Builder $qq) use ($word, $locale) {
-                            $qq->where('locale', $locale)
-                                ->where(function (Builder $sub) use ($word) {
-                                    $sub->where('title', 'like', "%{$word}%")
-                                        ->orWhere('slug', 'like', "%{$word}%")
-                                        ->orWhere('short', 'like', "%{$word}%");
-                                });
-                        })
+                        /**
+                         * Модуль.
+                         */
+                        ->orWhereHas(
+                            'module',
+                            function (Builder $qq) use ($word, $locale) {
+                                $qq
+                                    ->where(
+                                        'school_modules.slug',
+                                        'like',
+                                        "%{$word}%"
+                                    )
+                                    ->orWhereHas(
+                                        'translations',
+                                        function (Builder $translationQuery) use ($word, $locale) {
+                                            $translationQuery
+                                                ->where('locale', $locale)
+                                                ->where(function (Builder $sub) use ($word) {
+                                                    $sub
+                                                        ->where(
+                                                            'title',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'subtitle',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'short',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'description',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        );
+                                                });
+                                        }
+                                    );
+                            }
+                        )
 
-                        ->orWhereHas('lesson.translations', function (Builder $qq) use ($word, $locale) {
-                            $qq->where('locale', $locale)
-                                ->where(function (Builder $sub) use ($word) {
-                                    $sub->where('title', 'like', "%{$word}%")
-                                        ->orWhere('slug', 'like', "%{$word}%")
-                                        ->orWhere('short', 'like', "%{$word}%");
-                                });
-                        })
+                        /**
+                         * Урок.
+                         */
+                        ->orWhereHas(
+                            'lesson',
+                            function (Builder $qq) use ($word, $locale) {
+                                $qq
+                                    ->where(
+                                        'school_lessons.slug',
+                                        'like',
+                                        "%{$word}%"
+                                    )
+                                    ->orWhereHas(
+                                        'translations',
+                                        function (Builder $translationQuery) use ($word, $locale) {
+                                            $translationQuery
+                                                ->where('locale', $locale)
+                                                ->where(function (Builder $sub) use ($word) {
+                                                    $sub
+                                                        ->where(
+                                                            'title',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'subtitle',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'short',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'description',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        );
+                                                });
+                                        }
+                                    );
+                            }
+                        )
 
-                        ->orWhereHas('instructor.translations', function (Builder $qq) use ($word, $locale) {
-                            $qq->where('locale', $locale)
-                                ->where(function (Builder $sub) use ($word) {
-                                    $sub->where('title', 'like', "%{$word}%")
-                                        ->orWhere('slug', 'like', "%{$word}%")
-                                        ->orWhere('short', 'like', "%{$word}%");
-                                });
-                        })
+                        /**
+                         * Инструктор.
+                         */
+                        ->orWhereHas(
+                            'instructor.translations',
+                            function (Builder $qq) use ($word, $locale) {
+                                $qq
+                                    ->where('locale', $locale)
+                                    ->where(
+                                        'title',
+                                        'like',
+                                        "%{$word}%"
+                                    );
+                            }
+                        )
 
-                        ->orWhereHas('instructor.user', function (Builder $qq) use ($word) {
-                            $qq->where('name', 'like', "%{$word}%")
-                                ->orWhere('email', 'like', "%{$word}%");
-                        });
+                        /**
+                         * Пользователь инструктора.
+                         */
+                        ->orWhereHas(
+                            'instructor.user',
+                            function (Builder $qq) use ($word) {
+                                $qq
+                                    ->where(
+                                        'name',
+                                        'like',
+                                        "%{$word}%"
+                                    )
+                                    ->orWhere(
+                                        'email',
+                                        'like',
+                                        "%{$word}%"
+                                    );
+                            }
+                        );
                 });
             }
         });
     }
 
     /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
-    {
+    public function scopeSortByParam(
+        Builder $q,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
         $locale = $locale ?: app()->getLocale();
 
         return match ($sort) {
-            'idAsc' => $q->orderBy('id', 'asc'),
-            'idDesc' => $q->orderBy('id', 'desc'),
+            'idAsc' =>
+            $q->orderBy(
+                'school_assignments.id',
+                'asc'
+            ),
 
-            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+            'idDesc' =>
+            $q->orderBy(
+                'school_assignments.id',
+                'desc'
+            ),
 
-            'slugAsc' => $q->orderBy('school_assignments.slug', 'asc')
-                ->orderByDesc('school_assignments.id'),
-            'slugDesc' => $q->orderBy('school_assignments.slug', 'desc')
-                ->orderByDesc('school_assignments.id'),
+            'sortAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'titleAsc' => $q
-                ->leftJoin('school_assignment_translations as sat_sort', function ($join) use ($locale) {
-                    $join->on('sat_sort.school_assignment_id', '=', 'school_assignments.id')
-                        ->where('sat_sort.locale', '=', $locale);
-                })
-                ->orderBy('sat_sort.title', 'asc')
-                ->orderByDesc('school_assignments.id')
-                ->select('school_assignments.*'),
+            'sortDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.sort',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'titleDesc' => $q
-                ->leftJoin('school_assignment_translations as sat_sort', function ($join) use ($locale) {
-                    $join->on('sat_sort.school_assignment_id', '=', 'school_assignments.id')
-                        ->where('sat_sort.locale', '=', $locale);
-                })
-                ->orderBy('sat_sort.title', 'desc')
-                ->orderByDesc('school_assignments.id')
-                ->select('school_assignments.*'),
+            'slugAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.slug',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'courseAsc' => $q->orderBy('school_course_id', 'asc')->orderByDesc('id'),
-            'courseDesc' => $q->orderBy('school_course_id', 'desc')->orderByDesc('id'),
+            'slugDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.slug',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'courseTitleAsc' => $q
-                ->leftJoin('school_course_translations as sct_sort', function ($join) use ($locale) {
-                    $join->on('sct_sort.course_id', '=', 'school_assignments.school_course_id')
-                        ->where('sct_sort.locale', '=', $locale);
-                })
-                ->orderBy('sct_sort.title', 'asc')
-                ->orderByDesc('school_assignments.id')
-                ->select('school_assignments.*'),
+            /**
+             * Название задания.
+             */
+            'titleAsc' =>
+            $q
+                ->leftJoin(
+                    'school_assignment_translations as sat_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'sat_sort.school_assignment_id',
+                                '=',
+                                'school_assignments.id'
+                            )
+                            ->where(
+                                'sat_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'school_assignments.*'
+                )
+                ->orderBy(
+                    'sat_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'courseTitleDesc' => $q
-                ->leftJoin('school_course_translations as sct_sort', function ($join) use ($locale) {
-                    $join->on('sct_sort.course_id', '=', 'school_assignments.school_course_id')
-                        ->where('sct_sort.locale', '=', $locale);
-                })
-                ->orderBy('sct_sort.title', 'desc')
-                ->orderByDesc('school_assignments.id')
-                ->select('school_assignments.*'),
+            'titleDesc' =>
+            $q
+                ->leftJoin(
+                    'school_assignment_translations as sat_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'sat_sort.school_assignment_id',
+                                '=',
+                                'school_assignments.id'
+                            )
+                            ->where(
+                                'sat_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'school_assignments.*'
+                )
+                ->orderBy(
+                    'sat_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'moduleAsc' => $q->orderBy('school_module_id', 'asc')->orderByDesc('id'),
-            'moduleDesc' => $q->orderBy('school_module_id', 'desc')->orderByDesc('id'),
+            /**
+             * Курс — ID.
+             */
+            'courseAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.school_course_id',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'moduleTitleAsc' => $q
-                ->leftJoin('school_module_translations as smt_sort', function ($join) use ($locale) {
-                    $join->on('smt_sort.module_id', '=', 'school_assignments.school_module_id')
-                        ->where('smt_sort.locale', '=', $locale);
-                })
-                ->orderBy('smt_sort.title', 'asc')
-                ->orderByDesc('school_assignments.id')
-                ->select('school_assignments.*'),
+            'courseDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.school_course_id',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'moduleTitleDesc' => $q
-                ->leftJoin('school_module_translations as smt_sort', function ($join) use ($locale) {
-                    $join->on('smt_sort.module_id', '=', 'school_assignments.school_module_id')
-                        ->where('smt_sort.locale', '=', $locale);
-                })
-                ->orderBy('smt_sort.title', 'desc')
-                ->orderByDesc('school_assignments.id')
-                ->select('school_assignments.*'),
+            /**
+             * Курс — название.
+             *
+             * FK таблицы переводов:
+             * school_course_id.
+             */
+            'courseTitleAsc' =>
+            $q
+                ->leftJoin(
+                    'school_course_translations as sct_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'sct_sort.school_course_id',
+                                '=',
+                                'school_assignments.school_course_id'
+                            )
+                            ->where(
+                                'sct_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'school_assignments.*'
+                )
+                ->orderBy(
+                    'sct_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'lessonAsc' => $q->orderBy('school_lesson_id', 'asc')->orderByDesc('id'),
-            'lessonDesc' => $q->orderBy('school_lesson_id', 'desc')->orderByDesc('id'),
+            'courseTitleDesc' =>
+            $q
+                ->leftJoin(
+                    'school_course_translations as sct_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'sct_sort.school_course_id',
+                                '=',
+                                'school_assignments.school_course_id'
+                            )
+                            ->where(
+                                'sct_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'school_assignments.*'
+                )
+                ->orderBy(
+                    'sct_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'lessonTitleAsc' => $q
-                ->leftJoin('school_lesson_translations as slt_sort', function ($join) use ($locale) {
-                    $join->on('slt_sort.lesson_id', '=', 'school_assignments.school_lesson_id')
-                        ->where('slt_sort.locale', '=', $locale);
-                })
-                ->orderBy('slt_sort.title', 'asc')
-                ->orderByDesc('school_assignments.id')
-                ->select('school_assignments.*'),
+            /**
+             * Модуль — ID.
+             */
+            'moduleAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.school_module_id',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'lessonTitleDesc' => $q
-                ->leftJoin('school_lesson_translations as slt_sort', function ($join) use ($locale) {
-                    $join->on('slt_sort.lesson_id', '=', 'school_assignments.school_lesson_id')
-                        ->where('slt_sort.locale', '=', $locale);
-                })
-                ->orderBy('slt_sort.title', 'desc')
-                ->orderByDesc('school_assignments.id')
-                ->select('school_assignments.*'),
+            'moduleDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.school_module_id',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'instructorAsc' => $q->orderBy('school_instructor_profile_id', 'asc')
-                ->orderByDesc('id'),
-            'instructorDesc' => $q->orderBy('school_instructor_profile_id', 'desc')
-                ->orderByDesc('id'),
+            /**
+             * Модуль — название.
+             *
+             * FK:
+             * school_module_id.
+             */
+            'moduleTitleAsc' =>
+            $q
+                ->leftJoin(
+                    'school_module_translations as smt_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'smt_sort.school_module_id',
+                                '=',
+                                'school_assignments.school_module_id'
+                            )
+                            ->where(
+                                'smt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'school_assignments.*'
+                )
+                ->orderBy(
+                    'smt_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'instructorTitleAsc' => $q
-                ->leftJoin('school_instructor_profile_translations as sipt_sort', function ($join) use ($locale) {
-                    $join->on('sipt_sort.instructor_profile_id', '=', 'school_assignments.school_instructor_profile_id')
-                        ->where('sipt_sort.locale', '=', $locale);
-                })
-                ->orderBy('sipt_sort.title', 'asc')
-                ->orderByDesc('school_assignments.id')
-                ->select('school_assignments.*'),
+            'moduleTitleDesc' =>
+            $q
+                ->leftJoin(
+                    'school_module_translations as smt_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'smt_sort.school_module_id',
+                                '=',
+                                'school_assignments.school_module_id'
+                            )
+                            ->where(
+                                'smt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'school_assignments.*'
+                )
+                ->orderBy(
+                    'smt_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'instructorTitleDesc' => $q
-                ->leftJoin('school_instructor_profile_translations as sipt_sort', function ($join) use ($locale) {
-                    $join->on('sipt_sort.instructor_profile_id', '=', 'school_assignments.school_instructor_profile_id')
-                        ->where('sipt_sort.locale', '=', $locale);
-                })
-                ->orderBy('sipt_sort.title', 'desc')
-                ->orderByDesc('school_assignments.id')
-                ->select('school_assignments.*'),
+            /**
+             * Урок — ID.
+             */
+            'lessonAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.school_lesson_id',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'statusAsc' => $q->orderBy('status', 'asc')->orderByDesc('id'),
-            'statusDesc' => $q->orderBy('status', 'desc')->orderByDesc('id'),
+            'lessonDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.school_lesson_id',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'visibilityAsc' => $q->orderBy('visibility', 'asc')->orderByDesc('id'),
-            'visibilityDesc' => $q->orderBy('visibility', 'desc')->orderByDesc('id'),
+            /**
+             * Урок — название.
+             *
+             * FK:
+             * school_lesson_id.
+             */
+            'lessonTitleAsc' =>
+            $q
+                ->leftJoin(
+                    'school_lesson_translations as slt_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'slt_sort.school_lesson_id',
+                                '=',
+                                'school_assignments.school_lesson_id'
+                            )
+                            ->where(
+                                'slt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'school_assignments.*'
+                )
+                ->orderBy(
+                    'slt_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'gradingTypeAsc' => $q->orderBy('grading_type', 'asc')->orderByDesc('id'),
-            'gradingTypeDesc' => $q->orderBy('grading_type', 'desc')->orderByDesc('id'),
+            'lessonTitleDesc' =>
+            $q
+                ->leftJoin(
+                    'school_lesson_translations as slt_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'slt_sort.school_lesson_id',
+                                '=',
+                                'school_assignments.school_lesson_id'
+                            )
+                            ->where(
+                                'slt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'school_assignments.*'
+                )
+                ->orderBy(
+                    'slt_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'attemptsLimitAsc' => $q->orderBy('attempts_limit', 'asc')->orderByDesc('id'),
-            'attemptsLimitDesc' => $q->orderBy('attempts_limit', 'desc')->orderByDesc('id'),
+            /**
+             * Инструктор — ID.
+             */
+            'instructorAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.school_instructor_profile_id',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'maxScoreAsc' => $q->orderBy('max_score', 'asc')->orderByDesc('id'),
-            'maxScoreDesc' => $q->orderBy('max_score', 'desc')->orderByDesc('id'),
+            'instructorDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.school_instructor_profile_id',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'submissionsAsc' => $q->withCount('submissions')
-                ->orderBy('submissions_count', 'asc')->orderByDesc('id'),
-            'submissionsDesc' => $q->withCount('submissions')
-                ->orderBy('submissions_count', 'desc')->orderByDesc('id'),
+            /**
+             * Инструктор — имя профиля.
+             *
+             * FK:
+             * school_instructor_profile_id.
+             */
+            'instructorTitleAsc' =>
+            $q
+                ->leftJoin(
+                    'school_instructor_profile_translations as sipt_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'sipt_sort.school_instructor_profile_id',
+                                '=',
+                                'school_assignments.school_instructor_profile_id'
+                            )
+                            ->where(
+                                'sipt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'school_assignments.*'
+                )
+                ->orderBy(
+                    'sipt_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'imagesAsc' => $q->withCount('images')
-                ->orderBy('images_count', 'asc')->orderByDesc('id'),
-            'imagesDesc' => $q->withCount('images')
-                ->orderBy('images_count', 'desc')->orderByDesc('id'),
+            'instructorTitleDesc' =>
+            $q
+                ->leftJoin(
+                    'school_instructor_profile_translations as sipt_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'sipt_sort.school_instructor_profile_id',
+                                '=',
+                                'school_assignments.school_instructor_profile_id'
+                            )
+                            ->where(
+                                'sipt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'school_assignments.*'
+                )
+                ->orderBy(
+                    'sipt_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'publishedAtAsc', 'dateAsc' => $q->orderBy('published_at', 'asc')
-                ->orderByDesc('id'),
-            'publishedAtDesc', 'dateDesc' => $q->orderBy('published_at', 'desc')
-                ->orderByDesc('id'),
+            /**
+             * Простые поля.
+             */
+            'statusAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.status',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'dueAtAsc' => $q->orderBy('due_at', 'asc')->orderByDesc('id'),
-            'dueAtDesc' => $q->orderBy('due_at', 'desc')->orderByDesc('id'),
+            'statusDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.status',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'createdAtAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'visibilityAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.visibility',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('id'),
+            'visibilityDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.visibility',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('id'),
-            'activity' => $q->where('activity', true)->orderByDesc('id'),
-            'inactive' => $q->where('activity', false)->orderByDesc('id'),
+            'gradingTypeAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.grading_type',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            'left' => $q->where('left', true)->orderByDesc('id'),
-            'noLeft' => $q->where('left', false)->orderByDesc('id'),
-            'main' => $q->where('main', true)->orderByDesc('id'),
-            'noMain' => $q->where('main', false)->orderByDesc('id'),
-            'right' => $q->where('right', true)->orderByDesc('id'),
-            'noRight' => $q->where('right', false)->orderByDesc('id'),
+            'gradingTypeDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.grading_type',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
 
-            default => $q->sorted(),
+            'attemptsLimitAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.attempts_limit',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'attemptsLimitDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.attempts_limit',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'maxScoreAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.max_score',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'maxScoreDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.max_score',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            /**
+             * Counts уже добавляет indexQuery().
+             *
+             * Поэтому второй withCount()
+             * здесь не нужен.
+             */
+            'submissionsAsc' =>
+            $q
+                ->orderBy(
+                    'submissions_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'submissionsDesc' =>
+            $q
+                ->orderBy(
+                    'submissions_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'imagesAsc' =>
+            $q
+                ->orderBy(
+                    'images_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'imagesDesc' =>
+            $q
+                ->orderBy(
+                    'images_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            /**
+             * Даты.
+             */
+            'publishedAtAsc',
+            'dateAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.published_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'publishedAtDesc',
+            'dateDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.published_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'dueAtAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.due_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'dueAtDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.due_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'createdAtAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.created_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'createdAtDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'updatedAtAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.updated_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'updatedAtDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.updated_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            /**
+             * Активность.
+             */
+            'activityAsc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.activity',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'activityDesc' =>
+            $q
+                ->orderBy(
+                    'school_assignments.activity',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'activity' =>
+            $q
+                ->where(
+                    'school_assignments.activity',
+                    true
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'inactive' =>
+            $q
+                ->where(
+                    'school_assignments.activity',
+                    false
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            /**
+             * Позиции.
+             */
+            'left' =>
+            $q
+                ->where(
+                    'school_assignments.left',
+                    true
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'noLeft' =>
+            $q
+                ->where(
+                    'school_assignments.left',
+                    false
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'main' =>
+            $q
+                ->where(
+                    'school_assignments.main',
+                    true
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'noMain' =>
+            $q
+                ->where(
+                    'school_assignments.main',
+                    false
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'right' =>
+            $q
+                ->where(
+                    'school_assignments.right',
+                    true
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            'noRight' =>
+            $q
+                ->where(
+                    'school_assignments.right',
+                    false
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
+
+            default =>
+            $q
+                ->orderBy(
+                    'school_assignments.sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_assignments.id'
+                ),
         };
     }
 

@@ -5,6 +5,7 @@
  *
  * Зачисление ученика (Enrollment)
  */
+
 import { computed, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
@@ -21,48 +22,123 @@ import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vu
 import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 import SelectEntity from '@/Components/Admin/UI/Select/SelectEntity.vue'
 
-// Локализация и уведомления
+/**
+ * Локализация и уведомления.
+ */
 const { t } = useI18n()
 const toast = useToast()
 
-// Пропсы страницы создания
+/**
+ * Props.
+ */
 const props = defineProps({
-    users: { type: Array, default: () => [] },
-    courses: { type: Array, default: () => [] },
-    schedules: { type: Array, default: () => [] },
-    orders: { type: Array, default: () => [] },
+    users: {
+        type: Array,
+        default: () => [],
+    },
+
+    courses: {
+        type: Array,
+        default: () => [],
+    },
+
+    schedules: {
+        type: Array,
+        default: () => [],
+    },
+
+    orders: {
+        type: Array,
+        default: () => [],
+    },
+
+    currentLocale: {
+        type: String,
+        default: 'ru',
+    },
+
+    availableLocales: {
+        type: Array,
+        default: () => [],
+    },
 })
 
-// Форма создания зачисления
+/**
+ * Форма.
+ */
 const form = useForm({
-    user_id: null,
-    school_course_id: null,
-    school_course_schedule_id: null,
-    school_order_id: null,
+    user_id:
+        null,
 
-    status: 'active',
+    school_course_id:
+        null,
 
-    started_at: '',
-    expires_at: '',
-    completed_at: '',
+    school_course_schedule_id:
+        null,
 
-    progress_percent: 0,
-    notes: '',
-    meta: null,
+    school_order_id:
+        null,
+
+    status:
+        'active',
+
+    started_at:
+        '',
+
+    expires_at:
+        '',
+
+    completed_at:
+        '',
+
+    progress_percent:
+        0,
+
+    notes:
+        '',
+
+    meta:
+        null,
 })
 
-// Форматирование даты для отображения
+/**
+ * Текущая locale используется
+ * для форматирования дат.
+ */
+const dateLocale = computed(() =>
+    props.currentLocale || 'ru'
+)
+
+/**
+ * Форматирование дат
+ * для подписей селектов.
+ */
 const formatDateTime = (value) => {
-    if (!value) return ''
+    if (!value) {
+        return ''
+    }
 
     try {
-        return new Date(value).toLocaleString('ru-RU')
+        return new Intl.DateTimeFormat(
+            dateLocale.value,
+            {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            }
+        ).format(
+            new Date(value)
+        )
     } catch {
-        return value
+        return String(value)
     }
 }
 
-// Список статусов зачисления
+/**
+ * Статусы.
+ */
 const statusOptions = [
     'active',
     'completed',
@@ -71,278 +147,575 @@ const statusOptions = [
     'paused',
 ]
 
-// Ключи переводов статусов
+/**
+ * Ключи переводов статусов.
+ */
 const statusLabelKeyMap = {
-    active: 'statusEnrollmentActive',
-    completed: 'statusEnrollmentCompleted',
-    cancelled: 'statusEnrollmentCancelled',
-    expired: 'statusEnrollmentExpired',
-    paused: 'statusEnrollmentPaused',
+    active:
+        'statusEnrollmentActive',
+
+    completed:
+        'statusEnrollmentCompleted',
+
+    cancelled:
+        'statusEnrollmentCancelled',
+
+    expired:
+        'statusEnrollmentExpired',
+
+    paused:
+        'statusEnrollmentPaused',
 }
 
-// Получение локализованного статуса
+/**
+ * Локализованный status.
+ */
 const getStatusLabel = (status) => {
-    if (!status) return '—'
+    if (!status) {
+        return '—'
+    }
 
-    const key = statusLabelKeyMap[status]
+    const key =
+        statusLabelKeyMap[status]
 
-    return key ? t(key) : status
+    return key
+        ? t(key)
+        : status
 }
 
-// Опции пользователей
+/**
+ * Название курса
+ * из нового SharedResource.
+ */
+const getCourseTitle = (course) =>
+    course?.translation?.title
+    || course?.slug
+    || `${t('course')} #${course?.id ?? '—'}`
+
+/**
+ * Название потока
+ * из нового SharedResource.
+ */
+const getScheduleTitle = (schedule) =>
+    schedule?.translation?.title
+    || schedule?.slug
+    || `${t('schedule')} #${schedule?.id ?? '—'}`
+
+/**
+ * Пользователи.
+ */
 const userOptions = computed(() =>
-    props.users.map(user => ({
-        id: user.id,
-        label: user.name
-            ? `[ID: ${user.id}] ${user.name}${user.email ? ` (${user.email})` : ''}`
-            : `[ID: ${user.id}]`,
-    }))
+    props.users.map(
+        (user) => ({
+            id:
+            user.id,
+
+            label:
+                user.name
+                    ? `[ID: ${user.id}] ${user.name}${user.email ? ` (${user.email})` : ''}`
+                    : `[ID: ${user.id}]`,
+        })
+    )
 )
 
-// Опции курсов
+/**
+ * Курсы.
+ */
 const courseOptions = computed(() =>
-    props.courses.map(course => ({
-        id: course.id,
-        label: `[ID: ${course.id}] ${course.title || course.slug || `#${course.id}`}`,
-    }))
+    props.courses.map(
+        (course) => ({
+            id:
+            course.id,
+
+            label:
+                `[ID: ${course.id}] ${getCourseTitle(course)}`,
+        })
+    )
 )
 
-// Опции расписаний
+/**
+ * Потоки.
+ */
 const scheduleOptions = computed(() =>
-    props.schedules.map(schedule => {
-        const starts = formatDateTime(schedule.starts_at)
-        const enrollStart = formatDateTime(schedule.enroll_starts_at)
-        const enrollEnd = formatDateTime(schedule.enroll_ends_at)
+    props.schedules.map(
+        (schedule) => {
+            const starts =
+                formatDateTime(
+                    schedule.starts_at
+                )
 
-        const coursePart = schedule.course?.title
-            ? `курс: ${schedule.course.title}`
+            const enrollStart =
+                formatDateTime(
+                    schedule.enroll_starts_at
+                )
+
+            const enrollEnd =
+                formatDateTime(
+                    schedule.enroll_ends_at
+                )
+
+            const courseTitle =
+                schedule.course
+                    ? getCourseTitle(
+                        schedule.course
+                    )
+                    : null
+
+            const parts = [
+                `[ID: ${schedule.id}] ${getScheduleTitle(schedule)}`,
+
+                courseTitle
+                    ? `${t('course')}: ${courseTitle}`
+                    : null,
+
+                starts
+                    ? `${t('start')}: ${starts}`
+                    : null,
+
+                (enrollStart || enrollEnd)
+                    ? `${t('enrollmentPeriod')}: ${t('from')} ${enrollStart || '—'} ${t('to')} ${enrollEnd || '—'}`
+                    : null,
+            ].filter(Boolean)
+
+            return {
+                id:
+                schedule.id,
+
+                label:
+                    parts.join('\n'),
+            }
+        }
+    )
+)
+
+/**
+ * Заказы.
+ */
+const orderOptions = computed(() =>
+    props.orders.map(
+        (order) => {
+            const date =
+                formatDateTime(
+                    order.created_at
+                )
+
+            const numberPart =
+                order.number
+                    ? `[ID: ${order.id}] №${order.number}`
+                    : `[ID: ${order.id}]`
+
+            const amountPart =
+                order.total != null
+                    ? `${order.total} ${order.currency || ''}`.trim()
+                    : null
+
+            const userPart =
+                order.buyer_name
+                || order.user?.name
+
+            const emailPart =
+                order.buyer_email
+                || order.user?.email
+
+            const parts = [
+                numberPart,
+
+                date
+                    ? `${t('date')}: ${date}`
+                    : null,
+
+                amountPart
+                    ? `${t('amount')}: ${amountPart}`
+                    : null,
+
+                userPart
+                    ? `${t('buyer')}: ${userPart}${emailPart ? ` (${emailPart})` : ''}`
+                    : null,
+            ].filter(Boolean)
+
+            return {
+                id:
+                order.id,
+
+                label:
+                    parts.join('\n'),
+            }
+        }
+    )
+)
+
+/**
+ * Выбранный поток.
+ */
+const selectedSchedule = computed(() =>
+    props.schedules.find(
+        (schedule) =>
+            Number(schedule.id)
+            === Number(
+                form.school_course_schedule_id
+            )
+    )
+)
+
+/**
+ * Информация выбранного потока.
+ */
+const selectedScheduleDetails = computed(() => {
+    const schedule =
+        selectedSchedule.value
+
+    if (!schedule) {
+        return ''
+    }
+
+    const starts =
+        formatDateTime(
+            schedule.starts_at
+        )
+
+    const enrollStart =
+        formatDateTime(
+            schedule.enroll_starts_at
+        )
+
+    const enrollEnd =
+        formatDateTime(
+            schedule.enroll_ends_at
+        )
+
+    const courseTitle =
+        schedule.course
+            ? getCourseTitle(
+                schedule.course
+            )
             : null
 
-        const parts = [
-            `[ID: ${schedule.id}] ${schedule.title || 'Без названия'}`,
-            coursePart,
-            starts && `старт: ${starts}`,
-            (enrollStart || enrollEnd) &&
-            `запись: с ${enrollStart || '—'} по ${enrollEnd || '—'}`,
-        ].filter(Boolean)
+    const parts = [
+        `#${schedule.id} — ${getScheduleTitle(schedule)}`,
 
-        return {
-            id: schedule.id,
-            label: parts.join('\n'),
-        }
-    })
+        courseTitle
+            ? `${t('course')}: ${courseTitle}`
+            : null,
+
+        starts
+            ? `${t('start')}: ${starts}`
+            : null,
+
+        (enrollStart || enrollEnd)
+            ? `${t('enrollmentPeriod')}: ${t('from')} ${enrollStart || '—'} ${t('to')} ${enrollEnd || '—'}`
+            : null,
+    ].filter(Boolean)
+
+    return parts.join('\n')
+})
+
+/**
+ * Выбранный заказ.
+ */
+const selectedOrder = computed(() =>
+    props.orders.find(
+        (order) =>
+            Number(order.id)
+            === Number(
+                form.school_order_id
+            )
+    )
 )
 
-// Опции заказов
-const orderOptions = computed(() =>
-    props.orders.map(order => {
-        const date = formatDateTime(order.created_at)
+/**
+ * Информация выбранного заказа.
+ */
+const selectedOrderDetails = computed(() => {
+    const order =
+        selectedOrder.value
 
-        const numberPart = order.number
-            ? `[ID: ${order.id}] №${order.number}`
-            : `[ID: ${order.id}]`
+    if (!order) {
+        return ''
+    }
 
-        const amountPart = order.total != null
+    const date =
+        formatDateTime(
+            order.created_at
+        )
+
+    const numberPart =
+        order.number
+            ? `#${order.id} — №${order.number}`
+            : `#${order.id}`
+
+    const amountPart =
+        order.total != null
             ? `${order.total} ${order.currency || ''}`.trim()
             : null
 
-        const userPart = order.buyer_name || order.user?.name
-        const emailPart = order.buyer_email || order.user?.email
+    const userPart =
+        order.buyer_name
+        || order.user?.name
 
-        const parts = [
-            numberPart,
-            date && `от ${date}`,
-            amountPart && `на сумму ${amountPart}`,
-            userPart && `покупатель: ${userPart}${emailPart ? ` (${emailPart})` : ''}`,
-        ].filter(Boolean)
-
-        return {
-            id: order.id,
-            label: parts.join('\n'),
-        }
-    })
-)
-
-// Выбранное расписание
-const selectedSchedule = computed(() =>
-    props.schedules.find(schedule => Number(schedule.id) === Number(form.school_course_schedule_id))
-)
-
-// Детали выбранного расписания
-const selectedScheduleDetails = computed(() => {
-    if (!selectedSchedule.value) return ''
-
-    const schedule = selectedSchedule.value
-
-    const starts = formatDateTime(schedule.starts_at)
-    const enrollStart = formatDateTime(schedule.enroll_starts_at)
-    const enrollEnd = formatDateTime(schedule.enroll_ends_at)
-
-    const parts = [
-        `#${schedule.id} — ${schedule.title || 'Без названия'}`,
-        schedule.course?.title && `Курс: ${schedule.course.title}`,
-        starts && `Старт потока: ${starts}`,
-        (enrollStart || enrollEnd) &&
-        `Запись: с ${enrollStart || '—'} по ${enrollEnd || '—'}`,
-    ].filter(Boolean)
-
-    return parts.join('\n')
-})
-
-// Выбранный заказ
-const selectedOrder = computed(() =>
-    props.orders.find(order => Number(order.id) === Number(form.school_order_id))
-)
-
-// Детали выбранного заказа
-const selectedOrderDetails = computed(() => {
-    if (!selectedOrder.value) return ''
-
-    const order = selectedOrder.value
-    const date = formatDateTime(order.created_at)
-
-    const numberPart = order.number
-        ? `#${order.id} — №${order.number}`
-        : `#${order.id}`
-
-    const amountPart = order.total != null
-        ? `${order.total} ${order.currency || ''}`.trim()
-        : null
-
-    const userPart = order.buyer_name || order.user?.name
-    const emailPart = order.buyer_email || order.user?.email
+    const emailPart =
+        order.buyer_email
+        || order.user?.email
 
     const parts = [
         numberPart,
-        date && `от ${date}`,
-        amountPart && `на сумму ${amountPart}`,
-        userPart && `Покупатель: ${userPart}${emailPart ? ` (${emailPart})` : ''}`,
+
+        date
+            ? `${t('date')}: ${date}`
+            : null,
+
+        amountPart
+            ? `${t('amount')}: ${amountPart}`
+            : null,
+
+        userPart
+            ? `${t('buyer')}: ${userPart}${emailPart ? ` (${emailPart})` : ''}`
+            : null,
     ].filter(Boolean)
 
     return parts.join('\n')
 })
 
-// Автоподстановка курса из расписания
+/**
+ * Автоподстановка курса
+ * из выбранного потока.
+ */
 watch(
-    () => form.school_course_schedule_id,
+    () =>
+        form.school_course_schedule_id,
+
     () => {
-        const schedule = selectedSchedule.value
+        const schedule =
+            selectedSchedule.value
 
-        if (!schedule) return
+        if (!schedule) {
+            return
+        }
 
-        const courseId = schedule.school_course_id || schedule.course?.id
+        const courseId =
+            schedule.school_course_id
+            || schedule.course?.id
 
-        if (courseId) {
-            const newCourseId = Number(courseId)
+        if (!courseId) {
+            return
+        }
 
-            if (!form.school_course_id) {
-                form.school_course_id = newCourseId
-                return
-            }
+        const newCourseId =
+            Number(courseId)
 
-            if (Number(form.school_course_id) !== newCourseId) {
-                form.school_course_id = newCourseId
-                toast.info('Курс автоматически подставлен из выбранного расписания')
-            }
+        if (!form.school_course_id) {
+            form.school_course_id =
+                newCourseId
+
+            return
+        }
+
+        if (
+            Number(
+                form.school_course_id
+            ) !== newCourseId
+        ) {
+            form.school_course_id =
+                newCourseId
+
+            toast.info(
+                t('courseAutoSelectedFromSchedule')
+            )
         }
     }
 )
 
-// Автоподстановка пользователя и данных из заказа
+/**
+ * Автоподстановка связанных
+ * данных из заказа.
+ */
 watch(
-    () => form.school_order_id,
+    () =>
+        form.school_order_id,
+
     () => {
-        const order = selectedOrder.value
+        const order =
+            selectedOrder.value
 
-        if (!order) return
+        if (!order) {
+            return
+        }
 
+        /**
+         * Пользователь.
+         */
         if (order.user_id) {
-            const newUserId = Number(order.user_id)
+            const newUserId =
+                Number(
+                    order.user_id
+                )
 
             if (!form.user_id) {
-                form.user_id = newUserId
-                return
-            }
+                form.user_id =
+                    newUserId
+            } else if (
+                Number(form.user_id)
+                !== newUserId
+            ) {
+                form.user_id =
+                    newUserId
 
-            if (Number(form.user_id) !== newUserId) {
-                form.user_id = newUserId
-                toast.info('Пользователь автоматически подставлен из выбранного заказа')
+                toast.info(
+                    t('userAutoSelectedFromOrder')
+                )
             }
         }
 
-        if (order.school_course_id && !form.school_course_id) {
-            form.school_course_id = Number(order.school_course_id)
+        /**
+         * Курс.
+         */
+        if (
+            order.school_course_id
+            && !form.school_course_id
+        ) {
+            form.school_course_id =
+                Number(
+                    order.school_course_id
+                )
         }
 
-        if (order.school_course_schedule_id && !form.school_course_schedule_id) {
-            form.school_course_schedule_id = Number(order.school_course_schedule_id)
+        /**
+         * Поток.
+         */
+        if (
+            order.school_course_schedule_id
+            && !form.school_course_schedule_id
+        ) {
+            form.school_course_schedule_id =
+                Number(
+                    order.school_course_schedule_id
+                )
         }
     }
 )
 
-// Отправка формы создания
+/**
+ * Создание.
+ */
 const submitForm = () => {
-    form.transform((data) => ({
-        ...data,
+    form.transform(
+        (data) => ({
+            ...data,
 
-        user_id: data.user_id || null,
-        school_course_id: data.school_course_id || null,
-        school_course_schedule_id: data.school_course_schedule_id || null,
-        school_order_id: data.school_order_id || null,
+            user_id:
+                data.user_id
+                || null,
 
-        progress_percent: Number(data.progress_percent || 0),
-    }))
+            school_course_id:
+                data.school_course_id
+                || null,
 
-    form.post(route('admin.schoolEnrollments.store'), {
-        preserveScroll: true,
-        onSuccess: () => toast.success('Зачисление успешно создано.'),
-        onError: (errors) => {
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors?.[firstKey] || 'Проверьте правильность заполнения полей.')
-        },
-    })
+            school_course_schedule_id:
+                data.school_course_schedule_id
+                || null,
+
+            school_order_id:
+                data.school_order_id
+                || null,
+
+            progress_percent:
+                Number(
+                    data.progress_percent
+                    || 0
+                ),
+        })
+    )
+
+    form.post(
+        route(
+            'admin.schoolEnrollments.store'
+        ),
+        {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success(
+                    t('enrollmentCreatedSuccessfully')
+                )
+            },
+
+            onError: (errors) => {
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors?.[firstKey]
+                    || t('checkFormFields')
+                )
+            },
+        }
+    )
 }
 </script>
 
 <template>
     <AdminLayout :title="t('addEnrollment')">
         <template #header>
-            <TitlePage>{{ t('addEnrollment') }}</TitlePage>
+            <TitlePage>
+                {{ t('addEnrollment') }}
+            </TitlePage>
         </template>
 
-        <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-12xl mx-auto">
+        <div
+            class="px-4 py-8 w-full max-w-12xl mx-auto
+                   sm:px-6 lg:px-8"
+        >
             <div
                 class="p-4 bg-slate-50 dark:bg-slate-700
                        border border-blue-400 dark:border-blue-200
                        shadow-lg shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <DefaultButton :href="route('admin.schoolEnrollments.index')">
-                        <template #icon>
-                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                 viewBox="0 0 16 16">
-                                <path
-                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
-                                />
-                            </svg>
-                        </template>
+                <div
+                    class="sm:flex sm:justify-between
+                           sm:items-center mb-2"
+                >
+                    <DefaultButton
+                        :href="route('admin.schoolEnrollments.index')"
+                    >
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
-                <form @submit.prevent="submitForm" class="p-3 w-full space-y-3">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <form
+                    class="p-3 w-full space-y-3"
+                    @submit.prevent="submitForm"
+                >
+                    <!-- STATUS / PROGRESS -->
+                    <div
+                        class="grid grid-cols-1
+                               md:grid-cols-2 gap-4"
+                    >
                         <div class="flex flex-col items-start">
                             <LabelInput for="status">
-                                <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                                <span
+                                    class="text-red-500
+                                           dark:text-red-300
+                                           font-semibold"
+                                >
+                                    *
+                                </span>
+
                                 {{ t('status') }}
                             </LabelInput>
+
                             <select
                                 id="status"
                                 v-model="form.status"
-                                class="w-full px-3 py-0.5 form-select bg-white dark:bg-cyan-800
-                                       text-gray-600 dark:text-slate-100 rounded-sm shadow-sm
-                                       border border-slate-400 dark:border-slate-600"
+                                class="w-full px-3 py-0.5
+                                       form-select bg-white
+                                       dark:bg-cyan-800
+                                       text-gray-600
+                                       dark:text-slate-100
+                                       rounded-sm shadow-sm
+                                       border border-slate-400
+                                       dark:border-slate-600"
                             >
                                 <option
                                     v-for="status in statusOptions"
@@ -352,140 +725,221 @@ const submitForm = () => {
                                     {{ getStatusLabel(status) }}
                                 </option>
                             </select>
-                            <InputError class="mt-2" :message="form.errors.status" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.status"
+                            />
                         </div>
+
                         <div class="flex flex-col items-end">
                             <LabelInput for="progress_percent">
                                 {{ t('progress') }}, %
                             </LabelInput>
+
                             <InputProgress
                                 id="progress_percent"
                                 v-model="form.progress_percent"
-                                class="w-24 md:w-24"
+                                class="w-24"
                             />
-                            <InputError class="mt-2" :message="form.errors.progress_percent" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.progress_percent"
+                            />
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    <!-- DATES -->
+                    <div
+                        class="grid grid-cols-1
+                               md:grid-cols-3 gap-4"
+                    >
                         <div class="flex flex-col items-start">
-                            <LabelInput for="started_at">{{ t('accessStartDate') }}</LabelInput>
+                            <LabelInput for="started_at">
+                                {{ t('accessStartDate') }}
+                            </LabelInput>
+
                             <InputText
                                 id="started_at"
-                                type="datetime-local"
                                 v-model="form.started_at"
+                                type="datetime-local"
                                 autocomplete="off"
                                 class="w-full"
                             />
-                            <InputError class="mt-2" :message="form.errors.started_at" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.started_at"
+                            />
                         </div>
+
                         <div class="flex flex-col items-start">
-                            <LabelInput for="expires_at">{{ t('accessEndDate') }}</LabelInput>
+                            <LabelInput for="expires_at">
+                                {{ t('accessEndDate') }}
+                            </LabelInput>
+
                             <InputText
                                 id="expires_at"
-                                type="datetime-local"
                                 v-model="form.expires_at"
+                                type="datetime-local"
                                 autocomplete="off"
                                 class="w-full"
                             />
-                            <InputError class="mt-2" :message="form.errors.expires_at" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.expires_at"
+                            />
                         </div>
+
                         <div class="flex flex-col items-start">
-                            <LabelInput for="completed_at">{{ t('shortCompleted') }}</LabelInput>
+                            <LabelInput for="completed_at">
+                                {{ t('shortCompleted') }}
+                            </LabelInput>
+
                             <InputText
                                 id="completed_at"
-                                type="datetime-local"
                                 v-model="form.completed_at"
+                                type="datetime-local"
                                 autocomplete="off"
                                 class="w-full"
                             />
-                            <InputError class="mt-2" :message="form.errors.completed_at" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.completed_at"
+                            />
                         </div>
                     </div>
+
+                    <!-- ORDER / SCHEDULE -->
                     <div class="grid grid-cols-1 gap-4">
-                        <SelectEntity
-                            id="school_order_id"
-                            v-model="form.school_order_id"
-                            :label="t('order')"
-                            :options="orderOptions"
-                            :error-message="form.errors.school_order_id"
-                            :nullable="true"
-                            :placeholder="t('notSelected') || t('select')"
-                        />
-                        <p
-                            v-if="selectedOrderDetails"
-                            class="mt-1 text-xs text-fuchsia-500 dark:text-fuchsia-200
-                                   font-semibold whitespace-pre-line"
-                        >
-                            {{ selectedOrderDetails }}
-                        </p>
-                        <SelectEntity
-                            id="school_course_schedule_id"
-                            v-model="form.school_course_schedule_id"
-                            :label="t('schedule')"
-                            :options="scheduleOptions"
-                            :error-message="form.errors.school_course_schedule_id"
-                            :nullable="true"
-                            :placeholder="t('notSelected') || t('select')"
-                        />
-                        <p
-                            v-if="selectedScheduleDetails"
-                            class="mt-1 text-xs text-fuchsia-500 dark:text-fuchsia-200
-                                   font-semibold whitespace-pre-line"
-                        >
-                            {{ selectedScheduleDetails }}
-                        </p>
+                        <div>
+                            <SelectEntity
+                                id="school_order_id"
+                                v-model="form.school_order_id"
+                                :label="t('order')"
+                                :options="orderOptions"
+                                :error-message="form.errors.school_order_id"
+                                :nullable="true"
+                                :placeholder="t('notSelected')"
+                            />
+
+                            <p
+                                v-if="selectedOrderDetails"
+                                class="mt-1 text-xs
+                                       text-fuchsia-500
+                                       dark:text-fuchsia-200
+                                       font-semibold
+                                       whitespace-pre-line"
+                            >
+                                {{ selectedOrderDetails }}
+                            </p>
+                        </div>
+
+                        <div>
+                            <SelectEntity
+                                id="school_course_schedule_id"
+                                v-model="form.school_course_schedule_id"
+                                :label="t('schedule')"
+                                :options="scheduleOptions"
+                                :error-message="
+                                    form.errors.school_course_schedule_id
+                                "
+                                :nullable="true"
+                                :placeholder="t('notSelected')"
+                            />
+
+                            <p
+                                v-if="selectedScheduleDetails"
+                                class="mt-1 text-xs
+                                       text-fuchsia-500
+                                       dark:text-fuchsia-200
+                                       font-semibold
+                                       whitespace-pre-line"
+                            >
+                                {{ selectedScheduleDetails }}
+                            </p>
+                        </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <!-- USER / COURSE -->
+                    <div
+                        class="grid grid-cols-1
+                               md:grid-cols-2 gap-4"
+                    >
                         <SelectEntity
                             id="user_id"
                             v-model="form.user_id"
-                            :label="`${t('user')} (${t('autoCorrect')})`"
+                            :label="
+                                `${t('user')} (${t('autoCorrect')})`
+                            "
                             :required="true"
                             :options="userOptions"
                             :error-message="form.errors.user_id"
                             :placeholder="t('select')"
                         />
+
                         <SelectEntity
                             id="school_course_id"
                             v-model="form.school_course_id"
-                            :label="`${t('course')} (${t('autoCorrect')})`"
+                            :label="
+                                `${t('course')} (${t('autoCorrect')})`
+                            "
                             :required="true"
                             :options="courseOptions"
                             :error-message="form.errors.school_course_id"
                             :placeholder="t('select')"
                         />
                     </div>
+
+                    <!-- NOTES -->
                     <div class="flex flex-col items-start">
                         <div class="flex justify-between w-full">
-                            <LabelInput for="notes">{{ t('notes') }}</LabelInput>
-                            <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                {{ form.notes.length }} / 255 {{ t('characters') }}
+                            <LabelInput for="notes">
+                                {{ t('notes') }}
+                            </LabelInput>
+
+                            <div
+                                class="text-md text-gray-900
+                                       dark:text-gray-400 mt-1"
+                            >
+                                {{ form.notes.length }}
+                                / 255
+                                {{ t('characters') }}
                             </div>
                         </div>
+
                         <MetaDescTextarea
                             id="notes"
                             v-model="form.notes"
                             class="w-full"
                         />
-                        <InputError class="mt-2" :message="form.errors.notes" />
+
+                        <InputError
+                            class="mt-2"
+                            :message="form.errors.notes"
+                        />
                     </div>
-                    <div class="flex items-center justify-center gap-3">
+
+                    <!-- ACTIONS -->
+                    <div
+                        class="flex items-center
+                               justify-center gap-3"
+                    >
                         <DefaultButton
                             :href="route('admin.schoolEnrollments.index')"
                         >
-                            <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                     viewBox="0 0 16 16">
-                                    <path
-                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
-                                    />
-                                </svg>
-                            </template>
                             {{ t('back') }}
                         </DefaultButton>
+
                         <PrimaryButton
                             class="mb-0"
-                            :class="{ 'opacity-25': form.processing }"
+                            :class="{
+                                'opacity-25':
+                                    form.processing,
+                            }"
                             :disabled="form.processing"
                         >
                             {{ t('save') }}

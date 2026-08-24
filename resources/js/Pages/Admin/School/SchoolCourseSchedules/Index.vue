@@ -3,16 +3,20 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Список расписаний курсов школы
- * - режимы обработки: frontend | server | auto
- * - локальный поиск/сортировка/пагинация
- * - серверный поиск/сортировка/пагинация
+ * Admin SchoolCourseSchedule Index.
+ *
+ * Новый контракт:
+ * - SchoolCourseScheduleSharedResource;
+ * - одна выбранная locale;
+ * - server | frontend | auto;
+ * - frontend search / sort / pagination;
+ * - server search / sort / pagination.
  */
 
-import { computed, defineProps, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
@@ -33,57 +37,87 @@ import SortSelect from '@/Components/Admin/School/SchoolCourseSchedule/Sort/Sort
 import CourseScheduleTable from '@/Components/Admin/School/SchoolCourseSchedule/Table/CourseScheduleTable.vue'
 import CourseScheduleCardGrid from '@/Components/Admin/School/SchoolCourseSchedule/View/CourseScheduleCardGrid.vue'
 
-/* ==========================================================
- * БАЗОВЫЕ СЕРВИСЫ И PROPS
- * ========================================================== */
-
-/** Локализация интерфейса */
 const { t } = useI18n()
-
-/** Уведомления */
 const toast = useToast()
 
-/** Данные страницы из Inertia */
 const props = defineProps({
-    currentLocale: { type: String, default: '' },
-    availableLocales: { type: Array, default: () => [] },
+    currentLocale: {
+        type: String,
+        default: '',
+    },
 
-    adminSchoolCourseSchedulesProcessingMode: { type: String, default: 'frontend' },
-    useServerProcessing: { type: Boolean, default: false },
+    availableLocales: {
+        type: Array,
+        default: () => [],
+    },
 
-    schedules: { type: [Array, Object], default: () => [] },
-    schedulesCount: { type: Number, default: 0 },
+    adminSchoolCourseSchedulesProcessingMode: {
+        type: String,
+        default: 'frontend',
+    },
 
-    adminSchoolCourseSchedulesPerPage: { type: Number, default: 6 },
-    adminSchoolCourseSchedulesDefaultSort: { type: String, default: 'idDesc' },
+    useServerProcessing: {
+        type: Boolean,
+        default: false,
+    },
 
-    sortParam: { type: String, default: '' },
-    search: { type: String, default: '' },
+    schedules: {
+        type: [Array, Object],
+        default: () => [],
+    },
 
-    errors: { type: Object, default: () => ({}) },
+    schedulesCount: {
+        type: Number,
+        default: 0,
+    },
+
+    adminSchoolCourseSchedulesPerPage: {
+        type: Number,
+        default: 6,
+    },
+
+    adminSchoolCourseSchedulesDefaultSort: {
+        type: String,
+        default: 'idDesc',
+    },
+
+    sortParam: {
+        type: String,
+        default: '',
+    },
+
+    search: {
+        type: String,
+        default: '',
+    },
+
+    errors: {
+        type: Object,
+        default: () => ({}),
+    },
 })
 
 /* ==========================================================
- * РЕЖИМ ОТОБРАЖЕНИЯ
+ * VIEW MODE
  * ========================================================== */
 
-/** Текущий режим отображения: таблица / карточки */
-const viewMode = ref(localStorage.getItem('admin_view_mode_course_schedules') || 'table')
+const viewMode = ref(
+    localStorage.getItem(
+        'admin_view_mode_course_schedules'
+    ) || 'table'
+)
 
-/** Сохраняем выбранный вид локально */
-watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode_course_schedules', val)
+watch(viewMode, (value) => {
+    localStorage.setItem(
+        'admin_view_mode_course_schedules',
+        value
+    )
 })
 
 /* ==========================================================
- * ИСТОЧНИК ДАННЫХ
+ * SOURCE DATA
  * ========================================================== */
 
-/**
- * Унифицированный список расписаний:
- * frontend → обычный массив
- * server → schedules.data
- */
 const schedulesList = computed(() => {
     if (Array.isArray(props.schedules)) {
         return props.schedules
@@ -96,80 +130,135 @@ const schedulesList = computed(() => {
     return []
 })
 
-/* ==========================================================
- * ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ДАННЫХ
- * ========================================================== */
-
-/**
- * Локальная копия списка.
- * Используется для:
- * - локального поиска
- * - локальной сортировки
- * - моментального обновления UI
- */
 const localSchedules = ref([])
 
 watch(
     schedulesList,
-    (newVal) => {
-        localSchedules.value = JSON.parse(JSON.stringify(newVal || []))
+    (schedules) => {
+        localSchedules.value = JSON.parse(
+            JSON.stringify(
+                schedules || []
+            )
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
 /* ==========================================================
- * НАСТРОЙКИ ПАГИНАЦИИ И СОРТИРОВКИ
+ * PAGINATION / SORT / SEARCH
  * ========================================================== */
 
-/** Количество элементов на странице */
-const itemsPerPage = ref(props.adminSchoolCourseSchedulesPerPage || 6)
+const itemsPerPage = ref(
+    props.adminSchoolCourseSchedulesPerPage || 6
+)
 
-/** Сохраняем настройку количества элементов */
-watch(itemsPerPage, (newVal) => {
+const sortParam = ref(
+    props.sortParam
+    || props.adminSchoolCourseSchedulesDefaultSort
+    || 'idDesc'
+)
+
+const searchQuery = ref(
+    props.search || ''
+)
+
+const currentPage = ref(1)
+
+/**
+ * Реальная серверная страница paginator.
+ */
+const serverCurrentPage = computed(() => {
+    return Number(
+        props.schedules?.meta?.current_page
+        ?? props.schedules?.current_page
+        ?? 1
+    ) || 1
+})
+
+const activeCurrentPage = computed(() => {
+    return props.useServerProcessing
+        ? serverCurrentPage.value
+        : currentPage.value
+})
+
+/**
+ * Количество элементов.
+ *
+ * В server mode настройкой занимается
+ * ServerItemsPerPageSelect.
+ */
+watch(itemsPerPage, (newValue) => {
+    if (props.useServerProcessing) {
+        return
+    }
+
+    currentPage.value = 1
+
     router.put(
-        route('admin.settings.updateAdminCountSchoolCourseSchedules'),
-        { value: newVal },
+        route(
+            'admin.settings.updateAdminCountSchoolCourseSchedules'
+        ),
+        {
+            value: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
-                toast.info(`Показ ${newVal} элементов на странице.`)
+                toast.info(
+                    `Показ ${newValue} элементов на странице.`
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления кол-ва элементов.')
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления количества элементов.'
+                )
             },
         }
     )
 })
 
-/** Текущий параметр сортировки */
-const sortParam = ref(
-    props.sortParam ||
-    props.adminSchoolCourseSchedulesDefaultSort ||
-    'idDesc'
-)
-
-/** Сохраняем сортировку и при server-режиме перезагружаем список */
-watch(sortParam, (newVal) => {
+/**
+ * Сортировка.
+ */
+watch(sortParam, (newValue) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortSchoolCourseSchedules'),
-        { value: newVal },
+        route(
+            'admin.settings.updateAdminSortSchoolCourseSchedules'
+        ),
+        {
+            value: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
                 if (props.useServerProcessing) {
+                    const query =
+                        Object.fromEntries(
+                            new URLSearchParams(
+                                window.location.search
+                            )
+                        )
+
                     router.get(
                         window.location.pathname,
                         {
-                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
-                            sort: newVal || undefined,
-                            page: undefined,
+                            ...query,
+                            sort:
+                                newValue
+                                || undefined,
+                            page:
+                            undefined,
                         },
                         {
                             preserveScroll: true,
@@ -179,570 +268,1084 @@ watch(sortParam, (newVal) => {
                     )
                 }
 
-                toast.info('Сортировка успешно изменена')
+                toast.info(
+                    'Сортировка успешно изменена'
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления сортировки.')
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления сортировки.'
+                )
             },
         }
     )
 })
 
 /* ==========================================================
- * ПОИСК И ПАГИНАЦИЯ
+ * NEW SHARED RESOURCE CONTRACT
  * ========================================================== */
 
-/** Поисковый запрос */
-const searchQuery = ref(props.search || '')
-
-/** Текущая страница frontend-пагинации */
-const currentPage = ref(1)
-
-/* ==========================================================
- * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
- * ========================================================== */
-
-/** Нормализация строки */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
-
-/** Безопасное преобразование в число */
-const safeNumber = (value) => {
-    const number = Number(value)
-    return Number.isFinite(number) ? number : 0
-}
-
-/** Безопасное преобразование даты */
-const safeDate = (value) => {
-    const time = new Date(value || 0).getTime()
-    return Number.isFinite(time) ? time : 0
-}
-
-/* ==========================================================
- * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ РЕСУРСОВ
- * ========================================================== */
-
-/** Получение заголовка расписания */
+/**
+ * Schedule.
+ */
 const getScheduleTitle = (schedule) => {
-    return schedule?.title
-        || schedule?.translation?.title
-        || schedule?.translations?.[0]?.title
+    return schedule?.translation?.title
         || `ID: ${schedule?.id}`
 }
 
-/** Получение подзаголовка расписания */
 const getScheduleSubtitle = (schedule) => {
-    return schedule?.subtitle
-        || schedule?.translation?.subtitle
-        || schedule?.translations?.[0]?.subtitle
-        || ''
+    return schedule?.translation?.subtitle || ''
 }
 
-/** Получение краткого описания расписания */
 const getScheduleShort = (schedule) => {
-    return schedule?.short
-        || schedule?.translation?.short
-        || schedule?.translations?.[0]?.short
-        || ''
+    return schedule?.translation?.short || ''
 }
 
-/** Получение описания расписания */
 const getScheduleDescription = (schedule) => {
-    return schedule?.description
-        || schedule?.translation?.description
-        || schedule?.translations?.[0]?.description
-        || ''
+    return schedule?.translation?.description || ''
 }
 
-/** Получение slug расписания */
-const getScheduleSlug = (schedule) => {
-    return schedule?.slug
-        || schedule?.translation?.slug
-        || schedule?.translations?.[0]?.slug
-        || ''
-}
-
-/** Получение заголовка связанной сущности */
-const getNestedTitle = (item) => {
-    return item?.title
-        || item?.name
-        || item?.translation?.title
-        || item?.translation?.name
-        || item?.translations?.[0]?.title
-        || item?.translations?.[0]?.name
-        || item?.user?.name
-        || ''
-}
-
-/** Получение названия курса */
+/**
+ * Course.
+ */
 const getCourseTitle = (schedule) => {
-    return getNestedTitle(schedule?.course)
+    return schedule?.course?.translation?.title
+        || (
+            schedule?.course?.id
+                ? `ID: ${schedule.course.id}`
+                : ''
+        )
 }
 
-/** Получение имени инструктора */
+const getCourseSlug = (schedule) => {
+    return schedule?.course?.slug || ''
+}
+
+/**
+ * Instructor.
+ */
 const getInstructorTitle = (schedule) => {
-    return getNestedTitle(schedule?.instructor)
+    const instructor =
+        schedule?.instructor
+
+    if (!instructor) {
+        return ''
+    }
+
+    return instructor?.translation?.title
+        || instructor?.user?.name
+        || (
+            instructor?.id
+                ? `ID: ${instructor.id}`
+                : ''
+        )
 }
 
-/** Получение имени пользователя инструктора */
-const getInstructorUserText = (schedule) => {
-    const user = schedule?.instructor?.user
+const getInstructorName = (schedule) => {
+    return schedule?.instructor?.user?.name || ''
+}
 
-    return [
-        user?.name,
-        user?.email,
-    ].filter(Boolean).join(' ')
+const getInstructorEmail = (schedule) => {
+    return schedule?.instructor?.user?.email || ''
 }
 
 /* ==========================================================
- * СОРТИРОВКА FRONTEND
+ * HELPERS
  * ========================================================== */
 
-/** Сортировка чисел ↑ */
-const byNumberAsc = (field) => (a, b) =>
-    safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+const normalize = (value) => {
+    return String(value ?? '')
+        .trim()
+        .toLocaleLowerCase()
+}
 
-/** Сортировка чисел ↓ */
-const byNumberDesc = (field) => (a, b) =>
-    safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const safeNumber = (value) => {
+    const number = Number(value)
 
-/** Сортировка строк ↑ */
-const byStringAsc = (field) => (a, b) =>
-    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    return Number.isFinite(number)
+        ? number
+        : 0
+}
 
-/** Сортировка строк ↓ */
-const byStringDesc = (field) => (a, b) =>
-    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const safeDate = (value) => {
+    const time =
+        new Date(
+            value || 0
+        ).getTime()
 
-/** Сортировка дат ↑ */
-const byDateAsc = (field) => (a, b) =>
-    safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    return Number.isFinite(time)
+        ? time
+        : 0
+}
 
-/** Сортировка дат ↓ */
-const byDateDesc = (field) => (a, b) =>
-    safeDate(b?.[field]) - safeDate(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const compareText = (a, b) => {
+    return normalize(a).localeCompare(
+        normalize(b),
+        props.currentLocale || undefined,
+        {
+            sensitivity: 'base',
+        }
+    )
+}
 
-/**
- * Главный обработчик сортировки.
- * Должен совпадать со scopeSortByParam() модели и SortSelect.vue.
- */
+const byNumberAsc = (field) => {
+    return (a, b) =>
+        safeNumber(a?.[field])
+        - safeNumber(b?.[field])
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
+}
+
+const byNumberDesc = (field) => {
+    return (a, b) =>
+        safeNumber(b?.[field])
+        - safeNumber(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+const byStringAsc = (field) => {
+    return (a, b) =>
+        compareText(
+            a?.[field],
+            b?.[field]
+        )
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
+}
+
+const byStringDesc = (field) => {
+    return (a, b) =>
+        compareText(
+            b?.[field],
+            a?.[field]
+        )
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+const byDateAsc = (field) => {
+    return (a, b) =>
+        safeDate(a?.[field])
+        - safeDate(b?.[field])
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
+}
+
+const byDateDesc = (field) => {
+    return (a, b) =>
+        safeDate(b?.[field])
+        - safeDate(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+/* ==========================================================
+ * FRONTEND SORT
+ * ========================================================== */
+
 const sortSchedules = (items) => {
-    const list = (items || []).slice()
+    const list = [
+        ...(items || []),
+    ]
 
-    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
-    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
-
-    if (sortParam.value === 'online') return list.filter(item => !!item.is_online)
-    if (sortParam.value === 'offline') return list.filter(item => !item.is_online)
-
-    const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
-
-        sortAsc: byNumberAsc('sort'),
-        sortDesc: byNumberDesc('sort'),
-
-        titleAsc: (a, b) =>
-            normalize(getScheduleTitle(a)).localeCompare(normalize(getScheduleTitle(b)), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        titleDesc: (a, b) =>
-            normalize(getScheduleTitle(b)).localeCompare(normalize(getScheduleTitle(a)), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        slugAsc: byStringAsc('slug'),
-        slugDesc: byStringDesc('slug'),
-
-        statusAsc: byStringAsc('status'),
-        statusDesc: byStringDesc('status'),
-
-        timezoneAsc: byStringAsc('timezone'),
-        timezoneDesc: byStringDesc('timezone'),
-
-        locationAsc: byStringAsc('location'),
-        locationDesc: byStringDesc('location'),
-
-        meetingUrlAsc: byStringAsc('meeting_url'),
-        meetingUrlDesc: byStringDesc('meeting_url'),
-
-        capacityAsc: byNumberAsc('capacity'),
-        capacityDesc: byNumberDesc('capacity'),
-
-        viewsAsc: byNumberAsc('views'),
-        viewsDesc: byNumberDesc('views'),
-
-        imagesAsc: byNumberAsc('images_count'),
-        imagesDesc: byNumberDesc('images_count'),
-
-        cohortEnrollmentsAsc: byNumberAsc('cohort_enrollments_count'),
-        cohortEnrollmentsDesc: byNumberDesc('cohort_enrollments_count'),
-
-        activityAsc: byNumberAsc('activity'),
-        activityDesc: byNumberDesc('activity'),
-
-        onlineAsc: byNumberAsc('is_online'),
-        onlineDesc: byNumberDesc('is_online'),
-
-        startsAtAsc: byDateAsc('starts_at'),
-        startsAtDesc: byDateDesc('starts_at'),
-
-        endsAtAsc: byDateAsc('ends_at'),
-        endsAtDesc: byDateDesc('ends_at'),
-
-        enrollStartsAtAsc: byDateAsc('enroll_starts_at'),
-        enrollStartsAtDesc: byDateDesc('enroll_starts_at'),
-
-        enrollEndsAtAsc: byDateAsc('enroll_ends_at'),
-        enrollEndsAtDesc: byDateDesc('enroll_ends_at'),
-
-        createdAtAsc: byDateAsc('created_at'),
-        createdAtDesc: byDateDesc('created_at'),
-
-        updatedAtAsc: byDateAsc('updated_at'),
-        updatedAtDesc: byDateDesc('updated_at'),
+    /**
+     * Filter-параметры.
+     */
+    if (sortParam.value === 'activity') {
+        return list.filter(
+            schedule =>
+                !!schedule.activity
+        )
     }
 
-    return sortMap[sortParam.value]
-        ? list.sort(sortMap[sortParam.value])
+    if (sortParam.value === 'inactive') {
+        return list.filter(
+            schedule =>
+                !schedule.activity
+        )
+    }
+
+    if (sortParam.value === 'online') {
+        return list.filter(
+            schedule =>
+                !!schedule.is_online
+        )
+    }
+
+    if (sortParam.value === 'offline') {
+        return list.filter(
+            schedule =>
+                !schedule.is_online
+        )
+    }
+
+    const sortMap = {
+        idAsc:
+            byNumberAsc('id'),
+
+        idDesc:
+            byNumberDesc('id'),
+
+        sortAsc:
+            byNumberAsc('sort'),
+
+        sortDesc:
+            byNumberDesc('sort'),
+
+        slugAsc:
+            byStringAsc('slug'),
+
+        slugDesc:
+            byStringDesc('slug'),
+
+        titleAsc: (a, b) =>
+            compareText(
+                getScheduleTitle(a),
+                getScheduleTitle(b)
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        titleDesc: (a, b) =>
+            compareText(
+                getScheduleTitle(b),
+                getScheduleTitle(a)
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        statusAsc:
+            byStringAsc('status'),
+
+        statusDesc:
+            byStringDesc('status'),
+
+        timezoneAsc:
+            byStringAsc('timezone'),
+
+        timezoneDesc:
+            byStringDesc('timezone'),
+
+        locationAsc:
+            byStringAsc('location'),
+
+        locationDesc:
+            byStringDesc('location'),
+
+        meetingUrlAsc:
+            byStringAsc('meeting_url'),
+
+        meetingUrlDesc:
+            byStringDesc('meeting_url'),
+
+        capacityAsc:
+            byNumberAsc('capacity'),
+
+        capacityDesc:
+            byNumberDesc('capacity'),
+
+        viewsAsc:
+            byNumberAsc('views'),
+
+        viewsDesc:
+            byNumberDesc('views'),
+
+        imagesAsc:
+            byNumberAsc('images_count'),
+
+        imagesDesc:
+            byNumberDesc('images_count'),
+
+        cohortEnrollmentsAsc:
+            byNumberAsc(
+                'cohort_enrollments_count'
+            ),
+
+        cohortEnrollmentsDesc:
+            byNumberDesc(
+                'cohort_enrollments_count'
+            ),
+
+        activityAsc:
+            byNumberAsc('activity'),
+
+        activityDesc:
+            byNumberDesc('activity'),
+
+        onlineAsc:
+            byNumberAsc('is_online'),
+
+        onlineDesc:
+            byNumberDesc('is_online'),
+
+        startsAtAsc:
+            byDateAsc('starts_at'),
+
+        startsAtDesc:
+            byDateDesc('starts_at'),
+
+        endsAtAsc:
+            byDateAsc('ends_at'),
+
+        endsAtDesc:
+            byDateDesc('ends_at'),
+
+        enrollStartsAtAsc:
+            byDateAsc(
+                'enroll_starts_at'
+            ),
+
+        enrollStartsAtDesc:
+            byDateDesc(
+                'enroll_starts_at'
+            ),
+
+        enrollEndsAtAsc:
+            byDateAsc(
+                'enroll_ends_at'
+            ),
+
+        enrollEndsAtDesc:
+            byDateDesc(
+                'enroll_ends_at'
+            ),
+
+        createdAtAsc:
+            byDateAsc('created_at'),
+
+        createdAtDesc:
+            byDateDesc('created_at'),
+
+        updatedAtAsc:
+            byDateAsc('updated_at'),
+
+        updatedAtDesc:
+            byDateDesc('updated_at'),
+    }
+
+    const sorter =
+        sortMap[sortParam.value]
+
+    return sorter
+        ? list.sort(sorter)
         : list
 }
 
 /* ==========================================================
- * ПОИСК FRONTEND
+ * FRONTEND SEARCH
  * ========================================================== */
 
-/**
- * Фильтрация списка.
- *
- * frontend:
- * поиск выполняется здесь
- *
- * server:
- * поиск выполняется контроллером
- */
 const filteredSchedules = computed(() => {
-    let filtered = localSchedules.value || []
-    const query = normalize(searchQuery.value)
+    let schedules =
+        localSchedules.value || []
 
-    if (!query) {
-        return sortSchedules(filtered)
+    /**
+     * Server уже выполнил:
+     * - search;
+     * - sort;
+     * - pagination.
+     *
+     * Повторно обрабатывать только
+     * текущую страницу нельзя.
+     */
+    if (props.useServerProcessing) {
+        return schedules
     }
 
-    filtered = filtered.filter((schedule) => {
-        const title = normalize(getScheduleTitle(schedule))
-        const subtitle = normalize(getScheduleSubtitle(schedule))
-        const slug = normalize(getScheduleSlug(schedule))
-        const short = normalize(getScheduleShort(schedule))
-        const description = normalize(getScheduleDescription(schedule))
-        const notes = normalize(schedule?.notes)
-        const location = normalize(schedule?.location)
-        const meetingUrl = normalize(schedule?.meeting_url)
-        const timezone = normalize(schedule?.timezone)
-        const status = normalize(schedule?.status)
-        const courseTitle = normalize(getCourseTitle(schedule))
-        const instructorTitle = normalize(getInstructorTitle(schedule))
-        const instructorUser = normalize(getInstructorUserText(schedule))
+    const query =
+        normalize(
+            searchQuery.value
+        )
 
-        return title.includes(query)
-            || subtitle.includes(query)
-            || slug.includes(query)
-            || short.includes(query)
-            || description.includes(query)
-            || notes.includes(query)
-            || location.includes(query)
-            || meetingUrl.includes(query)
-            || timezone.includes(query)
-            || status.includes(query)
-            || courseTitle.includes(query)
-            || instructorTitle.includes(query)
-            || instructorUser.includes(query)
-    })
+    if (query) {
+        schedules = schedules.filter(
+            (schedule) => {
+                const title =
+                    normalize(
+                        getScheduleTitle(
+                            schedule
+                        )
+                    )
 
-    return sortSchedules(filtered)
+                const subtitle =
+                    normalize(
+                        getScheduleSubtitle(
+                            schedule
+                        )
+                    )
+
+                const short =
+                    normalize(
+                        getScheduleShort(
+                            schedule
+                        )
+                    )
+
+                const description =
+                    normalize(
+                        getScheduleDescription(
+                            schedule
+                        )
+                    )
+
+                const slug =
+                    normalize(
+                        schedule?.slug
+                    )
+
+                const location =
+                    normalize(
+                        schedule?.location
+                    )
+
+                const meetingUrl =
+                    normalize(
+                        schedule?.meeting_url
+                    )
+
+                const timezone =
+                    normalize(
+                        schedule?.timezone
+                    )
+
+                const status =
+                    normalize(
+                        schedule?.status
+                    )
+
+                const courseTitle =
+                    normalize(
+                        getCourseTitle(
+                            schedule
+                        )
+                    )
+
+                const courseSlug =
+                    normalize(
+                        getCourseSlug(
+                            schedule
+                        )
+                    )
+
+                const instructorTitle =
+                    normalize(
+                        getInstructorTitle(
+                            schedule
+                        )
+                    )
+
+                const instructorName =
+                    normalize(
+                        getInstructorName(
+                            schedule
+                        )
+                    )
+
+                const instructorEmail =
+                    normalize(
+                        getInstructorEmail(
+                            schedule
+                        )
+                    )
+
+                const ids = [
+                    schedule?.id,
+                    schedule?.sort,
+                    schedule?.school_course_id,
+                    schedule?.school_instructor_profile_id,
+                    schedule?.capacity,
+                    schedule?.views,
+                    schedule?.images_count,
+                    schedule?.cohort_enrollments_count,
+                ]
+                    .map(normalize)
+                    .join(' ')
+
+                return title.includes(query)
+                    || subtitle.includes(query)
+                    || short.includes(query)
+                    || description.includes(query)
+                    || slug.includes(query)
+                    || location.includes(query)
+                    || meetingUrl.includes(query)
+                    || timezone.includes(query)
+                    || status.includes(query)
+                    || courseTitle.includes(query)
+                    || courseSlug.includes(query)
+                    || instructorTitle.includes(query)
+                    || instructorName.includes(query)
+                    || instructorEmail.includes(query)
+                    || ids.includes(query)
+            }
+        )
+    }
+
+    return sortSchedules(
+        schedules
+    )
 })
 
 /* ==========================================================
- * ЛОКАЛЬНАЯ ПАГИНАЦИЯ
+ * FRONTEND PAGINATION
  * ========================================================== */
 
-/** Разбиение списка по страницам */
 const paginatedSchedules = computed(() => {
-    const per = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * per
+    const perPage =
+        Number(
+            itemsPerPage.value
+        ) || 6
 
-    return filteredSchedules.value.slice(start, start + per)
+    const start =
+        (
+            currentPage.value - 1
+        ) * perPage
+
+    return filteredSchedules.value.slice(
+        start,
+        start + perPage
+    )
 })
 
-/**
- * Итоговый список:
- * frontend → локальная пагинация
- * server → данные сервера
- */
 const displayedSchedules = computed(() => {
     return props.useServerProcessing
         ? schedulesList.value
         : paginatedSchedules.value
 })
 
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
-
-/* ==========================================================
- * УДАЛЕНИЕ
- * ========================================================== */
-
-/** Состояние модального окна удаления */
-const showConfirmDeleteModal = ref(false)
-const scheduleToDeleteId = ref(null)
-const scheduleToDeleteTitle = ref('')
-
-/** Открыть подтверждение удаления */
-const confirmDelete = (scheduleOrId, title = null) => {
-    if (typeof scheduleOrId === 'object') {
-        scheduleToDeleteId.value = scheduleOrId.id
-        scheduleToDeleteTitle.value = title || getScheduleTitle(scheduleOrId)
-    } else {
-        scheduleToDeleteId.value = scheduleOrId
-        scheduleToDeleteTitle.value = title || `ID: ${scheduleOrId}`
-    }
-
-    showConfirmDeleteModal.value = true
-}
-
-/** Закрыть окно */
-const closeModal = () => {
-    showConfirmDeleteModal.value = false
-    scheduleToDeleteId.value = null
-    scheduleToDeleteTitle.value = ''
-}
-
-/** Выполнить удаление */
-const deleteSchedule = () => {
-    if (scheduleToDeleteId.value === null) return
-
-    const idToDelete = scheduleToDeleteId.value
-    const titleToDelete = scheduleToDeleteTitle.value
-
-    router.delete(route('admin.schoolCourseSchedules.destroy', {
-        schoolCourseSchedule: idToDelete,
-    }), {
-        preserveScroll: true,
-        preserveState: false,
-
-        onSuccess: () => {
-            toast.success(`Расписание "${titleToDelete || 'ID: ' + idToDelete}" удалено.`)
-        },
-
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
-
-            toast.error(`${errorMsg} (Расписание: ${titleToDelete || 'ID: ' + idToDelete})`)
-        },
-
-        onFinish: () => closeModal(),
-    })
-}
-
-/* ==========================================================
- * ЛОКАЛЬНОЕ ОБНОВЛЕНИЕ UI
- * ========================================================== */
-
-/**
- * Обновление записи локально
- * без полной перезагрузки страницы
- */
-const patchSchedule = (scheduleId, payload) => {
-    const index = localSchedules.value.findIndex(schedule => schedule.id === scheduleId)
-
-    if (index !== -1) {
-        localSchedules.value[index] = {
-            ...localSchedules.value[index],
-            ...payload,
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+    ],
+    () => {
+        if (!props.useServerProcessing) {
+            currentPage.value = 1
         }
     }
-}
+)
 
 /* ==========================================================
- * МАССОВЫЕ ОПЕРАЦИИ
+ * DELETE
  * ========================================================== */
 
-/** Выбранные элементы */
-const selectedSchedules = ref([])
+const showConfirmDeleteModal =
+    ref(false)
 
-/** Выбрать все */
-const toggleAll = (payload) => {
-    const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? displayedSchedules.value.map((schedule) => schedule.id)
+const scheduleToDeleteId =
+    ref(null)
 
-    if (checked) {
-        selectedSchedules.value = [...new Set([...selectedSchedules.value, ...ids])]
-    } else {
-        selectedSchedules.value = selectedSchedules.value.filter((id) => !ids.includes(id))
-    }
-}
+const scheduleToDeleteTitle =
+    ref('')
 
-/** Выбрать элемент */
-const toggleSelectSchedule = (id) => {
-    const index = selectedSchedules.value.indexOf(id)
+const confirmDelete = (
+    scheduleOrId,
+    title = null
+) => {
+    if (
+        typeof scheduleOrId === 'object'
+        && scheduleOrId !== null
+    ) {
+        scheduleToDeleteId.value =
+            scheduleOrId.id
 
-    if (index > -1) {
-        selectedSchedules.value.splice(index, 1)
-    } else {
-        selectedSchedules.value.push(id)
-    }
-}
-
-/** Изменить порядок */
-const handleSortOrderUpdate = (orderedIds) => {
-    const startSort = (currentPage.value - 1) * itemsPerPage.value
-
-    const items = orderedIds.map((id, index) => ({
-        id,
-        sort: startSort + index + 1,
-    }))
-
-    if (!items.length) return
-
-    router.put(route('admin.actions.schoolCourseSchedules.updateSortBulk'), { items }, {
-        preserveScroll: true,
-        preserveState: true,
-
-        onSuccess: () => {
-            toast.success('Порядок расписаний успешно обновлён.')
-        },
-
-        onError: (errors) => {
-            console.error('Ошибка обновления сортировки расписаний:', errors)
-
-            toast.error(
-                errors?.message ||
-                errors?.general ||
-                'Не удалось обновить порядок расписаний.'
+        scheduleToDeleteTitle.value =
+            title
+            || getScheduleTitle(
+                scheduleOrId
             )
+    } else {
+        scheduleToDeleteId.value =
+            scheduleOrId
 
-            router.reload({
-                only: ['schedules'],
-                preserveScroll: true,
-            })
-        },
-    })
+        scheduleToDeleteTitle.value =
+            title
+            || `ID: ${scheduleOrId}`
+    }
+
+    showConfirmDeleteModal.value =
+        true
 }
 
-/** Массовая активность */
-const bulkToggleActivity = (newActivity) => {
-    if (!selectedSchedules.value.length) {
-        toast.warning('Выберите расписания для активации/деактивации.')
+const closeModal = () => {
+    showConfirmDeleteModal.value =
+        false
+
+    scheduleToDeleteId.value =
+        null
+
+    scheduleToDeleteTitle.value =
+        ''
+}
+
+const deleteSchedule = () => {
+    if (
+        scheduleToDeleteId.value === null
+    ) {
         return
     }
 
-    const idsToUpdate = [...selectedSchedules.value]
+    const id =
+        scheduleToDeleteId.value
 
-    router.put(route('admin.actions.schoolCourseSchedules.bulkUpdateActivity'), {
-        ids: idsToUpdate,
-        activity: newActivity,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
+    const title =
+        scheduleToDeleteTitle.value
 
-        onSuccess: () => {
-            idsToUpdate.forEach(id => patchSchedule(id, { activity: newActivity }))
-            selectedSchedules.value = []
-            toast.success('Активность выбранных расписаний обновлена.')
-        },
+    router.delete(
+        route(
+            'admin.schoolCourseSchedules.destroy',
+            {
+                schoolCourseSchedule:
+                id,
+            }
+        ),
+        {
+            preserveScroll: true,
+            preserveState: false,
 
-        onError: (errors) => {
-            toast.error(
-                errors?.ids ||
-                errors?.activity ||
-                errors?.general ||
-                'Ошибка массового обновления активности.'
-            )
-        },
-    })
+            onSuccess: () => {
+                toast.success(
+                    `Расписание "${title || `ID: ${id}`}" удалено.`
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                const message =
+                    errors?.general
+                    || errors?.[errorKey]
+                    || 'Произошла ошибка при удалении.'
+
+                toast.error(
+                    `${message} (Расписание: ${title || `ID: ${id}`})`
+                )
+            },
+
+            onFinish: () => {
+                closeModal()
+            },
+        }
+    )
 }
 
-/** Обработчик массовых действий */
+/* ==========================================================
+ * LOCAL UI PATCH
+ * ========================================================== */
+
+const patchSchedule = (
+    scheduleId,
+    payload
+) => {
+    const index =
+        localSchedules.value.findIndex(
+            schedule =>
+                schedule.id === scheduleId
+        )
+
+    if (index === -1) {
+        return
+    }
+
+    localSchedules.value[index] = {
+        ...localSchedules.value[index],
+        ...payload,
+    }
+}
+
+/* ==========================================================
+ * SELECTION
+ * ========================================================== */
+
+const selectedSchedules =
+    ref([])
+
+const toggleAll = (payload) => {
+    const checked =
+        payload?.checked
+        ?? payload?.target?.checked
+        ?? false
+
+    const ids =
+        payload?.ids
+        ?? displayedSchedules.value.map(
+            schedule =>
+                schedule.id
+        )
+
+    if (checked) {
+        selectedSchedules.value = [
+            ...new Set([
+                ...selectedSchedules.value,
+                ...ids,
+            ]),
+        ]
+
+        return
+    }
+
+    selectedSchedules.value =
+        selectedSchedules.value.filter(
+            id => !ids.includes(id)
+        )
+}
+
+const toggleSelectSchedule = (id) => {
+    const index =
+        selectedSchedules.value.indexOf(
+            id
+        )
+
+    if (index > -1) {
+        selectedSchedules.value.splice(
+            index,
+            1
+        )
+
+        return
+    }
+
+    selectedSchedules.value.push(
+        id
+    )
+}
+
+/* ==========================================================
+ * DRAG & DROP
+ * ========================================================== */
+
+const handleSortOrderUpdate = (
+    orderedIds
+) => {
+    /**
+     * Для server используем настоящую
+     * страницу paginator.
+     */
+    const startSort =
+        (
+            activeCurrentPage.value - 1
+        )
+        * Number(
+            itemsPerPage.value || 6
+        )
+
+    const items =
+        orderedIds.map(
+            (id, index) => ({
+                id,
+                sort:
+                    startSort
+                    + index
+                    + 1,
+            })
+        )
+
+    if (!items.length) {
+        return
+    }
+
+    router.put(
+        route(
+            'admin.actions.schoolCourseSchedules.updateSortBulk'
+        ),
+        {
+            items,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Порядок расписаний успешно обновлён.'
+                )
+            },
+
+            onError: (errors) => {
+                console.error(
+                    'Ошибка обновления сортировки расписаний:',
+                    errors
+                )
+
+                toast.error(
+                    errors?.message
+                    || errors?.general
+                    || 'Не удалось обновить порядок расписаний.'
+                )
+
+                router.reload({
+                    only: [
+                        'schedules',
+                    ],
+                    preserveScroll: true,
+                })
+            },
+        }
+    )
+}
+
+/* ==========================================================
+ * BULK ACTIONS
+ * ========================================================== */
+
+const bulkToggleActivity = (
+    newActivity
+) => {
+    if (
+        !selectedSchedules.value.length
+    ) {
+        toast.warning(
+            'Выберите расписания для активации/деактивации.'
+        )
+
+        return
+    }
+
+    const ids = [
+        ...selectedSchedules.value,
+    ]
+
+    router.put(
+        route(
+            'admin.actions.schoolCourseSchedules.bulkUpdateActivity'
+        ),
+        {
+            ids,
+            activity:
+            newActivity,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                ids.forEach((id) => {
+                    patchSchedule(
+                        id,
+                        {
+                            activity:
+                            newActivity,
+                        }
+                    )
+                })
+
+                selectedSchedules.value =
+                    []
+
+                toast.success(
+                    'Активность выбранных расписаний обновлена.'
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.ids
+                    || errors?.activity
+                    || errors?.general
+                    || 'Ошибка массового обновления активности.'
+                )
+            },
+        }
+    )
+}
+
+const bulkDelete = () => {
+    if (
+        !selectedSchedules.value.length
+    ) {
+        toast.warning(
+            'Выберите расписания для удаления.'
+        )
+
+        return
+    }
+
+    if (
+        !confirm(
+            'Вы уверены, что хотите удалить выбранные расписания?'
+        )
+    ) {
+        return
+    }
+
+    router.delete(
+        route(
+            'admin.actions.schoolCourseSchedules.bulkDestroy'
+        ),
+        {
+            data: {
+                ids:
+                selectedSchedules.value,
+            },
+
+            preserveScroll: true,
+            preserveState: false,
+
+            onSuccess: () => {
+                selectedSchedules.value =
+                    []
+
+                toast.success(
+                    'Выбранные расписания успешно удалены.'
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors?.[errorKey]
+                    || 'Ошибка массового удаления расписаний.'
+                )
+            },
+        }
+    )
+}
+
 const handleBulkAction = (event) => {
-    const action = event.target.value
+    const action =
+        event.target.value
 
     if (action === 'selectAll') {
-        toggleAll({ target: { checked: true } })
-    } else if (action === 'deselectAll') {
-        toggleAll({ target: { checked: false } })
-    } else if (action === 'activate') {
-        bulkToggleActivity(true)
-    } else if (action === 'deactivate') {
-        bulkToggleActivity(false)
+        toggleAll({
+            target: {
+                checked: true,
+            },
+        })
+    }
+
+    if (action === 'deselectAll') {
+        toggleAll({
+            target: {
+                checked: false,
+            },
+        })
+    }
+
+    if (action === 'activate') {
+        bulkToggleActivity(
+            true
+        )
+    }
+
+    if (action === 'deactivate') {
+        bulkToggleActivity(
+            false
+        )
+    }
+
+    if (action === 'delete') {
+        bulkDelete()
     }
 
     event.target.value = ''
 }
 
 /* ==========================================================
- * ОПЕРАЦИИ НАД ОДНОЙ ЗАПИСЬЮ
+ * SINGLE ACTIONS
  * ========================================================== */
 
-/** Переключение активности */
 const toggleActivity = (schedule) => {
-    const newActivity = !schedule.activity
-    const scheduleTitle = getScheduleTitle(schedule)
-    const actionText = newActivity ? t('activated') : t('deactivated')
+    const newActivity =
+        !schedule.activity
 
-    router.put(route('admin.actions.schoolCourseSchedules.updateActivity', {
-        schoolCourseSchedule: schedule.id,
-    }), {
-        activity: newActivity,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
+    const scheduleTitle =
+        getScheduleTitle(
+            schedule
+        )
 
-        onSuccess: () => {
-            patchSchedule(schedule.id, { activity: newActivity })
-            schedule.activity = newActivity
+    const actionText =
+        newActivity
+            ? t('activated')
+            : t('deactivated')
 
-            toast.success(`Расписание "${scheduleTitle}" ${actionText}.`)
+    router.put(
+        route(
+            'admin.actions.schoolCourseSchedules.updateActivity',
+            {
+                schoolCourseSchedule:
+                schedule.id,
+            }
+        ),
+        {
+            activity:
+            newActivity,
         },
+        {
+            preserveScroll: true,
+            preserveState: true,
 
-        onError: (errors) => {
-            toast.error(
-                errors?.activity ||
-                errors?.general ||
-                `Ошибка изменения активности для расписания "${scheduleTitle}".`
-            )
-        },
-    })
+            onSuccess: () => {
+                patchSchedule(
+                    schedule.id,
+                    {
+                        activity:
+                        newActivity,
+                    }
+                )
+
+                schedule.activity =
+                    newActivity
+
+                toast.success(
+                    `Расписание "${scheduleTitle}" ${actionText}.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.activity
+                    || errors?.general
+                    || `Ошибка изменения активности для расписания "${scheduleTitle}".`
+                )
+            },
+        }
+    )
 }
 
-/** Клонирование расписания */
 const cloneSchedule = (schedule) => {
-    router.post(route('admin.actions.schoolCourseSchedules.clone', {
-        schoolCourseSchedule: schedule.id,
-    }), {}, {
-        preserveScroll: true,
+    router.post(
+        route(
+            'admin.actions.schoolCourseSchedules.clone',
+            {
+                schoolCourseSchedule:
+                schedule.id,
+            }
+        ),
+        {},
+        {
+            preserveScroll: true,
 
-        onSuccess: () => {
-            toast.success('Расписание успешно клонировано.')
-        },
+            onSuccess: () => {
+                toast.success(
+                    'Расписание успешно клонировано.'
+                )
+            },
 
-        onError: () => {
-            toast.error('Ошибка при клонировании расписания.')
-        },
-    })
+            onError: () => {
+                toast.error(
+                    'Ошибка при клонировании расписания.'
+                )
+            },
+        }
+    )
 }
 </script>
 
 <template>
     <AdminLayout :title="t('schedules')">
         <template #header>
-            <TitlePage>{{ t('schedules') }}</TitlePage>
+            <TitlePage>
+                {{ t('schedules') }}
+            </TitlePage>
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
@@ -752,8 +1355,14 @@ const cloneSchedule = (schedule) => {
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
-                    <DefaultButton :href="route('admin.schoolCourseSchedules.create')">
+                <!-- Create + processing -->
+                <div
+                    class="sm:flex sm:justify-between
+                           sm:items-center mb-3 gap-3"
+                >
+                    <DefaultButton
+                        :href="route('admin.schoolCourseSchedules.create')"
+                    >
                         <template #icon>
                             <svg
                                 class="w-4 h-4 fill-current opacity-50 shrink-0"
@@ -776,6 +1385,7 @@ const cloneSchedule = (schedule) => {
                     />
                 </div>
 
+                <!-- Search -->
                 <SearchInput
                     v-if="schedulesCount && !useServerProcessing"
                     v-model="searchQuery"
@@ -787,9 +1397,11 @@ const cloneSchedule = (schedule) => {
                     v-model="searchQuery"
                 />
 
+                <!-- Per page + sort -->
                 <div
                     v-if="schedulesCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                    class="flex justify-between items-center
+                           flex-col md:flex-row my-3 gap-3"
                 >
                     <ItemsPerPageSelect
                         v-if="!useServerProcessing"
@@ -805,24 +1417,34 @@ const cloneSchedule = (schedule) => {
 
                     <SortSelect
                         :sortParam="sortParam"
-                        @update:sortParam="val => sortParam = val"
+                        @update:sortParam="sortParam = $event"
                     />
                 </div>
 
+                <!-- Count + bulk + view -->
                 <div
                     v-if="schedulesCount"
-                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
+                    class="flex flex-col lg:flex-row
+                           items-center justify-between gap-3"
                 >
-                    <CountTable>{{ schedulesCount }}</CountTable>
+                    <CountTable>
+                        {{ schedulesCount }}
+                    </CountTable>
 
-                    <BulkActionSelect @change="handleBulkAction" />
+                    <BulkActionSelect
+                        @change="handleBulkAction"
+                    />
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
+                <!-- Top pagination -->
                 <div
                     v-if="schedulesCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                    class="flex justify-center items-center
+                           flex-col md:flex-row mt-3"
                 >
                     <Pagination
                         v-if="!useServerProcessing"
@@ -838,6 +1460,7 @@ const cloneSchedule = (schedule) => {
                     />
                 </div>
 
+                <!-- Table -->
                 <CourseScheduleTable
                     v-if="viewMode === 'table'"
                     :schedules="displayedSchedules"
@@ -850,6 +1473,7 @@ const cloneSchedule = (schedule) => {
                     @toggle-all="toggleAll"
                 />
 
+                <!-- Cards -->
                 <CourseScheduleCardGrid
                     v-else
                     :schedules="displayedSchedules"
@@ -862,9 +1486,11 @@ const cloneSchedule = (schedule) => {
                     @toggle-all="toggleAll"
                 />
 
+                <!-- Bottom pagination -->
                 <div
                     v-if="schedulesCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                    class="flex justify-center items-center
+                           flex-col md:flex-row mt-3"
                 >
                     <Pagination
                         v-if="!useServerProcessing"

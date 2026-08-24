@@ -171,6 +171,7 @@ export default {
     stanceSouthpaw: 'Солақай (Southpaw)',
     stanceSwitch: 'Ауыстырылатын (Switch)',
     stampPng: 'Мөр PNG',
+    start: 'Бастау',
     statistics: 'Статистика',
     status: 'Күй',
     statusArchived: 'Мұрағат',

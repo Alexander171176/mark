@@ -27,6 +27,7 @@ export default {
     title: 'Атауы',
     titleItemsPerPage: 'Беттегі элементтер саны',
     titleProperty: 'Қасиеттің атауы',
+    to: 'ға',
     toggleDarkMode: 'Жарық/қараңғы режимге ауыстыру',
     toggleSidebar: 'Бүйірлік панельді ашу/жабу',
     total: 'Барлығы',

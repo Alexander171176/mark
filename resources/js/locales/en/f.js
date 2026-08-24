@@ -25,4 +25,5 @@ export default {
     found: 'Found',
     free: 'for free',
     frontend: 'Frontend',
+    from: 'from',
 }

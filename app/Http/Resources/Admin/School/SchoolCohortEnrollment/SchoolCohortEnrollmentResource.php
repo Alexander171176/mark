@@ -11,27 +11,80 @@ class SchoolCohortEnrollmentResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' =>
+                $this->id,
 
-            'school_course_schedule_id' => $this->school_course_schedule_id,
-            'user_id' => $this->user_id,
+            /**
+             * Связи.
+             */
+            'school_course_schedule_id' =>
+                $this->school_course_schedule_id,
 
-            'status' => $this->status,
-            'enrolled_at' => optional($this->enrolled_at)->toIso8601String(),
-            'notes' => $this->notes,
+            'user_id' =>
+                $this->user_id,
 
-            'schedule' => new SchoolCourseScheduleSharedResource(
-                $this->whenLoaded('schedule')
+            /**
+             * Основные данные записи.
+             */
+            'status' =>
+                $this->status,
+
+            /**
+             * Edit использует datetime-local.
+             */
+            'enrolled_at' =>
+                $this->enrolled_at?->format(
+                    'Y-m-d\TH:i'
+                ),
+
+            'notes' =>
+                $this->notes,
+
+            /**
+             * Поток.
+             *
+             * Controller заранее загружает:
+             *
+             * schedule.translations
+             * только для выбранной locale.
+             *
+             * Также может быть загружен
+             * schedule.course.translations.
+             */
+            'schedule' =>
+                new SchoolCourseScheduleSharedResource(
+                    $this->whenLoaded(
+                        'schedule'
+                    )
+                ),
+
+            /**
+             * Пользователь.
+             */
+            'user' => $this->whenLoaded(
+                'user',
+                fn () => $this->user
+                    ? [
+                        'id' =>
+                            $this->user->id,
+
+                        'name' =>
+                            $this->user->name,
+
+                        'email' =>
+                            $this->user->email,
+                    ]
+                    : null
             ),
 
-            'user' => $this->whenLoaded('user', fn () => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
-                'email' => $this->user->email,
-            ]),
+            /**
+             * Служебные даты.
+             */
+            'created_at' =>
+                $this->created_at?->toISOString(),
 
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

@@ -13,72 +13,215 @@ class SchoolEnrollmentResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' =>
+                $this->id,
 
-            'user_id' => $this->user_id,
-            'school_course_id' => $this->school_course_id,
-            'school_course_schedule_id' => $this->school_course_schedule_id,
-            'school_order_id' => $this->school_order_id,
+            /**
+             * FK.
+             */
+            'user_id' =>
+                $this->user_id,
 
-            'status' => $this->status,
+            'school_course_id' =>
+                $this->school_course_id,
 
-            'started_at' => optional($this->started_at)->toIso8601String(),
-            'expires_at' => optional($this->expires_at)->toIso8601String(),
-            'completed_at' => optional($this->completed_at)->toIso8601String(),
+            'school_course_schedule_id' =>
+                $this->school_course_schedule_id,
 
-            'progress_percent' => (int) $this->progress_percent,
-            'notes' => $this->notes,
-            'meta' => $this->meta,
+            'school_order_id' =>
+                $this->school_order_id,
 
-            'is_accessible' => (bool) $this->is_accessible,
-            'days_left' => $this->days_left,
+            /**
+             * Основные данные.
+             */
+            'status' =>
+                $this->status,
 
-            'user' => $this->whenLoaded('user', fn () => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
-                'email' => $this->user->email,
-            ]),
+            /**
+             * Edit будет использовать
+             * datetime-local.
+             */
+            'started_at' =>
+                $this->started_at?->format(
+                    'Y-m-d\TH:i'
+                ),
 
-            'course' => new SchoolCourseSharedResource(
-                $this->whenLoaded('course')
+            'expires_at' =>
+                $this->expires_at?->format(
+                    'Y-m-d\TH:i'
+                ),
+
+            'completed_at' =>
+                $this->completed_at?->format(
+                    'Y-m-d\TH:i'
+                ),
+
+            'progress_percent' =>
+                (int) $this->progress_percent,
+
+            'notes' =>
+                $this->notes,
+
+            'meta' =>
+                $this->meta,
+
+            /**
+             * Вычисляемые состояния.
+             */
+            'is_accessible' =>
+                (bool) $this->is_accessible,
+
+            'days_left' =>
+                $this->days_left,
+
+            /**
+             * Пользователь.
+             */
+            'user' => $this->whenLoaded(
+                'user',
+                fn () => $this->user
+                    ? [
+                        'id' =>
+                            $this->user->id,
+
+                        'name' =>
+                            $this->user->name,
+
+                        'email' =>
+                            $this->user->email,
+                    ]
+                    : null
             ),
 
-            'schedule' => new SchoolCourseScheduleSharedResource(
-                $this->whenLoaded('schedule')
+            /**
+             * Курс.
+             *
+             * Edit-контроллер заранее
+             * загрузит translations
+             * только выбранной locale.
+             */
+            'course' =>
+                new SchoolCourseSharedResource(
+                    $this->whenLoaded(
+                        'course'
+                    )
+                ),
+
+            /**
+             * Поток.
+             */
+            'schedule' =>
+                new SchoolCourseScheduleSharedResource(
+                    $this->whenLoaded(
+                        'schedule'
+                    )
+                ),
+
+            /**
+             * Заказ.
+             */
+            'order' =>
+                new SchoolOrderSharedResource(
+                    $this->whenLoaded(
+                        'order'
+                    )
+                ),
+
+            /**
+             * Записи прогресса.
+             *
+             * Нужны только если relation
+             * специально загружена.
+             */
+            'progress_records' =>
+                $this->whenLoaded(
+                    'progressRecords',
+                    fn () =>
+                    $this->progressRecords->map(
+                        fn ($record) => [
+                            'id' =>
+                                $record->id,
+
+                            'school_course_id' =>
+                                $record->school_course_id,
+
+                            'school_module_id' =>
+                                $record->school_module_id,
+
+                            'school_lesson_id' =>
+                                $record->school_lesson_id,
+
+                            'status' =>
+                                $record->status,
+
+                            'progress_percent' =>
+                                (int) $record->progress_percent,
+
+                            'time_spent_seconds' =>
+                                (int) $record->time_spent_seconds,
+
+                            'last_viewed_at' =>
+                                $record
+                                    ->last_viewed_at
+                                    ?->toISOString(),
+
+                            'completed_at' =>
+                                $record
+                                    ->completed_at
+                                    ?->toISOString(),
+                        ]
+                    )
+                ),
+
+            /**
+             * Сертификат.
+             */
+            'certificate' => $this->whenLoaded(
+                'certificate',
+                fn () => $this->certificate
+                    ? [
+                        'id' =>
+                            $this->certificate->id,
+
+                        'number' =>
+                            $this->certificate->number,
+
+                        'verification_code' =>
+                            $this->certificate->verification_code,
+
+                        'status' =>
+                            $this->certificate->status,
+
+                        'issued_at' =>
+                            $this->certificate
+                                ->issued_at
+                                ?->toISOString(),
+
+                        'expires_at' =>
+                            $this->certificate
+                                ->expires_at
+                                ?->toISOString(),
+                    ]
+                    : null
             ),
 
-            'order' => new SchoolOrderSharedResource(
-                $this->whenLoaded('order')
-            ),
-
-            'progress_records' => $this->whenLoaded('progressRecords', fn () => $this->progressRecords->map(fn ($record) => [
-                'id' => $record->id,
-                'school_course_id' => $record->school_course_id,
-                'school_module_id' => $record->school_module_id,
-                'school_lesson_id' => $record->school_lesson_id,
-                'status' => $record->status,
-                'progress_percent' => (int) $record->progress_percent,
-                'time_spent_seconds' => (int) $record->time_spent_seconds,
-                'last_viewed_at' => optional($record->last_viewed_at)->toIso8601String(),
-                'completed_at' => optional($record->completed_at)->toIso8601String(),
-            ])),
-
-            'certificate' => $this->whenLoaded('certificate', fn () => $this->certificate ? [
-                'id' => $this->certificate->id,
-                'number' => $this->certificate->number,
-                'verification_code' => $this->certificate->verification_code,
-                'status' => $this->certificate->status,
-                'issued_at' => optional($this->certificate->issued_at)->toIso8601String(),
-                'expires_at' => optional($this->certificate->expires_at)->toIso8601String(),
-            ] : null),
-
+            /**
+             * Counts.
+             */
             'progress_records_count' => $this->when(
                 isset($this->progress_records_count),
-                fn () => (int) $this->progress_records_count
+                fn () =>
+                (int) $this->progress_records_count
             ),
 
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            /**
+             * Служебные даты.
+             */
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

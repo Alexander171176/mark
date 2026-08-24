@@ -3,7 +3,14 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Создание расписания обучения
+ * Создание расписания обучения.
+ *
+ * Новый контракт:
+ * - courses/instructors приходят локализованными SharedResource;
+ * - form.*_id является единственным источником истины;
+ * - VueMultiselect хранит только UI-объект выбранной сущности;
+ * - при смене ru/en выбранные ID сохраняются,
+ *   а подписи multiselect перестраиваются из новой locale.
  */
 import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
@@ -31,19 +38,21 @@ import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 import SelectStatus from '@/Components/Admin/School/SchoolCourseSchedule/Select/SelectStatus.vue'
 import SelectTimezone from '@/Components/Admin/School/SchoolCourseSchedule/Select/SelectTimezone.vue'
 
-// Локализация и Toast уведомления
 const { t } = useI18n()
 const toast = useToast()
 
-// Props из контроллера
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
+
     courses: { type: Array, default: () => [] },
     instructors: { type: Array, default: () => [] },
 })
 
-// Пустая структура перевода
+/* ==========================================================
+ * TRANSLATIONS
+ * ========================================================== */
+
 const makeTranslation = () => ({
     title: '',
     subtitle: '',
@@ -54,13 +63,17 @@ const makeTranslation = () => ({
     meta_desc: '',
 })
 
-// Локаль по умолчанию
-const defaultLocale = props.currentLocale || 'ru'
+const defaultLocale =
+    props.currentLocale
+    || props.availableLocales?.[0]
+    || 'ru'
 
-// Активная локаль вкладки
 const activeLocale = ref(defaultLocale)
 
-// Форма создания расписания
+/* ==========================================================
+ * FORM
+ * ========================================================== */
+
 const form = useForm({
     school_course_id: null,
     school_instructor_profile_id: null,
@@ -77,178 +90,423 @@ const form = useForm({
 
     capacity: 0,
     is_online: true,
+
     location: '',
     meeting_url: '',
     timezone: '',
     status: 'draft',
     notes: '',
 
-    images: [],
-
     translations: {
-        [defaultLocale]: makeTranslation(),
+        [defaultLocale]:
+            makeTranslation(),
     },
 })
 
-// Текущий перевод активной локали
 const currentTranslation = computed(() => {
     if (!form.translations[activeLocale.value]) {
-        form.translations[activeLocale.value] = makeTranslation()
+        form.translations[activeLocale.value] =
+            makeTranslation()
     }
 
     return form.translations[activeLocale.value]
 })
 
-// Получение ошибки перевода
-const getError = (key) => form.errors[`translations.${activeLocale.value}.${key}`]
+const getError = (key) =>
+    form.errors[
+        `translations.${activeLocale.value}.${key}`
+        ]
 
-// Динамический лимит multiselect
-const dynamicOptionsLimit = (items) => {
-    if (!items) return 10
+/**
+ * Смена locale не должна сбрасывать форму.
+ *
+ * Меняется только активная вкладка перевода
+ * и локализованные подписи selector-ов.
+ */
+watch(
+    () => props.currentLocale,
+    (locale) => {
+        if (!locale) return
 
-    return items.length + 10
-}
+        activeLocale.value = locale
 
-// Опции курсов
-const courseOptions = computed(() =>
-    props.courses.map((item) => ({
-        id: item.id,
-        label: `[ID: ${item.id}] ${item.title || item.slug || `#${item.id}`}`,
-    }))
-)
-
-// Опции преподавателей
-const instructorOptions = computed(() =>
-    props.instructors.map((item) => {
-        const title = item.public_name || item.title || item.name || `#${item.id}`
-        const userName = item.user?.name || item.user?.email || ''
-
-        return {
-            id: item.id,
-            label: userName
-                ? `[ID: ${item.id}] ${title} — ${userName}`
-                : `[ID: ${item.id}] ${title}`,
+        if (!form.translations[locale]) {
+            form.translations[locale] =
+                makeTranslation()
         }
-    })
+    }
 )
 
-// Выбранный курс и преподаватель
+/* ==========================================================
+ * SELECT HELPERS
+ * ========================================================== */
+
+const dynamicOptionsLimit = (items) =>
+    Array.isArray(items)
+        ? items.length + 10
+        : 10
+
+const getCourseTitle = (item) =>
+    item?.translation?.title
+    || item?.title
+    || item?.slug
+    || `#${item?.id ?? ''}`
+
+const getInstructorTitle = (item) =>
+    item?.translation?.title
+    || item?.translation?.public_name
+    || item?.public_name
+    || item?.title
+    || item?.user?.name
+    || `#${item?.id ?? ''}`
+
+const courseOptions = computed(() =>
+    (props.courses || []).map(
+        (item) => ({
+            id: item.id,
+            label:
+                `[ID: ${item.id}] ${getCourseTitle(item)}`,
+        })
+    )
+)
+
+const instructorOptions = computed(() =>
+    (props.instructors || []).map(
+        (item) => {
+            const title =
+                getInstructorTitle(item)
+
+            const userName =
+                item?.user?.name
+                || item?.user?.email
+                || ''
+
+            return {
+                id: item.id,
+
+                label:
+                    userName
+                    && userName !== title
+                        ? `[ID: ${item.id}] ${title} — ${userName}`
+                        : `[ID: ${item.id}] ${title}`,
+            }
+        }
+    )
+)
+
+/**
+ * VueMultiselect хранит UI objects.
+ * form хранит реальные FK.
+ */
 const selectedCourse = ref(null)
 const selectedInstructor = ref(null)
 
-// Синхронизация курса с формой
-watch(selectedCourse, (val) => {
-    form.school_course_id = val?.id ?? null
+/**
+ * Важно для Create:
+ *
+ * после ru → en props.courses / props.instructors
+ * получают новые локализованные объекты.
+ *
+ * Новый UI object находим по сохранённому form ID.
+ */
+watch(
+    courseOptions,
+    (options) => {
+        selectedCourse.value =
+            options.find(
+                (item) =>
+                    Number(item.id) ===
+                    Number(form.school_course_id)
+            )
+            || null
+    },
+    { immediate: true }
+)
+
+watch(
+    instructorOptions,
+    (options) => {
+        selectedInstructor.value =
+            options.find(
+                (item) =>
+                    Number(item.id) ===
+                    Number(form.school_instructor_profile_id)
+            )
+            || null
+    },
+    { immediate: true }
+)
+
+watch(selectedCourse, (value) => {
+    form.school_course_id =
+        value?.id !== undefined
+        && value?.id !== null
+            ? Number(value.id)
+            : null
 })
 
-// Синхронизация преподавателя с формой
-watch(selectedInstructor, (val) => {
-    form.school_instructor_profile_id = val?.id ?? null
+watch(selectedInstructor, (value) => {
+    form.school_instructor_profile_id =
+        value?.id !== undefined
+        && value?.id !== null
+            ? Number(value.id)
+            : null
 })
 
-// Новые изображения
+/* ==========================================================
+ * IMAGES
+ * ========================================================== */
+
 const newImages = ref([])
 
-// Обновление новых изображений
 const handleNewImagesUpdate = (images) => {
-    newImages.value = images || []
+    newImages.value =
+        Array.isArray(images)
+            ? images
+            : []
 }
 
-// Генерация slug из title
+/* ==========================================================
+ * SLUG / SEO
+ * ========================================================== */
+
 const handleSlugFocus = () => {
-    if (!form.slug && currentTranslation.value.title) {
-        form.slug = transliterate(currentTranslation.value.title.toLowerCase())
+    if (
+        !form.slug
+        && currentTranslation.value.title
+    ) {
+        form.slug = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
     }
 }
 
-// Обрезка текста
-const truncateText = (text, maxLength, addEllipsis = false) => {
+const truncateText = (
+    text,
+    maxLength,
+    addEllipsis = false
+) => {
     if (!text) return ''
 
-    const str = String(text)
+    const value = String(text)
 
-    if (str.length <= maxLength) return str
-
-    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
-    const truncated = lastSpaceIndex === -1
-        ? str.substring(0, maxLength)
-        : str.substring(0, lastSpaceIndex)
-
-    return addEllipsis ? `${truncated}...` : truncated
-}
-
-// Генерация SEO полей
-const generateMetaFields = () => {
-    const translation = currentTranslation.value
-
-    if (translation.title && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.title, 160)
+    if (value.length <= maxLength) {
+        return value
     }
 
-    if (!translation.meta_keywords && translation.short) {
-        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+    const lastSpaceIndex =
+        value.lastIndexOf(
+            ' ',
+            maxLength
+        )
+
+    const truncated =
+        lastSpaceIndex === -1
+            ? value.substring(
+                0,
+                maxLength
+            )
+            : value.substring(
+                0,
+                lastSpaceIndex
+            )
+
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
+}
+
+const generateMetaFields = () => {
+    const translation =
+        currentTranslation.value
+
+    if (
+        translation.title
+        && !translation.meta_title
+    ) {
+        translation.meta_title =
+            truncateText(
+                translation.title,
+                160
+            )
+    }
+
+    if (
+        !translation.meta_keywords
+        && translation.short
+    ) {
+        let text = String(
+            translation.short
+        ).replace(
+            /(<([^>]+)>)/gi,
+            ''
+        )
+
+        text = text.replace(
+            /[.,!?;:()[\]{}"'«»]/g,
+            ''
+        )
 
         const words = text
             .split(/\s+/)
-            .filter(word => word && word.length >= 3)
-            .map(word => word.toLowerCase())
-            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter(
+                (word) =>
+                    word
+                    && word.length >= 3
+            )
+            .map(
+                (word) =>
+                    word.toLowerCase()
+            )
+            .filter(
+                (value, index, self) =>
+                    self.indexOf(value)
+                    === index
+            )
 
-        translation.meta_keywords = truncateText(words.join(', '), 255)
+        translation.meta_keywords =
+            truncateText(
+                words.join(', '),
+                255
+            )
     }
 
-    if (translation.short && !translation.meta_desc) {
-        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        translation.meta_desc = truncateText(descText, 255, true)
+    if (
+        translation.short
+        && !translation.meta_desc
+    ) {
+        const description = String(
+            translation.short
+        ).replace(
+            /(<([^>]+)>)/gi,
+            ''
+        )
+
+        translation.meta_desc =
+            truncateText(
+                description,
+                255,
+                true
+            )
     }
 }
 
-// Отправка формы создания
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
+const nullableId = (value) => {
+    if (
+        value === ''
+        || value === null
+        || value === undefined
+    ) {
+        return null
+    }
+
+    const number = Number(value)
+
+    return Number.isFinite(number)
+        ? number
+        : null
+}
+
 const submit = () => {
     form.transform((data) => {
         const transformed = {
             ...data,
 
-            school_course_id: selectedCourse.value?.id ?? null,
-            school_instructor_profile_id: selectedInstructor.value?.id ?? null,
+            school_course_id:
+                nullableId(
+                    data.school_course_id
+                ),
 
-            activity: data.activity ? 1 : 0,
-            is_online: data.is_online ? 1 : 0,
+            school_instructor_profile_id:
+                nullableId(
+                    data.school_instructor_profile_id
+                ),
 
-            sort: data.sort === '' || data.sort === null
-                ? 0
-                : Number(data.sort),
+            activity:
+                data.activity
+                    ? 1
+                    : 0,
 
-            capacity: data.capacity === '' || data.capacity === null
-                ? 0
-                : Number(data.capacity),
+            is_online:
+                data.is_online
+                    ? 1
+                    : 0,
+
+            sort:
+                data.sort === ''
+                || data.sort === null
+                    ? 0
+                    : Number(data.sort),
+
+            capacity:
+                data.capacity === ''
+                || data.capacity === null
+                    ? 0
+                    : Number(data.capacity),
         }
 
-        delete transformed.images
+        newImages.value.forEach(
+            (image, index) => {
+                transformed[
+                    `images[${index}][file]`
+                    ] = image.file
 
-        newImages.value.forEach((image, index) => {
-            transformed[`images[${index}][file]`] = image.file
-            transformed[`images[${index}][order]`] = image.order ?? 0
-            transformed[`images[${index}][alt]`] = image.alt ?? ''
-            transformed[`images[${index}][caption]`] = image.caption ?? ''
-        })
+                transformed[
+                    `images[${index}][order]`
+                    ] = image.order ?? 0
+
+                transformed[
+                    `images[${index}][alt]`
+                    ] = image.alt ?? ''
+
+                transformed[
+                    `images[${index}][caption]`
+                    ] = image.caption ?? ''
+            }
+        )
 
         return transformed
     })
 
-    form.post(route('admin.schoolCourseSchedules.store'), {
-        errorBag: 'createSchoolCourseSchedule',
-        preserveScroll: true,
-        forceFormData: true,
-        onSuccess: () => toast.success('Расписание успешно создано!'),
-        onError: (errors) => {
-            console.error('Ошибка создания расписания:', errors)
+    form.post(
+        route(
+            'admin.schoolCourseSchedules.store'
+        ),
+        {
+            errorBag:
+                'createSchoolCourseSchedule',
 
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors[firstKey] || 'Проверьте корректность полей.')
-        },
-    })
+            preserveScroll: true,
+            forceFormData: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Расписание успешно создано!'
+                )
+            },
+
+            onError: (errors) => {
+                console.error(
+                    'Ошибка создания расписания:',
+                    errors
+                )
+
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors?.[firstKey]
+                    || 'Проверьте корректность полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -525,7 +783,7 @@ const submit = () => {
                                     </LabelInput>
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                {{ currentTranslation.title.length }} / 255 {{ t('characters') }}
+                                        {{ currentTranslation.title.length }} / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -548,7 +806,7 @@ const submit = () => {
                                     />
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                {{ currentTranslation.subtitle.length }} / 255 {{ t('characters') }}
+                                        {{ currentTranslation.subtitle.length }} / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -563,13 +821,13 @@ const submit = () => {
 
                             <div class="mb-3 flex flex-col items-start">
                                 <div class="flex justify-between w-full">
-                            <LabelInput
-                                for="short"
-                                :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
-                            />
+                                    <LabelInput
+                                        for="short"
+                                        :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
+                                    />
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                {{ currentTranslation.short.length }} / 255 {{ t('characters') }}
+                                        {{ currentTranslation.short.length }} / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -610,7 +868,7 @@ const submit = () => {
                                     />
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                            {{ currentTranslation.meta_title.length }} / 160 {{ t('characters') }}
+                                        {{ currentTranslation.meta_title.length }} / 160 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -644,13 +902,13 @@ const submit = () => {
 
                             <div class="mb-3 flex flex-col items-start">
                                 <div class="flex justify-between w-full">
-                            <LabelInput
-                                for="meta_desc"
-                                :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
-                            />
+                                    <LabelInput
+                                        for="meta_desc"
+                                        :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
+                                    />
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                            {{ currentTranslation.meta_desc.length }} / 255 {{ t('characters') }}
+                                        {{ currentTranslation.meta_desc.length }} / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 

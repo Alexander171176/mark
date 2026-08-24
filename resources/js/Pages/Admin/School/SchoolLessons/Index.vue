@@ -3,16 +3,21 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Список уроков школы
- * - режимы обработки: frontend | server | auto
- * - локальный поиск/сортировка/пагинация
- * - серверный поиск/сортировка/пагинация
+ * Список уроков школы.
+ *
+ * Admin Index contract:
+ * - SchoolLessonSharedResource;
+ * - translation содержит только выбранную locale;
+ * - module/course/hashtags используют SharedResource;
+ * - frontend | server | auto;
+ * - frontend search / sort / pagination;
+ * - server search / sort / pagination.
  */
 
-import { computed, defineProps, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
@@ -33,17 +38,9 @@ import SortSelect from '@/Components/Admin/School/SchoolLesson/Sort/SortSelect.v
 import LessonTable from '@/Components/Admin/School/SchoolLesson/Table/LessonTable.vue'
 import LessonCardGrid from '@/Components/Admin/School/SchoolLesson/View/LessonCardGrid.vue'
 
-/* ==========================================================
- * БАЗОВЫЕ СЕРВИСЫ И PROPS
- * ========================================================== */
-
-/** Локализация интерфейса */
 const { t } = useI18n()
-
-/** Уведомления */
 const toast = useToast()
 
-/** Данные страницы из Inertia */
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
@@ -64,26 +61,21 @@ const props = defineProps({
 })
 
 /* ==========================================================
- * РЕЖИМ ОТОБРАЖЕНИЯ
+ * VIEW MODE
  * ========================================================== */
 
-/** Текущий режим отображения (таблица / карточки) */
-const viewMode = ref(localStorage.getItem('admin_view_mode_lessons') || 'table')
+const viewMode = ref(
+    localStorage.getItem('admin_view_mode_lessons') || 'table'
+)
 
-/** Сохраняем выбранный вид локально */
-watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode_lessons', val)
+watch(viewMode, (value) => {
+    localStorage.setItem('admin_view_mode_lessons', value)
 })
 
 /* ==========================================================
- * ИСТОЧНИК ДАННЫХ
+ * SOURCE DATA
  * ========================================================== */
 
-/**
- * Унифицированный список уроков:
- * frontend → обычный массив
- * server → lessons.data
- */
 const lessonsList = computed(() => {
     if (Array.isArray(props.lessons)) {
         return props.lessons
@@ -96,69 +88,112 @@ const lessonsList = computed(() => {
     return []
 })
 
-/* ==========================================================
- * ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ДАННЫХ
- * ========================================================== */
-
-/**
- * Локальная копия списка.
- * Используется для:
- * - локального поиска
- * - локальной сортировки
- * - моментального обновления UI
- */
 const localLessons = ref([])
 
 watch(
     lessonsList,
-    (newVal) => {
-        localLessons.value = JSON.parse(JSON.stringify(newVal || []))
+    (lessons) => {
+        localLessons.value = JSON.parse(
+            JSON.stringify(lessons || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
 /* ==========================================================
- * НАСТРОЙКИ ПАГИНАЦИИ И СОРТИРОВКИ
+ * PAGINATION / SORT / SEARCH
  * ========================================================== */
 
-/** Количество элементов на странице */
-const itemsPerPage = ref(props.adminSchoolLessonsPerPage || 6)
+const itemsPerPage = ref(
+    props.adminSchoolLessonsPerPage || 6
+)
 
-/** Сохраняем настройку количества элементов */
-watch(itemsPerPage, (newVal) => {
+const sortParam = ref(
+    props.sortParam
+    || props.adminSchoolLessonsDefaultSort
+    || 'idDesc'
+)
+
+const searchQuery = ref(
+    props.search || ''
+)
+
+const currentPage = ref(1)
+
+const serverCurrentPage = computed(() => {
+    return Number(
+        props.lessons?.meta?.current_page
+        ?? props.lessons?.current_page
+        ?? 1
+    ) || 1
+})
+
+const activeCurrentPage = computed(() => {
+    return props.useServerProcessing
+        ? serverCurrentPage.value
+        : currentPage.value
+})
+
+watch(itemsPerPage, (newValue) => {
+    if (props.useServerProcessing) {
+        return
+    }
+
+    currentPage.value = 1
+
     router.put(
         route('admin.settings.updateAdminCountSchoolLessons'),
-        { value: newVal },
+        {
+            value: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+
+            onSuccess: () => {
+                toast.info(
+                    `Показ ${newValue} элементов на странице.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления количества элементов.'
+                )
+            },
         }
     )
 })
 
-/** Текущий параметр сортировки */
-const sortParam = ref(props.sortParam || props.adminSchoolLessonsDefaultSort || 'idDesc')
-
-/** Сохраняем сортировку и при server-режиме перезагружаем список */
-watch(sortParam, (newVal) => {
+watch(sortParam, (newValue) => {
     currentPage.value = 1
 
     router.put(
         route('admin.settings.updateAdminSortSchoolLessons'),
-        { value: newVal },
+        {
+            value: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
                 if (props.useServerProcessing) {
+                    const query = Object.fromEntries(
+                        new URLSearchParams(
+                            window.location.search
+                        )
+                    )
+
                     router.get(
                         window.location.pathname,
                         {
-                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
-                            sort: newVal || undefined,
+                            ...query,
+                            sort: newValue || undefined,
                             page: undefined,
                         },
                         {
@@ -169,535 +204,898 @@ watch(sortParam, (newVal) => {
                     )
                 }
 
-                toast.info('Сортировка успешно изменена')
+                toast.info(
+                    'Сортировка успешно изменена'
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления сортировки.')
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления сортировки.'
+                )
             },
         }
     )
 })
 
 /* ==========================================================
- * ПОИСК И ПАГИНАЦИЯ
+ * NEW RESOURCE CONTRACT
  * ========================================================== */
 
-/** Поисковый запрос */
-const searchQuery = ref(props.search || '')
-
-/** Текущая страница frontend-пагинации */
-const currentPage = ref(1)
-
-/* ==========================================================
- * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
- * ========================================================== */
-
-/** Нормализация строки */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
-
-/** Безопасное преобразование в число */
-const safeNumber = (value) => {
-    const number = Number(value)
-    return Number.isFinite(number) ? number : 0
-}
-
-/** Безопасное преобразование даты */
-const safeDate = (value) => {
-    const time = new Date(value || 0).getTime()
-    return Number.isFinite(time) ? time : 0
-}
-
-/* ==========================================================
- * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ РЕСУРСОВ
- * ========================================================== */
-
-/** Получение заголовка урока */
 const getLessonTitle = (lesson) => {
-    return lesson?.title
-        || lesson?.translation?.title
-        || lesson?.translations?.[0]?.title
+    return lesson?.translation?.title
         || `ID: ${lesson?.id}`
 }
 
-/** Получение подзаголовка урока */
 const getLessonSubtitle = (lesson) => {
-    return lesson?.subtitle
-        || lesson?.translation?.subtitle
-        || lesson?.translations?.[0]?.subtitle
-        || ''
+    return lesson?.translation?.subtitle || ''
 }
 
-/** Получение краткого описания урока */
 const getLessonShort = (lesson) => {
-    return lesson?.short
-        || lesson?.translation?.short
-        || lesson?.translations?.[0]?.short
-        || ''
+    return lesson?.translation?.short || ''
 }
 
-/** Получение описания урока */
 const getLessonDescription = (lesson) => {
-    return lesson?.description
-        || lesson?.translation?.description
-        || lesson?.translations?.[0]?.description
-        || ''
+    return lesson?.translation?.description || ''
 }
 
-/** Получение slug урока */
 const getLessonSlug = (lesson) => {
-    return lesson?.slug
-        || lesson?.translation?.slug
-        || lesson?.translations?.[0]?.slug
-        || ''
+    return lesson?.slug || ''
 }
 
-/** Получение заголовка связанной сущности */
-const getNestedTitle = (item) => {
-    return item?.title
-        || item?.name
-        || item?.translation?.title
-        || item?.translation?.name
-        || item?.translations?.[0]?.title
-        || item?.translations?.[0]?.name
-        || ''
-}
-
-/** Получение заголовка модуля */
 const getModuleTitle = (lesson) => {
-    return getNestedTitle(lesson?.module)
+    return lesson?.module?.translation?.title
+        || `ID: ${lesson?.school_module_id || '-'}`
 }
 
-/** Получение slug модуля */
 const getModuleSlug = (lesson) => {
-    return lesson?.module?.slug
-        || lesson?.module?.translation?.slug
-        || lesson?.module?.translations?.[0]?.slug
-        || ''
+    return lesson?.module?.slug || ''
 }
 
-/** Получение заголовка курса */
+const getCourse = (lesson) => {
+    return lesson?.module?.course || null
+}
+
 const getCourseTitle = (lesson) => {
-    return getNestedTitle(lesson?.module?.course || lesson?.course)
+    const course = getCourse(lesson)
+
+    return course?.translation?.title
+        || (course?.id ? `ID: ${course.id}` : '')
 }
 
-/** Получение slug курса */
 const getCourseSlug = (lesson) => {
-    const course = lesson?.module?.course || lesson?.course
+    return getCourse(lesson)?.slug || ''
+}
 
-    return course?.slug
-        || course?.translation?.slug
-        || course?.translations?.[0]?.slug
+const getHashtagTitle = (hashtag) => {
+    return hashtag?.translation?.name
+        || hashtag?.translation?.title
+        || hashtag?.slug
         || ''
 }
 
-/** Получение текста хештегов */
 const getHashtagsText = (lesson) => {
-    const hashtags = Array.isArray(lesson?.hashtags) ? lesson.hashtags : []
+    const hashtags = Array.isArray(lesson?.hashtags)
+        ? lesson.hashtags
+        : []
 
-    return hashtags.map(getNestedTitle).filter(Boolean).join(' ')
+    return hashtags
+        .map(getHashtagTitle)
+        .filter(Boolean)
+        .join(' ')
 }
 
 /* ==========================================================
- * СОРТИРОВКА FRONTEND
+ * HELPERS
  * ========================================================== */
 
-/** Сортировка чисел ↑ */
-const byNumberAsc = (field) => (a, b) =>
-    safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+const normalize = (value) => {
+    return String(value ?? '')
+        .trim()
+        .toLocaleLowerCase()
+}
 
-/** Сортировка чисел ↓ */
-const byNumberDesc = (field) => (a, b) =>
-    safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const safeNumber = (value) => {
+    const number = Number(value)
 
-/** Сортировка строк ↑ */
-const byStringAsc = (field) => (a, b) =>
-    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    return Number.isFinite(number)
+        ? number
+        : 0
+}
 
-/** Сортировка строк ↓ */
-const byStringDesc = (field) => (a, b) =>
-    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const safeDate = (value) => {
+    const time = new Date(
+        value || 0
+    ).getTime()
+
+    return Number.isFinite(time)
+        ? time
+        : 0
+}
+
+const compareText = (a, b) => {
+    return normalize(a).localeCompare(
+        normalize(b),
+        props.currentLocale || undefined,
+        {
+            sensitivity: 'base',
+        }
+    )
+}
+
+/* ==========================================================
+ * FRONTEND SORT
+ * ========================================================== */
+
+const byNumberAsc = (field) => {
+    return (a, b) =>
+        safeNumber(a?.[field])
+        - safeNumber(b?.[field])
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
+}
+
+const byNumberDesc = (field) => {
+    return (a, b) =>
+        safeNumber(b?.[field])
+        - safeNumber(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+const byStringAsc = (field) => {
+    return (a, b) =>
+        compareText(
+            a?.[field],
+            b?.[field]
+        )
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
+}
+
+const byStringDesc = (field) => {
+    return (a, b) =>
+        compareText(
+            b?.[field],
+            a?.[field]
+        )
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
 
 /**
- * Главный обработчик сортировки.
- * Должен совпадать со scopeSortByParam() модели и SortSelect.vue.
+ * Должен совпадать:
+ *
+ * SchoolLesson::scopeSortByParam()
+ * SortSelect.vue
+ * frontend sort.
  */
 const sortLessons = (items) => {
-    const list = (items || []).slice()
+    const list = [
+        ...(items || []),
+    ]
 
-    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
-    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
-
-    const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
-
-        sortAsc: byNumberAsc('sort'),
-        sortDesc: byNumberDesc('sort'),
-
-        moduleAsc: byNumberAsc('school_module_id'),
-        moduleDesc: byNumberDesc('school_module_id'),
-
-        titleAsc: (a, b) =>
-            normalize(getLessonTitle(a)).localeCompare(normalize(getLessonTitle(b)), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        titleDesc: (a, b) =>
-            normalize(getLessonTitle(b)).localeCompare(normalize(getLessonTitle(a)), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        slugAsc: (a, b) =>
-            normalize(getLessonSlug(a)).localeCompare(normalize(getLessonSlug(b)), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        slugDesc: (a, b) =>
-            normalize(getLessonSlug(b)).localeCompare(normalize(getLessonSlug(a)), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        statusAsc: byStringAsc('status'),
-        statusDesc: byStringDesc('status'),
-
-        availabilityAsc: byStringAsc('availability'),
-        availabilityDesc: byStringDesc('availability'),
-
-        accessTypeAsc: byStringAsc('access_type'),
-        accessTypeDesc: byStringDesc('access_type'),
-
-        contentTypeAsc: byStringAsc('content_type'),
-        contentTypeDesc: byStringDesc('content_type'),
-
-        contentIdAsc: byNumberAsc('content_id'),
-        contentIdDesc: byNumberDesc('content_id'),
-
-        difficultyAsc: byNumberAsc('difficulty'),
-        difficultyDesc: byNumberDesc('difficulty'),
-
-        durationAsc: byNumberAsc('duration'),
-        durationDesc: byNumberDesc('duration'),
-
-        previewValueAsc: byNumberAsc('preview_value'),
-        previewValueDesc: byNumberDesc('preview_value'),
-
-        popularityAsc: byNumberAsc('popularity'),
-        popularityDesc: byNumberDesc('popularity'),
-
-        ratingCountAsc: byNumberAsc('rating_count'),
-        ratingCountDesc: byNumberDesc('rating_count'),
-
-        ratingAvgAsc: byNumberAsc('rating_avg'),
-        ratingAvgDesc: byNumberDesc('rating_avg'),
-
-        viewsAsc: byNumberAsc('views'),
-        viewsDesc: byNumberDesc('views'),
-
-        likesAsc: byNumberAsc('likes'),
-        likesDesc: byNumberDesc('likes'),
-
-        likesCountAsc: byNumberAsc('likes_count'),
-        likesCountDesc: byNumberDesc('likes_count'),
-
-        imagesAsc: byNumberAsc('images_count'),
-        imagesDesc: byNumberDesc('images_count'),
-
-        hashtagsAsc: byNumberAsc('hashtags_count'),
-        hashtagsDesc: byNumberDesc('hashtags_count'),
-
-        activityAsc: byNumberAsc('activity'),
-        activityDesc: byNumberDesc('activity'),
-
-        publishedAtAsc: (a, b) =>
-            safeDate(a?.published_at) - safeDate(b?.published_at)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        publishedAtDesc: (a, b) =>
-            safeDate(b?.published_at) - safeDate(a?.published_at)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        dateAsc: (a, b) =>
-            safeDate(a?.published_at) - safeDate(b?.published_at)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        dateDesc: (a, b) =>
-            safeDate(b?.published_at) - safeDate(a?.published_at)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        createdAtAsc: (a, b) =>
-            safeDate(a?.created_at) - safeDate(b?.created_at)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        createdAtDesc: (a, b) =>
-            safeDate(b?.created_at) - safeDate(a?.created_at)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        updatedAtAsc: (a, b) =>
-            safeDate(a?.updated_at) - safeDate(b?.updated_at)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        updatedAtDesc: (a, b) =>
-            safeDate(b?.updated_at) - safeDate(a?.updated_at)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+    if (sortParam.value === 'activity') {
+        return list.filter(
+            lesson => !!lesson.activity
+        )
     }
 
-    return sortMap[sortParam.value]
-        ? list.sort(sortMap[sortParam.value])
+    if (sortParam.value === 'inactive') {
+        return list.filter(
+            lesson => !lesson.activity
+        )
+    }
+
+    const sortMap = {
+        idAsc:
+            byNumberAsc('id'),
+
+        idDesc:
+            byNumberDesc('id'),
+
+        sortAsc:
+            byNumberAsc('sort'),
+
+        sortDesc:
+            byNumberDesc('sort'),
+
+        moduleAsc:
+            byNumberAsc('school_module_id'),
+
+        moduleDesc:
+            byNumberDesc('school_module_id'),
+
+        titleAsc: (a, b) =>
+            compareText(
+                getLessonTitle(a),
+                getLessonTitle(b)
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        titleDesc: (a, b) =>
+            compareText(
+                getLessonTitle(b),
+                getLessonTitle(a)
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        slugAsc: (a, b) =>
+            compareText(
+                getLessonSlug(a),
+                getLessonSlug(b)
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        slugDesc: (a, b) =>
+            compareText(
+                getLessonSlug(b),
+                getLessonSlug(a)
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        statusAsc:
+            byStringAsc('status'),
+
+        statusDesc:
+            byStringDesc('status'),
+
+        availabilityAsc:
+            byStringAsc('availability'),
+
+        availabilityDesc:
+            byStringDesc('availability'),
+
+        accessTypeAsc:
+            byStringAsc('access_type'),
+
+        accessTypeDesc:
+            byStringDesc('access_type'),
+
+        contentTypeAsc:
+            byStringAsc('content_type'),
+
+        contentTypeDesc:
+            byStringDesc('content_type'),
+
+        contentIdAsc:
+            byNumberAsc('content_id'),
+
+        contentIdDesc:
+            byNumberDesc('content_id'),
+
+        difficultyAsc:
+            byNumberAsc('difficulty'),
+
+        difficultyDesc:
+            byNumberDesc('difficulty'),
+
+        durationAsc:
+            byNumberAsc('duration'),
+
+        durationDesc:
+            byNumberDesc('duration'),
+
+        previewValueAsc:
+            byNumberAsc('preview_value'),
+
+        previewValueDesc:
+            byNumberDesc('preview_value'),
+
+        popularityAsc:
+            byNumberAsc('popularity'),
+
+        popularityDesc:
+            byNumberDesc('popularity'),
+
+        ratingCountAsc:
+            byNumberAsc('rating_count'),
+
+        ratingCountDesc:
+            byNumberDesc('rating_count'),
+
+        ratingAvgAsc:
+            byNumberAsc('rating_avg'),
+
+        ratingAvgDesc:
+            byNumberDesc('rating_avg'),
+
+        viewsAsc:
+            byNumberAsc('views'),
+
+        viewsDesc:
+            byNumberDesc('views'),
+
+        likesAsc:
+            byNumberAsc('likes'),
+
+        likesDesc:
+            byNumberDesc('likes'),
+
+        likesCountAsc:
+            byNumberAsc('likes_count'),
+
+        likesCountDesc:
+            byNumberDesc('likes_count'),
+
+        imagesAsc:
+            byNumberAsc('images_count'),
+
+        imagesDesc:
+            byNumberDesc('images_count'),
+
+        hashtagsAsc:
+            byNumberAsc('hashtags_count'),
+
+        hashtagsDesc:
+            byNumberDesc('hashtags_count'),
+
+        activityAsc:
+            byNumberAsc('activity'),
+
+        activityDesc:
+            byNumberDesc('activity'),
+
+        publishedAtAsc: (a, b) =>
+            safeDate(a?.published_at)
+            - safeDate(b?.published_at)
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        publishedAtDesc: (a, b) =>
+            safeDate(b?.published_at)
+            - safeDate(a?.published_at)
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        dateAsc: (a, b) =>
+            safeDate(a?.published_at)
+            - safeDate(b?.published_at)
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        dateDesc: (a, b) =>
+            safeDate(b?.published_at)
+            - safeDate(a?.published_at)
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        createdAtAsc: (a, b) =>
+            safeDate(a?.created_at)
+            - safeDate(b?.created_at)
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        createdAtDesc: (a, b) =>
+            safeDate(b?.created_at)
+            - safeDate(a?.created_at)
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        updatedAtAsc: (a, b) =>
+            safeDate(a?.updated_at)
+            - safeDate(b?.updated_at)
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        updatedAtDesc: (a, b) =>
+            safeDate(b?.updated_at)
+            - safeDate(a?.updated_at)
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+    }
+
+    const sorter =
+        sortMap[sortParam.value]
+
+    return sorter
+        ? list.sort(sorter)
         : list
 }
 
 /* ==========================================================
- * ПОИСК FRONTEND
+ * FRONTEND SEARCH
  * ========================================================== */
 
-/**
- * Фильтрация списка.
- *
- * frontend:
- * поиск выполняется здесь
- *
- * server:
- * поиск выполняется контроллером
- */
 const filteredLessons = computed(() => {
-    let filtered = localLessons.value || []
-    const query = normalize(searchQuery.value)
+    let lessons =
+        localLessons.value || []
 
-    if (!query) {
-        return sortLessons(filtered)
+    /**
+     * Server уже выполнил
+     * поиск и сортировку.
+     *
+     * Не фильтруем повторно
+     * текущую страницу paginator.
+     */
+    if (props.useServerProcessing) {
+        return lessons
     }
 
-    filtered = filtered.filter((lesson) => {
-        const title = normalize(getLessonTitle(lesson))
-        const subtitle = normalize(getLessonSubtitle(lesson))
-        const slug = normalize(getLessonSlug(lesson))
-        const short = normalize(getLessonShort(lesson))
-        const description = normalize(getLessonDescription(lesson))
+    const query =
+        normalize(searchQuery.value)
 
-        const moduleTitle = normalize(getModuleTitle(lesson))
-        const moduleSlug = normalize(getModuleSlug(lesson))
+    if (query) {
+        lessons = lessons.filter((lesson) => {
+            const title =
+                normalize(
+                    getLessonTitle(lesson)
+                )
 
-        const courseTitle = normalize(getCourseTitle(lesson))
-        const courseSlug = normalize(getCourseSlug(lesson))
+            const subtitle =
+                normalize(
+                    getLessonSubtitle(lesson)
+                )
 
-        const hashtags = normalize(getHashtagsText(lesson))
+            const slug =
+                normalize(
+                    getLessonSlug(lesson)
+                )
 
-        const status = normalize(lesson?.status)
-        const availability = normalize(lesson?.availability)
-        const accessType = normalize(lesson?.access_type)
-        const contentType = normalize(lesson?.content_type)
+            const short =
+                normalize(
+                    getLessonShort(lesson)
+                )
 
-        return title.includes(query)
-            || subtitle.includes(query)
-            || slug.includes(query)
-            || short.includes(query)
-            || description.includes(query)
-            || moduleTitle.includes(query)
-            || moduleSlug.includes(query)
-            || courseTitle.includes(query)
-            || courseSlug.includes(query)
-            || hashtags.includes(query)
-            || status.includes(query)
-            || availability.includes(query)
-            || accessType.includes(query)
-            || contentType.includes(query)
-    })
+            const description =
+                normalize(
+                    getLessonDescription(lesson)
+                )
 
-    return sortLessons(filtered)
+            const moduleTitle =
+                normalize(
+                    getModuleTitle(lesson)
+                )
+
+            const moduleSlug =
+                normalize(
+                    getModuleSlug(lesson)
+                )
+
+            const courseTitle =
+                normalize(
+                    getCourseTitle(lesson)
+                )
+
+            const courseSlug =
+                normalize(
+                    getCourseSlug(lesson)
+                )
+
+            const hashtags =
+                normalize(
+                    getHashtagsText(lesson)
+                )
+
+            const status =
+                normalize(
+                    lesson?.status
+                )
+
+            const availability =
+                normalize(
+                    lesson?.availability
+                )
+
+            const accessType =
+                normalize(
+                    lesson?.access_type
+                )
+
+            const contentType =
+                normalize(
+                    lesson?.content_type
+                )
+
+            const contentId =
+                normalize(
+                    lesson?.content_id
+                )
+
+            return title.includes(query)
+                || subtitle.includes(query)
+                || slug.includes(query)
+                || short.includes(query)
+                || description.includes(query)
+                || moduleTitle.includes(query)
+                || moduleSlug.includes(query)
+                || courseTitle.includes(query)
+                || courseSlug.includes(query)
+                || hashtags.includes(query)
+                || status.includes(query)
+                || availability.includes(query)
+                || accessType.includes(query)
+                || contentType.includes(query)
+                || contentId.includes(query)
+        })
+    }
+
+    return sortLessons(
+        lessons
+    )
 })
 
 /* ==========================================================
- * ЛОКАЛЬНАЯ ПАГИНАЦИЯ
+ * FRONTEND PAGINATION
  * ========================================================== */
 
-/** Разбиение списка по страницам */
 const paginatedLessons = computed(() => {
-    const per = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * per
+    const perPage =
+        Number(itemsPerPage.value) || 6
 
-    return filteredLessons.value.slice(start, start + per)
+    const start =
+        (currentPage.value - 1)
+        * perPage
+
+    return filteredLessons.value.slice(
+        start,
+        start + perPage
+    )
 })
 
-/**
- * Итоговый список:
- * frontend → локальная пагинация
- * server → данные сервера
- */
 const displayedLessons = computed(() => {
     return props.useServerProcessing
         ? lessonsList.value
         : paginatedLessons.value
 })
 
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
-
-/* ==========================================================
- * УДАЛЕНИЕ
- * ========================================================== */
-
-/** Состояние модального окна удаления */
-const showConfirmDeleteModal = ref(false)
-const lessonToDeleteId = ref(null)
-const lessonToDeleteTitle = ref('')
-
-/** Открыть подтверждение удаления */
-const confirmDelete = (lessonOrId, title = null) => {
-    if (typeof lessonOrId === 'object') {
-        lessonToDeleteId.value = lessonOrId.id
-        lessonToDeleteTitle.value = title || getLessonTitle(lessonOrId)
-    } else {
-        lessonToDeleteId.value = lessonOrId
-        lessonToDeleteTitle.value = title || `ID: ${lessonOrId}`
-    }
-
-    showConfirmDeleteModal.value = true
-}
-
-/** Закрыть окно */
-const closeModal = () => {
-    showConfirmDeleteModal.value = false
-    lessonToDeleteId.value = null
-    lessonToDeleteTitle.value = ''
-}
-
-/** Выполнить удаление */
-const deleteLesson = () => {
-    if (lessonToDeleteId.value === null) return
-
-    const idToDelete = lessonToDeleteId.value
-    const titleToDelete = lessonToDeleteTitle.value
-
-    router.delete(route('admin.schoolLessons.destroy', { schoolLesson: idToDelete }), {
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => {
-            toast.success(`Урок "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
-        },
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Урок: ${titleToDelete || 'ID: ' + idToDelete})`)
-        },
-        onFinish: () => closeModal(),
-    })
-}
-
-/* ==========================================================
- * ЛОКАЛЬНОЕ ОБНОВЛЕНИЕ UI
- * ========================================================== */
-
-/**
- * Обновление записи локально
- * без полной перезагрузки страницы
- */
-const patchLesson = (lessonId, payload) => {
-    const index = localLessons.value.findIndex(lesson => lesson.id === lessonId)
-
-    if (index !== -1) {
-        localLessons.value[index] = {
-            ...localLessons.value[index],
-            ...payload,
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+    ],
+    () => {
+        if (!props.useServerProcessing) {
+            currentPage.value = 1
         }
     }
-}
+)
 
 /* ==========================================================
- * МАССОВЫЕ ОПЕРАЦИИ
+ * DELETE
  * ========================================================== */
 
-/** Выбранные элементы */
-const selectedLessons = ref([])
+const showConfirmDeleteModal =
+    ref(false)
 
-/** Выбрать все */
-const toggleAll = (payload) => {
-    const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? displayedLessons.value.map((lesson) => lesson.id)
+const lessonToDeleteId =
+    ref(null)
 
-    if (checked) {
-        selectedLessons.value = [...new Set([...selectedLessons.value, ...ids])]
+const lessonToDeleteTitle =
+    ref('')
+
+const confirmDelete = (
+    lessonOrId,
+    title = null
+) => {
+    if (
+        typeof lessonOrId === 'object'
+        && lessonOrId !== null
+    ) {
+        lessonToDeleteId.value =
+            lessonOrId.id
+
+        lessonToDeleteTitle.value =
+            title
+            || getLessonTitle(
+                lessonOrId
+            )
     } else {
-        selectedLessons.value = selectedLessons.value.filter((id) => !ids.includes(id))
+        lessonToDeleteId.value =
+            lessonOrId
+
+        lessonToDeleteTitle.value =
+            title
+            || `ID: ${lessonOrId}`
     }
+
+    showConfirmDeleteModal.value =
+        true
 }
 
-/** Выбрать элемент */
-const toggleSelectLesson = (id) => {
-    const index = selectedLessons.value.indexOf(id)
+const closeModal = () => {
+    showConfirmDeleteModal.value =
+        false
 
-    if (index > -1) {
-        selectedLessons.value.splice(index, 1)
-    } else {
-        selectedLessons.value.push(id)
-    }
+    lessonToDeleteId.value =
+        null
+
+    lessonToDeleteTitle.value =
+        ''
 }
 
-/** Изменить порядок */
-const handleSortOrderUpdate = (orderedIds) => {
-    const startSort = (currentPage.value - 1) * itemsPerPage.value
-
-    const items = orderedIds.map((id, index) => ({
-        id,
-        sort: startSort + index + 1,
-    }))
-
-    if (!items.length) return
-
-    router.put(route('admin.actions.schoolLessons.updateSortBulk'), { items }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.success('Порядок уроков успешно обновлён.'),
-        onError: (errors) => {
-            console.error('Ошибка обновления сортировки уроков:', errors)
-            toast.error(errors?.message || errors?.general || 'Не удалось обновить порядок уроков.')
-
-            router.reload({
-                only: ['lessons'],
-                preserveScroll: true,
-            })
-        },
-    })
-}
-
-/** Массовая активность */
-const bulkToggleActivity = (newActivity) => {
-    if (!selectedLessons.value.length) {
-        toast.warning('Выберите уроки для активации/деактивации.')
+const deleteLesson = () => {
+    if (
+        lessonToDeleteId.value === null
+    ) {
         return
     }
 
-    const idsToUpdate = [...selectedLessons.value]
+    const id =
+        lessonToDeleteId.value
 
-    router.put(route('admin.actions.schoolLessons.bulkUpdateActivity'), {
-        ids: idsToUpdate,
-        activity: newActivity,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-            idsToUpdate.forEach(id => patchLesson(id, { activity: newActivity }))
-            selectedLessons.value = []
-            toast.success('Активность выбранных уроков обновлена.')
-        },
-        onError: (errors) => {
-            toast.error(errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.')
-        },
-    })
+    const title =
+        lessonToDeleteTitle.value
+
+    router.delete(
+        route(
+            'admin.schoolLessons.destroy',
+            {
+                schoolLesson: id,
+            }
+        ),
+        {
+            preserveScroll: true,
+            preserveState: false,
+
+            onSuccess: () => {
+                toast.success(
+                    `Урок "${title || `ID: ${id}`}" удалён.`
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                const message =
+                    errors?.general
+                    || errors?.[errorKey]
+                    || 'Произошла ошибка при удалении.'
+
+                toast.error(
+                    `${message} (Урок: ${title || `ID: ${id}`})`
+                )
+            },
+
+            onFinish: () => {
+                closeModal()
+            },
+        }
+    )
 }
 
-/** Обработчик массовых действий */
+/* ==========================================================
+ * LOCAL UI PATCH
+ * ========================================================== */
+
+const patchLesson = (
+    lessonId,
+    payload
+) => {
+    const index =
+        localLessons.value.findIndex(
+            lesson => lesson.id === lessonId
+        )
+
+    if (index === -1) {
+        return
+    }
+
+    localLessons.value[index] = {
+        ...localLessons.value[index],
+        ...payload,
+    }
+}
+
+/* ==========================================================
+ * SELECTION / BULK ACTIONS
+ * ========================================================== */
+
+const selectedLessons =
+    ref([])
+
+const toggleAll = (payload) => {
+    const checked =
+        payload?.checked
+        ?? payload?.target?.checked
+        ?? false
+
+    const ids =
+        payload?.ids
+        ?? displayedLessons.value.map(
+            lesson => lesson.id
+        )
+
+    if (checked) {
+        selectedLessons.value = [
+            ...new Set([
+                ...selectedLessons.value,
+                ...ids,
+            ]),
+        ]
+
+        return
+    }
+
+    selectedLessons.value =
+        selectedLessons.value.filter(
+            id => !ids.includes(id)
+        )
+}
+
+const toggleSelectLesson = (id) => {
+    const index =
+        selectedLessons.value.indexOf(id)
+
+    if (index > -1) {
+        selectedLessons.value.splice(
+            index,
+            1
+        )
+
+        return
+    }
+
+    selectedLessons.value.push(id)
+}
+
+/* ==========================================================
+ * DRAG & DROP SORT
+ * ========================================================== */
+
+const handleSortOrderUpdate = (
+    orderedIds
+) => {
+    /**
+     * В server mode учитываем
+     * реальную страницу paginator.
+     */
+    const startSort =
+        (
+            activeCurrentPage.value - 1
+        )
+        * Number(
+            itemsPerPage.value || 6
+        )
+
+    const items =
+        orderedIds.map(
+            (id, index) => ({
+                id,
+                sort:
+                    startSort
+                    + index
+                    + 1,
+            })
+        )
+
+    if (!items.length) {
+        return
+    }
+
+    router.put(
+        route(
+            'admin.actions.schoolLessons.updateSortBulk'
+        ),
+        {
+            items,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Порядок уроков успешно обновлён.'
+                )
+            },
+
+            onError: (errors) => {
+                console.error(
+                    'Ошибка обновления сортировки уроков:',
+                    errors
+                )
+
+                toast.error(
+                    errors?.message
+                    || errors?.general
+                    || 'Не удалось обновить порядок уроков.'
+                )
+
+                router.reload({
+                    only: ['lessons'],
+                    preserveScroll: true,
+                })
+            },
+        }
+    )
+}
+
+/* ==========================================================
+ * BULK ACTIVITY
+ * ========================================================== */
+
+const bulkToggleActivity = (
+    newActivity
+) => {
+    if (
+        !selectedLessons.value.length
+    ) {
+        toast.warning(
+            'Выберите уроки для активации/деактивации.'
+        )
+
+        return
+    }
+
+    const ids = [
+        ...selectedLessons.value,
+    ]
+
+    router.put(
+        route(
+            'admin.actions.schoolLessons.bulkUpdateActivity'
+        ),
+        {
+            ids,
+            activity: newActivity,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                ids.forEach((id) => {
+                    patchLesson(
+                        id,
+                        {
+                            activity: newActivity,
+                        }
+                    )
+                })
+
+                selectedLessons.value = []
+
+                toast.success(
+                    'Активность выбранных уроков обновлена.'
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.ids
+                    || errors?.activity
+                    || errors?.general
+                    || 'Ошибка массового обновления активности.'
+                )
+            },
+        }
+    )
+}
+
 const handleBulkAction = (event) => {
-    const action = event.target.value
+    const action =
+        event.target.value
 
     if (action === 'selectAll') {
-        toggleAll({ target: { checked: true } })
-    } else if (action === 'deselectAll') {
-        toggleAll({ target: { checked: false } })
-    } else if (action === 'activate') {
+        toggleAll({
+            target: {
+                checked: true,
+            },
+        })
+    }
+
+    if (action === 'deselectAll') {
+        toggleAll({
+            target: {
+                checked: false,
+            },
+        })
+    }
+
+    if (action === 'activate') {
         bulkToggleActivity(true)
-    } else if (action === 'deactivate') {
+    }
+
+    if (action === 'deactivate') {
         bulkToggleActivity(false)
     }
 
@@ -705,49 +1103,102 @@ const handleBulkAction = (event) => {
 }
 
 /* ==========================================================
- * ОПЕРАЦИИ НАД ОДНОЙ ЗАПИСЬЮ
+ * SINGLE ACTIVITY
  * ========================================================== */
 
-/** Переключение активности */
 const toggleActivity = (lesson) => {
-    const newActivity = !lesson.activity
-    const lessonTitle = getLessonTitle(lesson)
-    const actionText = newActivity ? t('activated') : t('deactivated')
+    const newActivity =
+        !lesson.activity
 
-    router.put(route('admin.actions.schoolLessons.updateActivity', {
-        schoolLesson: lesson.id,
-    }), {
-        activity: newActivity,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-            patchLesson(lesson.id, { activity: newActivity })
-            lesson.activity = newActivity
-            toast.success(`Урок "${lessonTitle}" ${actionText}.`)
+    const lessonTitle =
+        getLessonTitle(lesson)
+
+    const actionText =
+        newActivity
+            ? t('activated')
+            : t('deactivated')
+
+    router.put(
+        route(
+            'admin.actions.schoolLessons.updateActivity',
+            {
+                schoolLesson:
+                lesson.id,
+            }
+        ),
+        {
+            activity: newActivity,
         },
-        onError: (errors) => {
-            toast.error(errors?.activity || errors?.general || `Ошибка изменения активности для урока "${lessonTitle}".`)
-        },
-    })
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                patchLesson(
+                    lesson.id,
+                    {
+                        activity: newActivity,
+                    }
+                )
+
+                lesson.activity =
+                    newActivity
+
+                toast.success(
+                    `Урок "${lessonTitle}" ${actionText}.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.activity
+                    || errors?.general
+                    || `Ошибка изменения активности для урока "${lessonTitle}".`
+                )
+            },
+        }
+    )
 }
 
-/** Клонирование урока */
+/* ==========================================================
+ * CLONE
+ * ========================================================== */
+
 const cloneLesson = (lesson) => {
-    router.post(route('admin.actions.schoolLessons.clone', {
-        schoolLesson: lesson.id,
-    }), {}, {
-        preserveScroll: true,
-        onSuccess: () => toast.success('Урок успешно клонирован.'),
-        onError: () => toast.error('Ошибка при клонировании урока.'),
-    })
+    router.post(
+        route(
+            'admin.actions.schoolLessons.clone',
+            {
+                schoolLesson:
+                lesson.id,
+            }
+        ),
+        {},
+        {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Урок успешно клонирован.'
+                )
+            },
+
+            onError: () => {
+                toast.error(
+                    'Ошибка при клонировании урока.'
+                )
+            },
+        }
+    )
 }
 </script>
 
 <template>
     <AdminLayout :title="t('lessons')">
         <template #header>
-            <TitlePage>{{ t('lessons') }}</TitlePage>
+            <TitlePage>
+                {{ t('lessons') }}
+            </TitlePage>
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
@@ -760,11 +1211,16 @@ const cloneLesson = (lesson) => {
                 <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.schoolLessons.create')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0"
-                                 viewBox="0 0 16 16">
-                                <path d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"></path>
+                            <svg
+                                class="w-4 h-4 fill-current opacity-50 shrink-0"
+                                viewBox="0 0 16 16"
+                            >
+                                <path
+                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
+                                />
                             </svg>
                         </template>
+
                         {{ t('addLesson') }}
                     </DefaultButton>
 
@@ -776,6 +1232,7 @@ const cloneLesson = (lesson) => {
                     />
                 </div>
 
+                <!-- Search -->
                 <SearchInput
                     v-if="lessonsCount && !useServerProcessing"
                     v-model="searchQuery"
@@ -787,9 +1244,10 @@ const cloneLesson = (lesson) => {
                     v-model="searchQuery"
                 />
 
+                <!-- Per page + sort -->
                 <div
                     v-if="lessonsCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                    class="flex justify-between items-center flex-col md:flex-row my-3 gap-3"
                 >
                     <ItemsPerPageSelect
                         v-if="!useServerProcessing"
@@ -805,21 +1263,29 @@ const cloneLesson = (lesson) => {
 
                     <SortSelect
                         :sortParam="sortParam"
-                        @update:sortParam="val => sortParam = val"
+                        @update:sortParam="sortParam = $event"
                     />
                 </div>
 
+                <!-- Count + bulk + view -->
                 <div
                     v-if="lessonsCount"
                     class="flex flex-col lg:flex-row items-center justify-between gap-3"
                 >
-                    <CountTable>{{ lessonsCount }}</CountTable>
+                    <CountTable>
+                        {{ lessonsCount }}
+                    </CountTable>
 
-                    <BulkActionSelect @change="handleBulkAction" />
+                    <BulkActionSelect
+                        @change="handleBulkAction"
+                    />
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
+                <!-- Top pagination -->
                 <div
                     v-if="lessonsCount"
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
@@ -838,6 +1304,7 @@ const cloneLesson = (lesson) => {
                     />
                 </div>
 
+                <!-- Table -->
                 <LessonTable
                     v-if="viewMode === 'table'"
                     :lessons="displayedLessons"
@@ -850,6 +1317,7 @@ const cloneLesson = (lesson) => {
                     @clone="cloneLesson"
                 />
 
+                <!-- Cards -->
                 <LessonCardGrid
                     v-else
                     :lessons="displayedLessons"
@@ -862,6 +1330,7 @@ const cloneLesson = (lesson) => {
                     @clone="cloneLesson"
                 />
 
+                <!-- Bottom pagination -->
                 <div
                     v-if="lessonsCount"
                     class="flex justify-center items-center flex-col md:flex-row mt-3"
@@ -884,11 +1353,11 @@ const cloneLesson = (lesson) => {
 
         <DangerModal
             :show="showConfirmDeleteModal"
-            @close="closeModal"
             :onCancel="closeModal"
             :onConfirm="deleteLesson"
             :cancelText="t('cancel')"
             :confirmText="t('yesDelete')"
+            @close="closeModal"
         />
     </AdminLayout>
 </template>

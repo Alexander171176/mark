@@ -15,6 +15,7 @@ export default {
     useRecoveryCode: 'Use a recovery code',
     user: 'User',
     userAgent: 'User agent of the client device',
+    userAutoSelectedFromOrder: 'The user is automatically inserted from the selected order',
     userComment: 'User comment',
     userCommented: 'The user commented: ',
     userEmail: 'User Email *',

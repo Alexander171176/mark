@@ -8,6 +8,7 @@ use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleSharedResource;
 use App\Http\Resources\Admin\Blog\BlogVideo\BlogVideoSharedResource;
 use App\Http\Resources\Admin\School\SchoolHashtag\SchoolHashtagSharedResource;
 use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonResource;
+use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonSharedResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleSharedResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
@@ -75,25 +76,57 @@ class SchoolLessonController extends BaseSchoolAdminController
 
         $settings = app(AdminSettingsService::class);
 
-        $perPage = $settings->int('adminSchoolLessonsPerPage', 6);
-        $defaultSort = $settings->string('adminSchoolLessonsDefaultSort', 'idDesc');
+        $perPage = $settings->int(
+            'adminSchoolLessonsPerPage',
+            6
+        );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $defaultSort = $settings->string(
+            'adminSchoolLessonsDefaultSort',
+            'idDesc'
+        );
+
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
+
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
 
         $processingMode = $settings->string(
             'adminSchoolLessonsProcessingMode',
             'frontend'
         );
 
-        $lessonsCount = $this->baseQuery()->count();
+        /**
+         * Общий COUNT заранее нужен
+         * только режиму auto.
+         *
+         * server/frontend уже сами
+         * однозначно определяют способ обработки.
+         */
+        $lessonsCount = null;
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
+        if ($processingMode === 'auto') {
+            $lessonsCount = $this->baseQuery()
+                ->count();
+
+            $useServerProcessing = app(
+                ProcessingModeService::class
+            )->shouldUseServer(
                 $processingMode,
                 $lessonsCount,
                 300
             );
+        } else {
+            $useServerProcessing =
+                $processingMode === 'server';
+        }
 
         try {
             $lessons = $this->getIndexLessons(
@@ -104,68 +137,168 @@ class SchoolLessonController extends BaseSchoolAdminController
                 search: $search,
             );
 
-            return Inertia::render('Admin/School/SchoolLessons/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            /**
+             * Если COUNT ещё не был получен
+             * режимом auto, определяем его
+             * наиболее дешёвым способом.
+             */
+            if ($lessonsCount === null) {
+                if (!$useServerProcessing) {
+                    /**
+                     * Frontend получил всю коллекцию.
+                     *
+                     * Отдельный SQL COUNT не нужен.
+                     */
+                    $lessonsCount = $lessons->count();
+                } elseif ($search === '') {
+                    /**
+                     * Server без поиска.
+                     *
+                     * paginate() уже выполнил COUNT
+                     * и знает общее количество.
+                     */
+                    $lessonsCount = $lessons->total();
+                } else {
+                    /**
+                     * Server + поиск.
+                     *
+                     * paginator total содержит
+                     * количество найденных записей,
+                     * а lessonsCount должен оставаться
+                     * общим количеством уроков.
+                     */
+                    $lessonsCount = $this->baseQuery()
+                        ->count();
+                }
+            }
 
-                'useServerProcessing' => $useServerProcessing,
+            return Inertia::render(
+                'Admin/School/SchoolLessons/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'adminSchoolLessonsPerPage' => $perPage,
-                'adminSchoolLessonsDefaultSort' => $defaultSort,
-                'adminSchoolLessonsProcessingMode' => $processingMode,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'lessons' => SchoolLessonResource::collection($lessons),
-                'lessonsCount' => $lessonsCount,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
-            ]);
+                    'adminSchoolLessonsPerPage' =>
+                        $perPage,
+
+                    'adminSchoolLessonsDefaultSort' =>
+                        $defaultSort,
+
+                    'adminSchoolLessonsProcessingMode' =>
+                        $processingMode,
+
+                    /**
+                     * Admin Index использует
+                     * краткий Shared Resource.
+                     */
+                    'lessons' =>
+                        SchoolLessonSharedResource::collection(
+                            $lessons
+                        ),
+
+                    'lessonsCount' =>
+                        $lessonsCount,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки списка school lessons: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки списка school lessons: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return Inertia::render('Admin/School/SchoolLessons/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/School/SchoolLessons/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminSchoolLessonsPerPage' => $perPage,
-                'adminSchoolLessonsDefaultSort' => $defaultSort,
-                'adminSchoolLessonsProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'lessons' => [],
-                'lessonsCount' => 0,
+                    'adminSchoolLessonsPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminSchoolLessonsDefaultSort' =>
+                        $defaultSort,
 
-                'error' => 'Ошибка загрузки уроков.',
-            ]);
+                    'adminSchoolLessonsProcessingMode' =>
+                        $processingMode,
+
+                    'lessons' =>
+                        [],
+
+                    'lessonsCount' =>
+                        0,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'error' =>
+                        'Ошибка загрузки уроков.',
+                ]
+            );
         }
     }
 
     /** Страница создания урока */
-    public function create(Request $request): Response
-    {
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        $currentLocale = $this->resolveLocale($request);
+        return Inertia::render(
+            'Admin/School/SchoolLessons/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
 
-        return Inertia::render('Admin/School/SchoolLessons/Create', [
+                'availableLocales' =>
+                    $this->availableLocales(),
 
-            // Локали
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+                'modules' =>
+                    $this->modulesForSelect(
+                        $currentLocale
+                    ),
 
-            // Данные для select
-            'modules' => $this->modulesForSelect(),
-            'hashtags' => $this->hashtagsForSelect(),
+                'hashtags' =>
+                    $this->hashtagsForSelect(
+                        $currentLocale
+                    ),
 
-            // Контент для привязки
-            'articles' => $this->articlesForSelect(),
-            'videos' => $this->videosForSelect(),
-        ]);
+                'articles' =>
+                    $this->articlesForSelect(
+                        $currentLocale
+                    ),
+
+                'videos' =>
+                    $this->videosForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Сохранение урока */
@@ -255,46 +388,104 @@ class SchoolLessonController extends BaseSchoolAdminController
     }
 
     /** Страница редактирования урока */
-    public function edit(int $schoolLesson, Request $request): Response
-    {
+    public function edit(
+        int $schoolLesson,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        $currentLocale = $this->resolveLocale($request);
-
-        // Получение урока
         $lesson = $this->baseQuery()
             ->with([
-                'translation',
+                /**
+                 * Все переводы самого урока
+                 * нужны TranslationTabs формы.
+                 */
                 'translations',
-                'images',
-                'module.translation',
-                'module.course.translation',
-                'hashtags.translation',
-                'content',
+
+                /**
+                 * Изображения + Spatie Media.
+                 */
+                'images.media',
+
+                /**
+                 * Родительский модуль.
+                 */
+                'module' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+
+                    'course' => fn ($courseQuery) =>
+                    $courseQuery->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $currentLocale
+                        ),
+                    ]),
+                ]),
+
+                /**
+                 * Связанные хештеги.
+                 */
+                'hashtags' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
             ])
             ->withCount([
                 'images',
                 'likes',
                 'hashtags',
             ])
-            ->findOrFail($schoolLesson);
+            ->findOrFail(
+                $schoolLesson
+            );
 
-        return Inertia::render('Admin/School/SchoolLessons/Edit', [
+        return Inertia::render(
+            'Admin/School/SchoolLessons/Edit',
+            [
+                'lesson' =>
+                    new SchoolLessonResource(
+                        $lesson
+                    ),
 
-            // Текущий урок
-            'lesson' => new SchoolLessonResource($lesson),
+                'currentLocale' =>
+                    $currentLocale,
 
-            // Локали
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+                'availableLocales' =>
+                    $this->availableLocales(),
 
-            // Данные для select
-            'modules' => $this->modulesForSelect(),
-            'hashtags' => $this->hashtagsForSelect(),
+                'modules' =>
+                    $this->modulesForSelect(
+                        $currentLocale
+                    ),
 
-            // Контент для привязки
-            'articles' => $this->articlesForSelect(),
-            'videos' => $this->videosForSelect(),
-        ]);
+                'hashtags' =>
+                    $this->hashtagsForSelect(
+                        $currentLocale
+                    ),
+
+                'articles' =>
+                    $this->articlesForSelect(
+                        $currentLocale
+                    ),
+
+                'videos' =>
+                    $this->videosForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Обновление урока */
@@ -433,65 +624,112 @@ class SchoolLessonController extends BaseSchoolAdminController
     }
 
     /** Модули для select */
-    private function modulesForSelect(): AnonymousResourceCollection
-    {
-
-        // Получение модулей
+    private function modulesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $modules = SchoolModule::query()
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'course.translation',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                'course' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
             ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
-        return SchoolModuleSharedResource::collection($modules);
+        return SchoolModuleSharedResource::collection(
+            $modules
+        );
     }
 
-    /** Хэштеги для select */
-    private function hashtagsForSelect(): AnonymousResourceCollection
-    {
-
-        // Получение хэштегов
+    /** Хештеги для select */
+    private function hashtagsForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $hashtags = SchoolHashtag::query()
             ->with([
-                'translation',
-                'translations',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
-        return SchoolHashtagSharedResource::collection($hashtags);
+        return SchoolHashtagSharedResource::collection(
+            $hashtags
+        );
     }
 
     /** Статьи для select */
-    private function articlesForSelect(): AnonymousResourceCollection
-    {
-
-        // Получение статей
+    private function articlesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $articles = BlogArticle::query()
             ->with([
-                'translations',
-                'images',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
-        return BlogArticleSharedResource::collection($articles);
+        return BlogArticleSharedResource::collection(
+            $articles
+        );
     }
 
     /** Видео для select */
-    private function videosForSelect(): AnonymousResourceCollection
-    {
-
-        // Получение видео
+    private function videosForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $videos = BlogVideo::query()
             ->with([
-                'translations',
-                'images',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
-        return BlogVideoSharedResource::collection($videos);
+        return BlogVideoSharedResource::collection(
+            $videos
+        );
     }
 
     /** Клонирование урока */
@@ -565,21 +803,67 @@ class SchoolLessonController extends BaseSchoolAdminController
         }
     }
 
-    /** Базовый запрос для списка уроков. */
-    private function indexQuery(): Builder
-    {
+    /** Базовый запрос для Admin Index уроков. */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'module.translation',
-                'module.translations',
-                'module.course.translation',
-                'module.course.translations',
-                'hashtags.translation',
-                'hashtags.translations',
-                'content',
+                /**
+                 * Admin Index:
+                 * только выбранная локаль.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                /**
+                 * Изображения +
+                 * Spatie Media.
+                 */
+                'images.media',
+
+                /**
+                 * Родительский модуль.
+                 */
+                'module' => fn ($query) =>
+                $query->with([
+                    /**
+                     * Только выбранная локаль
+                     * модуля.
+                     */
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+
+                    /**
+                     * Родительский курс модуля.
+                     */
+                    'course' => fn ($courseQuery) =>
+                    $courseQuery->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $locale
+                        ),
+                    ]),
+                ]),
+
+                /**
+                 * Хештеги нужны frontend-поиску.
+                 */
+                'hashtags' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
             ])
             ->withCount([
                 'images',
@@ -596,18 +880,31 @@ class SchoolLessonController extends BaseSchoolAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

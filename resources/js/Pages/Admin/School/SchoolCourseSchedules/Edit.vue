@@ -3,9 +3,17 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Редактирование расписания обучения
+ * Редактирование расписания обучения.
+ *
+ * Новый контракт:
+ * - SchoolCourseScheduleResource для Edit;
+ * - translations содержит все переводы расписания;
+ * - translation содержит current/fallback перевод;
+ * - courses/instructors приходят локализованными SharedResource;
+ * - form.*_id является единственным источником истины;
+ * - VueMultiselect хранит только UI-объект выбранной сущности.
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -33,20 +41,23 @@ import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 import SelectStatus from '@/Components/Admin/School/SchoolCourseSchedule/Select/SelectStatus.vue'
 import SelectTimezone from '@/Components/Admin/School/SchoolCourseSchedule/Select/SelectTimezone.vue'
 
-// Локализация и Toast уведомления
 const { t } = useI18n()
 const toast = useToast()
 
-// Props страницы редактирования
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
+
     schedule: { type: Object, required: true },
+
     courses: { type: Array, default: () => [] },
     instructors: { type: Array, default: () => [] },
 })
 
-// Пустая структура перевода
+/* ==========================================================
+ * TRANSLATIONS
+ * ========================================================== */
+
 const makeTranslation = () => ({
     title: '',
     subtitle: '',
@@ -57,10 +68,18 @@ const makeTranslation = () => ({
     meta_desc: '',
 })
 
-// Сбор переводов из существующей записи
+const resolveDefaultLocale = () =>
+    props.currentLocale
+    || props.schedule?.translation?.locale
+    || props.availableLocales?.[0]
+    || 'ru'
+
 const buildTranslations = () => {
-    const result = {};
-    (props.schedule.translations || []).forEach((translation) => {
+    const result = {}
+
+    ;(props.schedule?.translations || []).forEach((translation) => {
+        if (!translation?.locale) return
+
         result[translation.locale] = {
             title: translation.title || '',
             subtitle: translation.subtitle || '',
@@ -72,71 +91,66 @@ const buildTranslations = () => {
         }
     })
 
-    const defaultLocale =
-        props.currentLocale ||
-        props.schedule.translation?.locale ||
-        props.availableLocales[0] ||
-        'ru'
+    const locale = resolveDefaultLocale()
 
-    if (!Object.keys(result).length) {
-        result[defaultLocale] = makeTranslation()
-    }
-
-    if (!result[defaultLocale]) {
-        result[defaultLocale] = makeTranslation()
+    if (!result[locale]) {
+        result[locale] = makeTranslation()
     }
 
     return result
 }
 
-// Активная локаль по умолчанию
-const defaultLocale =
-    props.currentLocale ||
-    props.schedule.translation?.locale ||
-    props.availableLocales[0] ||
-    'ru'
+const activeLocale = ref(resolveDefaultLocale())
 
-// Текущая активная локаль
-const activeLocale = ref(defaultLocale)
+/* ==========================================================
+ * FORM
+ * ========================================================== */
 
-// Основная форма редактирования
 const form = useForm({
     _method: 'PUT',
 
     school_course_id:
-        props.schedule.school_course_id ??
-        props.schedule.course?.id ??
-        null,
+        props.schedule?.school_course_id
+        ?? props.schedule?.course?.id
+        ?? null,
 
     school_instructor_profile_id:
-        props.schedule.school_instructor_profile_id ??
-        props.schedule.instructor?.id ??
-        null,
+        props.schedule?.school_instructor_profile_id
+        ?? props.schedule?.instructor?.id
+        ?? null,
 
-    activity: Boolean(props.schedule.activity),
-    sort: props.schedule.sort ?? 0,
+    activity: Boolean(props.schedule?.activity),
+    sort: props.schedule?.sort ?? 0,
 
-    slug: props.schedule.slug ?? '',
+    slug: props.schedule?.slug ?? '',
 
-    starts_at: props.schedule.starts_at ?? '',
-    ends_at: props.schedule.ends_at ?? '',
-    enroll_starts_at: props.schedule.enroll_starts_at ?? '',
-    enroll_ends_at: props.schedule.enroll_ends_at ?? '',
+    /**
+     * Resource уже возвращает значения специально
+     * для input[type="datetime-local"]:
+     *
+     * Y-m-dTH:i
+     *
+     * Поэтому new Date() здесь не нужен.
+     */
+    starts_at: props.schedule?.starts_at ?? '',
+    ends_at: props.schedule?.ends_at ?? '',
+    enroll_starts_at: props.schedule?.enroll_starts_at ?? '',
+    enroll_ends_at: props.schedule?.enroll_ends_at ?? '',
 
-    capacity: props.schedule.capacity ?? 0,
-    is_online: Boolean(props.schedule.is_online),
-    location: props.schedule.location ?? '',
-    meeting_url: props.schedule.meeting_url ?? '',
-    timezone: props.schedule.timezone ?? '',
-    status: props.schedule.status ?? 'draft',
-    notes: props.schedule.notes ?? '',
+    capacity: props.schedule?.capacity ?? 0,
+    is_online: Boolean(props.schedule?.is_online),
+
+    location: props.schedule?.location ?? '',
+    meeting_url: props.schedule?.meeting_url ?? '',
+    timezone: props.schedule?.timezone ?? '',
+    status: props.schedule?.status ?? 'draft',
+    notes: props.schedule?.notes ?? '',
 
     translations: buildTranslations(),
 
     deletedImages: [],
 })
 
-// Получение активного перевода
 const currentTranslation = computed(() => {
     if (!form.translations[activeLocale.value]) {
         form.translations[activeLocale.value] = makeTranslation()
@@ -145,267 +159,495 @@ const currentTranslation = computed(() => {
     return form.translations[activeLocale.value]
 })
 
-// Заголовок страницы редактирования
-const pageTitle = computed(() => {
-    return currentTranslation.value.title ||
-        props.schedule.translation?.title ||
-        props.schedule.title ||
-        `ID: ${props.schedule.id}`
-})
+const pageTitle = computed(() =>
+    currentTranslation.value.title
+    || props.schedule?.translation?.title
+    || `ID: ${props.schedule?.id}`
+)
 
-// Получение ошибок текущей локали
-const getError = (key) => form.errors[`translations.${activeLocale.value}.${key}`]
+const getError = (key) =>
+    form.errors[`translations.${activeLocale.value}.${key}`]
 
-// Преобразование даты под datetime-local
-const formatDateTimeLocal = (dateStr) => {
-    if (!dateStr) return ''
+/**
+ * Если язык админской формы изменился через Inertia,
+ * TranslationTabs также переходит на эту locale.
+ *
+ * Данные остальных переводов при этом не теряются.
+ */
+watch(
+    () => props.currentLocale,
+    (locale) => {
+        if (!locale) return
 
-    const date = new Date(dateStr)
+        activeLocale.value = locale
 
-    if (isNaN(date.getTime())) return ''
+        if (!form.translations[locale]) {
+            form.translations[locale] = makeTranslation()
+        }
+    }
+)
 
-    const pad = (num) => String(num).padStart(2, '0')
+/* ==========================================================
+ * SELECT HELPERS
+ * ========================================================== */
 
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
+const dynamicOptionsLimit = (items) =>
+    Array.isArray(items)
+        ? items.length + 10
+        : 10
 
-// Форматирование дат при открытии страницы
-onMounted(() => {
-    form.starts_at = formatDateTimeLocal(form.starts_at)
-    form.ends_at = formatDateTimeLocal(form.ends_at)
-    form.enroll_starts_at = formatDateTimeLocal(form.enroll_starts_at)
-    form.enroll_ends_at = formatDateTimeLocal(form.enroll_ends_at)
-})
+const getCourseTitle = (item) =>
+    item?.translation?.title
+    || item?.title
+    || item?.slug
+    || `#${item?.id ?? ''}`
 
-// Ограничение количества элементов мультиселекта
-const dynamicOptionsLimit = (items) => {
-    if (!items) return 10
+const getInstructorTitle = (item) =>
+    item?.translation?.title
+    || item?.translation?.public_name
+    || item?.public_name
+    || item?.title
+    || item?.user?.name
+    || `#${item?.id ?? ''}`
 
-    return items.length + 10
-}
-
-// Опции курсов
 const courseOptions = computed(() =>
-    props.courses.map((item) => ({
+    (props.courses || []).map((item) => ({
         id: item.id,
-        label: `[ID: ${item.id}] ${item.title || item.slug || `#${item.id}`}`,
+        label: `[ID: ${item.id}] ${getCourseTitle(item)}`,
     }))
 )
 
-// Опции преподавателей
 const instructorOptions = computed(() =>
-    props.instructors.map((item) => {
-        const title = item.public_name || item.title || item.name || `#${item.id}`
-        const userName = item.user?.name || item.user?.email || ''
+    (props.instructors || []).map((item) => {
+        const title = getInstructorTitle(item)
+        const userName = item?.user?.name || item?.user?.email || ''
 
         return {
             id: item.id,
-            label: userName
-                ? `[ID: ${item.id}] ${title} — ${userName}`
-                : `[ID: ${item.id}] ${title}`,
+            label:
+                userName && userName !== title
+                    ? `[ID: ${item.id}] ${title} — ${userName}`
+                    : `[ID: ${item.id}] ${title}`,
         }
     })
 )
 
-// выбранные курсы, преподователи
+/**
+ * UI-состояние VueMultiselect.
+ *
+ * ID выбранных сущностей хранится только в form.
+ */
 const selectedCourse = ref(null)
 const selectedInstructor = ref(null)
 
-// Синхронизация выбранного курса с form
+/**
+ * При первой загрузке и после смены locale
+ * options создаются заново.
+ *
+ * Выбранный объект восстанавливаем по form ID.
+ */
 watch(
     courseOptions,
     (options) => {
-        selectedCourse.value = options.find(
-            item => Number(item.id) === Number(form.school_course_id)
-        ) || null
+        selectedCourse.value =
+            options.find(
+                (item) =>
+                    Number(item.id) ===
+                    Number(form.school_course_id)
+            )
+            || null
     },
     { immediate: true }
 )
 
-// Синхронизация выбранного преподователя с form
 watch(
     instructorOptions,
     (options) => {
-        selectedInstructor.value = options.find(
-            item => Number(item.id) === Number(form.school_instructor_profile_id)
-        ) || null
+        selectedInstructor.value =
+            options.find(
+                (item) =>
+                    Number(item.id) ===
+                    Number(form.school_instructor_profile_id)
+            )
+            || null
     },
     { immediate: true }
 )
 
-// Выбранные курсы
-watch(selectedCourse, (val) => {
-    form.school_course_id = val?.id ?? null
+/**
+ * Пользователь изменил выбранную сущность.
+ */
+watch(selectedCourse, (value) => {
+    form.school_course_id =
+        value?.id !== undefined && value?.id !== null
+            ? Number(value.id)
+            : null
 })
 
-// Выбранный инструктор
-watch(selectedInstructor, (val) => {
-    form.school_instructor_profile_id = val?.id ?? null
+watch(selectedInstructor, (value) => {
+    form.school_instructor_profile_id =
+        value?.id !== undefined && value?.id !== null
+            ? Number(value.id)
+            : null
 })
 
-// Существующие изображения
+/* ==========================================================
+ * IMAGES
+ * ========================================================== */
+
+const resolveImageUrl = (image) =>
+    image?.webp_url
+    || image?.thumb_url
+    || image?.image_url
+    || image?.url
+    || null
+
 const existingImages = ref(
-    (props.schedule.images || [])
-        .filter(image => image.webp_url || image.url || image.image_url)
-        .map(image => ({
+    (props.schedule?.images || [])
+        .filter((image) => Boolean(resolveImageUrl(image)))
+        .map((image) => ({
             id: image.id,
-            url: image.webp_url || image.url || image.image_url,
-            order: image.order || 0,
+            url: resolveImageUrl(image),
+
+            order:
+                image.order
+                ?? image.pivot?.order
+                ?? 0,
+
             alt: image.alt || '',
             caption: image.caption || '',
         }))
 )
 
-// Новые изображения
 const newImages = ref([])
 
-// Обновление существующих изображений
 const handleExistingImagesUpdate = (images) => {
-    existingImages.value = images || []
+    existingImages.value =
+        Array.isArray(images)
+            ? images
+            : []
 }
 
-// Удаление существующего изображения
 const handleDeleteExistingImage = (deletedId) => {
     if (!form.deletedImages.includes(deletedId)) {
         form.deletedImages.push(deletedId)
     }
 
-    existingImages.value = existingImages.value.filter(
-        image => image.id !== deletedId
-    )
+    existingImages.value =
+        existingImages.value.filter(
+            (image) => Number(image.id) !== Number(deletedId)
+        )
 }
 
-// Обновление новых изображений
 const handleNewImagesUpdate = (images) => {
-    newImages.value = images || []
+    newImages.value =
+        Array.isArray(images)
+            ? images
+            : []
 }
 
-// Автогенерация slug из title
+/* ==========================================================
+ * SLUG / SEO
+ * ========================================================== */
+
 const handleSlugFocus = () => {
-    if (!form.slug && currentTranslation.value.title) {
-        form.slug = transliterate(currentTranslation.value.title.toLowerCase())
+    if (
+        !form.slug
+        && currentTranslation.value.title
+    ) {
+        form.slug = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
     }
 }
 
-// Обрезка текста
-const truncateText = (text, maxLength, addEllipsis = false) => {
+const truncateText = (
+    text,
+    maxLength,
+    addEllipsis = false
+) => {
     if (!text) return ''
 
-    const str = String(text)
+    const value = String(text)
 
-    if (str.length <= maxLength) return str
+    if (value.length <= maxLength) {
+        return value
+    }
 
-    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
-    const truncated = lastSpaceIndex === -1
-        ? str.substring(0, maxLength)
-        : str.substring(0, lastSpaceIndex)
+    const lastSpaceIndex =
+        value.lastIndexOf(
+            ' ',
+            maxLength
+        )
 
-    return addEllipsis ? `${truncated}...` : truncated
+    const truncated =
+        lastSpaceIndex === -1
+            ? value.substring(
+                0,
+                maxLength
+            )
+            : value.substring(
+                0,
+                lastSpaceIndex
+            )
+
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
 }
 
-// Очистка SEO полей
 const clearMetaFields = () => {
-    const translation = currentTranslation.value
+    const translation =
+        currentTranslation.value
 
     translation.meta_title = ''
     translation.meta_keywords = ''
     translation.meta_desc = ''
 }
 
-// Генерация SEO полей
 const generateMetaFields = () => {
-    const translation = currentTranslation.value
+    const translation =
+        currentTranslation.value
 
-    if (translation.title && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.title, 160)
+    if (
+        translation.title
+        && !translation.meta_title
+    ) {
+        translation.meta_title =
+            truncateText(
+                translation.title,
+                160
+            )
     }
 
-    if (!translation.meta_keywords && translation.short) {
-        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+    if (
+        !translation.meta_keywords
+        && translation.short
+    ) {
+        let text = String(
+            translation.short
+        ).replace(
+            /(<([^>]+)>)/gi,
+            ''
+        )
+
+        text = text.replace(
+            /[.,!?;:()[\]{}"'«»]/g,
+            ''
+        )
 
         const words = text
             .split(/\s+/)
-            .filter(word => word && word.length >= 3)
-            .map(word => word.toLowerCase())
-            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter(
+                (word) =>
+                    word
+                    && word.length >= 3
+            )
+            .map(
+                (word) =>
+                    word.toLowerCase()
+            )
+            .filter(
+                (value, index, self) =>
+                    self.indexOf(value)
+                    === index
+            )
 
-        translation.meta_keywords = truncateText(words.join(', '), 255)
+        translation.meta_keywords =
+            truncateText(
+                words.join(', '),
+                255
+            )
     }
 
-    if (translation.short && !translation.meta_desc) {
-        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        translation.meta_desc = truncateText(descText, 255, true)
+    if (
+        translation.short
+        && !translation.meta_desc
+    ) {
+        const description = String(
+            translation.short
+        ).replace(
+            /(<([^>]+)>)/gi,
+            ''
+        )
+
+        translation.meta_desc =
+            truncateText(
+                description,
+                255,
+                true
+            )
     }
 }
 
-// Отправка формы
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
+const nullableId = (value) => {
+    if (
+        value === ''
+        || value === null
+        || value === undefined
+    ) {
+        return null
+    }
+
+    const number = Number(value)
+
+    return Number.isFinite(number)
+        ? number
+        : null
+}
+
 const submitForm = () => {
     form.transform((data) => {
         const transformed = {
             ...data,
 
-            school_course_id: selectedCourse.value?.id ?? null,
-            school_instructor_profile_id: selectedInstructor.value?.id ?? null,
+            /**
+             * Единственный источник истины —
+             * form IDs, а не selected UI objects.
+             */
+            school_course_id:
+                nullableId(
+                    data.school_course_id
+                ),
 
-            activity: data.activity ? 1 : 0,
-            is_online: data.is_online ? 1 : 0,
+            school_instructor_profile_id:
+                nullableId(
+                    data.school_instructor_profile_id
+                ),
 
-            sort: data.sort === '' || data.sort === null
-                ? 0
-                : Number(data.sort),
+            activity:
+                data.activity
+                    ? 1
+                    : 0,
 
-            capacity: data.capacity === '' || data.capacity === null
-                ? 0
-                : Number(data.capacity),
+            is_online:
+                data.is_online
+                    ? 1
+                    : 0,
+
+            sort:
+                data.sort === ''
+                || data.sort === null
+                    ? 0
+                    : Number(data.sort),
+
+            capacity:
+                data.capacity === ''
+                || data.capacity === null
+                    ? 0
+                    : Number(data.capacity),
         }
 
+        /**
+         * Поля images/deletedImages заменяем
+         * multipart-ключами ниже.
+         */
         delete transformed.images
         delete transformed.deletedImages
 
         let index = 0
 
-        existingImages.value.forEach((image) => {
-            transformed[`images[${index}][id]`] = image.id
-            transformed[`images[${index}][order]`] = image.order ?? 0
-            transformed[`images[${index}][alt]`] = image.alt ?? ''
-            transformed[`images[${index}][caption]`] = image.caption ?? ''
-            index++
-        })
+        existingImages.value.forEach(
+            (image) => {
+                transformed[
+                    `images[${index}][id]`
+                    ] = image.id
 
-        newImages.value.forEach((image) => {
-            transformed[`images[${index}][file]`] = image.file
-            transformed[`images[${index}][order]`] = image.order ?? 0
-            transformed[`images[${index}][alt]`] = image.alt ?? ''
-            transformed[`images[${index}][caption]`] = image.caption ?? ''
-            index++
-        })
+                transformed[
+                    `images[${index}][order]`
+                    ] = image.order ?? 0
 
-        form.deletedImages.forEach((id, deletedIndex) => {
-            transformed[`deletedImages[${deletedIndex}]`] = id
-        })
+                transformed[
+                    `images[${index}][alt]`
+                    ] = image.alt ?? ''
+
+                transformed[
+                    `images[${index}][caption]`
+                    ] = image.caption ?? ''
+
+                index++
+            }
+        )
+
+        newImages.value.forEach(
+            (image) => {
+                transformed[
+                    `images[${index}][file]`
+                    ] = image.file
+
+                transformed[
+                    `images[${index}][order]`
+                    ] = image.order ?? 0
+
+                transformed[
+                    `images[${index}][alt]`
+                    ] = image.alt ?? ''
+
+                transformed[
+                    `images[${index}][caption]`
+                    ] = image.caption ?? ''
+
+                index++
+            }
+        )
+
+        form.deletedImages.forEach(
+            (id, deletedIndex) => {
+                transformed[
+                    `deletedImages[${deletedIndex}]`
+                    ] = id
+            }
+        )
 
         return transformed
     })
 
-    form.post(route('admin.schoolCourseSchedules.update', {
-        schoolCourseSchedule: props.schedule.id,
-    }), {
-        errorBag: 'editSchoolCourseSchedule',
-        preserveScroll: true,
-        forceFormData: true,
-        onSuccess: () => {
-            toast.success('Расписание успешно обновлено!')
-            newImages.value = []
-            form.deletedImages = []
-        },
-        onError: (errors) => {
-            console.error('Ошибка обновления расписания:', errors)
+    form.post(
+        route(
+            'admin.schoolCourseSchedules.update',
+            {
+                schoolCourseSchedule:
+                props.schedule.id,
+            }
+        ),
+        {
+            errorBag:
+                'editSchoolCourseSchedule',
 
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors[firstKey] || 'Проверьте корректность полей.')
-        },
-    })
+            preserveScroll: true,
+            forceFormData: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Расписание успешно обновлено!'
+                )
+
+                newImages.value = []
+                form.deletedImages = []
+            },
+
+            onError: (errors) => {
+                console.error(
+                    'Ошибка обновления расписания:',
+                    errors
+                )
+
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors?.[firstKey]
+                    || 'Проверьте корректность полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -776,7 +1018,8 @@ const submitForm = () => {
                                     />
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                        {{ (currentTranslation.meta_keywords || '').length }} / 255 {{ t('characters') }}
+                                        {{ (currentTranslation.meta_keywords || '').length }} / 255 {{ t('characters')
+                                        }}
                                     </div>
                                 </div>
 

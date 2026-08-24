@@ -3,16 +3,21 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Список заданий школы
- * - режимы обработки: frontend | server | auto
- * - локальный поиск/сортировка/пагинация
- * - серверный поиск/сортировка/пагинация
+ * Список заданий школы.
+ *
+ * Admin Index contract:
+ * - SchoolAssignmentSharedResource;
+ * - translation содержит только выбранную locale;
+ * - course/module/lesson/instructor используют SharedResource;
+ * - frontend | server | auto;
+ * - frontend search / sort / pagination;
+ * - server search / sort / pagination.
  */
 
-import { computed, defineProps, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { router } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
@@ -33,17 +38,9 @@ import SortSelect from '@/Components/Admin/School/SchoolAssignment/Sort/SortSele
 import AssignmentTable from '@/Components/Admin/School/SchoolAssignment/Table/AssignmentTable.vue'
 import AssignmentCardGrid from '@/Components/Admin/School/SchoolAssignment/View/AssignmentCardGrid.vue'
 
-/* ==========================================================
- * БАЗОВЫЕ СЕРВИСЫ И PROPS
- * ========================================================== */
-
-/** Локализация интерфейса */
 const { t } = useI18n()
-
-/** Уведомления */
 const toast = useToast()
 
-/** Данные страницы из Inertia */
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
@@ -64,26 +61,24 @@ const props = defineProps({
 })
 
 /* ==========================================================
- * РЕЖИМ ОТОБРАЖЕНИЯ
+ * VIEW MODE
  * ========================================================== */
 
-/** Текущий режим отображения (таблица / карточки) */
-const viewMode = ref(localStorage.getItem('admin_view_mode_assignments') || 'table')
+const viewMode = ref(
+    localStorage.getItem('admin_view_mode_assignments') || 'table'
+)
 
-/** Сохраняем выбранный вид локально */
-watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode_assignments', val)
+watch(viewMode, (value) => {
+    localStorage.setItem(
+        'admin_view_mode_assignments',
+        value
+    )
 })
 
 /* ==========================================================
- * ИСТОЧНИК ДАННЫХ
+ * SOURCE DATA
  * ========================================================== */
 
-/**
- * Унифицированный список заданий:
- * frontend → обычный массив
- * server → assignments.data
- */
 const assignmentsList = computed(() => {
     if (Array.isArray(props.assignments)) {
         return props.assignments
@@ -96,65 +91,116 @@ const assignmentsList = computed(() => {
     return []
 })
 
-/* ==========================================================
- * ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ДАННЫХ
- * ========================================================== */
-
-/**
- * Локальная копия списка.
- * Используется для:
- * - локального поиска
- * - локальной сортировки
- * - моментального обновления UI
- */
 const localAssignments = ref([])
 
 watch(
     assignmentsList,
-    (newVal) => {
-        localAssignments.value = JSON.parse(JSON.stringify(newVal || []))
+    (assignments) => {
+        localAssignments.value = JSON.parse(
+            JSON.stringify(assignments || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
 /* ==========================================================
- * НАСТРОЙКИ ПАГИНАЦИИ И СОРТИРОВКИ
+ * PAGINATION / SORT / SEARCH
  * ========================================================== */
 
-/** Количество элементов на странице */
-const itemsPerPage = ref(props.adminSchoolAssignmentsPerPage || 6)
+const itemsPerPage = ref(
+    props.adminSchoolAssignmentsPerPage || 6
+)
 
-watch(itemsPerPage, (newVal) => {
+const sortParam = ref(
+    props.sortParam
+    || props.adminSchoolAssignmentsDefaultSort
+    || 'idDesc'
+)
+
+const searchQuery = ref(
+    props.search || ''
+)
+
+const currentPage = ref(1)
+
+const serverCurrentPage = computed(() => {
+    return Number(
+        props.assignments?.meta?.current_page
+        ?? props.assignments?.current_page
+        ?? 1
+    ) || 1
+})
+
+const activeCurrentPage = computed(() => {
+    return props.useServerProcessing
+        ? serverCurrentPage.value
+        : currentPage.value
+})
+
+watch(itemsPerPage, (newValue) => {
+    if (props.useServerProcessing) {
+        return
+    }
+
+    currentPage.value = 1
+
     router.put(
-        route('admin.settings.updateAdminCountSchoolAssignments'),
-        { value: newVal },
+        route(
+            'admin.settings.updateAdminCountSchoolAssignments'
+        ),
+        {
+            value: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+
+            onSuccess: () => {
+                toast.info(
+                    `Показ ${newValue} элементов на странице.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления количества элементов.'
+                )
+            },
         }
     )
 })
 
-/** Текущий параметр сортировки */
-const sortParam = ref(props.sortParam || props.adminSchoolAssignmentsDefaultSort || 'idDesc')
+watch(sortParam, (newValue) => {
+    currentPage.value = 1
 
-watch(sortParam, (newVal) => {
     router.put(
-        route('admin.settings.updateAdminSortSchoolAssignments'),
-        { value: newVal },
+        route(
+            'admin.settings.updateAdminSortSchoolAssignments'
+        ),
+        {
+            value: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
                 if (props.useServerProcessing) {
+                    const query = Object.fromEntries(
+                        new URLSearchParams(
+                            window.location.search
+                        )
+                    )
+
                     router.get(
                         window.location.pathname,
                         {
-                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
-                            sort: newVal || undefined,
+                            ...query,
+                            sort: newValue || undefined,
                             page: undefined,
                         },
                         {
@@ -165,571 +211,1218 @@ watch(sortParam, (newVal) => {
                     )
                 }
 
-                toast.info('Сортировка успешно изменена')
+                toast.info(
+                    'Сортировка успешно изменена'
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления сортировки.')
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления сортировки.'
+                )
             },
         }
     )
 })
 
 /* ==========================================================
- * ПОИСК И ПАГИНАЦИЯ
+ * NEW RESOURCE CONTRACT
  * ========================================================== */
 
-/** Поисковый запрос */
-const searchQuery = ref(props.search || '')
-
-/** Текущая страница */
-const currentPage = ref(1)
-
-/* ==========================================================
- * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
- * ========================================================== */
-
-/** Нормализация строки */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
-
-/** Безопасное преобразование в число */
-const safeNumber = (value) => {
-    const number = Number(value)
-    return Number.isFinite(number) ? number : 0
-}
-
-/** Безопасное преобразование даты */
-const safeDate = (value) => {
-    const time = new Date(value || 0).getTime()
-    return Number.isFinite(time) ? time : 0
-}
-
-/* ==========================================================
- * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ РЕСУРСОВ
- * ========================================================== */
-
-/** Получение заголовка задания */
 const getAssignmentTitle = (assignment) => {
-    return assignment?.title
-        || assignment?.translation?.title
-        || assignment?.translations?.[0]?.title
+    return assignment?.translation?.title
         || `ID: ${assignment?.id}`
 }
 
-/** Получение краткого описания */
+const getAssignmentSubtitle = (assignment) => {
+    return assignment?.translation?.subtitle || ''
+}
+
 const getAssignmentShort = (assignment) => {
-    return assignment?.short
-        || assignment?.translation?.short
-        || assignment?.translations?.[0]?.short
-        || ''
+    return assignment?.translation?.short || ''
 }
 
-/** Получение описания */
 const getAssignmentDescription = (assignment) => {
-    return assignment?.description
-        || assignment?.translation?.description
-        || assignment?.translations?.[0]?.description
-        || ''
+    return assignment?.translation?.description || ''
 }
 
-/** Получение инструкции */
 const getAssignmentInstructions = (assignment) => {
-    return assignment?.instructions
-        || assignment?.translation?.instructions
-        || assignment?.translations?.[0]?.instructions
-        || ''
+    return assignment?.translation?.instructions || ''
 }
 
-/** Получение заголовка связанной сущности */
-const getNestedTitle = (item, field) => {
-    const entity = item?.[field]
+const getCourseTitle = (assignment) => {
+    return assignment?.course?.translation?.title
+        || (
+            assignment?.course?.id
+                ? `ID: ${assignment.course.id}`
+                : ''
+        )
+}
 
-    return entity?.title
-        || entity?.name
-        || entity?.public_name
-        || entity?.translation?.title
-        || entity?.translation?.name
-        || entity?.translations?.[0]?.title
-        || entity?.translations?.[0]?.name
-        || entity?.user?.name
-        || ''
+const getCourseSlug = (assignment) => {
+    return assignment?.course?.slug || ''
+}
+
+const getModuleTitle = (assignment) => {
+    return assignment?.module?.translation?.title
+        || (
+            assignment?.module?.id
+                ? `ID: ${assignment.module.id}`
+                : ''
+        )
+}
+
+const getModuleSlug = (assignment) => {
+    return assignment?.module?.slug || ''
+}
+
+const getLessonTitle = (assignment) => {
+    return assignment?.lesson?.translation?.title
+        || (
+            assignment?.lesson?.id
+                ? `ID: ${assignment.lesson.id}`
+                : ''
+        )
+}
+
+const getLessonSlug = (assignment) => {
+    return assignment?.lesson?.slug || ''
+}
+
+const getInstructorTitle = (assignment) => {
+    return assignment?.instructor?.translation?.title
+        || assignment?.instructor?.user?.name
+        || (
+            assignment?.instructor?.id
+                ? `ID: ${assignment.instructor.id}`
+                : ''
+        )
+}
+
+const getInstructorName = (assignment) => {
+    return assignment?.instructor?.user?.name || ''
+}
+
+const getInstructorEmail = (assignment) => {
+    return assignment?.instructor?.user?.email || ''
 }
 
 /* ==========================================================
- * СОРТИРОВКА FRONTEND
+ * HELPERS
  * ========================================================== */
 
-/** Сортировка чисел ↑ */
-const byNumberAsc = (field) => (a, b) =>
-    safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+const normalize = (value) => {
+    return String(value ?? '')
+        .trim()
+        .toLocaleLowerCase()
+}
 
-/** Сортировка чисел ↓ */
-const byNumberDesc = (field) => (a, b) =>
-    safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const safeNumber = (value) => {
+    const number = Number(value)
 
-/** Сортировка строк ↑ */
-const byStringAsc = (field) => (a, b) =>
-    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    return Number.isFinite(number)
+        ? number
+        : 0
+}
 
-/** Сортировка строк ↓ */
-const byStringDesc = (field) => (a, b) =>
-    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const safeDate = (value) => {
+    const time = new Date(
+        value || 0
+    ).getTime()
 
-/**
- * Главный обработчик сортировки.
- * Должен совпадать со scopeSortByParam() модели.
- */
+    return Number.isFinite(time)
+        ? time
+        : 0
+}
+
+const compareText = (a, b) => {
+    return normalize(a).localeCompare(
+        normalize(b),
+        props.currentLocale || undefined,
+        {
+            sensitivity: 'base',
+        }
+    )
+}
+
+const byNumberAsc = (field) => {
+    return (a, b) =>
+        safeNumber(a?.[field])
+        - safeNumber(b?.[field])
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
+}
+
+const byNumberDesc = (field) => {
+    return (a, b) =>
+        safeNumber(b?.[field])
+        - safeNumber(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+const byStringAsc = (field) => {
+    return (a, b) =>
+        compareText(
+            a?.[field],
+            b?.[field]
+        )
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
+}
+
+const byStringDesc = (field) => {
+    return (a, b) =>
+        compareText(
+            b?.[field],
+            a?.[field]
+        )
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+/* ==========================================================
+ * FRONTEND SORT
+ * ========================================================== */
+
 const sortAssignments = (items) => {
-    const list = (items || []).slice()
+    const list = [
+        ...(items || []),
+    ]
 
-    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
-    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
-
-    if (sortParam.value === 'left') return list.filter(item => !!item.left)
-    if (sortParam.value === 'noLeft') return list.filter(item => !item.left)
-
-    if (sortParam.value === 'main') return list.filter(item => !!item.main)
-    if (sortParam.value === 'noMain') return list.filter(item => !item.main)
-
-    if (sortParam.value === 'right') return list.filter(item => !!item.right)
-    if (sortParam.value === 'noRight') return list.filter(item => !item.right)
-
-    const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
-
-        sortAsc: byNumberAsc('sort'),
-        sortDesc: byNumberDesc('sort'),
-
-        titleAsc: (a, b) =>
-            normalize(getAssignmentTitle(a)).localeCompare(normalize(getAssignmentTitle(b)), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        titleDesc: (a, b) =>
-            normalize(getAssignmentTitle(b)).localeCompare(normalize(getAssignmentTitle(a)), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        slugAsc: byStringAsc('slug'),
-        slugDesc: byStringDesc('slug'),
-
-        courseAsc: byNumberAsc('school_course_id'),
-        courseDesc: byNumberDesc('school_course_id'),
-
-        moduleAsc: byNumberAsc('school_module_id'),
-        moduleDesc: byNumberDesc('school_module_id'),
-
-        lessonAsc: byNumberAsc('school_lesson_id'),
-        lessonDesc: byNumberDesc('school_lesson_id'),
-
-        instructorAsc: byNumberAsc('school_instructor_profile_id'),
-        instructorDesc: byNumberDesc('school_instructor_profile_id'),
-
-        courseTitleAsc: (a, b) =>
-            normalize(getNestedTitle(a, 'course')).localeCompare(normalize(getNestedTitle(b, 'course')), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        courseTitleDesc: (a, b) =>
-            normalize(getNestedTitle(b, 'course')).localeCompare(normalize(getNestedTitle(a, 'course')), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        moduleTitleAsc: (a, b) =>
-            normalize(getNestedTitle(a, 'module')).localeCompare(normalize(getNestedTitle(b, 'module')), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        moduleTitleDesc: (a, b) =>
-            normalize(getNestedTitle(b, 'module')).localeCompare(normalize(getNestedTitle(a, 'module')), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        lessonTitleAsc: (a, b) =>
-            normalize(getNestedTitle(a, 'lesson')).localeCompare(normalize(getNestedTitle(b, 'lesson')), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        lessonTitleDesc: (a, b) =>
-            normalize(getNestedTitle(b, 'lesson')).localeCompare(normalize(getNestedTitle(a, 'lesson')), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        instructorTitleAsc: (a, b) =>
-            normalize(getNestedTitle(a, 'instructor')).localeCompare(normalize(getNestedTitle(b, 'instructor')), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        instructorTitleDesc: (a, b) =>
-            normalize(getNestedTitle(b, 'instructor')).localeCompare(normalize(getNestedTitle(a, 'instructor')), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        statusAsc: byStringAsc('status'),
-        statusDesc: byStringDesc('status'),
-
-        visibilityAsc: byStringAsc('visibility'),
-        visibilityDesc: byStringDesc('visibility'),
-
-        gradingTypeAsc: byStringAsc('grading_type'),
-        gradingTypeDesc: byStringDesc('grading_type'),
-
-        attemptsLimitAsc: byNumberAsc('attempts_limit'),
-        attemptsLimitDesc: byNumberDesc('attempts_limit'),
-
-        maxScoreAsc: byNumberAsc('max_score'),
-        maxScoreDesc: byNumberDesc('max_score'),
-
-        submissionsAsc: byNumberAsc('submissions_count'),
-        submissionsDesc: byNumberDesc('submissions_count'),
-
-        imagesAsc: byNumberAsc('images_count'),
-        imagesDesc: byNumberDesc('images_count'),
-
-        activityAsc: byNumberAsc('activity'),
-        activityDesc: byNumberDesc('activity'),
-
-        publishedAtAsc: (a, b) =>
-            safeDate(a?.published_at) - safeDate(b?.published_at)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        publishedAtDesc: (a, b) =>
-            safeDate(b?.published_at) - safeDate(a?.published_at)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        dueAtAsc: (a, b) =>
-            safeDate(a?.due_at) - safeDate(b?.due_at)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        dueAtDesc: (a, b) =>
-            safeDate(b?.due_at) - safeDate(a?.due_at)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        createdAtAsc: (a, b) =>
-            safeDate(a?.created_at) - safeDate(b?.created_at)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        createdAtDesc: (a, b) =>
-            safeDate(b?.created_at) - safeDate(a?.created_at)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        updatedAtAsc: (a, b) =>
-            safeDate(a?.updated_at) - safeDate(b?.updated_at)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        updatedAtDesc: (a, b) =>
-            safeDate(b?.updated_at) - safeDate(a?.updated_at)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+    if (sortParam.value === 'activity') {
+        return list.filter(
+            assignment => !!assignment.activity
+        )
     }
 
-    return sortMap[sortParam.value]
-        ? list.sort(sortMap[sortParam.value])
+    if (sortParam.value === 'inactive') {
+        return list.filter(
+            assignment => !assignment.activity
+        )
+    }
+
+    if (sortParam.value === 'left') {
+        return list.filter(
+            assignment => !!assignment.left
+        )
+    }
+
+    if (sortParam.value === 'noLeft') {
+        return list.filter(
+            assignment => !assignment.left
+        )
+    }
+
+    if (sortParam.value === 'main') {
+        return list.filter(
+            assignment => !!assignment.main
+        )
+    }
+
+    if (sortParam.value === 'noMain') {
+        return list.filter(
+            assignment => !assignment.main
+        )
+    }
+
+    if (sortParam.value === 'right') {
+        return list.filter(
+            assignment => !!assignment.right
+        )
+    }
+
+    if (sortParam.value === 'noRight') {
+        return list.filter(
+            assignment => !assignment.right
+        )
+    }
+
+    const sortMap = {
+        idAsc:
+            byNumberAsc('id'),
+
+        idDesc:
+            byNumberDesc('id'),
+
+        sortAsc:
+            byNumberAsc('sort'),
+
+        sortDesc:
+            byNumberDesc('sort'),
+
+        slugAsc:
+            byStringAsc('slug'),
+
+        slugDesc:
+            byStringDesc('slug'),
+
+        titleAsc: (a, b) =>
+            compareText(
+                getAssignmentTitle(a),
+                getAssignmentTitle(b)
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        titleDesc: (a, b) =>
+            compareText(
+                getAssignmentTitle(b),
+                getAssignmentTitle(a)
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        courseAsc:
+            byNumberAsc('school_course_id'),
+
+        courseDesc:
+            byNumberDesc('school_course_id'),
+
+        courseTitleAsc: (a, b) =>
+            compareText(
+                getCourseTitle(a),
+                getCourseTitle(b)
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        courseTitleDesc: (a, b) =>
+            compareText(
+                getCourseTitle(b),
+                getCourseTitle(a)
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        moduleAsc:
+            byNumberAsc('school_module_id'),
+
+        moduleDesc:
+            byNumberDesc('school_module_id'),
+
+        moduleTitleAsc: (a, b) =>
+            compareText(
+                getModuleTitle(a),
+                getModuleTitle(b)
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        moduleTitleDesc: (a, b) =>
+            compareText(
+                getModuleTitle(b),
+                getModuleTitle(a)
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        lessonAsc:
+            byNumberAsc('school_lesson_id'),
+
+        lessonDesc:
+            byNumberDesc('school_lesson_id'),
+
+        lessonTitleAsc: (a, b) =>
+            compareText(
+                getLessonTitle(a),
+                getLessonTitle(b)
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        lessonTitleDesc: (a, b) =>
+            compareText(
+                getLessonTitle(b),
+                getLessonTitle(a)
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        instructorAsc:
+            byNumberAsc(
+                'school_instructor_profile_id'
+            ),
+
+        instructorDesc:
+            byNumberDesc(
+                'school_instructor_profile_id'
+            ),
+
+        instructorTitleAsc: (a, b) =>
+            compareText(
+                getInstructorTitle(a),
+                getInstructorTitle(b)
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        instructorTitleDesc: (a, b) =>
+            compareText(
+                getInstructorTitle(b),
+                getInstructorTitle(a)
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        statusAsc:
+            byStringAsc('status'),
+
+        statusDesc:
+            byStringDesc('status'),
+
+        visibilityAsc:
+            byStringAsc('visibility'),
+
+        visibilityDesc:
+            byStringDesc('visibility'),
+
+        gradingTypeAsc:
+            byStringAsc('grading_type'),
+
+        gradingTypeDesc:
+            byStringDesc('grading_type'),
+
+        attemptsLimitAsc:
+            byNumberAsc('attempts_limit'),
+
+        attemptsLimitDesc:
+            byNumberDesc('attempts_limit'),
+
+        maxScoreAsc:
+            byNumberAsc('max_score'),
+
+        maxScoreDesc:
+            byNumberDesc('max_score'),
+
+        submissionsAsc:
+            byNumberAsc('submissions_count'),
+
+        submissionsDesc:
+            byNumberDesc('submissions_count'),
+
+        imagesAsc:
+            byNumberAsc('images_count'),
+
+        imagesDesc:
+            byNumberDesc('images_count'),
+
+        activityAsc:
+            byNumberAsc('activity'),
+
+        activityDesc:
+            byNumberDesc('activity'),
+
+        publishedAtAsc: (a, b) =>
+            safeDate(a?.published_at)
+            - safeDate(b?.published_at)
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        publishedAtDesc: (a, b) =>
+            safeDate(b?.published_at)
+            - safeDate(a?.published_at)
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        dateAsc: (a, b) =>
+            safeDate(a?.published_at)
+            - safeDate(b?.published_at)
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        dateDesc: (a, b) =>
+            safeDate(b?.published_at)
+            - safeDate(a?.published_at)
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        dueAtAsc: (a, b) =>
+            safeDate(a?.due_at)
+            - safeDate(b?.due_at)
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        dueAtDesc: (a, b) =>
+            safeDate(b?.due_at)
+            - safeDate(a?.due_at)
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        createdAtAsc: (a, b) =>
+            safeDate(a?.created_at)
+            - safeDate(b?.created_at)
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        createdAtDesc: (a, b) =>
+            safeDate(b?.created_at)
+            - safeDate(a?.created_at)
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        updatedAtAsc: (a, b) =>
+            safeDate(a?.updated_at)
+            - safeDate(b?.updated_at)
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        updatedAtDesc: (a, b) =>
+            safeDate(b?.updated_at)
+            - safeDate(a?.updated_at)
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+    }
+
+    const sorter =
+        sortMap[sortParam.value]
+
+    return sorter
+        ? list.sort(sorter)
         : list
 }
 
 /* ==========================================================
- * ПОИСК FRONTEND
+ * FRONTEND SEARCH
  * ========================================================== */
 
-/**
- * Фильтрация списка.
- *
- * frontend:
- * поиск выполняется здесь
- *
- * server:
- * поиск выполняется контроллером
- */
 const filteredAssignments = computed(() => {
-    let filtered = localAssignments.value || []
-    const query = normalize(searchQuery.value)
+    let assignments =
+        localAssignments.value || []
 
-    if (!query) {
-        return sortAssignments(filtered)
+    /**
+     * В server mode backend уже выполнил
+     * поиск и сортировку.
+     *
+     * Нельзя повторно фильтровать
+     * только текущую страницу paginator.
+     */
+    if (props.useServerProcessing) {
+        return assignments
     }
 
-    filtered = filtered.filter((assignment) => {
-        const title = normalize(getAssignmentTitle(assignment))
-        const subtitle = normalize(assignment?.subtitle || assignment?.translation?.subtitle)
-        const slug = normalize(assignment?.slug || assignment?.translation?.slug)
-        const short = normalize(getAssignmentShort(assignment))
-        const description = normalize(getAssignmentDescription(assignment))
-        const instructions = normalize(getAssignmentInstructions(assignment))
+    const query =
+        normalize(searchQuery.value)
 
-        const courseTitle = normalize(getNestedTitle(assignment, 'course'))
-        const moduleTitle = normalize(getNestedTitle(assignment, 'module'))
-        const lessonTitle = normalize(getNestedTitle(assignment, 'lesson'))
-        const instructorTitle = normalize(getNestedTitle(assignment, 'instructor'))
-        const instructorName = normalize(assignment?.instructor?.user?.name)
-        const instructorEmail = normalize(assignment?.instructor?.user?.email)
+    if (query) {
+        assignments = assignments.filter(
+            (assignment) => {
+                const title =
+                    normalize(
+                        getAssignmentTitle(
+                            assignment
+                        )
+                    )
 
-        return title.includes(query)
-            || subtitle.includes(query)
-            || slug.includes(query)
-            || short.includes(query)
-            || description.includes(query)
-            || instructions.includes(query)
-            || courseTitle.includes(query)
-            || moduleTitle.includes(query)
-            || lessonTitle.includes(query)
-            || instructorTitle.includes(query)
-            || instructorName.includes(query)
-            || instructorEmail.includes(query)
-    })
+                const subtitle =
+                    normalize(
+                        getAssignmentSubtitle(
+                            assignment
+                        )
+                    )
 
-    return sortAssignments(filtered)
+                const slug =
+                    normalize(
+                        assignment?.slug
+                    )
+
+                const short =
+                    normalize(
+                        getAssignmentShort(
+                            assignment
+                        )
+                    )
+
+                const description =
+                    normalize(
+                        getAssignmentDescription(
+                            assignment
+                        )
+                    )
+
+                const instructions =
+                    normalize(
+                        getAssignmentInstructions(
+                            assignment
+                        )
+                    )
+
+                const courseTitle =
+                    normalize(
+                        getCourseTitle(
+                            assignment
+                        )
+                    )
+
+                const courseSlug =
+                    normalize(
+                        getCourseSlug(
+                            assignment
+                        )
+                    )
+
+                const moduleTitle =
+                    normalize(
+                        getModuleTitle(
+                            assignment
+                        )
+                    )
+
+                const moduleSlug =
+                    normalize(
+                        getModuleSlug(
+                            assignment
+                        )
+                    )
+
+                const lessonTitle =
+                    normalize(
+                        getLessonTitle(
+                            assignment
+                        )
+                    )
+
+                const lessonSlug =
+                    normalize(
+                        getLessonSlug(
+                            assignment
+                        )
+                    )
+
+                const instructorTitle =
+                    normalize(
+                        getInstructorTitle(
+                            assignment
+                        )
+                    )
+
+                const instructorName =
+                    normalize(
+                        getInstructorName(
+                            assignment
+                        )
+                    )
+
+                const instructorEmail =
+                    normalize(
+                        getInstructorEmail(
+                            assignment
+                        )
+                    )
+
+                const status =
+                    normalize(
+                        assignment?.status
+                    )
+
+                const visibility =
+                    normalize(
+                        assignment?.visibility
+                    )
+
+                const gradingType =
+                    normalize(
+                        assignment?.grading_type
+                    )
+
+                const ids = [
+                    assignment?.id,
+                    assignment?.sort,
+                    assignment?.school_course_id,
+                    assignment?.school_module_id,
+                    assignment?.school_lesson_id,
+                    assignment?.school_instructor_profile_id,
+                    assignment?.max_score,
+                    assignment?.attempts_limit,
+                ]
+                    .map(normalize)
+                    .join(' ')
+
+                return title.includes(query)
+                    || subtitle.includes(query)
+                    || slug.includes(query)
+                    || short.includes(query)
+                    || description.includes(query)
+                    || instructions.includes(query)
+                    || courseTitle.includes(query)
+                    || courseSlug.includes(query)
+                    || moduleTitle.includes(query)
+                    || moduleSlug.includes(query)
+                    || lessonTitle.includes(query)
+                    || lessonSlug.includes(query)
+                    || instructorTitle.includes(query)
+                    || instructorName.includes(query)
+                    || instructorEmail.includes(query)
+                    || status.includes(query)
+                    || visibility.includes(query)
+                    || gradingType.includes(query)
+                    || ids.includes(query)
+            }
+        )
+    }
+
+    return sortAssignments(
+        assignments
+    )
 })
 
 /* ==========================================================
- * ЛОКАЛЬНАЯ ПАГИНАЦИЯ
+ * FRONTEND PAGINATION
  * ========================================================== */
 
-/** Разбиение списка по страницам */
 const paginatedAssignments = computed(() => {
-    const per = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * per
+    const perPage =
+        Number(itemsPerPage.value) || 6
 
-    return filteredAssignments.value.slice(start, start + per)
+    const start =
+        (currentPage.value - 1)
+        * perPage
+
+    return filteredAssignments.value.slice(
+        start,
+        start + perPage
+    )
 })
 
-/**
- * Итоговый список:
- * frontend → локальная пагинация
- * server → данные сервера
- */
 const displayedAssignments = computed(() => {
     return props.useServerProcessing
         ? assignmentsList.value
         : paginatedAssignments.value
 })
 
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
-
-/* ==========================================================
- * УДАЛЕНИЕ
- * ========================================================== */
-
-/** Состояние модального окна удаления */
-const showConfirmDeleteModal = ref(false)
-const assignmentToDeleteId = ref(null)
-const assignmentToDeleteTitle = ref('')
-
-/** Открыть подтверждение удаления */
-const confirmDelete = (assignmentOrId, title = null) => {
-    if (typeof assignmentOrId === 'object') {
-        assignmentToDeleteId.value = assignmentOrId.id
-        assignmentToDeleteTitle.value = title || getAssignmentTitle(assignmentOrId)
-    } else {
-        assignmentToDeleteId.value = assignmentOrId
-        assignmentToDeleteTitle.value = title || `ID: ${assignmentOrId}`
-    }
-
-    showConfirmDeleteModal.value = true
-}
-
-/** Закрыть окно */
-const closeModal = () => {
-    showConfirmDeleteModal.value = false
-    assignmentToDeleteId.value = null
-    assignmentToDeleteTitle.value = ''
-}
-
-/** Выполнить удаление */
-const deleteAssignment = () => {
-    if (assignmentToDeleteId.value === null) return
-
-    const idToDelete = assignmentToDeleteId.value
-    const titleToDelete = assignmentToDeleteTitle.value
-
-    router.delete(route('admin.schoolAssignments.destroy', { schoolAssignment: idToDelete }), {
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => {
-            toast.success(`Задание "${titleToDelete || 'ID: ' + idToDelete}" удалено.`)
-        },
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Задание: ${titleToDelete || 'ID: ' + idToDelete})`)
-        },
-        onFinish: () => closeModal(),
-    })
-}
-
-/* ==========================================================
- * ЛОКАЛЬНОЕ ОБНОВЛЕНИЕ UI
- * ========================================================== */
-
-/**
- * Обновление записи локально
- * без полной перезагрузки страницы
- */
-const patchAssignment = (assignmentId, payload) => {
-    const index = localAssignments.value.findIndex(assignment => assignment.id === assignmentId)
-
-    if (index !== -1) {
-        localAssignments.value[index] = {
-            ...localAssignments.value[index],
-            ...payload,
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+    ],
+    () => {
+        if (!props.useServerProcessing) {
+            currentPage.value = 1
         }
     }
+)
+
+/* ==========================================================
+ * DELETE
+ * ========================================================== */
+
+const showConfirmDeleteModal =
+    ref(false)
+
+const assignmentToDeleteId =
+    ref(null)
+
+const assignmentToDeleteTitle =
+    ref('')
+
+const confirmDelete = (
+    assignmentOrId,
+    title = null
+) => {
+    if (
+        typeof assignmentOrId === 'object'
+        && assignmentOrId !== null
+    ) {
+        assignmentToDeleteId.value =
+            assignmentOrId.id
+
+        assignmentToDeleteTitle.value =
+            title
+            || getAssignmentTitle(
+                assignmentOrId
+            )
+    } else {
+        assignmentToDeleteId.value =
+            assignmentOrId
+
+        assignmentToDeleteTitle.value =
+            title
+            || `ID: ${assignmentOrId}`
+    }
+
+    showConfirmDeleteModal.value =
+        true
+}
+
+const closeModal = () => {
+    showConfirmDeleteModal.value =
+        false
+
+    assignmentToDeleteId.value =
+        null
+
+    assignmentToDeleteTitle.value =
+        ''
+}
+
+const deleteAssignment = () => {
+    if (
+        assignmentToDeleteId.value === null
+    ) {
+        return
+    }
+
+    const id =
+        assignmentToDeleteId.value
+
+    const title =
+        assignmentToDeleteTitle.value
+
+    router.delete(
+        route(
+            'admin.schoolAssignments.destroy',
+            {
+                schoolAssignment: id,
+            }
+        ),
+        {
+            preserveScroll: true,
+            preserveState: false,
+
+            onSuccess: () => {
+                toast.success(
+                    `Задание "${title || `ID: ${id}`}" удалено.`
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                const message =
+                    errors?.general
+                    || errors?.[errorKey]
+                    || 'Произошла ошибка при удалении.'
+
+                toast.error(
+                    `${message} (Задание: ${title || `ID: ${id}`})`
+                )
+            },
+
+            onFinish: () => {
+                closeModal()
+            },
+        }
+    )
 }
 
 /* ==========================================================
- * МАССОВЫЕ ОПЕРАЦИИ
+ * LOCAL UI PATCH
  * ========================================================== */
 
-/** Выбранные элементы */
-const selectedAssignments = ref([])
+const patchAssignment = (
+    assignmentId,
+    payload
+) => {
+    const index =
+        localAssignments.value.findIndex(
+            assignment =>
+                assignment.id === assignmentId
+        )
 
-/** Выбрать все */
+    if (index === -1) {
+        return
+    }
+
+    localAssignments.value[index] = {
+        ...localAssignments.value[index],
+        ...payload,
+    }
+}
+
+/* ==========================================================
+ * SELECTION / BULK ACTIONS
+ * ========================================================== */
+
+const selectedAssignments =
+    ref([])
+
 const toggleAll = (payload) => {
-    const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? displayedAssignments.value.map((assignment) => assignment.id)
+    const checked =
+        payload?.checked
+        ?? payload?.target?.checked
+        ?? false
+
+    const ids =
+        payload?.ids
+        ?? displayedAssignments.value.map(
+            assignment => assignment.id
+        )
 
     if (checked) {
-        selectedAssignments.value = [...new Set([...selectedAssignments.value, ...ids])]
-    } else {
-        selectedAssignments.value = selectedAssignments.value.filter((id) => !ids.includes(id))
+        selectedAssignments.value = [
+            ...new Set([
+                ...selectedAssignments.value,
+                ...ids,
+            ]),
+        ]
+
+        return
     }
+
+    selectedAssignments.value =
+        selectedAssignments.value.filter(
+            id => !ids.includes(id)
+        )
 }
 
-/** Выбрать элемент */
 const toggleSelectAssignment = (id) => {
-    const index = selectedAssignments.value.indexOf(id)
+    const index =
+        selectedAssignments.value.indexOf(id)
 
     if (index > -1) {
-        selectedAssignments.value.splice(index, 1)
-    } else {
-        selectedAssignments.value.push(id)
+        selectedAssignments.value.splice(
+            index,
+            1
+        )
+
+        return
     }
+
+    selectedAssignments.value.push(id)
 }
 
-/** Изменить порядок */
-const handleSortOrderUpdate = (orderedIds) => {
-    const startSort = (currentPage.value - 1) * itemsPerPage.value
+/* ==========================================================
+ * DRAG & DROP SORT
+ * ========================================================== */
 
-    const items = orderedIds.map((id, index) => ({
-        id,
-        sort: startSort + index + 1,
-    }))
+const handleSortOrderUpdate = (
+    orderedIds
+) => {
+    const startSort =
+        (
+            activeCurrentPage.value - 1
+        )
+        * Number(
+            itemsPerPage.value || 6
+        )
 
-    if (!items.length) return
-
-    router.put(route('admin.actions.schoolAssignments.updateSortBulk'), { items }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.success('Порядок заданий успешно обновлён.'),
-        onError: (errors) => {
-            console.error('Ошибка обновления сортировки заданий:', errors)
-            toast.error(errors?.message || errors?.general || 'Не удалось обновить порядок заданий.')
-
-            router.reload({
-                only: ['assignments'],
-                preserveScroll: true,
+    const items =
+        orderedIds.map(
+            (id, index) => ({
+                id,
+                sort:
+                    startSort
+                    + index
+                    + 1,
             })
-        },
-    })
-}
+        )
 
-/** Массовая активность */
-const bulkToggleActivity = (newActivity) => {
-    if (!selectedAssignments.value.length) {
-        toast.warning('Выберите задания для активации/деактивации.')
+    if (!items.length) {
         return
     }
 
-    const idsToUpdate = [...selectedAssignments.value]
+    router.put(
+        route(
+            'admin.actions.schoolAssignments.updateSortBulk'
+        ),
+        {
+            items,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
 
-    router.put(route('admin.actions.schoolAssignments.bulkUpdateActivity'), {
-        ids: idsToUpdate,
-        activity: newActivity,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-            idsToUpdate.forEach(id => patchAssignment(id, { activity: newActivity }))
-            selectedAssignments.value = []
-            toast.success('Активность выбранных заданий обновлена.')
-        },
-        onError: (errors) => {
-            toast.error(errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.')
-        },
-    })
+            onSuccess: () => {
+                toast.success(
+                    'Порядок заданий успешно обновлён.'
+                )
+            },
+
+            onError: (errors) => {
+                console.error(
+                    'Ошибка обновления сортировки заданий:',
+                    errors
+                )
+
+                toast.error(
+                    errors?.message
+                    || errors?.general
+                    || 'Не удалось обновить порядок заданий.'
+                )
+
+                router.reload({
+                    only: [
+                        'assignments',
+                    ],
+                    preserveScroll: true,
+                })
+            },
+        }
+    )
 }
 
-/** Массовые флаги */
-const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
-    if (!selectedAssignments.value.length) {
-        toast.warning('Выберите задания для массового действия.')
+/* ==========================================================
+ * BULK ACTIVITY
+ * ========================================================== */
+
+const bulkToggleActivity = (
+    newActivity
+) => {
+    if (
+        !selectedAssignments.value.length
+    ) {
+        toast.warning(
+            'Выберите задания для активации/деактивации.'
+        )
+
         return
     }
 
-    const idsToUpdate = [...selectedAssignments.value]
+    const ids = [
+        ...selectedAssignments.value,
+    ]
 
-    router.put(route(routeName), {
-        ids: idsToUpdate,
-        [field]: newValue,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-            idsToUpdate.forEach(id => patchAssignment(id, { [field]: newValue }))
-            selectedAssignments.value = []
-            toast.success(successMessage)
+    router.put(
+        route(
+            'admin.actions.schoolAssignments.bulkUpdateActivity'
+        ),
+        {
+            ids,
+            activity: newActivity,
         },
-        onError: (errors) => {
-            toast.error(errors?.ids || errors?.[field] || errors?.general || 'Ошибка массового обновления.')
-        },
-    })
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                ids.forEach((id) => {
+                    patchAssignment(
+                        id,
+                        {
+                            activity: newActivity,
+                        }
+                    )
+                })
+
+                selectedAssignments.value =
+                    []
+
+                toast.success(
+                    'Активность выбранных заданий обновлена.'
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.ids
+                    || errors?.activity
+                    || errors?.general
+                    || 'Ошибка массового обновления активности.'
+                )
+            },
+        }
+    )
 }
 
-/** Массовое удаление */
+/* ==========================================================
+ * BULK FLAGS
+ * ========================================================== */
+
+const bulkToggleFlag = (
+    field,
+    newValue,
+    routeName,
+    successMessage
+) => {
+    if (
+        !selectedAssignments.value.length
+    ) {
+        toast.warning(
+            'Выберите задания для массового действия.'
+        )
+
+        return
+    }
+
+    const ids = [
+        ...selectedAssignments.value,
+    ]
+
+    router.put(
+        route(
+            routeName
+        ),
+        {
+            ids,
+            [field]: newValue,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                ids.forEach((id) => {
+                    patchAssignment(
+                        id,
+                        {
+                            [field]: newValue,
+                        }
+                    )
+                })
+
+                selectedAssignments.value =
+                    []
+
+                toast.success(
+                    successMessage
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.ids
+                    || errors?.[field]
+                    || errors?.general
+                    || 'Ошибка массового обновления.'
+                )
+            },
+        }
+    )
+}
+
 const bulkDelete = () => {
-    if (!selectedAssignments.value.length) {
-        toast.warning('Выберите задания для удаления.')
+    if (
+        !selectedAssignments.value.length
+    ) {
+        toast.warning(
+            'Выберите задания для удаления.'
+        )
+
         return
     }
 
-    if (!confirm('Вы уверены, что хотите удалить выбранные задания?')) return
+    if (
+        !confirm(
+            'Вы уверены, что хотите удалить выбранные задания?'
+        )
+    ) {
+        return
+    }
 
-    router.delete(route('admin.actions.schoolAssignments.bulkDestroy'), {
-        data: { ids: selectedAssignments.value },
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => {
-            selectedAssignments.value = []
-            toast.success('Выбранные задания успешно удалены.')
-        },
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            toast.error(errors[errorKey] || 'Ошибка массового удаления заданий.')
-        },
-    })
+    router.delete(
+        route(
+            'admin.actions.schoolAssignments.bulkDestroy'
+        ),
+        {
+            data: {
+                ids:
+                selectedAssignments.value,
+            },
+
+            preserveScroll: true,
+            preserveState: false,
+
+            onSuccess: () => {
+                selectedAssignments.value =
+                    []
+
+                toast.success(
+                    'Выбранные задания успешно удалены.'
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors?.[errorKey]
+                    || 'Ошибка массового удаления заданий.'
+                )
+            },
+        }
+    )
 }
 
-/** Обработчик действий */
 const handleBulkAction = (event) => {
-    const action = event.target.value
+    const action =
+        event.target.value
 
     if (action === 'selectAll') {
-        toggleAll({ target: { checked: true } })
-    } else if (action === 'deselectAll') {
-        toggleAll({ target: { checked: false } })
-    } else if (action === 'activate') {
+        toggleAll({
+            target: {
+                checked: true,
+            },
+        })
+    }
+
+    if (action === 'deselectAll') {
+        toggleAll({
+            target: {
+                checked: false,
+            },
+        })
+    }
+
+    if (action === 'activate') {
         bulkToggleActivity(true)
-    } else if (action === 'deactivate') {
+    }
+
+    if (action === 'deactivate') {
         bulkToggleActivity(false)
-    } else if (action === 'left') {
-        bulkToggleFlag('left', true, 'admin.actions.schoolAssignments.bulkUpdateLeft', 'Задания добавлены в левую колонку.')
-    } else if (action === 'noLeft') {
-        bulkToggleFlag('left', false, 'admin.actions.schoolAssignments.bulkUpdateLeft', 'Задания убраны из левой колонки.')
-    } else if (action === 'main') {
-        bulkToggleFlag('main', true, 'admin.actions.schoolAssignments.bulkUpdateMain', 'Задания добавлены в главный блок.')
-    } else if (action === 'noMain') {
-        bulkToggleFlag('main', false, 'admin.actions.schoolAssignments.bulkUpdateMain', 'Задания убраны из главного блока.')
-    } else if (action === 'right') {
-        bulkToggleFlag('right', true, 'admin.actions.schoolAssignments.bulkUpdateRight', 'Задания добавлены в правую колонку.')
-    } else if (action === 'noRight') {
-        bulkToggleFlag('right', false, 'admin.actions.schoolAssignments.bulkUpdateRight', 'Задания убраны из правой колонки.')
-    } else if (action === 'delete') {
+    }
+
+    if (action === 'left') {
+        bulkToggleFlag(
+            'left',
+            true,
+            'admin.actions.schoolAssignments.bulkUpdateLeft',
+            'Задания добавлены в левую колонку.'
+        )
+    }
+
+    if (action === 'noLeft') {
+        bulkToggleFlag(
+            'left',
+            false,
+            'admin.actions.schoolAssignments.bulkUpdateLeft',
+            'Задания убраны из левой колонки.'
+        )
+    }
+
+    if (action === 'main') {
+        bulkToggleFlag(
+            'main',
+            true,
+            'admin.actions.schoolAssignments.bulkUpdateMain',
+            'Задания добавлены в главный блок.'
+        )
+    }
+
+    if (action === 'noMain') {
+        bulkToggleFlag(
+            'main',
+            false,
+            'admin.actions.schoolAssignments.bulkUpdateMain',
+            'Задания убраны из главного блока.'
+        )
+    }
+
+    if (action === 'right') {
+        bulkToggleFlag(
+            'right',
+            true,
+            'admin.actions.schoolAssignments.bulkUpdateRight',
+            'Задания добавлены в правую колонку.'
+        )
+    }
+
+    if (action === 'noRight') {
+        bulkToggleFlag(
+            'right',
+            false,
+            'admin.actions.schoolAssignments.bulkUpdateRight',
+            'Задания убраны из правой колонки.'
+        )
+    }
+
+    if (action === 'delete') {
         bulkDelete()
     }
 
@@ -737,56 +1430,119 @@ const handleBulkAction = (event) => {
 }
 
 /* ==========================================================
- * ОПЕРАЦИИ НАД ОДНОЙ ЗАПИСЬЮ
+ * SINGLE ACTIONS
  * ========================================================== */
 
-/** Переключение активности */
 const toggleActivity = (assignment) => {
-    const newActivity = !assignment.activity
-    const assignmentTitle = getAssignmentTitle(assignment)
-    const actionText = newActivity ? t('activated') : t('deactivated')
+    const newActivity =
+        !assignment.activity
 
-    router.put(route('admin.actions.schoolAssignments.updateActivity', {
-        schoolAssignment: assignment.id,
-    }), {
-        activity: newActivity,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-            patchAssignment(assignment.id, { activity: newActivity })
-            assignment.activity = newActivity
-            toast.success(`Задание "${assignmentTitle}" ${actionText}.`)
+    const assignmentTitle =
+        getAssignmentTitle(
+            assignment
+        )
+
+    const actionText =
+        newActivity
+            ? t('activated')
+            : t('deactivated')
+
+    router.put(
+        route(
+            'admin.actions.schoolAssignments.updateActivity',
+            {
+                schoolAssignment:
+                assignment.id,
+            }
+        ),
+        {
+            activity: newActivity,
         },
-        onError: (errors) => {
-            toast.error(errors?.activity || errors?.general || `Ошибка изменения активности для задания "${assignmentTitle}".`)
-        },
-    })
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                patchAssignment(
+                    assignment.id,
+                    {
+                        activity: newActivity,
+                    }
+                )
+
+                assignment.activity =
+                    newActivity
+
+                toast.success(
+                    `Задание "${assignmentTitle}" ${actionText}.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.activity
+                    || errors?.general
+                    || `Ошибка изменения активности для задания "${assignmentTitle}".`
+                )
+            },
+        }
+    )
 }
 
-/** Универсальный переключатель флагов */
-const toggleFlag = (assignment, field, routeName, successMessage, errorMessage) => {
-    const newValue = !assignment[field]
+const toggleFlag = (
+    assignment,
+    field,
+    routeName,
+    successMessage,
+    errorMessage
+) => {
+    const newValue =
+        !assignment[field]
 
-    router.put(route(routeName, {
-        schoolAssignment: assignment.id,
-    }), {
-        [field]: newValue,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-            patchAssignment(assignment.id, { [field]: newValue })
-            assignment[field] = newValue
-            toast.success(successMessage)
+    router.put(
+        route(
+            routeName,
+            {
+                schoolAssignment:
+                assignment.id,
+            }
+        ),
+        {
+            [field]:
+            newValue,
         },
-        onError: (errors) => {
-            toast.error(errors?.[field] || errors?.general || errorMessage)
-        },
-    })
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                patchAssignment(
+                    assignment.id,
+                    {
+                        [field]:
+                        newValue,
+                    }
+                )
+
+                assignment[field] =
+                    newValue
+
+                toast.success(
+                    successMessage
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.[field]
+                    || errors?.general
+                    || errorMessage
+                )
+            },
+        }
+    )
 }
 
-/** Левая колонка */
 const toggleLeft = (assignment) => {
     toggleFlag(
         assignment,
@@ -797,7 +1553,6 @@ const toggleLeft = (assignment) => {
     )
 }
 
-/** Главный блок */
 const toggleMain = (assignment) => {
     toggleFlag(
         assignment,
@@ -808,7 +1563,6 @@ const toggleMain = (assignment) => {
     )
 }
 
-/** Правая колонка */
 const toggleRight = (assignment) => {
     toggleFlag(
         assignment,
@@ -819,22 +1573,41 @@ const toggleRight = (assignment) => {
     )
 }
 
-/** Клонирование */
 const cloneAssignment = (assignment) => {
-    router.post(route('admin.actions.schoolAssignments.clone', {
-        schoolAssignment: assignment.id,
-    }), {}, {
-        preserveScroll: true,
-        onSuccess: () => toast.success('Задание успешно клонировано.'),
-        onError: () => toast.error('Ошибка при клонировании задания.'),
-    })
+    router.post(
+        route(
+            'admin.actions.schoolAssignments.clone',
+            {
+                schoolAssignment:
+                assignment.id,
+            }
+        ),
+        {},
+        {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Задание успешно клонировано.'
+                )
+            },
+
+            onError: () => {
+                toast.error(
+                    'Ошибка при клонировании задания.'
+                )
+            },
+        }
+    )
 }
 </script>
 
 <template>
     <AdminLayout :title="t('assignments')">
         <template #header>
-            <TitlePage>{{ t('assignments') }}</TitlePage>
+            <TitlePage>
+                {{ t('assignments') }}
+            </TitlePage>
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
@@ -847,12 +1620,16 @@ const cloneAssignment = (assignment) => {
                 <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.schoolAssignments.create')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current opacity-50 shrink-0"
-                                 viewBox="0 0 16 16">
+                            <svg
+                                class="w-4 h-4 fill-current opacity-50 shrink-0"
+                                viewBox="0 0 16 16"
+                            >
                                 <path
-                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"></path>
+                                    d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z"
+                                />
                             </svg>
                         </template>
+
                         {{ t('addAssignment') }}
                     </DefaultButton>
 
@@ -864,6 +1641,7 @@ const cloneAssignment = (assignment) => {
                     />
                 </div>
 
+                <!-- Search -->
                 <SearchInput
                     v-if="assignmentsCount && !useServerProcessing"
                     v-model="searchQuery"
@@ -875,9 +1653,11 @@ const cloneAssignment = (assignment) => {
                     v-model="searchQuery"
                 />
 
+                <!-- Per page + sort -->
                 <div
                     v-if="assignmentsCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                    class="flex justify-between items-center
+                           flex-col md:flex-row my-3 gap-3"
                 >
                     <ItemsPerPageSelect
                         v-if="!useServerProcessing"
@@ -893,24 +1673,34 @@ const cloneAssignment = (assignment) => {
 
                     <SortSelect
                         :sortParam="sortParam"
-                        @update:sortParam="val => sortParam = val"
+                        @update:sortParam="sortParam = $event"
                     />
                 </div>
 
+                <!-- Count + bulk + view -->
                 <div
                     v-if="assignmentsCount"
-                    class="flex flex-col lg:flex-row items-center justify-between gap-3"
+                    class="flex flex-col lg:flex-row
+                           items-center justify-between gap-3"
                 >
-                    <CountTable>{{ assignmentsCount }}</CountTable>
+                    <CountTable>
+                        {{ assignmentsCount }}
+                    </CountTable>
 
-                    <BulkActionSelect @change="handleBulkAction" />
+                    <BulkActionSelect
+                        @change="handleBulkAction"
+                    />
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
+                <!-- Top pagination -->
                 <div
                     v-if="assignmentsCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                    class="flex justify-center items-center
+                           flex-col md:flex-row mt-3"
                 >
                     <Pagination
                         v-if="!useServerProcessing"
@@ -926,6 +1716,7 @@ const cloneAssignment = (assignment) => {
                     />
                 </div>
 
+                <!-- Table -->
                 <AssignmentTable
                     v-if="viewMode === 'table'"
                     :assignments="displayedAssignments"
@@ -941,6 +1732,7 @@ const cloneAssignment = (assignment) => {
                     @clone="cloneAssignment"
                 />
 
+                <!-- Cards -->
                 <AssignmentCardGrid
                     v-else
                     :assignments="displayedAssignments"
@@ -956,9 +1748,11 @@ const cloneAssignment = (assignment) => {
                     @clone="cloneAssignment"
                 />
 
+                <!-- Bottom pagination -->
                 <div
                     v-if="assignmentsCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                    class="flex justify-center items-center
+                           flex-col md:flex-row mt-3"
                 >
                     <Pagination
                         v-if="!useServerProcessing"

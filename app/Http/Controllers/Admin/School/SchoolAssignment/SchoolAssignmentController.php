@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Admin\School\SchoolAssignment;
 use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolAssignment\SchoolAssignmentRequest;
 use App\Http\Resources\Admin\School\SchoolAssignment\SchoolAssignmentResource;
+use App\Http\Resources\Admin\School\SchoolAssignment\SchoolAssignmentSharedResource;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
-use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileResource;
+use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileSharedResource;
 use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonSharedResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleSharedResource;
 use App\Models\Admin\School\SchoolAssignment\SchoolAssignment;
@@ -74,25 +75,53 @@ class SchoolAssignmentController extends BaseSchoolAdminController
 
         $settings = app(AdminSettingsService::class);
 
-        $perPage = $settings->int('adminSchoolAssignmentsPerPage', 6);
-        $defaultSort = $settings->string('adminSchoolAssignmentsDefaultSort', 'idDesc');
+        $perPage = $settings->int(
+            'adminSchoolAssignmentsPerPage',
+            6
+        );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $defaultSort = $settings->string(
+            'adminSchoolAssignmentsDefaultSort',
+            'idDesc'
+        );
+
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
+
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
 
         $processingMode = $settings->string(
             'adminSchoolAssignmentsProcessingMode',
             'frontend'
         );
 
-        $assignmentsCount = $this->baseQuery()->count();
+        /**
+         * Decision COUNT нужен
+         * только режиму auto.
+         */
+        $assignmentsCount = null;
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
+        if ($processingMode === 'auto') {
+            $assignmentsCount = $this->baseQuery()->count();
+
+            $useServerProcessing = app(
+                ProcessingModeService::class
+            )->shouldUseServer(
                 $processingMode,
                 $assignmentsCount,
                 300
             );
+        } else {
+            $useServerProcessing =
+                $processingMode === 'server';
+        }
 
         try {
             $assignments = $this->getIndexAssignments(
@@ -103,63 +132,134 @@ class SchoolAssignmentController extends BaseSchoolAdminController
                 search: $search,
             );
 
-            return Inertia::render('Admin/School/SchoolAssignments/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            /**
+             * Получаем общий total
+             * без лишнего COUNT.
+             */
+            if ($assignmentsCount === null) {
+                if (!$useServerProcessing) {
+                    /**
+                     * Frontend получил
+                     * всю коллекцию.
+                     */
+                    $assignmentsCount =
+                        $assignments->count();
+                } elseif ($search === '') {
+                    /**
+                     * paginate() уже знает
+                     * общий total.
+                     */
+                    $assignmentsCount =
+                        $assignments->total();
+                } else {
+                    /**
+                     * paginator total при поиске
+                     * означает найденное количество,
+                     * поэтому нужен отдельный общий total.
+                     */
+                    $assignmentsCount =
+                        $this->baseQuery()->count();
+                }
+            }
 
-                'useServerProcessing' => $useServerProcessing,
+            return Inertia::render(
+                'Admin/School/SchoolAssignments/Index',
+                [
+                    'currentLocale' => $currentLocale,
+                    'availableLocales' => $this->availableLocales(),
 
-                'adminSchoolAssignmentsPerPage' => $perPage,
-                'adminSchoolAssignmentsDefaultSort' => $defaultSort,
-                'adminSchoolAssignmentsProcessingMode' => $processingMode,
+                    'useServerProcessing' => $useServerProcessing,
 
-                'assignments' => SchoolAssignmentResource::collection($assignments),
-                'assignmentsCount' => $assignmentsCount,
+                    'adminSchoolAssignmentsPerPage' => $perPage,
+                    'adminSchoolAssignmentsDefaultSort' => $defaultSort,
+                    'adminSchoolAssignmentsProcessingMode' => $processingMode,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
-            ]);
+                    /**
+                     * Admin Index использует
+                     * только Shared Resource.
+                     */
+                    'assignments' =>
+                        SchoolAssignmentSharedResource::collection(
+                            $assignments
+                        ),
+
+                    'assignmentsCount' => $assignmentsCount,
+
+                    'sortParam' => $sortParam,
+                    'search' => $search,
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки списка school assignments: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки списка school assignments: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return Inertia::render('Admin/School/SchoolAssignments/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/School/SchoolAssignments/Index',
+                [
+                    'currentLocale' => $currentLocale,
+                    'availableLocales' => $this->availableLocales(),
 
-                'useServerProcessing' => $useServerProcessing,
+                    'useServerProcessing' => $useServerProcessing,
 
-                'adminSchoolAssignmentsPerPage' => $perPage,
-                'adminSchoolAssignmentsDefaultSort' => $defaultSort,
-                'adminSchoolAssignmentsProcessingMode' => $processingMode,
+                    'adminSchoolAssignmentsPerPage' => $perPage,
+                    'adminSchoolAssignmentsDefaultSort' => $defaultSort,
+                    'adminSchoolAssignmentsProcessingMode' => $processingMode,
 
-                'assignments' => [],
-                'assignmentsCount' => 0,
+                    'assignments' => [],
+                    'assignmentsCount' => 0,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'sortParam' => $sortParam,
+                    'search' => $search,
 
-                'error' => 'Ошибка загрузки заданий.',
-            ]);
+                    'error' => 'Ошибка загрузки заданий.',
+                ]
+            );
         }
     }
 
     /** Страница создания задания */
-    public function create(Request $request): Response
-    {
-        // Текущая локаль
-        $currentLocale = $this->resolveLocale($request);
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        return Inertia::render('Admin/School/SchoolAssignments/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+        return Inertia::render(
+            'Admin/School/SchoolAssignments/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
 
-            'courses' => $this->coursesForSelect(),
-            'modules' => $this->modulesForSelect(),
-            'lessons' => $this->lessonsForSelect(),
-            'instructors' => $this->instructorsForSelect(),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+
+                'modules' =>
+                    $this->modulesForSelect(
+                        $currentLocale
+                    ),
+
+                'lessons' =>
+                    $this->lessonsForSelect(
+                        $currentLocale
+                    ),
+
+                'instructors' =>
+                    $this->instructorsForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Создание задания */
@@ -214,39 +314,148 @@ class SchoolAssignmentController extends BaseSchoolAdminController
         return redirect()->route('admin.schoolAssignments.edit', $schoolAssignment);
     }
 
-    /** Страница редактирования */
-    public function edit(int $schoolAssignment, Request $request): Response
-    {
-        // Текущая локаль
-        $currentLocale = $this->resolveLocale($request);
+    /** Страница редактирования задания */
+    public function edit(
+        int $schoolAssignment,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
         $assignment = $this->baseQuery()
             ->with([
-                'translation',
+                /**
+                 * Все переводы самого задания
+                 * нужны TranslationTabs формы.
+                 */
                 'translations',
-                'images',
-                'course.translation',
-                'module.translation',
-                'lesson.translation',
-                'instructor.translation',
+
+                /**
+                 * Изображения + Spatie Media.
+                 */
+                'images.media',
+
+                /**
+                 * Связанный курс.
+                 */
+                'course' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
+
+                /**
+                 * Связанный модуль.
+                 */
+                'module' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+
+                    'course' => fn ($courseQuery) =>
+                    $courseQuery->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $currentLocale
+                        ),
+                    ]),
+                ]),
+
+                /**
+                 * Связанный урок.
+                 */
+                'lesson' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+
+                    'module' => fn ($moduleQuery) =>
+                    $moduleQuery->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $currentLocale
+                        ),
+
+                        'course' => fn ($courseQuery) =>
+                        $courseQuery->with([
+                            'translations' => fn ($translationQuery) =>
+                            $translationQuery->where(
+                                'locale',
+                                $currentLocale
+                            ),
+                        ]),
+                    ]),
+                ]),
+
+                /**
+                 * Преподаватель.
+                 */
+                'instructor' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+
+                    'user',
+                ]),
             ])
             ->withCount([
                 'images',
                 'submissions',
             ])
-            ->findOrFail($schoolAssignment);
+            ->findOrFail(
+                $schoolAssignment
+            );
 
-        return Inertia::render('Admin/School/SchoolAssignments/Edit', [
-            'assignment' => new SchoolAssignmentResource($assignment),
+        return Inertia::render(
+            'Admin/School/SchoolAssignments/Edit',
+            [
+                'assignment' =>
+                    new SchoolAssignmentResource(
+                        $assignment
+                    ),
 
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+                'currentLocale' =>
+                    $currentLocale,
 
-            'courses' => $this->coursesForSelect(),
-            'modules' => $this->modulesForSelect(),
-            'lessons' => $this->lessonsForSelect(),
-            'instructors' => $this->instructorsForSelect(),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+
+                'modules' =>
+                    $this->modulesForSelect(
+                        $currentLocale
+                    ),
+
+                'lessons' =>
+                    $this->lessonsForSelect(
+                        $currentLocale
+                    ),
+
+                'instructors' =>
+                    $this->instructorsForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Обновление задания */
@@ -478,78 +687,192 @@ class SchoolAssignmentController extends BaseSchoolAdminController
         }
     }
 
-    /** Курсы для селекта */
-    private function coursesForSelect(): AnonymousResourceCollection
-    {
+    /** Курсы для select */
+    private function coursesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $courses = SchoolCourse::query()
             ->with([
-                'translation',
-                'translations',
-                'images',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
-        return SchoolCourseSharedResource::collection($courses);
+        return SchoolCourseSharedResource::collection(
+            $courses
+        );
     }
 
-    /** Модули для селекта */
-    private function modulesForSelect(): AnonymousResourceCollection
-    {
+    /** Модули для select */
+    private function modulesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $modules = SchoolModule::query()
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'course.translation',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                'course' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
             ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
-        return SchoolModuleSharedResource::collection($modules);
+        return SchoolModuleSharedResource::collection(
+            $modules
+        );
     }
 
-    /** Уроки для селекта */
-    private function lessonsForSelect(): AnonymousResourceCollection
-    {
+    /** Уроки для select */
+    private function lessonsForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $lessons = SchoolLesson::query()
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'module.translation',
-                'module.course.translation',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                'module' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+
+                    'course' => fn ($courseQuery) =>
+                    $courseQuery->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $locale
+                        ),
+                    ]),
+                ]),
             ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
-        return SchoolLessonSharedResource::collection($lessons);
+        return SchoolLessonSharedResource::collection(
+            $lessons
+        );
     }
 
-    /** Преподаватели для селекта */
-    private function instructorsForSelect(): AnonymousResourceCollection
-    {
+    /** Преподаватели для select */
+    private function instructorsForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $instructors = SchoolInstructorProfile::query()
             ->with([
-                'translation',
-                'translations',
-                'images',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
                 'user',
             ])
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            )
             ->get();
 
-        return SchoolInstructorProfileResource::collection($instructors);
+        return SchoolInstructorProfileSharedResource::collection(
+            $instructors
+        );
     }
 
-    /** Базовый запрос для списка заданий. */
-    private function indexQuery(): Builder
+    /** Базовый запрос для Admin Index заданий. */
+    private function indexQuery(string $locale): Builder
     {
         return $this->baseQuery()
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'course.translation',
-                'module.translation',
-                'lesson.translation',
-                'instructor.translation',
+                /**
+                 * Только выбранная локаль задания.
+                 */
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                /**
+                 * Изображения + Spatie Media.
+                 */
+                'images.media',
+
+                /**
+                 * Курс.
+                 */
+                'course' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where('locale', $locale),
+                ]),
+
+                /**
+                 * Модуль.
+                 */
+                'module' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where('locale', $locale),
+                ]),
+
+                /**
+                 * Урок.
+                 */
+                'lesson' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where('locale', $locale),
+                ]),
+
+                /**
+                 * Инструктор.
+                 */
+                'instructor' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where('locale', $locale),
+
+                    /**
+                     * Нужен для имени
+                     * в таблице/карточках.
+                     */
+                    'user',
+                ]),
             ])
             ->withCount([
                 'images',
@@ -565,7 +888,7 @@ class SchoolAssignmentController extends BaseSchoolAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery($locale);
 
         if ($useServerProcessing) {
             return $query

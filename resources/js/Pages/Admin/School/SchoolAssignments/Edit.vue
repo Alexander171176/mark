@@ -3,8 +3,16 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  * Редактирование задания (SchoolAssignment)
+ *
+ * Новый Admin Edit contract:
+ * - assignment.translation — текущий/fallback перевод;
+ * - assignment.translations — все переводы формы;
+ * - assignment.images — изображения с media;
+ * - course/module/lesson/instructor — SharedResource;
+ * - выбранные связи хранятся в form только по ID;
+ * - selected* используются только как UI-объекты VueMultiselect.
  */
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -31,13 +39,9 @@ import SelectStatus from '@/Components/Admin/School/SchoolAssignment/Select/Sele
 import SelectVisibility from '@/Components/Admin/School/SchoolAssignment/Select/SelectVisibility.vue'
 import SelectGradingType from '@/Components/Admin/School/SchoolAssignment/Select/SelectGradingType.vue'
 
-// Локализация
 const { t } = useI18n()
-
-// Toast уведомления
 const toast = useToast()
 
-// Props страницы редактирования
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
@@ -48,37 +52,40 @@ const props = defineProps({
     instructors: { type: Array, default: () => [] },
 })
 
-// Создание пустой структуры перевода
+/* ==========================================================
+ * TRANSLATIONS
+ * ========================================================== */
+
 const makeTranslation = () => ({
     title: '',
     subtitle: '',
     short: '',
     description: '',
-    instructions: ''
+    instructions: '',
 })
 
-// Сбор переводов из существующей записи
+const defaultLocale =
+    props.currentLocale
+    || props.assignment?.translation?.locale
+    || props.availableLocales?.[0]
+    || 'ru'
+
+const activeLocale = ref(defaultLocale)
+
 const buildTranslations = () => {
-    const result = {};
-    (props.assignment.translations || []).forEach((translation) => {
+    const result = {}
+
+    ;(props.assignment?.translations || []).forEach((translation) => {
+        if (!translation?.locale) return
+
         result[translation.locale] = {
             title: translation.title || '',
             subtitle: translation.subtitle || '',
             short: translation.short || '',
             description: translation.description || '',
-            instructions: translation.instructions || ''
+            instructions: translation.instructions || '',
         }
     })
-
-    const defaultLocale =
-        props.currentLocale ||
-        props.assignment.translation?.locale ||
-        props.availableLocales[0] ||
-        'ru'
-
-    if (!Object.keys(result).length) {
-        result[defaultLocale] = makeTranslation()
-    }
 
     if (!result[defaultLocale]) {
         result[defaultLocale] = makeTranslation()
@@ -87,63 +94,74 @@ const buildTranslations = () => {
     return result
 }
 
-// Активная локаль по умолчанию
-const defaultLocale =
-    props.currentLocale ||
-    props.assignment.translation?.locale ||
-    props.availableLocales[0] ||
-    'ru'
+const normalizeDateTimeLocal = (value) => {
+    if (!value) return ''
 
-// Текущая активная локаль
-const activeLocale = ref(defaultLocale)
+    const stringValue = String(value)
 
-// Основная форма редактирования
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(stringValue)) {
+        return stringValue.slice(0, 16)
+    }
+
+    const date = new Date(stringValue)
+
+    if (Number.isNaN(date.getTime())) {
+        return ''
+    }
+
+    const pad = (number) => String(number).padStart(2, '0')
+
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+/* ==========================================================
+ * FORM
+ * ========================================================== */
+
 const form = useForm({
     _method: 'PUT',
 
     school_course_id:
-        props.assignment.school_course_id ??
-        props.assignment.course?.id ??
-        null,
+        props.assignment?.school_course_id
+        ?? props.assignment?.course?.id
+        ?? null,
 
     school_module_id:
-        props.assignment.school_module_id ??
-        props.assignment.module?.id ??
-        null,
+        props.assignment?.school_module_id
+        ?? props.assignment?.module?.id
+        ?? null,
 
     school_lesson_id:
-        props.assignment.school_lesson_id ??
-        props.assignment.lesson?.id ??
-        null,
+        props.assignment?.school_lesson_id
+        ?? props.assignment?.lesson?.id
+        ?? null,
 
     school_instructor_profile_id:
-        props.assignment.school_instructor_profile_id ??
-        props.assignment.instructor?.id ??
-        null,
+        props.assignment?.school_instructor_profile_id
+        ?? props.assignment?.instructor?.id
+        ?? null,
 
-    activity: Boolean(props.assignment.activity),
-    left: Boolean(props.assignment.left),
-    main: Boolean(props.assignment.main),
-    right: Boolean(props.assignment.right),
+    activity: Boolean(props.assignment?.activity),
+    left: Boolean(props.assignment?.left),
+    main: Boolean(props.assignment?.main),
+    right: Boolean(props.assignment?.right),
 
-    sort: props.assignment.sort ?? 0,
-    slug: props.assignment.slug ?? '',
+    sort: props.assignment?.sort ?? 0,
+    slug: props.assignment?.slug ?? '',
 
-    status: props.assignment.status ?? 'draft',
-    visibility: props.assignment.visibility ?? 'enrolled',
-    attempts_limit: props.assignment.attempts_limit ?? 0,
-    grading_type: props.assignment.grading_type ?? 'manual',
-    max_score: props.assignment.max_score ?? 100,
+    status: props.assignment?.status ?? 'draft',
+    visibility: props.assignment?.visibility ?? 'enrolled',
+    attempts_limit: props.assignment?.attempts_limit ?? 0,
+    grading_type: props.assignment?.grading_type ?? 'manual',
+    max_score: props.assignment?.max_score ?? 100,
 
-    published_at: props.assignment.published_at ?? '',
-    due_at: props.assignment.due_at ?? '',
+    published_at: normalizeDateTimeLocal(props.assignment?.published_at),
+    due_at: normalizeDateTimeLocal(props.assignment?.due_at),
 
     translations: buildTranslations(),
-
-    deletedImages: []
+    deletedImages: [],
 })
 
-// Получение активного перевода
 const currentTranslation = computed(() => {
     if (!form.translations[activeLocale.value]) {
         form.translations[activeLocale.value] = makeTranslation()
@@ -152,72 +170,92 @@ const currentTranslation = computed(() => {
     return form.translations[activeLocale.value]
 })
 
-// Заголовок страницы редактирования
 const pageTitle = computed(() => {
-    return currentTranslation.value.title ||
-        props.assignment.translation?.title ||
-        props.assignment.title ||
-        `ID: ${props.assignment.id}`
+    return currentTranslation.value.title
+        || props.assignment?.translation?.title
+        || `ID: ${props.assignment?.id}`
 })
 
-// Получение ошибок текущей локали
-const getError = (key) => form.errors[`translations.${activeLocale.value}.${key}`]
-
-// Преобразование даты под datetime-local
-const formatDateTimeLocal = (dateStr) => {
-    if (!dateStr) return ''
-
-    const date = new Date(dateStr)
-
-    if (isNaN(date.getTime())) return ''
-
-    const pad = (num) => String(num).padStart(2, '0')
-
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+const getError = (key) => {
+    return form.errors[`translations.${activeLocale.value}.${key}`]
 }
 
-// Форматирование дат при открытии страницы
-onMounted(() => {
-    form.published_at = formatDateTimeLocal(form.published_at)
-    form.due_at = formatDateTimeLocal(form.due_at)
-})
+/* ==========================================================
+ * SELECT HELPERS
+ * ========================================================== */
 
-// Ограничение количества элементов мультиселекта
 const dynamicOptionsLimit = (items) => {
-    if (!items) return 10
-    return items.length + 10
+    return Array.isArray(items) ? items.length + 10 : 10
 }
 
-// Опции курсов
-const courseOptions = computed(() =>
-    props.courses.map(item => ({
-        id: item.id,
-        label: `[ID: ${item.id}] ${item.title || item.slug || `#${item.id}`}`
-    }))
-)
+const getTranslationForLocale = (entity) => {
+    if (!entity) return null
 
-// Опции модулей
-const moduleOptions = computed(() =>
-    props.modules.map(item => {
-        const moduleTitle = item.title || item.slug || `#${item.id}`
-        const courseTitle = item.course?.title || null
+    if (Array.isArray(entity.translations)) {
+        const exact = entity.translations.find(
+            translation => translation?.locale === activeLocale.value
+        )
+
+        if (exact) return exact
+    }
+
+    return entity.translation || null
+}
+
+const getEntityTitle = (entity) => {
+    return getTranslationForLocale(entity)?.title
+        || entity?.slug
+        || `#${entity?.id ?? ''}`
+}
+
+const findOptionById = (options, id) => {
+    if (id === null || id === undefined || id === '') {
+        return null
+    }
+
+    return options.find(
+        option => Number(option.id) === Number(id)
+    ) || null
+}
+
+/* ==========================================================
+ * SELECT OPTIONS — NEW CONTRACT
+ * ========================================================== */
+
+const courseOptions = computed(() => {
+    return (props.courses || []).map((course) => ({
+        id: course.id,
+        label: `[ID: ${course.id}] ${getEntityTitle(course)}`,
+    }))
+})
+
+const moduleOptions = computed(() => {
+    return (props.modules || []).map((module) => {
+        const moduleTitle = getEntityTitle(module)
+        const courseTitle = module?.course
+            ? getEntityTitle(module.course)
+            : ''
 
         return {
-            id: item.id,
-            course_id: item.school_course_id || item.course?.id || null,
+            id: module.id,
+            course_id:
+                module.school_course_id
+                ?? module.course?.id
+                ?? null,
             label: courseTitle
-                ? `[ID: ${item.id}] [${courseTitle}] ${moduleTitle}`
-                : `[ID: ${item.id}] ${moduleTitle}`
+                ? `[ID: ${module.id}] [${courseTitle}] ${moduleTitle}`
+                : `[ID: ${module.id}] ${moduleTitle}`,
         }
     })
-)
+})
 
-// Опции уроков
-const lessonOptions = computed(() =>
-    props.lessons.map(item => {
-        const lessonTitle = item.title || item.slug || `#${item.id}`
-        const moduleTitle = item.module?.title || null
-        const courseTitle = item.course?.title || item.module?.course?.title || null
+const lessonOptions = computed(() => {
+    return (props.lessons || []).map((lesson) => {
+        const lessonTitle = getEntityTitle(lesson)
+        const module = lesson?.module || null
+        const course = module?.course || lesson?.course || null
+        const moduleTitle = module ? getEntityTitle(module) : ''
+        const courseTitle = course ? getEntityTitle(course) : ''
 
         let label = lessonTitle
 
@@ -225,238 +263,276 @@ const lessonOptions = computed(() =>
             label = `[${courseTitle}] [${moduleTitle}] ${lessonTitle}`
         } else if (moduleTitle) {
             label = `[${moduleTitle}] ${lessonTitle}`
+        } else if (courseTitle) {
+            label = `[${courseTitle}] ${lessonTitle}`
         }
 
         return {
-            id: item.id,
-            module_id: item.school_module_id || item.module?.id || null,
-            course_id: item.course?.id || item.module?.course?.id || null,
-            label: `[ID: ${item.id}] ${label}`
+            id: lesson.id,
+            module_id:
+                lesson.school_module_id
+                ?? module?.id
+                ?? null,
+            course_id:
+                course?.id
+                ?? module?.school_course_id
+                ?? null,
+            label: `[ID: ${lesson.id}] ${label}`,
         }
     })
-)
+})
 
-// Опции преподавателей
-const instructorOptions = computed(() =>
-    props.instructors.map(item => {
-        const title = item.title || item.name || `#${item.id}`
-        const userName = item.user?.name || item.user?.email || ''
+const instructorOptions = computed(() => {
+    return (props.instructors || []).map((instructor) => {
+        const profileTitle = getEntityTitle(instructor)
+        const userName = instructor?.user?.name
+            || instructor?.user?.email
+            || ''
 
         return {
-            id: item.id,
-            label: userName
-                ? `[ID: ${item.id}] ${title} — ${userName}`
-                : `[ID: ${item.id}] ${title}`
+            id: instructor.id,
+            label: userName && userName !== profileTitle
+                ? `[ID: ${instructor.id}] ${profileTitle} — ${userName}`
+                : `[ID: ${instructor.id}] ${profileTitle}`,
         }
     })
-)
+})
 
-// выбранные курсы, модули, уроки, преподователи
+/* ==========================================================
+ * SELECTED UI OBJECTS
+ * ========================================================== */
+
 const selectedCourse = ref(null)
 const selectedModule = ref(null)
 const selectedLesson = ref(null)
 const selectedInstructor = ref(null)
 
-// Синхронизация выбранного курса с form
+/**
+ * Важный принцип:
+ * form.*_id — источник истины.
+ * selected* — только UI-представление VueMultiselect.
+ *
+ * При пересборке options (например после смены locale)
+ * выбранные объекты восстанавливаются по ID и получают новый label.
+ */
+const syncSelectedOptions = () => {
+    selectedCourse.value = findOptionById(
+        courseOptions.value,
+        form.school_course_id
+    )
+
+    selectedModule.value = findOptionById(
+        moduleOptions.value,
+        form.school_module_id
+    )
+
+    selectedLesson.value = findOptionById(
+        lessonOptions.value,
+        form.school_lesson_id
+    )
+
+    selectedInstructor.value = findOptionById(
+        instructorOptions.value,
+        form.school_instructor_profile_id
+    )
+}
+
 watch(
-    courseOptions,
-    (options) => {
-        selectedCourse.value = options.find(
-            item => Number(item.id) === Number(form.school_course_id)
-        ) || null
-    },
+    [courseOptions, moduleOptions, lessonOptions, instructorOptions],
+    syncSelectedOptions,
     { immediate: true }
 )
 
-// Синхронизация выбранного модуля с form
-watch(
-    moduleOptions,
-    (options) => {
-        selectedModule.value = options.find(
-            item => Number(item.id) === Number(form.school_module_id)
-        ) || null
-    },
-    { immediate: true }
-)
-
-// Синхронизация выбранного урока с form
-watch(
-    lessonOptions,
-    (options) => {
-        selectedLesson.value = options.find(
-            item => Number(item.id) === Number(form.school_lesson_id)
-        ) || null
-    },
-    { immediate: true }
-)
-
-// Синхронизация выбранного преподователя с form
-watch(
-    instructorOptions,
-    (options) => {
-        selectedInstructor.value = options.find(
-            item => Number(item.id) === Number(form.school_instructor_profile_id)
-        ) || null
-    },
-    { immediate: true }
-)
-
-// Выбранные курсы
-watch(selectedCourse, (val) => {
-    form.school_course_id = val?.id ?? null
+watch(selectedCourse, (value) => {
+    form.school_course_id = value?.id ?? null
 })
 
-// Выбранные модули
-watch(selectedModule, (val) => {
-    form.school_module_id = val?.id ?? null
+watch(selectedModule, (value) => {
+    form.school_module_id = value?.id ?? null
 
-    if (val?.course_id) {
-        form.school_course_id = val.course_id
-        selectedCourse.value = courseOptions.value.find(
-            item => Number(item.id) === Number(val.course_id)
-        ) || null
+    if (!value?.course_id) return
+
+    form.school_course_id = value.course_id
+    selectedCourse.value = findOptionById(
+        courseOptions.value,
+        value.course_id
+    )
+})
+
+watch(selectedLesson, (value) => {
+    form.school_lesson_id = value?.id ?? null
+
+    if (value?.module_id) {
+        form.school_module_id = value.module_id
+        selectedModule.value = findOptionById(
+            moduleOptions.value,
+            value.module_id
+        )
+    }
+
+    if (value?.course_id) {
+        form.school_course_id = value.course_id
+        selectedCourse.value = findOptionById(
+            courseOptions.value,
+            value.course_id
+        )
     }
 })
 
-// Выбранные уроки
-watch(selectedLesson, (val) => {
-    form.school_lesson_id = val?.id ?? null
-
-    if (val?.module_id) {
-        form.school_module_id = val.module_id
-        selectedModule.value = moduleOptions.value.find(
-            item => Number(item.id) === Number(val.module_id)
-        ) || null
-    }
-
-    if (val?.course_id) {
-        form.school_course_id = val.course_id
-        selectedCourse.value = courseOptions.value.find(
-            item => Number(item.id) === Number(val.course_id)
-        ) || null
-    }
+watch(selectedInstructor, (value) => {
+    form.school_instructor_profile_id = value?.id ?? null
 })
 
-// Выбранный инструктор
-watch(selectedInstructor, (val) => {
-    form.school_instructor_profile_id = val?.id ?? null
-})
+/* ==========================================================
+ * IMAGES
+ * ========================================================== */
 
-// Существующие изображения
+const getImageUrl = (image) => {
+    return image?.webp_url
+        || image?.thumb_url
+        || image?.image_url
+        || image?.url
+        || ''
+}
+
 const existingImages = ref(
-    (props.assignment.images || [])
-        .filter(image => image.webp_url || image.url || image.image_url)
+    (props.assignment?.images || [])
+        .filter(image => getImageUrl(image))
         .map(image => ({
             id: image.id,
-            url: image.webp_url || image.url || image.image_url,
-            order: image.order || 0,
+            url: getImageUrl(image),
+            order: image.order ?? image.pivot?.order ?? 0,
             alt: image.alt || '',
-            caption: image.caption || ''
+            caption: image.caption || '',
         }))
 )
 
-// Новые изображения
 const newImages = ref([])
 
-// Обновление существующих изображений
 const handleExistingImagesUpdate = (images) => {
     existingImages.value = images || []
 }
 
-// Удаление существующего изображения
 const handleDeleteExistingImage = (deletedId) => {
     if (!form.deletedImages.includes(deletedId)) {
         form.deletedImages.push(deletedId)
     }
 
     existingImages.value = existingImages.value.filter(
-        image => image.id !== deletedId
+        image => Number(image.id) !== Number(deletedId)
     )
 }
 
-// Обновление новых изображений
 const handleNewImagesUpdate = (images) => {
     newImages.value = images || []
 }
 
-// Автогенерация slug из title
+/* ==========================================================
+ * SLUG
+ * ========================================================== */
+
 const handleSlugFocus = () => {
     if (!form.slug && currentTranslation.value.title) {
-        form.slug = transliterate(currentTranslation.value.title.toLowerCase())
+        form.slug = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
     }
 }
 
-// Отправка формы
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
 const submitForm = () => {
     form.transform((data) => {
         const transformed = {
             ...data,
 
-            school_course_id: selectedCourse.value?.id ?? null,
-            school_module_id: selectedModule.value?.id ?? null,
-            school_lesson_id: selectedLesson.value?.id ?? null,
-            school_instructor_profile_id: selectedInstructor.value?.id ?? null,
+            school_course_id: data.school_course_id ?? null,
+            school_module_id: data.school_module_id ?? null,
+            school_lesson_id: data.school_lesson_id ?? null,
+            school_instructor_profile_id:
+                data.school_instructor_profile_id ?? null,
 
             activity: data.activity ? 1 : 0,
             left: data.left ? 1 : 0,
             main: data.main ? 1 : 0,
             right: data.right ? 1 : 0,
 
-            sort: data.sort === '' || data.sort === null ? 0 : Number(data.sort),
-            attempts_limit: data.attempts_limit === '' || data.attempts_limit === null
-                ? 0
-                : Number(data.attempts_limit),
-            max_score: data.max_score === '' || data.max_score === null
-                ? 100
-                : Number(data.max_score)
+            sort:
+                data.sort === '' || data.sort === null
+                    ? 0
+                    : Number(data.sort),
+
+            attempts_limit:
+                data.attempts_limit === '' || data.attempts_limit === null
+                    ? 0
+                    : Number(data.attempts_limit),
+
+            max_score:
+                data.max_score === '' || data.max_score === null
+                    ? 100
+                    : Number(data.max_score),
         }
 
         delete transformed.images
         delete transformed.deletedImages
 
-        let index = 0
+        let imageIndex = 0
 
         existingImages.value.forEach((image) => {
-            transformed[`images[${index}][id]`] = image.id
-            transformed[`images[${index}][order]`] = image.order ?? 0
-            transformed[`images[${index}][alt]`] = image.alt ?? ''
-            transformed[`images[${index}][caption]`] = image.caption ?? ''
-            index++
+            transformed[`images[${imageIndex}][id]`] = image.id
+            transformed[`images[${imageIndex}][order]`] = image.order ?? 0
+            transformed[`images[${imageIndex}][alt]`] = image.alt ?? ''
+            transformed[`images[${imageIndex}][caption]`] = image.caption ?? ''
+            imageIndex++
         })
 
         newImages.value.forEach((image) => {
-            transformed[`images[${index}][file]`] = image.file
-            transformed[`images[${index}][order]`] = image.order ?? 0
-            transformed[`images[${index}][alt]`] = image.alt ?? ''
-            transformed[`images[${index}][caption]`] = image.caption ?? ''
-            index++
+            transformed[`images[${imageIndex}][file]`] = image.file
+            transformed[`images[${imageIndex}][order]`] = image.order ?? 0
+            transformed[`images[${imageIndex}][alt]`] = image.alt ?? ''
+            transformed[`images[${imageIndex}][caption]`] = image.caption ?? ''
+            imageIndex++
         })
 
-        form.deletedImages.forEach((id, deletedIndex) => {
-            transformed[`deletedImages[${deletedIndex}]`] = id
+        form.deletedImages.forEach((id, index) => {
+            transformed[`deletedImages[${index}]`] = id
         })
 
         return transformed
     })
 
-    form.post(route('admin.schoolAssignments.update', {
-        schoolAssignment: props.assignment.id
-    }), {
-        errorBag: 'editSchoolAssignment',
-        preserveScroll: true,
-        forceFormData: true,
-        onSuccess: () => {
-            toast.success('Задание успешно обновлено!')
-            newImages.value = []
-            form.deletedImages = []
-        },
-        onError: (errors) => {
-            console.error('Ошибка обновления задания:', errors)
+    form.post(
+        route('admin.schoolAssignments.update', {
+            schoolAssignment: props.assignment.id,
+        }),
+        {
+            errorBag: 'editSchoolAssignment',
+            preserveScroll: true,
+            forceFormData: true,
 
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors[firstKey] || 'Проверьте корректность полей.')
+            onSuccess: () => {
+                toast.success('Задание успешно обновлено!')
+                newImages.value = []
+                form.deletedImages = []
+            },
+
+            onError: (errors) => {
+                console.error(
+                    'Ошибка обновления задания:',
+                    errors
+                )
+
+                const firstKey = Object.keys(errors || {})[0]
+
+                toast.error(
+                    errors?.[firstKey]
+                    || 'Проверьте корректность полей.'
+                )
+            },
         }
-    })
+    )
 }
 </script>
 
@@ -835,7 +911,7 @@ const submitForm = () => {
                                 <InputError class="mt-2" :message="getError('short')" />
                             </div>
 
-                            <!-- Описание курса -->
+                            <!-- Описание задания -->
                             <div class="mb-3 flex flex-col items-start">
                                 <LabelInput
                                     for="description"

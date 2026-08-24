@@ -155,8 +155,13 @@ class SchoolEnrollment extends Model
     /** Осталось дней */
     public function getDaysLeftAttribute(): ?int
     {
-        return $this->expires_at
-            ? now()->diffInDays($this->expires_at, false)
-            : null;
+        if (!$this->expires_at) {
+            return null;
+        }
+
+        return (int) now()->diffInDays(
+            $this->expires_at,
+            false
+        );
     }
 }

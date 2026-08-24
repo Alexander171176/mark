@@ -11,132 +11,195 @@ class SchoolLessonResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
         $translation = $this->relationLoaded('translations')
-            ? $this->translations->first()
+            ? (
+            $this->translations->firstWhere(
+                'locale',
+                $locale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
             : null;
 
-        $courseTranslation = null;
-
-        if (
-            $this->relationLoaded('module')
-            && $this->module
-            && $this->module->relationLoaded('course')
-            && $this->module->course
-            && $this->module->course->relationLoaded('translations')
-        ) {
-            $courseTranslation = $this->module
-                ->course
-                ->translations
-                ->first();
-        }
-
         return [
-            'id' => $this->id,
-            'school_module_id' => $this->school_module_id,
+            'id' =>
+                $this->id,
 
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
+            'school_module_id' =>
+                $this->school_module_id,
 
-            'slug' => $this->slug,
+            /**
+             * Основные поля.
+             */
+            'sort' =>
+                (int) $this->sort,
 
-            'title' => $translation?->title,
-            'subtitle' => $translation?->subtitle,
-            'short' => $translation?->short,
-            'description' => $translation?->description,
+            'activity' =>
+                (bool) $this->activity,
 
-            'meta_title' => $translation?->meta_title,
-            'meta_keywords' => $translation?->meta_keywords,
-            'meta_desc' => $translation?->meta_desc,
+            'slug' =>
+                $this->slug,
 
-            'content_type' => $this->content_type,
-            'content_id' => $this->content_id,
+            /**
+             * Привязанный контент.
+             */
+            'content_type' =>
+                $this->content_type,
 
-            'published_at' => optional($this->published_at)->format('Y-m-d'),
+            'content_id' =>
+                $this->content_id !== null
+                    ? (int) $this->content_id
+                    : null,
 
-            'status' => $this->status,
-            'availability' => $this->availability,
-            'access_type' => $this->access_type,
+            /**
+             * Публикация / состояние.
+             */
+            'published_at' =>
+                $this->published_at?->format(
+                    'Y-m-d'
+                ),
 
-            'difficulty' => $this->difficulty !== null ? (int) $this->difficulty : null,
-            'duration' => $this->duration !== null ? (int) $this->duration : null,
+            'status' =>
+                $this->status,
 
-            'preview_mode' => $this->preview_mode,
-            'preview_value' => $this->preview_value !== null ? (int) $this->preview_value : null,
+            'availability' =>
+                $this->availability,
 
-            'popularity' => (int) $this->popularity,
-            'rating_count' => (int) $this->rating_count,
-            'rating_avg' => $this->rating_avg !== null ? (float) $this->rating_avg : null,
-            'views' => (int) $this->views,
-            'likes' => (int) $this->likes,
+            'access_type' =>
+                $this->access_type,
 
-            'already_liked' => (bool) ($this->already_liked ?? false),
+            'difficulty' =>
+                $this->difficulty !== null
+                    ? (int) $this->difficulty
+                    : null,
 
-            'primary_image' => $this->whenLoaded(
-                'images',
-                fn () => $this->primary_image
-                    ? new SchoolLessonImageResource($this->primary_image)
-                    : null
+            'duration' =>
+                $this->duration !== null
+                    ? (int) $this->duration
+                    : null,
+
+            /**
+             * Preview.
+             */
+            'preview_mode' =>
+                $this->preview_mode,
+
+            'preview_value' =>
+                $this->preview_value !== null
+                    ? (int) $this->preview_value
+                    : null,
+
+            /**
+             * Статистика.
+             */
+            'popularity' =>
+                (int) $this->popularity,
+
+            'rating_count' =>
+                (int) $this->rating_count,
+
+            'rating_avg' =>
+                $this->rating_avg !== null
+                    ? (float) $this->rating_avg
+                    : null,
+
+            'views' =>
+                (int) $this->views,
+
+            'likes' =>
+                (int) $this->likes,
+
+            /**
+             * Текущий перевод.
+             *
+             * Только из уже загруженной
+             * коллекции translations.
+             */
+            'translation' => $translation
+                ? new SchoolLessonTranslationResource(
+                    $translation
+                )
+                : null,
+
+            /**
+             * Все переводы нужны Edit.
+             */
+            'translations' =>
+                SchoolLessonTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
+
+            /**
+             * Изображения нужны Edit.
+             *
+             * Controller загружает images.media.
+             */
+            'images' =>
+                SchoolLessonImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
+
+            /**
+             * Родительский модуль.
+             *
+             * Внутри Shared Resource
+             * доступен его курс.
+             */
+            'module' =>
+                new SchoolModuleSharedResource(
+                    $this->whenLoaded(
+                        'module'
+                    )
+                ),
+
+            /**
+             * Хештеги.
+             */
+            'hashtags' =>
+                SchoolHashtagSharedResource::collection(
+                    $this->whenLoaded(
+                        'hashtags'
+                    )
+                ),
+
+            /**
+             * Counts.
+             */
+            'likes_count' => $this->when(
+                isset($this->likes_count),
+                fn () => (int) $this->likes_count
             ),
 
-            'images' => SchoolLessonImageResource::collection(
-                $this->whenLoaded('images')
+            'hashtags_count' => $this->when(
+                isset($this->hashtags_count),
+                fn () => (int) $this->hashtags_count
             ),
 
-            'translations' => SchoolLessonTranslationResource::collection(
-                $this->whenLoaded('translations')
+            'images_count' => $this->when(
+                isset($this->images_count),
+                fn () => (int) $this->images_count
             ),
 
-            'module' => new SchoolModuleSharedResource(
-                $this->whenLoaded('module')
-            ),
+            'created_at' =>
+                $this->created_at?->toISOString(),
 
-            'course' => $this->when(
-                $this->relationLoaded('module')
-                && $this->module
-                && $this->module->relationLoaded('course')
-                && $this->module->course,
-                fn () => [
-                    'id' => $this->module->course->id,
-                    'slug' => $this->module->course->slug,
-                    'title' => $courseTranslation?->title,
-                ]
-            ),
-
-            'hashtags' => SchoolHashtagSharedResource::collection(
-                $this->whenLoaded('hashtags')
-            ),
-
-            'content' => $this->whenLoaded('content', function () {
-                $content = $this->content;
-
-                if (!$content) {
-                    return null;
-                }
-
-                $title = null;
-
-                if (method_exists($content, 'translationOrFallback')) {
-                    $title = $content->translationOrFallback()?->title;
-                } elseif (method_exists($content, 'translation')) {
-                    $title = $content->translation()?->title;
-                } else {
-                    $title = $content->title ?? null;
-                }
-
-                return array_filter([
-                    'id' => $content->id ?? null,
-                    'title' => $title,
-                    'slug' => $content->slug ?? $content->url ?? null,
-                    'type' => class_basename($content),
-                ]);
-            }),
-
-            'likes_count' => $this->when(isset($this->likes_count), fn () => (int) $this->likes_count),
-            'hashtags_count' => $this->when(isset($this->hashtags_count), fn () => (int) $this->hashtags_count),
-            'images_count' => $this->when(isset($this->images_count), fn () => (int) $this->images_count),
-
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

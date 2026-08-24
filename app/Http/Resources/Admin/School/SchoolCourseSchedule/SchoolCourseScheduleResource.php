@@ -3,7 +3,7 @@
 namespace App\Http\Resources\Admin\School\SchoolCourseSchedule;
 
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
-use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileResource;
+use App\Http\Resources\Admin\School\SchoolInstructorProfile\SchoolInstructorProfileSharedResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,93 +11,247 @@ class SchoolCourseScheduleResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        /**
+         * Текущий перевод.
+         *
+         * Никакого отдельного relation translation
+         * Resource больше не требует.
+         *
+         * Edit загружает все translations,
+         * после чего нужный перевод определяется
+         * уже в памяти:
+         *
+         * current
+         * → fallback
+         * → первый доступный.
+         */
+        $translation = $this->relationLoaded(
+            'translations'
+        )
+            ? (
+            $this->translations->firstWhere(
+                'locale',
+                $locale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
+            : null;
+
         return [
-            'id' => $this->id,
-            'school_course_id' => $this->school_course_id,
-            'school_instructor_profile_id' => $this->school_instructor_profile_id,
+            'id' =>
+                $this->id,
 
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
+            'school_course_id' =>
+                $this->school_course_id,
 
-            'slug' => $this->slug,
+            'school_instructor_profile_id' =>
+                $this->school_instructor_profile_id,
 
-            'title' => $this->translation?->title,
-            'subtitle' => $this->translation?->subtitle,
-            'short' => $this->translation?->short,
-            'description' => $this->translation?->description,
+            /**
+             * Основные поля.
+             */
+            'slug' =>
+                $this->slug,
 
-            'meta_title' => $this->translation?->meta_title,
-            'meta_keywords' => $this->translation?->meta_keywords,
-            'meta_desc' => $this->translation?->meta_desc,
+            'sort' =>
+                (int) $this->sort,
 
-            'starts_at' => optional($this->starts_at)->format('Y-m-d\TH:i'),
-            'ends_at' => optional($this->ends_at)->format('Y-m-d\TH:i'),
-            'enroll_starts_at' => optional($this->enroll_starts_at)->format('Y-m-d\TH:i'),
-            'enroll_ends_at' => optional($this->enroll_ends_at)->format('Y-m-d\TH:i'),
+            'activity' =>
+                (bool) $this->activity,
 
-            'capacity' => (int) $this->capacity,
-            'is_online' => (bool) $this->is_online,
+            /**
+             * Текущий перевод.
+             */
+            'translation' => $translation
+                ? new SchoolCourseScheduleTranslationResource(
+                    $translation
+                )
+                : null,
 
-            'location' => $this->location,
-            'meeting_url' => $this->meeting_url,
-            'timezone' => $this->timezone,
+            /**
+             * Все переводы нужны Edit.
+             */
+            'translations' =>
+                SchoolCourseScheduleTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
 
-            'status' => $this->status,
-            'views' => (int) $this->views,
-            'notes' => $this->notes,
+            /**
+             * Даты расписания.
+             */
+            'starts_at' =>
+                $this->starts_at?->format(
+                    'Y-m-d\TH:i'
+                ),
 
-            'is_enrollment_open' => (bool) $this->is_enrollment_open,
+            'ends_at' =>
+                $this->ends_at?->format(
+                    'Y-m-d\TH:i'
+                ),
 
-            'primary_image' => $this->whenLoaded(
-                'images',
-                fn () => $this->primary_image
-                    ? new SchoolCourseScheduleImageResource($this->primary_image)
-                    : null
-            ),
+            'enroll_starts_at' =>
+                $this->enroll_starts_at?->format(
+                    'Y-m-d\TH:i'
+                ),
 
-            'images' => SchoolCourseScheduleImageResource::collection(
-                $this->whenLoaded('images')
-            ),
+            'enroll_ends_at' =>
+                $this->enroll_ends_at?->format(
+                    'Y-m-d\TH:i'
+                ),
 
-            'translations' => SchoolCourseScheduleTranslationResource::collection(
-                $this->whenLoaded('translations')
-            ),
+            /**
+             * Параметры потока.
+             */
+            'capacity' =>
+                (int) $this->capacity,
 
-            'course' => new SchoolCourseSharedResource(
-                $this->whenLoaded('course')
-            ),
+            'is_online' =>
+                (bool) $this->is_online,
 
-            'instructor' => new SchoolInstructorProfileResource(
-                $this->whenLoaded('instructor')
-            ),
+            'location' =>
+                $this->location,
 
-            'cohort_enrollments' => $this->whenLoaded('cohortEnrollments', fn () => $this->cohortEnrollments->map(fn ($enrollment) => [
-                'id' => $enrollment->id,
-                'user_id' => $enrollment->user_id,
-                'status' => $enrollment->status,
-                'enrolled_at' => optional($enrollment->enrolled_at)->toIso8601String(),
+            'meeting_url' =>
+                $this->meeting_url,
 
-                'user' => $enrollment->relationLoaded('user') && $enrollment->user
-                    ? [
-                        'id' => $enrollment->user->id,
-                        'name' => $enrollment->user->name,
-                        'email' => $enrollment->user->email,
-                    ]
-                    : null,
-            ])),
+            'timezone' =>
+                $this->timezone,
 
+            'status' =>
+                $this->status,
+
+            'views' =>
+                (int) $this->views,
+
+            'notes' =>
+                $this->notes,
+
+            /**
+             * Вычисляемое состояние.
+             */
+            'is_enrollment_open' =>
+                (bool) $this->is_enrollment_open,
+
+            /**
+             * Изображения нужны Edit.
+             *
+             * Controller обязан загрузить
+             * images.media.
+             */
+            'images' =>
+                SchoolCourseScheduleImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
+
+            /**
+             * Связанный курс.
+             */
+            'course' =>
+                new SchoolCourseSharedResource(
+                    $this->whenLoaded(
+                        'course'
+                    )
+                ),
+
+            /**
+             * Преподаватель.
+             *
+             * Полный InstructorProfileResource
+             * здесь не нужен.
+             */
+            'instructor' =>
+                new SchoolInstructorProfileSharedResource(
+                    $this->whenLoaded(
+                        'instructor'
+                    )
+                ),
+
+            /**
+             * Зачисления.
+             *
+             * Оставляем условно, поскольку
+             * Resource может использоваться
+             * там, где relation специально
+             * загружена.
+             */
+            'cohort_enrollments' =>
+                $this->whenLoaded(
+                    'cohortEnrollments',
+                    fn () =>
+                    $this->cohortEnrollments->map(
+                        fn ($enrollment) => [
+                            'id' =>
+                                $enrollment->id,
+
+                            'user_id' =>
+                                $enrollment->user_id,
+
+                            'status' =>
+                                $enrollment->status,
+
+                            'enrolled_at' =>
+                                $enrollment
+                                    ->enrolled_at
+                                    ?->toISOString(),
+
+                            'user' =>
+                                $enrollment->relationLoaded(
+                                    'user'
+                                )
+                                && $enrollment->user
+                                    ? [
+                                    'id' =>
+                                        $enrollment->user->id,
+
+                                    'name' =>
+                                        $enrollment->user->name,
+
+                                    'email' =>
+                                        $enrollment->user->email,
+                                ]
+                                    : null,
+                        ]
+                    )
+                ),
+
+            /**
+             * Counts.
+             */
             'cohort_enrollments_count' => $this->when(
                 isset($this->cohort_enrollments_count),
-                fn () => (int) $this->cohort_enrollments_count
+                fn () =>
+                (int) $this->cohort_enrollments_count
             ),
 
             'images_count' => $this->when(
                 isset($this->images_count),
-                fn () => (int) $this->images_count
+                fn () =>
+                (int) $this->images_count
             ),
 
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            /**
+             * Служебные даты.
+             */
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

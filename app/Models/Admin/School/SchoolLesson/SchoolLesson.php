@@ -281,22 +281,56 @@ class SchoolLesson extends Model
             'moduleDesc' => $q->orderBy('school_module_id', 'desc')->orderByDesc('id'),
 
             'titleAsc' => $q
-                ->leftJoin('school_lesson_translations as slt_sort', function ($join) use ($locale) {
-                    $join->on('slt_sort.school_lesson_id', '=', 'school_lessons.id')
-                        ->where('slt_sort.locale', '=', $locale);
-                })
-                ->orderBy('slt_sort.title', 'asc')
-                ->orderByDesc('school_lessons.id')
-                ->select('school_lessons.*'),
+                ->leftJoin(
+                    'school_lesson_translations as slt_sort',
+                    function ($join) use ($locale) {
+                        $join->on(
+                            'slt_sort.school_lesson_id',
+                            '=',
+                            'school_lessons.id'
+                        )->where(
+                            'slt_sort.locale',
+                            '=',
+                            $locale
+                        );
+                    }
+                )
+                ->orderBy(
+                    'slt_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_lessons.id'
+                )
+                ->addSelect(
+                    'school_lessons.*'
+                ),
 
             'titleDesc' => $q
-                ->leftJoin('school_lesson_translations as slt_sort', function ($join) use ($locale) {
-                    $join->on('slt_sort.school_lesson_id', '=', 'school_lessons.id')
-                        ->where('slt_sort.locale', '=', $locale);
-                })
-                ->orderBy('slt_sort.title', 'desc')
-                ->orderByDesc('school_lessons.id')
-                ->select('school_lessons.*'),
+                ->leftJoin(
+                    'school_lesson_translations as slt_sort',
+                    function ($join) use ($locale) {
+                        $join->on(
+                            'slt_sort.school_lesson_id',
+                            '=',
+                            'school_lessons.id'
+                        )->where(
+                            'slt_sort.locale',
+                            '=',
+                            $locale
+                        );
+                    }
+                )
+                ->orderBy(
+                    'slt_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_lessons.id'
+                )
+                ->addSelect(
+                    'school_lessons.*'
+                ),
 
             'statusAsc' => $q->orderBy('status', 'asc')->orderByDesc('id'),
             'statusDesc' => $q->orderBy('status', 'desc')->orderByDesc('id'),

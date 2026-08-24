@@ -25,4 +25,5 @@ export default {
     found: 'Табылды',
     free: 'тегін',
     frontend: 'Алғы жақ',
+    from: 'дан',
 }

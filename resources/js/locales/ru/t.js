@@ -27,6 +27,7 @@ export default {
     title: 'Название',
     titleItemsPerPage: 'Количество элементов на странице',
     titleProperty: 'Имя Свойства',
+    to: 'по',
     toggleDarkMode: 'Переключить на светлый/темный режим',
     toggleSidebar: 'Развернуть / свернуть боковую панель',
     total: 'Всего',

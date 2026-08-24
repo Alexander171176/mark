@@ -15,6 +15,7 @@ export default {
     useRecoveryCode: 'Использовать код восстановления',
     user: 'Пользователь',
     userAgent: 'Юзер агент устройства клиента',
+    userAutoSelectedFromOrder: 'Пользователь автоматически подставлен из выбранного заказа',
     userComment: 'Комментарий пользователя',
     userCommented: 'Прокомментировал пользователь: ',
     userEmail: 'Email Пользователя *',

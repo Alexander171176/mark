@@ -230,7 +230,7 @@ class SchoolCourseSchedule extends Model
                 })
                 ->orderBy('scst_sort.title', 'asc')
                 ->orderByDesc('school_course_schedules.id')
-                ->select('school_course_schedules.*'),
+                ->addSelect('school_course_schedules.*'),
 
             'titleDesc' => $q
                 ->leftJoin('school_course_schedule_translations as scst_sort', function ($join) use ($locale) {
@@ -239,7 +239,7 @@ class SchoolCourseSchedule extends Model
                 })
                 ->orderBy('scst_sort.title', 'desc')
                 ->orderByDesc('school_course_schedules.id')
-                ->select('school_course_schedules.*'),
+                ->addSelect('school_course_schedules.*'),
 
             'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
             'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),

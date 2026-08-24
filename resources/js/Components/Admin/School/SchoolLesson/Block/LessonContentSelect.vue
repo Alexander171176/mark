@@ -2,219 +2,441 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import VueMultiselect from 'vue-multiselect'
+
 import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
 import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 import ContentIdInput from '@/Components/Admin/School/SchoolLesson/Input/ContentIdInput.vue'
 
 const { t } = useI18n()
 
-// Props компонента
 const props = defineProps({
-    // Тип связанного контента (FQCN модели)
-    contentType: { type: String, default: null },
+    contentType: {
+        type: String,
+        default: null,
+    },
 
-    // ID связанного контента
-    contentId: { type: [Number, String, null], default: null },
+    contentId: {
+        type: [Number, String, null],
+        default: null,
+    },
 
-    // Список статей
-    articles: { type: Array, default: () => [] },
+    articles: {
+        type: Array,
+        default: () => [],
+    },
 
-    // Список видео
-    videos: { type: Array, default: () => [] },
+    videos: {
+        type: Array,
+        default: () => [],
+    },
 
-    // Ошибка типа контента
-    errorType: { type: String, default: '' },
+    errorType: {
+        type: String,
+        default: '',
+    },
 
-    // Ошибка ID контента
-    errorId: { type: String, default: '' },
+    errorId: {
+        type: String,
+        default: '',
+    },
 })
 
-// Emits для v-model
-const emit = defineEmits(['update:contentType', 'update:contentId'])
+const emit = defineEmits([
+    'update:contentType',
+    'update:contentId',
+])
 
-// Соответствие локального типа и FQCN модели
+/* ==========================================================
+ * CONTENT TYPES
+ * ========================================================== */
+
 const CONTENT_TYPE_MAP = {
-    article: 'App\\Models\\Admin\\Blog\\BlogArticle\\BlogArticle',
-    video: 'App\\Models\\Admin\\Blog\\BlogVideo\\BlogVideo',
+    article:
+        'App\\Models\\Admin\\Blog\\BlogArticle\\BlogArticle',
+
+    video:
+        'App\\Models\\Admin\\Blog\\BlogVideo\\BlogVideo',
 }
 
-// Опции статей для VueMultiselect
-const articleOptions = computed(() =>
-    props.articles.map(a => ({
-        id: a.id,
-        label: `[ID: ${a.id}] ${a.title || a.name || `Article #${a.id}`}`,
-    })),
-)
-
-// Опции видео для VueMultiselect
-const videoOptions = computed(() =>
-    props.videos.map(v => ({
-        id: v.id,
-        label: `[ID: ${v.id}] ${v.title || v.name || `Video #${v.id}`}`,
-    })),
-)
-
-// Текущий локальный тип контента
-const localType = ref(null)
-
-// Текущий выбранный элемент
-const selectedItem = ref(null)
-
-// Кэш выбранных элементов для восстановления при переключении табов
-const cachedSelected = ref({
-    article: null,
-    video: null,
-})
-
-// Активный список опций в зависимости от выбранного типа
-const activeOptions = computed(() => {
-    if (localType.value === 'article') return articleOptions.value
-    if (localType.value === 'video') return videoOptions.value
-
-    return []
-})
-
-// Определение локального типа по FQCN модели
 const detectType = (contentType) => {
-    if (contentType === CONTENT_TYPE_MAP.article) return 'article'
-    if (contentType === CONTENT_TYPE_MAP.video) return 'video'
+    if (
+        contentType
+        === CONTENT_TYPE_MAP.article
+    ) {
+        return 'article'
+    }
+
+    if (
+        contentType
+        === CONTENT_TYPE_MAP.video
+    ) {
+        return 'video'
+    }
 
     return null
 }
 
-// Поиск выбранного элемента по типу и ID
-const findOption = (type, id) => {
-    if (!type || !id) return null
+/* ==========================================================
+ * OPTIONS
+ * ========================================================== */
 
-    const options = type === 'article'
-        ? articleOptions.value
-        : videoOptions.value
+/**
+ * Новый краткий Resource contract:
+ *
+ * article.translation.title
+ */
+const articleOptions = computed(() => {
+    return (props.articles || []).map(
+        (article) => ({
+            id: article.id,
 
-    return options.find(item => Number(item.id) === Number(id)) || null
+            label:
+                `[ID: ${article.id}] ${
+                    article?.translation?.title
+                    || article?.url
+                    || `Article #${article.id}`
+                }`,
+        })
+    )
+})
+
+/**
+ * Новый краткий Resource contract:
+ *
+ * video.translation.title
+ */
+const videoOptions = computed(() => {
+    return (props.videos || []).map(
+        (video) => ({
+            id: video.id,
+
+            label:
+                `[ID: ${video.id}] ${
+                    video?.translation?.title
+                    || video?.url
+                    || `Video #${video.id}`
+                }`,
+        })
+    )
+})
+
+const activeOptions = computed(() => {
+    if (localType.value === 'article') {
+        return articleOptions.value
+    }
+
+    if (localType.value === 'video') {
+        return videoOptions.value
+    }
+
+    return []
+})
+
+/* ==========================================================
+ * LOCAL STATE
+ * ========================================================== */
+
+const localType = ref(
+    detectType(
+        props.contentType
+    )
+)
+
+const selectedItem = ref(null)
+
+/**
+ * Храним только ID.
+ *
+ * Не сохраняем старый option-объект,
+ * потому что после смены locale
+ * label может измениться.
+ */
+const cachedSelectedIds = ref({
+    article: null,
+    video: null,
+})
+
+const findOption = (
+    type,
+    id
+) => {
+    if (
+        !type
+        || id === null
+        || id === ''
+        || typeof id === 'undefined'
+    ) {
+        return null
+    }
+
+    const options =
+        type === 'article'
+            ? articleOptions.value
+            : videoOptions.value
+
+    return options.find(
+        item =>
+            Number(item.id)
+            === Number(id)
+    ) || null
 }
 
-// Синхронизация props с локальным состоянием
+/* ==========================================================
+ * PROP SYNCHRONIZATION
+ * ========================================================== */
+
+/**
+ * Синхронизация parent → component.
+ *
+ * При смене locale articles/videos
+ * получают новые translation.title.
+ *
+ * Выбранный item восстанавливается
+ * по ID уже из нового массива options.
+ */
 watch(
-    () => [props.contentType, props.contentId, props.articles.length, props.videos.length],
+    [
+        () => props.contentType,
+        () => props.contentId,
+        articleOptions,
+        videoOptions,
+    ],
     () => {
-        const type = detectType(props.contentType)
+        const type =
+            detectType(
+                props.contentType
+            )
 
-        localType.value = type
+        localType.value =
+            type
 
-        // Сброс состояния если тип не выбран
         if (!type) {
-            selectedItem.value = null
+            selectedItem.value =
+                null
+
             return
         }
 
-        // Поиск выбранного элемента
-        const found = findOption(type, props.contentId)
+        const found =
+            findOption(
+                type,
+                props.contentId
+            )
 
-        // Установка текущего элемента
-        selectedItem.value = found
+        selectedItem.value =
+            found
 
-        // Сохранение в кэш
-        cachedSelected.value[type] = found
+        cachedSelectedIds.value[type] =
+            found?.id
+            ?? (
+                props.contentId
+                    ? Number(props.contentId)
+                    : null
+            )
     },
-    { immediate: true },
+    {
+        immediate: true,
+    }
 )
 
-// Переключение типа связанного контента
-const handleTypeChange = (type) => {
-    // Защита от повторного выбора
-    if (type === localType.value) return
+/* ==========================================================
+ * TYPE CHANGE
+ * ========================================================== */
 
-    localType.value = type
+const handleTypeChange = (
+    type
+) => {
+    if (
+        type
+        === localType.value
+    ) {
+        return
+    }
 
-    // Полный сброс связи
+    /**
+     * Запоминаем текущий ID
+     * перед переключением типа.
+     */
+    if (
+        localType.value
+        && selectedItem.value
+    ) {
+        cachedSelectedIds.value[
+            localType.value
+            ] = Number(
+            selectedItem.value.id
+        )
+    }
+
+    localType.value =
+        type
+
     if (!type) {
-        selectedItem.value = null
+        selectedItem.value =
+            null
 
-        emit('update:contentType', null)
-        emit('update:contentId', null)
+        emit(
+            'update:contentType',
+            null
+        )
+
+        emit(
+            'update:contentId',
+            null
+        )
 
         return
     }
 
-    // Восстановление из кэша
-    const cached = cachedSelected.value[type]
+    const cachedId =
+        cachedSelectedIds.value[
+            type
+            ]
 
-    selectedItem.value = cached
+    const cachedOption =
+        findOption(
+            type,
+            cachedId
+        )
 
-    // Обновление типа и ID
-    emit('update:contentType', CONTENT_TYPE_MAP[type])
-    emit('update:contentId', cached ? Number(cached.id) : null)
+    selectedItem.value =
+        cachedOption
+
+    emit(
+        'update:contentType',
+        CONTENT_TYPE_MAP[type]
+    )
+
+    emit(
+        'update:contentId',
+        cachedOption
+            ? Number(
+                cachedOption.id
+            )
+            : null
+    )
 }
 
-// Обновление content_id при выборе элемента
-watch(selectedItem, (item) => {
-    // Сохраняем выбранный элемент в кэш
-    if (localType.value) {
-        cachedSelected.value[localType.value] = item
+/* ==========================================================
+ * SELECTED ITEM
+ * ========================================================== */
+
+watch(
+    selectedItem,
+    (item) => {
+        if (localType.value) {
+            cachedSelectedIds.value[
+                localType.value
+                ] = item
+                ? Number(item.id)
+                : null
+        }
+
+        emit(
+            'update:contentId',
+            item
+                ? Number(item.id)
+                : null
+        )
     }
+)
 
-    // Отправляем новый ID наверх
-    emit('update:contentId', item ? Number(item.id) : null)
-})
+/* ==========================================================
+ * MANUAL CONTENT ID
+ * ========================================================== */
 
-// Прокси для ручного ввода ID
 const contentIdProxy = computed({
     get() {
-        return props.contentId ?? ''
+        return props.contentId
+            ?? ''
     },
 
-    set(val) {
-        // Сброс значения
-        if (val === '' || val === null) {
-            selectedItem.value = null
+    set(value) {
+        if (
+            value === ''
+            || value === null
+        ) {
+            selectedItem.value =
+                null
 
-            emit('update:contentId', null)
-
-            return
-        }
-
-        // Преобразование в число
-        const num = Number(val)
-
-        // Проверка корректности ID
-        if (!Number.isFinite(num)) {
-            emit('update:contentId', null)
+            emit(
+                'update:contentId',
+                null
+            )
 
             return
         }
 
-        // Поиск элемента по ID
-        selectedItem.value = findOption(localType.value, num)
+        const id =
+            Number(value)
 
-        // Обновление ID
-        emit('update:contentId', num)
+        if (
+            !Number.isFinite(id)
+        ) {
+            selectedItem.value =
+                null
+
+            emit(
+                'update:contentId',
+                null
+            )
+
+            return
+        }
+
+        selectedItem.value =
+            findOption(
+                localType.value,
+                id
+            )
+
+        if (localType.value) {
+            cachedSelectedIds.value[
+                localType.value
+                ] = id
+        }
+
+        /**
+         * Ручной ID разрешён даже если
+         * такого элемента сейчас нет
+         * среди загруженных options.
+         */
+        emit(
+            'update:contentId',
+            id
+        )
     },
 })
 </script>
 
 <template>
     <div
-        class="mb-3 flex flex-col items-start
-               border-t border-b border-dashed border-slate-500 py-3 w-full">
-
-        <div class="w-full mb-2 text-sm font-semibold text-gray-900 dark:text-gray-200">
+        class="mb-3 flex w-full flex-col items-start
+               border-y border-dashed border-slate-500 py-3"
+    >
+        <div
+            class="mb-2 w-full text-sm font-semibold
+                   text-gray-900 dark:text-gray-200"
+        >
             {{ t('relatedContent') }}
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+        <div class="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
             <!-- Тип контента -->
             <div class="flex flex-col items-start">
                 <LabelInput for="content_type">
                     {{ t('contentType') }}
                 </LabelInput>
 
-                <div class="flex flex-wrap gap-3 mt-1">
+                <div class="mt-1 flex flex-wrap gap-3">
                     <button
                         type="button"
-                        class="px-3 py-1 rounded border text-sm"
-                        :class="localType === 'article'
-              ? 'bg-emerald-600 text-white border-emerald-700'
-              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100 border-slate-300 dark:border-slate-600'"
+                        class="rounded border px-3 py-1 text-sm"
+                        :class="
+                            localType === 'article'
+                                ? 'border-emerald-700 bg-emerald-600 text-white'
+                                : 'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100'
+                        "
                         @click="handleTypeChange('article')"
                     >
                         {{ t('article') }}
@@ -222,10 +444,12 @@ const contentIdProxy = computed({
 
                     <button
                         type="button"
-                        class="px-3 py-1 rounded border text-sm"
-                        :class="localType === 'video'
-              ? 'bg-emerald-600 text-white border-emerald-700'
-              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100 border-slate-300 dark:border-slate-600'"
+                        class="rounded border px-3 py-1 text-sm"
+                        :class="
+                            localType === 'video'
+                                ? 'border-emerald-700 bg-emerald-600 text-white'
+                                : 'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100'
+                        "
                         @click="handleTypeChange('video')"
                     >
                         {{ t('video') }}
@@ -233,28 +457,30 @@ const contentIdProxy = computed({
 
                     <button
                         type="button"
-                        class="px-2 py-0.5 rounded border text-xs"
-                        :class="!localType
-                              ? 'bg-red-500 text-white border-red-700'
-                              : 'bg-slate-200 dark:bg-slate-800 ' +
-                               'text-slate-800 dark:text-slate-200 ' +
-                               'border-slate-300 dark:border-slate-600'"
+                        class="rounded border px-2 py-0.5 text-xs"
+                        :class="
+                            !localType
+                                ? 'border-red-700 bg-red-500 text-white'
+                                : 'border-slate-300 bg-slate-200 text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200'
+                        "
                         @click="handleTypeChange(null)"
                     >
                         {{ t('reset') }}
                     </button>
                 </div>
 
-                <InputError class="mt-1" :message="errorType" />
+                <InputError
+                    class="mt-1"
+                    :message="errorType"
+                />
             </div>
 
-            <!-- Конкретная статья / видео + ручной ID -->
-            <div class="flex flex-col items-start w-full">
+            <!-- Статья / видео -->
+            <div class="flex w-full flex-col items-start">
                 <LabelInput for="content_id">
                     {{ t('contentId') }}
                 </LabelInput>
 
-                <!-- Список статей/видео, если тип выбран -->
                 <VueMultiselect
                     v-if="localType"
                     id="content_id_select"
@@ -267,23 +493,29 @@ const contentIdProxy = computed({
                     :placeholder="t('select')"
                     label="label"
                     track-by="id"
-                    class="w-full mb-2"
+                    class="mb-2 w-full"
                 />
 
-                <!-- Ручной ввод ID (всегда доступен) -->
-                <div class="flex items-center gap-2 w-full">
+                <div class="flex w-full items-center gap-2">
                     <ContentIdInput
                         id="content_id"
-                        :min="0"
                         v-model="contentIdProxy"
+                        :min="0"
                         class="w-32"
                     />
-                    <span class="font-semibold text-xs text-slate-600 dark:text-slate-400">
+
+                    <span
+                        class="text-xs font-semibold
+                               text-slate-600 dark:text-slate-400"
+                    >
                         {{ t('orEnterIdManually') }}
                     </span>
                 </div>
 
-                <InputError class="mt-1" :message="errorId" />
+                <InputError
+                    class="mt-1"
+                    :message="errorId"
+                />
             </div>
         </div>
     </div>

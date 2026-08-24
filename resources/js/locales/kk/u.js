@@ -15,6 +15,7 @@ export default {
     useRecoveryCode: 'Қалпына келтіру кодын пайдалану',
     user: 'Пайдаланушы',
     userAgent: 'Клиент құрылғысының пайдаланушы агенті',
+    userAutoSelectedFromOrder: 'Пайдаланушы таңдалған тапсырыстан автоматты түрде енгізіледі',
     userComment: 'Пайдаланушы пікірі',
     userCommented: 'Пайдаланушы пікір қалдырды: ',
     userEmail: 'Пайдаланушының Email *',

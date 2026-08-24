@@ -3,8 +3,16 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Создание урока школы
+ * Создание урока школы.
+ *
+ * Create использует тот же selector contract,
+ * что и Edit:
+ * - module.translation;
+ * - module.course.translation;
+ * - hashtag.translation;
+ * - article/video Public/Admin Shared contract.
  */
+
 import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
@@ -16,6 +24,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
 import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
 import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
+import ClearMetaButton from '@/Components/Admin/UI/Buttons/ClearMetaButton.vue'
 import MetatagsButton from '@/Components/Admin/UI/Buttons/MetatagsButton.vue'
 import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue'
 import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue'
@@ -35,13 +44,9 @@ import SelectAccessType from '@/Components/Admin/School/SchoolLesson/Select/Sele
 import SelectPreviewMode from '@/Components/Admin/School/SchoolLesson/Select/SelectPreviewMode.vue'
 import LessonContentSelect from '@/Components/Admin/School/SchoolLesson/Block/LessonContentSelect.vue'
 
-// Toast уведомления
+const { t } = useI18n()
 const toast = useToast()
 
-// Локализация
-const { t } = useI18n()
-
-// Props страницы создания урока
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
@@ -51,7 +56,10 @@ const props = defineProps({
     videos: { type: Array, default: () => [] },
 })
 
-// Пустая структура перевода
+/* ==========================================================
+ * TRANSLATIONS
+ * ========================================================== */
+
 const makeTranslation = () => ({
     title: '',
     subtitle: '',
@@ -62,13 +70,18 @@ const makeTranslation = () => ({
     meta_desc: '',
 })
 
-// Локаль по умолчанию
-const defaultLocale = props.currentLocale || 'ru'
+const defaultLocale = props.currentLocale
+    || props.availableLocales?.[0]
+    || 'ru'
 
-// Активная локаль вкладки
-const activeLocale = ref(defaultLocale)
+const activeLocale = ref(
+    defaultLocale
+)
 
-// Форма создания урока
+/* ==========================================================
+ * FORM
+ * ========================================================== */
+
 const form = useForm({
     school_module_id: null,
 
@@ -79,6 +92,7 @@ const form = useForm({
 
     difficulty: 0,
     duration: 0,
+
     access_type: 'free',
     availability: 'public',
     status: 'draft',
@@ -98,186 +112,453 @@ const form = useForm({
     },
 })
 
-// Текущий активный перевод
 const currentTranslation = computed(() => {
     if (!form.translations[activeLocale.value]) {
-        form.translations[activeLocale.value] = makeTranslation()
+        form.translations[activeLocale.value] =
+            makeTranslation()
     }
 
-    return form.translations[activeLocale.value]
+    return form.translations[
+        activeLocale.value
+        ]
 })
 
-// Получение ошибок перевода
-const getError = (key) => form.errors[`translations.${activeLocale.value}.${key}`]
-
-// Динамический лимит multiselect
-const dynamicOptionsLimit = (items) => {
-    if (!items) return 10
-    return items.length + 10
+const getError = (key) => {
+    return form.errors[
+        `translations.${activeLocale.value}.${key}`
+        ]
 }
 
-// Опции модулей
-const moduleOptions = computed(() =>
-    props.modules.map((item) => {
-        const moduleTitle = item.title || item.slug || `#${item.id}`
-        const courseTitle = item.course?.title || null
+/* ==========================================================
+ * MULTISELECT
+ * ========================================================== */
+
+const dynamicOptionsLimit = (items) => {
+    return Array.isArray(items)
+        ? items.length + 10
+        : 10
+}
+
+/**
+ * Новый контракт модуля:
+ *
+ * module.translation.title
+ * module.course.translation.title
+ */
+const moduleOptions = computed(() => {
+    return (props.modules || []).map((item) => {
+        const moduleTitle = item?.translation?.title
+            || item?.slug
+            || `#${item.id}`
+
+        const courseTitle = item?.course?.translation?.title
+            || item?.course?.slug
+            || null
 
         return {
             id: item.id,
+
             label: courseTitle
                 ? `[ID: ${item.id}] [${courseTitle}] ${moduleTitle}`
                 : `[ID: ${item.id}] ${moduleTitle}`,
         }
     })
-)
+})
 
-// Выбранный модуль
 const selectedModule = ref(null)
 
-// Синхронизация выбранного модуля с form
-watch(selectedModule, (val) => {
-    form.school_module_id = val?.id ?? null
-})
+/**
+ * Create тоже использует восстановление
+ * selected option из текущих options.
+ *
+ * Сейчас ID обычно null, но эта механика
+ * делает Create полностью симметричным Edit
+ * и корректно работает после Inertia validation return.
+ */
+watch(
+    moduleOptions,
+    (options) => {
+        if (!form.school_module_id) {
+            selectedModule.value = null
+            return
+        }
 
-// Опции хэштегов
-const hashtagOptions = computed(() =>
-    props.hashtags.map((item) => ({
-        id: item.id,
-        label: item.name || item.title || item.slug || `#${item.id}`,
-        color: item.color || null,
-    }))
+        selectedModule.value = options.find(
+            item =>
+                Number(item.id)
+                === Number(form.school_module_id)
+        ) || null
+    },
+    { immediate: true }
 )
 
-// Выбранные хэштеги
-const selectedHashtags = ref([])
-
-// Синхронизация хэштегов с form
-watch(selectedHashtags, (val) => {
-    form.hashtag_ids = Array.isArray(val) ? val.map(item => item.id) : []
+watch(selectedModule, (value) => {
+    form.school_module_id =
+        value?.id
+        ?? null
 })
 
-// Новые изображения
+/**
+ * Новый контракт хештега:
+ *
+ * hashtag.translation.name
+ */
+const hashtagOptions = computed(() => {
+    return (props.hashtags || []).map((item) => ({
+        id: item.id,
+
+        label:
+            `[ID: ${item.id}] ${
+                item?.translation?.name
+                || item?.slug
+                || `#${item.id}`
+            }`,
+
+        color:
+            item?.color
+            || null,
+    }))
+})
+
+const selectedHashtags = ref([])
+
+watch(
+    hashtagOptions,
+    (options) => {
+        const ids =
+            (form.hashtag_ids || [])
+                .map(Number)
+
+        selectedHashtags.value =
+            options.filter(
+                item =>
+                    ids.includes(
+                        Number(item.id)
+                    )
+            )
+    },
+    { immediate: true }
+)
+
+watch(selectedHashtags, (value) => {
+    form.hashtag_ids =
+        Array.isArray(value)
+            ? value.map(item => item.id)
+            : []
+})
+
+/* ==========================================================
+ * IMAGES
+ * ========================================================== */
+
 const newImages = ref([])
 
-// Обновление новых изображений
 const handleNewImagesUpdate = (images) => {
-    newImages.value = images || []
+    newImages.value =
+        Array.isArray(images)
+            ? images
+            : []
 }
 
-// Автогенерация slug из title
+/* ==========================================================
+ * SLUG
+ * ========================================================== */
+
 const handleSlugFocus = () => {
-    if (!form.slug && currentTranslation.value.title) {
-        form.slug = transliterate(currentTranslation.value.title.toLowerCase())
+    if (
+        !form.slug
+        && currentTranslation.value.title
+    ) {
+        form.slug = transliterate(
+            currentTranslation.value.title
+                .toLowerCase()
+        )
     }
 }
 
-// Обрезка текста
-const truncateText = (text, maxLength, addEllipsis = false) => {
-    if (!text) return ''
+/* ==========================================================
+ * SEO
+ * ========================================================== */
+
+const truncateText = (
+    text,
+    maxLength,
+    addEllipsis = false
+) => {
+    if (!text) {
+        return ''
+    }
 
     const str = String(text)
 
-    if (str.length <= maxLength) return str
-
-    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
-    const truncated = lastSpaceIndex === -1
-        ? str.substring(0, maxLength)
-        : str.substring(0, lastSpaceIndex)
-
-    return addEllipsis ? `${truncated}...` : truncated
-}
-
-// Генерация SEO полей
-const generateMetaFields = () => {
-    const translation = currentTranslation.value
-
-    if (translation.title && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.title, 160)
+    if (str.length <= maxLength) {
+        return str
     }
 
-    if (!translation.meta_keywords && translation.short) {
-        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+    const lastSpaceIndex =
+        str.lastIndexOf(
+            ' ',
+            maxLength
+        )
+
+    const truncated =
+        lastSpaceIndex === -1
+            ? str.substring(
+                0,
+                maxLength
+            )
+            : str.substring(
+                0,
+                lastSpaceIndex
+            )
+
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
+}
+
+const clearMetaFields = () => {
+    currentTranslation.value.meta_title = ''
+    currentTranslation.value.meta_keywords = ''
+    currentTranslation.value.meta_desc = ''
+}
+
+const generateMetaFields = () => {
+    const translation =
+        currentTranslation.value
+
+    if (
+        translation.title
+        && !translation.meta_title
+    ) {
+        translation.meta_title =
+            truncateText(
+                translation.title,
+                160
+            )
+    }
+
+    if (
+        !translation.meta_keywords
+        && translation.short
+    ) {
+        let text =
+            String(translation.short)
+                .replace(
+                    /(<([^>]+)>)/gi,
+                    ''
+                )
+
+        text = text.replace(
+            /[.,!?;:()[\]{}"'«»]/g,
+            ''
+        )
 
         const words = text
             .split(/\s+/)
-            .filter(word => word && word.length >= 3)
-            .map(word => word.toLowerCase())
-            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter(
+                word =>
+                    word
+                    && word.length >= 3
+            )
+            .map(
+                word =>
+                    word.toLowerCase()
+            )
+            .filter(
+                (value, index, self) =>
+                    self.indexOf(value)
+                    === index
+            )
 
-        translation.meta_keywords = truncateText(words.join(', '), 255)
+        translation.meta_keywords =
+            truncateText(
+                words.join(', '),
+                255
+            )
     }
 
-    if (translation.short && !translation.meta_desc) {
-        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        translation.meta_desc = truncateText(descText, 255, true)
+    if (
+        translation.short
+        && !translation.meta_desc
+    ) {
+        const text =
+            String(translation.short)
+                .replace(
+                    /(<([^>]+)>)/gi,
+                    ''
+                )
+
+        translation.meta_desc =
+            truncateText(
+                text,
+                255,
+                true
+            )
     }
 }
 
-// Отправка формы создания
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
 const submit = () => {
     form.transform((data) => {
-        const toNum = (val, digits = 2) => {
-            if (val === '' || val === null || typeof val === 'undefined') return null
+        const toNum = (
+            value,
+            digits = 2
+        ) => {
+            if (
+                value === ''
+                || value === null
+                || typeof value
+                === 'undefined'
+            ) {
+                return null
+            }
 
-            const n = Number(val)
+            const number =
+                Number(value)
 
-            return Number.isFinite(n) ? Number(n.toFixed(digits)) : null
+            return Number.isFinite(
+                number
+            )
+                ? Number(
+                    number.toFixed(
+                        digits
+                    )
+                )
+                : null
         }
 
-        let difficulty = toNum(data.difficulty, 2)
+        let difficulty =
+            toNum(
+                data.difficulty,
+                2
+            )
 
         if (difficulty !== null) {
-            if (difficulty < 0) difficulty = 0
-            if (difficulty > 5) difficulty = 5
+            difficulty =
+                Math.max(
+                    0,
+                    Math.min(
+                        5,
+                        difficulty
+                    )
+                )
         }
 
         const transformed = {
             ...data,
 
-            school_module_id: selectedModule.value?.id ?? null,
+            school_module_id:
+                selectedModule.value?.id
+                ?? null,
 
             difficulty,
-            duration: data.duration === '' || data.duration === null
-                ? null
-                : Number(data.duration),
 
-            preview_value: data.preview_value === '' || data.preview_value === null
-                ? null
-                : Number(data.preview_value),
+            duration:
+                data.duration === ''
+                || data.duration === null
+                    ? null
+                    : Number(
+                        data.duration
+                    ),
 
-            activity: data.activity ? 1 : 0,
+            preview_value:
+                data.preview_value === ''
+                || data.preview_value === null
+                    ? null
+                    : Number(
+                        data.preview_value
+                    ),
 
-            hashtag_ids: selectedHashtags.value.map(item => item.id),
+            activity:
+                data.activity
+                    ? 1
+                    : 0,
+
+            hashtag_ids:
+                selectedHashtags.value
+                    .map(
+                        item => item.id
+                    ),
         }
 
-        if (!transformed.content_type || !transformed.content_id) {
-            transformed.content_type = null
-            transformed.content_id = null
+        if (
+            !transformed.content_type
+            || !transformed.content_id
+        ) {
+            transformed.content_type =
+                null
+
+            transformed.content_id =
+                null
         }
 
-        newImages.value.forEach((image, index) => {
-            transformed[`images[${index}][file]`] = image.file
-            transformed[`images[${index}][order]`] = image.order ?? 0
-            transformed[`images[${index}][alt]`] = image.alt ?? ''
-            transformed[`images[${index}][caption]`] = image.caption ?? ''
-        })
+        delete transformed.images
+
+        newImages.value.forEach(
+            (image, index) => {
+                transformed[
+                    `images[${index}][file]`
+                    ] = image.file
+
+                transformed[
+                    `images[${index}][order]`
+                    ] = image.order ?? 0
+
+                transformed[
+                    `images[${index}][alt]`
+                    ] = image.alt ?? ''
+
+                transformed[
+                    `images[${index}][caption]`
+                    ] = image.caption ?? ''
+            }
+        )
 
         return transformed
     })
 
-    form.post(route('admin.schoolLessons.store'), {
-        errorBag: 'createSchoolLesson',
-        preserveScroll: true,
-        forceFormData: true,
-        onSuccess: () => toast.success('Урок успешно создан!'),
-        onError: (errors) => {
-            console.error('Ошибка создания урока:', errors)
+    form.post(
+        route(
+            'admin.schoolLessons.store'
+        ),
+        {
+            errorBag:
+                'createSchoolLesson',
 
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors[firstKey] || 'Проверьте корректность полей.')
-        },
-    })
+            preserveScroll:
+                true,
+
+            forceFormData:
+                true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Урок успешно создан!'
+                )
+            },
+
+            onError: (errors) => {
+                console.error(
+                    'Ошибка создания урока:',
+                    errors
+                )
+
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors[firstKey]
+                    || 'Проверьте корректность полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -559,7 +840,13 @@ const submit = () => {
                                 <InputError class="mt-2" :message="getError('meta_desc')" />
                             </div>
 
-                            <div class="flex justify-end mt-4">
+                            <div class="flex justify-end gap-2 mt-4">
+                                <ClearMetaButton @click.prevent="clearMetaFields">
+                                    <template #default>
+                                        {{ t('clearMetaFields') }}
+                                    </template>
+                                </ClearMetaButton>
+
                                 <MetatagsButton @click.prevent="generateMetaFields">
                                     {{ t('generateMetaTags') }}
                                 </MetatagsButton>

@@ -25,4 +25,5 @@ export default {
     found: 'Найдено',
     free: 'бесплатно',
     frontend: 'Фронтэнд',
+    from: 'с',
 }

@@ -3,9 +3,19 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * Редактирование урока
+ * Редактирование урока школы.
+ *
+ * Новый Admin Edit contract:
+ * - lesson.translation — текущий перевод;
+ * - lesson.translations — все переводы формы;
+ * - lesson.images — изображения;
+ * - lesson.module.translation;
+ * - lesson.module.course.translation;
+ * - lesson.hashtags[].translation;
+ * - selector-ы используют только translation выбранной locale.
  */
-import { computed, ref, onMounted, watch } from 'vue'
+
+import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -37,13 +47,9 @@ import SelectAccessType from '@/Components/Admin/School/SchoolLesson/Select/Sele
 import SelectPreviewMode from '@/Components/Admin/School/SchoolLesson/Select/SelectPreviewMode.vue'
 import LessonContentSelect from '@/Components/Admin/School/SchoolLesson/Block/LessonContentSelect.vue'
 
-// Toast уведомления
+const { t } = useI18n()
 const toast = useToast()
 
-// Локализация
-const { t } = useI18n()
-
-// Props страницы редактирования урока
 const props = defineProps({
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
@@ -54,7 +60,10 @@ const props = defineProps({
     videos: { type: Array, default: () => [] },
 })
 
-// Пустая структура перевода
+/* ==========================================================
+ * TRANSLATIONS
+ * ========================================================== */
+
 const makeTranslation = () => ({
     title: '',
     subtitle: '',
@@ -65,11 +74,19 @@ const makeTranslation = () => ({
     meta_desc: '',
 })
 
-// Формирование переводов из lesson.translations
+const defaultLocale = props.currentLocale
+    || props.lesson?.translation?.locale
+    || props.availableLocales?.[0]
+    || 'ru'
+
 const buildTranslations = () => {
     const result = {}
 
-    ;(props.lesson.translations || []).forEach((translation) => {
+    ;(props.lesson?.translations || []).forEach((translation) => {
+        if (!translation?.locale) {
+            return
+        }
+
         result[translation.locale] = {
             title: translation.title || '',
             subtitle: translation.subtitle || '',
@@ -81,19 +98,10 @@ const buildTranslations = () => {
         }
     })
 
-    // Определение локали по умолчанию
-    const defaultLocale =
-        props.currentLocale ||
-        props.lesson.translation?.locale ||
-        props.availableLocales[0] ||
-        'ru'
-
-    // Если переводов нет — создаём дефолтный
     if (!Object.keys(result).length) {
         result[defaultLocale] = makeTranslation()
     }
 
-    // Гарантия существования дефолтной локали
     if (!result[defaultLocale]) {
         result[defaultLocale] = makeTranslation()
     }
@@ -101,24 +109,18 @@ const buildTranslations = () => {
     return result
 }
 
-// Активная локаль по умолчанию
-const defaultLocale =
-    props.currentLocale ||
-    props.lesson.translation?.locale ||
-    props.availableLocales[0] ||
-    'ru'
-
-// Текущая активная локаль
 const activeLocale = ref(defaultLocale)
 
-// Основная форма редактирования урока
+/* ==========================================================
+ * FORM
+ * ========================================================== */
+
 const form = useForm({
     _method: 'PUT',
 
-    school_module_id:
-        props.lesson.school_module_id ??
-        props.lesson.module?.id ??
-        null,
+    school_module_id: props.lesson.school_module_id
+        ?? props.lesson.module?.id
+        ?? null,
 
     sort: props.lesson.sort ?? 0,
     activity: Boolean(props.lesson.activity),
@@ -126,7 +128,8 @@ const form = useForm({
     slug: props.lesson.slug ?? '',
 
     difficulty: props.lesson.difficulty ?? 0,
-    duration: Number(props.lesson.duration ?? 0),
+    duration: props.lesson.duration ?? 0,
+
     access_type: props.lesson.access_type ?? 'free',
     availability: props.lesson.availability ?? 'public',
     status: props.lesson.status ?? 'draft',
@@ -135,21 +138,16 @@ const form = useForm({
     preview_mode: props.lesson.preview_mode ?? 'none',
     preview_value: props.lesson.preview_value ?? 0,
 
-    // Связанный контент
     content_type: props.lesson.content_type ?? '',
     content_id: props.lesson.content_id ?? '',
 
-    // Хэштеги
-    hashtag_ids: (props.lesson.hashtags || []).map(item => item.id),
+    hashtag_ids: (props.lesson.hashtags || []).map(item => Number(item.id)),
 
-    // Переводы
     translations: buildTranslations(),
 
-    // Удалённые изображения
     deletedImages: [],
 })
 
-// Текущий активный перевод
 const currentTranslation = computed(() => {
     if (!form.translations[activeLocale.value]) {
         form.translations[activeLocale.value] = makeTranslation()
@@ -158,46 +156,42 @@ const currentTranslation = computed(() => {
     return form.translations[activeLocale.value]
 })
 
-// Заголовок страницы
 const pageTitle = computed(() => {
     return currentTranslation.value.title
-        || props.lesson.translation?.title
-        || props.lesson.title
+        || props.lesson?.translation?.title
         || `ID: ${props.lesson.id}`
 })
 
-// Получение ошибок переводов
-const getError = (key) => form.errors[`translations.${activeLocale.value}.${key}`]
-
-// Форматирование даты в yyyy-MM-dd
-const formatDate = (dateStr) => {
-    if (!dateStr) return ''
-
-    const date = new Date(dateStr)
-
-    if (isNaN(date.getTime())) return ''
-
-    return date.toISOString().split('T')[0]
+const getError = (key) => {
+    return form.errors[`translations.${activeLocale.value}.${key}`]
 }
 
-// Нормализация даты после загрузки страницы
-onMounted(() => {
-    if (form.published_at) {
-        form.published_at = formatDate(form.published_at)
-    }
-})
+/* ==========================================================
+ * MULTISELECT
+ * ========================================================== */
 
-// Динамический лимит multiselect
 const dynamicOptionsLimit = (items) => {
-    if (!items) return 10
-    return items.length + 10
+    return Array.isArray(items)
+        ? items.length + 10
+        : 10
 }
 
-// Опции модулей
-const moduleOptions = computed(() =>
-    props.modules.map((item) => {
-        const moduleTitle = item.title || item.slug || `#${item.id}`
-        const courseTitle = item.course?.title || null
+/**
+ * Модули.
+ *
+ * Новый контракт:
+ * module.translation.title
+ * module.course.translation.title
+ */
+const moduleOptions = computed(() => {
+    return (props.modules || []).map((item) => {
+        const moduleTitle = item?.translation?.title
+            || item?.slug
+            || `#${item.id}`
+
+        const courseTitle = item?.course?.translation?.title
+            || item?.course?.slug
+            || null
 
         return {
             id: item.id,
@@ -206,252 +200,365 @@ const moduleOptions = computed(() =>
                 : `[ID: ${item.id}] ${moduleTitle}`,
         }
     })
-)
-
-// Выбранный модуль
-const selectedModule = ref(
-    moduleOptions.value.find(item => Number(item.id) === Number(form.school_module_id)) || null
-)
-
-// Синхронизация выбранного модуля с form
-watch(selectedModule, (val) => {
-    form.school_module_id = val?.id ?? null
 })
 
-// Опции хэштегов
-const hashtagOptions = computed(() =>
-    props.hashtags.map((item) => ({
-        id: item.id,
-        label: item.name || item.title || item.slug || `#${item.id}`,
-        color: item.color || null,
-    }))
-)
+const selectedModule = ref(null)
 
-// Выбранные хэштеги
-const selectedHashtags = ref([])
-
-// Восстановление выбранных хэштегов
+/**
+ * Восстанавливаем selected option по ID.
+ *
+ * Это принципиально важно при смене currentLocale:
+ * props.modules меняются → moduleOptions пересобирается →
+ * выбранный модуль получает новую локализованную label.
+ */
 watch(
-    hashtagOptions,
+    moduleOptions,
     (options) => {
-        const ids = form.hashtag_ids || []
-        selectedHashtags.value = options.filter(item => ids.includes(item.id))
+        selectedModule.value = options.find(
+            item => Number(item.id) === Number(form.school_module_id)
+        ) || null
     },
     { immediate: true }
 )
 
-// Синхронизация хэштегов с form
-watch(selectedHashtags, (val) => {
-    form.hashtag_ids = Array.isArray(val) ? val.map(item => item.id) : []
+watch(selectedModule, (value) => {
+    form.school_module_id = value?.id ?? null
 })
 
-// Существующие изображения
+/**
+ * Хештеги.
+ *
+ * Новый контракт:
+ * hashtag.translation.name
+ */
+const hashtagOptions = computed(() => {
+    return (props.hashtags || []).map((item) => ({
+        id: item.id,
+        label: `[ID: ${item.id}] ${
+            item?.translation?.name
+            || item?.slug
+            || `#${item.id}`
+        }`,
+        color: item?.color || null,
+    }))
+})
+
+const selectedHashtags = ref([])
+
+/**
+ * По той же причине восстанавливаем выбранные
+ * хештеги из новых option-объектов.
+ */
+watch(
+    hashtagOptions,
+    (options) => {
+        const ids = (form.hashtag_ids || []).map(Number)
+
+        selectedHashtags.value = options.filter(
+            item => ids.includes(Number(item.id))
+        )
+    },
+    { immediate: true }
+)
+
+watch(selectedHashtags, (value) => {
+    form.hashtag_ids = Array.isArray(value)
+        ? value.map(item => item.id)
+        : []
+})
+
+/* ==========================================================
+ * IMAGES
+ * ========================================================== */
+
+const getImageUrl = (image) => {
+    return image?.webp_url
+        || image?.url
+        || image?.image_url
+        || ''
+}
+
 const existingImages = ref(
     (props.lesson.images || [])
-        .filter(image => image.webp_url || image.url || image.image_url)
+        .filter(image => getImageUrl(image))
         .map(image => ({
             id: image.id,
-            url: image.webp_url || image.url || image.image_url,
-            order: image.order || 0,
+            url: getImageUrl(image),
+            order: image.order ?? 0,
             alt: image.alt || '',
             caption: image.caption || '',
         }))
 )
 
-// Новые изображения
 const newImages = ref([])
 
-// Обновление существующих изображений
 const handleExistingImagesUpdate = (images) => {
-    existingImages.value = images || []
+    existingImages.value = Array.isArray(images)
+        ? images
+        : []
 }
 
-// Удаление существующего изображения
 const handleDeleteExistingImage = (deletedId) => {
     if (!form.deletedImages.includes(deletedId)) {
         form.deletedImages.push(deletedId)
     }
 
     existingImages.value = existingImages.value.filter(
-        image => image.id !== deletedId
+        image => Number(image.id) !== Number(deletedId)
     )
 }
 
-// Обновление новых изображений
 const handleNewImagesUpdate = (images) => {
-    newImages.value = images || []
+    newImages.value = Array.isArray(images)
+        ? images
+        : []
 }
 
-// Автогенерация slug из title
+/* ==========================================================
+ * SLUG
+ * ========================================================== */
+
 const handleSlugFocus = () => {
     if (!form.slug && currentTranslation.value.title) {
-        form.slug = transliterate(currentTranslation.value.title.toLowerCase())
+        form.slug = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
     }
 }
 
-// Обрезка текста
+/* ==========================================================
+ * SEO
+ * ========================================================== */
+
 const truncateText = (text, maxLength, addEllipsis = false) => {
-    if (!text) return ''
+    if (!text) {
+        return ''
+    }
 
     const str = String(text)
 
-    if (str.length <= maxLength) return str
+    if (str.length <= maxLength) {
+        return str
+    }
 
     const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
+
     const truncated = lastSpaceIndex === -1
         ? str.substring(0, maxLength)
         : str.substring(0, lastSpaceIndex)
 
-    return addEllipsis ? `${truncated}...` : truncated
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
 }
 
-// Очистка SEO полей
 const clearMetaFields = () => {
-    const translation = currentTranslation.value
-
-    translation.meta_title = ''
-    translation.meta_keywords = ''
-    translation.meta_desc = ''
+    currentTranslation.value.meta_title = ''
+    currentTranslation.value.meta_keywords = ''
+    currentTranslation.value.meta_desc = ''
 }
 
-// Генерация SEO полей
 const generateMetaFields = () => {
     const translation = currentTranslation.value
 
     if (translation.title && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.title, 160)
+        translation.meta_title = truncateText(
+            translation.title,
+            160
+        )
     }
 
     if (!translation.meta_keywords && translation.short) {
-        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+        let text = String(translation.short)
+            .replace(/(<([^>]+)>)/gi, '')
+
+        text = text.replace(
+            /[.,!?;:()[\]{}"'«»]/g,
+            ''
+        )
 
         const words = text
             .split(/\s+/)
             .filter(word => word && word.length >= 3)
             .map(word => word.toLowerCase())
-            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter(
+                (value, index, self) =>
+                    self.indexOf(value) === index
+            )
 
-        translation.meta_keywords = truncateText(words.join(', '), 255)
+        translation.meta_keywords = truncateText(
+            words.join(', '),
+            255
+        )
     }
 
     if (translation.short && !translation.meta_desc) {
-        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        translation.meta_desc = truncateText(descText, 255, true)
+        const text = String(translation.short)
+            .replace(/(<([^>]+)>)/gi, '')
+
+        translation.meta_desc = truncateText(
+            text,
+            255,
+            true
+        )
     }
 }
 
-// Отправка формы
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
 const submitForm = () => {
     form.transform((data) => {
-
-        // Преобразование значения в число
-        const toNum = (val, digits = 2) => {
-            if (val === '' || val === null || typeof val === 'undefined') {
+        const toNum = (value, digits = 2) => {
+            if (
+                value === ''
+                || value === null
+                || typeof value === 'undefined'
+            ) {
                 return null
             }
 
-            const n = Number(val)
+            const number = Number(value)
 
-            return Number.isFinite(n)
-                ? Number(n.toFixed(digits))
+            return Number.isFinite(number)
+                ? Number(number.toFixed(digits))
                 : null
         }
 
-        // Ограничение сложности от 0 до 5
-        let difficulty = toNum(data.difficulty, 2)
+        let difficulty = toNum(
+            data.difficulty,
+            2
+        )
 
         if (difficulty !== null) {
-            if (difficulty < 0) difficulty = 0
-            if (difficulty > 5) difficulty = 5
+            difficulty = Math.max(
+                0,
+                Math.min(5, difficulty)
+            )
         }
 
-        // Подготовка данных формы
         const transformed = {
             ...data,
 
-            school_module_id: selectedModule.value?.id ?? null,
+            school_module_id:
+                selectedModule.value?.id
+                ?? null,
 
             difficulty,
 
-            duration: data.duration === '' || data.duration === null
-                ? null
-                : Number(data.duration),
+            duration:
+                data.duration === ''
+                || data.duration === null
+                    ? null
+                    : Number(data.duration),
 
-            preview_value: data.preview_value === '' || data.preview_value === null
-                ? null
-                : Number(data.preview_value),
+            preview_value:
+                data.preview_value === ''
+                || data.preview_value === null
+                    ? null
+                    : Number(data.preview_value),
 
-            activity: data.activity ? 1 : 0,
+            activity:
+                data.activity
+                    ? 1
+                    : 0,
 
-            hashtag_ids: selectedHashtags.value.map(item => item.id),
+            hashtag_ids:
+                selectedHashtags.value.map(
+                    item => item.id
+                ),
         }
 
-        // Сброс связанного контента если связь пустая
-        if (!transformed.content_type || !transformed.content_id) {
+        if (
+            !transformed.content_type
+            || !transformed.content_id
+        ) {
             transformed.content_type = null
             transformed.content_id = null
         }
 
-        // Удаление лишних полей
         delete transformed.images
         delete transformed.deletedImages
 
-        let index = 0
+        let imageIndex = 0
 
-        // Существующие изображения
         existingImages.value.forEach((image) => {
-            transformed[`images[${index}][id]`] = image.id
-            transformed[`images[${index}][order]`] = image.order ?? 0
-            transformed[`images[${index}][alt]`] = image.alt ?? ''
-            transformed[`images[${index}][caption]`] = image.caption ?? ''
-            index++
+            transformed[`images[${imageIndex}][id]`] =
+                image.id
+
+            transformed[`images[${imageIndex}][order]`] =
+                image.order ?? 0
+
+            transformed[`images[${imageIndex}][alt]`] =
+                image.alt ?? ''
+
+            transformed[`images[${imageIndex}][caption]`] =
+                image.caption ?? ''
+
+            imageIndex++
         })
 
-        // Новые изображения
         newImages.value.forEach((image) => {
-            transformed[`images[${index}][file]`] = image.file
-            transformed[`images[${index}][order]`] = image.order ?? 0
-            transformed[`images[${index}][alt]`] = image.alt ?? ''
-            transformed[`images[${index}][caption]`] = image.caption ?? ''
-            index++
+            transformed[`images[${imageIndex}][file]`] =
+                image.file
+
+            transformed[`images[${imageIndex}][order]`] =
+                image.order ?? 0
+
+            transformed[`images[${imageIndex}][alt]`] =
+                image.alt ?? ''
+
+            transformed[`images[${imageIndex}][caption]`] =
+                image.caption ?? ''
+
+            imageIndex++
         })
 
-        // Удалённые изображения
-        form.deletedImages.forEach((id, deletedIndex) => {
-            transformed[`deletedImages[${deletedIndex}]`] = id
+        form.deletedImages.forEach((id, index) => {
+            transformed[`deletedImages[${index}]`] = id
         })
 
         return transformed
     })
 
-    // Отправка формы обновления
-    form.post(route('admin.schoolLessons.update', {
-        schoolLesson: props.lesson.id,
-    }), {
-        errorBag: 'editSchoolLesson',
-        preserveScroll: true,
-        forceFormData: true,
+    form.post(
+        route(
+            'admin.schoolLessons.update',
+            {
+                schoolLesson: props.lesson.id,
+            }
+        ),
+        {
+            errorBag: 'editSchoolLesson',
+            preserveScroll: true,
+            forceFormData: true,
 
-        // Успешное обновление
-        onSuccess: () => {
-            toast.success('Урок успешно обновлён!')
+            onSuccess: () => {
+                toast.success(
+                    'Урок успешно обновлён!'
+                )
 
-            newImages.value = []
-            form.deletedImages = []
-        },
+                newImages.value = []
+                form.deletedImages = []
+            },
 
-        // Ошибки валидации
-        onError: (errors) => {
-            console.error('Ошибка обновления урока:', errors)
+            onError: (errors) => {
+                console.error(
+                    'Ошибка обновления урока:',
+                    errors
+                )
 
-            const firstKey = Object.keys(errors || {})[0]
+                const firstKey =
+                    Object.keys(errors || {})[0]
 
-            toast.error(
-                errors[firstKey] || 'Проверьте корректность полей.'
-            )
-        },
-    })
+                toast.error(
+                    errors[firstKey]
+                    || 'Проверьте корректность полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 

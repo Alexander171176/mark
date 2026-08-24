@@ -171,6 +171,7 @@ export default {
     stanceSouthpaw: 'Левша (Southpaw)',
     stanceSwitch: 'Сменяемая (Switch)',
     stampPng: 'Печать PNG',
+    start: 'Старт',
     statistics: 'Статистика',
     status: 'Статус',
     statusArchived: 'Архив',

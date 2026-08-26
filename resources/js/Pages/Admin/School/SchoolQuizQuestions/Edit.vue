@@ -5,6 +5,7 @@
  *
  * Редактирование вопроса квиза (SchoolQuizQuestion)
  */
+
 import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
@@ -23,206 +24,469 @@ import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
 import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 
-// Локализация
-const { t } = useI18n()
+/* ==========================================================
+ * ЛОКАЛИЗАЦИЯ / УВЕДОМЛЕНИЯ
+ * ========================================================== */
 
-// Toast уведомления
+const { t } = useI18n()
 const toast = useToast()
 
-// Props страницы редактирования
+/* ==========================================================
+ * PROPS
+ * ========================================================== */
+
 const props = defineProps({
-    currentLocale: { type: String, default: '' },
-    availableLocales: { type: Array, default: () => [] },
-    question: { type: Object, required: true },
-    quizzes: { type: Array, default: () => [] },
+    currentLocale: {
+        type: String,
+        default: '',
+    },
+
+    availableLocales: {
+        type: Array,
+        default: () => [],
+    },
+
+    question: {
+        type: Object,
+        required: true,
+    },
+
+    quizzes: {
+        type: Array,
+        default: () => [],
+    },
 })
 
-// Создание пустой структуры перевода
+/* ==========================================================
+ * ПЕРЕВОДЫ
+ * ========================================================== */
+
 const makeTranslation = () => ({
     question_text: '',
     explanation: '',
 })
 
-// Сбор переводов из существующей записи
+/**
+ * SchoolQuizQuestionResource для Edit
+ * отдаёт все translations вопроса.
+ */
 const buildTranslations = () => {
     const result = {}
 
-    ;(props.question.translations || []).forEach((translation) => {
-        result[translation.locale] = {
-            question_text: translation.question_text || '',
-            explanation: translation.explanation || '',
-        }
-    })
+    ;(
+        props.question.translations
+        || []
+    ).forEach(
+        (translation) => {
+            result[
+                translation.locale
+                ] = {
+                question_text:
+                    translation.question_text
+                    || '',
 
-    const defaultLocale =
-        props.currentLocale ||
-        props.question.translation?.locale ||
-        props.availableLocales[0] ||
-        'ru'
+                explanation:
+                    translation.explanation
+                    || '',
+            }
+        }
+    )
+
+    const locale =
+        props.currentLocale
+        || props.question
+            ?.translation?.locale
+        || props.availableLocales?.[0]
+        || 'ru'
 
     if (!Object.keys(result).length) {
-        result[defaultLocale] = makeTranslation()
+        result[locale] =
+            makeTranslation()
     }
 
-    if (!result[defaultLocale]) {
-        result[defaultLocale] = makeTranslation()
+    if (!result[locale]) {
+        result[locale] =
+            makeTranslation()
     }
 
     return result
 }
 
-// Активная локаль по умолчанию
+/* ==========================================================
+ * АКТИВНАЯ ЛОКАЛЬ
+ * ========================================================== */
+
 const defaultLocale =
-    props.currentLocale ||
-    props.question.translation?.locale ||
-    props.availableLocales[0] ||
-    'ru'
+    props.currentLocale
+    || props.question
+        ?.translation?.locale
+    || props.availableLocales?.[0]
+    || 'ru'
 
-// Текущая активная локаль
-const activeLocale = ref(defaultLocale)
+const activeLocale = ref(
+    defaultLocale
+)
 
-// Основная форма редактирования
+/* ==========================================================
+ * ФОРМА
+ * ========================================================== */
+
 const form = useForm({
     _method: 'PUT',
 
     school_quiz_id:
-        props.question.school_quiz_id ??
-        props.question.quiz?.id ??
-        null,
+        props.question.school_quiz_id
+        ?? props.question.quiz?.id
+        ?? null,
 
-    sort: props.question.sort ?? 0,
-    question_type: props.question.question_type ?? 'single_choice',
-    points: props.question.points ?? 1,
-    activity: Boolean(props.question.activity),
+    sort:
+        props.question.sort ?? 0,
 
-    meta_raw: props.question.meta
-        ? JSON.stringify(props.question.meta, null, 2)
-        : '',
+    question_type:
+        props.question.question_type
+        ?? 'single_choice',
 
-    translations: buildTranslations(),
+    points:
+        props.question.points ?? 1,
+
+    activity:
+        Boolean(
+            props.question.activity
+        ),
+
+    meta_raw:
+        props.question.meta
+            ? JSON.stringify(
+                props.question.meta,
+                null,
+                2
+            )
+            : '',
+
+    translations:
+        buildTranslations(),
 })
 
-// Получение активного перевода
-const currentTranslation = computed(() => {
-    if (!form.translations[activeLocale.value]) {
-        form.translations[activeLocale.value] = makeTranslation()
+/**
+ * При смене интерфейсной locale
+ * синхронизируем активную вкладку.
+ */
+watch(
+    () => props.currentLocale,
+    (locale) => {
+        if (!locale) {
+            return
+        }
+
+        activeLocale.value =
+            locale
+
+        if (!form.translations[locale]) {
+            form.translations[locale] =
+                makeTranslation()
+        }
     }
+)
 
-    return form.translations[activeLocale.value]
-})
+/**
+ * Активный перевод.
+ */
+const currentTranslation = computed(
+    () => {
+        if (
+            !form.translations[
+                activeLocale.value
+                ]
+        ) {
+            form.translations[
+                activeLocale.value
+                ] = makeTranslation()
+        }
 
-// Очистка HTML тегов и спецсимволов
+        return form.translations[
+            activeLocale.value
+            ]
+    }
+)
+
+/* ==========================================================
+ * PAGE TITLE
+ * ========================================================== */
+
 const stripHtml = (value) => {
     return (value || '')
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/<[^>]*>/g, '')
-        .replace(/\s+/g, ' ')
+        .replace(
+            /&nbsp;/gi,
+            ' '
+        )
+        .replace(
+            /<[^>]*>/g,
+            ''
+        )
+        .replace(
+            /\s+/g,
+            ' '
+        )
         .trim()
 }
 
-// Заголовок страницы редактирования
+/**
+ * Используем только новый
+ * Resource-контракт.
+ *
+ * Старого:
+ *
+ * props.question.question_text
+ *
+ * здесь больше нет.
+ */
 const pageTitle = computed(() => {
     return stripHtml(
-        currentTranslation.value.question_text ||
-        props.question.translation?.question_text ||
-        props.question.question_text ||
-        `ID: ${props.question.id}`
+        currentTranslation.value
+            .question_text
+        || props.question
+            ?.translation
+            ?.question_text
+        || `ID: ${props.question.id}`
     )
 })
 
-// Получение ошибок текущей локали
-const getError = (key) => form.errors[`translations.${activeLocale.value}.${key}`]
-
-// Ограничение количества элементов мультиселекта
-const dynamicOptionsLimit = computed(() => {
-    const count = props.quizzes?.length ?? 0
-
-    return count + 10
-})
-
-// Опции квизов
-const quizOptions = computed(() => props.quizzes ?? [])
-
-// Подпись квиза в мультиселекте
-const quizOptionLabel = (option) => {
-    if (!option) return ''
-
-    const idPart = `[ID: ${option.id}]`
-    const titlePart = option.title || option.slug || `#${option.id}`
-
-    return `${idPart} ${titlePart}`
+/**
+ * Ошибка поля текущей locale.
+ */
+const getError = (key) => {
+    return form.errors[
+        `translations.${activeLocale.value}.${key}`
+        ]
 }
 
-// Выбранный квиз
-const selectedQuiz = ref(null)
+/* ==========================================================
+ * QUIZ MULTISELECT
+ * ========================================================== */
 
-// Синхронизация выбранного квиза с текущим вопросом
-watch(
-    quizOptions,
-    (options) => {
-        selectedQuiz.value = options.find(
-            item => Number(item.id) === Number(form.school_quiz_id)
+const quizOptions = computed(
+    () => props.quizzes ?? []
+)
+
+const dynamicOptionsLimit = computed(
+    () => {
+        return quizOptions.value.length + 10
+    }
+)
+
+/**
+ * Locale-aware подпись Quiz.
+ *
+ * Полностью идентична Create.vue.
+ */
+const quizOptionLabel = (quiz) => {
+    if (!quiz) {
+        return ''
+    }
+
+    const idPart =
+        `[ID: ${quiz.id}]`
+
+    const titlePart =
+        quiz?.translation?.title
+        || quiz?.slug
+        || `#${quiz.id}`
+
+    const context = [
+        quiz?.lesson?.translation?.title
+            ? `Урок: ${quiz.lesson.translation.title}`
+            : null,
+
+        quiz?.module?.translation?.title
+            ? `Модуль: ${quiz.module.translation.title}`
+            : null,
+
+        quiz?.course?.translation?.title
+            ? `Курс: ${quiz.course.translation.title}`
+            : null,
+    ]
+        .filter(Boolean)
+        .join(' / ')
+
+    return context
+        ? `${idPart} ${titlePart} — ${context}`
+        : `${idPart} ${titlePart}`
+}
+
+/**
+ * Выбранный Quiz.
+ *
+ * Единственный источник состояния:
+ *
+ * form.school_quiz_id
+ *
+ * При смене locale props.quizzes
+ * обновляются, quizOptions пересчитывается,
+ * а selectedQuiz находит тот же ID
+ * уже с новым переводом.
+ */
+const selectedQuiz = computed({
+    get: () => {
+        if (!form.school_quiz_id) {
+            return null
+        }
+
+        return quizOptions.value.find(
+            (quiz) =>
+                Number(quiz.id)
+                === Number(
+                    form.school_quiz_id
+                )
         ) || null
     },
-    { immediate: true }
-)
 
-// Выбранный квиз
-watch(selectedQuiz, (val) => {
-    form.school_quiz_id = val?.id ?? null
+    set: (value) => {
+        form.school_quiz_id =
+            value?.id ?? null
+    },
 })
 
-// Карта типов вопросов
+/* ==========================================================
+ * ТИПЫ ВОПРОСОВ
+ * ========================================================== */
+
 const questionTypeLabelKeyMap = {
-    single_choice: 'questionTypeSingleChoice',
-    multiple_choice: 'questionTypeMultipleChoice',
-    true_false: 'questionTypeTrueFalse',
-    open_text: 'questionTypeOpenText',
+    single_choice:
+        'questionTypeSingleChoice',
+
+    multiple_choice:
+        'questionTypeMultipleChoice',
+
+    true_false:
+        'questionTypeTrueFalse',
+
+    open_text:
+        'questionTypeOpenText',
 }
 
-// Опции типов вопросов
-const questionTypeOptions = Object.entries(questionTypeLabelKeyMap).map(
-    ([value, labelKey]) => ({ value, labelKey })
-)
+const questionTypeOptions =
+    Object.entries(
+        questionTypeLabelKeyMap
+    ).map(
+        ([value, labelKey]) => ({
+            value,
+            labelKey,
+        })
+    )
 
-// Отправка формы
+/* ==========================================================
+ * META
+ * ========================================================== */
+
+const parseMeta = (metaRaw) => {
+    if (
+        !metaRaw
+        || !metaRaw.trim()
+    ) {
+        return null
+    }
+
+    try {
+        return JSON.parse(
+            metaRaw
+        )
+    } catch (error) {
+        console.error(
+            'Ошибка парсинга meta JSON:',
+            error
+        )
+
+        return null
+    }
+}
+
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
 const submitForm = () => {
-    form.transform((data) => {
-        const { meta_raw, ...rest } = data
+    form.transform(
+        (data) => {
+            const {
+                meta_raw,
+                ...rest
+            } = data
 
-        let meta = null
+            return {
+                ...rest,
 
-        if (meta_raw && meta_raw.trim()) {
-            try {
-                meta = JSON.parse(meta_raw)
-            } catch (e) {
-                console.error('Ошибка парсинга meta JSON:', e)
+                school_quiz_id:
+                    data.school_quiz_id
+                    || null,
+
+                activity:
+                    data.activity
+                        ? 1
+                        : 0,
+
+                sort:
+                    data.sort === ''
+                    || data.sort === null
+                        ? 0
+                        : Number(
+                            data.sort
+                        ),
+
+                points:
+                    data.points === ''
+                    || data.points === null
+                        ? 1
+                        : Number(
+                            data.points
+                        ),
+
+                meta:
+                    parseMeta(
+                        meta_raw
+                    ),
             }
         }
+    )
 
-        return {
-            ...rest,
-            school_quiz_id: selectedQuiz.value?.id ?? null,
-            activity: data.activity ? 1 : 0,
-            sort: data.sort === '' || data.sort === null ? 0 : Number(data.sort),
-            points: data.points === '' || data.points === null ? 1 : Number(data.points),
-            meta,
+    form.post(
+        route(
+            'admin.schoolQuizQuestions.update',
+            {
+                schoolQuizQuestion:
+                props.question.id,
+            }
+        ),
+        {
+            errorBag:
+                'editSchoolQuizQuestion',
+
+            preserveScroll:
+                true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Вопрос квиза успешно обновлён!'
+                )
+            },
+
+            onError: (errors) => {
+                console.error(
+                    'Ошибка обновления вопроса квиза:',
+                    errors
+                )
+
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors[firstKey]
+                    || 'Проверьте корректность полей.'
+                )
+            },
         }
-    })
-
-    form.post(route('admin.schoolQuizQuestions.update', {
-        schoolQuizQuestion: props.question.id,
-    }), {
-        errorBag: 'editSchoolQuizQuestion',
-        preserveScroll: true,
-        onSuccess: () => toast.success('Вопрос квиза успешно обновлён!'),
-        onError: (errors) => {
-            console.error('Ошибка обновления вопроса квиза:', errors)
-
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors[firstKey] || 'Проверьте корректность полей.')
-        },
-    })
+    )
 }
 </script>
 
@@ -230,29 +494,58 @@ const submitForm = () => {
     <AdminLayout :title="t('editQuizQuestion')">
         <template #header>
             <TitlePage>
-                {{ t('editQuizQuestion') }}: {{ pageTitle }} [ID: {{ props.question.id }}]
+                {{ t('editQuizQuestion') }}:
+                {{ pageTitle }}
+                [ID: {{ props.question.id }}]
             </TitlePage>
         </template>
 
-        <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-6xl mx-auto">
+        <div
+            class="px-4 sm:px-6 lg:px-8 py-8
+                   w-full max-w-6xl mx-auto"
+        >
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700
+                class="p-4
+                       bg-slate-50 dark:bg-slate-700
                        border border-blue-400 dark:border-blue-200
                        shadow-lg shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="sm:flex sm:justify-between sm:items-center mb-4">
-                    <DefaultButton :href="route('admin.schoolQuizQuestions.index')">
+                <!-- ==================================================
+                     BACK
+                     ================================================== -->
+
+                <div
+                    class="sm:flex sm:justify-between
+                           sm:items-center mb-4"
+                >
+                    <DefaultButton
+                        :href="route('admin.schoolQuizQuestions.index')"
+                    >
                         <template #icon>
                             <svg
-                                class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                class="w-4 h-4 fill-current
+                                       text-slate-100
+                                       shrink-0 mr-2"
                                 viewBox="0 0 16 16"
                             >
                                 <path
-                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
+                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0
+                                       .7.7 1.2 1.7 1.4 2.7l2-.3
+                                       c-.2-1.5-.9-2.8-1.9-3.8
+                                       C10.1.4 5.7.4 2.9 3.1
+                                       L.7.9 0 7.3l6.4-.7-2.1-2.1z
+                                       M15.6 8.7l-6.4.7 2.1 2.1
+                                       c-1.9 1.9-5.1 1.9-7 0
+                                       -.7-.7-1.2-1.7-1.4-2.7l-2 .3
+                                       c-.2 1.5.9 2.8 1.9 3.8
+                                       1.4 1.4 3.1 2 4.9 2
+                                       1.8 0 3.6-.7 4.9-2
+                                       l2.2 2.2 .8-6.4z"
                                 />
                             </svg>
                         </template>
+
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
@@ -262,9 +555,25 @@ const submitForm = () => {
                     class="p-3 w-full"
                 >
                     <div class="pb-12">
-                        <div class="mb-4 flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
-                            <div class="flex flex-row items-center gap-2">
-                                <ActivityCheckbox v-model="form.activity" />
+
+                        <!-- ==================================================
+                             ACTIVITY / POINTS / SORT
+                             ================================================== -->
+
+                        <div
+                            class="mb-4 flex flex-col
+                                   lg:flex-row gap-4
+                                   lg:items-center
+                                   lg:justify-between"
+                        >
+                            <div
+                                class="flex flex-row
+                                       items-center gap-2"
+                            >
+                                <ActivityCheckbox
+                                    v-model="form.activity"
+                                />
+
                                 <LabelCheckbox
                                     for="activity"
                                     :text="t('activity')"
@@ -272,11 +581,15 @@ const submitForm = () => {
                                 />
                             </div>
 
-                            <div class="flex flex-row items-center gap-2">
+                            <div
+                                class="flex flex-row
+                                       items-center gap-2"
+                            >
                                 <LabelInput
                                     for="points"
                                     :value="t('points')"
                                 />
+
                                 <InputNumber
                                     id="points"
                                     type="number"
@@ -285,15 +598,22 @@ const submitForm = () => {
                                     autocomplete="points"
                                     class="w-28"
                                 />
-                                <InputError :message="form.errors.points" />
+
+                                <InputError
+                                    :message="form.errors.points"
+                                />
                             </div>
 
-                            <div class="flex flex-row items-center gap-2">
+                            <div
+                                class="flex flex-row
+                                       items-center gap-2"
+                            >
                                 <LabelInput
                                     for="sort"
                                     :value="t('sort')"
                                     class="text-sm"
                                 />
+
                                 <InputNumber
                                     id="sort"
                                     type="number"
@@ -302,16 +622,27 @@ const submitForm = () => {
                                     autocomplete="sort"
                                     class="w-28"
                                 />
-                                <InputError :message="form.errors.sort" />
+
+                                <InputError
+                                    :message="form.errors.sort"
+                                />
                             </div>
                         </div>
 
-                        <div class="mb-4 flex flex-col items-start w-full">
+                        <!-- ==================================================
+                             QUIZ
+                             ================================================== -->
+
+                        <div
+                            class="mb-4 flex flex-col
+                                   items-start w-full"
+                        >
                             <LabelInput
                                 for="school_quiz_id"
                                 :value="t('quiz')"
                                 class="mb-1"
                             />
+
                             <VueMultiselect
                                 id="school_quiz_id"
                                 v-model="selectedQuiz"
@@ -322,46 +653,69 @@ const submitForm = () => {
                                 :clear-on-select="false"
                                 :preserve-search="true"
                                 :placeholder="t('select')"
-                                label="title"
                                 track-by="id"
                                 :custom-label="quizOptionLabel"
                                 class="w-full"
                             />
+
                             <InputError
                                 class="mt-2"
                                 :message="form.errors.school_quiz_id"
                             />
                         </div>
 
-                        <div class="mb-4 flex flex-col items-end">
+                        <!-- ==================================================
+                             QUESTION TYPE
+                             ================================================== -->
+
+                        <div
+                            class="mb-4 flex flex-col
+                                   items-end"
+                        >
                             <LabelInput
                                 for="question_type"
                                 :value="t('questionType')"
                             />
+
                             <select
                                 id="question_type"
                                 v-model="form.question_type"
-                                class="block w-fit py-0.5 border-slate-500 text-md
-                                       focus:border-indigo-500 focus:ring-indigo-300
-                                       rounded-sm shadow-sm dark:bg-cyan-800 dark:text-slate-100"
+                                class="block w-fit py-0.5
+                                       border-slate-500 text-md
+                                       focus:border-indigo-500
+                                       focus:ring-indigo-300
+                                       rounded-sm shadow-sm
+                                       dark:bg-cyan-800
+                                       dark:text-slate-100"
                             >
                                 <option
                                     v-for="opt in questionTypeOptions"
                                     :key="opt.value"
                                     :value="opt.value"
                                 >
-                                    {{ t(opt.labelKey) || opt.value }}
+                                    {{
+                                        t(opt.labelKey)
+                                        || opt.value
+                                    }}
                                 </option>
                             </select>
+
                             <InputError
                                 class="mt-2"
                                 :message="form.errors.question_type"
                             />
                         </div>
 
+                        <!-- ==================================================
+                             TRANSLATIONS
+                             ================================================== -->
+
                         <div
-                            class="my-5 p-3 border border-slate-300 dark:border-slate-500
-                                   bg-white dark:bg-slate-800 rounded-sm"
+                            class="my-5 p-3
+                                   border border-slate-300
+                                   dark:border-slate-500
+                                   bg-white dark:bg-slate-800
+                                   rounded-sm"
                         >
                             <TranslationTabs
                                 v-model="activeLocale"
@@ -373,32 +727,54 @@ const submitForm = () => {
                                 @added="toast.success('Локаль добавлена.')"
                             />
 
-                            <div class="mb-4 flex flex-col items-start">
+                            <!-- Question text -->
+
+                            <div
+                                class="mb-4 flex flex-col
+                                       items-start"
+                            >
                                 <LabelInput for="question_text">
-                                    <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                                    {{ t('question') }} [{{ activeLocale.toUpperCase() }}]
+                                    <span
+                                        class="text-red-500
+                                               dark:text-red-300
+                                               font-semibold"
+                                    >
+                                        *
+                                    </span>
+
+                                    {{ t('question') }}
+                                    [{{ activeLocale.toUpperCase() }}]
                                 </LabelInput>
+
                                 <TinyEditor
                                     id="question_text"
                                     v-model="currentTranslation.question_text"
                                     :height="350"
                                 />
+
                                 <InputError
                                     class="mt-2"
                                     :message="getError('question_text')"
                                 />
                             </div>
 
-                            <div class="mb-4 flex flex-col items-start">
+                            <!-- Explanation -->
+
+                            <div
+                                class="mb-4 flex flex-col
+                                       items-start"
+                            >
                                 <LabelInput
                                     for="explanation"
                                     :value="`${t('explanation')} [${activeLocale.toUpperCase()}]`"
                                 />
+
                                 <TinyEditor
                                     id="explanation"
                                     v-model="currentTranslation.explanation"
                                     :height="250"
                                 />
+
                                 <InputError
                                     class="mt-2"
                                     :message="getError('explanation')"
@@ -406,24 +782,45 @@ const submitForm = () => {
                             </div>
                         </div>
 
-                        <div class="mb-4 flex flex-col items-start">
-                            <div class="flex justify-between w-full">
+                        <!-- ==================================================
+                             META
+                             ================================================== -->
+
+                        <div
+                            class="mb-4 flex flex-col
+                                   items-start"
+                        >
+                            <div
+                                class="flex justify-between
+                                       w-full"
+                            >
                                 <LabelInput
                                     for="meta_raw"
                                     :value="t('metaJson')"
                                 />
-                                <span class="text-xs text-slate-500 dark:text-slate-300 mt-1">
+
+                                <span
+                                    class="text-xs
+                                           text-slate-500
+                                           dark:text-slate-300
+                                           mt-1"
+                                >
                                     {{ t('metaJsonHint') }}
                                 </span>
                             </div>
+
                             <textarea
                                 id="meta_raw"
                                 v-model="form.meta_raw"
                                 rows="6"
-                                class="mt-1 block w-full border border-slate-300
-                                       dark:border-slate-600 bg-white dark:bg-slate-800
-                                       text-sm rounded-md px-3 py-2 font-mono"
+                                class="mt-1 block w-full
+                                       border border-slate-300
+                                       dark:border-slate-600
+                                       bg-white dark:bg-slate-800
+                                       text-sm rounded-md
+                                       px-3 py-2 font-mono"
                             />
+
                             <InputError
                                 class="mt-2"
                                 :message="form.errors.meta"
@@ -431,36 +828,70 @@ const submitForm = () => {
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-center gap-3">
-                        <DefaultButton :href="route('admin.schoolQuizQuestions.index')">
+                    <!-- ==================================================
+                         BUTTONS
+                         ================================================== -->
+
+                    <div
+                        class="flex items-center
+                               justify-center gap-3"
+                    >
+                        <DefaultButton
+                            :href="route('admin.schoolQuizQuestions.index')"
+                        >
                             <template #icon>
                                 <svg
-                                    class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                    class="w-4 h-4 fill-current
+                                           text-slate-100
+                                           shrink-0 mr-2"
                                     viewBox="0 0 16 16"
                                 >
                                     <path
-                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
+                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0
+                                           .7.7 1.2 1.7 1.4 2.7l2-.3
+                                           c-.2-1.5-.9-2.8-1.9-3.8
+                                           C10.1.4 5.7.4 2.9 3.1
+                                           L.7.9 0 7.3l6.4-.7-2.1-2.1z
+                                           M15.6 8.7l-6.4.7 2.1 2.1
+                                           c-1.9 1.9-5.1 1.9-7 0
+                                           -.7-.7-1.2-1.7-1.4-2.7l-2 .3
+                                           c-.2 1.5.9 2.8 1.9 3.8
+                                           1.4 1.4 3.1 2 4.9 2
+                                           1.8 0 3.6-.7 4.9-2
+                                           l2.2 2.2 .8-6.4z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('back') }}
                         </DefaultButton>
 
                         <PrimaryButton
                             class="mb-0"
-                            :class="{ 'opacity-25': form.processing }"
+                            :class="{
+                                'opacity-25':
+                                    form.processing
+                            }"
                             :disabled="form.processing"
                         >
                             <template #icon>
                                 <svg
-                                    class="w-4 h-4 fill-current text-slate-100"
+                                    class="w-4 h-4 fill-current
+                                           text-slate-100"
                                     viewBox="0 0 16 16"
                                 >
                                     <path
-                                        d="M14.3 2.3L5 11.6 1.7 8.3c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4l4 4c.2.2.4.3.7.3.3 0 .5-.1.7-.3l10-10c.4-.4.4-1 0-1.4-.4-.4-1-.4-1.4 0z"
+                                        d="M14.3 2.3L5 11.6 1.7 8.3
+                                           c-.4-.4-1-.4-1.4 0
+                                           -.4.4-.4 1 0 1.4l4 4
+                                           c.2.2.4.3.7.3
+                                           .3 0 .5-.1.7-.3l10-10
+                                           c.4-.4.4-1 0-1.4
+                                           -.4-.4-1-.4-1.4 0z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('save') }}
                         </PrimaryButton>
                     </div>

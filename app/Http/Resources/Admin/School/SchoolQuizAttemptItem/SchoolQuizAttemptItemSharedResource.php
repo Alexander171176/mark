@@ -8,15 +8,10 @@ use App\Http\Resources\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionSharedR
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class SchoolQuizAttemptItemResource extends JsonResource
+class SchoolQuizAttemptItemSharedResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        /**
-         * selected_answer_ids уже cast -> array
-         * в модели, но оставляем безопасную
-         * нормализацию для старых данных.
-         */
         $selectedIds = $this->selected_answer_ids;
 
         if (is_string($selectedIds)) {
@@ -40,13 +35,10 @@ class SchoolQuizAttemptItemResource extends JsonResource
             : [];
 
         /**
-         * Для multiple_choice Controller
-         * заранее загружает:
+         * Multiple choice.
          *
-         * question.answers.translations(currentLocale)
-         *
-         * Поэтому дополнительные SQL-запросы
-         * здесь не нужны.
+         * Используем уже загруженные
+         * question.answers.translations.
          */
         $selectedAnswers = [];
 
@@ -83,23 +75,11 @@ class SchoolQuizAttemptItemResource extends JsonResource
 
                             'text' =>
                                 $translation->text,
-
-                            'explanation' =>
-                                $translation->explanation,
                         ]
                         : null,
 
                     'is_correct' =>
                         (bool) $answer->is_correct,
-
-                    'weight' =>
-                        (int) $answer->weight,
-
-                    'sort' =>
-                        (int) $answer->sort,
-
-                    'activity' =>
-                        (bool) $answer->activity,
                 ];
             }
         }
@@ -120,10 +100,6 @@ class SchoolQuizAttemptItemResource extends JsonResource
             'selected_answer_ids' =>
                 $selectedIds,
 
-            /**
-             * Развёрнутые выбранные ответы
-             * для multiple_choice.
-             */
             'selected_answers' =>
                 $selectedAnswers,
 
@@ -139,39 +115,31 @@ class SchoolQuizAttemptItemResource extends JsonResource
             'max_score' =>
                 (int) $this->max_score,
 
+            /**
+             * Нужен frontend-поиску
+             * и отображению.
+             */
             'reviewer_comment' =>
                 $this->reviewer_comment,
 
-            /**
-             * Вопрос.
-             *
-             * SharedResource уже работает
-             * через translation текущей locale.
-             */
             'question' =>
                 new SchoolQuizQuestionSharedResource(
                     $this->whenLoaded('question')
                 ),
 
-            /**
-             * Выбранный одиночный ответ.
-             */
             'selected_answer' =>
                 new SchoolQuizAnswerSharedResource(
                     $this->whenLoaded('selectedAnswer')
                 ),
 
-            /**
-             * Родительская попытка.
-             *
-             * Для Item не нужен полный
-             * SchoolQuizAttemptResource.
-             */
             'attempt' =>
                 new SchoolQuizAttemptSharedResource(
                     $this->whenLoaded('attempt')
                 ),
 
+            /**
+             * Нужны frontend-сортировке.
+             */
             'created_at' =>
                 $this->created_at?->toISOString(),
 

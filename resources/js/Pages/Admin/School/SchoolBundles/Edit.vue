@@ -5,7 +5,8 @@
  *
  * Редактирование набора курсов
  */
-import { computed, onMounted, ref, watch } from 'vue'
+
+import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -30,19 +31,43 @@ import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
 import MultiImageEdit from '@/Components/Admin/UI/Image/MultiImageEdit.vue'
 import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 
-// Toast уведомления и локализация
-const toast = useToast()
-const { t } = useI18n()
+/* ==========================================================
+ * I18N / TOAST
+ * ========================================================== */
 
-// Данные из контроллера
+const { t } = useI18n()
+const toast = useToast()
+
+/* ==========================================================
+ * PROPS
+ * ========================================================== */
+
 const props = defineProps({
-    currentLocale: { type: String, default: '' },
-    availableLocales: { type: Array, default: () => [] },
-    bundle: { type: Object, required: true },
-    courses: { type: Array, default: () => [] },
+    currentLocale: {
+        type: String,
+        default: '',
+    },
+
+    availableLocales: {
+        type: Array,
+        default: () => [],
+    },
+
+    bundle: {
+        type: Object,
+        required: true,
+    },
+
+    courses: {
+        type: Array,
+        default: () => [],
+    },
 })
 
-// Шаблон пустого перевода
+/* ==========================================================
+ * TRANSLATIONS
+ * ========================================================== */
+
 const makeTranslation = () => ({
     title: '',
     subtitle: '',
@@ -53,240 +78,463 @@ const makeTranslation = () => ({
     meta_desc: '',
 })
 
-// Построение объекта переводов из ресурса
+const defaultLocale =
+    props.currentLocale
+    || props.bundle.translation?.locale
+    || props.availableLocales?.[0]
+    || 'ru'
+
 const buildTranslations = () => {
-    const result = {};
-    (props.bundle.translations || []).forEach((translation) => {
-        result[translation.locale] = {
-            title: translation.title || '',
-            subtitle: translation.subtitle || '',
-            short: translation.short || '',
-            description: translation.description || '',
-            meta_title: translation.meta_title || '',
-            meta_keywords: translation.meta_keywords || '',
-            meta_desc: translation.meta_desc || '',
+    const result = {}
+
+    ;(props.bundle.translations || []).forEach(
+        translation => {
+            result[translation.locale] = {
+                title:
+                    translation.title
+                    || '',
+
+                subtitle:
+                    translation.subtitle
+                    || '',
+
+                short:
+                    translation.short
+                    || '',
+
+                description:
+                    translation.description
+                    || '',
+
+                meta_title:
+                    translation.meta_title
+                    || '',
+
+                meta_keywords:
+                    translation.meta_keywords
+                    || '',
+
+                meta_desc:
+                    translation.meta_desc
+                    || '',
+            }
         }
-    })
+    )
 
-    const defaultLocale =
-        props.currentLocale ||
-        props.bundle.translation?.locale ||
-        props.availableLocales[0] ||
-        'ru'
-
-    if (!Object.keys(result).length) {
-        result[defaultLocale] = makeTranslation()
+    if (
+        !Object.keys(result).length
+    ) {
+        result[defaultLocale] =
+            makeTranslation()
     }
 
-    if (!result[defaultLocale]) {
-        result[defaultLocale] = makeTranslation()
+    if (
+        !result[defaultLocale]
+    ) {
+        result[defaultLocale] =
+            makeTranslation()
     }
 
     return result
 }
 
-// Локаль по умолчанию
-const defaultLocale =
-    props.currentLocale ||
-    props.bundle.translation?.locale ||
-    props.availableLocales[0] ||
-    'ru'
+const activeLocale = ref(
+    defaultLocale
+)
 
-// Активная вкладка перевода
-const activeLocale = ref(defaultLocale)
+watch(
+    () => props.currentLocale,
+    (locale) => {
+        if (locale) {
+            activeLocale.value = locale
+        }
+    }
+)
 
-// Форма редактирования набора курсов
+/* ==========================================================
+ * FORM
+ * ========================================================== */
+
 const form = useForm({
     _method: 'PUT',
 
-    sort: props.bundle.sort ?? 0,
-    activity: Boolean(props.bundle.activity),
+    sort:
+        props.bundle.sort
+        ?? 0,
 
-    slug: props.bundle.slug ?? '',
-    published_at: props.bundle.published_at ?? '',
+    activity:
+        Boolean(
+            props.bundle.activity
+        ),
 
-    meta: props.bundle.meta ?? null,
+    slug:
+        props.bundle.slug
+        ?? '',
 
-    course_ids: (props.bundle.courses || []).map(item => item.id),
+    /**
+     * Resource уже отдаёт Y-m-d,
+     * поэтому дополнительный onMounted
+     * с преобразованием даты не нужен.
+     */
+    published_at:
+        props.bundle.published_at
+        ?? '',
 
-    translations: buildTranslations(),
+    meta:
+        props.bundle.meta
+        ?? null,
+
+    /**
+     * Единственный источник состояния
+     * выбранных Courses.
+     */
+    course_ids:
+        (props.bundle.courses || [])
+            .map(course => course.id),
+
+    translations:
+        buildTranslations(),
 
     deletedImages: [],
 })
 
-// Текущий перевод активной локали
+/* ==========================================================
+ * CURRENT TRANSLATION
+ * ========================================================== */
+
 const currentTranslation = computed(() => {
-    if (!form.translations[activeLocale.value]) {
-        form.translations[activeLocale.value] = makeTranslation()
+    if (
+        !form.translations[
+            activeLocale.value
+            ]
+    ) {
+        form.translations[
+            activeLocale.value
+            ] = makeTranslation()
     }
 
-    return form.translations[activeLocale.value]
+    return form.translations[
+        activeLocale.value
+        ]
 })
 
-// Заголовок страницы
 const pageTitle = computed(() => {
     return currentTranslation.value.title
         || props.bundle.translation?.title
-        || props.bundle.title
         || `ID: ${props.bundle.id}`
 })
 
-// Получение ошибки поля перевода
-const getError = (key) => form.errors[`translations.${activeLocale.value}.${key}`]
-
-// Форматирование даты публикации
-const formatDate = (dateStr) => {
-    if (!dateStr) return ''
-
-    const date = new Date(dateStr)
-
-    if (Number.isNaN(date.getTime())) {
-        return ''
-    }
-
-    return date.toISOString().split('T')[0]
+const getError = (key) => {
+    return form.errors[
+        `translations.${activeLocale.value}.${key}`
+        ]
 }
 
-// Подготовка даты после загрузки страницы
-onMounted(() => {
-    if (form.published_at) {
-        form.published_at = formatDate(form.published_at)
-    }
-})
+/* ==========================================================
+ * COURSES
+ * ========================================================== */
 
-// Динамический лимит элементов multiselect
 const dynamicOptionsLimit = (items) => {
-    if (!items) return 10
-
-    return items.length + 10
+    return Array.isArray(items)
+        ? items.length + 10
+        : 10
 }
 
-// Список курсов для выбора
 const courseOptions = computed(() =>
-    props.courses.map((item) => ({
-        id: item.id,
-        label: `[ID: ${item.id}] ${item.title || item.slug || `#${item.id}`}`,
+    (props.courses || []).map(course => ({
+        ...course,
+
+        label:
+            `[ID: ${course.id}] ${
+                course.translation?.title
+                || course.slug
+                || `#${course.id}`
+            }`,
     }))
 )
 
-// Выбранные курсы набора
-const selectedCourses = ref(
-    (props.bundle.courses || []).map((item) => ({
-        id: item.id,
-        label: `[ID: ${item.id}] ${item.title || item.slug || `#${item.id}`}`,
-    }))
-)
+/**
+ * form.course_ids — единственный источник.
+ *
+ * При ru → en props.courses обновятся,
+ * courseOptions пересчитается,
+ * а выбранные ID останутся в form.
+ */
+const selectedCourses = computed({
+    get: () => {
+        const ids =
+            Array.isArray(
+                form.course_ids
+            )
+                ? form.course_ids
+                : []
 
-// Синхронизация выбранных курсов с формой
-watch(selectedCourses, (val) => {
-    form.course_ids = Array.isArray(val) ? val.map(item => item.id) : []
+        return courseOptions.value.filter(
+            course =>
+                ids.some(
+                    id =>
+                        Number(id)
+                        === Number(course.id)
+                )
+        )
+    },
+
+    set: (courses) => {
+        form.course_ids =
+            Array.isArray(courses)
+                ? courses.map(
+                    course => course.id
+                )
+                : []
+    },
 })
+
+/* ==========================================================
+ * IMAGES
+ * ========================================================== */
 
 const existingImages = ref(
     (props.bundle.images || [])
-        .filter(image => image.webp_url || image.url || image.image_url)
+        .filter(
+            image =>
+                image.webp_url
+                || image.url
+                || image.image_url
+        )
         .map(image => ({
-            id: image.id,
-            url: image.webp_url || image.url || image.image_url,
-            order: image.order || 0,
-            alt: image.alt || '',
-            caption: image.caption || '',
+            id:
+            image.id,
+
+            url:
+                image.webp_url
+                || image.url
+                || image.image_url,
+
+            order:
+                image.order
+                ?? 0,
+
+            alt:
+                image.alt
+                ?? '',
+
+            caption:
+                image.caption
+                ?? '',
         }))
 )
 
-// Существующие изображения набора
 const newImages = ref([])
 
-// Новые изображения для загрузки
-const handleExistingImagesUpdate = (images) => {
-    existingImages.value = images || []
+const handleExistingImagesUpdate = (
+    images
+) => {
+    existingImages.value =
+        images || []
 }
 
-// Удаление существующего изображения
-const handleDeleteExistingImage = (deletedId) => {
-    if (!form.deletedImages.includes(deletedId)) {
-        form.deletedImages.push(deletedId)
+const handleDeleteExistingImage = (
+    deletedId
+) => {
+    if (
+        !form.deletedImages.includes(
+            deletedId
+        )
+    ) {
+        form.deletedImages.push(
+            deletedId
+        )
     }
 
-    existingImages.value = existingImages.value.filter(image => image.id !== deletedId)
+    existingImages.value =
+        existingImages.value.filter(
+            image =>
+                Number(image.id)
+                !== Number(deletedId)
+        )
 }
 
-// Обновление новых изображений
-const handleNewImagesUpdate = (images) => {
-    newImages.value = images || []
+const handleNewImagesUpdate = (
+    images
+) => {
+    newImages.value =
+        images || []
 }
 
-// Генерация slug из заголовка
+/* ==========================================================
+ * SLUG
+ * ========================================================== */
+
 const handleSlugFocus = () => {
-    if (!form.slug && currentTranslation.value.title) {
-        form.slug = transliterate(currentTranslation.value.title.toLowerCase())
+    if (
+        !form.slug
+        && currentTranslation.value.title
+    ) {
+        form.slug =
+            transliterate(
+                currentTranslation.value.title
+                    .toLowerCase()
+            )
     }
 }
 
-// Обрезка текста по длине
-const truncateText = (text, maxLength, addEllipsis = false) => {
+/* ==========================================================
+ * SEO
+ * ========================================================== */
+
+const truncateText = (
+    text,
+    maxLength,
+    addEllipsis = false
+) => {
     if (!text) return ''
 
-    const str = String(text)
+    const str =
+        String(text)
 
-    if (str.length <= maxLength) return str
+    if (
+        str.length <= maxLength
+    ) {
+        return str
+    }
 
-    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
-    const truncated = lastSpaceIndex === -1
-        ? str.substring(0, maxLength)
-        : str.substring(0, lastSpaceIndex)
+    const lastSpaceIndex =
+        str.lastIndexOf(
+            ' ',
+            maxLength
+        )
 
-    return addEllipsis ? `${truncated}...` : truncated
+    const truncated =
+        lastSpaceIndex === -1
+            ? str.substring(
+                0,
+                maxLength
+            )
+            : str.substring(
+                0,
+                lastSpaceIndex
+            )
+
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
 }
 
-// Очистка SEO-полей
 const clearMetaFields = () => {
-    const translation = currentTranslation.value
+    const translation =
+        currentTranslation.value
 
     translation.meta_title = ''
     translation.meta_keywords = ''
     translation.meta_desc = ''
 }
 
-// Автогенерация SEO-полей
 const generateMetaFields = () => {
-    const translation = currentTranslation.value
+    const translation =
+        currentTranslation.value
 
-    if (translation.title && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.title, 160)
+    if (
+        translation.title
+        && !translation.meta_title
+    ) {
+        translation.meta_title =
+            truncateText(
+                translation.title,
+                160
+            )
     }
 
-    if (!translation.meta_keywords && translation.short) {
-        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+    if (
+        !translation.meta_keywords
+        && translation.short
+    ) {
+        let text =
+            String(
+                translation.short
+            ).replace(
+                /(<([^>]+)>)/gi,
+                ''
+            )
+
+        text = text.replace(
+            /[.,!?;:()[\]{}"'«»]/g,
+            ''
+        )
 
         const words = text
             .split(/\s+/)
-            .filter(word => word && word.length >= 3)
-            .map(word => word.toLowerCase())
-            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter(
+                word =>
+                    word
+                    && word.length >= 3
+            )
+            .map(
+                word =>
+                    word.toLowerCase()
+            )
+            .filter(
+                (value, index, self) =>
+                    self.indexOf(value)
+                    === index
+            )
 
-        translation.meta_keywords = truncateText(words.join(', '), 255)
+        translation.meta_keywords =
+            truncateText(
+                words.join(', '),
+                255
+            )
     }
 
-    if (translation.short && !translation.meta_desc) {
-        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        translation.meta_desc = truncateText(descText, 255, true)
+    if (
+        translation.short
+        && !translation.meta_desc
+    ) {
+        const descText =
+            String(
+                translation.short
+            ).replace(
+                /(<([^>]+)>)/gi,
+                ''
+            )
+
+        translation.meta_desc =
+            truncateText(
+                descText,
+                255,
+                true
+            )
     }
 }
 
-// Отправка формы редактирования
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
 const submitForm = () => {
-    form.transform((data) => {
+    form.transform(data => {
         const transformed = {
             ...data,
 
-            activity: data.activity ? 1 : 0,
-            sort: Number(data.sort || 0),
+            activity:
+                data.activity
+                    ? 1
+                    : 0,
 
-            course_ids: Array.isArray(selectedCourses.value)
-                ? selectedCourses.value.map(item => item.id)
-                : [],
+            sort:
+                Number(
+                    data.sort || 0
+                ),
+
+            /**
+             * Никакой повторной сборки
+             * из selectedCourses.
+             */
+            course_ids:
+                Array.isArray(
+                    data.course_ids
+                )
+                    ? data.course_ids
+                    : [],
         }
 
         delete transformed.images
@@ -294,49 +542,103 @@ const submitForm = () => {
 
         let index = 0
 
-        existingImages.value.forEach((image) => {
-            transformed[`images[${index}][id]`] = image.id
-            transformed[`images[${index}][order]`] = image.order ?? 0
-            transformed[`images[${index}][alt]`] = image.alt ?? ''
-            transformed[`images[${index}][caption]`] = image.caption ?? ''
-            index++
-        })
+        existingImages.value.forEach(
+            image => {
+                transformed[
+                    `images[${index}][id]`
+                    ] = image.id
 
-        newImages.value.forEach((image) => {
-            transformed[`images[${index}][file]`] = image.file
-            transformed[`images[${index}][order]`] = image.order ?? 0
-            transformed[`images[${index}][alt]`] = image.alt ?? ''
-            transformed[`images[${index}][caption]`] = image.caption ?? ''
-            index++
-        })
+                transformed[
+                    `images[${index}][order]`
+                    ] = image.order ?? 0
 
-        form.deletedImages.forEach((id, deletedIndex) => {
-            transformed[`deletedImages[${deletedIndex}]`] = id
-        })
+                transformed[
+                    `images[${index}][alt]`
+                    ] = image.alt ?? ''
+
+                transformed[
+                    `images[${index}][caption]`
+                    ] = image.caption ?? ''
+
+                index++
+            }
+        )
+
+        newImages.value.forEach(
+            image => {
+                transformed[
+                    `images[${index}][file]`
+                    ] = image.file
+
+                transformed[
+                    `images[${index}][order]`
+                    ] = image.order ?? 0
+
+                transformed[
+                    `images[${index}][alt]`
+                    ] = image.alt ?? ''
+
+                transformed[
+                    `images[${index}][caption]`
+                    ] = image.caption ?? ''
+
+                index++
+            }
+        )
+
+        form.deletedImages.forEach(
+            (id, deletedIndex) => {
+                transformed[
+                    `deletedImages[${deletedIndex}]`
+                    ] = id
+            }
+        )
 
         return transformed
     })
 
-    form.post(route('admin.schoolBundles.update', {
-        schoolBundle: props.bundle.id,
-    }), {
-        errorBag: 'editSchoolBundle',
-        preserveScroll: true,
-        forceFormData: true,
+    form.post(
+        route(
+            'admin.schoolBundles.update',
+            {
+                schoolBundle:
+                props.bundle.id,
+            }
+        ),
+        {
+            errorBag:
+                'editSchoolBundle',
 
-        onSuccess: () => {
-            toast.success('Набор курсов успешно обновлён!')
-            newImages.value = []
-            form.deletedImages = []
-        },
+            preserveScroll: true,
+            forceFormData: true,
 
-        onError: (errors) => {
-            console.error('Ошибка обновления набора курсов:', errors)
+            onSuccess: () => {
+                toast.success(
+                    'Набор курсов успешно обновлён!'
+                )
 
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors[firstKey] || 'Проверьте корректность полей.')
-        },
-    })
+                newImages.value = []
+                form.deletedImages = []
+            },
+
+            onError: (errors) => {
+                console.error(
+                    'Ошибка обновления набора курсов:',
+                    errors
+                )
+
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors?.[firstKey]
+                    || 'Проверьте корректность полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -344,7 +646,9 @@ const submitForm = () => {
     <AdminLayout :title="t('editBundle')">
         <template #header>
             <TitlePage>
-                {{ t('editBundle') }}: {{ pageTitle }} [ID: {{ props.bundle.id }}]
+                {{ t('editBundle') }}:
+                {{ pageTitle }}
+                [ID: {{ bundle.id }}]
             </TitlePage>
         </template>
 
@@ -358,13 +662,16 @@ const submitForm = () => {
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
                     <DefaultButton :href="route('admin.schoolBundles.index')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                 viewBox="0 0 16 16">
+                            <svg
+                                class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                viewBox="0 0 16 16"
+                            >
                                 <path
                                     d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
                                 />
                             </svg>
                         </template>
+
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
@@ -375,44 +682,67 @@ const submitForm = () => {
                     class="p-3 w-full"
                 >
                     <div class="pb-12">
-
-                        <div class="mb-3 flex justify-between flex-col
-                                    lg:flex-row items-center gap-4">
+                        <!-- Основные настройки -->
+                        <div
+                            class="mb-3 flex justify-between flex-col
+                                   lg:flex-row items-center gap-4"
+                        >
                             <div class="flex flex-row items-center gap-2">
                                 <ActivityCheckbox v-model="form.activity" />
+
                                 <LabelCheckbox
                                     for="activity"
                                     :text="t('activity')"
                                     class="text-sm h-8 flex items-center"
                                 />
                             </div>
+
                             <div class="flex flex-row items-center gap-2">
                                 <LabelInput
                                     for="published_at"
                                     :value="t('publishedAt')"
-                                    class="w-full" />
+                                    class="w-full"
+                                />
+
                                 <InputText
                                     id="published_at"
                                     type="date"
                                     v-model="form.published_at"
                                     class="w-full max-w-56"
                                 />
-                                <InputError :message="form.errors.published_at" />
+
+                                <InputError
+                                    :message="form.errors.published_at"
+                                />
                             </div>
+
                             <div class="flex flex-row items-center gap-2">
-                                <LabelInput for="sort" :value="t('sort')" class="text-sm" />
+                                <LabelInput
+                                    for="sort"
+                                    :value="t('sort')"
+                                    class="text-sm"
+                                />
+
                                 <InputNumber
                                     id="sort"
                                     type="number"
                                     v-model.number="form.sort"
                                     class="w-full lg:w-28"
                                 />
-                                <InputError :message="form.errors.sort" />
+
+                                <InputError
+                                    :message="form.errors.sort"
+                                />
                             </div>
                         </div>
 
+                        <!-- Courses -->
                         <div class="mb-3 flex flex-col items-start">
-                            <LabelInput for="course_ids" :value="t('courses')" class="mb-1" />
+                            <LabelInput
+                                for="course_ids"
+                                :value="t('courses')"
+                                class="mb-1"
+                            />
 
                             <VueMultiselect
                                 id="course_ids"
@@ -429,12 +759,19 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.course_ids" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.course_ids"
+                            />
                         </div>
 
+                        <!-- Slug -->
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput for="slug">
-                                <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                                <span class="text-red-500 dark:text-red-300 font-semibold">
+                                    *
+                                </span>
+
                                 {{ t('slug') }}
                             </LabelInput>
 
@@ -453,9 +790,11 @@ const submitForm = () => {
                             />
                         </div>
 
+                        <!-- Translations -->
                         <div
-                            class="my-5 p-3 border border-slate-300 dark:border-slate-500
-                                   bg-white dark:bg-slate-800 rounded-sm"
+                            class="my-5 p-3 border border-slate-300
+                                   dark:border-slate-500 bg-white
+                                   dark:bg-slate-800 rounded-sm"
                         >
                             <TranslationTabs
                                 v-model="activeLocale"
@@ -467,15 +806,21 @@ const submitForm = () => {
                                 @added="toast.success('Локаль добавлена.')"
                             />
 
+                            <!-- Title -->
                             <div class="mb-3 flex flex-col items-start">
                                 <div class="flex justify-between w-full">
                                     <LabelInput for="title">
-                                        <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                                        {{ t('title') }} [{{ activeLocale.toUpperCase() }}]
+                                        <span class="text-red-500 dark:text-red-300 font-semibold">
+                                            *
+                                        </span>
+
+                                        {{ t('title') }}
+                                        [{{ activeLocale.toUpperCase() }}]
                                     </LabelInput>
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                        {{ (currentTranslation.title || '').length }} / 255 {{ t('characters') }}
+                                        {{ (currentTranslation.title || '').length }}
+                                        / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -488,9 +833,13 @@ const submitForm = () => {
                                     autocomplete="title"
                                 />
 
-                                <InputError class="mt-2" :message="getError('title')" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="getError('title')"
+                                />
                             </div>
 
+                            <!-- Subtitle -->
                             <div class="mb-3 flex flex-col items-start">
                                 <div class="flex justify-between w-full">
                                     <LabelInput
@@ -499,7 +848,8 @@ const submitForm = () => {
                                     />
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                        {{ (currentTranslation.subtitle || '').length }} / 255 {{ t('characters') }}
+                                        {{ (currentTranslation.subtitle || '').length }}
+                                        / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -508,9 +858,13 @@ const submitForm = () => {
                                     class="w-full"
                                 />
 
-                                <InputError class="mt-2" :message="getError('subtitle')" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="getError('subtitle')"
+                                />
                             </div>
 
+                            <!-- Short -->
                             <div class="mb-3 flex flex-col items-start">
                                 <div class="flex justify-between w-full">
                                     <LabelInput
@@ -519,7 +873,8 @@ const submitForm = () => {
                                     />
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                        {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
+                                        {{ (currentTranslation.short || '').length }}
+                                        / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -528,9 +883,13 @@ const submitForm = () => {
                                     class="w-full"
                                 />
 
-                                <InputError class="mt-2" :message="getError('short')" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="getError('short')"
+                                />
                             </div>
 
+                            <!-- Description -->
                             <div class="mb-3 flex flex-col items-start">
                                 <LabelInput
                                     for="description"
@@ -542,9 +901,13 @@ const submitForm = () => {
                                     :height="500"
                                 />
 
-                                <InputError class="mt-2" :message="getError('description')" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="getError('description')"
+                                />
                             </div>
 
+                            <!-- Meta title -->
                             <div class="mb-3 flex flex-col items-start">
                                 <div class="flex justify-between w-full">
                                     <LabelInput
@@ -553,7 +916,8 @@ const submitForm = () => {
                                     />
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                        {{ (currentTranslation.meta_title || '').length }} / 160 {{ t('characters') }}
+                                        {{ (currentTranslation.meta_title || '').length }}
+                                        / 160 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -565,9 +929,13 @@ const submitForm = () => {
                                     autocomplete="meta_title"
                                 />
 
-                                <InputError class="mt-2" :message="getError('meta_title')" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="getError('meta_title')"
+                                />
                             </div>
 
+                            <!-- Meta keywords -->
                             <div class="mb-3 flex flex-col items-start">
                                 <div class="flex justify-between w-full">
                                     <LabelInput
@@ -576,7 +944,8 @@ const submitForm = () => {
                                     />
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                        {{ (currentTranslation.meta_keywords || '').length }} / 255 {{ t('characters') }}
+                                        {{ (currentTranslation.meta_keywords || '').length }}
+                                        / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -588,9 +957,13 @@ const submitForm = () => {
                                     autocomplete="meta_keywords"
                                 />
 
-                                <InputError class="mt-2" :message="getError('meta_keywords')" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="getError('meta_keywords')"
+                                />
                             </div>
 
+                            <!-- Meta description -->
                             <div class="mb-3 flex flex-col items-start">
                                 <div class="flex justify-between w-full">
                                     <LabelInput
@@ -599,7 +972,8 @@ const submitForm = () => {
                                     />
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                        {{ (currentTranslation.meta_desc || '').length }} / 255 {{ t('characters') }}
+                                        {{ (currentTranslation.meta_desc || '').length }}
+                                        / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -609,9 +983,13 @@ const submitForm = () => {
                                     class="w-full"
                                 />
 
-                                <InputError class="mt-2" :message="getError('meta_desc')" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="getError('meta_desc')"
+                                />
                             </div>
 
+                            <!-- SEO buttons -->
                             <div class="flex justify-end gap-2 mt-4">
                                 <ClearMetaButton @click.prevent="clearMetaFields">
                                     <template #default>
@@ -625,6 +1003,7 @@ const submitForm = () => {
                             </div>
                         </div>
 
+                        <!-- Existing images -->
                         <div class="mt-4">
                             <MultiImageEdit
                                 :images="existingImages"
@@ -633,28 +1012,37 @@ const submitForm = () => {
                             />
                         </div>
 
+                        <!-- New images -->
                         <div class="mt-4">
-                            <MultiImageUpload @update:images="handleNewImagesUpdate" />
+                            <MultiImageUpload
+                                @update:images="handleNewImagesUpdate"
+                            />
 
                             <div
                                 v-if="newImages.length"
-                                class="text-xs text-slate-600 dark:text-slate-300 mt-2"
+                                class="text-xs text-slate-600
+                                       dark:text-slate-300 mt-2"
                             >
-                                {{ t('images') }}: {{ newImages.length }}
+                                {{ t('images') }}:
+                                {{ newImages.length }}
                             </div>
                         </div>
                     </div>
 
+                    <!-- Actions -->
                     <div class="flex items-center justify-center mt-4 gap-3">
                         <DefaultButton :href="route('admin.schoolBundles.index')">
                             <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                     viewBox="0 0 16 16">
+                                <svg
+                                    class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                    viewBox="0 0 16 16"
+                                >
                                     <path
                                         d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('back') }}
                         </DefaultButton>
 

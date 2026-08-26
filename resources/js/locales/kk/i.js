@@ -14,6 +14,7 @@ export default {
     images: 'Изображений',
     import: 'Импорттау',
     inactive: 'Белсенді емес',
+    incorrect: 'Дұрыс емес',
     individual: 'Individual',
     inherited: 'Мұрагерлік',
     instructions: 'Нұсқаулар',

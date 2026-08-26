@@ -10,8 +10,15 @@ import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue
 const { t } = useI18n()
 
 const props = defineProps({
-    answers: { type: Array, default: () => [] },
-    selectedAnswers: { type: Array, default: () => [] },
+    answers: {
+        type: Array,
+        default: () => [],
+    },
+
+    selectedAnswers: {
+        type: Array,
+        default: () => [],
+    },
 })
 
 const emit = defineEmits([
@@ -22,33 +29,61 @@ const emit = defineEmits([
     'toggle-all',
 ])
 
+/* ==========================================================
+ * LOCAL DATA
+ * ========================================================== */
+
 const localAnswers = ref([])
 
 watch(
     () => props.answers,
-    (newVal) => {
-        localAnswers.value = JSON.parse(JSON.stringify(newVal || []))
+    (newValue) => {
+        localAnswers.value = JSON.parse(
+            JSON.stringify(newValue || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
+/* ==========================================================
+ * DRAG / SELECT
+ * ========================================================== */
+
 const handleDragEnd = () => {
-    emit('update-sort-order', localAnswers.value.map(answer => answer.id))
+    emit(
+        'update-sort-order',
+        localAnswers.value.map(
+            answer => answer.id
+        )
+    )
 }
 
 const toggleAll = (event) => {
     emit('toggle-all', {
-        ids: localAnswers.value.map(answer => answer.id),
-        checked: event.target.checked,
+        ids: localAnswers.value.map(
+            answer => answer.id
+        ),
+
+        checked:
+        event.target.checked,
     })
 }
 
-const stripHtml = (html) => {
-    if (!html) return ''
+/* ==========================================================
+ * TEXT HELPERS
+ * ========================================================== */
 
-    return html
-        .replace(/<\/p>/gi, '\n')
-        .replace(/<br\s*\/?>/gi, '\n')
+const stripHtml = (html) => {
+    if (!html) {
+        return ''
+    }
+
+    return String(html)
+        .replace(/<\/p>/gi, ' ')
+        .replace(/<br\s*\/?>/gi, ' ')
         .replace(/<[^>]+>/g, '')
         .replace(/&nbsp;/gi, ' ')
         .replace(/&amp;/gi, '&')
@@ -60,10 +95,40 @@ const stripHtml = (html) => {
         .trim()
 }
 
-const shortText = (html, length = 120) => {
-    const clean = stripHtml(html)
+const shortText = (
+    html,
+    length = 120
+) => {
+    const clean =
+        stripHtml(html)
 
-    return clean.length > length ? clean.slice(0, length) + '…' : clean
+    return clean.length > length
+        ? `${clean.slice(0, length)}…`
+        : clean
+}
+
+/* ==========================================================
+ * RESOURCE HELPERS
+ * ========================================================== */
+
+const getAnswerText = (answer) => {
+    return answer?.translation?.text
+        || ''
+}
+
+const getAnswerExplanation = (answer) => {
+    return answer?.translation?.explanation
+        || ''
+}
+
+const getQuizTitle = (answer) => {
+    return answer?.quiz?.translation?.title
+        || ''
+}
+
+const getQuestionText = (answer) => {
+    return answer?.question?.translation?.question_text
+        || ''
 }
 </script>
 
@@ -72,12 +137,14 @@ const shortText = (html, length = 120) => {
         class="bg-white dark:bg-slate-700 shadow-lg rounded-sm
                border border-slate-400 dark:border-slate-500 relative"
     >
+        <!-- Selection -->
         <div
             class="flex items-center justify-between px-3 py-2
                    border-b border-slate-400 dark:border-slate-500"
         >
             <div class="text-xs text-slate-600 dark:text-slate-200">
-                {{ t('selected') }}: {{ selectedAnswers.length }}
+                {{ t('selected') }}:
+                {{ selectedAnswers.length }}
             </div>
 
             <label
@@ -85,12 +152,22 @@ const shortText = (html, length = 120) => {
                 class="flex items-center text-xs text-slate-600
                        dark:text-slate-200 cursor-pointer"
             >
-                <span>{{ t('selectAll') }}</span>
-                <input type="checkbox" class="mx-2" @change="toggleAll" />
+                <span>
+                    {{ t('selectAll') }}
+                </span>
+
+                <input
+                    type="checkbox"
+                    class="mx-2"
+                    @change="toggleAll"
+                />
             </label>
         </div>
 
-        <div v-if="localAnswers.length" class="p-3">
+        <div
+            v-if="localAnswers.length"
+            class="p-3"
+        >
             <draggable
                 v-model="localAnswers"
                 tag="div"
@@ -106,6 +183,7 @@ const shortText = (html, length = 120) => {
                                bg-slate-50/70 dark:bg-slate-800/80 shadow-sm
                                hover:shadow-md transition-shadow duration-150"
                     >
+                        <!-- Header -->
                         <header
                             class="flex items-center justify-between px-2 py-1
                                    border-b border-dashed border-slate-400 dark:border-slate-500"
@@ -113,11 +191,14 @@ const shortText = (html, length = 120) => {
                             <div class="flex items-center space-x-2">
                                 <button
                                     type="button"
-                                    class="drag-handle text-slate-400 hover:text-slate-700
-                                           dark:hover:text-slate-100"
+                                    class="drag-handle text-slate-400 hover:text-slate-700 dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
                                         <path
                                             d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z"
                                         />
@@ -142,55 +223,80 @@ const shortText = (html, length = 120) => {
                             />
                         </header>
 
+                        <!-- Body -->
                         <div class="flex flex-col flex-1 px-3 py-2 space-y-2 text-[11px]">
+                            <!-- Quiz -->
                             <div
                                 class="text-[11px] text-center font-semibold
                                        text-blue-600 dark:text-blue-300"
-                                :title="answer.quiz?.title || ('#' + answer.school_quiz_id)"
+                                :title="getQuizTitle(answer) || `Quiz ID: ${answer.school_quiz_id}`"
                             >
-                                {{ answer.quiz?.title || ('Quiz ID: ' + answer.school_quiz_id) }}
+                                {{
+                                    getQuizTitle(answer)
+                                    || `Quiz ID: ${answer.school_quiz_id}`
+                                }}
                             </div>
 
+                            <!-- Question -->
                             <div
                                 class="text-xs text-slate-800 dark:text-slate-100
                                        font-semibold border border-dashed border-slate-400
                                        bg-slate-100/70 dark:bg-slate-900/40
                                        rounded-sm px-2 py-1 min-h-[3rem]"
-                                :title="stripHtml(answer.question?.question_text)"
+                                :title="stripHtml(getQuestionText(answer))"
                             >
-        {{ shortText(answer.question?.question_text) || ('ID: ' + answer.school_quiz_question_id) }}
+                                {{
+                                    shortText(
+                                        getQuestionText(answer)
+                                    )
+                                    || `ID: ${answer.school_quiz_question_id}`
+                                }}
                             </div>
 
+                            <!-- Answer -->
                             <div
                                 class="text-[11px] text-center font-semibold
                                        text-indigo-700 dark:text-indigo-200"
-                                :title="stripHtml(answer.text)"
+                                :title="stripHtml(getAnswerText(answer))"
                             >
-                                {{ shortText(answer.text) }}
+                                {{
+                                    shortText(
+                                        getAnswerText(answer)
+                                    )
+                                    || `ID: ${answer.id}`
+                                }}
                             </div>
 
+                            <!-- Explanation -->
                             <div
-                                v-if="answer.explanation"
+                                v-if="getAnswerExplanation(answer)"
                                 class="text-[10px] text-slate-600 dark:text-slate-300"
-                                :title="stripHtml(answer.explanation)"
+                                :title="stripHtml(getAnswerExplanation(answer))"
                             >
-                                {{ shortText(answer.explanation, 90) }}
+                                {{
+                                    shortText(
+                                        getAnswerExplanation(answer),
+                                        90
+                                    )
+                                }}
                             </div>
 
+                            <!-- Correct / Weight -->
                             <div class="flex flex-wrap justify-between gap-2 mt-1 text-[10px]">
                                 <span
                                     :class="[
                                         'px-2 py-0.5 rounded-sm font-semibold border',
                                         answer.is_correct
-                                            ? 'border-emerald-500 ' +
-                                             'bg-emerald-50 dark:bg-emerald-900/40 ' +
-                                              'text-emerald-700 dark:text-emerald-200'
-                                            : 'border-rose-500 bg-rose-50 dark:bg-rose-900/40 ' +
-                                             'text-rose-700 dark:text-rose-200'
+                                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-200'
+                                            : 'border-rose-500 bg-rose-50 dark:bg-rose-900/40 text-rose-700 dark:text-rose-200',
                                     ]"
                                 >
                                     {{ t('isCorrect') }}:
-                                    {{ answer.is_correct ? t('yes') : t('no') }}
+                                    {{
+                                        answer.is_correct
+                                            ? t('yes')
+                                            : t('no')
+                                    }}
                                 </span>
 
                                 <span
@@ -199,27 +305,41 @@ const shortText = (html, length = 120) => {
                                            border border-gray-400
                                            text-amber-700 dark:text-amber-300"
                                 >
-                                    {{ t('points') }}: {{ answer.weight ?? 0 }}
+                                    {{ t('points') }}:
+                                    {{ answer.weight ?? 0 }}
                                 </span>
                             </div>
 
+                            <!-- Counts -->
+                            <div
+                                class="flex justify-center text-[10px]
+                                       text-fuchsia-700 dark:text-fuchsia-300"
+                            >
+                                {{ t('quizAttempts') }}:
+                                {{ answer.attempt_items_count ?? 0 }}
+                            </div>
+
+                            <!-- IDs -->
                             <div class="grid grid-cols-2 gap-1 text-[10px] text-center">
                                 <span
                                     class="border border-dashed border-slate-300
                                            dark:border-slate-600 rounded-sm px-1 py-0.5"
                                 >
-                                    {{ t('quiz') }} ID: {{ answer.school_quiz_id ?? '—' }}
+                                    {{ t('quiz') }} ID:
+                                    {{ answer.school_quiz_id ?? '—' }}
                                 </span>
 
                                 <span
                                     class="border border-dashed border-slate-300
                                            dark:border-slate-600 rounded-sm px-1 py-0.5"
                                 >
-                                {{ t('question') }} ID: {{ answer.school_quiz_question_id ?? '—' }}
+                                    {{ t('question') }} ID:
+                                    {{ answer.school_quiz_question_id ?? '—' }}
                                 </span>
                             </div>
                         </div>
 
+                        <!-- Footer -->
                         <footer
                             class="flex items-center justify-center px-3 py-2
                                    border-t border-dashed border-slate-400 dark:border-slate-500"
@@ -248,7 +368,10 @@ const shortText = (html, length = 120) => {
             </draggable>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

@@ -10,8 +10,15 @@ import ActivityToggle from '@/Components/Admin/UI/Buttons/ActivityToggle.vue'
 const { t } = useI18n()
 
 const props = defineProps({
-    answers: { type: Array, default: () => [] },
-    selectedAnswers: { type: Array, default: () => [] },
+    answers: {
+        type: Array,
+        default: () => [],
+    },
+
+    selectedAnswers: {
+        type: Array,
+        default: () => [],
+    },
 })
 
 const emit = defineEmits([
@@ -22,33 +29,61 @@ const emit = defineEmits([
     'toggle-all',
 ])
 
+/* ==========================================================
+ * LOCAL DATA
+ * ========================================================== */
+
 const localAnswers = ref([])
 
 watch(
     () => props.answers,
-    (newVal) => {
-        localAnswers.value = JSON.parse(JSON.stringify(newVal || []))
+    (newValue) => {
+        localAnswers.value = JSON.parse(
+            JSON.stringify(newValue || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
+/* ==========================================================
+ * DRAG / SELECT
+ * ========================================================== */
+
 const handleDragEnd = () => {
-    emit('update-sort-order', localAnswers.value.map(answer => answer.id))
+    emit(
+        'update-sort-order',
+        localAnswers.value.map(
+            answer => answer.id
+        )
+    )
 }
 
 const toggleAll = (event) => {
     emit('toggle-all', {
-        ids: localAnswers.value.map(answer => answer.id),
-        checked: event.target.checked,
+        ids: localAnswers.value.map(
+            answer => answer.id
+        ),
+
+        checked:
+        event.target.checked,
     })
 }
 
-const stripHtml = (html) => {
-    if (!html) return ''
+/* ==========================================================
+ * TEXT HELPERS
+ * ========================================================== */
 
-    return html
-        .replace(/<\/p>/gi, '\n')
-        .replace(/<br\s*\/?>/gi, '\n')
+const stripHtml = (html) => {
+    if (!html) {
+        return ''
+    }
+
+    return String(html)
+        .replace(/<\/p>/gi, ' ')
+        .replace(/<br\s*\/?>/gi, ' ')
         .replace(/<[^>]+>/g, '')
         .replace(/&nbsp;/gi, ' ')
         .replace(/&amp;/gi, '&')
@@ -60,10 +95,35 @@ const stripHtml = (html) => {
         .trim()
 }
 
-const shortText = (html, length = 120) => {
-    const clean = stripHtml(html)
+const shortText = (
+    html,
+    length = 120
+) => {
+    const clean =
+        stripHtml(html)
 
-    return clean.length > length ? clean.slice(0, length) + '…' : clean
+    return clean.length > length
+        ? `${clean.slice(0, length)}…`
+        : clean
+}
+
+/* ==========================================================
+ * RESOURCE HELPERS
+ * ========================================================== */
+
+const getAnswerText = (answer) => {
+    return answer?.translation?.text
+        || ''
+}
+
+const getQuizTitle = (answer) => {
+    return answer?.quiz?.translation?.title
+        || ''
+}
+
+const getQuestionText = (answer) => {
+    return answer?.question?.translation?.question_text
+        || ''
 }
 </script>
 
@@ -72,12 +132,14 @@ const shortText = (html, length = 120) => {
         class="bg-white dark:bg-slate-700 shadow-lg rounded-sm
                border border-slate-200 dark:border-slate-600 relative"
     >
+        <!-- Selection -->
         <div
             class="flex items-center justify-between px-3 py-2
                    border-b border-slate-400 dark:border-slate-500"
         >
             <div class="text-xs text-slate-600 dark:text-slate-200">
-                {{ t('selected') }}: {{ selectedAnswers.length }}
+                {{ t('selected') }}:
+                {{ selectedAnswers.length }}
             </div>
 
             <label
@@ -85,8 +147,15 @@ const shortText = (html, length = 120) => {
                 class="flex items-center text-xs text-slate-600
                        dark:text-slate-200 cursor-pointer"
             >
-                <span>{{ t('selectAll') }}</span>
-                <input type="checkbox" class="mx-2" @change="toggleAll" />
+                <span>
+                    {{ t('selectAll') }}
+                </span>
+
+                <input
+                    type="checkbox"
+                    class="mx-2"
+                    @change="toggleAll"
+                />
             </label>
         </div>
 
@@ -101,7 +170,10 @@ const shortText = (html, length = 120) => {
                 >
                 <tr>
                     <th class="px-2 py-3 w-px text-center">
-                        <svg class="w-4 h-4 opacity-60" viewBox="0 0 24 24">
+                        <svg
+                            class="w-4 h-4 opacity-60"
+                            viewBox="0 0 24 24"
+                        >
                             <path
                                 d="M12.707 2.293a1 1 0 0 0-1.414 0l-5 5A1 1 0 1 0 7.707 8.707L12 4.414l4.293 4.293a1 1 0 0 0 1.414-1.414l-5-5z"
                             />
@@ -110,27 +182,44 @@ const shortText = (html, length = 120) => {
                             />
                         </svg>
                     </th>
-                    <th class="font-medium px-2 py-3 w-px text-center">ID</th>
+
+                    <th class="font-medium px-2 py-3 w-px text-center">
+                        ID
+                    </th>
+
                     <th class="font-medium px-2 py-3 whitespace-nowrap text-center">
                         {{ t('quiz') }}
                     </th>
+
                     <th class="font-medium px-2 py-3 whitespace-nowrap text-center">
                         {{ t('quizQuestion') }}
                     </th>
+
                     <th class="font-medium px-2 py-3 whitespace-nowrap text-center">
                         {{ t('answer') }}
                     </th>
+
                     <th class="font-medium px-2 py-3 whitespace-nowrap text-center">
                         {{ t('isCorrect') }}
                     </th>
+
                     <th class="font-medium px-2 py-3 whitespace-nowrap text-center">
                         {{ t('points') }}
                     </th>
+
+                    <th class="font-medium px-2 py-3 whitespace-nowrap text-center">
+                        {{ t('quizAttempts') }}
+                    </th>
+
                     <th class="font-medium px-2 py-3 whitespace-nowrap text-end">
                         {{ t('actions') }}
                     </th>
+
                     <th class="px-2 py-3 whitespace-nowrap text-center">
-                        <input type="checkbox" @change="toggleAll" />
+                        <input
+                            type="checkbox"
+                            @change="toggleAll"
+                        />
                     </th>
                 </tr>
                 </thead>
@@ -147,6 +236,7 @@ const shortText = (html, length = 120) => {
                             class="text-sm font-semibold border-b-2
                                    hover:bg-slate-100 dark:hover:bg-cyan-800"
                         >
+                            <!-- Drag -->
                             <td class="px-2 py-1 text-center cursor-move handle">
                                 <svg
                                     class="w-4 h-4 text-gray-500 dark:text-gray-300"
@@ -158,6 +248,8 @@ const shortText = (html, length = 120) => {
                                     />
                                 </svg>
                             </td>
+
+                            <!-- ID -->
                             <td
                                 class="px-2 py-3 text-center text-xs
                                        text-indigo-800 dark:text-indigo-200"
@@ -165,48 +257,81 @@ const shortText = (html, length = 120) => {
                             >
                                 {{ answer.id }}
                             </td>
+
+                            <!-- Quiz -->
                             <td
                                 class="px-2 py-3 text-center text-xs
                                        text-blue-600 dark:text-blue-300"
-                                :title="answer.quiz?.title || ('#' + answer.school_quiz_id)"
+                                :title="getQuizTitle(answer) || `Quiz ID: ${answer.school_quiz_id}`"
                             >
-                                {{ answer.quiz?.title || ('#' + answer.school_quiz_id) }}
+                                {{
+                                    getQuizTitle(answer)
+                                    || `Quiz ID: ${answer.school_quiz_id}`
+                                }}
                             </td>
+
+                            <!-- Question -->
                             <td
                                 class="px-2 py-3 text-xs text-center font-semibold"
-                                :title="stripHtml(answer.question?.question_text)"
+                                :title="stripHtml(getQuestionText(answer))"
                             >
-        {{ shortText(answer.question?.question_text) || ('ID: ' + answer.school_quiz_question_id) }}
+                                {{
+                                    shortText(
+                                        getQuestionText(answer)
+                                    )
+                                    || `ID: ${answer.school_quiz_question_id}`
+                                }}
                             </td>
+
+                            <!-- Answer -->
                             <td
                                 class="px-2 py-3 text-xs
                                        text-slate-500 dark:text-slate-200 text-center"
-                                :title="stripHtml(answer.text)"
+                                :title="stripHtml(getAnswerText(answer))"
                             >
-                                {{ shortText(answer.text) }}
+                                {{
+                                    shortText(
+                                        getAnswerText(answer)
+                                    )
+                                    || `ID: ${answer.id}`
+                                }}
                             </td>
+
+                            <!-- Correct -->
                             <td class="px-2 py-3 text-center text-xs">
                                 <span
                                     :class="[
-                                        'px-2 pb-0.5 rounded-sm text-[12px] ' +
-                                         'font-semibold border-2 ' +
-                                          'border-gray-300 dark:border-gray-400',
+                                        'px-2 pb-0.5 rounded-sm text-[12px] font-semibold border-2 border-gray-300 dark:border-gray-400',
                                         answer.is_correct
-                                            ? 'bg-emerald-100 text-emerald-700 ' +
-                                             'dark:bg-emerald-700/40 dark:text-emerald-100'
-                                            : 'bg-rose-100 text-rose-700 dark:bg-rose-700/40 ' +
-                                             'dark:text-rose-100'
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-700/40 dark:text-emerald-100'
+                                            : 'bg-rose-100 text-rose-700 dark:bg-rose-700/40 dark:text-rose-100',
                                     ]"
                                 >
-                                    {{ answer.is_correct ? t('yes') : t('no') }}
+                                    {{
+                                        answer.is_correct
+                                            ? t('yes')
+                                            : t('no')
+                                    }}
                                 </span>
                             </td>
+
+                            <!-- Weight -->
                             <td
                                 class="px-2 py-3 text-center text-xs
                                        text-amber-600 dark:text-amber-300"
                             >
                                 {{ answer.weight ?? 0 }}
                             </td>
+
+                            <!-- Attempt items -->
+                            <td
+                                class="px-2 py-3 text-center text-xs
+                                       text-fuchsia-700 dark:text-fuchsia-300"
+                            >
+                                {{ answer.attempt_items_count ?? 0 }}
+                            </td>
+
+                            <!-- Actions -->
                             <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="flex justify-end space-x-2">
                                     <ActivityToggle
@@ -214,17 +339,21 @@ const shortText = (html, length = 120) => {
                                         :title="answer.activity ? t('enabled') : t('disabled')"
                                         @toggle-activity="emit('toggle-activity', answer)"
                                     />
+
                                     <IconEdit
                                         :href="route('admin.schoolQuizAnswers.edit', {
                                             schoolQuizAnswer: answer.id,
                                         })"
                                     />
+
                                     <DeleteIconButton
                                         :title="t('delete')"
                                         @delete="emit('delete', answer)"
                                     />
                                 </div>
                             </td>
+
+                            <!-- Select -->
                             <td class="px-2 py-3 text-center">
                                 <input
                                     type="checkbox"
@@ -236,6 +365,7 @@ const shortText = (html, length = 120) => {
                     </template>
                 </draggable>
             </table>
+
             <div
                 v-else
                 class="p-5 text-center text-slate-700 dark:text-slate-100"

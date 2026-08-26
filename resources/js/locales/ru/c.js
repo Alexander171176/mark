@@ -100,6 +100,7 @@ export default {
     createModule: 'Создать Модуль обучения',
     createNewTeam: 'Создать новую группу',
     createNewTeamDesc: 'Создайте новую команду для совместной работы над проектами с другими пользователями.',
+    createOrder: 'Создать Заказ',
     createParameter: 'Создать Параметр',
     createPermission: 'Создать Разрешение',
     createQuiz: 'Создать Викторину',

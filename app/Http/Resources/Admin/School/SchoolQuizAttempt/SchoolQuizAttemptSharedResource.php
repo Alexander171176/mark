@@ -7,11 +7,10 @@ use App\Http\Resources\Admin\School\SchoolEnrollment\SchoolEnrollmentSharedResou
 use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonSharedResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleSharedResource;
 use App\Http\Resources\Admin\School\SchoolQuiz\SchoolQuizSharedResource;
-use App\Http\Resources\Admin\School\SchoolQuizAttemptItem\SchoolQuizAttemptItemResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class SchoolQuizAttemptResource extends JsonResource
+class SchoolQuizAttemptSharedResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
@@ -61,6 +60,9 @@ class SchoolQuizAttemptResource extends JsonResource
             'duration_seconds' =>
                 (int) $this->duration_seconds,
 
+            /**
+             * Нужны frontend-поиску.
+             */
             'ip_address' =>
                 $this->ip_address,
 
@@ -107,19 +109,17 @@ class SchoolQuizAttemptResource extends JsonResource
                 ),
 
             /**
-             * Полный Resource:
-             * items нужны Edit.
+             * В Index сами items не нужны,
+             * только count.
              */
-            'items' =>
-                SchoolQuizAttemptItemResource::collection(
-                    $this->whenLoaded('items')
-                ),
-
             'items_count' => $this->when(
                 isset($this->items_count),
                 fn () => (int) $this->items_count
             ),
 
+            /**
+             * Нужны frontend-сортировке.
+             */
             'created_at' =>
                 $this->created_at?->toISOString(),
 

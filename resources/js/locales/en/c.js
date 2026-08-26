@@ -100,6 +100,7 @@ export default {
     createModule: 'Create a Training Module',
     createNewTeam: 'Create New Team',
     createNewTeamDesc: 'Create a new team to collaborate on projects with other users.',
+    createOrder: 'Create an Order',
     createParameter: 'Create Parameter',
     createPermission: 'Create Permission',
     createQuiz: 'Create a Quiz',

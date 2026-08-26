@@ -154,7 +154,7 @@ class SchoolQuizAttemptItem extends Model
                 })
                 ->orderBy('sqqt_sort.question_text', 'asc')
                 ->orderByDesc('school_quiz_attempt_items.id')
-                ->select('school_quiz_attempt_items.*'),
+                ->addSelect('school_quiz_attempt_items.*'),
 
             'questionTextDesc' => $q
                 ->leftJoin('school_quiz_question_translations as sqqt_sort', function ($join) use ($locale) {
@@ -163,7 +163,7 @@ class SchoolQuizAttemptItem extends Model
                 })
                 ->orderBy('sqqt_sort.question_text', 'desc')
                 ->orderByDesc('school_quiz_attempt_items.id')
-                ->select('school_quiz_attempt_items.*'),
+                ->addSelect('school_quiz_attempt_items.*'),
 
             'createdAtAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('school_quiz_attempt_items.id'),
             'createdAtDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('school_quiz_attempt_items.id'),

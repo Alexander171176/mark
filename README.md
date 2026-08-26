@@ -634,6 +634,7 @@ Analytics
 `docker exec mark-php-app php artisan db:seed --class=SchoolQuizAttemptSeeder` <br>
 `docker exec mark-php-app php artisan make:request Admin/School/SchoolQuizAttempt/SchoolQuizAttemptRequest` <br>
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAttempt/SchoolQuizAttemptResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAttempt/SchoolQuizAttemptSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuizAttempt/SchoolQuizAttemptController --resource` <br>
 
 16) creating business logic SchoolQuizAttemptItem - ответ на один конкретный вопрос в рамках попытки
@@ -643,6 +644,7 @@ Analytics
 `docker exec mark-php-app php artisan db:seed --class=SchoolQuizAttemptItemSeeder` <br>
 `docker exec mark-php-app php artisan make:request Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItemRequest` <br>
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItemResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItemSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItemController --resource` <br>
 
 17) creating business logic SchoolBundle - набор курсов

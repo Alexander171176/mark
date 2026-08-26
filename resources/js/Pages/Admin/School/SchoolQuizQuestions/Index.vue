@@ -86,18 +86,37 @@ const selectedQuizId = ref(props.currentQuizId ?? props.filters?.school_quiz_id 
 const quizOptions = computed(() => props.quizzes || [])
 
 const quizOptionLabel = (quiz) => {
-    if (!quiz) return ''
+    if (!quiz) {
+        return ''
+    }
 
-    const idPart = `[ID: ${quiz.id}]`
-    const titlePart = quiz.title || quiz.slug || `#${quiz.id}`
+    const idPart =
+        `[ID: ${quiz.id}]`
+
+    const titlePart =
+        quiz?.translation?.title
+        || quiz?.slug
+        || `#${quiz.id}`
 
     const context = [
-        quiz.lesson?.title ? `Урок: ${quiz.lesson.title}` : null,
-        quiz.module?.title ? `Модуль: ${quiz.module.title}` : null,
-        quiz.course?.title ? `Курс: ${quiz.course.title}` : null,
-    ].filter(Boolean).join(' / ')
+        quiz?.lesson?.translation?.title
+            ? `Урок: ${quiz.lesson.translation.title}`
+            : null,
 
-    return context ? `${idPart} ${titlePart} — ${context}` : `${idPart} ${titlePart}`
+        quiz?.module?.translation?.title
+            ? `Модуль: ${quiz.module.translation.title}`
+            : null,
+
+        quiz?.course?.translation?.title
+            ? `Курс: ${quiz.course.translation.title}`
+            : null,
+    ]
+        .filter(Boolean)
+        .join(' / ')
+
+    return context
+        ? `${idPart} ${titlePart} — ${context}`
+        : `${idPart} ${titlePart}`
 }
 
 const handleQuizFilterChange = () => {
@@ -188,31 +207,43 @@ const safeDate = (value) => {
     return Number.isFinite(time) ? time : 0
 }
 
+/* ==========================================================
+ * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ RESOURCES
+ * ========================================================== */
+
+/**
+ * Текст вопроса.
+ */
 const getQuestionText = (question) => {
-    return question?.question_text
-        || question?.translation?.question_text
-        || question?.translations?.[0]?.question_text
+    return question?.translation?.question_text
         || `ID: ${question?.id}`
 }
 
+/**
+ * Пояснение к вопросу.
+ */
 const getQuestionExplanation = (question) => {
-    return question?.explanation
-        || question?.translation?.explanation
-        || question?.translations?.[0]?.explanation
+    return question?.translation?.explanation
         || ''
 }
 
+/**
+ * Заголовок переводимой связанной сущности.
+ */
 const getNestedTitle = (item) => {
-    return item?.title
-        || item?.name
-        || item?.translation?.title
+    return item?.translation?.title
         || item?.translation?.name
-        || item?.translations?.[0]?.title
-        || item?.translations?.[0]?.name
         || ''
 }
 
-const getQuizTitle = (question) => getNestedTitle(question?.quiz)
+/**
+ * Заголовок квиза вопроса.
+ */
+const getQuizTitle = (question) => {
+    return getNestedTitle(
+        question?.quiz
+    )
+}
 
 const byNumberAsc = (field) => (a, b) =>
     safeNumber(a?.[field]) - safeNumber(b?.[field])

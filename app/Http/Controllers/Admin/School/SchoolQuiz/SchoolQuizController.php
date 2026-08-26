@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Admin\School\SchoolQuiz;
 use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolQuiz\SchoolQuizRequest;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
-use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonResource;
-use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
+use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonSharedResource;
+use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleSharedResource;
 use App\Http\Resources\Admin\School\SchoolQuiz\SchoolQuizResource;
+use App\Http\Resources\Admin\School\SchoolQuiz\SchoolQuizSharedResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
@@ -66,31 +67,57 @@ class SchoolQuizController extends BaseSchoolAdminController
     /** Список квизов. */
     public function index(Request $request): Response
     {
-        $currentLocale = $this->resolveLocale($request);
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        $settings = app(AdminSettingsService::class);
+        $settings = app(
+            AdminSettingsService::class
+        );
 
-        $perPage = $settings->int('adminSchoolQuizzesPerPage', 6);
-        $defaultSort = $settings->string('adminSchoolQuizzesDefaultSort', 'idDesc');
+        $perPage = $settings->int(
+            'adminSchoolQuizzesPerPage',
+            6
+        );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $defaultSort = $settings->string(
+            'adminSchoolQuizzesDefaultSort',
+            'idDesc'
+        );
+
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
+
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
 
         $processingMode = $settings->string(
             'adminSchoolQuizzesProcessingMode',
             'frontend'
         );
 
-        $quizzesCount = $this->baseQuery()->count();
+        $quizzesCount = $this->baseQuery()
+            ->count();
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
-                $processingMode,
-                $quizzesCount,
-                300
-            );
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $quizzesCount,
+            300
+        );
 
         try {
+            /**
+             * Вот здесь используется
+             * getIndexQuizzes().
+             */
             $quizzes = $this->getIndexQuizzes(
                 locale: $currentLocale,
                 useServerProcessing: $useServerProcessing,
@@ -99,61 +126,128 @@ class SchoolQuizController extends BaseSchoolAdminController
                 search: $search,
             );
 
-            return Inertia::render('Admin/School/SchoolQuizzes/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/School/SchoolQuizzes/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminSchoolQuizzesPerPage' => $perPage,
-                'adminSchoolQuizzesDefaultSort' => $defaultSort,
-                'adminSchoolQuizzesProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'quizzes' => SchoolQuizResource::collection($quizzes),
-                'quizzesCount' => $quizzesCount,
+                    'adminSchoolQuizzesPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
-            ]);
+                    'adminSchoolQuizzesDefaultSort' =>
+                        $defaultSort,
+
+                    'adminSchoolQuizzesProcessingMode' =>
+                        $processingMode,
+
+                    /**
+                     * Index использует
+                     * краткий Shared Resource.
+                     */
+                    'quizzes' =>
+                        SchoolQuizSharedResource::collection(
+                            $quizzes
+                        ),
+
+                    'quizzesCount' =>
+                        $quizzesCount,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки списка school quizzes: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки списка school quizzes: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return Inertia::render('Admin/School/SchoolQuizzes/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/School/SchoolQuizzes/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminSchoolQuizzesPerPage' => $perPage,
-                'adminSchoolQuizzesDefaultSort' => $defaultSort,
-                'adminSchoolQuizzesProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'quizzes' => [],
-                'quizzesCount' => 0,
+                    'adminSchoolQuizzesPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminSchoolQuizzesDefaultSort' =>
+                        $defaultSort,
 
-                'error' => 'Ошибка загрузки квизов.',
-            ]);
+                    'adminSchoolQuizzesProcessingMode' =>
+                        $processingMode,
+
+                    'quizzes' =>
+                        [],
+
+                    'quizzesCount' =>
+                        0,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'error' =>
+                        'Ошибка загрузки квизов.',
+                ]
+            );
         }
     }
 
     /** Страница создания квиза. */
-    public function create(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        return Inertia::render('Admin/School/SchoolQuizzes/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+        return Inertia::render(
+            'Admin/School/SchoolQuizzes/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
 
-            'courses' => $this->coursesForSelect(),
-            'modules' => $this->modulesForSelect(),
-            'lessons' => $this->lessonsForSelect(),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+
+                'modules' =>
+                    $this->modulesForSelect(
+                        $currentLocale
+                    ),
+
+                'lessons' =>
+                    $this->lessonsForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Сохранение нового квиза. */
@@ -204,19 +298,82 @@ class SchoolQuizController extends BaseSchoolAdminController
     }
 
     /** Страница редактирования квиза. */
-    public function edit(int $schoolQuiz, Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function edit(
+        int $schoolQuiz,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
         $quiz = $this->baseQuery()
             ->with([
-                'translation',
+                /**
+                 * Edit требует все переводы квиза.
+                 *
+                 * Отдельная relation translation
+                 * больше не нужна.
+                 */
                 'translations',
-                'images',
-                'course.translation',
-                'module.translation',
-                'lesson.translation',
-                'questions.translation',
+
+                /**
+                 * Изображения + Spatie Media
+                 * одним пакетным eager loading.
+                 */
+                'images.media',
+
+                /**
+                 * Курс:
+                 * только выбранная локаль.
+                 */
+                'course' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
+
+                /**
+                 * Модуль:
+                 * только выбранная локаль.
+                 */
+                'module' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
+
+                /**
+                 * Урок:
+                 * только выбранная локаль.
+                 */
+                'lesson' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
+
+                /**
+                 * Вопросы:
+                 * только выбранный перевод.
+                 */
+                'questions' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $currentLocale
+                    ),
+                ]),
+
                 'attempts',
             ])
             ->withCount([
@@ -224,18 +381,40 @@ class SchoolQuizController extends BaseSchoolAdminController
                 'attempts',
                 'images',
             ])
-            ->findOrFail($schoolQuiz);
+            ->findOrFail(
+                $schoolQuiz
+            );
 
-        return Inertia::render('Admin/School/SchoolQuizzes/Edit', [
-            'quiz' => new SchoolQuizResource($quiz),
+        return Inertia::render(
+            'Admin/School/SchoolQuizzes/Edit',
+            [
+                'quiz' =>
+                    new SchoolQuizResource(
+                        $quiz
+                    ),
 
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+                'currentLocale' =>
+                    $currentLocale,
 
-            'courses' => $this->coursesForSelect(),
-            'modules' => $this->modulesForSelect(),
-            'lessons' => $this->lessonsForSelect(),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+
+                'modules' =>
+                    $this->modulesForSelect(
+                        $currentLocale
+                    ),
+
+                'lessons' =>
+                    $this->lessonsForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Обновление квиза. */
@@ -368,9 +547,11 @@ class SchoolQuizController extends BaseSchoolAdminController
         $quiz = $this->baseQuery()
             ->with([
                 'translations',
-                'images',
+                'images.media',
             ])
-            ->findOrFail($schoolQuiz);
+            ->findOrFail(
+                $schoolQuiz
+            );
 
         try {
             DB::transaction(function () use ($quiz) {
@@ -447,61 +628,154 @@ class SchoolQuizController extends BaseSchoolAdminController
     }
 
     /** Список курсов для select. */
-    private function coursesForSelect(): AnonymousResourceCollection
-    {
+    private function coursesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $courses = SchoolCourse::query()
-            ->with(['translation', 'translations'])
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+            ])
+            ->orderBy('sort')
+            ->orderByDesc('id')
             ->get();
 
-        return SchoolCourseSharedResource::collection($courses);
+        return SchoolCourseSharedResource::collection(
+            $courses
+        );
     }
 
     /** Список модулей для select. */
-    private function modulesForSelect(): AnonymousResourceCollection
-    {
+    private function modulesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $modules = SchoolModule::query()
             ->with([
-                'translation',
-                'translations',
-                'course.translation',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                'course' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
             ])
+            ->orderBy('sort')
+            ->orderByDesc('id')
             ->get();
 
-        return SchoolModuleResource::collection($modules);
+        return SchoolModuleSharedResource::collection(
+            $modules
+        );
     }
 
     /** Список уроков для select. */
-    private function lessonsForSelect(): AnonymousResourceCollection
-    {
+    private function lessonsForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $lessons = SchoolLesson::query()
             ->with([
-                'translation',
-                'translations',
-                'module.translation',
-                'module.course.translation',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
+
+                'module' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+
+                    'course' => fn ($courseQuery) =>
+                    $courseQuery->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $locale
+                        ),
+                    ]),
+                ]),
             ])
+            ->orderBy('sort')
+            ->orderByDesc('id')
             ->get();
 
-        return SchoolLessonResource::collection($lessons);
+        return SchoolLessonSharedResource::collection(
+            $lessons
+        );
     }
 
-    /** Базовый запрос для списка квизов. */
-    private function indexQuery(): Builder
-    {
+    /** Базовый запрос для Admin Index квизов. */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'translation',
-                'translations',
-                'images',
+                /**
+                 * Admin Index:
+                 * только выбранная локаль.
+                 *
+                 * Все переводы здесь не нужны.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
 
-                'course.translation',
-                'course.translations',
+                /**
+                 * Изображения квиза +
+                 * Spatie Media пакетным запросом.
+                 */
+                'images.media',
 
-                'module.translation',
-                'module.translations',
+                /**
+                 * Курс.
+                 */
+                'course' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
 
-                'lesson.translation',
-                'lesson.translations',
+                /**
+                 * Модуль.
+                 */
+                'module' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
+
+                /**
+                 * Урок.
+                 */
+                'lesson' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
             ])
             ->withCount([
                 'questions',
@@ -518,18 +792,31 @@ class SchoolQuizController extends BaseSchoolAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

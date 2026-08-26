@@ -195,7 +195,7 @@ class SchoolQuizAnswer extends Model
                 })
                 ->orderBy('sqat_sort.text', 'asc')
                 ->orderBy('school_quiz_answers.id', 'asc')
-                ->select('school_quiz_answers.*'),
+                ->addSelect('school_quiz_answers.*'),
 
             'textDesc' => $q
                 ->leftJoin('school_quiz_answer_translations as sqat_sort', function ($join) use ($locale) {
@@ -204,7 +204,7 @@ class SchoolQuizAnswer extends Model
                 })
                 ->orderBy('sqat_sort.text', 'desc')
                 ->orderByDesc('school_quiz_answers.id')
-                ->select('school_quiz_answers.*'),
+                ->addSelect('school_quiz_answers.*'),
 
             'quizTitleAsc' => $q
                 ->leftJoin('school_quizzes as sq_sort', 'sq_sort.id', '=', 'school_quiz_answers.school_quiz_id')
@@ -214,7 +214,7 @@ class SchoolQuizAnswer extends Model
                 })
                 ->orderBy('sqt_sort.title', 'asc')
                 ->orderBy('school_quiz_answers.id', 'asc')
-                ->select('school_quiz_answers.*'),
+                ->addSelect('school_quiz_answers.*'),
 
             'quizTitleDesc' => $q
                 ->leftJoin('school_quizzes as sq_sort', 'sq_sort.id', '=', 'school_quiz_answers.school_quiz_id')
@@ -224,7 +224,7 @@ class SchoolQuizAnswer extends Model
                 })
                 ->orderBy('sqt_sort.title', 'desc')
                 ->orderByDesc('school_quiz_answers.id')
-                ->select('school_quiz_answers.*'),
+                ->addSelect('school_quiz_answers.*'),
 
             'questionTextAsc' => $q
                 ->leftJoin('school_quiz_questions as sqq_sort', 'sqq_sort.id', '=', 'school_quiz_answers.school_quiz_question_id')
@@ -234,7 +234,7 @@ class SchoolQuizAnswer extends Model
                 })
                 ->orderBy('sqqt_sort.question_text', 'asc')
                 ->orderBy('school_quiz_answers.id', 'asc')
-                ->select('school_quiz_answers.*'),
+                ->addSelect('school_quiz_answers.*'),
 
             'questionTextDesc' => $q
                 ->leftJoin('school_quiz_questions as sqq_sort', 'sqq_sort.id', '=', 'school_quiz_answers.school_quiz_question_id')
@@ -244,7 +244,7 @@ class SchoolQuizAnswer extends Model
                 })
                 ->orderBy('sqqt_sort.question_text', 'desc')
                 ->orderByDesc('school_quiz_answers.id')
-                ->select('school_quiz_answers.*'),
+                ->addSelect('school_quiz_answers.*'),
 
             'weightAsc' => $q->orderBy('weight', 'asc')->orderBy('id', 'asc'),
             'weightDesc' => $q->orderBy('weight', 'desc')->orderByDesc('id'),

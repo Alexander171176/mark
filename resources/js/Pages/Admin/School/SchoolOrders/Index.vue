@@ -1,13 +1,17 @@
 <script setup>
 /**
+ * @version PulsarCMS 1.0
+ * @author Александр Косолапов <kosolapov1976@gmail.com>
+ *
  * Список заказов школы
+ *
  * - режимы обработки: frontend | server | auto
  * - локальный/серверный поиск
  * - локальная/серверная пагинация
- * - сортировка должна совпадать с SchoolOrder::scopeSortByParam()
+ * - сортировка совпадает с SchoolOrder::scopeSortByParam()
  */
 
-import { computed, defineProps, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { router } from '@inertiajs/vue3'
@@ -29,38 +33,106 @@ import SortSelect from '@/Components/Admin/School/SchoolOrder/Sort/SortSelect.vu
 import OrderTable from '@/Components/Admin/School/SchoolOrder/Table/OrderTable.vue'
 import OrderCardGrid from '@/Components/Admin/School/SchoolOrder/View/OrderCardGrid.vue'
 
+/* ==========================================================
+ * I18N / TOAST
+ * ========================================================== */
+
 const { t } = useI18n()
 const toast = useToast()
 
+/* ==========================================================
+ * PROPS
+ * ========================================================== */
+
 const props = defineProps({
-    currentLocale: { type: String, default: '' },
+    currentLocale: {
+        type: String,
+        default: '',
+    },
 
-    useServerProcessing: { type: Boolean, default: false },
-    adminSchoolOrdersProcessingMode: { type: String, default: 'frontend' },
+    availableLocales: {
+        type: Array,
+        default: () => [],
+    },
 
-    orders: { type: [Array, Object], default: () => [] },
-    ordersCount: { type: Number, default: 0 },
+    useServerProcessing: {
+        type: Boolean,
+        default: false,
+    },
 
-    filters: { type: Object, default: () => ({}) },
+    adminSchoolOrdersProcessingMode: {
+        type: String,
+        default: 'frontend',
+    },
 
-    adminSchoolOrdersPerPage: { type: Number, default: 10 },
-    adminSchoolOrdersDefaultSort: { type: String, default: 'idDesc' },
+    orders: {
+        type: [Array, Object],
+        default: () => [],
+    },
 
-    sortParam: { type: String, default: '' },
-    search: { type: String, default: '' },
+    ordersCount: {
+        type: Number,
+        default: 0,
+    },
 
-    errors: { type: Object, default: () => ({}) },
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+
+    adminSchoolOrdersPerPage: {
+        type: Number,
+        default: 10,
+    },
+
+    adminSchoolOrdersDefaultSort: {
+        type: String,
+        default: 'idDesc',
+    },
+
+    sortParam: {
+        type: String,
+        default: '',
+    },
+
+    search: {
+        type: String,
+        default: '',
+    },
+
+    errors: {
+        type: Object,
+        default: () => ({}),
+    },
 })
 
-const viewMode = ref(localStorage.getItem('admin_view_mode_orders') || 'table')
+/* ==========================================================
+ * VIEW MODE
+ * ========================================================== */
 
-watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode_orders', val)
+const viewMode = ref(
+    localStorage.getItem('admin_view_mode_orders') || 'table'
+)
+
+watch(viewMode, (value) => {
+    localStorage.setItem(
+        'admin_view_mode_orders',
+        value
+    )
 })
+
+/* ==========================================================
+ * DATA SOURCE
+ * ========================================================== */
 
 const ordersList = computed(() => {
-    if (Array.isArray(props.orders)) return props.orders
-    if (Array.isArray(props.orders?.data)) return props.orders.data
+    if (Array.isArray(props.orders)) {
+        return props.orders
+    }
+
+    if (Array.isArray(props.orders?.data)) {
+        return props.orders.data
+    }
 
     return []
 })
@@ -69,218 +141,499 @@ const localOrders = ref([])
 
 watch(
     ordersList,
-    (newVal) => {
-        localOrders.value = JSON.parse(JSON.stringify(newVal || []))
+    (newValue) => {
+        localOrders.value = JSON.parse(
+            JSON.stringify(newValue || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
-const itemsPerPage = ref(props.adminSchoolOrdersPerPage || 10)
+/* ==========================================================
+ * ITEMS PER PAGE
+ * ========================================================== */
 
-watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountSchoolOrders'), { value: newVal }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
-    })
+const itemsPerPage = ref(
+    props.adminSchoolOrdersPerPage || 10
+)
+
+watch(itemsPerPage, (newValue) => {
+    router.put(
+        route(
+            'admin.settings.updateAdminCountSchoolOrders'
+        ),
+        {
+            value: newValue,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                toast.info(
+                    `Показ ${newValue} элементов на странице.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления кол-ва элементов.'
+                )
+            },
+        }
+    )
 })
+
+/* ==========================================================
+ * SORT
+ * ========================================================== */
 
 const sortParam = ref(
-    props.sortParam ||
-    props.adminSchoolOrdersDefaultSort ||
-    'idDesc'
+    props.sortParam
+    || props.adminSchoolOrdersDefaultSort
+    || 'idDesc'
 )
 
-watch(sortParam, (newVal) => {
+const currentPage = ref(1)
+
+watch(sortParam, (newValue) => {
     currentPage.value = 1
 
-    router.put(route('admin.settings.updateAdminSortSchoolOrders'), { value: newVal }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-            if (props.useServerProcessing) {
-                router.get(
-                    window.location.pathname,
-                    {
-                        ...Object.fromEntries(new URLSearchParams(window.location.search)),
-                        sort: newVal || undefined,
-                        page: undefined,
-                    },
-                    {
-                        preserveScroll: true,
-                        preserveState: false,
-                        replace: true,
-                    }
-                )
-            }
-
-            toast.info('Сортировка успешно изменена')
+    router.put(
+        route(
+            'admin.settings.updateAdminSortSchoolOrders'
+        ),
+        {
+            value: newValue,
         },
-        onError: (errors) => toast.error(errors.value || 'Ошибка обновления сортировки.'),
-    })
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                if (props.useServerProcessing) {
+                    router.get(
+                        window.location.pathname,
+                        {
+                            ...Object.fromEntries(
+                                new URLSearchParams(
+                                    window.location.search
+                                )
+                            ),
+
+                            sort:
+                                newValue
+                                || undefined,
+
+                            page:
+                            undefined,
+                        },
+                        {
+                            preserveScroll: true,
+                            preserveState: false,
+                            replace: true,
+                        }
+                    )
+                }
+
+                toast.info(
+                    'Сортировка успешно изменена'
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления сортировки.'
+                )
+            },
+        }
+    )
 })
 
-const currentPage = ref(1)
-const searchQuery = ref(props.search || props.filters?.search || '')
+/* ==========================================================
+ * SEARCH
+ * ========================================================== */
+
+const searchQuery = ref(
+    props.search
+    || props.filters?.search
+    || ''
+)
+
+/* ==========================================================
+ * DELETE
+ * ========================================================== */
 
 const showConfirmDeleteModal = ref(false)
 const orderToDelete = ref(null)
 
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+/* ==========================================================
+ * HELPERS
+ * ========================================================== */
+
+const normalize = (value) => {
+    return (value ?? '')
+        .toString()
+        .trim()
+        .toLowerCase()
+}
 
 const safeNumber = (value) => {
     const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+
+    return Number.isFinite(number)
+        ? number
+        : 0
 }
 
 const safeDate = (value) => {
-    const time = new Date(value || 0).getTime()
-    return Number.isFinite(time) ? time : 0
+    const time = new Date(
+        value || 0
+    ).getTime()
+
+    return Number.isFinite(time)
+        ? time
+        : 0
 }
 
+/* ==========================================================
+ * RESOURCE HELPERS
+ * ========================================================== */
+
+/**
+ * Buyer может храниться:
+ *
+ * 1. непосредственно в Order;
+ * 2. в relation User.
+ */
 const getBuyerName = (order) => {
-    return order?.buyer_name || order?.user?.name || ''
+    return order?.buyer_name
+        || order?.user?.name
+        || ''
 }
 
 const getBuyerEmail = (order) => {
-    return order?.buyer_email || order?.user?.email || ''
+    return order?.buyer_email
+        || order?.user?.email
+        || ''
 }
 
+/**
+ * SchoolOrderSharedResource
+ * отдаёт SchoolCourseSharedResource.
+ *
+ * Поэтому используем только:
+ *
+ * course.translation.title
+ */
 const getCourseTitle = (order) => {
-    return order?.course?.title
-        || order?.course?.translation?.title
-        || order?.course?.translations?.[0]?.title
+    return order?.course?.translation?.title
         || ''
 }
 
+/**
+ * SchoolOrderSharedResource
+ * отдаёт SchoolCourseScheduleSharedResource.
+ *
+ * Поэтому используем только:
+ *
+ * schedule.translation.title
+ */
 const getScheduleTitle = (order) => {
-    return order?.schedule?.title
-        || order?.schedule?.translation?.title
-        || order?.schedule?.translations?.[0]?.title
+    return order?.schedule?.translation?.title
         || ''
 }
+
+/* ==========================================================
+ * FRONTEND SORT
+ * ========================================================== */
 
 const byNumberAsc = (field) => (a, b) =>
-    safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    safeNumber(a?.[field])
+    - safeNumber(b?.[field])
+    || safeNumber(a?.id)
+    - safeNumber(b?.id)
 
 const byNumberDesc = (field) => (a, b) =>
-    safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+    safeNumber(b?.[field])
+    - safeNumber(a?.[field])
+    || safeNumber(b?.id)
+    - safeNumber(a?.id)
 
 const byStringAsc = (field) => (a, b) =>
-    normalize(a?.[field]).localeCompare(normalize(b?.[field]), props.currentLocale)
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    normalize(
+        a?.[field]
+    ).localeCompare(
+        normalize(
+            b?.[field]
+        ),
+        props.currentLocale
+    )
+    || safeNumber(a?.id)
+    - safeNumber(b?.id)
 
 const byStringDesc = (field) => (a, b) =>
-    normalize(b?.[field]).localeCompare(normalize(a?.[field]), props.currentLocale)
-    || safeNumber(b?.id) - safeNumber(a?.id)
+    normalize(
+        b?.[field]
+    ).localeCompare(
+        normalize(
+            a?.[field]
+        ),
+        props.currentLocale
+    )
+    || safeNumber(b?.id)
+    - safeNumber(a?.id)
 
 const byDateAsc = (field) => (a, b) =>
-    safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    safeDate(a?.[field])
+    - safeDate(b?.[field])
+    || safeNumber(a?.id)
+    - safeNumber(b?.id)
 
 const byDateDesc = (field) => (a, b) =>
-    safeDate(b?.[field]) - safeDate(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+    safeDate(b?.[field])
+    - safeDate(a?.[field])
+    || safeNumber(b?.id)
+    - safeNumber(a?.id)
 
 const sortOrders = (items) => {
-    const list = (items || []).slice()
+    const list = (items || [])
+        .slice()
 
+    /**
+     * Полностью соответствует:
+     *
+     * SchoolOrder::scopeSortByParam()
+     */
     const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
+        idAsc:
+            byNumberAsc('id'),
 
-        numberAsc: byStringAsc('number'),
-        numberDesc: byStringDesc('number'),
+        idDesc:
+            byNumberDesc('id'),
 
-        createdAsc: byDateAsc('created_at'),
-        createdDesc: byDateDesc('created_at'),
-        date_asc: byDateAsc('created_at'),
-        date_desc: byDateDesc('created_at'),
+        numberAsc:
+            byStringAsc('number'),
 
-        totalAsc: byNumberAsc('total'),
-        totalDesc: byNumberDesc('total'),
-        total_asc: byNumberAsc('total'),
-        total_desc: byNumberDesc('total'),
+        numberDesc:
+            byStringDesc('number'),
 
-        paidAtAsc: byDateAsc('paid_at'),
-        paidAtDesc: byDateDesc('paid_at'),
-        paid_asc: byDateAsc('paid_at'),
-        paid_desc: byDateDesc('paid_at'),
+        createdAsc:
+            byDateAsc('created_at'),
+
+        createdDesc:
+            byDateDesc('created_at'),
+
+        date_asc:
+            byDateAsc('created_at'),
+
+        date_desc:
+            byDateDesc('created_at'),
+
+        totalAsc:
+            byNumberAsc('total'),
+
+        totalDesc:
+            byNumberDesc('total'),
+
+        total_asc:
+            byNumberAsc('total'),
+
+        total_desc:
+            byNumberDesc('total'),
+
+        paidAtAsc:
+            byDateAsc('paid_at'),
+
+        paidAtDesc:
+            byDateDesc('paid_at'),
+
+        paid_asc:
+            byDateAsc('paid_at'),
+
+        paid_desc:
+            byDateDesc('paid_at'),
 
         buyerAsc: (a, b) =>
-            normalize(getBuyerName(a)).localeCompare(normalize(getBuyerName(b)), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+            normalize(
+                getBuyerName(a)
+            ).localeCompare(
+                normalize(
+                    getBuyerName(b)
+                ),
+                props.currentLocale
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
 
         buyerDesc: (a, b) =>
-            normalize(getBuyerName(b)).localeCompare(normalize(getBuyerName(a)), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+            normalize(
+                getBuyerName(b)
+            ).localeCompare(
+                normalize(
+                    getBuyerName(a)
+                ),
+                props.currentLocale
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
 
-        statusAsc: byStringAsc('status'),
-        statusDesc: byStringDesc('status'),
+        statusAsc:
+            byStringAsc('status'),
 
-        paymentStatusAsc: byStringAsc('payment_status'),
-        paymentStatusDesc: byStringDesc('payment_status'),
+        statusDesc:
+            byStringDesc('status'),
+
+        paymentStatusAsc:
+            byStringAsc(
+                'payment_status'
+            ),
+
+        paymentStatusDesc:
+            byStringDesc(
+                'payment_status'
+            ),
 
         paidFirst: (a, b) =>
-            Number(Boolean(b?.is_paid)) - Number(Boolean(a?.is_paid))
-            || safeNumber(b?.id) - safeNumber(a?.id),
+            Number(
+                Boolean(
+                    b?.is_paid
+                )
+            )
+            - Number(
+                Boolean(
+                    a?.is_paid
+                )
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
 
         paidLast: (a, b) =>
-            Number(Boolean(a?.is_paid)) - Number(Boolean(b?.is_paid))
-            || safeNumber(b?.id) - safeNumber(a?.id),
+            Number(
+                Boolean(
+                    a?.is_paid
+                )
+            )
+            - Number(
+                Boolean(
+                    b?.is_paid
+                )
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
     }
 
-    return sortMap[sortParam.value]
-        ? list.sort(sortMap[sortParam.value])
+    return sortMap[
+        sortParam.value
+        ]
+        ? list.sort(
+            sortMap[
+                sortParam.value
+                ]
+        )
         : list
 }
 
+/* ==========================================================
+ * FRONTEND SEARCH
+ * ========================================================== */
+
+/**
+ * Соответствует обновлённому:
+ *
+ * SchoolOrder::scopeSearch($term, $locale)
+ *
+ * Ищем:
+ * - Order;
+ * - Buyer/User;
+ * - Course currentLocale;
+ * - Schedule currentLocale;
+ * - payment fields.
+ */
 const filteredOrders = computed(() => {
-    let filtered = localOrders.value || []
-    const query = normalize(searchQuery.value)
+    let filtered =
+        localOrders.value || []
+
+    const query =
+        normalize(
+            searchQuery.value
+        )
 
     if (!query) {
-        return sortOrders(filtered)
+        return sortOrders(
+            filtered
+        )
     }
 
-    filtered = filtered.filter((order) => {
-        const values = [
-            order?.id,
-            order?.number,
-            order?.status,
-            order?.payment_status,
+    filtered = filtered.filter(
+        (order) => {
+            const values = [
+                order?.id,
+                order?.number,
 
-            getBuyerName(order),
-            getBuyerEmail(order),
-            order?.buyer_phone,
+                order?.status,
+                order?.payment_status,
 
-            getCourseTitle(order),
-            getScheduleTitle(order),
+                getBuyerName(order),
+                getBuyerEmail(order),
+                order?.buyer_phone,
 
-            order?.payment_method,
-            order?.payment_provider,
-            order?.payment_reference,
-            order?.external_id,
-            order?.client_ip,
+                getCourseTitle(order),
+                getScheduleTitle(order),
 
-            order?.total,
-            order?.currency,
-        ]
+                order?.payment_method,
+                order?.payment_provider,
+                order?.payment_reference,
 
-        return values.some(value => normalize(value).includes(query))
-    })
+                order?.external_id,
+                order?.client_ip,
 
-    return sortOrders(filtered)
+                order?.total,
+                order?.currency,
+            ]
+
+            return values.some(
+                value =>
+                    normalize(
+                        value
+                    ).includes(
+                        query
+                    )
+            )
+        }
+    )
+
+    return sortOrders(
+        filtered
+    )
 })
 
-const paginatedOrders = computed(() => {
-    const per = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * per
+/* ==========================================================
+ * FRONTEND PAGINATION
+ * ========================================================== */
 
-    return filteredOrders.value.slice(start, start + per)
+const paginatedOrders = computed(() => {
+    const per = Number(
+        itemsPerPage.value
+        || 10
+    )
+
+    const start =
+        (
+            currentPage.value
+            - 1
+        )
+        * per
+
+    return filteredOrders.value.slice(
+        start,
+        start + per
+    )
 })
 
 const displayedOrders = computed(() => {
@@ -289,54 +642,125 @@ const displayedOrders = computed(() => {
         : paginatedOrders.value
 })
 
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+    ],
+    () => {
+        currentPage.value = 1
+    }
+)
+
+/* ==========================================================
+ * DELETE
+ * ========================================================== */
 
 const confirmDelete = (order) => {
-    orderToDelete.value = order
-    showConfirmDeleteModal.value = true
+    orderToDelete.value =
+        order
+
+    showConfirmDeleteModal.value =
+        true
 }
 
 const closeModal = () => {
-    showConfirmDeleteModal.value = false
-    orderToDelete.value = null
+    showConfirmDeleteModal.value =
+        false
+
+    orderToDelete.value =
+        null
 }
 
 const deleteOrder = () => {
-    if (!orderToDelete.value?.id) return
+    if (
+        !orderToDelete.value?.id
+    ) {
+        return
+    }
 
-    const idToDelete = orderToDelete.value.id
-    const numberToDelete = orderToDelete.value.number || `ID: ${idToDelete}`
+    const idToDelete =
+        orderToDelete.value.id
 
-    router.delete(route('admin.schoolOrders.destroy', {
-        schoolOrder: idToDelete,
-    }), {
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => {
-            toast.success(`Заказ "${numberToDelete}" удалён.`)
-        },
-        onError: (errors) => {
-            const firstKey = Object.keys(errors || {})[0]
-            const errorMsg = errors?.general || errors?.[firstKey] || 'Ошибка при удалении заказа.'
+    const numberToDelete =
+        orderToDelete.value.number
+        || `ID: ${idToDelete}`
 
-            toast.error(`${errorMsg} Заказ: ${numberToDelete}`)
-        },
-        onFinish: () => closeModal(),
-    })
+    router.delete(
+        route(
+            'admin.schoolOrders.destroy',
+            {
+                schoolOrder:
+                idToDelete,
+            }
+        ),
+        {
+            preserveScroll: true,
+            preserveState: false,
+
+            onSuccess: () => {
+                toast.success(
+                    `Заказ "${numberToDelete}" удалён.`
+                )
+            },
+
+            onError: (errors) => {
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                const errorMessage =
+                    errors?.general
+                    || errors?.[firstKey]
+                    || 'Ошибка при удалении заказа.'
+
+                toast.error(
+                    `${errorMessage} Заказ: ${numberToDelete}`
+                )
+            },
+
+            onFinish: () => {
+                closeModal()
+            },
+        }
+    )
 }
 
-const cloneOrder = (order) => {
-    if (!order?.id) return
+/* ==========================================================
+ * CLONE
+ * ========================================================== */
 
-    router.post(route('admin.actions.schoolOrders.clone', {
-        schoolOrder: order.id,
-    }), {}, {
-        preserveScroll: true,
-        onSuccess: () => toast.success('Заказ успешно клонирован.'),
-        onError: () => toast.error('Ошибка при клонировании заказа.'),
-    })
+const cloneOrder = (order) => {
+    if (!order?.id) {
+        return
+    }
+
+    router.post(
+        route(
+            'admin.actions.schoolOrders.clone',
+            {
+                schoolOrder:
+                order.id,
+            }
+        ),
+        {},
+        {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Заказ успешно клонирован.'
+                )
+            },
+
+            onError: () => {
+                toast.error(
+                    'Ошибка при клонировании заказа.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -352,9 +776,11 @@ const cloneOrder = (order) => {
             <div
                 class="p-4 bg-slate-50 dark:bg-slate-700
                        border border-blue-400 dark:border-blue-200
-                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                       overflow-hidden shadow-md shadow-gray-500
+                       dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
+                <!-- Processing mode -->
                 <div class="sm:flex sm:justify-end sm:items-center mb-3 gap-3">
                     <ProcessingModeSwitcher
                         setting-key="adminSchoolOrdersProcessingMode"
@@ -364,6 +790,7 @@ const cloneOrder = (order) => {
                     />
                 </div>
 
+                <!-- Search -->
                 <SearchInput
                     v-if="ordersCount && !useServerProcessing"
                     v-model="searchQuery"
@@ -375,9 +802,11 @@ const cloneOrder = (order) => {
                     v-model="searchQuery"
                 />
 
+                <!-- Per page / Sort -->
                 <div
                     v-if="ordersCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                    class="flex justify-between items-center
+                           flex-col md:flex-row my-3"
                 >
                     <ItemsPerPageSelect
                         v-if="!useServerProcessing"
@@ -393,22 +822,30 @@ const cloneOrder = (order) => {
 
                     <SortSelect
                         :sortParam="sortParam"
-                        @update:sortParam="val => sortParam = val"
+                        @update:sortParam="value => sortParam = value"
                     />
                 </div>
 
+                <!-- Count / View -->
                 <div
                     v-if="ordersCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                    class="flex justify-between items-center
+                           flex-col md:flex-row my-3"
                 >
-                    <CountTable>{{ ordersCount }}</CountTable>
+                    <CountTable>
+                        {{ ordersCount }}
+                    </CountTable>
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
+                <!-- Top Pagination -->
                 <div
                     v-if="ordersCount"
-                    class="flex justify-center items-center flex-col md:flex-row mb-3"
+                    class="flex justify-center items-center
+                           flex-col md:flex-row mb-3"
                 >
                     <Pagination
                         v-if="!useServerProcessing"
@@ -424,6 +861,7 @@ const cloneOrder = (order) => {
                     />
                 </div>
 
+                <!-- Table -->
                 <OrderTable
                     v-if="viewMode === 'table'"
                     :orders="displayedOrders"
@@ -431,6 +869,7 @@ const cloneOrder = (order) => {
                     @delete="confirmDelete"
                 />
 
+                <!-- Cards -->
                 <OrderCardGrid
                     v-else
                     :orders="displayedOrders"
@@ -438,9 +877,11 @@ const cloneOrder = (order) => {
                     @delete="confirmDelete"
                 />
 
+                <!-- Bottom Pagination -->
                 <div
                     v-if="ordersCount"
-                    class="flex justify-center items-center flex-col md:flex-row mt-3"
+                    class="flex justify-center items-center
+                           flex-col md:flex-row mt-3"
                 >
                     <Pagination
                         v-if="!useServerProcessing"

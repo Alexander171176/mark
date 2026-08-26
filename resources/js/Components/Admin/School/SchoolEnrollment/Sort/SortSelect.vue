@@ -72,8 +72,8 @@ const updateSort = (event) => {
             <option value="scheduleTitleDesc">{{ t('schedule') }} Z→A</option>
             <option disabled>──────────────────</option>
 
-            <option value="progressRecordsDesc">{{ t('progressRecords') }} 9→0</option>
-            <option value="progressRecordsAsc">{{ t('progressRecords') }} 0→9</option>
+            <option value="progressRecordsDesc">{{ t('progress') }} 9→0</option>
+            <option value="progressRecordsAsc">{{ t('progress') }} 0→9</option>
             <option disabled>──────────────────</option>
 
             <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>

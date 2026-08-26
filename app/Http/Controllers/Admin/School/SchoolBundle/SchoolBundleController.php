@@ -23,21 +23,20 @@ use Inertia\Response;
 use Throwable;
 
 /**
- * Контроллер для управления Наборами курсов (SchoolBundle) в административной панели.
+ * Контроллер для управления наборами курсов
+ * (SchoolBundle) в административной панели.
  *
  * CRUD +:
- * - обновление активности (одиночное и массовое)
- * - обновление сортировки (одиночное и массовое)
- * - удаление (одиночное)
- * - мультиязычность, изображения
- * - связи с треками, хештегами и связанными курсами.
+ * - мультиязычность;
+ * - изображения через базовую Spatie-логику;
+ * - связь с курсами;
+ * - цены;
+ * - activity;
+ * - sort;
+ * - processing modes:
+ *   frontend | server | auto.
  *
- * @version 1.1 (мультиязычная архитектура)
- * @author Александр Косолапов <kosolapov1976@gmail.com>
- *
- * @see SchoolBundle
- * @see SchoolBundleRequest
- *
+ * @version 1.2
  */
 class SchoolBundleController extends BaseSchoolAdminController
 {
@@ -64,32 +63,64 @@ class SchoolBundleController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
+    /**
+     * =========================================================
+     * INDEX
+     * =========================================================
+     */
+
     /** Список наборов курсов. */
     public function index(Request $request): Response
     {
-        $currentLocale = $this->resolveLocale($request);
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        $settings = app(AdminSettingsService::class);
+        $settings = app(
+            AdminSettingsService::class
+        );
 
-        $perPage = $settings->int('adminSchoolBundlesPerPage', 6);
-        $defaultSort = $settings->string('adminSchoolBundlesDefaultSort', 'idDesc');
+        $perPage = $settings->int(
+            'adminSchoolBundlesPerPage',
+            6
+        );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $defaultSort = $settings->string(
+            'adminSchoolBundlesDefaultSort',
+            'idDesc'
+        );
+
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
+
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
 
         $processingMode = $settings->string(
             'adminSchoolBundlesProcessingMode',
             'frontend'
         );
 
-        $bundlesCount = $this->baseQuery()->count();
+        /**
+         * Отдельный лёгкий count
+         * без eager loading.
+         */
+        $bundlesCount = $this->countQuery()
+            ->count();
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
-                $processingMode,
-                $bundlesCount,
-                300
-            );
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $bundlesCount,
+            300
+        );
 
         try {
             $bundles = $this->getIndexBundles(
@@ -100,69 +131,147 @@ class SchoolBundleController extends BaseSchoolAdminController
                 search: $search,
             );
 
-            return Inertia::render('Admin/School/SchoolBundles/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/School/SchoolBundles/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminSchoolBundlesPerPage' => $perPage,
-                'adminSchoolBundlesDefaultSort' => $defaultSort,
-                'adminSchoolBundlesProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'bundles' => SchoolBundleResource::collection($bundles),
-                'bundlesCount' => $bundlesCount,
+                    'adminSchoolBundlesPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
-            ]);
+                    'adminSchoolBundlesDefaultSort' =>
+                        $defaultSort,
+
+                    'adminSchoolBundlesProcessingMode' =>
+                        $processingMode,
+
+                    /**
+                     * Index использует
+                     * компактный SharedResource.
+                     */
+                    'bundles' =>
+                        SchoolBundleSharedResource::collection(
+                            $bundles
+                        ),
+
+                    'bundlesCount' =>
+                        $bundlesCount,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки списка school bundles: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки списка school bundles: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return Inertia::render('Admin/School/SchoolBundles/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/School/SchoolBundles/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminSchoolBundlesPerPage' => $perPage,
-                'adminSchoolBundlesDefaultSort' => $defaultSort,
-                'adminSchoolBundlesProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'bundles' => [],
-                'bundlesCount' => 0,
+                    'adminSchoolBundlesPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminSchoolBundlesDefaultSort' =>
+                        $defaultSort,
 
-                'error' => 'Ошибка загрузки наборов курсов.',
-            ]);
+                    'adminSchoolBundlesProcessingMode' =>
+                        $processingMode,
+
+                    'bundles' =>
+                        [],
+
+                    'bundlesCount' =>
+                        0,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'error' =>
+                        'Ошибка загрузки наборов курсов.',
+                ]
+            );
         }
     }
 
+    /**
+     * =========================================================
+     * CREATE / STORE
+     * =========================================================
+     */
+
     /** Страница создания набора курсов. */
-    public function create(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        return Inertia::render('Admin/School/SchoolBundles/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+        return Inertia::render(
+            'Admin/School/SchoolBundles/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
 
-            'courses' => $this->coursesForSelect(),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                /**
+                 * Courses для select:
+                 * только currentLocale.
+                 */
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Сохранение нового набора курсов. */
-    public function store(SchoolBundleRequest $request): RedirectResponse
-    {
+    public function store(
+        SchoolBundleRequest $request
+    ): RedirectResponse {
         $data = $request->validated();
 
-        $translations = $data['translations'] ?? [];
-        $imagesData = $data['images'] ?? [];
-        $courseIds = $data['course_ids'] ?? [];
+        $translations =
+            $data['translations']
+            ?? [];
+
+        $imagesData =
+            $data['images']
+            ?? [];
+
+        $courseIds =
+            $data['course_ids']
+            ?? [];
 
         unset(
             $data['translations'],
@@ -172,58 +281,146 @@ class SchoolBundleController extends BaseSchoolAdminController
         );
 
         try {
-            DB::transaction(function () use (
-                $request,
-                $data,
-                $translations,
-                $imagesData,
-                $courseIds
-            ) {
-                if (!isset($data['sort']) || is_null($data['sort'])) {
-                    $maxSort = SchoolBundle::query()->max('sort');
-                    $data['sort'] = is_null($maxSort) ? 1 : $maxSort + 1;
+            DB::transaction(
+                function () use (
+                    $request,
+                    $data,
+                    $translations,
+                    $imagesData,
+                    $courseIds
+                ) {
+                    /**
+                     * Автоматический sort.
+                     */
+                    if (
+                        !isset($data['sort'])
+                        || is_null($data['sort'])
+                    ) {
+                        $maxSort =
+                            SchoolBundle::query()
+                                ->max('sort');
+
+                        $data['sort'] =
+                            is_null($maxSort)
+                                ? 1
+                                : $maxSort + 1;
+                    }
+
+                    $bundle =
+                        SchoolBundle::create(
+                            $data
+                        );
+
+                    /**
+                     * Базовая мультиязычная логика.
+                     */
+                    $this->syncTranslations(
+                        $bundle,
+                        $translations
+                    );
+
+                    /**
+                     * Базовая Spatie image-логика.
+                     */
+                    $this->syncImages(
+                        $bundle,
+                        $request,
+                        $imagesData
+                    );
+
+                    /**
+                     * Курсы набора.
+                     */
+                    $bundle
+                        ->courses()
+                        ->sync(
+                            $courseIds
+                        );
                 }
-
-                $bundle = SchoolBundle::create($data);
-
-                $this->syncTranslations($bundle, $translations);
-                $this->syncImages($bundle, $request, $imagesData);
-
-                $bundle->courses()->sync($courseIds);
-            });
+            );
 
             return redirect()
-                ->route('admin.schoolBundles.index')
-                ->with('success', 'Набор курсов успешно создан.');
+                ->route(
+                    'admin.schoolBundles.index'
+                )
+                ->with(
+                    'success',
+                    'Набор курсов успешно создан.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка создания school bundle: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка создания school bundle: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при создании набора курсов.');
+                ->with(
+                    'error',
+                    'Ошибка при создании набора курсов.'
+                );
         }
     }
 
+    /**
+     * =========================================================
+     * SHOW / EDIT / UPDATE
+     * =========================================================
+     */
+
     /** Редирект на страницу редактирования. */
-    public function show(int $schoolBundle): RedirectResponse
-    {
-        return redirect()->route('admin.schoolBundles.edit', $schoolBundle);
+    public function show(
+        int $schoolBundle
+    ): RedirectResponse {
+        return redirect()->route(
+            'admin.schoolBundles.edit',
+            $schoolBundle
+        );
     }
 
     /** Страница редактирования набора курсов. */
-    public function edit(int $schoolBundle, Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    public function edit(
+        int $schoolBundle,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
         $bundle = $this->baseQuery()
             ->with([
-                'translation',
+                /**
+                 * Для Edit нужны ВСЕ
+                 * переводы самого Bundle.
+                 */
                 'translations',
-                'images',
-                'courses.translation',
-                'courses.translations',
+
+                /**
+                 * Изображения через
+                 * базовую Spatie-модель.
+                 */
+                'images.media',
+
+                /**
+                 * Связанные Courses:
+                 * только currentLocale.
+                 */
+                'courses' => fn ($query) =>
+                $query->with([
+                    'translations' =>
+                        fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $currentLocale
+                        ),
+                ]),
+
+                /**
+                 * Цены нужны Edit.
+                 */
                 'prices',
             ])
             ->withCount([
@@ -232,31 +429,66 @@ class SchoolBundleController extends BaseSchoolAdminController
                 'prices',
                 'orderItems',
             ])
-            ->findOrFail($schoolBundle);
+            ->findOrFail(
+                $schoolBundle
+            );
 
-        return Inertia::render('Admin/School/SchoolBundles/Edit', [
-            'bundle' => new SchoolBundleResource($bundle),
+        return Inertia::render(
+            'Admin/School/SchoolBundles/Edit',
+            [
+                'bundle' =>
+                    new SchoolBundleResource(
+                        $bundle
+                    ),
 
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+                'currentLocale' =>
+                    $currentLocale,
 
-            'courses' => $this->coursesForSelect(),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                /**
+                 * Select Courses:
+                 * только currentLocale.
+                 */
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Обновление набора курсов. */
-    public function update(SchoolBundleRequest $request, int $schoolBundle): RedirectResponse
-    {
+    public function update(
+        SchoolBundleRequest $request,
+        int $schoolBundle
+    ): RedirectResponse {
         $bundle = $this->baseQuery()
-            ->with('images')
-            ->findOrFail($schoolBundle);
+            ->with([
+                'images.media',
+            ])
+            ->findOrFail(
+                $schoolBundle
+            );
 
         $data = $request->validated();
 
-        $translations = $data['translations'] ?? [];
-        $imagesData = $data['images'] ?? [];
-        $deletedImageIds = $data['deletedImages'] ?? [];
-        $courseIds = $data['course_ids'] ?? [];
+        $translations =
+            $data['translations']
+            ?? [];
+
+        $imagesData =
+            $data['images']
+            ?? [];
+
+        $deletedImageIds =
+            $data['deletedImages']
+            ?? [];
+
+        $courseIds =
+            $data['course_ids']
+            ?? [];
 
         unset(
             $data['translations'],
@@ -267,112 +499,240 @@ class SchoolBundleController extends BaseSchoolAdminController
         );
 
         try {
-            DB::transaction(function () use (
-                $request,
-                $bundle,
-                $data,
-                $translations,
-                $imagesData,
-                $deletedImageIds,
-                $courseIds
-            ) {
-                $bundle->update($data);
+            DB::transaction(
+                function () use (
+                    $request,
+                    $bundle,
+                    $data,
+                    $translations,
+                    $imagesData,
+                    $deletedImageIds,
+                    $courseIds
+                ) {
+                    $bundle->update(
+                        $data
+                    );
 
-                $this->syncTranslations($bundle, $translations);
-                $this->syncImages($bundle, $request, $imagesData, $deletedImageIds);
+                    $this->syncTranslations(
+                        $bundle,
+                        $translations
+                    );
 
-                $bundle->courses()->sync($courseIds);
-            });
+                    $this->syncImages(
+                        $bundle,
+                        $request,
+                        $imagesData,
+                        $deletedImageIds
+                    );
+
+                    $bundle
+                        ->courses()
+                        ->sync(
+                            $courseIds
+                        );
+                }
+            );
 
             return redirect()
-                ->route('admin.schoolBundles.index')
-                ->with('success', 'Набор курсов успешно обновлён.');
+                ->route(
+                    'admin.schoolBundles.index'
+                )
+                ->with(
+                    'success',
+                    'Набор курсов успешно обновлён.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка обновления school bundle ID ' . $bundle->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка обновления school bundle ID '
+                . $bundle->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при обновлении набора курсов.');
+                ->with(
+                    'error',
+                    'Ошибка при обновлении набора курсов.'
+                );
         }
     }
+
+    /**
+     * =========================================================
+     * DELETE
+     * =========================================================
+     */
 
     /** Удаление набора курсов. */
-    public function destroy(int $schoolBundle): RedirectResponse
-    {
+    public function destroy(
+        int $schoolBundle
+    ): RedirectResponse {
         $bundle = $this->baseQuery()
-            ->with('images')
-            ->findOrFail($schoolBundle);
+            ->with([
+                'images.media',
+            ])
+            ->findOrFail(
+                $schoolBundle
+            );
 
         try {
-            DB::transaction(function () use ($bundle) {
-                $imageIds = $bundle->images()
-                    ->pluck('school_bundle_images.id')
-                    ->toArray();
+            DB::transaction(
+                function () use ($bundle) {
+                    $imageIds = $bundle
+                        ->images()
+                        ->pluck(
+                            'school_bundle_images.id'
+                        )
+                        ->toArray();
 
-                if (!empty($imageIds)) {
-                    $bundle->images()->detach();
-                    $this->deleteImages($imageIds);
+                    if (!empty($imageIds)) {
+                        $bundle
+                            ->images()
+                            ->detach();
+
+                        $this->deleteImages(
+                            $imageIds
+                        );
+                    }
+
+                    $bundle
+                        ->courses()
+                        ->detach();
+
+                    $bundle
+                        ->translations()
+                        ->delete();
+
+                    $bundle->delete();
                 }
-
-                $bundle->courses()->detach();
-                $bundle->translations()->delete();
-
-                $bundle->delete();
-            });
+            );
 
             return redirect()
-                ->route('admin.schoolBundles.index')
-                ->with('success', 'Набор курсов успешно удалён.');
+                ->route(
+                    'admin.schoolBundles.index'
+                )
+                ->with(
+                    'success',
+                    'Набор курсов успешно удалён.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка удаления school bundle ID ' . $bundle->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка удаления school bundle ID '
+                . $bundle->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при удалении набора курсов.');
+            return back()->with(
+                'error',
+                'Ошибка при удалении набора курсов.'
+            );
         }
     }
 
-    /** Список наборов курсов для select. */
-    private function bundlesForSelect(?int $excludeId = null): AnonymousResourceCollection
-    {
-        $bundles = SchoolBundle::query()
-            ->when($excludeId, fn ($query) => $query->whereKeyNot($excludeId))
-            ->with([
-                'translation',
-                'translations',
-                'images',
-            ])
-            ->get();
+    /**
+     * =========================================================
+     * SELECT HELPERS
+     * =========================================================
+     */
 
-        return SchoolBundleSharedResource::collection($bundles);
-    }
-
-    /** Список курсов для select. */
-    private function coursesForSelect(): AnonymousResourceCollection
-    {
+    /**
+     * Курсы для select.
+     *
+     * Controller загружает:
+     *
+     * translations(currentLocale)
+     * images.media
+     */
+    private function coursesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $courses = SchoolCourse::query()
             ->with([
-                'translation',
-                'translations',
-                'images',
+                'translations' =>
+                    fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
+
+                'images.media',
             ])
+            ->orderBy('sort')
+            ->orderByDesc('id')
             ->get();
 
-        return SchoolCourseSharedResource::collection($courses);
+        return SchoolCourseSharedResource::collection(
+            $courses
+        );
     }
 
-    /** Базовый запрос для списка наборов курсов. */
-    private function indexQuery(): Builder
+    /**
+     * =========================================================
+     * INDEX QUERIES
+     * =========================================================
+     */
+
+    /**
+     * Лёгкий query для count().
+     */
+    private function countQuery(): Builder
     {
+        return $this->baseQuery();
+    }
+
+    /**
+     * Базовый запрос Admin Index.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'translation',
-                'translations',
-                'images',
-                'courses.translation',
-                'courses.translations',
+                /**
+                 * Bundle translation:
+                 * только currentLocale.
+                 */
+                'translations' =>
+                    fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
+
+                /**
+                 * Изображения.
+                 */
+                'images.media',
+
+                /**
+                 * Courses:
+                 * только currentLocale.
+                 */
+                'courses' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn (
+                                $translationQuery
+                            ) =>
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                ),
+                    ]),
+
+                /**
+                 * Prices нужны Index.
+                 */
                 'prices',
             ])
             ->withCount([
@@ -383,7 +743,10 @@ class SchoolBundleController extends BaseSchoolAdminController
             ]);
     }
 
-    /** Получение списка наборов курсов по активному режиму обработки. */
+    /**
+     * Получение списка наборов
+     * по активному processing mode.
+     */
     private function getIndexBundles(
         string $locale,
         bool $useServerProcessing,
@@ -391,18 +754,31 @@ class SchoolBundleController extends BaseSchoolAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

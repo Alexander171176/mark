@@ -5,7 +5,8 @@
  *
  * Создать ответ на конкретный вопрос викторины
  */
-import { computed, ref, watch } from 'vue'
+
+import { computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -21,23 +22,58 @@ import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
 import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue'
 
-// Локализация
-const { t } = useI18n()
+/* ==========================================================
+ * I18N / TOAST
+ * ========================================================== */
 
-// Toast уведомления
+const { t } = useI18n()
 const toast = useToast()
 
-// Props страницы создания
-const props = defineProps({
-    attempts: { type: Array, default: () => [] },
-    questions: { type: Array, default: () => [] },
-    answers: { type: Array, default: () => [] },
+/* ==========================================================
+ * PROPS
+ * ========================================================== */
 
-    defaultAttemptId: { type: Number, default: null },
-    defaultQuestionId: { type: Number, default: null },
+const props = defineProps({
+    currentLocale: {
+        type: String,
+        default: '',
+    },
+
+    availableLocales: {
+        type: Array,
+        default: () => [],
+    },
+
+    attempts: {
+        type: Array,
+        default: () => [],
+    },
+
+    questions: {
+        type: Array,
+        default: () => [],
+    },
+
+    answers: {
+        type: Array,
+        default: () => [],
+    },
+
+    defaultAttemptId: {
+        type: Number,
+        default: null,
+    },
+
+    defaultQuestionId: {
+        type: Number,
+        default: null,
+    },
 })
 
-// Удаление HTML тегов из текста
+/* ==========================================================
+ * HELPERS
+ * ========================================================== */
+
 const stripHtml = (html = '') => {
     return (html || '')
         .replace(/<\/p>/gi, ' ')
@@ -53,32 +89,50 @@ const stripHtml = (html = '') => {
         .trim()
 }
 
-// Короткий текст для select
 const shortText = (value, limit = 120) => {
     const clean = stripHtml(value)
 
-    return clean.length > limit ? clean.slice(0, limit) + '…' : clean
+    return clean.length > limit
+        ? clean.slice(0, limit) + '…'
+        : clean
 }
 
-// Преобразование значения в число или null
 const toNumberOrNull = (value) => {
-    if (value === '' || value === null || typeof value === 'undefined') {
+    if (
+        value === ''
+        || value === null
+        || typeof value === 'undefined'
+    ) {
         return null
     }
 
     const number = Number(value)
 
-    return Number.isFinite(number) ? number : null
+    return Number.isFinite(number)
+        ? number
+        : null
 }
 
-// Динамический лимит VueMultiselect
 const dynamicOptionsLimit = (items) => {
-    const list = Array.isArray(items) ? items : []
+    const list = Array.isArray(items)
+        ? items
+        : []
 
     return list.length + 10
 }
 
-// Перевод типа вопроса
+const findById = (items, id) => {
+    if (!id) return null
+
+    return items.find(
+        item => Number(item.id) === Number(id)
+    ) || null
+}
+
+/* ==========================================================
+ * QUESTION TYPE
+ * ========================================================== */
+
 const questionTypeLabel = (type) => {
     const map = {
         single_choice: t('questionTypeSingleChoice'),
@@ -90,58 +144,97 @@ const questionTypeLabel = (type) => {
     return map[type] || type || '—'
 }
 
-// Подготовка попыток для select
+/* ==========================================================
+ * OPTIONS
+ * ========================================================== */
+
 const attemptOptions = computed(() => {
-    return (props.attempts || []).map((attempt) => {
+    return (props.attempts || []).map(attempt => {
         const user = attempt.user
             ? `${attempt.user.name || '—'}${attempt.user.email ? ` (${attempt.user.email})` : ''}`
             : `User ID: ${attempt.user_id || '—'}`
 
-        const quiz = attempt.quiz?.title || attempt.quiz?.slug || `Quiz ID: ${attempt.school_quiz_id || '—'}`
+        const quizTitle =
+            attempt.quiz?.translation?.title
+            || attempt.quiz?.slug
+            || `Quiz ID: ${attempt.school_quiz_id || '—'}`
 
         return {
             ...attempt,
-            label: `[ID: ${attempt.id}] ${user} — ${quiz} — ${t('attemptNumber')} ${attempt.attempt_number ?? '—'}`,
+
+            label:
+                `[ID: ${attempt.id}] `
+                + `${user} — `
+                + `${quizTitle} — `
+                + `${t('attemptNumber')} ${attempt.attempt_number ?? '—'}`,
         }
     })
 })
 
-// Подготовка вопросов для select
 const questionOptions = computed(() => {
-    return (props.questions || []).map((question) => ({
+    return (props.questions || []).map(question => ({
         ...question,
-        label: `[ID: ${question.id}] ${shortText(question.question_text || `#${question.id}`, 140)} — ${questionTypeLabel(question.question_type)}`,
+
+        label:
+            `[ID: ${question.id}] `
+            + `${shortText(
+                question.translation?.question_text || `#${question.id}`,
+                140
+            )} — `
+            + `${questionTypeLabel(question.question_type)}`,
     }))
 })
 
-// Подготовка ответов для select
 const answerOptionsAll = computed(() => {
-    return (props.answers || []).map((answer) => ({
+    return (props.answers || []).map(answer => ({
         ...answer,
-        label: `[ID: ${answer.id}] ${shortText(answer.text || `#${answer.id}`, 120)}${answer.is_correct ? ' ✅' : ''}`,
+
+        label:
+            `[ID: ${answer.id}] `
+            + `${shortText(
+                answer.translation?.text || `#${answer.id}`,
+                120
+            )}`
+            + `${answer.is_correct ? ' ✅' : ''}`,
     }))
 })
 
-// Выбранная попытка
-const selectedAttempt = ref(
-    attemptOptions.value.find(item => Number(item.id) === Number(props.defaultAttemptId)) || null
+/* ==========================================================
+ * INITIAL CONTEXT
+ * ========================================================== */
+
+const initialAttempt = findById(
+    attemptOptions.value,
+    props.defaultAttemptId
 )
 
-// Выбранный вопрос
-const selectedQuestion = ref(
-    questionOptions.value.find(item => Number(item.id) === Number(props.defaultQuestionId)) || null
+const initialQuestion = findById(
+    questionOptions.value,
+    props.defaultQuestionId
 )
 
-// Выбранный одиночный ответ
-const selectedAnswer = ref(null)
+/* ==========================================================
+ * FORM
+ * ========================================================== */
 
-// Выбранные множественные ответы
-const selectedAnswers = ref([])
-
-// Форма создания
+/**
+ * Единственный источник состояния:
+ *
+ * form.school_quiz_attempt_id
+ * form.school_quiz_question_id
+ * form.selected_answer_id
+ * form.selected_answer_ids
+ */
 const form = useForm({
-    school_quiz_attempt_id: selectedAttempt.value?.id ?? null,
-    school_quiz_question_id: selectedQuestion.value?.id ?? null,
+    school_quiz_attempt_id:
+        initialAttempt?.id
+        ?? props.defaultAttemptId
+        ?? null,
+
+    school_quiz_question_id:
+        initialQuestion?.id
+        ?? props.defaultQuestionId
+        ?? null,
 
     selected_answer_id: null,
     selected_answer_ids: [],
@@ -149,165 +242,346 @@ const form = useForm({
 
     is_correct: false,
     score: 0,
-    max_score: 0,
+
+    max_score:
+        initialQuestion?.points !== null
+        && typeof initialQuestion?.points !== 'undefined'
+            ? Number(initialQuestion.points)
+            : 0,
+
     reviewer_comment: '',
 })
 
-// Тип текущего вопроса
-const questionType = computed(() => selectedQuestion.value?.question_type || null)
+/* ==========================================================
+ * SELECTED ATTEMPT
+ * ========================================================== */
 
-// Открытый текстовый вопрос
-const isOpenText = computed(() => questionType.value === 'open_text')
+const selectedAttempt = computed({
+    get: () => findById(
+        attemptOptions.value,
+        form.school_quiz_attempt_id
+    ),
 
-// Вопрос с множественным выбором
-const isMultipleChoice = computed(() => questionType.value === 'multiple_choice')
-
-// Вопрос с одиночным выбором
-const isSingleChoice = computed(() => ['single_choice', 'true_false'].includes(questionType.value))
-
-// Максимальный балл вопроса
-const maxScoreReadonly = computed(() => {
-    const points = Number(selectedQuestion.value?.points)
-
-    return Number.isFinite(points) ? points : null
+    set: (attempt) => {
+        form.school_quiz_attempt_id =
+            attempt?.id ?? null
+    },
 })
 
-// Ответы текущего вопроса
+/* ==========================================================
+ * SELECTED QUESTION
+ * ========================================================== */
+
+const selectedQuestion = computed({
+    get: () => findById(
+        questionOptions.value,
+        form.school_quiz_question_id
+    ),
+
+    set: (question) => {
+        form.school_quiz_question_id =
+            question?.id ?? null
+
+        /**
+         * При смене Question
+         * полностью очищаем ответ.
+         */
+        form.selected_answer_id = null
+        form.selected_answer_ids = []
+        form.free_text_answer = ''
+        form.is_correct = false
+        form.score = 0
+
+        const points = Number(
+            question?.points
+        )
+
+        form.max_score =
+            Number.isFinite(points)
+                ? points
+                : 0
+    },
+})
+
+/* ==========================================================
+ * QUESTION STATE
+ * ========================================================== */
+
+const questionType = computed(() =>
+    selectedQuestion.value?.question_type
+    || null
+)
+
+const isOpenText = computed(() =>
+    questionType.value === 'open_text'
+)
+
+const isMultipleChoice = computed(() =>
+    questionType.value === 'multiple_choice'
+)
+
+const isSingleChoice = computed(() =>
+    [
+        'single_choice',
+        'true_false',
+    ].includes(
+        questionType.value
+    )
+)
+
+const maxScoreReadonly = computed(() => {
+    const points = Number(
+        selectedQuestion.value?.points
+    )
+
+    return Number.isFinite(points)
+        ? points
+        : null
+})
+
+/* ==========================================================
+ * ANSWERS
+ * ========================================================== */
+
 const answerOptions = computed(() => {
-    const questionId = selectedQuestion.value?.id ?? null
+    const questionId =
+        form.school_quiz_question_id
 
     if (!questionId) {
         return answerOptionsAll.value
     }
 
-    return answerOptionsAll.value.filter(answer =>
-        Number(answer.school_quiz_question_id) === Number(questionId)
+    return answerOptionsAll.value.filter(
+        answer =>
+            Number(answer.school_quiz_question_id)
+            === Number(questionId)
     )
 })
 
-// Синхронизация попытки
-watch(selectedAttempt, (value) => {
-    form.school_quiz_attempt_id = value?.id ?? null
-})
+/* ==========================================================
+ * SELECTED SINGLE ANSWER
+ * ========================================================== */
 
-// Синхронизация вопроса
-watch(selectedQuestion, (value) => {
-    form.school_quiz_question_id = value?.id ?? null
+const selectedAnswer = computed({
+    get: () => findById(
+        answerOptions.value,
+        form.selected_answer_id
+    ),
 
-    selectedAnswer.value = null
-    selectedAnswers.value = []
-    form.selected_answer_id = null
-    form.selected_answer_ids = []
-    form.free_text_answer = ''
-    form.is_correct = false
+    set: (answer) => {
+        form.selected_answer_id =
+            answer?.id ?? null
 
-    if (maxScoreReadonly.value !== null) {
-        form.max_score = maxScoreReadonly.value
-    }
-})
+        if (!answer) {
+            form.is_correct = false
+            form.score = 0
+            return
+        }
 
-// Синхронизация одиночного ответа
-watch(selectedAnswer, (value) => {
-    form.selected_answer_id = value?.id ?? null
-
-    if (value) {
         form.selected_answer_ids = []
         form.free_text_answer = ''
-        form.is_correct = Boolean(value.is_correct)
-        form.score = value.is_correct ? (maxScoreReadonly.value ?? form.max_score ?? 0) : 0
-    }
+
+        form.is_correct =
+            Boolean(answer.is_correct)
+
+        form.score =
+            answer.is_correct
+                ? (
+                    maxScoreReadonly.value
+                    ?? form.max_score
+                    ?? 0
+                )
+                : 0
+    },
 })
 
-// Синхронизация множественных ответов
-watch(selectedAnswers, (values) => {
-    const list = Array.isArray(values) ? values : []
+/* ==========================================================
+ * SELECTED MULTIPLE ANSWERS
+ * ========================================================== */
 
-    form.selected_answer_ids = list.map(answer => answer.id)
+const selectedAnswers = computed({
+    get: () => {
+        const ids = Array.isArray(
+            form.selected_answer_ids
+        )
+            ? form.selected_answer_ids
+            : []
 
-    if (list.length) {
+        return answerOptions.value.filter(
+            answer =>
+                ids.some(
+                    id =>
+                        Number(id)
+                        === Number(answer.id)
+                )
+        )
+    },
+
+    set: (answers) => {
+        const list = Array.isArray(answers)
+            ? answers
+            : []
+
+        form.selected_answer_ids =
+            list.map(answer => answer.id)
+
         form.selected_answer_id = null
         form.free_text_answer = ''
 
-        const hasWrong = list.some(answer => !answer.is_correct)
-        form.is_correct = !hasWrong
+        if (!list.length) {
+            form.is_correct = false
+            form.score = 0
+            return
+        }
 
-        form.score = form.is_correct ? (maxScoreReadonly.value ?? form.max_score ?? 0) : 0
-    }
+        const hasWrong =
+            list.some(
+                answer => !answer.is_correct
+            )
+
+        form.is_correct =
+            !hasWrong
+
+        form.score =
+            form.is_correct
+                ? (
+                    maxScoreReadonly.value
+                    ?? form.max_score
+                    ?? 0
+                )
+                : 0
+    },
 })
 
-// Установить максимальный балл
+/* ==========================================================
+ * SCORE HELPERS
+ * ========================================================== */
+
 const setScoreMax = () => {
-    if (maxScoreReadonly.value === null) return
+    if (maxScoreReadonly.value === null) {
+        return
+    }
 
-    form.score = maxScoreReadonly.value
-    form.max_score = maxScoreReadonly.value
+    form.score =
+        maxScoreReadonly.value
 
-    toast.info(`${t('score')}: ${t('setMax')}`)
+    form.max_score =
+        maxScoreReadonly.value
+
+    toast.info(
+        `${t('score')}: ${t('setMax')}`
+    )
 }
 
-// Установить нулевой балл
 const setScoreZero = () => {
     form.score = 0
 
-    toast.info(`${t('score')}: 0`)
+    toast.info(
+        `${t('score')}: 0`
+    )
 }
 
-// Отправка формы
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
 const submitForm = () => {
-    form.transform((data) => {
-        const payload = {
+    form.transform(data => {
+        return {
             ...data,
 
-            school_quiz_attempt_id: selectedAttempt.value?.id ?? null,
-            school_quiz_question_id: selectedQuestion.value?.id ?? null,
+            school_quiz_attempt_id:
+                data.school_quiz_attempt_id
+                ?? null,
 
-            selected_answer_id: isSingleChoice.value
-                ? selectedAnswer.value?.id ?? null
-                : null,
+            school_quiz_question_id:
+                data.school_quiz_question_id
+                ?? null,
 
-            selected_answer_ids: isMultipleChoice.value
-                ? selectedAnswers.value.map(answer => answer.id)
-                : [],
+            selected_answer_id:
+                isSingleChoice.value
+                    ? data.selected_answer_id ?? null
+                    : null,
 
-            free_text_answer: isOpenText.value
-                ? data.free_text_answer || null
-                : null,
+            selected_answer_ids:
+                isMultipleChoice.value
+                    ? (
+                        Array.isArray(
+                            data.selected_answer_ids
+                        )
+                            ? data.selected_answer_ids
+                            : []
+                    )
+                    : null,
 
-            is_correct: Boolean(data.is_correct),
-            score: toNumberOrNull(data.score) ?? 0,
-            max_score: toNumberOrNull(data.max_score) ?? maxScoreReadonly.value ?? 0,
-            reviewer_comment: (data.reviewer_comment || '').toString().trim() || null,
+            free_text_answer:
+                isOpenText.value
+                    ? (
+                        data.free_text_answer
+                        || null
+                    )
+                    : null,
+
+            is_correct:
+                Boolean(
+                    data.is_correct
+                ),
+
+            score:
+                toNumberOrNull(
+                    data.score
+                ) ?? 0,
+
+            max_score:
+                toNumberOrNull(
+                    data.max_score
+                )
+                ?? maxScoreReadonly.value
+                ?? 0,
+
+            reviewer_comment:
+                (data.reviewer_comment || '')
+                    .toString()
+                    .trim()
+                || null,
         }
-
-        if (!isMultipleChoice.value) {
-            payload.selected_answer_ids = null
-        }
-
-        return payload
     })
 
-    form.post(route('admin.schoolQuizAttemptItems.store'), {
-        preserveScroll: true,
+    form.post(
+        route(
+            'admin.schoolQuizAttemptItems.store'
+        ),
+        {
+            preserveScroll: true,
 
-        onSuccess: () => {
-            toast.success('Ответ попытки квиза успешно создан.')
-        },
+            onSuccess: () => {
+                toast.success(
+                    'Ответ попытки квиза успешно создан.'
+                )
+            },
 
-        onError: (errors) => {
-            const firstKey = Object.keys(errors || {})[0]
+            onError: (errors) => {
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
 
-            toast.error(
-                errors?.[firstKey] || 'Проверьте правильность заполнения полей.'
-            )
-        },
-    })
+                toast.error(
+                    errors?.[firstKey]
+                    || 'Проверьте правильность заполнения полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 
 <template>
     <AdminLayout :title="t('createQuizAttemptItem')">
         <template #header>
-            <TitlePage>{{ t('createQuizAttemptItem') }}</TitlePage>
+            <TitlePage>
+                {{ t('createQuizAttemptItem') }}
+            </TitlePage>
         </template>
 
         <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-12xl mx-auto">
@@ -325,24 +599,33 @@ const submitForm = () => {
                                 viewBox="0 0 16 16"
                             >
                                 <path
-                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
+                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
                                 />
                             </svg>
                         </template>
+
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
 
-                <form @submit.prevent="submitForm" class="pt-3 w-full">
+                <form
+                    @submit.prevent="submitForm"
+                    class="pt-3 w-full"
+                >
+                    <!-- Context -->
                     <div
-                        class="mb-4 p-3 border border-dashed border-slate-500 dark:border-slate-300
+                        class="mb-4 p-3 border border-dashed
+                               border-slate-500 dark:border-slate-300
                                bg-white/60 dark:bg-slate-800/40"
                     >
-                        <div class="text-center text-md font-semibold opacity-80 text-gray-900 dark:text-gray-100">
+                        <div
+                            class="text-center text-md font-semibold
+                                   opacity-80 text-gray-900 dark:text-gray-100"
+                        >
                             {{ t('context') }}
                         </div>
 
-                        <div class="flex flex-col items-start text-xs">
+                        <div class="flex flex-col items-start text-xs mb-2">
                             <LabelInput for="question">
                                 <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
                                 {{ t('quizQuestion') }}
@@ -363,7 +646,10 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.school_quiz_question_id" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.school_quiz_question_id"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start text-xs">
@@ -387,20 +673,32 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.school_quiz_attempt_id" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.school_quiz_attempt_id"
+                            />
                         </div>
 
                         <div
                             v-if="selectedQuestion"
-                            class="mt-4 p-2 border border-slate-300/70 dark:border-slate-200/30
+                            class="mt-4 p-2 border border-slate-300/70
+                                   dark:border-slate-200/30
                                    bg-white/70 dark:bg-slate-900/20"
                         >
                             <div class="text-sm font-semibold text-slate-700 dark:text-slate-300">
                                 ID: {{ selectedQuestion.id }}
                             </div>
 
-                            <div class="mt-2 whitespace-pre-wrap leading-relaxed text-sm font-semibold text-amber-800 dark:text-amber-200">
-                                {{ stripHtml(selectedQuestion.question_text) || '—' }}
+                            <div
+                                class="mt-2 whitespace-pre-wrap leading-relaxed
+                                       text-sm font-semibold
+                                       text-amber-800 dark:text-amber-200"
+                            >
+                                {{
+                                    stripHtml(
+                                        selectedQuestion.translation?.question_text
+                                    ) || '—'
+                                }}
                             </div>
 
                             <div class="mt-2 text-sm flex flex-row items-center justify-start">
@@ -408,6 +706,7 @@ const submitForm = () => {
                                     <span class="font-semibold text-slate-900 dark:text-slate-100">
                                         {{ t('type') }}:
                                     </span>
+
                                     <span class="font-semibold text-teal-800 dark:text-teal-200">
                                         {{ questionTypeLabel(selectedQuestion.question_type) }}
                                     </span>
@@ -419,6 +718,7 @@ const submitForm = () => {
                                     <span class="font-semibold text-slate-900 dark:text-slate-100">
                                         {{ t('maxScore') }}:
                                     </span>
+
                                     <span class="font-semibold text-teal-800 dark:text-teal-200">
                                         {{ maxScoreReadonly ?? form.max_score ?? '—' }}
                                     </span>
@@ -427,11 +727,16 @@ const submitForm = () => {
                         </div>
                     </div>
 
+                    <!-- Student Answer -->
                     <div
-                        class="mb-4 p-3 border border-dashed border-slate-500 dark:border-slate-300
+                        class="mb-4 p-3 border border-dashed
+                               border-slate-500 dark:border-slate-300
                                bg-white/60 dark:bg-slate-800/40"
                     >
-                        <div class="text-center text-md font-semibold opacity-80 text-gray-900 dark:text-gray-100">
+                        <div
+                            class="text-center text-md font-semibold
+                                   opacity-80 text-gray-900 dark:text-gray-100"
+                        >
                             {{ t('studentAnswer') }}
                         </div>
 
@@ -459,7 +764,10 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.selected_answer_id" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.selected_answer_id"
+                            />
                         </div>
 
                         <div
@@ -486,7 +794,10 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.selected_answer_ids" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.selected_answer_ids"
+                            />
                         </div>
 
                         <div
@@ -504,28 +815,40 @@ const submitForm = () => {
                                 :height="260"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.free_text_answer" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.free_text_answer"
+                            />
                         </div>
 
                         <div
                             v-else
-                            class="mt-3 p-3 text-center text-slate-700 dark:text-slate-100"
+                            class="mt-3 p-3 text-center
+                                   text-slate-700 dark:text-slate-100"
                         >
                             {{ t('select') }} {{ t('quizQuestion') }}
                         </div>
                     </div>
 
+                    <!-- Check -->
                     <div
-                        class="mb-4 p-3 border border-dashed border-slate-500 dark:border-slate-300
+                        class="mb-4 p-3 border border-dashed
+                               border-slate-500 dark:border-slate-300
                                bg-white/60 dark:bg-slate-800/40"
                     >
-                        <div class="text-center text-md font-semibold opacity-80 text-gray-900 dark:text-gray-100">
+                        <div
+                            class="text-center text-md font-semibold
+                                   opacity-80 text-gray-900 dark:text-gray-100"
+                        >
                             {{ t('checkInstructor') }}
                         </div>
 
                         <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
                             <div class="flex flex-col items-start">
-                                <LabelInput for="is_correct" class="mb-1">
+                                <LabelInput
+                                    for="is_correct"
+                                    class="mb-1"
+                                >
                                     {{ t('isCorrect') }}
                                 </LabelInput>
 
@@ -540,11 +863,17 @@ const submitForm = () => {
                                     </span>
                                 </label>
 
-                                <InputError class="mt-2" :message="form.errors.is_correct" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.is_correct"
+                                />
                             </div>
 
                             <div class="flex flex-col items-start">
-                                <LabelInput for="score" class="mb-1">
+                                <LabelInput
+                                    for="score"
+                                    class="mb-1"
+                                >
                                     {{ t('score') }}
                                 </LabelInput>
 
@@ -560,9 +889,12 @@ const submitForm = () => {
                                 <div class="flex gap-2 mt-2">
                                     <button
                                         type="button"
-                                        class="text-xs px-2 py-1 border border-slate-400 rounded-sm
-                                               hover:bg-slate-100 dark:hover:bg-slate-700
-                                               text-gray-900 dark:text-gray-100 font-semibold"
+                                        class="text-xs px-2 py-1 border
+                                               border-slate-400 rounded-sm
+                                               hover:bg-slate-100
+                                               dark:hover:bg-slate-700
+                                               text-gray-900 dark:text-gray-100
+                                               font-semibold"
                                         :disabled="maxScoreReadonly === null"
                                         @click="setScoreMax"
                                     >
@@ -571,20 +903,29 @@ const submitForm = () => {
 
                                     <button
                                         type="button"
-                                        class="text-xs px-2 py-1 border border-slate-400 rounded-sm
-                                               hover:bg-slate-100 dark:hover:bg-slate-700
-                                               text-gray-900 dark:text-gray-100 font-semibold"
+                                        class="text-xs px-2 py-1 border
+                                               border-slate-400 rounded-sm
+                                               hover:bg-slate-100
+                                               dark:hover:bg-slate-700
+                                               text-gray-900 dark:text-gray-100
+                                               font-semibold"
                                         @click="setScoreZero"
                                     >
                                         {{ t('setZero') }}
                                     </button>
                                 </div>
 
-                                <InputError class="mt-2" :message="form.errors.score" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.score"
+                                />
                             </div>
 
                             <div class="flex flex-col items-start">
-                                <LabelInput for="max_score" class="mb-1">
+                                <LabelInput
+                                    for="max_score"
+                                    class="mb-1"
+                                >
                                     {{ t('maxScore') }}
                                 </LabelInput>
 
@@ -596,12 +937,18 @@ const submitForm = () => {
                                     class="w-full"
                                 />
 
-                                <InputError class="mt-2" :message="form.errors.max_score" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.max_score"
+                                />
                             </div>
                         </div>
 
                         <div class="mt-4 flex flex-col items-start">
-                            <LabelInput for="reviewer_comment" class="mb-1">
+                            <LabelInput
+                                for="reviewer_comment"
+                                class="mb-1"
+                            >
                                 {{ t('reviewerComment') }}
                             </LabelInput>
 
@@ -611,12 +958,14 @@ const submitForm = () => {
                                 :height="260"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.reviewer_comment" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.reviewer_comment"
+                            />
                         </div>
                     </div>
 
                     <div class="flex items-center justify-center gap-3 pb-4">
-
                         <DefaultButton :href="route('admin.schoolQuizAttemptItems.index')">
                             <template #icon>
                                 <svg
@@ -624,10 +973,11 @@ const submitForm = () => {
                                     viewBox="0 0 16 16"
                                 >
                                     <path
-                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
+                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('back') }}
                         </DefaultButton>
 

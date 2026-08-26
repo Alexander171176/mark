@@ -126,7 +126,7 @@ class SchoolQuizQuestion extends Model
                 })
                 ->orderBy('sqqt_sort.question_text', 'asc')
                 ->orderByDesc('school_quiz_questions.id')
-                ->select('school_quiz_questions.*'),
+                ->addSelect('school_quiz_questions.*'),
 
             'questionTextDesc' => $q
                 ->leftJoin('school_quiz_question_translations as sqqt_sort', function ($join) use ($locale) {
@@ -135,7 +135,7 @@ class SchoolQuizQuestion extends Model
                 })
                 ->orderBy('sqqt_sort.question_text', 'desc')
                 ->orderByDesc('school_quiz_questions.id')
-                ->select('school_quiz_questions.*'),
+                ->addSelect('school_quiz_questions.*'),
 
             'quizTitleAsc' => $q
                 ->leftJoin('school_quizzes as sq_sort', 'sq_sort.id', '=', 'school_quiz_questions.school_quiz_id')
@@ -145,7 +145,7 @@ class SchoolQuizQuestion extends Model
                 })
                 ->orderBy('sqt_sort.title', 'asc')
                 ->orderByDesc('school_quiz_questions.id')
-                ->select('school_quiz_questions.*'),
+                ->addSelect('school_quiz_questions.*'),
 
             'quizTitleDesc' => $q
                 ->leftJoin('school_quizzes as sq_sort', 'sq_sort.id', '=', 'school_quiz_questions.school_quiz_id')
@@ -155,7 +155,7 @@ class SchoolQuizQuestion extends Model
                 })
                 ->orderBy('sqt_sort.title', 'desc')
                 ->orderByDesc('school_quiz_questions.id')
-                ->select('school_quiz_questions.*'),
+                ->addSelect('school_quiz_questions.*'),
 
             'pointsAsc' => $q->orderBy('points', 'asc')->orderByDesc('id'),
             'pointsDesc' => $q->orderBy('points', 'desc')->orderByDesc('id'),

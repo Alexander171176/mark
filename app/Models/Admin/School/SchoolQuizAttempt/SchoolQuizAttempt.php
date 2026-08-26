@@ -305,13 +305,13 @@ class SchoolQuizAttempt extends Model
                 ->leftJoin('users as u_sort', 'u_sort.id', '=', 'school_quiz_attempts.user_id')
                 ->orderBy('u_sort.name', 'asc')
                 ->orderByDesc('school_quiz_attempts.id')
-                ->select('school_quiz_attempts.*'),
+                ->addSelect('school_quiz_attempts.*'),
 
             'userNameDesc' => $q
                 ->leftJoin('users as u_sort', 'u_sort.id', '=', 'school_quiz_attempts.user_id')
                 ->orderBy('u_sort.name', 'desc')
                 ->orderByDesc('school_quiz_attempts.id')
-                ->select('school_quiz_attempts.*'),
+                ->addSelect('school_quiz_attempts.*'),
 
             'quizTitleAsc' => $q
                 ->leftJoin('school_quiz_translations as sqt_sort', function ($join) use ($locale) {
@@ -320,7 +320,7 @@ class SchoolQuizAttempt extends Model
                 })
                 ->orderBy('sqt_sort.title', 'asc')
                 ->orderByDesc('school_quiz_attempts.id')
-                ->select('school_quiz_attempts.*'),
+                ->addSelect('school_quiz_attempts.*'),
 
             'quizTitleDesc' => $q
                 ->leftJoin('school_quiz_translations as sqt_sort', function ($join) use ($locale) {
@@ -329,7 +329,7 @@ class SchoolQuizAttempt extends Model
                 })
                 ->orderBy('sqt_sort.title', 'desc')
                 ->orderByDesc('school_quiz_attempts.id')
-                ->select('school_quiz_attempts.*'),
+                ->addSelect('school_quiz_attempts.*'),
 
             default => $q->orderByDesc('school_quiz_attempts.id'),
         };

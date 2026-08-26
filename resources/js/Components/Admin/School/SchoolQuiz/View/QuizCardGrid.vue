@@ -42,32 +42,78 @@ const localQuizzes = ref([])
 watch(
     () => props.quizzes,
     (newVal) => {
-        localQuizzes.value = JSON.parse(JSON.stringify(newVal || []))
+        localQuizzes.value = JSON.parse(
+            JSON.stringify(newVal || [])
+        )
     },
-    { immediate: true, deep: true },
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
 const handleDragEnd = () => {
-    const newOrderIds = localQuizzes.value.map((quiz) => quiz.id)
+    const newOrderIds = localQuizzes.value.map(
+        (quiz) => quiz.id
+    )
 
-    emit('update-sort-order', newOrderIds)
+    emit(
+        'update-sort-order',
+        newOrderIds
+    )
 }
 
 const toggleAll = (event) => {
     const checked = event.target.checked
-    const ids = localQuizzes.value.map((quiz) => quiz.id)
 
-    emit('toggle-all', { ids, checked })
+    const ids = localQuizzes.value.map(
+        (quiz) => quiz.id
+    )
+
+    emit(
+        'toggle-all',
+        {
+            ids,
+            checked,
+        }
+    )
 }
 
-const getPrimaryImage = (quiz) => {
-    if (!quiz.images?.length) return null
+/**
+ * Переводы.
+ */
+const getQuizTitle = (quiz) => {
+    return quiz?.translation?.title
+        || `ID: ${quiz?.id}`
+}
 
-    return [...quiz.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0]
+const getQuizShort = (quiz) => {
+    return quiz?.translation?.short
+        || ''
+}
+
+const getNestedTitle = (item) => {
+    return item?.translation?.title
+        || item?.translation?.name
+        || ''
+}
+
+/**
+ * Изображения уже отсортированы
+ * relation images().
+ */
+const getPrimaryImage = (quiz) => {
+    if (!quiz.images?.length) {
+        return null
+    }
+
+    return quiz.images[0]
 }
 
 const getImageUrl = (quiz) => {
-    const image = getPrimaryImage(quiz)
+    const image = getPrimaryImage(
+        quiz
+    )
 
     return image?.webp_url
         || image?.thumb_url
@@ -77,33 +123,56 @@ const getImageUrl = (quiz) => {
 }
 
 const getImageAlt = (quiz) => {
-    const image = getPrimaryImage(quiz)
+    const image = getPrimaryImage(
+        quiz
+    )
 
-    return image?.alt || quiz.title || t('defaultImageAlt')
+    return image?.alt
+        || getQuizTitle(quiz)
+        || t('defaultImageAlt')
 }
 
 const formatDate = (dateStr) => {
-    if (!dateStr) return ''
+    if (!dateStr) {
+        return ''
+    }
 
-    const date = new Date(dateStr)
+    const date = new Date(
+        dateStr
+    )
 
-    if (Number.isNaN(date.getTime())) return ''
+    if (Number.isNaN(date.getTime())) {
+        return ''
+    }
 
-    return date.toLocaleDateString('ru-RU', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    })
+    return date.toLocaleDateString(
+        'ru-RU',
+        {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        }
+    )
 }
 
 const getQuizHierarchyTitle = (quiz) => {
     const parts = [
-        quiz.course?.title,
-        quiz.module?.title,
-        quiz.lesson?.title,
+        getNestedTitle(
+            quiz?.course
+        ),
+
+        getNestedTitle(
+            quiz?.module
+        ),
+
+        getNestedTitle(
+            quiz?.lesson
+        ),
     ].filter(Boolean)
 
-    return parts.length ? parts.join(' / ') : t('noHierarchyData')
+    return parts.length
+        ? parts.join(' / ')
+        : t('noHierarchyData')
 }
 
 const quizTypeLabelKeyMap = {
@@ -112,9 +181,12 @@ const quizTypeLabelKeyMap = {
 }
 
 const getQuizTypeLabel = (type) => {
-    const key = quizTypeLabelKeyMap[type]
+    const key =
+        quizTypeLabelKeyMap[type]
 
-    return key ? t(key) : type || '—'
+    return key
+        ? t(key)
+        : type || '—'
 }
 </script>
 
@@ -216,7 +288,7 @@ const getQuizTypeLabel = (type) => {
                             <img
                                 :src="getImageUrl(quiz)"
                                 :alt="getImageAlt(quiz)"
-                                :title="getPrimaryImage(quiz)?.caption || quiz.title || t('image')"
+                                :title="getPrimaryImage(quiz)?.caption || getQuizTitle(quiz) || t('image')"
                                 class="w-full h-full object-cover"
                             />
                         </div>
@@ -227,9 +299,9 @@ const getQuizTypeLabel = (type) => {
                                        hover:underline text-center"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                :title="quiz.short || quiz.title"
+                                :title="getQuizShort(quiz) || getQuizTitle(quiz)"
                             >
-                                {{ quiz.title || `ID: ${quiz.id}` }}
+                                {{ getQuizTitle(quiz) }}
                             </a>
                             <div
                                 class="text-[11px] text-slate-500 dark:text-slate-300"

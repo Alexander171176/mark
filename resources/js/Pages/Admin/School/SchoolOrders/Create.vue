@@ -3,7 +3,7 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов
  *
- * Редактирование заказа школы
+ * Создание заказа школы
  */
 
 import { computed } from 'vue'
@@ -44,11 +44,6 @@ const props = defineProps({
         default: () => [],
     },
 
-    order: {
-        type: Object,
-        required: true,
-    },
-
     users: {
         type: Array,
         default: () => [],
@@ -70,64 +65,54 @@ const props = defineProps({
  * ========================================================== */
 
 const form = useForm({
-    _method: 'PUT',
+    user_id: null,
+    school_course_id: null,
+    school_course_schedule_id: null,
 
-    user_id: props.order.user_id ?? null,
-    school_course_id: props.order.school_course_id ?? null,
-    school_course_schedule_id: props.order.school_course_schedule_id ?? null,
+    number: '',
 
-    number: props.order.number ?? '',
+    buyer_name: '',
+    buyer_email: '',
+    buyer_phone: '',
 
-    buyer_name: props.order.buyer_name ?? '',
-    buyer_email: props.order.buyer_email ?? '',
-    buyer_phone: props.order.buyer_phone ?? '',
+    billing_company: '',
+    billing_tax_id: '',
+    billing_address: '',
 
-    billing_company: props.order.billing_company ?? '',
-    billing_tax_id: props.order.billing_tax_id ?? '',
-    billing_address: props.order.billing_address ?? '',
+    is_paid: false,
+    paid_at: '',
 
-    is_paid: Boolean(props.order.is_paid),
-    paid_at: props.order.paid_at ?? '',
+    payment_method_id: null,
+    payment_method: '',
+    payment_provider: '',
+    payment_reference: '',
+    confirmation_code: '',
+    confirmation_status: '',
+    failure_reason: '',
 
-    payment_method_id: props.order.payment_method_id ?? null,
-    payment_method: props.order.payment_method ?? '',
-    payment_provider: props.order.payment_provider ?? '',
-    payment_reference: props.order.payment_reference ?? '',
-    confirmation_code: props.order.confirmation_code ?? '',
-    confirmation_status: props.order.confirmation_status ?? '',
-    failure_reason: props.order.failure_reason ?? '',
+    currency: 'USD',
 
-    currency: props.order.currency ?? 'USD',
-    subtotal: props.order.subtotal ?? '0.00',
-    discount_total: props.order.discount_total ?? '0.00',
-    tax_total: props.order.tax_total ?? '0.00',
-    total: props.order.total ?? '0.00',
+    subtotal: '0.00',
+    discount_total: '0.00',
+    tax_total: '0.00',
+    total: '0.00',
 
-    status: props.order.status ?? 'new',
-    payment_status: props.order.payment_status ?? 'pending',
+    status: 'new',
+    payment_status: 'pending',
 
-    items: props.order.items_snapshot ?? null,
-    meta: props.order.meta ?? null,
+    items: null,
+    meta: null,
 
-    user_comment: props.order.user_comment ?? '',
-    manager_comment: props.order.manager_comment ?? '',
+    user_comment: '',
+    manager_comment: '',
 
-    external_id: props.order.external_id ?? '',
-    exported_at: props.order.exported_at ?? '',
+    external_id: '',
+    exported_at: '',
 
-    client_ip: props.order.client_ip ?? '',
-    user_agent: props.order.user_agent ?? '',
-    public_hash: props.order.public_hash ?? '',
+    client_ip: '',
+    user_agent: '',
+    public_hash: '',
 })
-
-/* ==========================================================
- * PAGE
- * ========================================================== */
-
-const pageTitle = computed(() =>
-    props.order.number
-    || `ID: ${props.order.id}`
-)
 
 /* ==========================================================
  * OPTIONS
@@ -179,8 +164,7 @@ const scheduleOptions = computed(() =>
 /* ==========================================================
  * SELECTED ENTITIES
  *
- * Идентичная Create.vue схема:
- * единственное состояние — ID внутри form.
+ * Единственное состояние — ID внутри form.
  * ========================================================== */
 
 const selectedUser = computed({
@@ -282,18 +266,6 @@ const getPaymentStatusLabel = (status) => {
  * FORMATTERS
  * ========================================================== */
 
-const formatDateTimeHuman = (value) => {
-    if (!value) return '—'
-
-    const date = new Date(value)
-
-    if (Number.isNaN(date.getTime())) {
-        return String(value)
-    }
-
-    return date.toLocaleString('ru-RU')
-}
-
 const formatMoney = (value, currency = 'USD') => {
     if (value === null || value === undefined) return '—'
 
@@ -305,18 +277,6 @@ const formatMoney = (value, currency = 'USD') => {
 
     return `${number.toFixed(2)} ${currency}`
 }
-
-const formattedPaidAt = computed(() =>
-    formatDateTimeHuman(
-        props.order.paid_at
-    )
-)
-
-const formattedExportedAt = computed(() =>
-    formatDateTimeHuman(
-        props.order.exported_at
-    )
-)
 
 /* ==========================================================
  * SUBMIT
@@ -339,50 +299,40 @@ const submitForm = () => {
         total: Number(data.total || 0),
     }))
 
-    form.post(
-        route('admin.schoolOrders.update', {
-            schoolOrder: props.order.id,
-        }),
-        {
-            preserveScroll: true,
+    form.post(route('admin.schoolOrders.store'), {
+        preserveScroll: true,
 
-            onSuccess: () => {
-                toast.success(
-                    'Заказ успешно обновлён.'
-                )
-            },
+        onSuccess: () => {
+            toast.success('Заказ успешно создан.')
+        },
 
-            onError: (errors) => {
-                const firstKey =
-                    Object.keys(errors || {})[0]
+        onError: (errors) => {
+            const firstKey = Object.keys(errors || {})[0]
 
-                toast.error(
-                    errors?.[firstKey]
-                    || 'Проверьте правильность заполнения полей заказа.'
-                )
-            },
-        }
-    )
+            toast.error(
+                errors?.[firstKey]
+                || 'Проверьте правильность заполнения полей заказа.'
+            )
+        },
+    })
 }
 </script>
 
 <template>
-    <AdminLayout :title="t('editOrder')">
+    <AdminLayout :title="t('createOrder')">
         <template #header>
             <TitlePage>
-                {{ t('editOrder') }} - {{ pageTitle }} [ID: {{ order.id }}]
+                {{ t('createOrder') }}
             </TitlePage>
         </template>
 
         <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-12xl mx-auto">
-            <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200 shadow-lg shadow-gray-500 dark:shadow-slate-400">
+            <div class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200 shadow-lg shadow-gray-500 dark:shadow-slate-400">
                 <div class="sm:flex sm:justify-between sm:items-center mb-4">
                     <DefaultButton :href="route('admin.schoolOrders.index')">
                         <template #icon>
                             <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2" viewBox="0 0 16 16">
-                                <path
-                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z" />
+                                <path d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z" />
                             </svg>
                         </template>
                         {{ t('back') }}
@@ -418,8 +368,7 @@ const submitForm = () => {
 
                         <div class="flex flex-col">
                             <LabelInput for="payment_status">{{ t('paymentStatus') }}</LabelInput>
-                            <select id="payment_status" v-model="form.payment_status"
-                                    class="py-0.5 rounded-sm dark:bg-slate-800">
+                            <select id="payment_status" v-model="form.payment_status" class="py-0.5 rounded-sm dark:bg-slate-800">
                                 <option v-for="status in paymentStatusOptions" :key="status" :value="status">
                                     {{ getPaymentStatusLabel(status) }}
                                 </option>
@@ -562,14 +511,6 @@ const submitForm = () => {
                             </div>
 
                             <div class="flex flex-col">
-                                <LabelInput>{{ t('paidAt') }}</LabelInput>
-                                <div
-                                    class="px-2 py-0.5 rounded-sm border border-gray-400 text-sm bg-slate-200 dark:bg-slate-600">
-                                    {{ formattedPaidAt }}
-                                </div>
-                            </div>
-
-                            <div class="flex flex-col">
                                 <LabelInput for="confirmation_code">{{ t('confirmationCode') }}</LabelInput>
                                 <InputText id="confirmation_code" v-model="form.confirmation_code" type="text" />
                                 <InputError :message="form.errors.confirmation_code" />
@@ -612,8 +553,7 @@ const submitForm = () => {
 
                             <div class="flex flex-col">
                                 <LabelInput for="discount_total">{{ t('discountTotal') }}</LabelInput>
-                                <InputText id="discount_total" v-model="form.discount_total" type="number"
-                                           step="0.01" />
+                                <InputText id="discount_total" v-model="form.discount_total" type="number" step="0.01" />
                                 <InputError :message="form.errors.discount_total" />
                             </div>
 
@@ -671,14 +611,6 @@ const submitForm = () => {
                                 <LabelInput for="external_id">{{ t('externalId') }}</LabelInput>
                                 <InputText id="external_id" v-model="form.external_id" type="text" />
                                 <InputError :message="form.errors.external_id" />
-                            </div>
-
-                            <div class="flex flex-col">
-                                <LabelInput>{{ t('exportedAt') }}</LabelInput>
-                                <div
-                                    class="px-2 py-0.5 rounded-sm border border-gray-400 text-sm bg-slate-200 dark:bg-slate-600">
-                                    {{ formattedExportedAt }}
-                                </div>
                             </div>
 
                             <div class="flex flex-col">

@@ -6,7 +6,8 @@ use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerRequest;
 use App\Http\Resources\Admin\School\SchoolQuiz\SchoolQuizSharedResource;
 use App\Http\Resources\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerResource;
-use App\Http\Resources\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionResource;
+use App\Http\Resources\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerSharedResource;
+use App\Http\Resources\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionSharedResource;
 use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
 use App\Models\Admin\School\SchoolQuizAnswer\SchoolQuizAnswer;
 use App\Models\Admin\School\SchoolQuizQuestion\SchoolQuizQuestion;
@@ -23,246 +24,597 @@ use Inertia\Response;
 use Throwable;
 
 /**
- * Контроллер для управления ответами викторин
- * (SchoolQuizAnswer) в административной панели.
+ * Контроллер для управления ответами
+ * вопросов викторин школы.
  *
- * CRUD +:
- * - обновление активности (одиночное и массовое)
- * - обновление сортировки (одиночное и массовое)
- * - удаление (одиночное и массовое)
- * - мультиязычность, изображения
- * - связи с викторинами и вопросами викторин.
- *
- * @version 1.1 (мультиязычная архитектура)
- * @author Александр Косолапов <kosolapov1976@gmail.com>
- *
- * @see SchoolQuizAnswer
- * @see SchoolQuizAnswerRequest
- *
+ * @version 1.2
+ * @author Александр Косолапов
  */
 class SchoolQuizAnswerController extends BaseSchoolAdminController
 {
-    /** Основная модель */
-    protected string $modelClass = SchoolQuizAnswer::class;
+    /**
+     * Основная модель.
+     */
+    protected string $modelClass =
+        SchoolQuizAnswer::class;
 
-    /** Название сущности */
-    protected string $entityLabel = 'ответов квиза';
+    /**
+     * Название сущности.
+     */
+    protected string $entityLabel =
+        'ответов квиза';
 
-    /** Поля переводов */
+    /**
+     * Поля переводов.
+     */
     protected array $translationFields = [
         'text',
         'explanation',
     ];
 
-    /** Список ответов квизов. */
-    public function index(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    /**
+     * =========================================================
+     * INDEX
+     * =========================================================
+     */
 
-        $quizId = $request->query('school_quiz_id');
-        $questionId = $request->query('school_quiz_question_id');
-
-        $settings = app(AdminSettingsService::class);
-
-        $perPage = $settings->int('adminSchoolQuizAnswersPerPage', 6);
-        $defaultSort = $settings->string('adminSchoolQuizAnswersDefaultSort', 'idDesc');
-
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
-
-        $processingMode = $settings->string(
-            'adminSchoolQuizAnswersProcessingMode',
-            'frontend'
-        );
-
-        $answersCount = $this->indexQuery($quizId, $questionId)->count();
-
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer($processingMode, $answersCount, 300);
-
-        try {
-            $answers = $this->getIndexAnswers(
-                locale: $currentLocale,
-                useServerProcessing: $useServerProcessing,
-                perPage: $perPage,
-                sort: $sortParam,
-                search: $search,
-                quizId: $quizId,
-                questionId: $questionId,
+    /**
+     * Список ответов квиза.
+     */
+    public function index(
+        Request $request
+    ): Response {
+        $currentLocale =
+            $this->resolveLocale(
+                $request
             );
 
-            return Inertia::render('Admin/School/SchoolQuizAnswers/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+        $quizId =
+            $request->query(
+                'school_quiz_id'
+            );
 
-                'useServerProcessing' => $useServerProcessing,
+        $questionId =
+            $request->query(
+                'school_quiz_question_id'
+            );
 
-                'adminSchoolQuizAnswersPerPage' => $perPage,
-                'adminSchoolQuizAnswersDefaultSort' => $defaultSort,
-                'adminSchoolQuizAnswersProcessingMode' => $processingMode,
+        $settings =
+            app(
+                AdminSettingsService::class
+            );
 
-                'answers' => SchoolQuizAnswerResource::collection($answers),
-                'answersCount' => $answersCount,
+        $perPage =
+            $settings->int(
+                'adminSchoolQuizAnswersPerPage',
+                6
+            );
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+        $defaultSort =
+            $settings->string(
+                'adminSchoolQuizAnswersDefaultSort',
+                'idDesc'
+            );
 
-                'filters' => [
-                    'school_quiz_id' => $quizId,
-                    'school_quiz_question_id' => $questionId,
-                ],
+        $sortParam =
+            (string) $request->query(
+                'sort',
+                $defaultSort
+            );
 
-                'quizzes' => $this->quizzesForSelect(),
-                'questions' => $this->questionsForSelect($quizId ? (int) $quizId : null),
+        $search =
+            trim(
+                (string) $request->query(
+                    'search',
+                    ''
+                )
+            );
 
-                'currentQuizId' => $quizId ? (int) $quizId : null,
-                'currentQuestionId' => $questionId ? (int) $questionId : null,
-            ]);
+        $processingMode =
+            $settings->string(
+                'adminSchoolQuizAnswersProcessingMode',
+                'frontend'
+            );
+
+        /**
+         * Для определения режима обработки
+         * не загружаем relations.
+         */
+        $answersCount =
+            $this->indexBaseQuery(
+                quizId: $quizId,
+                questionId: $questionId
+            )->count();
+
+        $useServerProcessing =
+            app(
+                ProcessingModeService::class
+            )->shouldUseServer(
+                $processingMode,
+                $answersCount,
+                300
+            );
+
+        try {
+            $answers =
+                $this->getIndexAnswers(
+                    locale: $currentLocale,
+                    useServerProcessing: $useServerProcessing,
+                    perPage: $perPage,
+                    sort: $sortParam,
+                    search: $search,
+                    quizId: $quizId,
+                    questionId: $questionId,
+                );
+
+            return Inertia::render(
+                'Admin/School/SchoolQuizAnswers/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
+
+                    'availableLocales' =>
+                        $this->availableLocales(),
+
+                    'useServerProcessing' =>
+                        $useServerProcessing,
+
+                    'adminSchoolQuizAnswersPerPage' =>
+                        $perPage,
+
+                    'adminSchoolQuizAnswersDefaultSort' =>
+                        $defaultSort,
+
+                    'adminSchoolQuizAnswersProcessingMode' =>
+                        $processingMode,
+
+                    /**
+                     * Index использует компактный
+                     * SharedResource.
+                     */
+                    'answers' =>
+                        SchoolQuizAnswerSharedResource::collection(
+                            $answers
+                        ),
+
+                    'answersCount' =>
+                        $answersCount,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'filters' => [
+                        'school_quiz_id' =>
+                            $quizId
+                                ? (int) $quizId
+                                : null,
+
+                        'school_quiz_question_id' =>
+                            $questionId
+                                ? (int) $questionId
+                                : null,
+                    ],
+
+                    /**
+                     * Все переводимые select-коллекции
+                     * получают currentLocale.
+                     */
+                    'quizzes' =>
+                        $this->quizzesForSelect(
+                            $currentLocale
+                        ),
+
+                    'questions' =>
+                        $this->questionsForSelect(
+                            $currentLocale,
+                            $quizId
+                                ? (int) $quizId
+                                : null
+                        ),
+
+                    'currentQuizId' =>
+                        $quizId
+                            ? (int) $quizId
+                            : null,
+
+                    'currentQuestionId' =>
+                        $questionId
+                            ? (int) $questionId
+                            : null,
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки school quiz answers: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки school quiz answers: '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
-            return Inertia::render('Admin/School/SchoolQuizAnswers/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/School/SchoolQuizAnswers/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminSchoolQuizAnswersPerPage' => $perPage,
-                'adminSchoolQuizAnswersDefaultSort' => $defaultSort,
-                'adminSchoolQuizAnswersProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'answers' => [],
-                'answersCount' => 0,
+                    'adminSchoolQuizAnswersPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminSchoolQuizAnswersDefaultSort' =>
+                        $defaultSort,
 
-                'filters' => [
-                    'school_quiz_id' => $quizId,
-                    'school_quiz_question_id' => $questionId,
-                ],
+                    'adminSchoolQuizAnswersProcessingMode' =>
+                        $processingMode,
 
-                'quizzes' => [],
-                'questions' => [],
+                    'answers' =>
+                        [],
 
-                'currentQuizId' => $quizId ? (int) $quizId : null,
-                'currentQuestionId' => $questionId ? (int) $questionId : null,
+                    'answersCount' =>
+                        0,
 
-                'error' => 'Ошибка загрузки ответов квизов.',
-            ]);
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'filters' => [
+                        'school_quiz_id' =>
+                            $quizId
+                                ? (int) $quizId
+                                : null,
+
+                        'school_quiz_question_id' =>
+                            $questionId
+                                ? (int) $questionId
+                                : null,
+                    ],
+
+                    'quizzes' =>
+                        [],
+
+                    'questions' =>
+                        [],
+
+                    'currentQuizId' =>
+                        $quizId
+                            ? (int) $quizId
+                            : null,
+
+                    'currentQuestionId' =>
+                        $questionId
+                            ? (int) $questionId
+                            : null,
+
+                    'error' =>
+                        'Ошибка загрузки ответов квизов.',
+                ]
+            );
         }
     }
 
-    /** Страница создания ответа */
-    public function create(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    /**
+     * =========================================================
+     * CREATE / STORE
+     * =========================================================
+     */
 
-        $quizId = $request->query('school_quiz_id');
-        $questionId = $request->query('school_quiz_question_id');
+    /**
+     * Страница создания ответа.
+     */
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale =
+            $this->resolveLocale(
+                $request
+            );
 
-        return Inertia::render('Admin/School/SchoolQuizAnswers/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+        $quizId =
+            $request->query(
+                'school_quiz_id'
+            );
 
-            'quizzes' => $this->quizzesForSelect(),
-            'questions' => $this->questionsForSelect($quizId ? (int) $quizId : null),
+        $questionId =
+            $request->query(
+                'school_quiz_question_id'
+            );
 
-            'defaultQuizId' => $quizId ? (int) $quizId : null,
-            'defaultQuestionId' => $questionId ? (int) $questionId : null,
-        ]);
+        return Inertia::render(
+            'Admin/School/SchoolQuizAnswers/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'quizzes' =>
+                    $this->quizzesForSelect(
+                        $currentLocale
+                    ),
+
+                'questions' =>
+                    $this->questionsForSelect(
+                        $currentLocale,
+                        $quizId
+                            ? (int) $quizId
+                            : null
+                    ),
+
+                'defaultQuizId' =>
+                    $quizId
+                        ? (int) $quizId
+                        : null,
+
+                'defaultQuestionId' =>
+                    $questionId
+                        ? (int) $questionId
+                        : null,
+            ]
+        );
     }
 
-    /** Создание ответа */
-    public function store(SchoolQuizAnswerRequest $request): RedirectResponse
-    {
-        $data = $request->validated();
+    /**
+     * Создание ответа.
+     */
+    public function store(
+        SchoolQuizAnswerRequest $request
+    ): RedirectResponse {
+        $data =
+            $request->validated();
 
-        $translations = $data['translations'] ?? [];
+        $translations =
+            $data['translations']
+            ?? [];
 
-        unset($data['translations']);
+        unset(
+            $data['translations']
+        );
 
         $answer = null;
 
         try {
-            DB::transaction(function () use (&$answer, $data, $translations) {
-                if (!isset($data['sort']) || is_null($data['sort'])) {
-                    $maxSort = SchoolQuizAnswer::query()
-                        ->where('school_quiz_question_id', $data['school_quiz_question_id'])
-                        ->max('sort');
+            DB::transaction(
+                function () use (
+                    &$answer,
+                    $data,
+                    $translations
+                ) {
+                    /**
+                     * Автоматическое определение sort
+                     * внутри конкретного вопроса.
+                     */
+                    if (
+                        !isset($data['sort'])
+                        || is_null($data['sort'])
+                    ) {
+                        $maxSort =
+                            SchoolQuizAnswer::query()
+                                ->where(
+                                    'school_quiz_question_id',
+                                    $data['school_quiz_question_id']
+                                )
+                                ->max(
+                                    'sort'
+                                );
 
-                    $data['sort'] = is_null($maxSort) ? 1 : $maxSort + 1;
+                        $data['sort'] =
+                            is_null($maxSort)
+                                ? 1
+                                : $maxSort + 1;
+                    }
+
+                    $answer =
+                        SchoolQuizAnswer::create(
+                            $data
+                        );
+
+                    /**
+                     * Базовая мультиязычная логика.
+                     */
+                    $this->syncTranslations(
+                        $answer,
+                        $translations
+                    );
                 }
-
-                $answer = SchoolQuizAnswer::create($data);
-
-                $this->syncTranslations($answer, $translations);
-            });
+            );
 
             return redirect()
-                ->route('admin.schoolQuizAnswers.index', [
-                    'school_quiz_id' => $answer->school_quiz_id,
-                    'school_quiz_question_id' => $answer->school_quiz_question_id,
-                ])
-                ->with('success', 'Ответ квиза успешно создан.');
+                ->route(
+                    'admin.schoolQuizAnswers.index',
+                    [
+                        'school_quiz_id' =>
+                            $answer->school_quiz_id,
+
+                        'school_quiz_question_id' =>
+                            $answer->school_quiz_question_id,
+                    ]
+                )
+                ->with(
+                    'success',
+                    'Ответ квиза успешно создан.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка создания school quiz answer: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка создания school quiz answer: '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при создании ответа квиза.');
+                ->with(
+                    'error',
+                    'Ошибка при создании ответа квиза.'
+                );
         }
     }
 
-    /** Редирект на страницу редактирования */
-    public function show(int $schoolQuizAnswer): RedirectResponse
-    {
-        return redirect()->route('admin.schoolQuizAnswers.edit', $schoolQuizAnswer);
+    /**
+     * =========================================================
+     * SHOW / EDIT / UPDATE
+     * =========================================================
+     */
+
+    /**
+     * Редирект на страницу редактирования.
+     */
+    public function show(
+        int $schoolQuizAnswer
+    ): RedirectResponse {
+        return redirect()->route(
+            'admin.schoolQuizAnswers.edit',
+            $schoolQuizAnswer
+        );
     }
 
-    /** Страница редактирования ответа */
-    public function edit(int $schoolQuizAnswer, Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    /**
+     * Страница редактирования ответа.
+     */
+    public function edit(
+        int $schoolQuizAnswer,
+        Request $request
+    ): Response {
+        $currentLocale =
+            $this->resolveLocale(
+                $request
+            );
 
-        $answer = $this->baseQuery()
-            ->with([
-                'translation',
-                'translations',
-                'quiz.translation',
-                'quiz.translations',
-                'question.translation',
-                'question.translations',
-                'question.quiz.translation',
-            ])
-            ->withCount([
-                'attemptItems',
-            ])
-            ->findOrFail($schoolQuizAnswer);
+        $answer =
+            $this->baseQuery()
+                ->with([
+                    /**
+                     * Для самого Answer Edit нужны
+                     * ВСЕ переводы.
+                     */
+                    'translations',
 
-        return Inertia::render('Admin/School/SchoolQuizAnswers/Edit', [
-            'answer' => new SchoolQuizAnswerResource($answer),
+                    /**
+                     * Quiz отображается только
+                     * в текущей locale.
+                     */
+                    'quiz' => fn ($query) =>
+                    $query->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $currentLocale
+                        ),
 
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+                        'course' => fn ($courseQuery) =>
+                        $courseQuery->with([
+                            'translations' => fn ($translationQuery) =>
+                            $translationQuery->where(
+                                'locale',
+                                $currentLocale
+                            ),
+                        ]),
 
-            'quizzes' => $this->quizzesForSelect(),
-            'questions' => $this->questionsForSelect(),
-        ]);
+                        'module' => fn ($moduleQuery) =>
+                        $moduleQuery->with([
+                            'translations' => fn ($translationQuery) =>
+                            $translationQuery->where(
+                                'locale',
+                                $currentLocale
+                            ),
+                        ]),
+
+                        'lesson' => fn ($lessonQuery) =>
+                        $lessonQuery->with([
+                            'translations' => fn ($translationQuery) =>
+                            $translationQuery->where(
+                                'locale',
+                                $currentLocale
+                            ),
+                        ]),
+                    ]),
+
+                    /**
+                     * Question также только
+                     * в текущей locale.
+                     */
+                    'question' => fn ($query) =>
+                    $query->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $currentLocale
+                        ),
+                    ]),
+
+                    /**
+                     * Использования ответа.
+                     */
+                    'attemptItems',
+                ])
+                ->withCount([
+                    'attemptItems',
+                ])
+                ->findOrFail(
+                    $schoolQuizAnswer
+                );
+
+        return Inertia::render(
+            'Admin/School/SchoolQuizAnswers/Edit',
+            [
+                'answer' =>
+                    new SchoolQuizAnswerResource(
+                        $answer
+                    ),
+
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'quizzes' =>
+                    $this->quizzesForSelect(
+                        $currentLocale
+                    ),
+
+                'questions' =>
+                    $this->questionsForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
-    /** Обновление ответа */
-    public function update(SchoolQuizAnswerRequest $request, int $schoolQuizAnswer): RedirectResponse
-    {
-        $answer = $this->baseQuery()->findOrFail($schoolQuizAnswer);
+    /**
+     * Обновление ответа.
+     */
+    public function update(
+        SchoolQuizAnswerRequest $request,
+        int $schoolQuizAnswer
+    ): RedirectResponse {
+        $answer =
+            $this->baseQuery()
+                ->findOrFail(
+                    $schoolQuizAnswer
+                );
 
-        $data = $request->validated();
+        $data =
+            $request->validated();
 
-        $translations = $data['translations'] ?? [];
+        $translations =
+            $data['translations']
+            ?? [];
 
         unset(
             $data['translations'],
@@ -270,150 +622,383 @@ class SchoolQuizAnswerController extends BaseSchoolAdminController
         );
 
         try {
-            DB::transaction(function () use ($answer, $data, $translations) {
-                $answer->update($data);
+            DB::transaction(
+                function () use (
+                    $answer,
+                    $data,
+                    $translations
+                ) {
+                    $answer->update(
+                        $data
+                    );
 
-                $this->syncTranslations($answer, $translations);
-            });
+                    $this->syncTranslations(
+                        $answer,
+                        $translations
+                    );
+                }
+            );
 
             return redirect()
-                ->route('admin.schoolQuizAnswers.index', [
-                    'school_quiz_id' => $answer->school_quiz_id,
-                    'school_quiz_question_id' => $answer->school_quiz_question_id,
-                ])
-                ->with('success', 'Ответ квиза успешно обновлён.');
+                ->route(
+                    'admin.schoolQuizAnswers.index',
+                    [
+                        'school_quiz_id' =>
+                            $answer->school_quiz_id,
+
+                        'school_quiz_question_id' =>
+                            $answer->school_quiz_question_id,
+                    ]
+                )
+                ->with(
+                    'success',
+                    'Ответ квиза успешно обновлён.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка обновления school quiz answer ID ' . $answer->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка обновления school quiz answer ID '
+                . $answer->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при обновлении ответа квиза.');
+                ->with(
+                    'error',
+                    'Ошибка при обновлении ответа квиза.'
+                );
         }
     }
 
-    /** Удаление ответа */
-    public function destroy(int $schoolQuizAnswer): RedirectResponse
-    {
-        $answer = $this->baseQuery()->findOrFail($schoolQuizAnswer);
+    /**
+     * =========================================================
+     * DELETE
+     * =========================================================
+     */
 
-        $quizId = $answer->school_quiz_id;
-        $questionId = $answer->school_quiz_question_id;
+    /**
+     * Удаление ответа.
+     */
+    public function destroy(
+        int $schoolQuizAnswer
+    ): RedirectResponse {
+        $answer =
+            $this->baseQuery()
+                ->findOrFail(
+                    $schoolQuizAnswer
+                );
+
+        $quizId =
+            $answer->school_quiz_id;
+
+        $questionId =
+            $answer->school_quiz_question_id;
 
         try {
             $answer->delete();
 
             return redirect()
-                ->route('admin.schoolQuizAnswers.index', [
-                    'school_quiz_id' => $quizId,
-                    'school_quiz_question_id' => $questionId,
-                ])
-                ->with('success', 'Ответ квиза успешно удалён.');
-        } catch (Throwable $e) {
-            Log::error('Ошибка удаления school quiz answer ID ' . $answer->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+                ->route(
+                    'admin.schoolQuizAnswers.index',
+                    [
+                        'school_quiz_id' =>
+                            $quizId,
 
-            return back()->with('error', 'Ошибка при удалении ответа квиза.');
+                        'school_quiz_question_id' =>
+                            $questionId,
+                    ]
+                )
+                ->with(
+                    'success',
+                    'Ответ квиза успешно удалён.'
+                );
+        } catch (Throwable $e) {
+            Log::error(
+                'Ошибка удаления school quiz answer ID '
+                . $answer->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
+
+            return back()
+                ->with(
+                    'error',
+                    'Ошибка при удалении ответа квиза.'
+                );
         }
     }
 
-    /** Массовое удаление ответов */
-    public function bulkDestroy(Request $request): RedirectResponse
-    {
-        $data = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:school_quiz_answers,id'],
-            'school_quiz_id' => ['nullable', 'integer', 'exists:school_quizzes,id'],
-            'school_quiz_question_id' => ['nullable', 'integer', 'exists:school_quiz_questions,id'],
-        ]);
+    /**
+     * Массовое удаление ответов.
+     */
+    public function bulkDestroy(
+        Request $request
+    ): RedirectResponse {
+        $data =
+            $request->validate([
+                'ids' => [
+                    'required',
+                    'array',
+                ],
+
+                'ids.*' => [
+                    'required',
+                    'integer',
+                    'exists:school_quiz_answers,id',
+                ],
+
+                'school_quiz_id' => [
+                    'nullable',
+                    'integer',
+                    'exists:school_quizzes,id',
+                ],
+
+                'school_quiz_question_id' => [
+                    'nullable',
+                    'integer',
+                    'exists:school_quiz_questions,id',
+                ],
+            ]);
 
         try {
-            DB::transaction(function () use ($data) {
-                SchoolQuizAnswer::query()
-                    ->whereIn('id', $data['ids'])
-                    ->delete();
-            });
+            DB::transaction(
+                function () use ($data) {
+                    SchoolQuizAnswer::query()
+                        ->whereIn(
+                            'id',
+                            $data['ids']
+                        )
+                        ->delete();
+                }
+            );
 
-            return back()->with('success', 'Выбранные ответы успешно удалены.');
+            return back()
+                ->with(
+                    'success',
+                    'Выбранные ответы успешно удалены.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка массового удаления school quiz answers: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка массового удаления school quiz answers: '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при массовом удалении ответов квиза.');
+            return back()
+                ->with(
+                    'error',
+                    'Ошибка при массовом удалении ответов квиза.'
+                );
         }
     }
 
-    /** Список квизов для select */
-    private function quizzesForSelect(): AnonymousResourceCollection
-    {
-        $quizzes = SchoolQuiz::query()
-            ->with([
-                'translation',
-                'translations',
-                'course.translation',
-                'module.translation',
-                'lesson.translation',
-            ])
-            ->orderByDesc('id')
-            ->get();
+    /**
+     * =========================================================
+     * SELECT HELPERS
+     * =========================================================
+     */
 
-        return SchoolQuizSharedResource::collection($quizzes);
+    /**
+     * Квизы для select.
+     *
+     * Все переводимые связи загружаются
+     * только для currentLocale.
+     */
+    private function quizzesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
+        $quizzes =
+            SchoolQuiz::query()
+                ->with([
+                    'translations' => fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
+
+                    'course' => fn ($query) =>
+                    $query->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $locale
+                        ),
+                    ]),
+
+                    'module' => fn ($query) =>
+                    $query->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $locale
+                        ),
+                    ]),
+
+                    'lesson' => fn ($query) =>
+                    $query->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->where(
+                            'locale',
+                            $locale
+                        ),
+                    ]),
+                ])
+                ->orderByDesc(
+                    'id'
+                )
+                ->get();
+
+        return SchoolQuizSharedResource::collection(
+            $quizzes
+        );
     }
 
-    /** Список вопросов для select */
-    private function questionsForSelect(?int $quizId = null): AnonymousResourceCollection
-    {
-        $query = SchoolQuizQuestion::query()
-            ->with([
-                'translation',
-                'translations',
-                'quiz.translation',
-                'quiz.translations',
-            ])
-            ->orderBy('school_quiz_id')
-            ->orderBy('sort')
-            ->orderBy('id');
+    /**
+     * Вопросы для select.
+     *
+     * Можно ограничить конкретным Quiz.
+     */
+    private function questionsForSelect(
+        string $locale,
+        ?int $quizId = null
+    ): AnonymousResourceCollection {
+        $questions =
+            SchoolQuizQuestion::query()
+                ->with([
+                    'translations' => fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
+                ])
+                ->when(
+                    $quizId,
+                    fn (Builder $query) =>
+                    $query->where(
+                        'school_quiz_id',
+                        $quizId
+                    )
+                )
+                ->orderBy(
+                    'school_quiz_id'
+                )
+                ->orderBy(
+                    'sort'
+                )
+                ->orderBy(
+                    'id'
+                )
+                ->get();
 
-        if ($quizId) {
-            $query->where('school_quiz_id', $quizId);
-        }
-
-        return SchoolQuizQuestionResource::collection($query->get());
+        return SchoolQuizQuestionSharedResource::collection(
+            $questions
+        );
     }
 
-    /** Базовый запрос для списка ответов квизов. */
-    private function indexQuery(
+    /**
+     * =========================================================
+     * INDEX QUERIES
+     * =========================================================
+     */
+
+    /**
+     * Базовый Index Query.
+     *
+     * Без eager loading.
+     * Используется также для answersCount.
+     */
+    private function indexBaseQuery(
         null|string|int $quizId = null,
         null|string|int $questionId = null
     ): Builder {
         return $this->baseQuery()
-            ->when($quizId, fn (Builder $query) => $query
-                ->where('school_quiz_id', (int) $quizId)
+            ->when(
+                $quizId,
+                fn (Builder $query) =>
+                $query->where(
+                    'school_quiz_id',
+                    (int) $quizId
+                )
             )
-            ->when($questionId, fn (Builder $query) => $query
-                ->where('school_quiz_question_id', (int) $questionId)
-            )
+            ->when(
+                $questionId,
+                fn (Builder $query) =>
+                $query->where(
+                    'school_quiz_question_id',
+                    (int) $questionId
+                )
+            );
+    }
+
+    /**
+     * Полный Index Query.
+     *
+     * Загружаем только currentLocale.
+     */
+    private function indexQuery(
+        string $locale,
+        null|string|int $quizId = null,
+        null|string|int $questionId = null
+    ): Builder {
+        return $this->indexBaseQuery(
+            quizId: $quizId,
+            questionId: $questionId
+        )
             ->with([
-                'translation',
-                'translations',
+                /**
+                 * Перевод самого Answer.
+                 */
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
 
-                'quiz.translation',
-                'quiz.translations',
+                /**
+                 * Родительский Quiz.
+                 */
+                'quiz' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
 
-                'question.translation',
-                'question.translations',
-                'question.quiz.translation',
-                'question.quiz.translations',
+                /**
+                 * Родительский Question.
+                 */
+                'question' => fn ($query) =>
+                $query->with([
+                    'translations' => fn ($translationQuery) =>
+                    $translationQuery->where(
+                        'locale',
+                        $locale
+                    ),
+                ]),
             ])
             ->withCount([
                 'attemptItems',
             ]);
     }
 
-    /** Получение списка ответов квизов по активному режиму обработки. */
+    /**
+     * Получение списка по активному
+     * режиму обработки.
+     */
     private function getIndexAnswers(
         string $locale,
         bool $useServerProcessing,
@@ -423,18 +1008,44 @@ class SchoolQuizAnswerController extends BaseSchoolAdminController
         null|string|int $quizId = null,
         null|string|int $questionId = null,
     ) {
-        $query = $this->indexQuery($quizId, $questionId);
+        $query =
+            $this->indexQuery(
+                locale: $locale,
+                quizId: $quizId,
+                questionId: $questionId
+            );
 
+        /**
+         * SERVER:
+         * поиск + сортировка + SQL pagination.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * FRONTEND:
+         * отдаём полный набор,
+         * поиск/сортировка/пагинация
+         * выполняются во Vue.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

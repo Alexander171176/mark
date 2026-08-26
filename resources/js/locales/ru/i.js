@@ -14,6 +14,7 @@ export default {
     images: 'Изображений',
     import: 'Импортировать',
     inactive: 'Неактивные',
+    incorrect: 'Некорректно',
     individual: 'Физ. лицо',
     inherited: 'Наследуется',
     instructions: 'Инструкции',

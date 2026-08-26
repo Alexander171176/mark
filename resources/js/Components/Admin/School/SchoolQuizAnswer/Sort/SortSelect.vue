@@ -49,14 +49,14 @@ const updateSort = (event) => {
             <option value="weightDesc">{{ t('weight') }} 9→0</option>
             <option value="weightAsc">{{ t('weight') }} 0→9</option>
 
-            <option value="attemptItemsDesc">{{ t('attempts') }} 9→0</option>
-            <option value="attemptItemsAsc">{{ t('attempts') }} 0→9</option>
+            <option value="attemptItemsDesc">{{ t('quizAttempts') }} 9→0</option>
+            <option value="attemptItemsAsc">{{ t('quizAttempts') }} 0→9</option>
             <option disabled>─────────────</option>
 
-            <option value="correct">{{ t('correct') }}</option>
+            <option value="correct">{{ t('isCorrect') }}</option>
             <option value="incorrect">{{ t('incorrect') }}</option>
-            <option value="correctDesc">{{ t('correct') }} ON→OFF</option>
-            <option value="correctAsc">{{ t('correct') }} OFF→ON</option>
+            <option value="correctDesc">{{ t('isCorrect') }} ON→OFF</option>
+            <option value="correctAsc">{{ t('isCorrect') }} OFF→ON</option>
             <option disabled>─────────────</option>
 
             <option value="activityDesc">{{ t('activity') }} ON→OFF</option>

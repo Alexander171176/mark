@@ -14,6 +14,7 @@ export default {
     images: 'Images',
     import: 'Import',
     inactive: 'Inactive',
+    incorrect: 'Incorrect',
     individual: 'Жеке',
     inherited: 'Inherited',
     instructions: 'Instructions',

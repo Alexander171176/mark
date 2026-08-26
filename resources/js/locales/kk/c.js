@@ -100,6 +100,7 @@ export default {
     createModule: 'Оқыту модулін жасаңыз',
     createNewTeam: 'Жаңа топ құру',
     createNewTeamDesc: 'Басқа пайдаланушылармен жобаларда жұмыс істеу үшін жаңа топ жасаңыз.',
+    createOrder: 'Тапсырыс жасау',
     createParameter: 'Параметр жасау',
     createPermission: 'Рұқсат жасау',
     createQuiz: 'Викторина жасау',

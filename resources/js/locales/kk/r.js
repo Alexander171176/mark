@@ -26,6 +26,7 @@ export default {
     relatedCourses: 'Ұсынылған курстар',
     relatedProducts: 'Ұсынылған өнімдер',
     relatedVideos: 'Ұсынылған бейнелер',
+    relations: 'Қарым-қатынас',
     remainder: 'Қалдық',
     rememberMe: 'Мені есте сақтау',
     remove: 'Жою',

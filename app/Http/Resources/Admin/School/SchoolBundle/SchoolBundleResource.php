@@ -10,88 +10,266 @@ class SchoolBundleResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        /**
+         * Для Edit Controller загружает
+         * все translations.
+         *
+         * Текущий перевод определяем
+         * только из уже загруженной
+         * коллекции translations.
+         */
+        $translation = $this->relationLoaded('translations')
+            ? (
+            $this->translations->firstWhere(
+                'locale',
+                $locale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
+            : null;
+
+        /**
+         * Первое изображение уже соответствует
+         * pivot order связи images().
+         *
+         * Controller обязан загрузить:
+         * images.media
+         */
+        $primaryImage = $this->relationLoaded('images')
+            ? $this->images->first()
+            : null;
+
         return [
-            'id' => $this->id,
+            'id' =>
+                $this->id,
 
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
+            /**
+             * Основные поля.
+             */
+            'sort' =>
+                (int) $this->sort,
 
-            'slug' => $this->slug,
+            'activity' =>
+                (bool) $this->activity,
 
-            'title' => $this->translation?->title,
-            'subtitle' => $this->translation?->subtitle,
-            'short' => $this->translation?->short,
-            'description' => $this->translation?->description,
+            'slug' =>
+                $this->slug,
 
-            'meta_title' => $this->translation?->meta_title,
-            'meta_keywords' => $this->translation?->meta_keywords,
-            'meta_desc' => $this->translation?->meta_desc,
+            /**
+             * Текущий перевод.
+             *
+             * Только из уже загруженной
+             * коллекции translations.
+             */
+            'translation' => $translation
+                ? new SchoolBundleTranslationResource(
+                    $translation
+                )
+                : null,
 
-            'published_at' => $this->published_at?->format('Y-m-d'), // YYYY-MM-DD
+            /**
+             * Все переводы нужны Edit.
+             */
+            'translations' =>
+                SchoolBundleTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
 
-            'views' => (int) $this->views,
-            'likes' => (int) $this->likes,
-            'meta' => $this->meta,
+            /**
+             * Публикация.
+             */
+            'published_at' =>
+                $this->published_at?->format(
+                    'Y-m-d'
+                ),
 
-            'primary_image' => $this->whenLoaded(
-                'images',
-                fn () => $this->primary_image
-                    ? new SchoolBundleImageResource($this->primary_image)
-                    : null
+            /**
+             * Статистика.
+             */
+            'views' =>
+                (int) $this->views,
+
+            'likes' =>
+                (int) $this->likes,
+
+            'meta' =>
+                $this->meta,
+
+            /**
+             * Изображения.
+             *
+             * Controller обязан загрузить:
+             * images.media
+             */
+            'primary_image' => $primaryImage
+                ? new SchoolBundleImageResource(
+                    $primaryImage
+                )
+                : null,
+
+            'images' =>
+                SchoolBundleImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
+
+            /**
+             * Курсы внутри набора.
+             *
+             * Controller загружает
+             * courses.translations(currentLocale).
+             */
+            'courses' =>
+                SchoolCourseSharedResource::collection(
+                    $this->whenLoaded(
+                        'courses'
+                    )
+                ),
+
+            /**
+             * Цены набора.
+             */
+            'prices' => $this->whenLoaded(
+                'prices',
+                fn () => $this->prices->map(
+                    fn ($price) => [
+                        'id' =>
+                            $price->id,
+
+                        'school_bundle_id' =>
+                            $price->school_bundle_id,
+
+                        'currency_id' =>
+                            $price->currency_id,
+
+                        'price' =>
+                            (string) $price->price,
+
+                        'sale_price' =>
+                            $price->sale_price !== null
+                                ? (string) $price->sale_price
+                                : null,
+
+                        'compare_at_price' =>
+                            $price->compare_at_price !== null
+                                ? (string) $price->compare_at_price
+                                : null,
+
+                        'effective_price' =>
+                            $price->effective_price
+                            ?? null,
+
+                        'has_discount' =>
+                            (bool) (
+                                $price->has_discount
+                                ?? false
+                            ),
+
+                        'discount_amount' =>
+                            $price->discount_amount
+                            ?? null,
+
+                        'discount_percent' =>
+                            $price->discount_percent
+                            ?? null,
+
+                        'starts_at' =>
+                            $price->starts_at?->toISOString(),
+
+                        'ends_at' =>
+                            $price->ends_at?->toISOString(),
+
+                        'activity' =>
+                            (bool) $price->activity,
+
+                        'sort' =>
+                            (int) $price->sort,
+
+                        'meta' =>
+                            $price->meta,
+                    ]
+                )
             ),
 
-            'images' => SchoolBundleImageResource::collection(
-                $this->whenLoaded('images')
+            /**
+             * Позиции заказов.
+             *
+             * Загружаются только там,
+             * где действительно нужны.
+             */
+            'order_items' => $this->whenLoaded(
+                'orderItems',
+                fn () => $this->orderItems->map(
+                    fn ($item) => [
+                        'id' =>
+                            $item->id,
+
+                        'school_order_id' =>
+                            $item->school_order_id,
+
+                        'title' =>
+                            $item->title,
+
+                        'currency' =>
+                            $item->currency,
+
+                        'quantity' =>
+                            (int) $item->quantity,
+
+                        'unit_price' =>
+                            (string) $item->unit_price,
+
+                        'discount' =>
+                            (string) $item->discount,
+
+                        'total' =>
+                            (string) $item->total,
+                    ]
+                )
             ),
 
-            'translations' => SchoolBundleTranslationResource::collection(
-                $this->whenLoaded('translations')
+            /**
+             * Counts.
+             */
+            'courses_count' => $this->when(
+                isset($this->courses_count),
+                fn () => (int) $this->courses_count
             ),
 
-            'courses' => SchoolCourseSharedResource::collection(
-                $this->whenLoaded('courses')
+            'images_count' => $this->when(
+                isset($this->images_count),
+                fn () => (int) $this->images_count
             ),
 
-            'prices' => $this->whenLoaded('prices', fn () => $this->prices->map(fn ($price) => [
-                'id' => $price->id,
-                'school_bundle_id' => $price->school_bundle_id,
-                'currency_id' => $price->currency_id,
+            'prices_count' => $this->when(
+                isset($this->prices_count),
+                fn () => (int) $this->prices_count
+            ),
 
-                'price' => (string) $price->price,
-                'sale_price' => $price->sale_price !== null ? (string) $price->sale_price : null,
-                'compare_at_price' => $price->compare_at_price !== null ? (string) $price->compare_at_price : null,
+            'order_items_count' => $this->when(
+                isset($this->order_items_count),
+                fn () => (int) $this->order_items_count
+            ),
 
-                'effective_price' => $price->effective_price ?? null,
-                'has_discount' => (bool) ($price->has_discount ?? false),
-                'discount_amount' => $price->discount_amount ?? null,
-                'discount_percent' => $price->discount_percent ?? null,
+            'created_at' =>
+                $this->created_at?->toISOString(),
 
-                'starts_at' => optional($price->starts_at)->toIso8601String(),
-                'ends_at' => optional($price->ends_at)->toIso8601String(),
-
-                'activity' => (bool) $price->activity,
-                'sort' => (int) $price->sort,
-                'meta' => $price->meta,
-            ])),
-
-            'order_items' => $this->whenLoaded('orderItems', fn () => $this->orderItems->map(fn ($item) => [
-                'id' => $item->id,
-                'school_order_id' => $item->school_order_id,
-                'title' => $item->title,
-                'currency' => $item->currency,
-                'quantity' => (int) $item->quantity,
-                'unit_price' => (string) $item->unit_price,
-                'discount' => (string) $item->discount,
-                'total' => (string) $item->total,
-            ])),
-
-            'courses_count' => $this->when(isset($this->courses_count), fn () => (int) $this->courses_count),
-            'images_count' => $this->when(isset($this->images_count), fn () => (int) $this->images_count),
-            'prices_count' => $this->when(isset($this->prices_count), fn () => (int) $this->prices_count),
-            'order_items_count' => $this->when(isset($this->order_items_count), fn () => (int) $this->order_items_count),
-
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

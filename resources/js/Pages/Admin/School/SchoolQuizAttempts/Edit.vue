@@ -3,8 +3,9 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  *
- * редактирование попытки прохождения викторины
+ * Редактирование попытки прохождения викторины
  */
+
 import { computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
@@ -19,33 +20,73 @@ import InputText from '@/Components/Admin/UI/Input/InputText.vue'
 import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
 import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 
-// Локализация и уведомления
+/* ==========================================================
+ * I18N / TOAST
+ * ========================================================== */
+
 const { t } = useI18n()
 const toast = useToast()
 
-// Пропсы страницы редактирования попытки
-const props = defineProps({
-    attempt: { type: Object, required: true },
+/* ==========================================================
+ * PROPS
+ * ========================================================== */
 
-    users: { type: Array, default: () => [] },
-    quizzes: { type: Array, default: () => [] },
-    enrollments: { type: Array, default: () => [] },
-    courses: { type: Array, default: () => [] },
-    modules: { type: Array, default: () => [] },
-    lessons: { type: Array, default: () => [] },
+const props = defineProps({
+    currentLocale: {
+        type: String,
+        default: '',
+    },
+    availableLocales: {
+        type: Array,
+        default: () => [],
+    },
+
+    attempt: {
+        type: Object,
+        required: true,
+    },
+
+    users: {
+        type: Array,
+        default: () => [],
+    },
+    quizzes: {
+        type: Array,
+        default: () => [],
+    },
+    enrollments: {
+        type: Array,
+        default: () => [],
+    },
+    courses: {
+        type: Array,
+        default: () => [],
+    },
+    modules: {
+        type: Array,
+        default: () => [],
+    },
+    lessons: {
+        type: Array,
+        default: () => [],
+    },
 })
 
-// Нормализация даты под datetime-local
+/* ==========================================================
+ * HELPERS
+ * ========================================================== */
+
 const normalizeDateTimeLocal = (value) => {
     if (!value) return ''
 
-    const str = String(value)
-    const match = str.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/)
+    const string = String(value)
+    const match = string.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/)
 
-    return match ? match[1] : str
+    return match
+        ? match[1]
+        : string
 }
 
-// Преобразование datetime-local в ISO формат
 const fromDatetimeLocal = (value) => {
     if (!value) return null
 
@@ -56,14 +97,12 @@ const fromDatetimeLocal = (value) => {
         : null
 }
 
-// Замена null/undefined на пустую строку
 const normalizeToEmptyString = (value) => {
     return value === null || typeof value === 'undefined'
         ? ''
         : value
 }
 
-// Преобразование значения в число или null
 const toNumberOrNull = (value) => {
     if (value === '' || value === null || typeof value === 'undefined') {
         return null
@@ -71,17 +110,44 @@ const toNumberOrNull = (value) => {
 
     const number = Number(value)
 
-    return Number.isFinite(number) ? number : null
+    return Number.isFinite(number)
+        ? number
+        : null
 }
 
-// Опции статусов прохождения квиза
+const getTitle = (item) => {
+    return item?.translation?.title
+        || item?.translation?.name
+        || item?.slug
+        || null
+}
+
+/* ==========================================================
+ * STATUS OPTIONS
+ * ========================================================== */
+
 const statusOptions = computed(() => ([
-    { value: 'in_progress', label: t('setStatusInProgress') },
-    { value: 'completed', label: t('setStatusCompleted') },
-    { value: 'graded', label: t('setStatusGraded') },
+    {
+        value: 'in_progress',
+        label: t('setStatusInProgress'),
+    },
+    {
+        value: 'completed',
+        label: t('setStatusCompleted'),
+    },
+    {
+        value: 'graded',
+        label: t('setStatusGraded'),
+    },
 ]))
 
-// Текст пользователя для readonly блока
+/* ==========================================================
+ * READONLY CONTEXT
+ * ========================================================== */
+
+/**
+ * User не переводимый.
+ */
 const userLabel = computed(() => {
     const user = props.attempt?.user
 
@@ -94,12 +160,14 @@ const userLabel = computed(() => {
         : '—'
 })
 
-// Текст квиза для readonly блока
+/**
+ * Quiz currentLocale.
+ */
 const quizLabel = computed(() => {
     const quiz = props.attempt?.quiz
 
     if (quiz?.id) {
-        return `[ID: ${quiz.id}] ${quiz.title || quiz.slug || '—'}`
+        return `[ID: ${quiz.id}] ${getTitle(quiz) || '—'}`
     }
 
     return props.attempt?.school_quiz_id
@@ -107,7 +175,10 @@ const quizLabel = computed(() => {
         : '—'
 })
 
-// Текст зачисления для readonly блока
+/**
+ * Enrollment сам не переводимый,
+ * Course внутри него — currentLocale.
+ */
 const enrollmentLabel = computed(() => {
     const enrollment = props.attempt?.enrollment
 
@@ -116,8 +187,10 @@ const enrollmentLabel = computed(() => {
             ? ` — ${enrollment.user.name}`
             : ''
 
-        const coursePart = enrollment.course?.title
-            ? ` / ${enrollment.course.title}`
+        const courseTitle = getTitle(enrollment.course)
+
+        const coursePart = courseTitle
+            ? ` / ${courseTitle}`
             : ''
 
         return `[ID: ${enrollment.id}]${userPart}${coursePart}`
@@ -128,12 +201,11 @@ const enrollmentLabel = computed(() => {
         : '—'
 })
 
-// Текст курса для readonly блока
 const courseLabel = computed(() => {
     const course = props.attempt?.course
 
     if (course?.id) {
-        return `[ID: ${course.id}] ${course.title || course.slug || '—'}`
+        return `[ID: ${course.id}] ${getTitle(course) || '—'}`
     }
 
     return props.attempt?.school_course_id
@@ -141,12 +213,11 @@ const courseLabel = computed(() => {
         : '—'
 })
 
-// Текст модуля для readonly блока
 const moduleLabel = computed(() => {
     const module = props.attempt?.module
 
     if (module?.id) {
-        return `[ID: ${module.id}] ${module.title || module.slug || '—'}`
+        return `[ID: ${module.id}] ${getTitle(module) || '—'}`
     }
 
     return props.attempt?.school_module_id
@@ -154,12 +225,11 @@ const moduleLabel = computed(() => {
         : '—'
 })
 
-// Текст урока для readonly блока
 const lessonLabel = computed(() => {
     const lesson = props.attempt?.lesson
 
     if (lesson?.id) {
-        return `[ID: ${lesson.id}] ${lesson.title || lesson.slug || '—'}`
+        return `[ID: ${lesson.id}] ${getTitle(lesson) || '—'}`
     }
 
     return props.attempt?.school_lesson_id
@@ -167,52 +237,100 @@ const lessonLabel = computed(() => {
         : '—'
 })
 
-// IP адрес пользователя
-const ipLabel = computed(() => props.attempt?.ip_address || '—')
+const ipLabel = computed(() =>
+    props.attempt?.ip_address || '—'
+)
 
-// User Agent пользователя
-const userAgentLabel = computed(() => props.attempt?.user_agent || '—')
+const userAgentLabel = computed(() =>
+    props.attempt?.user_agent || '—'
+)
 
-// Процент прохождения
 const percentLabel = computed(() => {
-    if (props.attempt?.percent === null || typeof props.attempt?.percent === 'undefined') {
+    if (
+        props.attempt?.percent === null
+        || typeof props.attempt?.percent === 'undefined'
+    ) {
         return '—'
     }
 
     return `${props.attempt.percent}%`
 })
 
-// Форма редактирования попытки
+/* ==========================================================
+ * FORM
+ * ========================================================== */
+
 const form = useForm({
     _method: 'PUT',
 
-    status: props.attempt?.status ?? 'in_progress',
+    status:
+        props.attempt?.status
+        ?? 'in_progress',
 
-    score: normalizeToEmptyString(props.attempt?.score),
-    max_score: normalizeToEmptyString(props.attempt?.max_score),
+    score:
+        normalizeToEmptyString(
+            props.attempt?.score
+        ),
 
-    started_at: normalizeDateTimeLocal(props.attempt?.started_at),
-    finished_at: normalizeDateTimeLocal(props.attempt?.finished_at),
-    duration_seconds: normalizeToEmptyString(props.attempt?.duration_seconds),
+    max_score:
+        normalizeToEmptyString(
+            props.attempt?.max_score
+        ),
+
+    started_at:
+        normalizeDateTimeLocal(
+            props.attempt?.started_at
+        ),
+
+    finished_at:
+        normalizeDateTimeLocal(
+            props.attempt?.finished_at
+        ),
+
+    duration_seconds:
+        normalizeToEmptyString(
+            props.attempt?.duration_seconds
+        ),
 })
 
-// Отправка формы редактирования
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
 const submitForm = () => {
-    form.transform((data) => {
+    form.transform(data => {
         const payload = {
             _method: 'PUT',
 
             status: data.status,
 
-            score: toNumberOrNull(data.score),
-            max_score: toNumberOrNull(data.max_score),
+            score:
+                toNumberOrNull(
+                    data.score
+                ),
 
-            started_at: fromDatetimeLocal(data.started_at),
-            finished_at: fromDatetimeLocal(data.finished_at),
-            duration_seconds: toNumberOrNull(data.duration_seconds),
+            max_score:
+                toNumberOrNull(
+                    data.max_score
+                ),
+
+            started_at:
+                fromDatetimeLocal(
+                    data.started_at
+                ),
+
+            finished_at:
+                fromDatetimeLocal(
+                    data.finished_at
+                ),
+
+            duration_seconds:
+                toNumberOrNull(
+                    data.duration_seconds
+                ),
         }
 
-        Object.keys(payload).forEach((key) => {
+        Object.keys(payload).forEach(key => {
             if (payload[key] === null) {
                 delete payload[key]
             }
@@ -221,16 +339,29 @@ const submitForm = () => {
         return payload
     })
 
-    form.post(route('admin.schoolQuizAttempts.update', {
-        schoolQuizAttempt: props.attempt.id,
-    }), {
-        preserveScroll: true,
-        onSuccess: () => toast.success('Попытка квиза успешно обновлена.'),
-        onError: (errors) => {
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors?.[firstKey] || 'Проверьте правильность заполнения полей.')
-        },
-    })
+    form.post(
+        route('admin.schoolQuizAttempts.update', {
+            schoolQuizAttempt: props.attempt.id,
+        }),
+        {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Попытка квиза успешно обновлена.'
+                )
+            },
+
+            onError: (errors) => {
+                const firstKey = Object.keys(errors || {})[0]
+
+                toast.error(
+                    errors?.[firstKey]
+                    || 'Проверьте правильность заполнения полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -252,17 +383,21 @@ const submitForm = () => {
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
                     <DefaultButton :href="route('admin.schoolQuizAttempts.index')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                 viewBox="0 0 16 16">
+                            <svg
+                                class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                viewBox="0 0 16 16"
+                            >
                                 <path
                                     d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                 />
                             </svg>
                         </template>
+
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
 
+                <!-- Readonly context -->
                 <div
                     class="mb-4 p-3 border border-dashed border-slate-500 dark:border-slate-300
                            bg-white/60 dark:bg-slate-800/40"
@@ -277,6 +412,7 @@ const submitForm = () => {
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">
                                     {{ t('user') }}:
                                 </span>
+
                                 <span class="text-slate-800 dark:text-slate-200 opacity-80">
                                     {{ userLabel }}
                                 </span>
@@ -286,6 +422,7 @@ const submitForm = () => {
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">
                                     {{ t('quiz') }}:
                                 </span>
+
                                 <span class="text-slate-800 dark:text-slate-200 opacity-80">
                                     {{ quizLabel }}
                                 </span>
@@ -295,6 +432,7 @@ const submitForm = () => {
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">
                                     {{ t('enrollment') }}:
                                 </span>
+
                                 <span class="text-slate-800 dark:text-slate-200 opacity-80">
                                     {{ enrollmentLabel }}
                                 </span>
@@ -304,6 +442,7 @@ const submitForm = () => {
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">
                                     {{ t('attemptNumber') }}:
                                 </span>
+
                                 <span class="text-slate-800 dark:text-slate-200 opacity-80">
                                     {{ attempt.attempt_number ?? '—' }}
                                 </span>
@@ -313,6 +452,7 @@ const submitForm = () => {
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">
                                     {{ t('percent') }}:
                                 </span>
+
                                 <span class="text-slate-800 dark:text-slate-200 opacity-80">
                                     {{ percentLabel }}
                                 </span>
@@ -324,6 +464,7 @@ const submitForm = () => {
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">
                                     {{ t('course') }}:
                                 </span>
+
                                 <span class="text-slate-800 dark:text-slate-200 opacity-80">
                                     {{ courseLabel }}
                                 </span>
@@ -333,6 +474,7 @@ const submitForm = () => {
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">
                                     {{ t('module') }}:
                                 </span>
+
                                 <span class="text-slate-800 dark:text-slate-200 opacity-80">
                                     {{ moduleLabel }}
                                 </span>
@@ -342,6 +484,7 @@ const submitForm = () => {
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">
                                     {{ t('lesson') }}:
                                 </span>
+
                                 <span class="text-slate-800 dark:text-slate-200 opacity-80">
                                     {{ lessonLabel }}
                                 </span>
@@ -351,6 +494,7 @@ const submitForm = () => {
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">
                                     {{ t('ipAddress') }}:
                                 </span>
+
                                 <span class="text-slate-800 dark:text-slate-200 opacity-80">
                                     {{ ipLabel }}
                                 </span>
@@ -360,6 +504,7 @@ const submitForm = () => {
                                 <span class="font-semibold text-gray-900 dark:text-gray-100">
                                     {{ t('userAgent') }}:
                                 </span>
+
                                 <div
                                     class="mt-1 text-slate-800 dark:text-slate-200
                                            opacity-80 break-words whitespace-pre-wrap"
@@ -371,10 +516,8 @@ const submitForm = () => {
                     </div>
                 </div>
 
-                <form
-                    @submit.prevent="submitForm"
-                    class="p-3 w-full space-y-4"
-                >
+                <!-- Editable fields -->
+                <form @submit.prevent="submitForm" class="p-3 w-full space-y-4">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div class="flex flex-col items-start">
                             <LabelInput for="duration_seconds">
@@ -446,10 +589,7 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError
-                                class="mt-2"
-                                :message="form.errors.score"
-                            />
+                            <InputError class="mt-2" :message="form.errors.score" />
                         </div>
 
                         <div class="flex flex-col items-start">
@@ -465,10 +605,7 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError
-                                class="mt-2"
-                                :message="form.errors.max_score"
-                            />
+                            <InputError class="mt-2" :message="form.errors.max_score" />
                         </div>
 
                         <div class="flex flex-col items-start">
@@ -494,25 +631,26 @@ const submitForm = () => {
                                 </option>
                             </select>
 
-                            <InputError
-                                class="mt-2"
-                                :message="form.errors.status"
-                            />
+                            <InputError class="mt-2" :message="form.errors.status" />
                         </div>
                     </div>
 
                     <div class="flex items-center justify-center gap-3">
                         <DefaultButton :href="route('admin.schoolQuizAttempts.index')">
                             <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                     viewBox="0 0 16 16">
+                                <svg
+                                    class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                    viewBox="0 0 16 16"
+                                >
                                     <path
                                         d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('back') }}
                         </DefaultButton>
+
                         <PrimaryButton
                             class="mb-0"
                             :class="{ 'opacity-25': form.processing }"

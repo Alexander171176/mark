@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\School\SchoolQuizAttempt;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolQuizAttempt\SchoolQuizAttemptRequest;
 use App\Http\Resources\Admin\School\SchoolCourse\SchoolCourseSharedResource;
 use App\Http\Resources\Admin\School\SchoolEnrollment\SchoolEnrollmentSharedResource;
@@ -10,12 +10,13 @@ use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonSharedResource;
 use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleSharedResource;
 use App\Http\Resources\Admin\School\SchoolQuiz\SchoolQuizSharedResource;
 use App\Http\Resources\Admin\School\SchoolQuizAttempt\SchoolQuizAttemptResource;
-use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
-use App\Models\Admin\School\SchoolQuizAttempt\SchoolQuizAttempt;
+use App\Http\Resources\Admin\School\SchoolQuizAttempt\SchoolQuizAttemptSharedResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolEnrollment\SchoolEnrollment;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
+use App\Models\Admin\School\SchoolQuiz\SchoolQuiz;
+use App\Models\Admin\School\SchoolQuizAttempt\SchoolQuizAttempt;
 use App\Models\User;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
@@ -28,63 +29,112 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
 use Throwable;
 
 /**
  * Контроллер для управления попытками ответов на викторины
  * (SchoolQuizAttempt) в административной панели.
- * SchoolQuizAttempt — это общая попытка пользователя пройти всю викторину
+ *
+ * SchoolQuizAttempt — общая попытка пользователя
+ * пройти викторину.
  *
  * CRUD +:
- * - удаление (одиночное и массовое)
- * - связи с викторинами и вопросами викторин.
+ * - удаление (одиночное и массовое);
+ * - массовое изменение статуса;
+ * - связи с пользователем, квизом, зачислением,
+ *   курсом, модулем и уроком.
  *
- * @version 1.1 (мультиязычная архитектура)
- * @author Александр Косолапов <kosolapov1976@gmail.com>
- *
- * @see SchoolQuizAttempt
- * @see SchoolQuizAttemptRequest
- *
+ * @version 1.1
  */
-class SchoolQuizAttemptController extends Controller
+class SchoolQuizAttemptController extends BaseSchoolAdminController
 {
+    /**
+     * =========================================================
+     * INDEX
+     * =========================================================
+     */
+
     /** Список попыток квиза. */
-    public function index(Request $request): Response
-    {
-        $locale = app()->getLocale();
+    public function index(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        $status = $request->query('status');
-        $userId = $request->query('user_id');
-        $quizId = $request->query('school_quiz_id');
-        $enrollmentId = $request->query('school_enrollment_id');
+        $status =
+            $request->query('status');
 
-        $settings = app(AdminSettingsService::class);
+        $userId =
+            $request->query('user_id');
 
-        $perPage = $settings->int('adminSchoolQuizAttemptsPerPage', 6);
-        $defaultSort = $settings->string('adminSchoolQuizAttemptsDefaultSort', 'idDesc');
+        $quizId =
+            $request->query(
+                'school_quiz_id'
+            );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $enrollmentId =
+            $request->query(
+                'school_enrollment_id'
+            );
+
+        $settings = app(
+            AdminSettingsService::class
+        );
+
+        $perPage = $settings->int(
+            'adminSchoolQuizAttemptsPerPage',
+            6
+        );
+
+        $defaultSort = $settings->string(
+            'adminSchoolQuizAttemptsDefaultSort',
+            'idDesc'
+        );
+
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
+
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
 
         $processingMode = $settings->string(
             'adminSchoolQuizAttemptsProcessingMode',
             'frontend'
         );
 
-        $attemptsCount = $this->indexQuery(
+        /**
+         * Count выполняем отдельным лёгким запросом.
+         *
+         * Eager loading Index здесь не нужен.
+         */
+        $attemptsCount = $this->countQuery(
             status: $status,
             userId: $userId,
             quizId: $quizId,
             enrollmentId: $enrollmentId,
         )->count();
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer($processingMode, $attemptsCount, 300);
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $attemptsCount,
+            300
+        );
 
         try {
             $attempts = $this->getIndexAttempts(
-                locale: $locale,
-                useServerProcessing: $useServerProcessing,
+                locale: $currentLocale,
+                useServerProcessing:
+                $useServerProcessing,
                 perPage: $perPage,
                 sort: $sortParam,
                 search: $search,
@@ -94,462 +144,1365 @@ class SchoolQuizAttemptController extends Controller
                 enrollmentId: $enrollmentId,
             );
 
-            return Inertia::render('Admin/School/SchoolQuizAttempts/Index', [
-                'useServerProcessing' => $useServerProcessing,
+            return Inertia::render(
+                'Admin/School/SchoolQuizAttempts/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'adminSchoolQuizAttemptsPerPage' => $perPage,
-                'adminSchoolQuizAttemptsDefaultSort' => $defaultSort,
-                'adminSchoolQuizAttemptsProcessingMode' => $processingMode,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'attempts' => SchoolQuizAttemptResource::collection($attempts),
-                'attemptsCount' => $attemptsCount,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminSchoolQuizAttemptsPerPage' =>
+                        $perPage,
 
-                'filters' => [
-                    'status' => $status,
-                    'user_id' => $userId,
-                    'school_quiz_id' => $quizId,
-                    'school_enrollment_id' => $enrollmentId,
-                ],
+                    'adminSchoolQuizAttemptsDefaultSort' =>
+                        $defaultSort,
 
-                'users' => $this->usersForSelect(),
-                'quizzes' => $this->quizzesForSelect(),
-                'enrollments' => $this->enrollmentsForSelect(),
-                'courses' => $this->coursesForSelect(),
-                'modules' => $this->modulesForSelect(),
-                'lessons' => $this->lessonsForSelect(),
-            ]);
+                    'adminSchoolQuizAttemptsProcessingMode' =>
+                        $processingMode,
+
+                    /**
+                     * Admin Index использует
+                     * краткий Shared Resource.
+                     */
+                    'attempts' =>
+                        SchoolQuizAttemptSharedResource::collection(
+                            $attempts
+                        ),
+
+                    'attemptsCount' =>
+                        $attemptsCount,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'filters' => [
+                        'status' =>
+                            $status,
+
+                        'user_id' =>
+                            $userId,
+
+                        'school_quiz_id' =>
+                            $quizId,
+
+                        'school_enrollment_id' =>
+                            $enrollmentId,
+                    ],
+
+                    /**
+                     * Все select-helper имеют
+                     * единый locale-контракт.
+                     */
+                    'users' => $this->usersForSelect(),
+
+                    'quizzes' =>
+                        $this->quizzesForSelect(
+                            $currentLocale
+                        ),
+
+                    'enrollments' =>
+                        $this->enrollmentsForSelect(
+                            $currentLocale
+                        ),
+
+                    'courses' =>
+                        $this->coursesForSelect(
+                            $currentLocale
+                        ),
+
+                    'modules' =>
+                        $this->modulesForSelect(
+                            $currentLocale
+                        ),
+
+                    'lessons' =>
+                        $this->lessonsForSelect(
+                            $currentLocale
+                        ),
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки school quiz attempts: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки school quiz attempts: '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
-            return Inertia::render('Admin/School/SchoolQuizAttempts/Index', [
-                'useServerProcessing' => $useServerProcessing,
+            return Inertia::render(
+                'Admin/School/SchoolQuizAttempts/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'adminSchoolQuizAttemptsPerPage' => $perPage,
-                'adminSchoolQuizAttemptsDefaultSort' => $defaultSort,
-                'adminSchoolQuizAttemptsProcessingMode' => $processingMode,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'attempts' => [],
-                'attemptsCount' => 0,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminSchoolQuizAttemptsPerPage' =>
+                        $perPage,
 
-                'filters' => [
-                    'status' => $status,
-                    'user_id' => $userId,
-                    'school_quiz_id' => $quizId,
-                    'school_enrollment_id' => $enrollmentId,
-                ],
+                    'adminSchoolQuizAttemptsDefaultSort' =>
+                        $defaultSort,
 
-                'users' => [],
-                'quizzes' => [],
-                'enrollments' => [],
-                'courses' => [],
-                'modules' => [],
-                'lessons' => [],
+                    'adminSchoolQuizAttemptsProcessingMode' =>
+                        $processingMode,
 
-                'error' => 'Ошибка загрузки попыток квиза.',
-            ]);
+                    'attempts' =>
+                        [],
+
+                    'attemptsCount' =>
+                        0,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'filters' => [
+                        'status' =>
+                            $status,
+
+                        'user_id' =>
+                            $userId,
+
+                        'school_quiz_id' =>
+                            $quizId,
+
+                        'school_enrollment_id' =>
+                            $enrollmentId,
+                    ],
+
+                    'users' =>
+                        [],
+
+                    'quizzes' =>
+                        [],
+
+                    'enrollments' =>
+                        [],
+
+                    'courses' =>
+                        [],
+
+                    'modules' =>
+                        [],
+
+                    'lessons' =>
+                        [],
+
+                    'error' =>
+                        'Ошибка загрузки попыток квиза.',
+                ]
+            );
         }
     }
 
-    /** Страница создания попытки. */
-    public function create(Request $request): Response
-    {
-        return Inertia::render('Admin/School/SchoolQuizAttempts/Create', [
-            'users' => $this->usersForSelect(),
-            'quizzes' => $this->quizzesForSelect(),
-            'enrollments' => $this->enrollmentsForSelect(),
-            'courses' => $this->coursesForSelect(),
-            'modules' => $this->modulesForSelect(),
-            'lessons' => $this->lessonsForSelect(),
+    /**
+     * =========================================================
+     * CREATE / STORE
+     * =========================================================
+     */
 
-            'defaultUserId' => $request->query('user_id') ? (int) $request->query('user_id') : null,
-            'defaultQuizId' => $request->query('school_quiz_id') ? (int) $request->query('school_quiz_id') : null,
-            'defaultEnrollmentId' => $request->query('school_enrollment_id') ? (int) $request->query('school_enrollment_id') : null,
-        ]);
+    /** Страница создания попытки. */
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
+
+        return Inertia::render(
+            'Admin/School/SchoolQuizAttempts/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'users' => $this->usersForSelect(),
+
+                'quizzes' =>
+                    $this->quizzesForSelect(
+                        $currentLocale
+                    ),
+
+                'enrollments' =>
+                    $this->enrollmentsForSelect(
+                        $currentLocale
+                    ),
+
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+
+                'modules' =>
+                    $this->modulesForSelect(
+                        $currentLocale
+                    ),
+
+                'lessons' =>
+                    $this->lessonsForSelect(
+                        $currentLocale
+                    ),
+
+                'defaultUserId' =>
+                    $request->query(
+                        'user_id'
+                    )
+                        ? (int) $request->query(
+                        'user_id'
+                    )
+                        : null,
+
+                'defaultQuizId' =>
+                    $request->query(
+                        'school_quiz_id'
+                    )
+                        ? (int) $request->query(
+                        'school_quiz_id'
+                    )
+                        : null,
+
+                'defaultEnrollmentId' =>
+                    $request->query(
+                        'school_enrollment_id'
+                    )
+                        ? (int) $request->query(
+                        'school_enrollment_id'
+                    )
+                        : null,
+            ]
+        );
     }
 
     /** Сохранение новой попытки. */
-    public function store(SchoolQuizAttemptRequest $request): RedirectResponse
-    {
-        $data = $request->validated();
+    public function store(
+        SchoolQuizAttemptRequest $request
+    ): RedirectResponse {
+        $data =
+            $request->validated();
 
         try {
-            $attempt = DB::transaction(function () use ($data) {
-                if (empty($data['attempt_number'])) {
-                    $maxAttempt = SchoolQuizAttempt::query()
-                        ->where('user_id', $data['user_id'])
-                        ->where('school_quiz_id', $data['school_quiz_id'])
-                        ->lockForUpdate()
-                        ->max('attempt_number');
+            $attempt = DB::transaction(
+                function () use ($data) {
+                    /**
+                     * Если номер попытки
+                     * не передан вручную —
+                     * определяем следующий.
+                     */
+                    if (
+                        empty(
+                        $data['attempt_number']
+                        )
+                    ) {
+                        $maxAttempt =
+                            SchoolQuizAttempt::query()
+                                ->where(
+                                    'user_id',
+                                    $data['user_id']
+                                )
+                                ->where(
+                                    'school_quiz_id',
+                                    $data['school_quiz_id']
+                                )
+                                ->lockForUpdate()
+                                ->max(
+                                    'attempt_number'
+                                );
 
-                    $data['attempt_number'] = $maxAttempt ? ((int) $maxAttempt + 1) : 1;
-                }
-
-                if (!empty($data['school_enrollment_id'])) {
-                    $enrollment = SchoolEnrollment::query()
-                        ->findOrFail((int) $data['school_enrollment_id']);
-
-                    if ((int) $enrollment->user_id !== (int) $data['user_id']) {
-                        throw new \RuntimeException('Зачисление не принадлежит выбранному пользователю.');
+                        $data['attempt_number'] =
+                            $maxAttempt
+                                ? (
+                                (int) $maxAttempt
+                                + 1
+                            )
+                                : 1;
                     }
 
-                    if (empty($data['school_course_id']) && !empty($enrollment->school_course_id)) {
-                        $data['school_course_id'] = (int) $enrollment->school_course_id;
+                    /**
+                     * Проверяем зачисление.
+                     */
+                    if (
+                        !empty(
+                        $data[
+                        'school_enrollment_id'
+                        ]
+                        )
+                    ) {
+                        $enrollment =
+                            SchoolEnrollment::query()
+                                ->findOrFail(
+                                    (int) $data[
+                                    'school_enrollment_id'
+                                    ]
+                                );
+
+                        if (
+                            (int) $enrollment->user_id
+                            !== (int) $data['user_id']
+                        ) {
+                            throw new RuntimeException(
+                                'Зачисление не принадлежит выбранному пользователю.'
+                            );
+                        }
+
+                        /**
+                         * Если курс явно не передан,
+                         * берём его из Enrollment.
+                         */
+                        if (
+                            empty(
+                            $data[
+                            'school_course_id'
+                            ]
+                            )
+                            && !empty(
+                            $enrollment
+                                ->school_course_id
+                            )
+                        ) {
+                            $data[
+                            'school_course_id'
+                            ] = (int) $enrollment
+                                ->school_course_id;
+                        }
                     }
+
+                    $attempt =
+                        SchoolQuizAttempt::create([
+                            'user_id' =>
+                                $data['user_id'],
+
+                            'school_quiz_id' =>
+                                $data[
+                                'school_quiz_id'
+                                ],
+
+                            'school_enrollment_id' =>
+                                $data[
+                                'school_enrollment_id'
+                                ] ?? null,
+
+                            'school_course_id' =>
+                                $data[
+                                'school_course_id'
+                                ] ?? null,
+
+                            'school_module_id' =>
+                                $data[
+                                'school_module_id'
+                                ] ?? null,
+
+                            'school_lesson_id' =>
+                                $data[
+                                'school_lesson_id'
+                                ] ?? null,
+
+                            'attempt_number' =>
+                                $data[
+                                'attempt_number'
+                                ],
+
+                            'score' =>
+                                $data['score']
+                                ?? 0,
+
+                            'max_score' =>
+                                $data['max_score']
+                                ?? 0,
+
+                            'status' =>
+                                $data['status']
+                                ?? 'in_progress',
+
+                            'started_at' =>
+                                $data['started_at']
+                                ?? null,
+
+                            'finished_at' =>
+                                $data['finished_at']
+                                ?? null,
+
+                            'duration_seconds' =>
+                                $data[
+                                'duration_seconds'
+                                ] ?? 0,
+
+                            'ip_address' =>
+                                $data['ip_address']
+                                ?? null,
+
+                            'user_agent' =>
+                                $data['user_agent']
+                                ?? null,
+                        ]);
+
+                    /**
+                     * Автоматически рассчитываем
+                     * длительность.
+                     */
+                    if (
+                        !$attempt->duration_seconds
+                        && $attempt->started_at
+                        && $attempt->finished_at
+                    ) {
+                        $attempt->duration_seconds =
+                            $attempt->finished_at
+                                ->diffInSeconds(
+                                    $attempt->started_at
+                                );
+                    }
+
+                    $attempt->recalcPercent();
+
+                    $attempt->save();
+
+                    return $attempt;
                 }
-
-                $attempt = SchoolQuizAttempt::create([
-                    'user_id' => $data['user_id'],
-                    'school_quiz_id' => $data['school_quiz_id'],
-
-                    'school_enrollment_id' => $data['school_enrollment_id'] ?? null,
-                    'school_course_id' => $data['school_course_id'] ?? null,
-                    'school_module_id' => $data['school_module_id'] ?? null,
-                    'school_lesson_id' => $data['school_lesson_id'] ?? null,
-
-                    'attempt_number' => $data['attempt_number'],
-
-                    'score' => $data['score'] ?? 0,
-                    'max_score' => $data['max_score'] ?? 0,
-                    'status' => $data['status'] ?? 'in_progress',
-
-                    'started_at' => $data['started_at'] ?? null,
-                    'finished_at' => $data['finished_at'] ?? null,
-                    'duration_seconds' => $data['duration_seconds'] ?? 0,
-
-                    'ip_address' => $data['ip_address'] ?? null,
-                    'user_agent' => $data['user_agent'] ?? null,
-                ]);
-
-                if (
-                    !$attempt->duration_seconds
-                    && $attempt->started_at
-                    && $attempt->finished_at
-                ) {
-                    $attempt->duration_seconds = $attempt->finished_at
-                        ->diffInSeconds($attempt->started_at);
-                }
-
-                $attempt->recalcPercent();
-                $attempt->save();
-
-                return $attempt;
-            });
+            );
 
             return redirect()
-                ->route('admin.schoolQuizAttempts.index', [
-                    'school_quiz_id' => $attempt->school_quiz_id,
-                    'user_id' => $attempt->user_id,
-                ])
-                ->with('success', 'Попытка квиза успешно создана.');
+                ->route(
+                    'admin.schoolQuizAttempts.index',
+                    [
+                        'school_quiz_id' =>
+                            $attempt->school_quiz_id,
+
+                        'user_id' =>
+                            $attempt->user_id,
+                    ]
+                )
+                ->with(
+                    'success',
+                    'Попытка квиза успешно создана.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка создания school quiz attempt: ' . $e->getMessage(), [
-                'exception' => $e,
-                'payload' => $data,
-            ]);
+            Log::error(
+                'Ошибка создания school quiz attempt: '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+
+                    'payload' =>
+                        $data,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при создании попытки квиза.');
+                ->with(
+                    'error',
+                    'Ошибка при создании попытки квиза.'
+                );
         }
     }
 
+    /**
+     * =========================================================
+     * SHOW / EDIT / UPDATE
+     * =========================================================
+     */
+
     /** Редирект на страницу редактирования. */
-    public function show(int $schoolQuizAttempt): RedirectResponse
-    {
-        return redirect()->route('admin.schoolQuizAttempts.edit', $schoolQuizAttempt);
+    public function show(
+        int $schoolQuizAttempt
+    ): RedirectResponse {
+        return redirect()->route(
+            'admin.schoolQuizAttempts.edit',
+            $schoolQuizAttempt
+        );
     }
 
     /** Страница редактирования попытки. */
-    public function edit(int $schoolQuizAttempt): Response
-    {
+    public function edit(
+        int $schoolQuizAttempt,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
+
         $attempt = SchoolQuizAttempt::query()
             ->with([
                 'user:id,name,email',
-                'quiz.translation',
-                'quiz.translations',
-                'enrollment.user:id,name,email',
-                'enrollment.course.translation',
-                'course.translation',
-                'course.translations',
-                'module.translation',
-                'module.translations',
-                'lesson.translation',
-                'lesson.translations',
+
+                /**
+                 * Quiz:
+                 * только текущая locale.
+                 */
+                'quiz' => fn ($query) =>
+                $query->with([
+                    'translations' =>
+                        fn ($translationQuery) =>
+                        $translationQuery
+                            ->where(
+                                'locale',
+                                $currentLocale
+                            ),
+                ]),
+
+                /**
+                 * Enrollment +
+                 * пользователь и курс.
+                 */
+                'enrollment' => fn ($query) =>
+                $query->with([
+                    'user:id,name,email',
+
+                    'course' =>
+                        fn ($courseQuery) =>
+                        $courseQuery->with([
+                            'translations' =>
+                                fn (
+                                    $translationQuery
+                                ) =>
+                                $translationQuery
+                                    ->where(
+                                        'locale',
+                                        $currentLocale
+                                    ),
+                        ]),
+                ]),
+
+                /**
+                 * Course.
+                 */
+                'course' => fn ($query) =>
+                $query->with([
+                    'translations' =>
+                        fn ($translationQuery) =>
+                        $translationQuery
+                            ->where(
+                                'locale',
+                                $currentLocale
+                            ),
+                ]),
+
+                /**
+                 * Module.
+                 */
+                'module' => fn ($query) =>
+                $query->with([
+                    'translations' =>
+                        fn ($translationQuery) =>
+                        $translationQuery
+                            ->where(
+                                'locale',
+                                $currentLocale
+                            ),
+                ]),
+
+                /**
+                 * Lesson.
+                 */
+                'lesson' => fn ($query) =>
+                $query->with([
+                    'translations' =>
+                        fn ($translationQuery) =>
+                        $translationQuery
+                            ->where(
+                                'locale',
+                                $currentLocale
+                            ),
+                ]),
+
+                /**
+                 * Full Resource:
+                 * элементы попытки нужны Edit.
+                 */
                 'items',
             ])
-            ->withCount(['items'])
-            ->findOrFail($schoolQuizAttempt);
+            ->withCount([
+                'items',
+            ])
+            ->findOrFail(
+                $schoolQuizAttempt
+            );
 
-        return Inertia::render('Admin/School/SchoolQuizAttempts/Edit', [
-            'attempt' => new SchoolQuizAttemptResource($attempt),
+        return Inertia::render(
+            'Admin/School/SchoolQuizAttempts/Edit',
+            [
+                'attempt' =>
+                    new SchoolQuizAttemptResource(
+                        $attempt
+                    ),
 
-            'users' => $this->usersForSelect(),
-            'quizzes' => $this->quizzesForSelect(),
-            'enrollments' => $this->enrollmentsForSelect(),
-            'courses' => $this->coursesForSelect(),
-            'modules' => $this->modulesForSelect(),
-            'lessons' => $this->lessonsForSelect(),
-        ]);
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'users' =>
+                    $this->usersForSelect(),
+
+                'quizzes' =>
+                    $this->quizzesForSelect(
+                        $currentLocale
+                    ),
+
+                'enrollments' =>
+                    $this->enrollmentsForSelect(
+                        $currentLocale
+                    ),
+
+                'courses' =>
+                    $this->coursesForSelect(
+                        $currentLocale
+                    ),
+
+                'modules' =>
+                    $this->modulesForSelect(
+                        $currentLocale
+                    ),
+
+                'lessons' =>
+                    $this->lessonsForSelect(
+                        $currentLocale
+                    ),
+            ]
+        );
     }
 
     /** Обновление попытки. */
-    public function update(SchoolQuizAttemptRequest $request, int $schoolQuizAttempt): RedirectResponse
-    {
-        $attempt = SchoolQuizAttempt::query()->findOrFail($schoolQuizAttempt);
+    public function update(
+        SchoolQuizAttemptRequest $request,
+        int $schoolQuizAttempt
+    ): RedirectResponse {
+        $attempt =
+            SchoolQuizAttempt::query()
+                ->findOrFail(
+                    $schoolQuizAttempt
+                );
 
-        $data = $request->validated();
+        $data =
+            $request->validated();
 
         try {
+            /**
+             * Сохраняем существующую
+             * бизнес-логику:
+             *
+             * связи попытки здесь
+             * не изменяются.
+             */
             $attempt->fill([
-                'status' => $data['status'] ?? $attempt->status,
-                'score' => $data['score'] ?? $attempt->score,
-                'max_score' => $data['max_score'] ?? $attempt->max_score,
-                'started_at' => $data['started_at'] ?? $attempt->started_at,
-                'finished_at' => $data['finished_at'] ?? $attempt->finished_at,
-                'duration_seconds' => $data['duration_seconds'] ?? $attempt->duration_seconds,
+                'status' =>
+                    $data['status']
+                    ?? $attempt->status,
+
+                'score' =>
+                    $data['score']
+                    ?? $attempt->score,
+
+                'max_score' =>
+                    $data['max_score']
+                    ?? $attempt->max_score,
+
+                'started_at' =>
+                    $data['started_at']
+                    ?? $attempt->started_at,
+
+                'finished_at' =>
+                    $data['finished_at']
+                    ?? $attempt->finished_at,
+
+                'duration_seconds' =>
+                    $data['duration_seconds']
+                    ?? $attempt->duration_seconds,
             ]);
 
             if (
-                empty($data['duration_seconds'])
+                empty(
+                $data['duration_seconds']
+                )
                 && $attempt->started_at
                 && $attempt->finished_at
             ) {
-                $attempt->duration_seconds = $attempt->finished_at
-                    ->diffInSeconds($attempt->started_at);
+                $attempt->duration_seconds =
+                    $attempt->finished_at
+                        ->diffInSeconds(
+                            $attempt->started_at
+                        );
             }
 
             $attempt->recalcPercent();
+
             $attempt->save();
 
             return redirect()
-                ->route('admin.schoolQuizAttempts.index', [
-                    'school_quiz_id' => $attempt->school_quiz_id,
-                    'user_id' => $attempt->user_id,
-                ])
-                ->with('success', 'Попытка квиза успешно обновлена.');
+                ->route(
+                    'admin.schoolQuizAttempts.index',
+                    [
+                        'school_quiz_id' =>
+                            $attempt->school_quiz_id,
+
+                        'user_id' =>
+                            $attempt->user_id,
+                    ]
+                )
+                ->with(
+                    'success',
+                    'Попытка квиза успешно обновлена.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка обновления school quiz attempt ID ' . $attempt->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка обновления school quiz attempt ID '
+                . $attempt->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при обновлении попытки квиза.');
+                ->with(
+                    'error',
+                    'Ошибка при обновлении попытки квиза.'
+                );
         }
     }
 
-    /** Удаление попытки. */
-    public function destroy(int $schoolQuizAttempt): RedirectResponse
-    {
-        $attempt = SchoolQuizAttempt::query()->findOrFail($schoolQuizAttempt);
+    /**
+     * =========================================================
+     * DELETE
+     * =========================================================
+     */
 
-        $quizId = $attempt->school_quiz_id;
-        $userId = $attempt->user_id;
+    /** Удаление попытки. */
+    public function destroy(
+        int $schoolQuizAttempt
+    ): RedirectResponse {
+        $attempt =
+            SchoolQuizAttempt::query()
+                ->findOrFail(
+                    $schoolQuizAttempt
+                );
+
+        $quizId =
+            $attempt->school_quiz_id;
+
+        $userId =
+            $attempt->user_id;
 
         try {
             $attempt->delete();
 
             return redirect()
-                ->route('admin.schoolQuizAttempts.index', [
-                    'school_quiz_id' => $quizId,
-                    'user_id' => $userId,
-                ])
-                ->with('success', 'Попытка квиза успешно удалена.');
-        } catch (Throwable $e) {
-            Log::error('Ошибка удаления school quiz attempt ID ' . $attempt->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+                ->route(
+                    'admin.schoolQuizAttempts.index',
+                    [
+                        'school_quiz_id' =>
+                            $quizId,
 
-            return back()->with('error', 'Ошибка при удалении попытки квиза.');
+                        'user_id' =>
+                            $userId,
+                    ]
+                )
+                ->with(
+                    'success',
+                    'Попытка квиза успешно удалена.'
+                );
+        } catch (Throwable $e) {
+            Log::error(
+                'Ошибка удаления school quiz attempt ID '
+                . $attempt->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
+
+            return back()->with(
+                'error',
+                'Ошибка при удалении попытки квиза.'
+            );
         }
     }
 
     /** Массовое удаление попыток. */
-    public function bulkDestroy(Request $request): RedirectResponse
-    {
+    public function bulkDestroy(
+        Request $request
+    ): RedirectResponse {
         $data = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:school_quiz_attempts,id'],
+            'ids' => [
+                'required',
+                'array',
+            ],
 
-            'school_quiz_id' => ['nullable', 'integer', 'exists:school_quizzes,id'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'status' => ['nullable', 'string'],
+            'ids.*' => [
+                'required',
+                'integer',
+                'exists:school_quiz_attempts,id',
+            ],
+
+            'school_quiz_id' => [
+                'nullable',
+                'integer',
+                'exists:school_quizzes,id',
+            ],
+
+            'user_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+            ],
+
+            'status' => [
+                'nullable',
+                'string',
+            ],
         ]);
 
         try {
-            DB::transaction(function () use ($data) {
-                SchoolQuizAttempt::query()
-                    ->whereIn('id', $data['ids'])
-                    ->delete();
-            });
+            DB::transaction(
+                function () use ($data) {
+                    SchoolQuizAttempt::query()
+                        ->whereIn(
+                            'id',
+                            $data['ids']
+                        )
+                        ->delete();
+                }
+            );
 
-            return back()->with('success', 'Выбранные попытки квиза успешно удалены.');
+            return back()->with(
+                'success',
+                'Выбранные попытки квиза успешно удалены.'
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка массового удаления school quiz attempts: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка массового удаления school quiz attempts: '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при массовом удалении попыток квиза.');
+            return back()->with(
+                'error',
+                'Ошибка при массовом удалении попыток квиза.'
+            );
         }
     }
 
     /** Массовое обновление статуса попыток. */
-    public function bulkUpdateStatus(Request $request): RedirectResponse
-    {
+    public function bulkUpdateStatus(
+        Request $request
+    ): RedirectResponse {
         $data = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:school_quiz_attempts,id'],
-            'status' => ['required', 'string', 'in:in_progress,completed,graded'],
+            'ids' => [
+                'required',
+                'array',
+            ],
+
+            'ids.*' => [
+                'required',
+                'integer',
+                'exists:school_quiz_attempts,id',
+            ],
+
+            'status' => [
+                'required',
+                'string',
+                'in:in_progress,completed,graded',
+            ],
         ]);
 
         try {
             SchoolQuizAttempt::query()
-                ->whereIn('id', $data['ids'])
-                ->update(['status' => $data['status']]);
+                ->whereIn(
+                    'id',
+                    $data['ids']
+                )
+                ->update([
+                    'status' =>
+                        $data['status'],
+                ]);
 
-            return back()->with('success', 'Статус выбранных попыток успешно обновлён.');
+            return back()->with(
+                'success',
+                'Статус выбранных попыток успешно обновлён.'
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка массового обновления статуса school quiz attempts: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка массового обновления статуса school quiz attempts: '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при массовом обновлении статуса попыток.');
+            return back()->with(
+                'error',
+                'Ошибка при массовом обновлении статуса попыток.'
+            );
         }
     }
 
-    /** Пользователи для select. */
-    private function usersForSelect(): Collection|array
-    {
+    /**
+     * =========================================================
+     * SELECT HELPERS
+     * =========================================================
+     */
+
+    /**
+     * Пользователи для select.
+     *
+     * User не является переводимой сущностью.
+     * $locale принимается для единого контракта
+     * всех select-helper контроллера.
+     */
+    private function usersForSelect(): Collection {
         return User::query()
-            ->select('id', 'name', 'email')
+            ->select([
+                'id',
+                'name',
+                'email',
+            ])
             ->orderBy('name')
             ->get();
     }
 
-    /** Квизы для select. */
-    private function quizzesForSelect(): AnonymousResourceCollection
-    {
+    /**
+     * Квизы для select.
+     *
+     * Только выбранная locale
+     * самого Quiz и его иерархии.
+     */
+    private function quizzesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $quizzes = SchoolQuiz::query()
             ->with([
-                'translation',
-                'translations',
-                'course.translation',
-                'module.translation',
-                'lesson.translation',
+                'translations' =>
+                    fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
+
+                'course' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn (
+                                $translationQuery
+                            ) =>
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                ),
+                    ]),
+
+                'module' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn (
+                                $translationQuery
+                            ) =>
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                ),
+                    ]),
+
+                'lesson' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn (
+                                $translationQuery
+                            ) =>
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                ),
+                    ]),
             ])
             ->orderByDesc('id')
             ->get();
 
-        return SchoolQuizSharedResource::collection($quizzes);
+        return SchoolQuizSharedResource::collection(
+            $quizzes
+        );
     }
 
-    /** Зачисления для select. */
-    private function enrollmentsForSelect(): AnonymousResourceCollection
-    {
-        $enrollments = SchoolEnrollment::query()
-            ->with([
-                'user:id,name,email',
-                'course.translation',
-                'course.translations',
-            ])
-            ->orderByDesc('id')
-            ->get();
+    /**
+     * Зачисления для select.
+     *
+     * Enrollment сам не переводимый,
+     * но его Course — переводимый.
+     */
+    private function enrollmentsForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
+        $enrollments =
+            SchoolEnrollment::query()
+                ->with([
+                    'user:id,name,email',
 
-        return SchoolEnrollmentSharedResource::collection($enrollments);
+                    'course' =>
+                        fn ($query) =>
+                        $query->with([
+                            'translations' =>
+                                fn (
+                                    $translationQuery
+                                ) =>
+                                $translationQuery
+                                    ->where(
+                                        'locale',
+                                        $locale
+                                    ),
+                        ]),
+                ])
+                ->orderByDesc('id')
+                ->get();
+
+        return SchoolEnrollmentSharedResource::collection(
+            $enrollments
+        );
     }
 
-    /** Курсы для select. */
-    private function coursesForSelect(): AnonymousResourceCollection
-    {
+    /**
+     * Курсы для select.
+     */
+    private function coursesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $courses = SchoolCourse::query()
-            ->with(['translation', 'translations'])
+            ->with([
+                'translations' =>
+                    fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
+            ])
+            ->orderBy('sort')
+            ->orderByDesc('id')
             ->get();
 
-        return SchoolCourseSharedResource::collection($courses);
+        return SchoolCourseSharedResource::collection(
+            $courses
+        );
     }
 
-    /** Модули для select. */
-    private function modulesForSelect(): AnonymousResourceCollection
-    {
+    /**
+     * Модули для select.
+     */
+    private function modulesForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $modules = SchoolModule::query()
             ->with([
-                'translation',
-                'translations',
-                'course.translation',
+                /**
+                 * Module:
+                 * текущая locale.
+                 */
+                'translations' =>
+                    fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
+
+                /**
+                 * Родительский Course:
+                 * текущая locale.
+                 */
+                'course' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn (
+                                $translationQuery
+                            ) =>
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                ),
+                    ]),
             ])
+            ->orderBy('sort')
+            ->orderByDesc('id')
             ->get();
 
-        return SchoolModuleSharedResource::collection($modules);
+        return SchoolModuleSharedResource::collection(
+            $modules
+        );
     }
 
-    /** Уроки для select. */
-    private function lessonsForSelect(): AnonymousResourceCollection
-    {
+    /**
+     * Уроки для select.
+     */
+    private function lessonsForSelect(
+        string $locale
+    ): AnonymousResourceCollection {
         $lessons = SchoolLesson::query()
             ->with([
-                'translation',
-                'translations',
-                'module.translation',
-                'module.course.translation',
+                /**
+                 * Lesson:
+                 * текущая locale.
+                 */
+                'translations' =>
+                    fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
+
+                /**
+                 * Module +
+                 * его Course.
+                 */
+                'module' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn (
+                                $translationQuery
+                            ) =>
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                ),
+
+                        'course' =>
+                            fn (
+                                $courseQuery
+                            ) =>
+                            $courseQuery->with([
+                                'translations' =>
+                                    fn (
+                                        $translationQuery
+                                    ) =>
+                                    $translationQuery
+                                        ->where(
+                                            'locale',
+                                            $locale
+                                        ),
+                            ]),
+                    ]),
             ])
+            ->orderBy('sort')
+            ->orderByDesc('id')
             ->get();
 
-        return SchoolLessonSharedResource::collection($lessons);
+        return SchoolLessonSharedResource::collection(
+            $lessons
+        );
     }
 
-    /** Базовый запрос для списка попыток квиза. */
-    private function indexQuery(
+    /**
+     * =========================================================
+     * INDEX QUERIES
+     * =========================================================
+     */
+
+    /**
+     * Лёгкий query для подсчёта количества
+     * попыток с активными фильтрами.
+     */
+    private function countQuery(
         null|string|int $status = null,
         null|string|int $userId = null,
         null|string|int $quizId = null,
         null|string|int $enrollmentId = null,
     ): Builder {
         return SchoolQuizAttempt::query()
-            ->when($status, fn (Builder $query) => $query
-                ->where('status', $status)
+            ->when(
+                $status,
+                fn (Builder $query) =>
+                $query->where(
+                    'status',
+                    $status
+                )
             )
-            ->when($userId, fn (Builder $query) => $query
-                ->where('user_id', (int) $userId)
+            ->when(
+                $userId,
+                fn (Builder $query) =>
+                $query->where(
+                    'user_id',
+                    (int) $userId
+                )
             )
-            ->when($quizId, fn (Builder $query) => $query
-                ->where('school_quiz_id', (int) $quizId)
+            ->when(
+                $quizId,
+                fn (Builder $query) =>
+                $query->where(
+                    'school_quiz_id',
+                    (int) $quizId
+                )
             )
-            ->when($enrollmentId, fn (Builder $query) => $query
-                ->where('school_enrollment_id', (int) $enrollmentId)
-            )
+            ->when(
+                $enrollmentId,
+                fn (Builder $query) =>
+                $query->where(
+                    'school_enrollment_id',
+                    (int) $enrollmentId
+                )
+            );
+    }
+
+    /**
+     * Базовый запрос для Admin Index
+     * попыток квиза.
+     */
+    private function indexQuery(
+        string $locale,
+        null|string|int $status = null,
+        null|string|int $userId = null,
+        null|string|int $quizId = null,
+        null|string|int $enrollmentId = null,
+    ): Builder {
+        return $this->countQuery(
+            status: $status,
+            userId: $userId,
+            quizId: $quizId,
+            enrollmentId: $enrollmentId,
+        )
             ->with([
+                /**
+                 * Пользователь.
+                 */
                 'user:id,name,email',
 
-                'quiz.translation',
-                'quiz.translations',
+                /**
+                 * Quiz:
+                 * только текущая locale.
+                 */
+                'quiz' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn (
+                                $translationQuery
+                            ) =>
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                ),
+                    ]),
 
-                'enrollment.user:id,name,email',
-                'enrollment.course.translation',
-                'enrollment.course.translations',
+                /**
+                 * Enrollment:
+                 * пользователь +
+                 * Course текущей locale.
+                 */
+                'enrollment' =>
+                    fn ($query) =>
+                    $query->with([
+                        'user:id,name,email',
 
-                'course.translation',
-                'course.translations',
+                        'course' =>
+                            fn (
+                                $courseQuery
+                            ) =>
+                            $courseQuery->with([
+                                'translations' =>
+                                    fn (
+                                        $translationQuery
+                                    ) =>
+                                    $translationQuery
+                                        ->where(
+                                            'locale',
+                                            $locale
+                                        ),
+                            ]),
+                    ]),
 
-                'module.translation',
-                'module.translations',
+                /**
+                 * Course.
+                 */
+                'course' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn (
+                                $translationQuery
+                            ) =>
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                ),
+                    ]),
 
-                'lesson.translation',
-                'lesson.translations',
+                /**
+                 * Module.
+                 */
+                'module' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn (
+                                $translationQuery
+                            ) =>
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                ),
+                    ]),
+
+                /**
+                 * Lesson.
+                 */
+                'lesson' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn (
+                                $translationQuery
+                            ) =>
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                ),
+                    ]),
             ])
             ->withCount([
                 'items',
             ]);
     }
 
-    /** Получение списка попыток по активному режиму обработки. */
+    /**
+     * Получение списка попыток
+     * по активному режиму обработки.
+     */
     private function getIndexAttempts(
         string $locale,
         bool $useServerProcessing,
@@ -562,6 +1515,7 @@ class SchoolQuizAttemptController extends Controller
         null|string|int $enrollmentId = null,
     ) {
         $query = $this->indexQuery(
+            locale: $locale,
             status: $status,
             userId: $userId,
             quizId: $quizId,
@@ -570,14 +1524,25 @@ class SchoolQuizAttemptController extends Controller
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

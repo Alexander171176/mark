@@ -58,8 +58,8 @@ const updateSort = (event) => {
             <option value="answersCountDesc">{{ t('answers') }} ↓</option>
             <option disabled>─────────────</option>
 
-            <option value="attemptItemsCountDesc">{{ t('attempts') }} 9→0</option>
-            <option value="attemptItemsCountAsc">{{ t('attempts') }} 0→9</option>
+            <option value="attemptItemsCountDesc">{{ t('quizAttempts') }} 9→0</option>
+            <option value="attemptItemsCountAsc">{{ t('quizAttempts') }} 0→9</option>
             <option disabled>─────────────</option>
 
             <option value="singleChoice">{{ t('questionTypeSingleChoice') }}</option>

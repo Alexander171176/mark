@@ -139,34 +139,32 @@ const safeDate = (value) => {
     return Number.isFinite(time) ? time : 0
 }
 
+/* ==========================================================
+ * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ RESOURCES
+ * ========================================================== */
+
+/** Заголовок квиза */
 const getQuizTitle = (quiz) => {
-    return quiz?.title
-        || quiz?.translation?.title
-        || quiz?.translations?.[0]?.title
+    return quiz?.translation?.title
         || `ID: ${quiz?.id}`
 }
 
+/** Краткое описание */
 const getQuizShort = (quiz) => {
-    return quiz?.short
-        || quiz?.translation?.short
-        || quiz?.translations?.[0]?.short
+    return quiz?.translation?.short
         || ''
 }
 
+/** Полное описание */
 const getQuizDescription = (quiz) => {
-    return quiz?.description
-        || quiz?.translation?.description
-        || quiz?.translations?.[0]?.description
+    return quiz?.translation?.description
         || ''
 }
 
+/** Заголовок связанной сущности */
 const getNestedTitle = (item) => {
-    return item?.title
-        || item?.name
-        || item?.translation?.title
+    return item?.translation?.title
         || item?.translation?.name
-        || item?.translations?.[0]?.title
-        || item?.translations?.[0]?.name
         || ''
 }
 

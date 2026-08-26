@@ -12,85 +12,239 @@ class SchoolQuizResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        /**
+         * Для Edit Controller загружает
+         * все translations.
+         *
+         * Из них определяем текущий перевод
+         * с fallback.
+         */
+        $translation = $this->relationLoaded('translations')
+            ? (
+            $this->translations->firstWhere(
+                'locale',
+                $locale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
+            : null;
+
         return [
-            'id' => $this->id,
+            'id' =>
+                $this->id,
 
-            'school_course_id' => $this->school_course_id,
-            'school_module_id' => $this->school_module_id,
-            'school_lesson_id' => $this->school_lesson_id,
+            'school_course_id' =>
+                $this->school_course_id,
 
-            'slug' => $this->slug,
+            'school_module_id' =>
+                $this->school_module_id,
 
-            'title' => $this->translation?->title,
-            'short' => $this->translation?->short,
-            'description' => $this->translation?->description,
+            'school_lesson_id' =>
+                $this->school_lesson_id,
 
-            'type' => $this->type,
+            'slug' =>
+                $this->slug,
 
-            'attempts_limit' => (int) $this->attempts_limit,
-            'time_limit_minutes' => $this->time_limit_minutes !== null
-                ? (int) $this->time_limit_minutes
+            /**
+             * Текущий перевод.
+             *
+             * Только из уже загруженной
+             * коллекции translations.
+             */
+            'translation' => $translation
+                ? new SchoolQuizTranslationResource(
+                    $translation
+                )
                 : null,
-            'pass_score' => (int) $this->pass_score,
 
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
+            /**
+             * Все переводы нужны Edit.
+             */
+            'translations' =>
+                SchoolQuizTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
 
-            'left' => (bool) $this->left,
-            'main' => (bool) $this->main,
-            'right' => (bool) $this->right,
+            'type' =>
+                $this->type,
 
-            'published_at' => optional($this->published_at)->toIso8601String(),
+            'attempts_limit' =>
+                (int) $this->attempts_limit,
 
+            'time_limit_minutes' =>
+                $this->time_limit_minutes !== null
+                    ? (int) $this->time_limit_minutes
+                    : null,
+
+            'pass_score' =>
+                (int) $this->pass_score,
+
+            'sort' =>
+                (int) $this->sort,
+
+            'activity' =>
+                (bool) $this->activity,
+
+            'left' =>
+                (bool) $this->left,
+
+            'main' =>
+                (bool) $this->main,
+
+            'right' =>
+                (bool) $this->right,
+
+            'published_at' =>
+                $this->published_at?->toIso8601String(),
+
+            /**
+             * Изображения.
+             *
+             * Controller обязан загрузить
+             * images.media.
+             */
             'primary_image' => $this->whenLoaded(
                 'images',
                 fn () => $this->primary_image
-                    ? new SchoolQuizImageResource($this->primary_image)
+                    ? new SchoolQuizImageResource(
+                        $this->primary_image
+                    )
                     : null
             ),
 
-            'images' => SchoolQuizImageResource::collection(
-                $this->whenLoaded('images')
+            'images' =>
+                SchoolQuizImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
+
+            /**
+             * Иерархия квиза.
+             *
+             * Для связанных сущностей Controller
+             * загружает только выбранную локаль.
+             */
+            'course' =>
+                new SchoolCourseSharedResource(
+                    $this->whenLoaded(
+                        'course'
+                    )
+                ),
+
+            'module' =>
+                new SchoolModuleSharedResource(
+                    $this->whenLoaded(
+                        'module'
+                    )
+                ),
+
+            'lesson' =>
+                new SchoolLessonSharedResource(
+                    $this->whenLoaded(
+                        'lesson'
+                    )
+                ),
+
+            /**
+             * Вопросы.
+             *
+             * Пока сохраняем существующую структуру
+             * ответа API.
+             */
+            'questions' => $this->whenLoaded(
+                'questions',
+                fn () => $this->questions->map(
+                    function ($question) {
+                        $translation = $question->relationLoaded(
+                            'translations'
+                        )
+                            ? $question->translations->first()
+                            : null;
+
+                        return [
+                            'id' =>
+                                $question->id,
+
+                            'school_quiz_id' =>
+                                $question->school_quiz_id,
+
+                            'sort' =>
+                                (int) $question->sort,
+
+                            'question_type' =>
+                                $question->question_type,
+
+                            'points' =>
+                                (int) $question->points,
+
+                            'activity' =>
+                                (bool) $question->activity,
+
+                            'question_text' =>
+                                $translation?->question_text,
+                        ];
+                    }
+                )
             ),
 
-            'translations' => SchoolQuizTranslationResource::collection(
-                $this->whenLoaded('translations')
+            /**
+             * Попытки.
+             */
+            'attempts' => $this->whenLoaded(
+                'attempts',
+                fn () => $this->attempts->map(
+                    fn ($attempt) => [
+                        'id' =>
+                            $attempt->id,
+
+                        'user_id' =>
+                            $attempt->user_id,
+
+                        'attempt_number' =>
+                            (int) $attempt->attempt_number,
+
+                        'score' =>
+                            (int) $attempt->score,
+
+                        'max_score' =>
+                            (int) $attempt->max_score,
+
+                        'percent' =>
+                            (int) $attempt->percent,
+
+                        'status' =>
+                            $attempt->status,
+
+                        'started_at' =>
+                            optional(
+                                $attempt->started_at
+                            )->toIso8601String(),
+
+                        'finished_at' =>
+                            optional(
+                                $attempt->finished_at
+                            )->toIso8601String(),
+                    ]
+                )
             ),
 
-            'course' => new SchoolCourseSharedResource(
-                $this->whenLoaded('course')
-            ),
-
-            'module' => new SchoolModuleSharedResource(
-                $this->whenLoaded('module')
-            ),
-
-            'lesson' => new SchoolLessonSharedResource(
-                $this->whenLoaded('lesson')
-            ),
-
-            'questions' => $this->whenLoaded('questions', fn () => $this->questions->map(fn ($question) => [
-                'id' => $question->id,
-                'school_quiz_id' => $question->school_quiz_id,
-                'sort' => (int) $question->sort,
-                'question_type' => $question->question_type,
-                'points' => (int) $question->points,
-                'activity' => (bool) $question->activity,
-                'question_text' => $question->translation?->question_text,
-            ])),
-
-            'attempts' => $this->whenLoaded('attempts', fn () => $this->attempts->map(fn ($attempt) => [
-                'id' => $attempt->id,
-                'user_id' => $attempt->user_id,
-                'attempt_number' => (int) $attempt->attempt_number,
-                'score' => (int) $attempt->score,
-                'max_score' => (int) $attempt->max_score,
-                'percent' => (int) $attempt->percent,
-                'status' => $attempt->status,
-                'started_at' => optional($attempt->started_at)->toIso8601String(),
-                'finished_at' => optional($attempt->finished_at)->toIso8601String(),
-            ])),
-
+            /**
+             * Counts.
+             */
             'questions_count' => $this->when(
                 isset($this->questions_count),
                 fn () => (int) $this->questions_count
@@ -106,8 +260,11 @@ class SchoolQuizResource extends JsonResource
                 fn () => (int) $this->images_count
             ),
 
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

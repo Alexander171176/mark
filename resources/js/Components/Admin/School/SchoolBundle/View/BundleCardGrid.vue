@@ -10,8 +10,15 @@ import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue
 const { t } = useI18n()
 
 const props = defineProps({
-    bundles: { type: Array, default: () => [] },
-    selectedBundles: { type: Array, default: () => [] },
+    bundles: {
+        type: Array,
+        default: () => [],
+    },
+
+    selectedBundles: {
+        type: Array,
+        default: () => [],
+    },
 })
 
 const emit = defineEmits([
@@ -22,18 +29,29 @@ const emit = defineEmits([
     'toggle-all',
 ])
 
+/* ==========================================================
+ * LOCAL DATA
+ * ========================================================== */
+
 const localBundles = ref([])
 
 watch(
     () => props.bundles,
-    (newVal) => {
-        localBundles.value = JSON.parse(JSON.stringify(newVal || []))
+    (newValue) => {
+        localBundles.value = JSON.parse(JSON.stringify(newValue || []))
     },
     { immediate: true, deep: true }
 )
 
+/* ==========================================================
+ * DRAG / SELECTION
+ * ========================================================== */
+
 const handleDragEnd = () => {
-    emit('update-sort-order', localBundles.value.map(bundle => bundle.id))
+    emit(
+        'update-sort-order',
+        localBundles.value.map(bundle => bundle.id)
+    )
 }
 
 const toggleAll = (event) => {
@@ -43,15 +61,60 @@ const toggleAll = (event) => {
     })
 }
 
+/* ==========================================================
+ * RESOURCE HELPERS
+ * ========================================================== */
+
+const getBundleTitle = (bundle) => {
+    return bundle?.translation?.title
+        || `ID: ${bundle?.id ?? '—'}`
+}
+
+const getBundleSubtitle = (bundle) => {
+    return bundle?.translation?.subtitle || ''
+}
+
+const getCourseTitle = (course) => {
+    return course?.translation?.title
+        || course?.slug
+        || ''
+}
+
+const getCourses = (bundle) => {
+    return Array.isArray(bundle?.courses)
+        ? bundle.courses
+        : []
+}
+
+const getCoursesCount = (bundle) => {
+    if (typeof bundle?.courses_count === 'number') {
+        return bundle.courses_count
+    }
+
+    return getCourses(bundle).length
+}
+
+const getCourseTitles = (bundle) => {
+    return getCourses(bundle)
+        .map(getCourseTitle)
+        .filter(Boolean)
+}
+
+const getCourseTitlesTooltip = (bundle) => {
+    return getCourseTitles(bundle).join('\n')
+}
+
+/* ==========================================================
+ * IMAGE
+ * ========================================================== */
+
 const getPrimaryImage = (bundle) => {
-    if (bundle.primary_image) {
+    if (bundle?.primary_image) {
         return bundle.primary_image
     }
 
-    if (Array.isArray(bundle.images) && bundle.images.length) {
-        return [...bundle.images].sort((a, b) => {
-            return (a.order ?? 0) - (b.order ?? 0)
-        })[0]
+    if (Array.isArray(bundle?.images) && bundle.images.length) {
+        return bundle.images[0]
     }
 
     return null
@@ -70,19 +133,27 @@ const imageUrl = (bundle) => {
 const imageAlt = (bundle) => {
     const image = getPrimaryImage(bundle)
 
-    return image?.alt || bundle.title || t('defaultImageAlt')
+    return image?.alt
+        || getBundleTitle(bundle)
+        || t('defaultImageAlt')
 }
 
 const imageTitle = (bundle) => {
     const image = getPrimaryImage(bundle)
 
-    return image?.caption || bundle.title || t('defaultImageTitle')
+    return image?.caption
+        || getBundleTitle(bundle)
+        || t('defaultImageTitle')
 }
 
-const formatDate = (dateStr) => {
-    if (!dateStr) return '—'
+/* ==========================================================
+ * DATE
+ * ========================================================== */
 
-    const date = new Date(dateStr)
+const formatDate = (value) => {
+    if (!value) return '—'
+
+    const date = new Date(value)
 
     if (Number.isNaN(date.getTime())) {
         return '—'
@@ -93,32 +164,6 @@ const formatDate = (dateStr) => {
         month: 'short',
         day: 'numeric',
     })
-}
-
-const getCoursesCount = (bundle) => {
-    if (typeof bundle.courses_count === 'number') {
-        return bundle.courses_count
-    }
-
-    if (Array.isArray(bundle.courses)) {
-        return bundle.courses.length
-    }
-
-    return 0
-}
-
-const getCourses = (bundle) => {
-    return Array.isArray(bundle.courses) ? bundle.courses : []
-}
-
-const getCourseTitles = (bundle) => {
-    return getCourses(bundle)
-        .map(course => course?.title || course?.slug)
-        .filter(Boolean)
-}
-
-const getCourseTitlesTooltip = (bundle) => {
-    return getCourseTitles(bundle).join('\n')
 }
 </script>
 
@@ -145,10 +190,8 @@ const getCourseTitlesTooltip = (bundle) => {
                 <input
                     type="checkbox"
                     class="mx-2"
-                    :checked="
-                        localBundles.length &&
-                        localBundles.every(bundle => selectedBundles.includes(bundle.id))
-                    "
+                    :checked="localBundles.length &&
+                        localBundles.every(bundle => selectedBundles.includes(bundle.id))"
                     @change="toggleAll"
                 />
             </label>
@@ -170,9 +213,11 @@ const getCourseTitlesTooltip = (bundle) => {
                                bg-slate-50/70 dark:bg-slate-800/80 shadow-sm
                                hover:shadow-md transition-shadow duration-150"
                     >
+                        <!-- Header -->
                         <header
                             class="flex items-center justify-between px-2 py-1
-                                   border-b border-dashed border-slate-400 dark:border-slate-500"
+                                   border-b border-dashed border-slate-400
+                                   dark:border-slate-500"
                         >
                             <div class="flex items-center space-x-2">
                                 <button
@@ -181,7 +226,11 @@ const getCourseTitlesTooltip = (bundle) => {
                                            dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
                                         <path
                                             d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z"
                                         />
@@ -189,8 +238,9 @@ const getCourseTitlesTooltip = (bundle) => {
                                 </button>
 
                                 <div
-                                    class="text-[10px] font-semibold px-1.5 py-0.5 rounded-sm
-                                           border border-gray-400 bg-slate-200 dark:bg-slate-700
+                                    class="text-[10px] font-semibold px-1.5 py-0.5
+                                           rounded-sm border border-gray-400
+                                           bg-slate-200 dark:bg-slate-700
                                            text-slate-800 dark:text-blue-100"
                                     :title="`[${bundle.sort}] ${formatDate(bundle.published_at)}`"
                                 >
@@ -201,7 +251,8 @@ const getCourseTitlesTooltip = (bundle) => {
                             <div class="flex items-center space-x-2">
                                 <span
                                     class="text-[10px] px-1.5 py-0.5 rounded-sm
-                                           border border-gray-400 bg-sky-100 dark:bg-sky-900/50
+                                           border border-gray-400 bg-sky-100
+                                           dark:bg-sky-900/50
                                            text-sky-700 dark:text-sky-300"
                                     :title="t('courses')"
                                 >
@@ -216,6 +267,7 @@ const getCourseTitlesTooltip = (bundle) => {
                             </div>
                         </header>
 
+                        <!-- Image -->
                         <div class="relative w-full h-32 bg-slate-200 dark:bg-slate-900">
                             <img
                                 :src="imageUrl(bundle)"
@@ -225,27 +277,30 @@ const getCourseTitlesTooltip = (bundle) => {
                             />
                         </div>
 
+                        <!-- Body -->
                         <div class="flex flex-col flex-1 px-3 py-2 space-y-1">
                             <a
                                 :href="`/school-bundles/${encodeURIComponent(bundle.slug)}`"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="text-sm font-semibold text-sky-700 dark:text-sky-300
-                                       hover:underline line-clamp-2 text-center"
-                                :title="bundle.subtitle || bundle.title"
+                                class="text-sm font-semibold text-sky-700
+                                       dark:text-sky-300 hover:underline
+                                       line-clamp-2 text-center"
+                                :title="getBundleSubtitle(bundle) || getBundleTitle(bundle)"
                             >
-                                {{ bundle.title || `ID: ${bundle.id}` }}
+                                {{ getBundleTitle(bundle) }}
                             </a>
 
                             <div
-                                v-if="bundle.subtitle"
-                                class="text-[11px] text-slate-600 dark:text-slate-200 text-center
-                                       font-semibold line-clamp-2"
-                                :title="bundle.subtitle"
+                                v-if="getBundleSubtitle(bundle)"
+                                class="text-[11px] text-slate-600 dark:text-slate-200
+                                       text-center font-semibold line-clamp-2"
+                                :title="getBundleSubtitle(bundle)"
                             >
-                                {{ bundle.subtitle }}
+                                {{ getBundleSubtitle(bundle) }}
                             </div>
 
+                            <!-- Courses -->
                             <div
                                 v-if="getCourseTitles(bundle).length"
                                 class="py-1 font-semibold text-[11px] text-left
@@ -280,6 +335,7 @@ const getCourseTitlesTooltip = (bundle) => {
                                 {{ t('courses') }}: —
                             </div>
 
+                            <!-- Stats -->
                             <div
                                 class="flex flex-wrap justify-center gap-3 mt-4
                                        text-[11px] text-slate-900 dark:text-slate-200"
@@ -316,9 +372,11 @@ const getCourseTitlesTooltip = (bundle) => {
                             </div>
                         </div>
 
+                        <!-- Footer -->
                         <footer
                             class="flex items-center justify-center px-3 py-2
-                                   border-t border-dashed border-slate-400 dark:border-slate-500"
+                                   border-t border-dashed border-slate-400
+                                   dark:border-slate-500"
                         >
                             <div class="flex items-center space-x-1">
                                 <ActivityToggle

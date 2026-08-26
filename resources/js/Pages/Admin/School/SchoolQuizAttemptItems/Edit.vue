@@ -5,6 +5,7 @@
  *
  * Редактировать ответ на конкретный вопрос викторины
  */
+
 import { computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
@@ -19,18 +20,38 @@ import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
 import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
 
-// Локализация интерфейса
-const { t } = useI18n()
+/* ==========================================================
+ * I18N / TOAST
+ * ========================================================== */
 
-// Toast уведомления
+const { t } = useI18n()
 const toast = useToast()
 
-// Props страницы редактирования
+/* ==========================================================
+ * PROPS
+ * ========================================================== */
+
 const props = defineProps({
-    item: { type: Object, required: true },
+    currentLocale: {
+        type: String,
+        default: '',
+    },
+
+    availableLocales: {
+        type: Array,
+        default: () => [],
+    },
+
+    item: {
+        type: Object,
+        required: true,
+    },
 })
 
-// Очистка HTML тегов из текста
+/* ==========================================================
+ * HELPERS
+ * ========================================================== */
+
 const stripHtml = (html = '') => {
     return (html || '')
         .replace(/<\/p>/gi, ' ')
@@ -46,23 +67,29 @@ const stripHtml = (html = '') => {
         .trim()
 }
 
-// Замена null/undefined на пустую строку
 const normalizeToEmptyString = (value) => {
-    return value === null || typeof value === 'undefined' ? '' : value
+    return value === null
+    || typeof value === 'undefined'
+        ? ''
+        : value
 }
 
-// Преобразование значения в число или null
 const toNumberOrNull = (value) => {
-    if (value === '' || value === null || typeof value === 'undefined') {
+    if (
+        value === ''
+        || value === null
+        || typeof value === 'undefined'
+    ) {
         return null
     }
 
     const number = Number(value)
 
-    return Number.isFinite(number) ? number : null
+    return Number.isFinite(number)
+        ? number
+        : null
 }
 
-// Форматирование даты и времени
 const formatDateTime = (value) => {
     if (!value) return '—'
 
@@ -75,7 +102,10 @@ const formatDateTime = (value) => {
     return date.toLocaleString('ru-RU')
 }
 
-// Перевод типа вопроса
+/* ==========================================================
+ * LABELS
+ * ========================================================== */
+
 const questionTypeLabel = (type) => {
     const map = {
         single_choice: t('questionTypeSingleChoice'),
@@ -87,7 +117,6 @@ const questionTypeLabel = (type) => {
     return map[type] || type || '—'
 }
 
-// Перевод статуса попытки
 const attemptStatusLabel = (status) => {
     const map = {
         in_progress: t('setStatusInProgress'),
@@ -98,7 +127,6 @@ const attemptStatusLabel = (status) => {
     return map[status] || status || '—'
 }
 
-// Цвет статуса попытки
 const attemptStatusClass = (status) => {
     if (status === 'graded') {
         return 'text-emerald-700 dark:text-emerald-200'
@@ -115,122 +143,239 @@ const attemptStatusClass = (status) => {
     return 'text-slate-500 dark:text-slate-300'
 }
 
-// Попытка прохождения
-const attempt = computed(() => props.item?.attempt || null)
+/* ==========================================================
+ * CONTEXT
+ * ========================================================== */
 
-// Пользователь попытки
-const student = computed(() => props.item?.attempt?.user || null)
+const attempt = computed(() =>
+    props.item?.attempt
+    || null
+)
 
-// Квиз попытки
-const quiz = computed(() => props.item?.attempt?.quiz || null)
+const student = computed(() =>
+    props.item?.attempt?.user
+    || null
+)
 
-// Вопрос квиза
-const question = computed(() => props.item?.question || null)
+const quiz = computed(() =>
+    props.item?.attempt?.quiz
+    || null
+)
 
-// Тип вопроса
-const questionType = computed(() => question.value?.question_type || null)
+const quizTitle = computed(() =>
+    quiz.value?.translation?.title
+    || quiz.value?.slug
+    || '—'
+)
 
-// Текст вопроса
-const questionText = computed(() => question.value?.question_text || '')
+const question = computed(() =>
+    props.item?.question
+    || null
+)
 
-// Баллы вопроса
-const questionPoints = computed(() => question.value?.points ?? null)
+const questionType = computed(() =>
+    question.value?.question_type
+    || null
+)
 
-// Подпись статуса попытки
-const statusLabel = computed(() => attemptStatusLabel(attempt.value?.status))
+const questionText = computed(() =>
+    question.value?.translation?.question_text
+    || ''
+)
 
-// CSS класс статуса попытки
-const statusClass = computed(() => attemptStatusClass(attempt.value?.status))
+const questionExplanation = computed(() =>
+    question.value?.translation?.explanation
+    || ''
+)
 
-// Подпись типа вопроса
-const questionTypeLabelValue = computed(() => questionTypeLabel(questionType.value))
+const questionPoints = computed(() =>
+    question.value?.points
+    ?? null
+)
 
-// Максимальный балл вопроса
+const statusLabel = computed(() =>
+    attemptStatusLabel(
+        attempt.value?.status
+    )
+)
+
+const statusClass = computed(() =>
+    attemptStatusClass(
+        attempt.value?.status
+    )
+)
+
+const questionTypeLabelValue = computed(() =>
+    questionTypeLabel(
+        questionType.value
+    )
+)
+
+/* ==========================================================
+ * QUESTION STATE
+ * ========================================================== */
+
 const maxScoreReadonly = computed(() => {
-    const points = Number(questionPoints.value)
+    const points = Number(
+        questionPoints.value
+    )
 
     if (Number.isFinite(points)) {
         return points
     }
 
-    const maxScore = Number(props.item?.max_score)
+    const maxScore = Number(
+        props.item?.max_score
+    )
 
-    return Number.isFinite(maxScore) ? maxScore : null
+    return Number.isFinite(maxScore)
+        ? maxScore
+        : null
 })
 
-// Проверка на текстовый вопрос
-const isOpenText = computed(() => questionType.value === 'open_text')
+const isOpenText = computed(() =>
+    questionType.value === 'open_text'
+)
 
-// Проверка на множественный выбор
-const isMultipleChoice = computed(() => questionType.value === 'multiple_choice')
+const isMultipleChoice = computed(() =>
+    questionType.value === 'multiple_choice'
+)
 
-// Проверка на одиночный выбор
-const isSingleChoice = computed(() => {
-    return ['single_choice', 'true_false'].includes(questionType.value)
-})
+const isSingleChoice = computed(() =>
+    [
+        'single_choice',
+        'true_false',
+    ].includes(
+        questionType.value
+    )
+)
 
-// Выбранный одиночный ответ
-const selectedAnswerSingle = computed(() => props.item?.selected_answer || null)
+/* ==========================================================
+ * STUDENT ANSWER
+ * ========================================================== */
 
-// Выбранные множественные ответы
+const selectedAnswerSingle = computed(() =>
+    props.item?.selected_answer
+    || null
+)
+
 const selectedAnswersMultiple = computed(() => {
-    return Array.isArray(props.item?.selected_answers)
+    return Array.isArray(
+        props.item?.selected_answers
+    )
         ? props.item.selected_answers
         : []
 })
 
-// ID выбранных ответов
 const selectedAnswerIds = computed(() => {
-    return Array.isArray(props.item?.selected_answer_ids)
+    return Array.isArray(
+        props.item?.selected_answer_ids
+    )
         ? props.item.selected_answer_ids
         : []
 })
 
-// Свободный текстовый ответ
-const freeTextAnswer = computed(() => props.item?.free_text_answer || '')
+const freeTextAnswer = computed(() =>
+    props.item?.free_text_answer
+    || ''
+)
 
-// Форма редактирования
+/* ==========================================================
+ * FORM
+ * ========================================================== */
+
 const form = useForm({
     _method: 'PUT',
 
-    is_correct: Boolean(props.item?.is_correct),
-    score: normalizeToEmptyString(props.item?.score),
-    max_score: normalizeToEmptyString(props.item?.max_score),
-    reviewer_comment: props.item?.reviewer_comment || '',
+    is_correct:
+        Boolean(
+            props.item?.is_correct
+        ),
+
+    score:
+        normalizeToEmptyString(
+            props.item?.score
+        ),
+
+    max_score:
+        normalizeToEmptyString(
+            props.item?.max_score
+        ),
+
+    reviewer_comment:
+        props.item?.reviewer_comment
+        || '',
 })
 
-// Установить максимальный балл
+/* ==========================================================
+ * SCORE HELPERS
+ * ========================================================== */
+
 const setScoreMax = () => {
-    if (maxScoreReadonly.value === null) return
+    if (maxScoreReadonly.value === null) {
+        return
+    }
 
-    form.score = String(maxScoreReadonly.value)
+    form.score =
+        String(
+            maxScoreReadonly.value
+        )
 
-    toast.info(`${t('score')}: ${t('setMax')}`)
+    toast.info(
+        `${t('score')}: ${t('setMax')}`
+    )
 }
 
-// Установить нулевой балл
 const setScoreZero = () => {
     form.score = '0'
 
-    toast.info(`${t('score')}: 0`)
+    toast.info(
+        `${t('score')}: 0`
+    )
 }
 
-// Отправка формы обновления
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
 const submitForm = () => {
-    form.transform((data) => {
+    form.transform(data => {
         const payload = {
             _method: 'PUT',
 
-            score: toNumberOrNull(data.score),
-            max_score: toNumberOrNull(data.max_score) ?? maxScoreReadonly.value,
-            reviewer_comment: (data.reviewer_comment || '').toString().trim() || null,
+            score:
+                toNumberOrNull(
+                    data.score
+                ),
+
+            max_score:
+                toNumberOrNull(
+                    data.max_score
+                )
+                ?? maxScoreReadonly.value,
+
+            reviewer_comment:
+                (data.reviewer_comment || '')
+                    .toString()
+                    .trim()
+                || null,
         }
 
+        /**
+         * Для open_text преподаватель
+         * определяет правильность вручную.
+         *
+         * Для остальных типов правильность
+         * уже определяется системой.
+         */
         if (isOpenText.value) {
-            payload.is_correct = Boolean(data.is_correct)
+            payload.is_correct =
+                Boolean(
+                    data.is_correct
+                )
         }
 
-        Object.keys(payload).forEach((key) => {
+        Object.keys(payload).forEach(key => {
             if (payload[key] === null) {
                 delete payload[key]
             }
@@ -239,26 +384,42 @@ const submitForm = () => {
         return payload
     })
 
-    form.post(route('admin.schoolQuizAttemptItems.update', {
-        schoolQuizAttemptItem: props.item.id,
-    }), {
-        preserveScroll: true,
-        preserveState: true,
+    form.post(
+        route(
+            'admin.schoolQuizAttemptItems.update',
+            {
+                schoolQuizAttemptItem:
+                props.item.id,
+            }
+        ),
+        {
+            preserveScroll: true,
+            preserveState: true,
 
-        onSuccess: () => {
-            toast.success('Проверка ответа успешно обновлена.')
-        },
+            onSuccess: () => {
+                toast.success(
+                    'Проверка ответа успешно обновлена.'
+                )
+            },
 
-        onError: (errors) => {
-            console.error('Ошибка обновления ответа попытки:', errors)
+            onError: (errors) => {
+                console.error(
+                    'Ошибка обновления ответа попытки:',
+                    errors
+                )
 
-            const firstKey = Object.keys(errors || {})[0]
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
 
-            toast.error(
-                errors?.[firstKey] || 'Проверьте поля формы.'
-            )
-        },
-    })
+                toast.error(
+                    errors?.[firstKey]
+                    || 'Проверьте поля формы.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -285,17 +446,23 @@ const submitForm = () => {
                                 viewBox="0 0 16 16"
                             >
                                 <path
-                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
+                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
                                 />
                             </svg>
                         </template>
+
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
 
-                <form @submit.prevent="submitForm" class="pt-3 w-full">
+                <form
+                    @submit.prevent="submitForm"
+                    class="pt-3 w-full"
+                >
+                    <!-- Context -->
                     <div
-                        class="mb-4 p-3 border border-dashed border-slate-500 dark:border-slate-300
+                        class="mb-4 p-3 border border-dashed
+                               border-slate-500 dark:border-slate-300
                                bg-white/60 dark:bg-slate-800/40"
                     >
                         <div
@@ -306,8 +473,10 @@ const submitForm = () => {
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-3 text-sm">
+                            <!-- Student -->
                             <div
-                                class="p-2 border border-slate-300/70 dark:border-slate-200/30
+                                class="p-2 border border-slate-300/70
+                                       dark:border-slate-200/30
                                        bg-white/70 dark:bg-slate-900/20"
                             >
                                 <div class="font-semibold opacity-80 text-slate-800 dark:text-slate-200">
@@ -316,7 +485,8 @@ const submitForm = () => {
 
                                 <div class="mt-1">
                                     <div class="font-semibold text-slate-700 dark:text-slate-300">
-                                        ID: {{ attempt?.user_id ?? student?.id ?? '—' }}
+                                        ID:
+                                        {{ attempt?.user_id ?? student?.id ?? '—' }}
                                     </div>
 
                                     <template v-if="student">
@@ -324,6 +494,7 @@ const submitForm = () => {
                                             <span class="font-semibold text-slate-700 dark:text-slate-300">
                                                 {{ t('name') }}:
                                             </span>
+
                                             <span class="font-semibold text-indigo-700 dark:text-indigo-300">
                                                 {{ student.name || '—' }}
                                             </span>
@@ -333,20 +504,26 @@ const submitForm = () => {
                                             <span class="font-semibold text-slate-700 dark:text-slate-300">
                                                 Email:
                                             </span>
+
                                             <span class="font-semibold text-indigo-700 dark:text-indigo-300">
                                                 {{ student.email || '—' }}
                                             </span>
                                         </div>
                                     </template>
 
-                                    <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+                                    <div
+                                        v-else
+                                        class="p-5 text-center text-slate-700 dark:text-slate-100"
+                                    >
                                         {{ t('noData') }}
                                     </div>
                                 </div>
                             </div>
 
+                            <!-- Quiz -->
                             <div
-                                class="p-2 border border-slate-300/70 dark:border-slate-200/30
+                                class="p-2 border border-slate-300/70
+                                       dark:border-slate-200/30
                                        bg-white/70 dark:bg-slate-900/20"
                             >
                                 <div class="font-semibold opacity-80 text-slate-800 dark:text-slate-200">
@@ -355,22 +532,26 @@ const submitForm = () => {
 
                                 <div class="mt-1">
                                     <div class="font-semibold text-slate-700 dark:text-slate-300">
-                                        ID: {{ quiz?.id ?? attempt?.school_quiz_id ?? '—' }}
+                                        ID:
+                                        {{ quiz?.id ?? attempt?.school_quiz_id ?? '—' }}
                                     </div>
 
                                     <div>
                                         <span class="font-semibold text-slate-700 dark:text-slate-300">
                                             {{ t('title') }}:
                                         </span>
+
                                         <span class="font-semibold text-indigo-700 dark:text-indigo-300">
-                                            {{ quiz?.title ?? quiz?.slug ?? '—' }}
+                                            {{ quizTitle }}
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
+                            <!-- Attempt -->
                             <div
-                                class="p-2 border border-slate-300/70 dark:border-slate-200/30
+                                class="p-2 border border-slate-300/70
+                                       dark:border-slate-200/30
                                        bg-white/70 dark:bg-slate-900/20"
                             >
                                 <div class="font-semibold opacity-80 text-slate-800 dark:text-slate-200">
@@ -398,7 +579,11 @@ const submitForm = () => {
                                         <span class="font-semibold text-slate-700 dark:text-slate-300">
                                             {{ t('status') }}:
                                         </span>
-                                        <span class="font-semibold" :class="statusClass">
+
+                                        <span
+                                            class="font-semibold"
+                                            :class="statusClass"
+                                        >
                                             {{ statusLabel }}
                                         </span>
                                     </div>
@@ -408,6 +593,7 @@ const submitForm = () => {
                                             <span class="font-semibold text-slate-900 dark:text-slate-100">
                                                 {{ t('createdAt') }}:
                                             </span>
+
                                             <span class="font-semibold text-blue-700 dark:text-blue-300">
                                                 {{ formatDateTime(item.created_at) }}
                                             </span>
@@ -417,6 +603,7 @@ const submitForm = () => {
                                             <span class="font-semibold text-slate-900 dark:text-slate-100">
                                                 {{ t('updatedAt') }}:
                                             </span>
+
                                             <span class="font-semibold text-blue-700 dark:text-blue-300">
                                                 {{ formatDateTime(item.updated_at) }}
                                             </span>
@@ -426,8 +613,10 @@ const submitForm = () => {
                             </div>
                         </div>
 
+                        <!-- Question -->
                         <div
-                            class="mt-4 p-2 border border-slate-300/70 dark:border-slate-200/30
+                            class="mt-4 p-2 border border-slate-300/70
+                                   dark:border-slate-200/30
                                    bg-white/70 dark:bg-slate-900/20"
                         >
                             <div
@@ -438,14 +627,23 @@ const submitForm = () => {
                             </div>
 
                             <div class="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                ID: {{ question?.id ?? item.school_quiz_question_id ?? '—' }}
+                                ID:
+                                {{ question?.id ?? item.school_quiz_question_id ?? '—' }}
                             </div>
 
                             <div
-                                class="mt-2 whitespace-pre-wrap leading-relaxed text-sm
-                                       font-semibold text-amber-800 dark:text-amber-200"
+                                class="mt-2 whitespace-pre-wrap leading-relaxed
+                                       text-sm font-semibold
+                                       text-amber-800 dark:text-amber-200"
                             >
                                 {{ stripHtml(questionText) || '—' }}
+                            </div>
+
+                            <div
+                                v-if="questionExplanation"
+                                class="mt-2 text-xs text-slate-600 dark:text-slate-300"
+                            >
+                                {{ stripHtml(questionExplanation) }}
                             </div>
 
                             <div class="mt-2 text-sm flex flex-row items-center justify-start">
@@ -453,6 +651,7 @@ const submitForm = () => {
                                     <span class="font-semibold text-slate-900 dark:text-slate-100">
                                         {{ t('type') }}:
                                     </span>
+
                                     <span class="font-semibold text-teal-800 dark:text-teal-200">
                                         {{ questionTypeLabelValue }}
                                     </span>
@@ -464,6 +663,7 @@ const submitForm = () => {
                                     <span class="font-semibold text-slate-900 dark:text-slate-100">
                                         {{ t('maxScore') }}:
                                     </span>
+
                                     <span class="font-semibold text-teal-800 dark:text-teal-200">
                                         {{ maxScoreReadonly ?? item.max_score ?? '—' }}
                                     </span>
@@ -472,8 +672,10 @@ const submitForm = () => {
                         </div>
                     </div>
 
+                    <!-- Student Answer -->
                     <div
-                        class="mb-4 p-3 border border-dashed border-slate-500 dark:border-slate-300
+                        class="mb-4 p-3 border border-dashed
+                               border-slate-500 dark:border-slate-300
                                bg-white/60 dark:bg-slate-800/40 text-md"
                     >
                         <div
@@ -483,9 +685,11 @@ const submitForm = () => {
                             {{ t('studentAnswer') }}
                         </div>
 
+                        <!-- Single -->
                         <div
                             v-if="isSingleChoice"
-                            class="mt-3 p-2 border border-slate-300/70 dark:border-slate-200/30
+                            class="mt-3 p-2 border border-slate-300/70
+                                   dark:border-slate-200/30
                                    bg-white/70 dark:bg-slate-900/20 text-sm"
                         >
                             <div class="font-semibold opacity-80 text-amber-800 dark:text-amber-200">
@@ -495,7 +699,8 @@ const submitForm = () => {
                             <div class="mt-1 flex flex-row items-center justify-start">
                                 <template v-if="selectedAnswerSingle">
                                     <div class="font-semibold text-slate-700 dark:text-slate-300">
-                                        ID: {{ selectedAnswerSingle.id }}
+                                        ID:
+                                        {{ selectedAnswerSingle.id }}
                                     </div>
 
                                     <div class="mx-2">|</div>
@@ -504,13 +709,29 @@ const submitForm = () => {
                                         <span class="font-semibold text-slate-900 dark:text-slate-100">
                                             {{ t('text') }}:
                                         </span>
+
                                         <span class="font-semibold text-teal-800 dark:text-teal-200">
-                                            {{ stripHtml(selectedAnswerSingle.text) || '—' }}
+                                            {{
+                                                stripHtml(
+                                                    selectedAnswerSingle.translation?.text
+                                                ) || '—'
+                                            }}
                                         </span>
                                     </div>
 
-                                    <span class="ml-2" v-if="selectedAnswerSingle.is_correct">✅</span>
-                                    <span class="ml-2" v-else>❌</span>
+                                    <span
+                                        v-if="selectedAnswerSingle.is_correct"
+                                        class="ml-2"
+                                    >
+                                        ✅
+                                    </span>
+
+                                    <span
+                                        v-else
+                                        class="ml-2"
+                                    >
+                                        ❌
+                                    </span>
                                 </template>
 
                                 <template v-else>
@@ -519,9 +740,11 @@ const submitForm = () => {
                             </div>
                         </div>
 
+                        <!-- Multiple -->
                         <div
                             v-else-if="isMultipleChoice"
-                            class="mt-3 p-2 border border-slate-300/70 dark:border-slate-200/30
+                            class="mt-3 p-2 border border-slate-300/70
+                                   dark:border-slate-200/30
                                    bg-white/70 dark:bg-slate-900/20 text-sm"
                         >
                             <div class="font-semibold opacity-80 text-amber-800 dark:text-amber-200">
@@ -536,25 +759,51 @@ const submitForm = () => {
                                         class="flex flex-row items-center justify-start"
                                     >
                                         <span class="font-semibold text-slate-700 dark:text-slate-300">
-                                            ID: {{ answer.id }} — {{ stripHtml(answer.text) || '—' }}
+                                            ID: {{ answer.id }} —
+                                            {{
+                                                stripHtml(
+                                                    answer.translation?.text
+                                                ) || '—'
+                                            }}
                                         </span>
 
-                                        <span v-if="answer.is_correct" class="ml-2">✅</span>
-                                        <span v-else class="ml-2">❌</span>
+                                        <span
+                                            v-if="answer.is_correct"
+                                            class="ml-2"
+                                        >
+                                            ✅
+                                        </span>
+
+                                        <span
+                                            v-else
+                                            class="ml-2"
+                                        >
+                                            ❌
+                                        </span>
                                     </li>
                                 </ul>
                             </template>
 
                             <template v-else>
-                                <div class="mt-2 text-sm opacity-80 font-semibold text-slate-700 dark:text-slate-300">
-                                    {{ selectedAnswerIds.length ? selectedAnswerIds.join(', ') : t('noData') }}
+                                <div
+                                    class="mt-2 text-sm opacity-80
+                                           font-semibold text-slate-700
+                                           dark:text-slate-300"
+                                >
+                                    {{
+                                        selectedAnswerIds.length
+                                            ? selectedAnswerIds.join(', ')
+                                            : t('noData')
+                                    }}
                                 </div>
                             </template>
                         </div>
 
+                        <!-- Open text -->
                         <div
                             v-else
-                            class="mt-3 p-2 border border-slate-300/70 dark:border-slate-200/30
+                            class="mt-3 p-2 border border-slate-300/70
+                                   dark:border-slate-200/30
                                    bg-white/70 dark:bg-slate-900/20 text-sm"
                         >
                             <div class="font-semibold opacity-80 text-slate-800 dark:text-slate-200">
@@ -562,8 +811,9 @@ const submitForm = () => {
                             </div>
 
                             <div
-                                class="mt-2 p-3 border border-slate-300 dark:border-slate-600
-                                       bg-white dark:bg-slate-900/40 rounded-sm"
+                                class="mt-2 p-3 border border-slate-300
+                                       dark:border-slate-600 bg-white
+                                       dark:bg-slate-900/40 rounded-sm"
                             >
                                 <div
                                     class="whitespace-pre-wrap font-semibold
@@ -575,8 +825,10 @@ const submitForm = () => {
                         </div>
                     </div>
 
+                    <!-- Instructor check -->
                     <div
-                        class="mb-4 p-3 border border-dashed border-slate-500 dark:border-slate-300
+                        class="mb-4 p-3 border border-dashed
+                               border-slate-500 dark:border-slate-300
                                bg-white/60 dark:bg-slate-800/40"
                     >
                         <div
@@ -588,9 +840,16 @@ const submitForm = () => {
 
                         <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
                             <div class="flex flex-col items-start">
-                                <LabelInput for="is_correct" class="mb-1">
+                                <LabelInput
+                                    for="is_correct"
+                                    class="mb-1"
+                                >
                                     {{ t('isCorrect') }}
-                                    <span v-if="!isOpenText" class="ml-2 text-xs opacity-70">
+
+                                    <span
+                                        v-if="!isOpenText"
+                                        class="ml-2 text-xs opacity-70"
+                                    >
                                         ({{ t('auto') }})
                                     </span>
                                 </LabelInput>
@@ -617,11 +876,17 @@ const submitForm = () => {
                                     {{ t('auto') }}
                                 </div>
 
-                                <InputError class="mt-2" :message="form.errors.is_correct" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.is_correct"
+                                />
                             </div>
 
                             <div class="flex flex-col items-start">
-                                <LabelInput for="score" class="mb-1">
+                                <LabelInput
+                                    for="score"
+                                    class="mb-1"
+                                >
                                     {{ t('score') }}
                                 </LabelInput>
 
@@ -637,9 +902,12 @@ const submitForm = () => {
                                 <div class="flex gap-2 mt-2">
                                     <button
                                         type="button"
-                                        class="text-xs px-2 py-1 border border-slate-400 rounded-sm
-                                               hover:bg-slate-100 dark:hover:bg-slate-700
-                                               text-gray-900 dark:text-gray-100 font-semibold"
+                                        class="text-xs px-2 py-1 border
+                                               border-slate-400 rounded-sm
+                                               hover:bg-slate-100
+                                               dark:hover:bg-slate-700
+                                               text-gray-900 dark:text-gray-100
+                                               font-semibold"
                                         :disabled="maxScoreReadonly === null"
                                         @click="setScoreMax"
                                     >
@@ -648,16 +916,22 @@ const submitForm = () => {
 
                                     <button
                                         type="button"
-                                        class="text-xs px-2 py-1 border border-slate-400 rounded-sm
-                                               hover:bg-slate-100 dark:hover:bg-slate-700
-                                               text-gray-900 dark:text-gray-100 font-semibold"
+                                        class="text-xs px-2 py-1 border
+                                               border-slate-400 rounded-sm
+                                               hover:bg-slate-100
+                                               dark:hover:bg-slate-700
+                                               text-gray-900 dark:text-gray-100
+                                               font-semibold"
                                         @click="setScoreZero"
                                     >
                                         {{ t('setZero') }}
                                     </button>
                                 </div>
 
-                                <InputError class="mt-2" :message="form.errors.score" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.score"
+                                />
                             </div>
 
                             <div class="flex flex-col items-start">
@@ -666,19 +940,27 @@ const submitForm = () => {
                                 </LabelInput>
 
                                 <div
-                                    class="w-full py-0.5 px-2 text-sm border border-slate-400
-                                           rounded-sm bg-slate-100 dark:bg-slate-800
-                                           font-semibold text-gray-900 dark:text-gray-100"
+                                    class="w-full py-0.5 px-2 text-sm
+                                           border border-slate-400 rounded-sm
+                                           bg-slate-100 dark:bg-slate-800
+                                           font-semibold text-gray-900
+                                           dark:text-gray-100"
                                 >
                                     {{ maxScoreReadonly ?? item.max_score ?? '—' }}
                                 </div>
 
-                                <InputError class="mt-2" :message="form.errors.max_score" />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.max_score"
+                                />
                             </div>
                         </div>
 
                         <div class="mt-4 flex flex-col items-start">
-                            <LabelInput for="reviewer_comment" class="mb-1">
+                            <LabelInput
+                                for="reviewer_comment"
+                                class="mb-1"
+                            >
                                 {{ t('reviewerComment') }}
                             </LabelInput>
 
@@ -688,8 +970,15 @@ const submitForm = () => {
                                 :height="260"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.reviewer_comment" />
-                            <InputError class="mt-2" :message="form.errors.server" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.reviewer_comment"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.server"
+                            />
                         </div>
                     </div>
 
@@ -701,10 +990,11 @@ const submitForm = () => {
                                     viewBox="0 0 16 16"
                                 >
                                     <path
-                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c-.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
+                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2 .8-6.4z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('back') }}
                         </DefaultButton>
 

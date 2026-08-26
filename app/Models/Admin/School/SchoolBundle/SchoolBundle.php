@@ -179,7 +179,7 @@ class SchoolBundle extends Model
                 })
                 ->orderBy('sbt_sort.title', 'asc')
                 ->orderByDesc('school_bundles.id')
-                ->select('school_bundles.*'),
+                ->addSelect('school_bundles.*'),
 
             'titleDesc' => $q
                 ->leftJoin('school_bundle_translations as sbt_sort', function ($join) use ($locale) {
@@ -188,7 +188,7 @@ class SchoolBundle extends Model
                 })
                 ->orderBy('sbt_sort.title', 'desc')
                 ->orderByDesc('school_bundles.id')
-                ->select('school_bundles.*'),
+                ->addSelect('school_bundles.*'),
 
             'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
             'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),

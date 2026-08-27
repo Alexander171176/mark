@@ -49,6 +49,7 @@ export default {
     disable: 'Өшіру',
     disabled: 'Өшірілген',
     disadvantages: 'Кемшіліктер',
+    discount: 'Жеңілдік',
     discountAmount: 'Жеңілдік сомасы',
     discountFixed: 'Түзетілді',
     discountNone: 'Жеңілдік жоқ',

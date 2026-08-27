@@ -186,7 +186,7 @@ class SchoolCoursePrice extends Model
                 })
                 ->orderBy('sct_sort.title', 'asc')
                 ->orderByDesc('school_course_prices.id')
-                ->select('school_course_prices.*'),
+                ->addSelect('school_course_prices.*'),
 
             'courseTitleDesc' => $q
                 ->leftJoin('school_course_translations as sct_sort', function ($join) use ($locale) {
@@ -195,19 +195,19 @@ class SchoolCoursePrice extends Model
                 })
                 ->orderBy('sct_sort.title', 'desc')
                 ->orderByDesc('school_course_prices.id')
-                ->select('school_course_prices.*'),
+                ->addSelect('school_course_prices.*'),
 
             'currencyCodeAsc' => $q
                 ->leftJoin('currencies as c_sort', 'c_sort.id', '=', 'school_course_prices.currency_id')
                 ->orderBy('c_sort.code', 'asc')
                 ->orderByDesc('school_course_prices.id')
-                ->select('school_course_prices.*'),
+                ->addSelect('school_course_prices.*'),
 
             'currencyCodeDesc' => $q
                 ->leftJoin('currencies as c_sort', 'c_sort.id', '=', 'school_course_prices.currency_id')
                 ->orderBy('c_sort.code', 'desc')
                 ->orderByDesc('school_course_prices.id')
-                ->select('school_course_prices.*'),
+                ->addSelect('school_course_prices.*'),
 
             'effectivePriceAsc' => $q
                 ->orderByRaw('COALESCE(NULLIF(sale_price, 0), price) asc')

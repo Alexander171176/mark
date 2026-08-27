@@ -188,7 +188,7 @@ class SchoolSubscriptionPlan extends Model
                 })
                 ->orderBy('sspt_sort.title', 'asc')
                 ->orderByDesc('school_subscription_plans.id')
-                ->select('school_subscription_plans.*'),
+                ->addSelect('school_subscription_plans.*'),
 
             'titleDesc' => $q
                 ->leftJoin('school_subscription_plan_translations as sspt_sort', function ($join) use ($locale) {
@@ -197,7 +197,7 @@ class SchoolSubscriptionPlan extends Model
                 })
                 ->orderBy('sspt_sort.title', 'desc')
                 ->orderByDesc('school_subscription_plans.id')
-                ->select('school_subscription_plans.*'),
+                ->addSelect('school_subscription_plans.*'),
 
             'publishedAtAsc' => $q->orderBy('published_at', 'asc')->orderByDesc('school_subscription_plans.id'),
             'publishedAtDesc' => $q->orderBy('published_at', 'desc')->orderByDesc('school_subscription_plans.id'),

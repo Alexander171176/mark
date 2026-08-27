@@ -14,6 +14,7 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+
     selectedPlans: {
         type: Array,
         default: () => [],
@@ -28,48 +29,80 @@ const emit = defineEmits([
     'toggle-all',
 ])
 
+/* ==========================================================
+ * LOCAL DATA
+ * ========================================================== */
+
 const localPlans = ref([])
 
 watch(
     () => props.subscriptionPlans,
     (plans) => {
         localPlans.value = Array.isArray(plans)
-            ? plans.map((plan) => ({ ...plan }))
+            ? plans.map(plan => ({ ...plan }))
             : []
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
+
+/* ==========================================================
+ * SELECT / DRAG
+ * ========================================================== */
 
 const allSelected = computed(() => {
     return localPlans.value.length > 0
-        && localPlans.value.every((plan) => props.selectedPlans.includes(plan.id))
+        && localPlans.value.every(plan =>
+            props.selectedPlans.includes(plan.id)
+        )
 })
 
 const handleDragEnd = () => {
-    emit('update-sort-order', localPlans.value.map((plan) => plan.id))
+    emit(
+        'update-sort-order',
+        localPlans.value.map(plan => plan.id)
+    )
 }
 
 const toggleAll = (event) => {
     emit('toggle-all', {
-        ids: localPlans.value.map((plan) => plan.id),
+        ids: localPlans.value.map(plan => plan.id),
         checked: event.target.checked,
     })
 }
 
-const getPrimaryImage = (plan) => {
-    if (!Array.isArray(plan.images) || !plan.images.length) {
-        return null
-    }
+/* ==========================================================
+ * RESOURCE HELPERS
+ * ========================================================== */
 
-    return [...plan.images].sort((a, b) => {
-        return Number(a.order ?? 0) - Number(b.order ?? 0)
-    })[0]
+const getPlanTitle = (plan) => {
+    return plan?.translation?.title
+        || `ID: ${plan?.id}`
+}
+
+const getPlanSubtitle = (plan) => {
+    return plan?.translation?.subtitle
+        || ''
+}
+
+/**
+ * Resource уже отдаёт primary_image.
+ * images[0] оставляем только как безопасный fallback.
+ */
+const getPrimaryImage = (plan) => {
+    return plan?.primary_image
+        || plan?.images?.[0]
+        || null
 }
 
 const imageSrc = (plan) => {
     const image = getPrimaryImage(plan)
 
     return image?.webp_url
+        || image?.thumb_url
+        || image?.image_url
         || image?.url
         || '/storage/school/school_subscription_plan_images/default-image.png'
 }
@@ -78,12 +111,18 @@ const imageAlt = (plan) => {
     const image = getPrimaryImage(plan)
 
     return image?.alt
-        || plan.title
+        || getPlanTitle(plan)
         || t('defaultImageTitle')
 }
 
+/* ==========================================================
+ * FORMATTERS
+ * ========================================================== */
+
 const formatDate = (date) => {
-    if (!date) return '—'
+    if (!date) {
+        return '—'
+    }
 
     const value = new Date(date)
 
@@ -106,9 +145,13 @@ const billingPeriodLabel = (period) => {
         year: 'years',
     }
 
-    const key = map[String(period || '').toLowerCase()]
+    const key = map[
+        String(period || '').toLowerCase()
+        ]
 
-    return key ? t(key) : '—'
+    return key
+        ? t(key)
+        : '—'
 }
 
 const periodLabel = (plan) => {
@@ -117,7 +160,7 @@ const periodLabel = (plan) => {
 
 const priceLabel = (plan) => {
     const price = plan.price ?? '0.00'
-    const code = plan.currency?.code || plan.currency_code || ''
+    const code = plan.currency?.code || ''
 
     return `${price} ${code}`.trim()
 }
@@ -128,6 +171,7 @@ const priceLabel = (plan) => {
         class="relative overflow-hidden rounded-sm border border-slate-300 bg-white shadow-lg
                dark:border-slate-600 dark:bg-slate-700"
     >
+        <!-- Selection -->
         <div
             class="flex flex-col gap-2 border-b border-slate-300 px-3 py-2
                    dark:border-slate-600 sm:flex-row sm:items-center sm:justify-between"
@@ -142,6 +186,7 @@ const priceLabel = (plan) => {
                        text-slate-600 dark:text-slate-200"
             >
                 <span>{{ t('selectAll') }}</span>
+
                 <input
                     type="checkbox"
                     class="rounded border-slate-400"
@@ -151,8 +196,7 @@ const priceLabel = (plan) => {
             </label>
         </div>
 
-        <div v-if="localPlans.length"
-             class="overflow-x-auto">
+        <div v-if="localPlans.length" class="overflow-x-auto">
             <table class="table-auto w-full text-slate-700 dark:text-slate-100">
                 <thead
                     class="text-sm uppercase bg-slate-200 dark:bg-cyan-900
@@ -161,68 +205,57 @@ const priceLabel = (plan) => {
                 <tr>
                     <th class="px-2 py-3 w-px">
                         <svg
-                            xmlns="http://www.w3.org/2000/svg"
                             class="w-4 h-4 fill-current text-slate-800 dark:text-slate-200"
-                            height="24"
-                            width="24"
                             viewBox="0 0 24 24"
                         >
                             <path
-                                d="M12.707,2.293a1,1,0,0,0-1.414,0l-5,5A1,1,0,0,0,7.707,8.707L12,4.414l4.293,4.293a1,1,0,0,0,1.414-1.414Z"
-                            />
+                                d="M12.707,2.293a1,1,0,0,0-1.414,0l-5,5A1,1,0,0,0,7.707,8.707L12,4.414l4.293,4.293a1,1,0,0,0,1.414-1.414Z" />
                             <path
-                                d="M16.293,15.293,12,19.586,7.707,15.293a1,1,0,0,0-1.414,1.414l5,5a1,1,0,0,0,1.414,0l5-5a1,1,0,0,0-1.414-1.414Z"
-                            />
+                                d="M16.293,15.293,12,19.586,7.707,15.293a1,1,0,0,0-1.414,1.414l5,5a1,1,0,0,0,1.414,0l5-5a1,1,0,0,0-1.414-1.414Z" />
                         </svg>
                     </th>
-                    <th class="px-2 py-3 w-px">
-                        <div class="font-medium text-center">
-                            {{ t('id') }}
-                        </div>
+
+                    <th class="px-2 py-3 w-px text-center font-medium">
+                        {{ t('id') }}
                     </th>
+
                     <th class="px-2 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('image')">
                             <svg class="w-6 h-6 fill-current shrink-0" viewBox="0 0 512 512">
                                 <path
-                                    d="M0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6l96 0 32 0 208 0c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"
-                                />
+                                    d="M0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6l96 0 32 0 208 0c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z" />
                             </svg>
                         </div>
                     </th>
+
                     <th class="px-2 py-3 w-px">
                         <div class="font-medium text-left">
                             {{ t('subscriptionPlan') }}
                         </div>
                     </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
-                        <div class="font-medium text-center">
-                            {{ t('period') }}
-                        </div>
+
+                    <th class="px-2 py-3 whitespace-nowrap text-center font-medium">
+                        {{ t('period') }}
                     </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
-                        <div class="font-medium text-center">
-                            {{ t('price') }}
-                        </div>
+
+                    <th class="px-2 py-3 whitespace-nowrap text-center font-medium">
+                        {{ t('price') }}
                     </th>
-                    <th class="flex items-center justify-center"
-                        :title="t('availability')">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="w-4 h-4"
-                            height="24"
-                            width="24"
-                            viewBox="0 0 24 24">
+
+                    <th class="px-2 py-3 whitespace-nowrap text-center" :title="t('availability')">
+                        <svg class="w-4 h-4 mx-auto" viewBox="0 0 24 24">
                             <path
                                 class="fill-current text-violet-700 dark:text-violet-300"
-                                d="M22,13a1,1,0,0,1,0-2h1.949A12.006,12.006,0,0,0,13,.051V2a1,1,0,0,1-2,0V.051A12.006,12.006,0,0,0,.051,11H2a1,1,0,0,1,0,2H.051A12.006,12.006,0,0,0,11,23.949V22a1,1,0,0,1,2,0v1.949A12.006,12.006,0,0,0,23.949,13Zm-6,0H12a1,1,0,0,1-.832-.445l-4-6a1,1,0,1,1,1.664-1.11L12.535,11H16a1,1,0,0,1,0,2Z"></path>
+                                d="M22,13a1,1,0,0,1,0-2h1.949A12.006,12.006,0,0,0,13,.051V2a1,1,0,0,1-2,0V.051A12.006,12.006,0,0,0,.051,11H2a1,1,0,0,1,0,2H.051A12.006,12.006,0,0,0,11,23.949V22a1,1,0,0,1,2,0v1.949A12.006,12.006,0,0,0,23.949,13Zm-6,0H12a1,1,0,0,1-.832-.445l-4-6a1,1,0,1,1,1.664-1.11L12.535,11H16a1,1,0,0,1,0,2Z"
+                            />
                         </svg>
                     </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-end">
-                            {{ t('actions') }}
-                        </div>
+
+                    <th class="px-2 py-3 whitespace-nowrap text-end font-semibold">
+                        {{ t('actions') }}
                     </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
+
+                    <th class="px-2 py-3 whitespace-nowrap text-center">
                         <input
                             type="checkbox"
                             class="rounded border-slate-400"
@@ -245,18 +278,22 @@ const priceLabel = (plan) => {
                             class="text-sm font-semibold border-b-2
                                    hover:bg-slate-100 dark:hover:bg-cyan-800"
                         >
+                            <!-- Drag -->
                             <td class="px-2 py-1 text-center cursor-move handle">
-                                <svg class="h-4 w-4 text-slate-500" fill="currentColor"
-                                     viewBox="0 0 20 20">
+                                <svg class="h-4 w-4 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
                                     <path
                                         d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
                                 </svg>
                             </td>
-                            <td class="px-2 py-3 whitespace-nowrap">
+
+                            <!-- ID -->
+                            <td class="px-2 py-3 whitespace-nowrap text-center">
                                 <div :title="`Sort: ${plan.sort ?? '—'}`">
                                     {{ plan.id }}
                                 </div>
                             </td>
+
+                            <!-- Image -->
                             <td class="px-2 py-3">
                                 <div class="flex justify-center">
                                     <img
@@ -266,73 +303,100 @@ const priceLabel = (plan) => {
                                     >
                                 </div>
                             </td>
-                            <td class="px-2 py-3 whitespace-nowrap">
+
+                            <!-- Plan -->
+                            <td class="px-2 py-3">
                                 <div class="w-fit flex flex-col space-y-1">
                                     <div
                                         class="text-sm text-blue-700 dark:text-blue-200"
-                                        :title="plan.title"
+                                        :title="getPlanTitle(plan)"
                                     >
-                                        {{ plan.title || '—' }}
+                                        {{ getPlanTitle(plan) }}
                                     </div>
+
                                     <div
                                         class="text-[11px] text-slate-500 dark:text-slate-300"
                                         :title="plan.slug"
                                     >
                                         {{ plan.slug || '—' }}
                                     </div>
+
                                     <div
-                                        v-if="plan.subtitle"
+                                        v-if="getPlanSubtitle(plan)"
                                         class="text-[11px] text-slate-600 dark:text-slate-300"
-                                        :title="plan.subtitle"
+                                        :title="getPlanSubtitle(plan)"
                                     >
-                                        {{ plan.subtitle }}
+                                        {{ getPlanSubtitle(plan) }}
                                     </div>
                                 </div>
                             </td>
+
+                            <!-- Period -->
                             <td class="px-2 py-3 whitespace-nowrap">
-                                <div class="text-xs flex flex-col
-                                            justify-center items-center">
+                                <div class="text-xs flex flex-col justify-center items-center">
                                     <div>
                                         {{ periodLabel(plan) }}
                                     </div>
-                                    <div class="text-fuchsia-700 dark:text-fuchsia-300"
-                                         :title="t('trial')">
+
+                                    <div
+                                        class="text-fuchsia-700 dark:text-fuchsia-300"
+                                        :title="t('trial')"
+                                    >
                                         {{ plan.trial_days ?? 0 }} {{ t('days') }}
+                                    </div>
+
+                                    <div
+                                        class="text-[10px] text-slate-500 dark:text-slate-300"
+                                        :title="t('autoRenew')"
+                                    >
+                                        {{ t('autoRenew') }}:
+                                        {{ plan.auto_renew ? t('yes') : t('no') }}
                                     </div>
                                 </div>
                             </td>
+
+                            <!-- Price -->
                             <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="text-xs flex flex-col items-center justify-center">
                                     <div class="text-emerald-700 dark:text-emerald-300">
                                         {{ priceLabel(plan) }}
                                     </div>
-                                    <div class="text-yellow-700 dark:text-yellow-300"
-                                         :title="t('publishedAt')">
+
+                                    <div
+                                        class="text-yellow-700 dark:text-yellow-300"
+                                        :title="t('publishedAt')"
+                                    >
                                         {{ formatDate(plan.published_at) }}
                                     </div>
-
                                 </div>
                             </td>
+
+                            <!-- Availability -->
                             <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="text-[10px] space-y-1">
                                     <div>
                                         <span class="text-slate-700 dark:text-slate-300">
                                             {{ t('shortStarted') }}:
                                         </span>
+
                                         <span class="text-teal-700 dark:text-teal-300">
                                             {{ formatDate(plan.available_from) }}
                                         </span>
                                     </div>
+
                                     <div>
                                         <span class="text-slate-700 dark:text-slate-300">
                                             {{ t('shortExpires') }}:
                                         </span>
+
                                         <span class="text-sky-700 dark:text-sky-300">
                                             {{ formatDate(plan.available_until) }}
                                         </span>
                                     </div>
                                 </div>
                             </td>
+
+                            <!-- Actions -->
                             <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="flex justify-end gap-2">
                                     <ActivityToggle
@@ -342,15 +406,19 @@ const priceLabel = (plan) => {
                                     />
 
                                     <IconEdit
-                                        :href="route('admin.schoolSubscriptionPlans.edit', plan.id)"
+                                        :href="route('admin.schoolSubscriptionPlans.edit', {
+                                            schoolSubscriptionPlan: plan.id,
+                                        })"
                                     />
 
                                     <DeleteIconButton
-                                        @delete="emit('delete', plan.id, plan.title)"
+                                        @delete="emit('delete', plan)"
                                     />
                                 </div>
                             </td>
-                            <td class="px-2 py-3 whitespace-nowrap">
+
+                            <!-- Select -->
+                            <td class="px-2 py-3 whitespace-nowrap text-center">
                                 <input
                                     type="checkbox"
                                     class="rounded border-slate-400"
@@ -363,9 +431,11 @@ const priceLabel = (plan) => {
                 </draggable>
             </table>
         </div>
-        <div v-else
-             class="p-5 text-center text-sm font-semibold
-                    text-slate-700 dark:text-slate-100">
+
+        <div
+            v-else
+            class="p-5 text-center text-sm font-semibold text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

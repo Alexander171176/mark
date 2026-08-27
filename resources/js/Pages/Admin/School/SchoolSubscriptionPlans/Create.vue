@@ -5,7 +5,7 @@
  *
  * Создание тарифного плана школы
  */
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -56,7 +56,7 @@ const makeTranslation = () => ({
 })
 
 // Локаль по умолчанию
-const defaultLocale = props.currentLocale || 'ru'
+const defaultLocale = props.currentLocale || props.availableLocales[0] || 'ru'
 
 // Текущая активная локаль в переводах
 const activeLocale = ref(defaultLocale)
@@ -123,12 +123,15 @@ const currencyOptions = computed(() =>
     })
 )
 
-// Выбранная валюта
-const selectedCurrency = ref(null)
-
-// Синхронизация выбранной валюты с формой
-watch(selectedCurrency, (value) => {
-    form.currency_id = value?.id ?? null
+// Выбранная валюта.
+// Единственный источник истины — form.currency_id.
+const selectedCurrency = computed({
+    get: () => currencyOptions.value.find(
+        item => Number(item.id) === Number(form.currency_id)
+    ) || null,
+    set: (value) => {
+        form.currency_id = value?.id ?? null
+    },
 })
 
 // Новые изображения для загрузки
@@ -249,7 +252,9 @@ const submit = () => {
                 ? null
                 : Number(data.trial_days),
 
-            currency_id: selectedCurrency.value?.id ?? null,
+            currency_id: data.currency_id === '' || data.currency_id === null
+                ? null
+                : Number(data.currency_id),
 
             published_at: toDateOrNull(data.published_at),
             available_from: toDateOrNull(data.available_from),
@@ -541,7 +546,7 @@ const submit = () => {
                                     </LabelInput>
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                        {{ (currentTranslation.title || '').length }} / 255 {{ t('characters') }}
+                                        {{ (currentTranslation.title || '').length }} / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -572,7 +577,7 @@ const submit = () => {
                             <div class="mb-3 flex flex-col items-start">
                                 <LabelInput
                                     for="short"
-                                :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
+                                    :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
                                 />
 
                                 <MetaDescTextarea
@@ -638,7 +643,7 @@ const submit = () => {
                                 <div class="mb-3 flex flex-col items-start">
                                     <LabelInput
                                         for="meta_keywords"
-                                    :value="`${t('metaKeywords')} [${activeLocale.toUpperCase()}]`"
+                                        :value="`${t('metaKeywords')} [${activeLocale.toUpperCase()}]`"
                                     />
 
                                     <MetaDescTextarea
@@ -653,7 +658,7 @@ const submit = () => {
                                 <div class="mb-3 flex flex-col items-start">
                                     <LabelInput
                                         for="meta_desc"
-                                :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
+                                        :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
                                     />
 
                                     <MetaDescTextarea

@@ -76,7 +76,7 @@ const onChange = (event) => {
             :id="id"
             :value="modelValue ?? (nullable ? null : '')"
             @change="onChange"
-            class="w-full px-3 py-0.5 rounded-sm shadow-sm form-select bg-white dark:bg-cyan-800
+            class="w-full px-3 py-1 rounded-sm shadow-sm form-select bg-white dark:bg-cyan-800
                    text-xs font-semibold text-gray-600 dark:text-slate-100
                    border border-slate-400 dark:border-slate-600 whitespace-pre-line"
         >

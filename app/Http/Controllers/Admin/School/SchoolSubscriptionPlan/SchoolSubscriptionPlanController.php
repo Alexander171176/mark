@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\School\SchoolSubscriptionPlan;
 use App\Http\Controllers\Admin\School\BaseSchoolAdminController;
 use App\Http\Requests\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanRequest;
 use App\Http\Resources\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanResource;
+use App\Http\Resources\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanSharedResource;
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlan;
 use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanImage;
@@ -21,34 +22,41 @@ use Inertia\Response;
 use Throwable;
 
 /**
- * Контроллер для управления тарифными планами в административной панели.
+ * Контроллер для управления
+ * тарифными планами школы.
  *
- * CRUD +:
- * - обновление активности (одиночное и массовое)
- * - обновление сортировки (одиночное и массовое)
- * - удаление (одиночное)
- *
- * @version 1.1 (мультиязычная архитектура)
- * @author Александр Косолапов <kosolapov1976@gmail.com>
- *
- * @see SchoolSubscriptionPlan
- * @see SchoolSubscriptionPlanRequest
+ * @version 1.2
+ * @author Александр Косолапов
  */
 class SchoolSubscriptionPlanController extends BaseSchoolAdminController
 {
-    /** Основная модель */
-    protected string $modelClass = SchoolSubscriptionPlan::class;
+    /**
+     * Основная модель.
+     */
+    protected string $modelClass =
+        SchoolSubscriptionPlan::class;
 
-    /** Модель изображений */
-    protected string $imageModelClass = SchoolSubscriptionPlanImage::class;
+    /**
+     * Модель изображений.
+     */
+    protected string $imageModelClass =
+        SchoolSubscriptionPlanImage::class;
 
-    /** Коллекция изображений */
-    protected string $imageMediaCollection = 'images';
+    /**
+     * Media collection.
+     */
+    protected string $imageMediaCollection =
+        'images';
 
-    /** Название сущности */
-    protected string $entityLabel = 'тарифных планов';
+    /**
+     * Название сущности.
+     */
+    protected string $entityLabel =
+        'тарифных планов';
 
-    /** Поля переводов */
+    /**
+     * Поля переводов.
+     */
     protected array $translationFields = [
         'title',
         'subtitle',
@@ -59,107 +67,247 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
         'meta_desc',
     ];
 
-    /** Список тарифных планов */
-    public function index(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    /**
+     * =========================================================
+     * INDEX
+     * =========================================================
+     */
 
-        $settings = app(AdminSettingsService::class);
+    /**
+     * Список тарифных планов.
+     */
+    public function index(
+        Request $request
+    ): Response {
+        $currentLocale =
+            $this->resolveLocale(
+                $request
+            );
 
-        $perPage = $settings->int('adminSchoolSubscriptionPlansPerPage', 6);
-        $defaultSort = $settings->string('adminSchoolSubscriptionPlansDefaultSort', 'idDesc');
+        $settings =
+            app(
+                AdminSettingsService::class
+            );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $perPage =
+            $settings->int(
+                'adminSchoolSubscriptionPlansPerPage',
+                6
+            );
 
-        $processingMode = $settings->string(
-            'adminSchoolSubscriptionPlansProcessingMode',
-            'frontend'
-        );
+        $defaultSort =
+            $settings->string(
+                'adminSchoolSubscriptionPlansDefaultSort',
+                'idDesc'
+            );
 
-        $plansCount = $this->baseQuery()->count();
+        $sortParam =
+            (string) $request->query(
+                'sort',
+                $defaultSort
+            );
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
+        $search =
+            trim(
+                (string) $request->query(
+                    'search',
+                    ''
+                )
+            );
+
+        $processingMode =
+            $settings->string(
+                'adminSchoolSubscriptionPlansProcessingMode',
+                'frontend'
+            );
+
+        /**
+         * Для определения processing mode
+         * используем лёгкий запрос
+         * без eager loading.
+         */
+        $plansCount =
+            $this->indexBaseQuery()
+                ->count();
+
+        $useServerProcessing =
+            app(
+                ProcessingModeService::class
+            )->shouldUseServer(
                 $processingMode,
                 $plansCount,
                 300
             );
 
         try {
-            $subscriptionPlans = $this->getIndexSubscriptionPlans(
-                locale: $currentLocale,
-                useServerProcessing: $useServerProcessing,
-                perPage: $perPage,
-                sort: $sortParam,
-                search: $search,
+            $subscriptionPlans =
+                $this->getIndexSubscriptionPlans(
+                    locale:
+                    $currentLocale,
+
+                    useServerProcessing:
+                    $useServerProcessing,
+
+                    perPage:
+                    $perPage,
+
+                    sort:
+                    $sortParam,
+
+                    search:
+                    $search,
+                );
+
+            return Inertia::render(
+                'Admin/School/SchoolSubscriptionPlans/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
+
+                    'availableLocales' =>
+                        $this->availableLocales(),
+
+                    'useServerProcessing' =>
+                        $useServerProcessing,
+
+                    'adminSchoolSubscriptionPlansPerPage' =>
+                        $perPage,
+
+                    'adminSchoolSubscriptionPlansDefaultSort' =>
+                        $defaultSort,
+
+                    'adminSchoolSubscriptionPlansProcessingMode' =>
+                        $processingMode,
+
+                    /**
+                     * Index использует
+                     * компактный SharedResource.
+                     */
+                    'subscriptionPlans' =>
+                        SchoolSubscriptionPlanSharedResource::collection(
+                            $subscriptionPlans
+                        ),
+
+                    'plansCount' =>
+                        $plansCount,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    /**
+                     * Currency не переводимая.
+                     */
+                    'currencies' =>
+                        $this->currenciesForSelect(),
+                ]
+            );
+        } catch (Throwable $e) {
+            Log::error(
+                'Ошибка загрузки списка school subscription plans: '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
             );
 
-            return Inertia::render('Admin/School/SchoolSubscriptionPlans/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/School/SchoolSubscriptionPlans/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminSchoolSubscriptionPlansPerPage' => $perPage,
-                'adminSchoolSubscriptionPlansDefaultSort' => $defaultSort,
-                'adminSchoolSubscriptionPlansProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'subscriptionPlans' => SchoolSubscriptionPlanResource::collection($subscriptionPlans),
-                'plansCount' => $plansCount,
+                    'adminSchoolSubscriptionPlansPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminSchoolSubscriptionPlansDefaultSort' =>
+                        $defaultSort,
 
-                'currencies' => $this->currenciesForSelect(),
-            ]);
-        } catch (Throwable $e) {
-            Log::error('Ошибка загрузки списка school subscription plans: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+                    'adminSchoolSubscriptionPlansProcessingMode' =>
+                        $processingMode,
 
-            return Inertia::render('Admin/School/SchoolSubscriptionPlans/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+                    'subscriptionPlans' =>
+                        [],
 
-                'useServerProcessing' => $useServerProcessing,
+                    'plansCount' =>
+                        0,
 
-                'adminSchoolSubscriptionPlansPerPage' => $perPage,
-                'adminSchoolSubscriptionPlansDefaultSort' => $defaultSort,
-                'adminSchoolSubscriptionPlansProcessingMode' => $processingMode,
+                    'sortParam' =>
+                        $sortParam,
 
-                'subscriptionPlans' => [],
-                'plansCount' => 0,
+                    'search' =>
+                        $search,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'currencies' =>
+                        [],
 
-                'currencies' => [],
-                'error' => 'Ошибка загрузки тарифных планов.',
-            ]);
+                    'error' =>
+                        'Ошибка загрузки тарифных планов.',
+                ]
+            );
         }
     }
 
-    /** Страница создания тарифного плана */
-    public function create(Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    /**
+     * =========================================================
+     * CREATE / STORE
+     * =========================================================
+     */
 
-        return Inertia::render('Admin/School/SchoolSubscriptionPlans/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+    /**
+     * Страница создания тарифного плана.
+     */
+    public function create(
+        Request $request
+    ): Response {
+        $currentLocale =
+            $this->resolveLocale(
+                $request
+            );
 
-            'currencies' => $this->currenciesForSelect(),
-        ]);
+        return Inertia::render(
+            'Admin/School/SchoolSubscriptionPlans/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                /**
+                 * Currency не переводимая.
+                 */
+                'currencies' =>
+                    $this->currenciesForSelect(),
+            ]
+        );
     }
 
-    /** Сохранение тарифного плана */
-    public function store(SchoolSubscriptionPlanRequest $request): RedirectResponse
-    {
-        $data = $request->validated();
+    /**
+     * Создание тарифного плана.
+     */
+    public function store(
+        SchoolSubscriptionPlanRequest $request
+    ): RedirectResponse {
+        $data =
+            $request->validated();
 
-        $translations = $data['translations'] ?? [];
-        $imagesData = $data['images'] ?? [];
+        $translations =
+            $data['translations']
+            ?? [];
+
+        $imagesData =
+            $data['images']
+            ?? [];
 
         unset(
             $data['translations'],
@@ -168,78 +316,196 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
         );
 
         try {
-            DB::transaction(function () use ($request, $data, $translations, $imagesData) {
-                if (!isset($data['sort']) || is_null($data['sort'])) {
-                    $maxSort = SchoolSubscriptionPlan::query()->max('sort');
-                    $data['sort'] = is_null($maxSort) ? 1 : $maxSort + 1;
+            DB::transaction(
+                function () use (
+                    $request,
+                    $data,
+                    $translations,
+                    $imagesData
+                ) {
+                    /**
+                     * Автоматический sort.
+                     */
+                    if (
+                        !isset($data['sort'])
+                        || is_null($data['sort'])
+                    ) {
+                        $maxSort =
+                            SchoolSubscriptionPlan::query()
+                                ->max(
+                                    'sort'
+                                );
+
+                        $data['sort'] =
+                            is_null($maxSort)
+                                ? 1
+                                : $maxSort + 1;
+                    }
+
+                    $plan =
+                        SchoolSubscriptionPlan::create(
+                            $data
+                        );
+
+                    /**
+                     * Переводы.
+                     */
+                    $this->syncTranslations(
+                        $plan,
+                        $translations
+                    );
+
+                    /**
+                     * Изображения через
+                     * общую Spatie-логику.
+                     */
+                    $this->syncImages(
+                        $plan,
+                        $request,
+                        $imagesData
+                    );
                 }
-
-                $plan = SchoolSubscriptionPlan::create($data);
-
-                $this->syncTranslations($plan, $translations);
-
-                $this->syncImages($plan, $request, $imagesData);
-            });
+            );
 
             return redirect()
-                ->route('admin.schoolSubscriptionPlans.index')
-                ->with('success', 'Тарифный план успешно создан.');
+                ->route(
+                    'admin.schoolSubscriptionPlans.index'
+                )
+                ->with(
+                    'success',
+                    'Тарифный план успешно создан.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка создания school subscription plan: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка создания school subscription plan: '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при создании тарифного плана.');
+                ->with(
+                    'error',
+                    'Ошибка при создании тарифного плана.'
+                );
         }
     }
 
-    /** Редирект на редактирование */
-    public function show(int $schoolSubscriptionPlan): RedirectResponse
-    {
-        return redirect()->route('admin.schoolSubscriptionPlans.edit', $schoolSubscriptionPlan);
+    /**
+     * =========================================================
+     * SHOW / EDIT / UPDATE
+     * =========================================================
+     */
+
+    /**
+     * Редирект на редактирование.
+     */
+    public function show(
+        int $schoolSubscriptionPlan
+    ): RedirectResponse {
+        return redirect()->route(
+            'admin.schoolSubscriptionPlans.edit',
+            $schoolSubscriptionPlan
+        );
     }
 
-    /** Страница редактирования тарифного плана */
-    public function edit(int $schoolSubscriptionPlan, Request $request): Response
-    {
-        $currentLocale = $this->resolveLocale($request);
+    /**
+     * Страница редактирования
+     * тарифного плана.
+     */
+    public function edit(
+        int $schoolSubscriptionPlan,
+        Request $request
+    ): Response {
+        $currentLocale =
+            $this->resolveLocale(
+                $request
+            );
 
-        $subscriptionPlan = $this->baseQuery()
-            ->with([
-                'translation',
-                'translations',
-                'images',
-                'currency:id,code,name,symbol',
-            ])
-            ->withCount([
-                'images',
-            ])
-            ->findOrFail($schoolSubscriptionPlan);
+        $subscriptionPlan =
+            $this->baseQuery()
+                ->with([
+                    /**
+                     * Для Edit нужны
+                     * все переводы самого Plan.
+                     */
+                    'translations',
 
-        return Inertia::render('Admin/School/SchoolSubscriptionPlans/Edit', [
-            'subscriptionPlan' => new SchoolSubscriptionPlanResource($subscriptionPlan),
+                    /**
+                     * Изображения через
+                     * базовую Spatie-модель.
+                     */
+                    'images.media',
 
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+                    /**
+                     * Currency не переводимая.
+                     */
+                    'currency:id,code,name,symbol',
+                ])
+                ->withCount([
+                    'images',
+                ])
+                ->findOrFail(
+                    $schoolSubscriptionPlan
+                );
 
-            'currencies' => $this->currenciesForSelect(),
-        ]);
+        return Inertia::render(
+            'Admin/School/SchoolSubscriptionPlans/Edit',
+            [
+                'subscriptionPlan' =>
+                    new SchoolSubscriptionPlanResource(
+                        $subscriptionPlan
+                    ),
+
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'currencies' =>
+                    $this->currenciesForSelect(),
+            ]
+        );
     }
 
-    /** Обновление тарифного плана */
-    public function update(SchoolSubscriptionPlanRequest $request, int $schoolSubscriptionPlan): RedirectResponse
-    {
-        $subscriptionPlan = $this->baseQuery()
-            ->with('images')
-            ->findOrFail($schoolSubscriptionPlan);
+    /**
+     * Обновление тарифного плана.
+     */
+    public function update(
+        SchoolSubscriptionPlanRequest $request,
+        int $schoolSubscriptionPlan
+    ): RedirectResponse {
+        /**
+         * Для syncImages необходимо
+         * загрузить images.media.
+         */
+        $subscriptionPlan =
+            $this->baseQuery()
+                ->with([
+                    'images.media',
+                ])
+                ->findOrFail(
+                    $schoolSubscriptionPlan
+                );
 
-        $data = $request->validated();
+        $data =
+            $request->validated();
 
-        $translations = $data['translations'] ?? [];
-        $imagesData = $data['images'] ?? [];
-        $deletedImageIds = $data['deletedImages'] ?? [];
+        $translations =
+            $data['translations']
+            ?? [];
+
+        $imagesData =
+            $data['images']
+            ?? [];
+
+        $deletedImageIds =
+            $data['deletedImages']
+            ?? [];
 
         unset(
             $data['translations'],
@@ -249,90 +515,242 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
         );
 
         try {
-            DB::transaction(function () use (
-                $request,
-                $subscriptionPlan,
-                $data,
-                $translations,
-                $imagesData,
-                $deletedImageIds
-            ) {
-                $subscriptionPlan->update($data);
+            DB::transaction(
+                function () use (
+                    $request,
+                    $subscriptionPlan,
+                    $data,
+                    $translations,
+                    $imagesData,
+                    $deletedImageIds
+                ) {
+                    $subscriptionPlan->update(
+                        $data
+                    );
 
-                $this->syncTranslations($subscriptionPlan, $translations);
+                    /**
+                     * Обновляем переводы.
+                     */
+                    $this->syncTranslations(
+                        $subscriptionPlan,
+                        $translations
+                    );
 
-                $this->syncImages($subscriptionPlan, $request, $imagesData, $deletedImageIds);
-            });
+                    /**
+                     * Обновляем изображения.
+                     */
+                    $this->syncImages(
+                        $subscriptionPlan,
+                        $request,
+                        $imagesData,
+                        $deletedImageIds
+                    );
+                }
+            );
 
             return redirect()
-                ->route('admin.schoolSubscriptionPlans.index')
-                ->with('success', 'Тарифный план успешно обновлён.');
+                ->route(
+                    'admin.schoolSubscriptionPlans.index'
+                )
+                ->with(
+                    'success',
+                    'Тарифный план успешно обновлён.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка обновления school subscription plan ID ' .
-                $subscriptionPlan->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка обновления school subscription plan ID '
+                . $subscriptionPlan->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при обновлении тарифного плана.');
+                ->with(
+                    'error',
+                    'Ошибка при обновлении тарифного плана.'
+                );
         }
     }
 
-    /** Удаление тарифного плана */
-    public function destroy(int $schoolSubscriptionPlan): RedirectResponse
-    {
-        $subscriptionPlan = $this->baseQuery()
-            ->with('images')
-            ->findOrFail($schoolSubscriptionPlan);
+    /**
+     * =========================================================
+     * DELETE
+     * =========================================================
+     */
+
+    /**
+     * Удаление тарифного плана.
+     */
+    public function destroy(
+        int $schoolSubscriptionPlan
+    ): RedirectResponse {
+        $subscriptionPlan =
+            $this->baseQuery()
+                ->with([
+                    'images.media',
+                ])
+                ->findOrFail(
+                    $schoolSubscriptionPlan
+                );
 
         try {
-            DB::transaction(function () use ($subscriptionPlan) {
-                $imageIds = $subscriptionPlan->images()
-                    ->pluck('school_subscription_plan_images.id')
-                    ->toArray();
+            DB::transaction(
+                function () use (
+                    $subscriptionPlan
+                ) {
+                    /**
+                     * Получаем IDs связанных
+                     * моделей изображений.
+                     */
+                    $imageIds =
+                        $subscriptionPlan
+                            ->images()
+                            ->pluck(
+                                'school_subscription_plan_images.id'
+                            )
+                            ->toArray();
 
-                if (!empty($imageIds)) {
-                    $subscriptionPlan->images()->detach();
+                    if (
+                        !empty($imageIds)
+                    ) {
+                        /**
+                         * Сначала detach pivot.
+                         */
+                        $subscriptionPlan
+                            ->images()
+                            ->detach();
 
-                    $this->deleteImages($imageIds);
+                        /**
+                         * Затем удаляем сами
+                         * image-модели + media
+                         * через базовую логику.
+                         */
+                        $this->deleteImages(
+                            $imageIds
+                        );
+                    }
+
+                    /**
+                     * Удаляем переводы.
+                     */
+                    $subscriptionPlan
+                        ->translations()
+                        ->delete();
+
+                    /**
+                     * Удаляем Plan.
+                     */
+                    $subscriptionPlan
+                        ->delete();
                 }
-
-                $subscriptionPlan->translations()->delete();
-
-                $subscriptionPlan->delete();
-            });
+            );
 
             return redirect()
-                ->route('admin.schoolSubscriptionPlans.index')
-                ->with('success', 'Тарифный план успешно удалён.');
+                ->route(
+                    'admin.schoolSubscriptionPlans.index'
+                )
+                ->with(
+                    'success',
+                    'Тарифный план успешно удалён.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка удаления school subscription plan ID ' .
-                $subscriptionPlan->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка удаления school subscription plan ID '
+                . $subscriptionPlan->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' =>
+                        $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при удалении тарифного плана.');
+            return back()
+                ->with(
+                    'error',
+                    'Ошибка при удалении тарифного плана.'
+                );
         }
     }
 
-    /** Валюты для select */
-    private function currenciesForSelect(): Collection|array
+    /**
+     * =========================================================
+     * SELECT HELPERS
+     * =========================================================
+     */
+
+    /**
+     * Валюты для select.
+     *
+     * Currency не переводимая,
+     * locale не требуется.
+     */
+    private function currenciesForSelect(): Collection
     {
         return Currency::query()
-            ->select('id', 'code', 'name', 'symbol')
-            ->orderBy('code')
+            ->select(
+                'id',
+                'code',
+                'name',
+                'symbol'
+            )
+            ->orderBy(
+                'code'
+            )
             ->get();
     }
 
-    /** Базовый запрос для списка тарифных планов */
-    private function indexQuery(): Builder
+    /**
+     * =========================================================
+     * INDEX QUERIES
+     * =========================================================
+     */
+
+    /**
+     * Лёгкий базовый запрос.
+     *
+     * Используется для count().
+     */
+    private function indexBaseQuery(): Builder
     {
-        return $this->baseQuery()
+        return $this->baseQuery();
+    }
+
+    /**
+     * Основной Admin Index Query.
+     *
+     * Загружаем только currentLocale.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
+        return $this->indexBaseQuery()
             ->with([
-                'translation',
-                'translations',
-                'images',
+                /**
+                 * Только перевод
+                 * выбранной locale.
+                 */
+                'translations' =>
+                    fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
+
+                /**
+                 * Controller обязан загрузить
+                 * images.media.
+                 */
+                'images.media',
+
+                /**
+                 * Currency не переводимая.
+                 */
                 'currency:id,code,name,symbol',
             ])
             ->withCount([
@@ -340,7 +758,10 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
             ]);
     }
 
-    /** Получение списка тарифных планов по активному режиму обработки */
+    /**
+     * Получение тарифных планов
+     * по текущему processing mode.
+     */
     private function getIndexSubscriptionPlans(
         string $locale,
         bool $useServerProcessing,
@@ -348,18 +769,43 @@ class SchoolSubscriptionPlanController extends BaseSchoolAdminController
         string $sort,
         string $search = '',
     ) {
-        $query = $this->indexQuery();
+        $query =
+            $this->indexQuery(
+                $locale
+            );
 
-        if ($useServerProcessing) {
+        /**
+         * SERVER:
+         * поиск + сортировка
+         * + SQL pagination.
+         */
+        if (
+            $useServerProcessing
+        ) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * FRONTEND:
+         * полный dataset.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->sortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

@@ -1,10 +1,11 @@
 <script setup>
 /**
  * @version PulsarCMS 1.0
- * @author Александр Косолапов <kosolapov1976@gmail.com>
+ * @author Александр Косолапов
  *
- * Создание цены курса школы
+ * Создание цены курса школы.
  */
+
 import { computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
@@ -23,20 +24,48 @@ import InputText from '@/Components/Admin/UI/Input/InputText.vue'
 import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 import SelectEntity from '@/Components/Admin/UI/Select/SelectEntity.vue'
 
-// Локализация и уведомления
+/* ==========================================================
+ * I18N / TOAST
+ * ========================================================== */
+
 const { t } = useI18n()
 const toast = useToast()
 
-// Входящие данные страницы
-const props = defineProps({
-    courses: { type: Array, default: () => [] },
-    currencies: { type: Array, default: () => [] },
+/* ==========================================================
+ * PROPS
+ * ========================================================== */
 
-    defaultCourseId: { type: Number, default: null },
-    defaultCurrencyId: { type: Number, default: null },
+const props = defineProps({
+    currentLocale: {
+        type: String,
+        default: '',
+    },
+
+    courses: {
+        type: Array,
+        default: () => [],
+    },
+
+    currencies: {
+        type: Array,
+        default: () => [],
+    },
+
+    defaultCourseId: {
+        type: Number,
+        default: null,
+    },
+
+    defaultCurrencyId: {
+        type: Number,
+        default: null,
+    },
 })
 
-// Форма создания цены курса
+/* ==========================================================
+ * FORM
+ * ========================================================== */
+
 const form = useForm({
     school_course_id: props.defaultCourseId,
     currency_id: props.defaultCurrencyId,
@@ -54,77 +83,196 @@ const form = useForm({
     meta: null,
 })
 
-// Список курсов для выпадающего списка
+/* ==========================================================
+ * RESOURCE HELPERS
+ *
+ * SchoolCourseSharedResource:
+ * course.translation.*
+ * ========================================================== */
+
+const getCourseTitle = (course) => {
+    return course?.translation?.title
+        || course?.slug
+        || `#${course?.id}`
+}
+
+/* ==========================================================
+ * SELECT OPTIONS
+ * ========================================================== */
+
 const courseOptions = computed(() =>
     props.courses.map(course => ({
         id: course.id,
+
         label: [
             `[ID: ${course.id}]`,
-            course.title || course.slug || `#${course.id}`,
-            course.slug ? `(${course.slug})` : null,
-        ].filter(Boolean).join(' '),
+            getCourseTitle(course),
+            course.slug
+                ? `(${course.slug})`
+                : null,
+        ]
+            .filter(Boolean)
+            .join(' '),
     }))
 )
 
-// Список валют для выпадающего списка
 const currencyOptions = computed(() =>
     props.currencies.map(currency => ({
         id: currency.id,
+
         label: [
-            currency.code || `#${currency.id}`,
-            currency.name ? `— ${currency.name}` : null,
-            currency.symbol ? `(${currency.symbol})` : null,
-        ].filter(Boolean).join(' '),
+            currency.code
+            || `#${currency.id}`,
+
+            currency.name
+                ? `— ${currency.name}`
+                : null,
+
+            currency.symbol
+                ? `(${currency.symbol})`
+                : null,
+        ]
+            .filter(Boolean)
+            .join(' '),
     }))
 )
 
-// Преобразование денежного значения в строку для сохранения
+/* ==========================================================
+ * NORMALIZATION
+ * ========================================================== */
+
+const toNullableId = (value) => {
+    if (
+        value === null
+        || value === undefined
+        || value === ''
+    ) {
+        return null
+    }
+
+    const number = Number(value)
+
+    return Number.isFinite(number)
+        ? number
+        : null
+}
+
 const toMoneyString = (value) => {
-    if (value === null || value === undefined) return null
+    if (
+        value === null
+        || value === undefined
+    ) {
+        return null
+    }
 
     const stringValue = String(value).trim()
 
-    if (stringValue === '') return null
+    if (stringValue === '') {
+        return null
+    }
 
     return stringValue.replace(',', '.')
 }
 
-// Преобразование даты в формат для сохранения
 const toDateTimeStringOrNull = (value) => {
-    if (!value) return null
+    if (!value) {
+        return null
+    }
 
     return String(value)
 }
 
-// Отправка формы создания цены курса
+const toSort = (value) => {
+    const number = Number(value)
+
+    return Number.isFinite(number)
+        ? number
+        : 0
+}
+
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
 const submitForm = () => {
-    form.transform((data) => ({
+    form.transform(data => ({
         ...data,
 
-        school_course_id: data.school_course_id ? Number(data.school_course_id) : null,
-        currency_id: data.currency_id ? Number(data.currency_id) : null,
+        school_course_id:
+            toNullableId(
+                data.school_course_id
+            ),
 
-        price: toMoneyString(data.price),
-        sale_price: toMoneyString(data.sale_price),
-        compare_at_price: toMoneyString(data.compare_at_price),
+        currency_id:
+            toNullableId(
+                data.currency_id
+            ),
 
-        starts_at: toDateTimeStringOrNull(data.starts_at),
-        ends_at: toDateTimeStringOrNull(data.ends_at),
+        price:
+            toMoneyString(
+                data.price
+            ),
 
-        activity: Boolean(data.activity),
-        sort: Number.isFinite(Number(data.sort)) ? Number(data.sort) : 0,
+        sale_price:
+            toMoneyString(
+                data.sale_price
+            ),
 
-        meta: data.meta,
+        compare_at_price:
+            toMoneyString(
+                data.compare_at_price
+            ),
+
+        starts_at:
+            toDateTimeStringOrNull(
+                data.starts_at
+            ),
+
+        ends_at:
+            toDateTimeStringOrNull(
+                data.ends_at
+            ),
+
+        activity:
+            Boolean(
+                data.activity
+            ),
+
+        sort:
+            toSort(
+                data.sort
+            ),
+
+        meta:
+        data.meta,
     }))
 
-    form.post(route('admin.schoolCoursePrices.store'), {
-        preserveScroll: true,
-        onSuccess: () => toast.success('Цена курса успешно создана.'),
-        onError: (errors) => {
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors?.[firstKey] || 'Проверьте правильность заполнения полей.')
-        },
-    })
+    form.post(
+        route(
+            'admin.schoolCoursePrices.store'
+        ),
+        {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Цена курса успешно создана.'
+                )
+            },
+
+            onError: (errors) => {
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors?.[firstKey]
+                    || 'Проверьте правильность заполнения полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -143,35 +291,54 @@ const submitForm = () => {
                        shadow-lg shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
+                <!-- Back -->
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
                     <DefaultButton :href="route('admin.schoolCoursePrices.index')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                 viewBox="0 0 16 16">
+                            <svg
+                                class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                viewBox="0 0 16 16"
+                            >
                                 <path
                                     d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                 />
                             </svg>
                         </template>
+
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
 
-                <form @submit.prevent="submitForm" class="p-3 w-full space-y-4">
+                <form
+                    class="p-3 w-full space-y-4"
+                    @submit.prevent="submitForm"
+                >
+                    <!-- Activity / Sort -->
                     <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
                         <div class="flex flex-row items-center gap-2">
-                            <ActivityCheckbox v-model="form.activity" />
+                            <ActivityCheckbox
+                                v-model="form.activity"
+                            />
+
                             <LabelCheckbox
                                 for="activity"
                                 :text="t('activity')"
                                 class="text-sm h-8 flex items-center"
                             />
-                            <InputError class="mt-2 lg:mt-0" :message="form.errors.activity" />
+
+                            <InputError
+                                class="mt-2 lg:mt-0"
+                                :message="form.errors.activity"
+                            />
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
                             <div class="h-8 flex items-center">
-                                <LabelInput for="sort" :value="t('sort')" class="text-sm" />
+                                <LabelInput
+                                    for="sort"
+                                    :value="t('sort')"
+                                    class="text-sm"
+                                />
                             </div>
 
                             <InputNumber
@@ -183,10 +350,14 @@ const submitForm = () => {
                                 class="w-full lg:w-28"
                             />
 
-                            <InputError class="mt-2 lg:mt-0" :message="form.errors.sort" />
+                            <InputError
+                                class="mt-2 lg:mt-0"
+                                :message="form.errors.sort"
+                            />
                         </div>
                     </div>
 
+                    <!-- Relations -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <SelectEntity
                             id="school_course_id"
@@ -209,10 +380,14 @@ const submitForm = () => {
                         />
                     </div>
 
+                    <!-- Prices -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div class="flex flex-col items-start">
                             <LabelInput for="price">
-                                <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                                <span class="text-red-500 dark:text-red-300 font-semibold">
+                                    *
+                                </span>
+
                                 {{ t('price') }}
                             </LabelInput>
 
@@ -225,7 +400,10 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.price" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.price"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
@@ -242,7 +420,10 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.sale_price" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.sale_price"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
@@ -259,10 +440,14 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.compare_at_price" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.compare_at_price"
+                            />
                         </div>
                     </div>
 
+                    <!-- Dates -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div class="flex flex-col items-start">
                             <LabelInput for="starts_at">
@@ -277,7 +462,10 @@ const submitForm = () => {
                                 class="w-full max-w-xs"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.starts_at" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.starts_at"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start lg:items-end">
@@ -293,20 +481,27 @@ const submitForm = () => {
                                 class="w-full max-w-xs"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.ends_at" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.ends_at"
+                            />
                         </div>
                     </div>
 
+                    <!-- Actions -->
                     <div class="flex items-center justify-center mt-4 gap-3">
                         <DefaultButton :href="route('admin.schoolCoursePrices.index')">
                             <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                     viewBox="0 0 16 16">
+                                <svg
+                                    class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                    viewBox="0 0 16 16"
+                                >
                                     <path
                                         d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('back') }}
                         </DefaultButton>
 
@@ -316,13 +511,16 @@ const submitForm = () => {
                             :disabled="form.processing"
                         >
                             <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100"
-                                     viewBox="0 0 16 16">
+                                <svg
+                                    class="w-4 h-4 fill-current text-slate-100"
+                                    viewBox="0 0 16 16"
+                                >
                                     <path
                                         d="M14.3 2.3L5 11.6 1.7 8.3c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4l4 4c.2.2.4.3.7.3.3 0 .5-.1.7-.3l10-10c.4-.4.4-1 0-1.4-.4-.4-1-.4-1.4 0z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('save') }}
                         </PrimaryButton>
                     </div>

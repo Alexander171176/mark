@@ -1,15 +1,20 @@
 <script setup>
 /**
  * @version PulsarCMS 1.0
- * @author Александр Косолапов <kosolapov1976@gmail.com>
+ * @author Александр Косолапов
  *
- * Список цен курсов школы
- * - режимы обработки: frontend | server | auto
- * - локальный поиск/сортировка/пагинация
- * - серверный поиск/сортировка/пагинация
+ * Список цен курсов школы.
+ *
+ * - processing modes: frontend | server | auto
+ * - locale-aware SchoolCourse
+ * - frontend/server search
+ * - frontend/server sorting
+ * - frontend/server pagination
+ * - bulk actions
+ * - drag & drop sort
  */
 
-import { computed, defineProps, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { router } from '@inertiajs/vue3'
@@ -34,59 +39,106 @@ import CoursePriceTable from '@/Components/Admin/School/SchoolCoursePrice/Table/
 import CoursePriceCardGrid from '@/Components/Admin/School/SchoolCoursePrice/View/CoursePriceCardGrid.vue'
 
 /* ==========================================================
- * БАЗОВЫЕ СЕРВИСЫ И PROPS
+ * I18N / TOAST
  * ========================================================== */
 
-/** Локализация интерфейса */
 const { t } = useI18n()
-
-/** Уведомления */
 const toast = useToast()
 
-/** Данные страницы из Inertia */
-const props = defineProps({
-    currentLocale: { type: String, default: '' },
-
-    adminSchoolCoursePricesProcessingMode: { type: String, default: 'frontend' },
-    useServerProcessing: { type: Boolean, default: false },
-
-    prices: { type: [Array, Object], default: () => [] },
-    pricesCount: { type: Number, default: 0 },
-
-    filters: { type: Object, default: () => ({}) },
-
-    adminSchoolCoursePricesPerPage: { type: Number, default: 10 },
-    adminSchoolCoursePricesDefaultSort: { type: String, default: 'idDesc' },
-
-    sortParam: { type: String, default: '' },
-    search: { type: String, default: '' },
-
-    courses: { type: Array, default: () => [] },
-    currencies: { type: Array, default: () => [] },
-
-    errors: { type: Object, default: () => ({}) },
-})
-
 /* ==========================================================
- * РЕЖИМ ОТОБРАЖЕНИЯ
+ * PROPS
  * ========================================================== */
 
-/** Текущий режим отображения: таблица / карточки */
-const viewMode = ref(localStorage.getItem('admin_view_mode_course_prices') || 'table')
+const props = defineProps({
+    currentLocale: {
+        type: String,
+        default: '',
+    },
 
-/** Сохраняем выбранный режим отображения */
-watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode_course_prices', val)
+    useServerProcessing: {
+        type: Boolean,
+        default: false,
+    },
+
+    adminSchoolCoursePricesProcessingMode: {
+        type: String,
+        default: 'frontend',
+    },
+
+    prices: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    pricesCount: {
+        type: Number,
+        default: 0,
+    },
+
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+
+    adminSchoolCoursePricesPerPage: {
+        type: Number,
+        default: 10,
+    },
+
+    adminSchoolCoursePricesDefaultSort: {
+        type: String,
+        default: 'idDesc',
+    },
+
+    sortParam: {
+        type: String,
+        default: '',
+    },
+
+    search: {
+        type: String,
+        default: '',
+    },
+
+    courses: {
+        type: Array,
+        default: () => [],
+    },
+
+    currencies: {
+        type: Array,
+        default: () => [],
+    },
+
+    errors: {
+        type: Object,
+        default: () => ({}),
+    },
 })
 
 /* ==========================================================
- * ИСТОЧНИК ДАННЫХ
+ * VIEW MODE
+ * ========================================================== */
+
+const viewMode = ref(
+    localStorage.getItem('admin_view_mode_course_prices')
+    || 'table'
+)
+
+watch(viewMode, (value) => {
+    localStorage.setItem(
+        'admin_view_mode_course_prices',
+        value
+    )
+})
+
+/* ==========================================================
+ * DATA SOURCE
  * ========================================================== */
 
 /**
- * Унифицированный список цен:
  * frontend → обычный массив
- * server → prices.data
+ * server   → paginator.data
  */
 const pricesList = computed(() => {
     if (Array.isArray(props.prices)) {
@@ -100,63 +152,80 @@ const pricesList = computed(() => {
     return []
 })
 
-/* ==========================================================
- * ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ДАННЫХ
- * ========================================================== */
-
-/**
- * Локальная копия списка.
- * Используется для:
- * - frontend-поиска
- * - frontend-сортировки
- * - frontend-пагинации
- * - моментального обновления UI
- */
 const localPrices = ref([])
 
 watch(
     pricesList,
-    (newVal) => {
-        localPrices.value = JSON.parse(JSON.stringify(newVal || []))
+    (newValue) => {
+        localPrices.value = JSON.parse(
+            JSON.stringify(newValue || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
 /* ==========================================================
- * НАСТРОЙКИ ПАГИНАЦИИ И СОРТИРОВКИ
+ * ITEMS PER PAGE
  * ========================================================== */
 
-/** Количество элементов на странице */
-const itemsPerPage = ref(props.adminSchoolCoursePricesPerPage || 10)
+const itemsPerPage = ref(
+    props.adminSchoolCoursePricesPerPage
+    || 10
+)
 
-/** Сохраняем настройку количества элементов */
-watch(itemsPerPage, (newVal) => {
+watch(itemsPerPage, (newValue) => {
     router.put(
-        route('admin.settings.updateAdminCountSchoolCoursePrices'),
-        { value: newVal },
+        route(
+            'admin.settings.updateAdminCountSchoolCoursePrices'
+        ),
+        {
+            value: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
+
+            onSuccess: () => {
+                toast.info(
+                    `Показ ${newValue} элементов на странице.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления кол-ва элементов.'
+                )
+            },
         }
     )
 })
 
-/** Текущий параметр сортировки */
+/* ==========================================================
+ * SORT
+ * ========================================================== */
+
 const sortParam = ref(
-    props.sortParam ||
-    props.adminSchoolCoursePricesDefaultSort ||
-    'idDesc'
+    props.sortParam
+    || props.adminSchoolCoursePricesDefaultSort
+    || 'idDesc'
 )
 
-/** Сохраняем сортировку и при server-режиме перезагружаем список */
-watch(sortParam, (newVal) => {
+const currentPage = ref(1)
+
+watch(sortParam, (newValue) => {
     currentPage.value = 1
 
     router.put(
-        route('admin.settings.updateAdminSortSchoolCoursePrices'),
-        { value: newVal },
+        route(
+            'admin.settings.updateAdminSortSchoolCoursePrices'
+        ),
+        {
+            value: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
@@ -166,9 +235,18 @@ watch(sortParam, (newVal) => {
                     router.get(
                         window.location.pathname,
                         {
-                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
-                            sort: newVal || undefined,
-                            page: undefined,
+                            ...Object.fromEntries(
+                                new URLSearchParams(
+                                    window.location.search
+                                )
+                            ),
+
+                            sort:
+                                newValue
+                                || undefined,
+
+                            page:
+                            undefined,
                         },
                         {
                             preserveScroll: true,
@@ -178,500 +256,984 @@ watch(sortParam, (newVal) => {
                     )
                 }
 
-                toast.info('Сортировка успешно изменена')
+                toast.info(
+                    'Сортировка успешно изменена'
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления сортировки.')
+                toast.error(
+                    errors?.value
+                    || 'Ошибка обновления сортировки.'
+                )
             },
         }
     )
 })
 
 /* ==========================================================
- * ПОИСК И ПАГИНАЦИЯ
+ * SEARCH
  * ========================================================== */
 
-/** Поисковый запрос */
-const searchQuery = ref(props.search || props.filters?.search || '')
-
-/** Текущая страница frontend-пагинации */
-const currentPage = ref(1)
+const searchQuery = ref(
+    props.search
+    || props.filters?.search
+    || ''
+)
 
 /* ==========================================================
- * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+ * NORMALIZATION
  * ========================================================== */
 
-/** Нормализация строки */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+const stripHtml = (html = '') => {
+    return String(html || '')
+        .replace(/<\/p>/gi, ' ')
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+}
 
-/** Безопасное преобразование в число */
+const normalize = (value) => {
+    return stripHtml(
+        value ?? ''
+    )
+        .toString()
+        .trim()
+        .toLowerCase()
+}
+
 const safeNumber = (value) => {
-    const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+    const number =
+        Number(value)
+
+    return Number.isFinite(number)
+        ? number
+        : 0
 }
 
-/** Безопасное преобразование даты */
 const safeDate = (value) => {
-    const time = new Date(value || 0).getTime()
-    return Number.isFinite(time) ? time : 0
+    if (!value) {
+        return 0
+    }
+
+    const time =
+        new Date(value).getTime()
+
+    return Number.isFinite(time)
+        ? time
+        : 0
 }
 
 /* ==========================================================
- * ИЗВЛЕЧЕНИЕ ДАННЫХ ИЗ РЕСУРСОВ
+ * RESOURCE HELPERS
+ *
+ * SchoolCoursePriceSharedResource
+ * +
+ * SchoolCourseSharedResource
  * ========================================================== */
 
-/** Получение названия курса */
 const getCourseTitle = (price) => {
-    return price?.course?.title
-        || price?.course?.translation?.title
-        || price?.course?.translations?.[0]?.title
+    return price?.course?.translation?.title
         || `ID: ${price?.school_course_id || ''}`
 }
 
-/** Получение slug курса */
-const getCourseSlug = (price) => {
-    return price?.course?.slug || ''
+const getCourseSubtitle = (price) => {
+    return price?.course?.translation?.subtitle
+        || ''
 }
 
-/** Получение кода валюты */
+const getCourseShort = (price) => {
+    return price?.course?.translation?.short
+        || ''
+}
+
+const getCourseDescription = (price) => {
+    return price?.course?.translation?.description
+        || ''
+}
+
 const getCurrencyCode = (price) => {
-    return price?.currency?.code || ''
+    return price?.currency?.code
+        || ''
 }
 
-/** Получение названия валюты */
 const getCurrencyName = (price) => {
-    return price?.currency?.name || ''
+    return price?.currency?.name
+        || ''
 }
 
-/** Получение символа валюты */
 const getCurrencySymbol = (price) => {
-    return price?.currency?.symbol || ''
+    return price?.currency?.symbol
+        || ''
 }
 
-/** Получение заголовка для уведомлений и удаления */
 const getDeleteTitle = (price) => {
-    const course = getCourseTitle(price)
-    const currency = getCurrencyCode(price)
-    const effectivePrice = price?.effective_price ? String(price.effective_price) : ''
+    const course =
+        getCourseTitle(price)
 
-    return [course, currency, effectivePrice].filter(Boolean).join(' • ')
+    const currency =
+        getCurrencyCode(price)
+
+    const effectivePrice =
+        price?.effective_price !== null
+        && price?.effective_price !== undefined
+            ? String(
+                price.effective_price
+            )
+            : ''
+
+    return [
+        course,
+        currency,
+        effectivePrice,
+    ]
+        .filter(Boolean)
+        .join(' • ')
 }
 
 /* ==========================================================
- * СОРТИРОВКА FRONTEND
+ * FRONTEND SORT HELPERS
  * ========================================================== */
 
-/** Сортировка чисел ↑ */
 const byNumberAsc = (field) => (a, b) =>
-    safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    safeNumber(a?.[field])
+    - safeNumber(b?.[field])
+    || safeNumber(a?.id)
+    - safeNumber(b?.id)
 
-/** Сортировка чисел ↓ */
 const byNumberDesc = (field) => (a, b) =>
-    safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+    safeNumber(b?.[field])
+    - safeNumber(a?.[field])
+    || safeNumber(b?.id)
+    - safeNumber(a?.id)
 
-/** Сортировка дат ↑ */
 const byDateAsc = (field) => (a, b) =>
-    safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    safeDate(a?.[field])
+    - safeDate(b?.[field])
+    || safeNumber(a?.id)
+    - safeNumber(b?.id)
 
-/** Сортировка дат ↓ */
 const byDateDesc = (field) => (a, b) =>
-    safeDate(b?.[field]) - safeDate(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+    safeDate(b?.[field])
+    - safeDate(a?.[field])
+    || safeNumber(b?.id)
+    - safeNumber(a?.id)
 
-/**
- * Главный обработчик сортировки.
- * Должен совпадать со SchoolCoursePrice::scopeSortByParam() и SortSelect.vue.
- */
+/* ==========================================================
+ * FRONTEND SORT
+ *
+ * Повторяет:
+ * SchoolCoursePrice::scopeSortByParam()
+ * ========================================================== */
+
 const sortPrices = (items) => {
-    const list = (items || []).slice()
+    const list =
+        (items || []).slice()
 
-    if (sortParam.value === 'activity') return list.filter(price => !!price.activity)
-    if (sortParam.value === 'inactive') return list.filter(price => !price.activity)
-
-    const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
-
-        sortAsc: byNumberAsc('sort'),
-        sortDesc: byNumberDesc('sort'),
-
-        activityAsc: byNumberAsc('activity'),
-        activityDesc: byNumberDesc('activity'),
-
-        courseTitleAsc: (a, b) =>
-            normalize(getCourseTitle(a)).localeCompare(normalize(getCourseTitle(b)), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        courseTitleDesc: (a, b) =>
-            normalize(getCourseTitle(b)).localeCompare(normalize(getCourseTitle(a)), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        currencyCodeAsc: (a, b) =>
-            normalize(getCurrencyCode(a)).localeCompare(normalize(getCurrencyCode(b)), props.currentLocale)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        currencyCodeDesc: (a, b) =>
-            normalize(getCurrencyCode(b)).localeCompare(normalize(getCurrencyCode(a)), props.currentLocale)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        effectivePriceAsc: byNumberAsc('effective_price'),
-        effectivePriceDesc: byNumberDesc('effective_price'),
-
-        priceAsc: byNumberAsc('price'),
-        priceDesc: byNumberDesc('price'),
-
-        salePriceAsc: byNumberAsc('sale_price'),
-        salePriceDesc: byNumberDesc('sale_price'),
-
-        compareAtPriceAsc: byNumberAsc('compare_at_price'),
-        compareAtPriceDesc: byNumberDesc('compare_at_price'),
-
-        discountPercentAsc: byNumberAsc('discount_percent'),
-        discountPercentDesc: byNumberDesc('discount_percent'),
-
-        startsAtAsc: byDateAsc('starts_at'),
-        startsAtDesc: byDateDesc('starts_at'),
-
-        endsAtAsc: byDateAsc('ends_at'),
-        endsAtDesc: byDateDesc('ends_at'),
-
-        createdAtAsc: byDateAsc('created_at'),
-        createdAtDesc: byDateDesc('created_at'),
-
-        updatedAtAsc: byDateAsc('updated_at'),
-        updatedAtDesc: byDateDesc('updated_at'),
+    /**
+     * Фильтрующие параметры сортировки.
+     */
+    if (
+        sortParam.value === 'activity'
+    ) {
+        return list.filter(
+            price =>
+                Boolean(
+                    price.activity
+                )
+        )
     }
 
-    return sortMap[sortParam.value]
-        ? list.sort(sortMap[sortParam.value])
+    if (
+        sortParam.value === 'inactive'
+    ) {
+        return list.filter(
+            price =>
+                !price.activity
+        )
+    }
+
+    const sortMap = {
+        idAsc:
+            byNumberAsc('id'),
+
+        idDesc:
+            byNumberDesc('id'),
+
+        sortAsc:
+            byNumberAsc('sort'),
+
+        sortDesc:
+            byNumberDesc('sort'),
+
+        activityAsc:
+            byNumberAsc(
+                'activity'
+            ),
+
+        activityDesc:
+            byNumberDesc(
+                'activity'
+            ),
+
+        courseTitleAsc: (a, b) =>
+            normalize(
+                getCourseTitle(a)
+            ).localeCompare(
+                normalize(
+                    getCourseTitle(b)
+                ),
+                props.currentLocale
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        courseTitleDesc: (a, b) =>
+            normalize(
+                getCourseTitle(b)
+            ).localeCompare(
+                normalize(
+                    getCourseTitle(a)
+                ),
+                props.currentLocale
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        currencyCodeAsc: (a, b) =>
+            normalize(
+                getCurrencyCode(a)
+            ).localeCompare(
+                normalize(
+                    getCurrencyCode(b)
+                ),
+                props.currentLocale
+            )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        currencyCodeDesc: (a, b) =>
+            normalize(
+                getCurrencyCode(b)
+            ).localeCompare(
+                normalize(
+                    getCurrencyCode(a)
+                ),
+                props.currentLocale
+            )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
+
+        effectivePriceAsc:
+            byNumberAsc(
+                'effective_price'
+            ),
+
+        effectivePriceDesc:
+            byNumberDesc(
+                'effective_price'
+            ),
+
+        priceAsc:
+            byNumberAsc(
+                'price'
+            ),
+
+        priceDesc:
+            byNumberDesc(
+                'price'
+            ),
+
+        salePriceAsc:
+            byNumberAsc(
+                'sale_price'
+            ),
+
+        salePriceDesc:
+            byNumberDesc(
+                'sale_price'
+            ),
+
+        compareAtPriceAsc:
+            byNumberAsc(
+                'compare_at_price'
+            ),
+
+        compareAtPriceDesc:
+            byNumberDesc(
+                'compare_at_price'
+            ),
+
+        discountPercentAsc:
+            byNumberAsc(
+                'discount_percent'
+            ),
+
+        discountPercentDesc:
+            byNumberDesc(
+                'discount_percent'
+            ),
+
+        startsAtAsc:
+            byDateAsc(
+                'starts_at'
+            ),
+
+        startsAtDesc:
+            byDateDesc(
+                'starts_at'
+            ),
+
+        endsAtAsc:
+            byDateAsc(
+                'ends_at'
+            ),
+
+        endsAtDesc:
+            byDateDesc(
+                'ends_at'
+            ),
+
+        createdAtAsc:
+            byDateAsc(
+                'created_at'
+            ),
+
+        createdAtDesc:
+            byDateDesc(
+                'created_at'
+            ),
+
+        updatedAtAsc:
+            byDateAsc(
+                'updated_at'
+            ),
+
+        updatedAtDesc:
+            byDateDesc(
+                'updated_at'
+            ),
+    }
+
+    return sortMap[
+        sortParam.value
+        ]
+        ? list.sort(
+            sortMap[
+                sortParam.value
+                ]
+        )
         : list
 }
 
 /* ==========================================================
- * ПОИСК FRONTEND
+ * FRONTEND SEARCH
+ *
+ * Повторяет Model::scopeSearch():
+ *
+ * Price:
+ * - price
+ * - sale_price
+ * - compare_at_price
+ *
+ * Currency:
+ * - code
+ * - name
+ * - symbol
+ *
+ * Course translation:
+ * - title
+ * - subtitle
+ * - short
+ * - description
  * ========================================================== */
 
-/**
- * Фильтрация списка.
- *
- * frontend:
- * поиск выполняется здесь
- *
- * server:
- * поиск выполняется контроллером
- */
 const filteredPrices = computed(() => {
-    let filtered = localPrices.value || []
-    const query = normalize(searchQuery.value)
+    let filtered =
+        localPrices.value || []
+
+    const query =
+        normalize(
+            searchQuery.value
+        )
 
     if (!query) {
-        return sortPrices(filtered)
+        return sortPrices(
+            filtered
+        )
     }
 
-    filtered = filtered.filter((price) => {
-        const values = [
-            price?.id,
-            price?.price,
-            price?.sale_price,
-            price?.compare_at_price,
-            price?.effective_price,
-            price?.discount_amount,
-            price?.discount_percent,
+    filtered = filtered.filter(
+        (price) => {
+            const values = [
+                /**
+                 * Price.
+                 */
+                price?.price,
+                price?.sale_price,
+                price?.compare_at_price,
 
-            getCourseTitle(price),
-            getCourseSlug(price),
+                /**
+                 * Course current locale.
+                 */
+                getCourseTitle(price),
+                getCourseSubtitle(price),
+                getCourseShort(price),
+                getCourseDescription(price),
 
-            getCurrencyCode(price),
-            getCurrencyName(price),
-            getCurrencySymbol(price),
-        ]
+                /**
+                 * Currency.
+                 */
+                getCurrencyCode(price),
+                getCurrencyName(price),
+                getCurrencySymbol(price),
+            ]
 
-        return values.some(value => normalize(value).includes(query))
-    })
+            return values.some(
+                value =>
+                    normalize(
+                        value
+                    ).includes(
+                        query
+                    )
+            )
+        }
+    )
 
-    return sortPrices(filtered)
+    return sortPrices(
+        filtered
+    )
 })
 
 /* ==========================================================
- * ЛОКАЛЬНАЯ ПАГИНАЦИЯ
+ * FRONTEND PAGINATION
  * ========================================================== */
 
-/** Разбиение списка по страницам */
 const paginatedPrices = computed(() => {
-    const per = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * per
+    const per =
+        Number(
+            itemsPerPage.value
+            || 10
+        )
 
-    return filteredPrices.value.slice(start, start + per)
+    const start =
+        (
+            currentPage.value
+            - 1
+        )
+        * per
+
+    return filteredPrices.value.slice(
+        start,
+        start + per
+    )
 })
 
-/**
- * Итоговый список:
- * frontend → локальная пагинация
- * server → данные сервера
- */
 const displayedPrices = computed(() => {
     return props.useServerProcessing
         ? pricesList.value
         : paginatedPrices.value
 })
 
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+    ],
+    () => {
+        currentPage.value = 1
+    }
+)
 
 /* ==========================================================
- * УДАЛЕНИЕ
+ * DELETE
  * ========================================================== */
 
-/** Состояние модального окна удаления */
-const showConfirmDeleteModal = ref(false)
+const showConfirmDeleteModal =
+    ref(false)
 
-/** Удаляемая цена курса */
-const priceToDelete = ref(null)
+const priceToDelete =
+    ref(null)
 
-/** Открытие окна подтверждения удаления */
 const confirmDelete = (priceOrId) => {
-    if (typeof priceOrId === 'object') {
-        priceToDelete.value = priceOrId
+    if (
+        typeof priceOrId === 'object'
+    ) {
+        priceToDelete.value =
+            priceOrId
     } else {
-        priceToDelete.value = displayedPrices.value.find(price => price.id === priceOrId) || {
-            id: priceOrId,
-        }
+        priceToDelete.value =
+            displayedPrices.value.find(
+                price =>
+                    Number(price.id)
+                    === Number(priceOrId)
+            )
+            || {
+                id: priceOrId,
+            }
     }
 
-    showConfirmDeleteModal.value = true
+    showConfirmDeleteModal.value =
+        true
 }
 
-/** Закрытие окна удаления */
 const closeModal = () => {
-    showConfirmDeleteModal.value = false
-    priceToDelete.value = null
+    showConfirmDeleteModal.value =
+        false
+
+    priceToDelete.value =
+        null
 }
 
-/** Удаление цены курса */
 const deleteCoursePrice = () => {
-    if (!priceToDelete.value?.id) return
+    if (
+        !priceToDelete.value?.id
+    ) {
+        return
+    }
 
-    const idToDelete = priceToDelete.value.id
-    const titleToDelete = getDeleteTitle(priceToDelete.value)
+    const idToDelete =
+        priceToDelete.value.id
 
-    router.delete(route('admin.schoolCoursePrices.destroy', {
-        schoolCoursePrice: idToDelete,
-    }), {
-        preserveScroll: true,
-        preserveState: false,
+    const titleToDelete =
+        getDeleteTitle(
+            priceToDelete.value
+        )
 
-        onSuccess: () => {
-            toast.success(`Цена курса "${titleToDelete || 'ID: ' + idToDelete}" удалена.`)
-        },
+    router.delete(
+        route(
+            'admin.schoolCoursePrices.destroy',
+            {
+                schoolCoursePrice:
+                idToDelete,
+            }
+        ),
+        {
+            preserveScroll: true,
+            preserveState: false,
 
-        onError: (errors) => {
-            const firstKey = Object.keys(errors || {})[0]
-            const errorMsg = errors?.general || errors?.[firstKey] || 'Ошибка при удалении цены курса.'
+            onSuccess: () => {
+                toast.success(
+                    `Цена курса "${
+                        titleToDelete
+                        || `ID: ${idToDelete}`
+                    }" удалена.`
+                )
+            },
 
-            toast.error(`${errorMsg} ID: ${idToDelete}`)
-        },
+            onError: (errors) => {
+                const firstKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
 
-        onFinish: () => closeModal(),
-    })
+                const errorMsg =
+                    errors?.general
+                    || errors?.[firstKey]
+                    || 'Ошибка при удалении цены курса.'
+
+                toast.error(
+                    `${errorMsg} ID: ${idToDelete}`
+                )
+            },
+
+            onFinish: () => {
+                closeModal()
+            },
+        }
+    )
 }
 
 /* ==========================================================
- * ЛОКАЛЬНОЕ ОБНОВЛЕНИЕ UI
+ * LOCAL PATCH
  * ========================================================== */
 
-/** Обновление записи локально без полной перезагрузки страницы */
-const patchPrice = (priceId, payload) => {
-    const index = localPrices.value.findIndex(price => price.id === priceId)
+const patchPrice = (
+    priceId,
+    payload
+) => {
+    const index =
+        localPrices.value.findIndex(
+            price =>
+                Number(price.id)
+                === Number(priceId)
+        )
 
-    if (index !== -1) {
-        localPrices.value[index] = {
-            ...localPrices.value[index],
-            ...payload,
-        }
+    if (index === -1) {
+        return
+    }
+
+    localPrices.value[index] = {
+        ...localPrices.value[index],
+        ...payload,
     }
 }
 
 /* ==========================================================
- * МАССОВЫЕ ОПЕРАЦИИ
+ * BULK SELECT
  * ========================================================== */
 
-/** Выбранные элементы */
 const selectedPrices = ref([])
 
-/** Выбор или снятие выбора всех элементов */
 const toggleAll = (payload) => {
-    const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? displayedPrices.value.map(price => price.id)
+    const checked =
+        payload?.checked
+        ?? payload?.target?.checked
+        ?? false
+
+    const ids =
+        payload?.ids
+        ?? displayedPrices.value.map(
+            price => price.id
+        )
 
     if (checked) {
-        selectedPrices.value = [...new Set([...selectedPrices.value, ...ids])]
-    } else {
-        selectedPrices.value = selectedPrices.value.filter(id => !ids.includes(id))
+        selectedPrices.value = [
+            ...new Set([
+                ...selectedPrices.value,
+                ...ids,
+            ]),
+        ]
+
+        return
     }
+
+    selectedPrices.value =
+        selectedPrices.value.filter(
+            id =>
+                !ids.includes(id)
+        )
 }
 
-/** Выбор одного элемента */
 const toggleSelectPrice = (id) => {
-    const index = selectedPrices.value.indexOf(id)
+    const index =
+        selectedPrices.value.indexOf(
+            id
+        )
 
     if (index > -1) {
-        selectedPrices.value.splice(index, 1)
-    } else {
-        selectedPrices.value.push(id)
-    }
-}
+        selectedPrices.value.splice(
+            index,
+            1
+        )
 
-/** Массовое изменение активности */
-const bulkToggleActivity = (newActivity) => {
-    if (!selectedPrices.value.length) {
-        toast.warning('Выберите цены курсов для активации/деактивации')
         return
     }
 
-    const idsToUpdate = [...selectedPrices.value]
-
-    router.put(route('admin.actions.schoolCoursePrices.bulkUpdateActivity'), {
-        ids: idsToUpdate,
-        activity: newActivity,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
-
-        onSuccess: () => {
-            idsToUpdate.forEach(id => patchPrice(id, { activity: newActivity }))
-            selectedPrices.value = []
-            toast.success('Активность цен курсов массово обновлена')
-        },
-
-        onError: (errors) => {
-            const msg = errors?.ids || errors?.activity || errors?.general || 'Не удалось массово обновить активность'
-            toast.error(msg)
-        },
-    })
+    selectedPrices.value.push(
+        id
+    )
 }
 
-/** Массовое удаление */
+/* ==========================================================
+ * BULK ACTIVITY
+ * ========================================================== */
+
+const bulkToggleActivity = (
+    newActivity
+) => {
+    if (
+        !selectedPrices.value.length
+    ) {
+        toast.warning(
+            'Выберите цены курсов для активации/деактивации'
+        )
+
+        return
+    }
+
+    const idsToUpdate = [
+        ...selectedPrices.value,
+    ]
+
+    router.put(
+        route(
+            'admin.actions.schoolCoursePrices.bulkUpdateActivity'
+        ),
+        {
+            ids:
+            idsToUpdate,
+
+            activity:
+            newActivity,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                idsToUpdate.forEach(
+                    id =>
+                        patchPrice(
+                            id,
+                            {
+                                activity:
+                                newActivity,
+                            }
+                        )
+                )
+
+                selectedPrices.value =
+                    []
+
+                toast.success(
+                    'Активность цен курсов массово обновлена'
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.ids
+                    || errors?.activity
+                    || errors?.general
+                    || 'Не удалось массово обновить активность'
+                )
+            },
+        }
+    )
+}
+
+/* ==========================================================
+ * BULK DELETE
+ * ========================================================== */
+
 const bulkDestroy = () => {
-    if (!selectedPrices.value.length) {
-        toast.warning('Выберите цены курсов для удаления')
+    if (
+        !selectedPrices.value.length
+    ) {
+        toast.warning(
+            'Выберите цены курсов для удаления'
+        )
+
         return
     }
 
-    router.delete(route('admin.actions.schoolCoursePrices.bulkDestroy'), {
-        data: { ids: selectedPrices.value },
-        preserveScroll: true,
-        preserveState: false,
+    router.delete(
+        route(
+            'admin.actions.schoolCoursePrices.bulkDestroy'
+        ),
+        {
+            data: {
+                ids:
+                selectedPrices.value,
+            },
 
-        onSuccess: () => {
-            toast.success('Выбранные цены курсов удалены')
-            selectedPrices.value = []
-        },
+            preserveScroll: true,
+            preserveState: false,
 
-        onError: (errors) => {
-            const msg = errors?.ids || errors?.general || 'Не удалось массово удалить цены курсов'
-            toast.error(msg)
-        },
-    })
+            onSuccess: () => {
+                selectedPrices.value =
+                    []
+
+                toast.success(
+                    'Выбранные цены курсов удалены'
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.ids
+                    || errors?.general
+                    || 'Не удалось массово удалить цены курсов'
+                )
+            },
+        }
+    )
 }
 
-/** Обработка массовых действий */
-const handleBulkAction = (event) => {
-    const action = event.target.value
+/* ==========================================================
+ * BULK ACTION
+ * ========================================================== */
 
-    if (action === 'selectAll') {
-        toggleAll({ checked: true })
-    } else if (action === 'deselectAll') {
-        toggleAll({ checked: false })
-    } else if (action === 'activate') {
-        bulkToggleActivity(true)
-    } else if (action === 'deactivate') {
-        bulkToggleActivity(false)
-    } else if (action === 'delete') {
+const handleBulkAction = (event) => {
+    const action =
+        event.target.value
+
+    if (
+        action === 'selectAll'
+    ) {
+        toggleAll({
+            checked: true,
+        })
+    } else if (
+        action === 'deselectAll'
+    ) {
+        toggleAll({
+            checked: false,
+        })
+    } else if (
+        action === 'activate'
+    ) {
+        bulkToggleActivity(
+            true
+        )
+    } else if (
+        action === 'deactivate'
+    ) {
+        bulkToggleActivity(
+            false
+        )
+    } else if (
+        action === 'delete'
+    ) {
         bulkDestroy()
     }
 
-    event.target.value = ''
+    event.target.value =
+        ''
 }
 
 /* ==========================================================
- * ОПЕРАЦИИ НАД ОДНОЙ ЗАПИСЬЮ
+ * SINGLE ACTIVITY
  * ========================================================== */
 
-/** Переключение активности одной цены */
 const toggleActivity = (price) => {
-    const newActivity = !price.activity
-    const actionText = newActivity ? t('activated') : t('deactivated')
+    const newActivity =
+        !price.activity
 
-    router.put(route('admin.actions.schoolCoursePrices.updateActivity', {
-        schoolCoursePrice: price.id,
-    }), {
-        activity: newActivity,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
+    const actionText =
+        newActivity
+            ? t('activated')
+            : t('deactivated')
 
-        onSuccess: () => {
-            patchPrice(price.id, { activity: newActivity })
-            price.activity = newActivity
-            toast.success(`Цена курса "${getDeleteTitle(price) || 'ID: ' + price.id}" ${actionText}.`)
+    router.put(
+        route(
+            'admin.actions.schoolCoursePrices.updateActivity',
+            {
+                schoolCoursePrice:
+                price.id,
+            }
+        ),
+        {
+            activity:
+            newActivity,
         },
+        {
+            preserveScroll: true,
+            preserveState: true,
 
-        onError: (errors) => {
-            toast.error(errors?.activity || errors?.general || `Ошибка изменения активности ID: ${price.id}`)
-        },
-    })
+            onSuccess: () => {
+                patchPrice(
+                    price.id,
+                    {
+                        activity:
+                        newActivity,
+                    }
+                )
+
+                price.activity =
+                    newActivity
+
+                toast.success(
+                    `Цена курса "${
+                        getDeleteTitle(price)
+                        || `ID: ${price.id}`
+                    }" ${actionText}.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors?.activity
+                    || errors?.general
+                    || `Ошибка изменения активности ID: ${price.id}`
+                )
+            },
+        }
+    )
 }
 
-/** Обновление порядка сортировки drag&drop */
-const handleSortOrderUpdate = (orderedIds) => {
-    const startSort = (currentPage.value - 1) * itemsPerPage.value
+/* ==========================================================
+ * DRAG SORT
+ * ========================================================== */
 
-    const items = orderedIds.map((id, index) => ({
-        id,
-        sort: startSort + index + 1,
-    }))
+const handleSortOrderUpdate = (
+    orderedIds
+) => {
+    const startSort =
+        (
+            currentPage.value
+            - 1
+        )
+        * itemsPerPage.value
 
-    if (!items.length) return
+    const items =
+        orderedIds.map(
+            (id, index) => ({
+                id,
 
-    router.put(route('admin.actions.schoolCoursePrices.updateSortBulk'), {
-        items,
-    }, {
-        preserveScroll: true,
-        preserveState: true,
-
-        onSuccess: () => toast.success('Порядок цен курсов успешно обновлён.'),
-
-        onError: (errors) => {
-            console.error('Ошибка обновления сортировки цен курсов:', errors)
-            toast.error(errors?.items || errors?.general || 'Не удалось обновить порядок цен курсов.')
-
-            router.reload({
-                only: ['prices'],
-                preserveScroll: true,
+                sort:
+                    startSort
+                    + index
+                    + 1,
             })
+        )
+
+    if (!items.length) {
+        return
+    }
+
+    router.put(
+        route(
+            'admin.actions.schoolCoursePrices.updateSortBulk'
+        ),
+        {
+            items,
         },
-    })
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Порядок цен курсов успешно обновлён.'
+                )
+            },
+
+            onError: (errors) => {
+                console.error(
+                    'Ошибка обновления сортировки цен курсов:',
+                    errors
+                )
+
+                toast.error(
+                    errors?.items
+                    || errors?.general
+                    || 'Не удалось обновить порядок цен курсов.'
+                )
+
+                router.reload({
+                    only: [
+                        'prices',
+                    ],
+
+                    preserveScroll: true,
+                })
+            },
+        }
+    )
 }
 </script>
 
 <template>
     <AdminLayout :title="t('coursePrices')">
         <template #header>
-            <TitlePage>{{ t('coursePrices') }}</TitlePage>
+            <TitlePage>
+                {{ t('coursePrices') }}
+            </TitlePage>
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
                 class="p-4 bg-slate-50 dark:bg-slate-700
                        border border-blue-400 dark:border-blue-200
-                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                       overflow-hidden shadow-md shadow-gray-500
+                       dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
+                <!-- Header -->
                 <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.schoolCoursePrices.create')">
                         <template #icon>
@@ -696,6 +1258,7 @@ const handleSortOrderUpdate = (orderedIds) => {
                     />
                 </div>
 
+                <!-- Search -->
                 <SearchInput
                     v-if="pricesCount && !useServerProcessing"
                     v-model="searchQuery"
@@ -707,9 +1270,10 @@ const handleSortOrderUpdate = (orderedIds) => {
                     v-model="searchQuery"
                 />
 
+                <!-- Per page / Sort -->
                 <div
                     v-if="pricesCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                    class="flex justify-between items-center flex-col md:flex-row my-3 gap-3"
                 >
                     <ItemsPerPageSelect
                         v-if="!useServerProcessing"
@@ -725,23 +1289,29 @@ const handleSortOrderUpdate = (orderedIds) => {
 
                     <SortSelect
                         :sortParam="sortParam"
-                        @update:sortParam="val => sortParam = val"
+                        @update:sortParam="value => sortParam = value"
                     />
                 </div>
 
+                <!-- Count / Bulk / View -->
                 <div
                     v-if="pricesCount"
-                    class="flex justify-between items-center flex-col md:flex-row my-3"
+                    class="flex justify-between items-center flex-col md:flex-row my-3 gap-3"
                 >
                     <CountTable>
                         {{ pricesCount }}
                     </CountTable>
 
-                    <BulkActionSelect @change="handleBulkAction" />
+                    <BulkActionSelect
+                        @change="handleBulkAction"
+                    />
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
+                <!-- Top pagination -->
                 <div
                     v-if="pricesCount"
                     class="flex justify-center items-center flex-col md:flex-row mb-3"
@@ -760,6 +1330,7 @@ const handleSortOrderUpdate = (orderedIds) => {
                     />
                 </div>
 
+                <!-- Table -->
                 <CoursePriceTable
                     v-if="viewMode === 'table'"
                     :prices="displayedPrices"
@@ -771,6 +1342,7 @@ const handleSortOrderUpdate = (orderedIds) => {
                     @toggle-all="toggleAll"
                 />
 
+                <!-- Cards -->
                 <CoursePriceCardGrid
                     v-else
                     :prices="displayedPrices"
@@ -782,6 +1354,7 @@ const handleSortOrderUpdate = (orderedIds) => {
                     @toggle-all="toggleAll"
                 />
 
+                <!-- Bottom pagination -->
                 <div
                     v-if="pricesCount"
                     class="flex justify-center items-center flex-col md:flex-row mt-3"

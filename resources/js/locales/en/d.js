@@ -49,6 +49,7 @@ export default {
     disable: 'Disable',
     disabled: 'Disabled',
     disadvantages: 'Flaws',
+    discount: 'Discount',
     discountAmount: 'Discount amount',
     discountFixed: 'Fixed',
     discountNone: 'No discount',

@@ -10,8 +10,15 @@ import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue
 const { t } = useI18n()
 
 const props = defineProps({
-    subscriptionPlans: { type: Array, default: () => [] },
-    selectedPlans: { type: Array, default: () => [] },
+    subscriptionPlans: {
+        type: Array,
+        default: () => [],
+    },
+
+    selectedPlans: {
+        type: Array,
+        default: () => [],
+    },
 })
 
 const emit = defineEmits([
@@ -22,48 +29,81 @@ const emit = defineEmits([
     'toggle-all',
 ])
 
+/* ==========================================================
+ * LOCAL DATA
+ * ========================================================== */
+
 const localPlans = ref([])
 
 watch(
     () => props.subscriptionPlans,
-    (newVal) => {
-        localPlans.value = Array.isArray(newVal)
-            ? newVal.map((plan) => ({ ...plan }))
+    (plans) => {
+        localPlans.value = Array.isArray(plans)
+            ? plans.map(plan => ({ ...plan }))
             : []
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
+
+/* ==========================================================
+ * SELECT / DRAG
+ * ========================================================== */
 
 const allSelected = computed(() => {
     return localPlans.value.length > 0
-        && localPlans.value.every((plan) => props.selectedPlans.includes(plan.id))
+        && localPlans.value.every(plan =>
+            props.selectedPlans.includes(plan.id)
+        )
 })
 
 const handleDragEnd = () => {
-    emit('update-sort-order', localPlans.value.map((plan) => plan.id))
+    emit(
+        'update-sort-order',
+        localPlans.value.map(plan => plan.id)
+    )
 }
 
 const toggleAll = (event) => {
     emit('toggle-all', {
-        ids: localPlans.value.map((plan) => plan.id),
+        ids: localPlans.value.map(plan => plan.id),
         checked: event.target.checked,
     })
 }
 
-const getPrimaryImage = (plan) => {
-    if (!Array.isArray(plan.images) || !plan.images.length) {
-        return null
-    }
+/* ==========================================================
+ * RESOURCE HELPERS
+ * ========================================================== */
 
-    return [...plan.images].sort((a, b) => {
-        return Number(a.order ?? 0) - Number(b.order ?? 0)
-    })[0]
+const getPlanTitle = (plan) => {
+    return plan?.translation?.title
+        || `ID: ${plan?.id}`
+}
+
+const getPlanSubtitle = (plan) => {
+    return plan?.translation?.subtitle
+        || ''
+}
+
+const getPlanShort = (plan) => {
+    return plan?.translation?.short
+        || ''
+}
+
+const getPrimaryImage = (plan) => {
+    return plan?.primary_image
+        || plan?.images?.[0]
+        || null
 }
 
 const imageSrc = (plan) => {
     const image = getPrimaryImage(plan)
 
     return image?.webp_url
+        || image?.thumb_url
+        || image?.image_url
         || image?.url
         || '/storage/school/school_subscription_plan_images/default-image.png'
 }
@@ -72,20 +112,26 @@ const imageAlt = (plan) => {
     const image = getPrimaryImage(plan)
 
     return image?.alt
-        || plan.title
+        || getPlanTitle(plan)
         || t('defaultImageTitle')
 }
 
-const formatDate = (dateStr) => {
-    if (!dateStr) return '—'
+/* ==========================================================
+ * FORMATTERS
+ * ========================================================== */
 
-    const date = new Date(dateStr)
-
-    if (Number.isNaN(date.getTime())) {
+const formatDate = (date) => {
+    if (!date) {
         return '—'
     }
 
-    return date.toLocaleDateString('ru-RU', {
+    const value = new Date(date)
+
+    if (Number.isNaN(value.getTime())) {
+        return '—'
+    }
+
+    return value.toLocaleDateString('ru-RU', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -100,9 +146,13 @@ const billingPeriodLabel = (period) => {
         year: 'years',
     }
 
-    const key = map[String(period || '').toLowerCase()]
+    const key = map[
+        String(period || '').toLowerCase()
+        ]
 
-    return key ? t(key) : '—'
+    return key
+        ? t(key)
+        : '—'
 }
 
 const periodLabel = (plan) => {
@@ -122,6 +172,7 @@ const priceLabel = (plan) => {
         class="relative rounded-sm border border-slate-400 bg-white shadow-lg
                dark:border-slate-500 dark:bg-slate-700"
     >
+        <!-- Selection -->
         <div
             class="flex flex-col gap-2 border-b border-slate-400 px-3 py-2
                    dark:border-slate-500 sm:flex-row sm:items-center sm:justify-between"
@@ -136,6 +187,7 @@ const priceLabel = (plan) => {
                        text-slate-600 dark:text-slate-200"
             >
                 <span>{{ t('selectAll') }}</span>
+
                 <input
                     type="checkbox"
                     class="rounded border-slate-400"
@@ -155,12 +207,13 @@ const priceLabel = (plan) => {
                 @end="handleDragEnd"
             >
                 <template #item="{ element: plan }">
-                    <div
+                    <article
                         class="relative flex h-full flex-col overflow-hidden rounded-md
                                border border-slate-400 bg-slate-50/70 shadow-sm transition-shadow
                                duration-150 hover:shadow-md dark:border-slate-500 dark:bg-slate-800/80"
                     >
-                        <div
+                        <!-- Header -->
+                        <header
                             class="flex items-center justify-between border-b border-dashed
                                    border-slate-400 px-2 py-1 dark:border-slate-500"
                         >
@@ -176,27 +229,27 @@ const priceLabel = (plan) => {
                                             d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
                                     </svg>
                                 </button>
+
                                 <div
-                                    class="rounded-sm border border-gray-400
-                                           bg-slate-200 px-1.5 py-0.5
-                                           text-[10px] font-semibold
-                                           text-slate-800 dark:bg-slate-700
-                                           dark:text-blue-100"
+                                    class="rounded-sm border border-gray-400 bg-slate-200
+                                           px-1.5 py-0.5 text-[10px] font-semibold
+                                           text-slate-800 dark:bg-slate-700 dark:text-blue-100"
                                     :title="`Sort: ${plan.sort ?? '—'}`"
                                 >
                                     ID: {{ plan.id }}
                                 </div>
                             </div>
+
                             <div class="flex items-center space-x-2">
                                 <span
-                                    class="rounded-sm border border-gray-400
-                                           bg-teal-100 px-1.5 py-0.5
-                                           text-[10px] font-bold text-teal-700
+                                    class="rounded-sm border border-gray-400 bg-teal-100
+                                           px-1.5 py-0.5 text-[10px] font-bold text-teal-700
                                            dark:bg-teal-900/50 dark:text-teal-300"
                                     :title="t('price')"
                                 >
                                     {{ priceLabel(plan) }}
                                 </span>
+
                                 <input
                                     type="checkbox"
                                     class="rounded border-slate-400"
@@ -204,77 +257,113 @@ const priceLabel = (plan) => {
                                     @change="emit('toggle-select', plan.id)"
                                 >
                             </div>
-                        </div>
+                        </header>
+
+                        <!-- Image -->
                         <div class="relative h-32 w-full bg-slate-200 dark:bg-slate-900">
                             <img
                                 :src="imageSrc(plan)"
                                 :alt="imageAlt(plan)"
                                 class="h-full w-full object-cover"
                             >
+
+                            <div
+                                v-if="plan.images_count > 1"
+                                class="absolute right-1 top-1 rounded-sm border border-gray-400
+                                       bg-slate-900/70 px-1.5 py-0.5 text-[9px] font-semibold text-white"
+                                :title="t('images')"
+                            >
+                                {{ plan.images_count }}
+                            </div>
                         </div>
+
+                        <!-- Body -->
                         <div class="flex flex-1 flex-col px-3 py-2">
                             <div
                                 class="line-clamp-2 text-center text-sm font-semibold
                                        text-blue-700 dark:text-blue-200"
-                                :title="plan.subtitle || plan.title"
+                                :title="getPlanSubtitle(plan) || getPlanTitle(plan)"
                             >
-                                {{ plan.title || '—' }}
+                                {{ getPlanTitle(plan) }}
                             </div>
+
                             <div class="text-center text-[9px] text-slate-500 dark:text-slate-300">
                                 {{ plan.slug || '—' }}
                             </div>
+
                             <div
-                                v-if="plan.subtitle"
+                                v-if="getPlanSubtitle(plan)"
                                 class="text-center text-[11px] font-semibold
                                        text-gray-700 dark:text-gray-300"
                             >
-                                {{ plan.subtitle }}
+                                {{ getPlanSubtitle(plan) }}
                             </div>
+
                             <div
-                                v-if="plan.short"
-                                class="my-1 border border-dashed border-gray-400 text-center
-                                       text-[11px] text-gray-500 dark:text-gray-400"
+                                v-if="getPlanShort(plan)"
+                                class="my-1 border border-dashed border-gray-400 px-1 py-1
+                                       text-center text-[11px] text-gray-500 dark:text-gray-400"
                             >
-                                {{ plan.short }}
+                                {{ getPlanShort(plan) }}
                             </div>
-                            <div class="mt-1 flex flex-wrap justify-center gap-1
-                                        text-[10px] font-semibold">
+
+                            <!-- Period -->
+                            <div class="mt-1 flex flex-wrap justify-center gap-1 text-[10px] font-semibold">
                                 <span
-                                    class="rounded-sm border border-gray-400
-                                           bg-teal-100 dark:bg-teal-900 px-2 py-0.5
+                                    class="rounded-sm border border-gray-400 bg-teal-100
+                                           dark:bg-teal-900 px-2 py-0.5
                                            text-teal-700 dark:text-teal-300"
                                 >
-                                    {{ t('period') }} - {{ periodLabel(plan) }}
+                                    {{ t('period') }}:
+                                    {{ periodLabel(plan) }}
                                 </span>
+
                                 <span
-                                    class="rounded-sm border border-gray-400
-                                           bg-fuchsia-100 dark:bg-fuchsia-900 px-2 py-0.5
+                                    class="rounded-sm border border-gray-400 bg-fuchsia-100
+                                           dark:bg-fuchsia-900 px-2 py-0.5
                                            text-fuchsia-700 dark:text-fuchsia-300"
                                 >
-                                    {{ t('trial') }}: {{ plan.trial_days ?? 0 }} {{ t('days') }}
+                                    {{ t('trial') }}:
+                                    {{ plan.trial_days ?? 0 }} {{ t('days') }}
+                                </span>
+
+                                <span
+                                    class="rounded-sm border border-gray-400 bg-cyan-100
+                                           dark:bg-cyan-900 px-2 py-0.5
+                                           text-cyan-700 dark:text-cyan-300"
+                                >
+                                    {{ t('autoRenew') }}:
+                                    {{ plan.auto_renew ? t('yes') : t('no') }}
                                 </span>
                             </div>
+
+                            <!-- Dates -->
                             <div class="mt-2 text-center text-[11px]">
                                 <div class="font-semibold">
                                     <span class="text-slate-700 dark:text-slate-300">
                                         {{ t('publishedAt') }}:
                                     </span>
+
                                     <span class="text-yellow-700 dark:text-yellow-300">
                                         {{ formatDate(plan.published_at) }}
                                     </span>
                                 </div>
+
                                 <div>
                                     <span class="text-slate-700 dark:text-slate-300">
                                         {{ t('shortStarted') }}:
                                     </span>
+
                                     <span class="font-semibold text-teal-700 dark:text-teal-300">
                                         {{ formatDate(plan.available_from) }}
                                     </span>
                                 </div>
+
                                 <div>
                                     <span class="text-slate-700 dark:text-slate-300">
                                         {{ t('shortExpires') }}:
                                     </span>
+
                                     <span class="font-semibold text-sky-700 dark:text-sky-300">
                                         {{ formatDate(plan.available_until) }}
                                     </span>
@@ -282,7 +371,8 @@ const priceLabel = (plan) => {
                             </div>
                         </div>
 
-                        <div
+                        <!-- Footer -->
+                        <footer
                             class="flex items-center justify-center border-t border-dashed
                                    border-slate-400 px-3 py-2 dark:border-slate-500"
                         >
@@ -294,20 +384,25 @@ const priceLabel = (plan) => {
                                 />
 
                                 <IconEdit
-                                    :href="route('admin.schoolSubscriptionPlans.edit', plan.id)"
+                                    :href="route('admin.schoolSubscriptionPlans.edit', {
+                                        schoolSubscriptionPlan: plan.id,
+                                    })"
                                 />
 
                                 <DeleteIconButton
-                                    @delete="emit('delete', plan.id, plan.title)"
+                                    @delete="emit('delete', plan)"
                                 />
                             </div>
-                        </div>
-                    </div>
+                        </footer>
+                    </article>
                 </template>
             </draggable>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

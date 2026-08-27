@@ -9,69 +9,201 @@ class SchoolSubscriptionPlanResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        /**
+         * Для Edit Controller загружает
+         * все translations.
+         *
+         * Текущий перевод определяем
+         * только из уже загруженной
+         * коллекции translations.
+         *
+         * Никакого обращения
+         * к relation translation().
+         */
+        $translation = $this->relationLoaded('translations')
+            ? (
+            $this->translations->firstWhere(
+                'locale',
+                $locale
+            )
+                ?: $this->translations->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+                ?: $this->translations->first()
+            )
+            : null;
+
+        /**
+         * Связь images() уже отсортирована
+         * по school_subscription_plan_has_images.order.
+         *
+         * Поэтому первый элемент является
+         * главным изображением.
+         *
+         * Controller обязан загрузить:
+         * images.media
+         */
+        $primaryImage = $this->relationLoaded('images')
+            ? $this->images->first()
+            : null;
+
         return [
-            'id' => $this->id,
+            'id' =>
+                $this->id,
 
-            'sort' => (int) $this->sort,
-            'activity' => (bool) $this->activity,
+            /**
+             * Основные поля.
+             */
+            'sort' =>
+                (int) $this->sort,
 
-            'slug' => $this->slug,
+            'activity' =>
+                (bool) $this->activity,
 
-            'title' => $this->translation?->title,
-            'subtitle' => $this->translation?->subtitle,
-            'short' => $this->translation?->short,
-            'description' => $this->translation?->description,
+            'slug' =>
+                $this->slug,
 
-            'meta_title' => $this->translation?->meta_title,
-            'meta_keywords' => $this->translation?->meta_keywords,
-            'meta_desc' => $this->translation?->meta_desc,
+            /**
+             * Текущий перевод.
+             *
+             * Только из уже загруженной
+             * коллекции translations.
+             */
+            'translation' => $translation
+                ? new SchoolSubscriptionPlanTranslationResource(
+                    $translation
+                )
+                : null,
 
-            'published_at' => optional($this->published_at)->toIso8601String(),
-            'available_from' => optional($this->available_from)->toIso8601String(),
-            'available_until' => optional($this->available_until)->toIso8601String(),
+            /**
+             * Все переводы нужны Edit.
+             */
+            'translations' =>
+                SchoolSubscriptionPlanTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
 
-            'billing_period' => $this->billing_period,
-            'interval' => (int) $this->interval,
-            'currency_id' => $this->currency_id,
-            'price' => (string) $this->price,
-            'trial_days' => (int) $this->trial_days,
-            'auto_renew' => (bool) $this->auto_renew,
+            /**
+             * Публикация и доступность.
+             */
+            'published_at' =>
+                $this->published_at?->toISOString(),
 
-            'provider' => $this->provider,
-            'provider_ref' => $this->provider_ref,
-            'provider_payload' => $this->provider_payload,
+            'available_from' =>
+                $this->available_from?->toISOString(),
 
-            'config' => $this->config,
+            'available_until' =>
+                $this->available_until?->toISOString(),
 
-            'currency' => $this->whenLoaded('currency', fn () => [
-                'id' => $this->currency->id,
-                'code' => $this->currency->code,
-                'name' => $this->currency->name,
-                'symbol' => $this->currency->symbol,
-            ]),
+            /**
+             * Тариф.
+             */
+            'billing_period' =>
+                $this->billing_period,
 
-            'primary_image' => $this->whenLoaded(
-                'images',
-                fn () => $this->primary_image
-                    ? new SchoolSubscriptionPlanImageResource($this->primary_image)
-                    : null
+            'interval' =>
+                (int) $this->interval,
+
+            'currency_id' =>
+                $this->currency_id,
+
+            'price' =>
+                (string) $this->price,
+
+            'trial_days' =>
+                (int) $this->trial_days,
+
+            'auto_renew' =>
+                (bool) $this->auto_renew,
+
+            /**
+             * Провайдер.
+             */
+            'provider' =>
+                $this->provider,
+
+            'provider_ref' =>
+                $this->provider_ref,
+
+            'provider_payload' =>
+                $this->provider_payload,
+
+            /**
+             * Дополнительная конфигурация.
+             */
+            'config' =>
+                $this->config,
+
+            /**
+             * Валюта.
+             *
+             * Currency не переводимая сущность.
+             */
+            'currency' => $this->whenLoaded(
+                'currency',
+                fn () => [
+                    'id' =>
+                        $this->currency->id,
+
+                    'code' =>
+                        $this->currency->code,
+
+                    'name' =>
+                        $this->currency->name,
+
+                    'symbol' =>
+                        $this->currency->symbol,
+                ]
             ),
 
-            'images' => SchoolSubscriptionPlanImageResource::collection(
-                $this->whenLoaded('images')
-            ),
+            /**
+             * Главное изображение.
+             *
+             * Controller обязан загрузить:
+             * images.media
+             */
+            'primary_image' => $primaryImage
+                ? new SchoolSubscriptionPlanImageResource(
+                    $primaryImage
+                )
+                : null,
 
-            'translations' => SchoolSubscriptionPlanTranslationResource::collection(
-                $this->whenLoaded('translations')
-            ),
+            /**
+             * Все изображения.
+             */
+            'images' =>
+                SchoolSubscriptionPlanImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
 
+            /**
+             * Counts.
+             */
             'images_count' => $this->when(
                 isset($this->images_count),
                 fn () => (int) $this->images_count
             ),
 
-            'created_at' => optional($this->created_at)->toIso8601String(),
-            'updated_at' => optional($this->updated_at)->toIso8601String(),
+            /**
+             * Системные даты.
+             */
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

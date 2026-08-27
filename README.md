@@ -122,6 +122,7 @@
 `docker exec -it mark-php-app php artisan optimize:clear`  <br>
 `docker exec -it mark-php-app php artisan view:clear`  <br>
 `docker exec mark-php-app sh -c "> storage/logs/laravel.log"`  <br>
+`docker exec mark-php-app sh -c "php artisan cache:clear && > storage/logs/laravel.log"`  <br>
 `docker restart mark-php-app`  <br>
 `docker exec -it mark-php-app php artisan route:list`  <br>
 `mkdir -p app/Services`  <br>

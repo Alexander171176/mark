@@ -5,7 +5,7 @@
  *
  * Редактирование тарифного плана школы
  */
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -165,7 +165,6 @@ const currentTranslation = computed(() => {
 const pageTitle = computed(() => {
     return currentTranslation.value.title ||
         props.subscriptionPlan.translation?.title ||
-        props.subscriptionPlan.title ||
         `ID: ${props.subscriptionPlan.id}`
 })
 
@@ -192,25 +191,15 @@ const currencyOptions = computed(() =>
     })
 )
 
-// Выбранная валюта
-const selectedCurrency = ref(null)
-
-// Инициализация выбранной валюты из данных тарифа
-watch(
-    currencyOptions,
-    (options) => {
-        const currencyId = props.subscriptionPlan.currency_id ?? props.subscriptionPlan.currency?.id
-
-        selectedCurrency.value = options.find(
-            item => Number(item.id) === Number(currencyId)
-        ) || null
+// Выбранная валюта.
+// Единственный источник истины — form.currency_id.
+const selectedCurrency = computed({
+    get: () => currencyOptions.value.find(
+        item => Number(item.id) === Number(form.currency_id)
+    ) || null,
+    set: (value) => {
+        form.currency_id = value?.id ?? null
     },
-    { immediate: true }
-)
-
-// Синхронизация выбранной валюты с формой
-watch(selectedCurrency, (value) => {
-    form.currency_id = value?.id ?? null
 })
 
 // Существующие изображения тарифного плана
@@ -360,7 +349,9 @@ const submitForm = () => {
                 ? null
                 : Number(data.trial_days),
 
-            currency_id: selectedCurrency.value?.id ?? null,
+            currency_id: data.currency_id === '' || data.currency_id === null
+                ? null
+                : Number(data.currency_id),
 
             published_at: toDateOrNull(data.published_at),
             available_from: toDateOrNull(data.available_from),
@@ -676,7 +667,7 @@ const submitForm = () => {
                                     </LabelInput>
 
                                     <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                        {{ (currentTranslation.title || '').length }} / 255 {{ t('characters') }}
+                                        {{ (currentTranslation.title || '').length }} / 255 {{ t('characters') }}
                                     </div>
                                 </div>
 
@@ -707,7 +698,7 @@ const submitForm = () => {
                             <div class="mb-3 flex flex-col items-start">
                                 <LabelInput
                                     for="short"
-                                :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
+                                    :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
                                 />
 
                                 <MetaDescTextarea v-model="currentTranslation.short"
@@ -773,7 +764,7 @@ const submitForm = () => {
                                 <div class="mb-3 flex flex-col items-start">
                                     <LabelInput
                                         for="meta_keywords"
-                                    :value="`${t('metaKeywords')} [${activeLocale.toUpperCase()}]`"
+                                        :value="`${t('metaKeywords')} [${activeLocale.toUpperCase()}]`"
                                     />
 
                                     <MetaDescTextarea
@@ -788,7 +779,7 @@ const submitForm = () => {
                                 <div class="mb-3 flex flex-col items-start">
                                     <LabelInput
                                         for="meta_desc"
-                                :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
+                                        :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
                                     />
 
                                     <MetaDescTextarea

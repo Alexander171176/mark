@@ -8,7 +8,7 @@
  * - локальный поиск/сортировка/пагинация
  * - серверный поиск/сортировка/пагинация
  */
-import { defineProps, ref, watch, computed } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { router, usePage } from '@inertiajs/vue3'
@@ -36,7 +36,7 @@ import CompanyCardGrid from '@/Components/Admin/Market/MarketCompany/View/Compan
 /** Локализация и сервисы */
 const { t, locale } = useI18n()
 const toast = useToast()
-const page = usePage()
+const inertiaPage = usePage()
 
 /** Входные параметры страницы */
 const props = defineProps({
@@ -60,64 +60,119 @@ const props = defineProps({
 
 /** Проверка роли администратора */
 const isAdmin = computed(() => {
-    const roles = page.props?.auth?.user?.roles || []
+    const roles = inertiaPage.props?.auth?.user?.roles || []
+
     return roles.some((role) => role?.name === 'admin')
 })
 
-/** Получение локализованных данных компании */
-const getCompanyTranslation = (company) => company?.translation || {}
+/** Название компании */
+const getCompanyTitle = (company) => {
+    return company?.translation?.title
+        || company?.legal_name
+        || `ID: ${company?.id}`
+}
 
-/** Получение заголовка компании */
-const getCompanyTitle = (company) => getCompanyTranslation(company)?.title || company?.legal_name || `ID: ${company?.id}`
+/** Нормализация строки */
+const normalize = (value) => {
+    return (value ?? '')
+        .toString()
+        .trim()
+        .toLowerCase()
+}
 
-/** Получение краткого описания */
-const getCompanyShort = (company) => getCompanyTranslation(company)?.short || ''
+/** Нормализация числа */
+const safeNumber = (value) => {
+    const number = Number(value)
 
-/** Получение полного описания */
-const getCompanyDescription = (company) => getCompanyTranslation(company)?.description || ''
+    return Number.isFinite(number)
+        ? number
+        : 0
+}
 
-/** Нормализация строк */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+/** Нормализация даты */
+const safeDate = (value) => {
+    if (!value) return 0
+
+    const timestamp = new Date(value).getTime()
+
+    return Number.isFinite(timestamp)
+        ? timestamp
+        : 0
+}
 
 /** Нормализация статуса модерации */
 const moderationNum = (value) => {
-    const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+    return safeNumber(value)
+}
+
+/** Сравнение строк */
+const compareStrings = (a, b) => {
+    return normalize(a).localeCompare(
+        normalize(b),
+        locale.value
+    )
 }
 
 /** Режим отображения списка */
-const viewMode = ref(localStorage.getItem('admin_view_mode_market_companies') || 'cards')
+const viewMode = ref(
+    localStorage.getItem('admin_view_mode_market_companies')
+    || 'cards'
+)
 
 /** Сохранение режима отображения */
 watch(viewMode, (value) => {
-    localStorage.setItem('admin_view_mode_market_companies', value)
+    localStorage.setItem(
+        'admin_view_mode_market_companies',
+        value
+    )
 })
 
 /** Количество элементов на странице */
-const itemsPerPage = ref(props.adminMarketCompaniesPerPage || 6)
+const itemsPerPage = ref(
+    props.adminMarketCompaniesPerPage || 6
+)
 
 /** Обновление количества элементов */
 watch(itemsPerPage, (newVal) => {
     router.put(
         route('admin.settings.updateAdminCountMarketCompanies'),
-        { value: newVal },
+        {
+            value: newVal,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} компаний на странице.`),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва компаний.'),
+
+            onSuccess: () => {
+                toast.info(
+                    `Показ ${newVal} компаний на странице.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors.value
+                    || 'Ошибка обновления кол-ва компаний.'
+                )
+            },
         }
     )
 })
 
 /** Текущая сортировка */
-const sortParam = ref(props.sortParam || props.adminMarketCompaniesDefaultSort || 'idDesc')
+const sortParam = ref(
+    props.sortParam
+    || props.adminMarketCompaniesDefaultSort
+    || 'idDesc'
+)
 
 /** Обновление сортировки */
 watch(sortParam, (newVal) => {
     router.put(
         route('admin.settings.updateAdminSortMarketCompanies'),
-        { value: newVal },
+        {
+            value: newVal,
+        },
         {
             preserveScroll: true,
             preserveState: true,
@@ -127,7 +182,11 @@ watch(sortParam, (newVal) => {
                     router.get(
                         window.location.pathname,
                         {
-                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                            ...Object.fromEntries(
+                                new URLSearchParams(
+                                    window.location.search
+                                )
+                            ),
                             sort: newVal || undefined,
                             page: undefined,
                         },
@@ -139,11 +198,16 @@ watch(sortParam, (newVal) => {
                     )
                 }
 
-                toast.info('Сортировка компаний успешно изменена')
+                toast.info(
+                    'Сортировка компаний успешно изменена'
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления сортировки компаний.')
+                toast.error(
+                    errors.value
+                    || 'Ошибка обновления сортировки компаний.'
+                )
             },
         }
     )
@@ -152,7 +216,7 @@ watch(sortParam, (newVal) => {
 /** Локальный список компаний */
 const localCompanies = ref([])
 
-/** Нормализация списка компаний */
+/** Нормализация ResourceCollection / paginator */
 const companiesList = computed(() => {
     if (Array.isArray(props.companies)) {
         return props.companies
@@ -177,9 +241,14 @@ const companiesList = computed(() => {
 watch(
     companiesList,
     (newVal) => {
-        localCompanies.value = JSON.parse(JSON.stringify(newVal || []))
+        localCompanies.value = JSON.parse(
+            JSON.stringify(newVal || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
 /** Модальное окно удаления */
@@ -191,10 +260,16 @@ const companyToDeleteTitle = ref('')
 const confirmDelete = (companyOrId, title = null) => {
     if (typeof companyOrId === 'object') {
         companyToDeleteId.value = companyOrId.id
-        companyToDeleteTitle.value = title || getCompanyTitle(companyOrId)
+
+        companyToDeleteTitle.value =
+            title
+            || getCompanyTitle(companyOrId)
     } else {
         companyToDeleteId.value = companyOrId
-        companyToDeleteTitle.value = title || `ID: ${companyOrId}`
+
+        companyToDeleteTitle.value =
+            title
+            || `ID: ${companyOrId}`
     }
 
     showConfirmDeleteModal.value = true
@@ -209,32 +284,60 @@ const closeModal = () => {
 
 /** Удаление компании */
 const deleteCompany = () => {
-    if (companyToDeleteId.value === null) return
+    if (companyToDeleteId.value === null) {
+        return
+    }
 
     const idToDelete = companyToDeleteId.value
     const titleToDelete = companyToDeleteTitle.value
 
-    router.delete(route('admin.marketCompanies.destroy', { marketCompany: idToDelete }), {
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => {
-            toast.success(`Компания "${titleToDelete || 'ID: ' + idToDelete}" удалена.`)
-        },
-        onError: (errors) => {
-            const errorKey = Object.keys(errors)[0]
-            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Компания: ${titleToDelete || 'ID: ' + idToDelete})`)
-        },
-        onFinish: () => closeModal(),
-    })
+    router.delete(
+        route(
+            'admin.marketCompanies.destroy',
+            {
+                marketCompany: idToDelete,
+            }
+        ),
+        {
+            preserveScroll: true,
+            preserveState: false,
+
+            onSuccess: () => {
+                toast.success(
+                    `Компания "${titleToDelete || 'ID: ' + idToDelete}" удалена.`
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey = Object.keys(errors)[0]
+
+                const errorMsg =
+                    errors.general
+                    || errors[errorKey]
+                    || 'Произошла ошибка при удалении.'
+
+                toast.error(
+                    `${errorMsg} (Компания: ${titleToDelete || 'ID: ' + idToDelete})`
+                )
+            },
+
+            onFinish: () => {
+                closeModal()
+            },
+        }
+    )
 }
 
 /** Локальное обновление компании */
 const patchLocalCompany = (companyId, callback) => {
-    const index = localCompanies.value.findIndex((company) => company.id === companyId)
+    const index = localCompanies.value.findIndex(
+        (company) => company.id === companyId
+    )
 
     if (index !== -1) {
-        callback(localCompanies.value[index])
+        callback(
+            localCompanies.value[index]
+        )
     }
 }
 
@@ -242,23 +345,44 @@ const patchLocalCompany = (companyId, callback) => {
 const toggleActivity = (company) => {
     const newActivity = !company.activity
     const title = getCompanyTitle(company)
-    const actionText = newActivity ? t('activated') : t('deactivated')
+
+    const actionText = newActivity
+        ? t('activated')
+        : t('deactivated')
 
     router.put(
-        route('admin.actions.marketCompanies.updateActivity', { marketCompany: company.id }),
-        { activity: newActivity },
+        route(
+            'admin.actions.marketCompanies.updateActivity',
+            {
+                marketCompany: company.id,
+            }
+        ),
+        {
+            activity: newActivity,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                patchLocalCompany(company.id, (node) => {
-                    node.activity = newActivity
-                })
 
-                toast.success(`Компания "${title}" ${actionText}.`)
+            onSuccess: () => {
+                patchLocalCompany(
+                    company.id,
+                    (node) => {
+                        node.activity = newActivity
+                    }
+                )
+
+                toast.success(
+                    `Компания "${title}" ${actionText}.`
+                )
             },
+
             onError: (errors) => {
-                toast.error(errors.activity || errors.general || `Ошибка изменения активности для "${title}".`)
+                toast.error(
+                    errors.activity
+                    || errors.general
+                    || `Ошибка изменения активности для "${title}".`
+                )
             },
         }
     )
@@ -270,20 +394,38 @@ const toggleLeft = (company) => {
     const title = getCompanyTitle(company)
 
     router.put(
-        route('admin.actions.marketCompanies.updateLeft', { marketCompany: company.id }),
-        { left: newLeft },
+        route(
+            'admin.actions.marketCompanies.updateLeft',
+            {
+                marketCompany: company.id,
+            }
+        ),
+        {
+            left: newLeft,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                patchLocalCompany(company.id, (node) => {
-                    node.left = newLeft
-                })
 
-                toast.success(`Позиция left для компании "${title}" обновлена.`)
+            onSuccess: () => {
+                patchLocalCompany(
+                    company.id,
+                    (node) => {
+                        node.left = newLeft
+                    }
+                )
+
+                toast.success(
+                    `Позиция left для компании "${title}" обновлена.`
+                )
             },
+
             onError: (errors) => {
-                toast.error(errors.left || errors.general || `Ошибка изменения left для "${title}".`)
+                toast.error(
+                    errors.left
+                    || errors.general
+                    || `Ошибка изменения left для "${title}".`
+                )
             },
         }
     )
@@ -295,20 +437,38 @@ const toggleMain = (company) => {
     const title = getCompanyTitle(company)
 
     router.put(
-        route('admin.actions.marketCompanies.updateMain', { marketCompany: company.id }),
-        { main: newMain },
+        route(
+            'admin.actions.marketCompanies.updateMain',
+            {
+                marketCompany: company.id,
+            }
+        ),
+        {
+            main: newMain,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                patchLocalCompany(company.id, (node) => {
-                    node.main = newMain
-                })
 
-                toast.success(`Позиция main для компании "${title}" обновлена.`)
+            onSuccess: () => {
+                patchLocalCompany(
+                    company.id,
+                    (node) => {
+                        node.main = newMain
+                    }
+                )
+
+                toast.success(
+                    `Позиция main для компании "${title}" обновлена.`
+                )
             },
+
             onError: (errors) => {
-                toast.error(errors.main || errors.general || `Ошибка изменения main для "${title}".`)
+                toast.error(
+                    errors.main
+                    || errors.general
+                    || `Ошибка изменения main для "${title}".`
+                )
             },
         }
     )
@@ -320,125 +480,493 @@ const toggleRight = (company) => {
     const title = getCompanyTitle(company)
 
     router.put(
-        route('admin.actions.marketCompanies.updateRight', { marketCompany: company.id }),
-        { right: newRight },
+        route(
+            'admin.actions.marketCompanies.updateRight',
+            {
+                marketCompany: company.id,
+            }
+        ),
+        {
+            right: newRight,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                patchLocalCompany(company.id, (node) => {
-                    node.right = newRight
-                })
 
-                toast.success(`Позиция right для компании "${title}" обновлена.`)
+            onSuccess: () => {
+                patchLocalCompany(
+                    company.id,
+                    (node) => {
+                        node.right = newRight
+                    }
+                )
+
+                toast.success(
+                    `Позиция right для компании "${title}" обновлена.`
+                )
             },
+
             onError: (errors) => {
-                toast.error(errors.right || errors.general || `Ошибка изменения right для "${title}".`)
+                toast.error(
+                    errors.right
+                    || errors.general
+                    || `Ошибка изменения right для "${title}".`
+                )
             },
         }
     )
 }
 
 /** Поиск и пагинация */
-const searchQuery = ref(props.search || '')
+const searchQuery = ref(
+    props.search || ''
+)
+
 const currentPage = ref(1)
 
-/** Сортировка компаний */
+/**
+ * Локальная сортировка.
+ *
+ * По возможности повторяет
+ * MarketCompany::scopeSortByParam().
+ */
 const sortCompanies = (companies) => {
     const list = (companies || []).slice()
 
-    if (sortParam.value === 'ownerNameAsc') return list.sort((a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
-    if (sortParam.value === 'ownerNameDesc') return list.sort((a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
-    if (sortParam.value === 'ownerEmailAsc') return list.sort((a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
-    if (sortParam.value === 'ownerEmailDesc') return list.sort((a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
+    switch (sortParam.value) {
+        case 'ownerNameAsc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    a?.owner?.name,
+                    b?.owner?.name
+                )
+            )
 
-    if (sortParam.value === 'idAsc') return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    if (sortParam.value === 'idDesc') return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-    if (sortParam.value === 'sortAsc') return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    if (sortParam.value === 'sortDesc') return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
+        case 'ownerNameDesc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    b?.owner?.name,
+                    a?.owner?.name
+                )
+            )
 
-    if (sortParam.value === 'titleAsc') return list.sort((a, b) => normalize(getCompanyTitle(a)).localeCompare(normalize(getCompanyTitle(b)), locale.value))
-    if (sortParam.value === 'titleDesc') return list.sort((a, b) => normalize(getCompanyTitle(b)).localeCompare(normalize(getCompanyTitle(a)), locale.value))
+        case 'ownerEmailAsc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    a?.owner?.email,
+                    b?.owner?.email
+                )
+            )
 
-    if (sortParam.value === 'legalNameAsc') return list.sort((a, b) => normalize(a?.legal_name).localeCompare(normalize(b?.legal_name), locale.value))
-    if (sortParam.value === 'legalNameDesc') return list.sort((a, b) => normalize(b?.legal_name).localeCompare(normalize(a?.legal_name), locale.value))
+        case 'ownerEmailDesc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    b?.owner?.email,
+                    a?.owner?.email
+                )
+            )
 
-    if (sortParam.value === 'companyTypeAsc') return list.sort((a, b) => normalize(a?.company_type).localeCompare(normalize(b?.company_type), locale.value))
-    if (sortParam.value === 'companyTypeDesc') return list.sort((a, b) => normalize(b?.company_type).localeCompare(normalize(a?.company_type), locale.value))
+        case 'idAsc':
+            return list.sort(
+                (a, b) =>
+                    safeNumber(a?.id)
+                    - safeNumber(b?.id)
+            )
 
-    if (sortParam.value === 'cityAsc') return list.sort((a, b) => normalize(a?.city).localeCompare(normalize(b?.city), locale.value))
-    if (sortParam.value === 'cityDesc') return list.sort((a, b) => normalize(b?.city).localeCompare(normalize(a?.city), locale.value))
+        case 'idDesc':
+            return list.sort(
+                (a, b) =>
+                    safeNumber(b?.id)
+                    - safeNumber(a?.id)
+            )
 
-    if (sortParam.value === 'activity') return list.filter((company) => !!company.activity)
-    if (sortParam.value === 'inactive') return list.filter((company) => !company.activity)
+        case 'sortAsc':
+            return list.sort(
+                (a, b) =>
+                    safeNumber(a?.sort)
+                    - safeNumber(b?.sort)
+                    || safeNumber(a?.id)
+                    - safeNumber(b?.id)
+            )
 
-    if (sortParam.value === 'left') return list.filter((company) => !!company.left)
-    if (sortParam.value === 'noLeft') return list.filter((company) => !company.left)
-    if (sortParam.value === 'main') return list.filter((company) => !!company.main)
-    if (sortParam.value === 'noMain') return list.filter((company) => !company.main)
-    if (sortParam.value === 'right') return list.filter((company) => !!company.right)
-    if (sortParam.value === 'noRight') return list.filter((company) => !company.right)
+        case 'sortDesc':
+            return list.sort(
+                (a, b) =>
+                    safeNumber(b?.sort)
+                    - safeNumber(a?.sort)
+                    || safeNumber(b?.id)
+                    - safeNumber(a?.id)
+            )
 
-    if (sortParam.value === 'publishedAtDesc') return list.sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0))
-    if (sortParam.value === 'publishedAtAsc') return list.sort((a, b) => new Date(a.published_at || 0) - new Date(b.published_at || 0))
+        case 'titleAsc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    getCompanyTitle(a),
+                    getCompanyTitle(b)
+                )
+            )
 
-    if (sortParam.value === 'views' || sortParam.value === 'viewsDesc') return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
-    if (sortParam.value === 'viewsAsc') return list.sort((a, b) => (a.views ?? 0) - (b.views ?? 0))
+        case 'titleDesc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    getCompanyTitle(b),
+                    getCompanyTitle(a)
+                )
+            )
 
-    if (sortParam.value === 'moderationPending') return list.filter((company) => moderationNum(company?.moderation_status) === 0)
-    if (sortParam.value === 'moderationApproved') return list.filter((company) => moderationNum(company?.moderation_status) === 1)
-    if (sortParam.value === 'moderationRejected') return list.filter((company) => moderationNum(company?.moderation_status) === 2)
+        case 'urlAsc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    a?.url,
+                    b?.url
+                )
+            )
 
-    if (sortParam.value === 'moderationStatusAsc') return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
-    if (sortParam.value === 'moderationStatusDesc') return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
+        case 'urlDesc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    b?.url,
+                    a?.url
+                )
+            )
 
-    return list
+        case 'legalNameAsc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    a?.legal_name,
+                    b?.legal_name
+                )
+            )
+
+        case 'legalNameDesc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    b?.legal_name,
+                    a?.legal_name
+                )
+            )
+
+        case 'companyTypeAsc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    a?.company_type,
+                    b?.company_type
+                )
+            )
+
+        case 'companyTypeDesc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    b?.company_type,
+                    a?.company_type
+                )
+            )
+
+        case 'cityAsc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    a?.city,
+                    b?.city
+                )
+            )
+
+        case 'cityDesc':
+            return list.sort(
+                (a, b) => compareStrings(
+                    b?.city,
+                    a?.city
+                )
+            )
+
+        case 'views':
+        case 'viewsDesc':
+            return list.sort(
+                (a, b) =>
+                    safeNumber(b?.views)
+                    - safeNumber(a?.views)
+            )
+
+        case 'viewsAsc':
+            return list.sort(
+                (a, b) =>
+                    safeNumber(a?.views)
+                    - safeNumber(b?.views)
+            )
+
+        case 'publishedAtAsc':
+            return list.sort(
+                (a, b) =>
+                    safeDate(a?.published_at)
+                    - safeDate(b?.published_at)
+            )
+
+        case 'publishedAtDesc':
+            return list.sort(
+                (a, b) =>
+                    safeDate(b?.published_at)
+                    - safeDate(a?.published_at)
+            )
+
+        case 'showFromAtAsc':
+            return list.sort(
+                (a, b) =>
+                    safeDate(a?.show_from_at)
+                    - safeDate(b?.show_from_at)
+            )
+
+        case 'showFromAtDesc':
+            return list.sort(
+                (a, b) =>
+                    safeDate(b?.show_from_at)
+                    - safeDate(a?.show_from_at)
+            )
+
+        case 'showToAtAsc':
+            return list.sort(
+                (a, b) =>
+                    safeDate(a?.show_to_at)
+                    - safeDate(b?.show_to_at)
+            )
+
+        case 'showToAtDesc':
+            return list.sort(
+                (a, b) =>
+                    safeDate(b?.show_to_at)
+                    - safeDate(a?.show_to_at)
+            )
+
+        case 'createdAtAsc':
+        case 'dateAsc':
+            return list.sort(
+                (a, b) =>
+                    safeDate(a?.created_at)
+                    - safeDate(b?.created_at)
+            )
+
+        case 'createdAtDesc':
+        case 'dateDesc':
+            return list.sort(
+                (a, b) =>
+                    safeDate(b?.created_at)
+                    - safeDate(a?.created_at)
+            )
+
+        case 'updatedAtAsc':
+            return list.sort(
+                (a, b) =>
+                    safeDate(a?.updated_at)
+                    - safeDate(b?.updated_at)
+            )
+
+        case 'updatedAtDesc':
+            return list.sort(
+                (a, b) =>
+                    safeDate(b?.updated_at)
+                    - safeDate(a?.updated_at)
+            )
+
+        case 'activityAsc':
+            return list.sort(
+                (a, b) =>
+                    Number(!!a?.activity)
+                    - Number(!!b?.activity)
+            )
+
+        case 'activityDesc':
+            return list.sort(
+                (a, b) =>
+                    Number(!!b?.activity)
+                    - Number(!!a?.activity)
+            )
+
+        case 'activity':
+            return list.filter(
+                (company) => !!company?.activity
+            )
+
+        case 'inactive':
+            return list.filter(
+                (company) => !company?.activity
+            )
+
+        case 'leftAsc':
+            return list.sort(
+                (a, b) =>
+                    Number(!!a?.left)
+                    - Number(!!b?.left)
+            )
+
+        case 'leftDesc':
+            return list.sort(
+                (a, b) =>
+                    Number(!!b?.left)
+                    - Number(!!a?.left)
+            )
+
+        case 'left':
+            return list.filter(
+                (company) => !!company?.left
+            )
+
+        case 'noLeft':
+            return list.filter(
+                (company) => !company?.left
+            )
+
+        case 'mainAsc':
+            return list.sort(
+                (a, b) =>
+                    Number(!!a?.main)
+                    - Number(!!b?.main)
+            )
+
+        case 'mainDesc':
+            return list.sort(
+                (a, b) =>
+                    Number(!!b?.main)
+                    - Number(!!a?.main)
+            )
+
+        case 'main':
+            return list.filter(
+                (company) => !!company?.main
+            )
+
+        case 'noMain':
+            return list.filter(
+                (company) => !company?.main
+            )
+
+        case 'rightAsc':
+            return list.sort(
+                (a, b) =>
+                    Number(!!a?.right)
+                    - Number(!!b?.right)
+            )
+
+        case 'rightDesc':
+            return list.sort(
+                (a, b) =>
+                    Number(!!b?.right)
+                    - Number(!!a?.right)
+            )
+
+        case 'right':
+            return list.filter(
+                (company) => !!company?.right
+            )
+
+        case 'noRight':
+            return list.filter(
+                (company) => !company?.right
+            )
+
+        case 'moderationStatusAsc':
+            return list.sort(
+                (a, b) =>
+                    moderationNum(a?.moderation_status)
+                    - moderationNum(b?.moderation_status)
+            )
+
+        case 'moderationStatusDesc':
+            return list.sort(
+                (a, b) =>
+                    moderationNum(b?.moderation_status)
+                    - moderationNum(a?.moderation_status)
+            )
+
+        case 'moderationPending':
+            return list.filter(
+                (company) =>
+                    moderationNum(
+                        company?.moderation_status
+                    ) === 0
+            )
+
+        case 'moderationApproved':
+            return list.filter(
+                (company) =>
+                    moderationNum(
+                        company?.moderation_status
+                    ) === 1
+            )
+
+        case 'moderationRejected':
+            return list.filter(
+                (company) =>
+                    moderationNum(
+                        company?.moderation_status
+                    ) === 2
+            )
+
+        default:
+            return list
+    }
 }
 
-/** Фильтрация компаний */
+/**
+ * Фильтрация компаний.
+ *
+ * Поля совпадают с
+ * MarketCompany::scopeSearch().
+ */
 const filteredCompanies = computed(() => {
-    let filtered = localCompanies.value || []
-    const query = normalize(searchQuery.value)
+    const query = normalize(
+        searchQuery.value
+    )
+
+    let filtered =
+        localCompanies.value || []
 
     if (!query) {
-        return sortCompanies(filtered)
+        return sortCompanies(
+            filtered
+        )
     }
 
     filtered = filtered.filter((company) => {
-        const title = normalize(getCompanyTitle(company))
-        const short = normalize(getCompanyShort(company))
-        const description = normalize(getCompanyDescription(company))
-        const url = normalize(company?.url)
-        const legalName = normalize(company?.legal_name)
-        const binIin = normalize(company?.bin_iin)
-        const email = normalize(company?.email)
-        const phone = normalize(company?.phone)
-        const city = normalize(company?.city)
-        const ownerName = normalize(company?.owner?.name)
-        const ownerEmail = normalize(company?.owner?.email)
+        const values = [
+            company?.translation?.title,
+            company?.translation?.short,
+            company?.translation?.description,
 
-        return title.includes(query)
-            || short.includes(query)
-            || description.includes(query)
-            || url.includes(query)
-            || legalName.includes(query)
-            || binIin.includes(query)
-            || email.includes(query)
-            || phone.includes(query)
-            || city.includes(query)
-            || ownerName.includes(query)
-            || ownerEmail.includes(query)
+            company?.url,
+            company?.legal_name,
+            company?.bin_iin,
+            company?.email,
+            company?.phone,
+            company?.city,
+
+            company?.owner?.name,
+            company?.owner?.email,
+        ]
+
+        return values.some(
+            (value) =>
+                normalize(value)
+                    .includes(query)
+        )
     })
 
-    return sortCompanies(filtered)
+    return sortCompanies(
+        filtered
+    )
 })
 
 /** Пагинация компаний */
 const paginatedCompanies = computed(() => {
-    const perPage = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * perPage
+    const perPage = Number(
+        itemsPerPage.value || 10
+    )
 
-    return filteredCompanies.value.slice(start, start + perPage)
+    const start =
+        (currentPage.value - 1)
+        * perPage
+
+    return filteredCompanies.value.slice(
+        start,
+        start + perPage
+    )
 })
 
 /** Список для отображения */
@@ -449,65 +977,130 @@ const displayedCompanies = computed(() => {
 })
 
 /** Сброс страницы при изменениях */
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+        sortParam,
+    ],
+    () => {
+        currentPage.value = 1
+    }
+)
 
 /** Выбранные компании */
 const selectedCompanies = ref([])
 
 /** Массовое выделение */
 const toggleAll = (payload) => {
-    const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? displayedCompanies.value.map((company) => company.id)
+    const checked =
+        payload?.checked
+        ?? payload?.target?.checked
+        ?? false
+
+    const ids =
+        payload?.ids
+        ?? displayedCompanies.value.map(
+            (company) => company.id
+        )
 
     if (checked) {
-        selectedCompanies.value = [...new Set([...selectedCompanies.value, ...ids])]
-    } else {
-        selectedCompanies.value = selectedCompanies.value.filter((id) => !ids.includes(id))
+        selectedCompanies.value = [
+            ...new Set([
+                ...selectedCompanies.value,
+                ...ids,
+            ]),
+        ]
+
+        return
     }
+
+    selectedCompanies.value =
+        selectedCompanies.value.filter(
+            (id) => !ids.includes(id)
+        )
 }
 
 /** Переключение выбора компании */
 const toggleSelectCompany = (companyId) => {
-    const index = selectedCompanies.value.indexOf(companyId)
+    const index =
+        selectedCompanies.value.indexOf(
+            companyId
+        )
 
     if (index > -1) {
-        selectedCompanies.value.splice(index, 1)
-    } else {
-        selectedCompanies.value.push(companyId)
+        selectedCompanies.value.splice(
+            index,
+            1
+        )
+
+        return
     }
+
+    selectedCompanies.value.push(
+        companyId
+    )
 }
 
 /** Массовое обновление активности */
 const bulkToggleActivity = (newActivity) => {
     if (!selectedCompanies.value.length) {
-        toast.warning('Выберите компании для активации/деактивации')
+        toast.warning(
+            'Выберите компании для активации/деактивации'
+        )
+
         return
     }
 
-    const idsToUpdate = [...selectedCompanies.value]
+    const idsToUpdate = [
+        ...selectedCompanies.value,
+    ]
 
     router.put(
-        route('admin.actions.marketCompanies.bulkUpdateActivity'),
-        { ids: idsToUpdate, activity: newActivity },
+        route(
+            'admin.actions.marketCompanies.bulkUpdateActivity'
+        ),
+        {
+            ids: idsToUpdate,
+            activity: newActivity,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                localCompanies.value = localCompanies.value.map((company) => {
-                    if (idsToUpdate.includes(company.id)) {
-                        return { ...company, activity: newActivity }
-                    }
 
-                    return company
-                })
+            onSuccess: () => {
+                localCompanies.value =
+                    localCompanies.value.map(
+                        (company) => {
+                            if (
+                                idsToUpdate.includes(
+                                    company.id
+                                )
+                            ) {
+                                return {
+                                    ...company,
+                                    activity: newActivity,
+                                }
+                            }
+
+                            return company
+                        }
+                    )
 
                 selectedCompanies.value = []
-                toast.success('Активность компаний массово обновлена')
+
+                toast.success(
+                    'Активность компаний массово обновлена'
+                )
             },
+
             onError: (errors) => {
-                const msg = errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности'
+                const msg =
+                    errors?.ids
+                    || errors?.activity
+                    || errors?.general
+                    || 'Ошибка массового обновления активности'
+
                 toast.error(msg)
             },
         }
@@ -515,34 +1108,67 @@ const bulkToggleActivity = (newActivity) => {
 }
 
 /** Массовое обновление позиции */
-const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
+const bulkToggleFlag = (
+    field,
+    newValue,
+    routeName,
+    successMessage
+) => {
     if (!selectedCompanies.value.length) {
-        toast.warning('Выберите компании для массового действия')
+        toast.warning(
+            'Выберите компании для массового действия'
+        )
+
         return
     }
 
-    const idsToUpdate = [...selectedCompanies.value]
+    const idsToUpdate = [
+        ...selectedCompanies.value,
+    ]
 
     router.put(
         route(routeName),
-        { ids: idsToUpdate, [field]: newValue },
+        {
+            ids: idsToUpdate,
+            [field]: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                localCompanies.value = localCompanies.value.map((company) => {
-                    if (idsToUpdate.includes(company.id)) {
-                        return { ...company, [field]: newValue }
-                    }
 
-                    return company
-                })
+            onSuccess: () => {
+                localCompanies.value =
+                    localCompanies.value.map(
+                        (company) => {
+                            if (
+                                idsToUpdate.includes(
+                                    company.id
+                                )
+                            ) {
+                                return {
+                                    ...company,
+                                    [field]: newValue,
+                                }
+                            }
+
+                            return company
+                        }
+                    )
 
                 selectedCompanies.value = []
-                toast.success(successMessage)
+
+                toast.success(
+                    successMessage
+                )
             },
+
             onError: (errors) => {
-                const msg = errors?.ids || errors?.[field] || errors?.general || 'Ошибка массового обновления'
+                const msg =
+                    errors?.ids
+                    || errors?.[field]
+                    || errors?.general
+                    || 'Ошибка массового обновления'
+
                 toast.error(msg)
             },
         }
@@ -552,25 +1178,52 @@ const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
 /** Массовое удаление */
 const bulkDelete = () => {
     if (!selectedCompanies.value.length) {
-        toast.warning('Выберите хотя бы одну компанию для удаления.')
+        toast.warning(
+            'Выберите хотя бы одну компанию для удаления.'
+        )
+
         return
     }
 
-    if (!confirm('Вы уверены, что хотите удалить выбранные компании?')) return
+    if (
+        !confirm(
+            'Вы уверены, что хотите удалить выбранные компании?'
+        )
+    ) {
+        return
+    }
 
-    router.delete(route('admin.actions.marketCompanies.bulkDestroy'), {
-        data: { ids: selectedCompanies.value },
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => {
-            selectedCompanies.value = []
-            toast.success('Массовое удаление компаний успешно завершено.')
-        },
-        onError: (errors) => {
-            const errorKey = Object.keys(errors)[0]
-            toast.error(errors[errorKey] || 'Произошла ошибка при удалении компаний.')
-        },
-    })
+    router.delete(
+        route(
+            'admin.actions.marketCompanies.bulkDestroy'
+        ),
+        {
+            data: {
+                ids: selectedCompanies.value,
+            },
+
+            preserveScroll: true,
+            preserveState: false,
+
+            onSuccess: () => {
+                selectedCompanies.value = []
+
+                toast.success(
+                    'Массовое удаление компаний успешно завершено.'
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey =
+                    Object.keys(errors)[0]
+
+                toast.error(
+                    errors[errorKey]
+                    || 'Произошла ошибка при удалении компаний.'
+                )
+            },
+        }
+    )
 }
 
 /** Обработка массовых действий */
@@ -578,25 +1231,63 @@ const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        toggleAll({ target: { checked: true } })
+        toggleAll({
+            target: {
+                checked: true,
+            },
+        })
     } else if (action === 'deselectAll') {
-        toggleAll({ target: { checked: false } })
+        toggleAll({
+            target: {
+                checked: false,
+            },
+        })
     } else if (action === 'activate') {
         bulkToggleActivity(true)
     } else if (action === 'deactivate') {
         bulkToggleActivity(false)
     } else if (action === 'left') {
-        bulkToggleFlag('left', true, 'admin.actions.marketCompanies.bulkUpdateLeft', 'Компании добавлены в левую колонку')
+        bulkToggleFlag(
+            'left',
+            true,
+            'admin.actions.marketCompanies.bulkUpdateLeft',
+            'Компании добавлены в левую колонку'
+        )
     } else if (action === 'noLeft') {
-        bulkToggleFlag('left', false, 'admin.actions.marketCompanies.bulkUpdateLeft', 'Компании убраны из левой колонки')
+        bulkToggleFlag(
+            'left',
+            false,
+            'admin.actions.marketCompanies.bulkUpdateLeft',
+            'Компании убраны из левой колонки'
+        )
     } else if (action === 'main') {
-        bulkToggleFlag('main', true, 'admin.actions.marketCompanies.bulkUpdateMain', 'Компании добавлены в главный блок')
+        bulkToggleFlag(
+            'main',
+            true,
+            'admin.actions.marketCompanies.bulkUpdateMain',
+            'Компании добавлены в главный блок'
+        )
     } else if (action === 'noMain') {
-        bulkToggleFlag('main', false, 'admin.actions.marketCompanies.bulkUpdateMain', 'Компании убраны из главного блока')
+        bulkToggleFlag(
+            'main',
+            false,
+            'admin.actions.marketCompanies.bulkUpdateMain',
+            'Компании убраны из главного блока'
+        )
     } else if (action === 'right') {
-        bulkToggleFlag('right', true, 'admin.actions.marketCompanies.bulkUpdateRight', 'Компании добавлены в правую колонку')
+        bulkToggleFlag(
+            'right',
+            true,
+            'admin.actions.marketCompanies.bulkUpdateRight',
+            'Компании добавлены в правую колонку'
+        )
     } else if (action === 'noRight') {
-        bulkToggleFlag('right', false, 'admin.actions.marketCompanies.bulkUpdateRight', 'Компании убраны из правой колонки')
+        bulkToggleFlag(
+            'right',
+            false,
+            'admin.actions.marketCompanies.bulkUpdateRight',
+            'Компании убраны из правой колонки'
+        )
     } else if (action === 'delete') {
         bulkDelete()
     }
@@ -605,48 +1296,111 @@ const handleBulkAction = (event) => {
 }
 
 /** Модерация компании */
-const approveCompany = (company, status = 1, note = '') => {
-    if (!company?.id) return
+const approveCompany = (
+    company,
+    status = 1,
+    note = ''
+) => {
+    if (!company?.id) {
+        return
+    }
 
     router.put(
-        route('admin.actions.marketCompanies.approve', { marketCompany: company.id }),
-        { moderation_status: status, moderation_note: note },
+        route(
+            'admin.actions.marketCompanies.approve',
+            {
+                marketCompany: company.id,
+            }
+        ),
+        {
+            moderation_status: status,
+            moderation_note: note,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                patchLocalCompany(company.id, (node) => {
-                    node.moderation_status = status
-                    node.is_approved = status === 1
-                    node.moderation_note = note
-                })
 
-                toast.success(status === 1 ? 'Компания одобрена' : 'Компания отклонена')
+            onSuccess: () => {
+                patchLocalCompany(
+                    company.id,
+                    (node) => {
+                        node.moderation_status =
+                            status
+
+                        node.is_approved =
+                            status === 1
+
+                        node.moderation_note =
+                            note
+                    }
+                )
+
+                toast.success(
+                    status === 1
+                        ? 'Компания одобрена'
+                        : 'Компания отклонена'
+                )
             },
-            onError: () => toast.error('Ошибка модерации компании'),
+
+            onError: () => {
+                toast.error(
+                    'Ошибка модерации компании'
+                )
+            },
         }
     )
 }
 
 /** Обновление порядка сортировки */
 const handleSortOrderUpdate = (newOrderIds) => {
-    const items = newOrderIds.map((id, index) => ({
-        id,
-        sort: index,
-    }))
+    const items = newOrderIds.map(
+        (id, index) => ({
+            id,
+            sort: index,
+        })
+    )
 
-    if (!items.length) return
+    if (!items.length) {
+        return
+    }
 
     router.put(
-        route('admin.actions.marketCompanies.updateSortBulk'),
-        { items },
+        route(
+            'admin.actions.marketCompanies.updateSortBulk'
+        ),
+        {
+            items,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.success('Сортировка компаний обновлена'),
+
+            onSuccess: () => {
+                items.forEach((item) => {
+                    patchLocalCompany(
+                        item.id,
+                        (company) => {
+                            company.sort =
+                                item.sort
+                        }
+                    )
+                })
+
+                toast.success(
+                    'Сортировка компаний обновлена'
+                )
+            },
+
             onError: (errors) => {
-                console.error('Ошибка сортировки компаний:', errors)
-                toast.error(errors.message || 'Ошибка обновления сортировки')
+                console.error(
+                    'Ошибка сортировки компаний:',
+                    errors
+                )
+
+                toast.error(
+                    errors.message
+                    || 'Ошибка обновления сортировки'
+                )
             },
         }
     )
@@ -707,7 +1461,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
                     <SortSelect
                         :sortParam="sortParam"
-                        @update:sortParam="(val) => (sortParam = val)"
+                        @update:sortParam="(value) => (sortParam = value)"
                     />
                 </div>
 
@@ -718,11 +1472,12 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     <CountTable>{{ companiesCount }}</CountTable>
 
                     <BulkActionSelect
-                        v-if="companiesCount"
                         @change="handleBulkAction"
                     />
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
                 <div

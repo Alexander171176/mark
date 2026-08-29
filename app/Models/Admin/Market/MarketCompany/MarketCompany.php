@@ -62,6 +62,7 @@ class MarketCompany extends Model
         'right',
 
         'status',
+
         'moderation_status',
         'moderated_by',
         'moderated_at',
@@ -75,6 +76,9 @@ class MarketCompany extends Model
     ];
 
     protected $casts = [
+        'user_id' => 'integer',
+        'moderated_by' => 'integer',
+
         'sort' => 'integer',
 
         'activity' => 'boolean',
@@ -105,40 +109,37 @@ class MarketCompany extends Model
     /** Магазин компании */
     public function shop(): HasOne
     {
-        return $this->hasOne(MarketShop::class, 'market_company_id');
+        return $this->hasOne(
+            MarketShop::class,
+            'market_company_id'
+        );
     }
 
+    /** Владелец компании */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
 
+    /** Пользователь, выполнивший модерацию */
     public function moderator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'moderated_by');
+        return $this->belongsTo(
+            User::class,
+            'moderated_by'
+        );
     }
 
+    /** Все переводы компании */
     public function translations(): HasMany
     {
-        return $this->hasMany(MarketCompanyTranslation::class, 'market_company_id');
-    }
-
-    public function translation(?string $locale = null): ?MarketCompanyTranslation
-    {
-        $locale = $locale ?: app()->getLocale();
-
-        return $this->translations
-            ->where('locale', $locale)
-            ->first();
-    }
-
-    public function translationOrFallback(?string $locale = null, string $fallback = 'ru'): ?MarketCompanyTranslation
-    {
-        $locale = $locale ?: app()->getLocale();
-
-        return $this->translations->firstWhere('locale', $locale)
-            ?: $this->translations->firstWhere('locale', $fallback)
-                ?: $this->translations->first();
+        return $this->hasMany(
+            MarketCompanyTranslation::class,
+            'market_company_id'
+        );
     }
 
     /** Все товары компании */
@@ -150,88 +151,233 @@ class MarketCompany extends Model
         );
     }
 
-    /* ======================== MODEL EVENTS ======================== */
+    /* ======================== Translation helpers ======================== */
+
+    /**
+     * Получить перевод указанной локали
+     * из коллекции translations.
+     *
+     * В Admin Index этот helper не используется:
+     * Controller сам загружает translations,
+     * ограниченные currentLocale.
+     */
+    public function translation(
+        ?string $locale = null
+    ): ?MarketCompanyTranslation {
+        $locale = $locale
+            ?: app()->getLocale();
+
+        return $this->translations
+            ->firstWhere(
+                'locale',
+                $locale
+            );
+    }
+
+    /**
+     * Получить перевод текущей локали
+     * с fallback.
+     *
+     * Используется только там, где действительно
+     * доступна полная коллекция translations.
+     */
+    public function translationOrFallback(
+        ?string $locale = null,
+        ?string $fallback = null
+    ): ?MarketCompanyTranslation {
+        $locale = $locale
+            ?: app()->getLocale();
+
+        $fallback = $fallback
+            ?: config(
+                'app.fallback_locale',
+                'ru'
+            );
+
+        return $this->translations
+            ->firstWhere(
+                'locale',
+                $locale
+            )
+            ?: $this->translations
+                ->firstWhere(
+                    'locale',
+                    $fallback
+                )
+                ?: $this->translations
+                    ->first();
+    }
+
+    /** Получить локализованный title */
+    public function getTranslatedTitle(
+        ?string $locale = null,
+        ?string $fallback = null
+    ): ?string {
+        return $this
+            ->translationOrFallback(
+                locale: $locale,
+                fallback: $fallback
+            )
+            ?->title;
+    }
+
+    /* ======================== Model events ======================== */
 
     protected static function booted(): void
     {
-        static::saved(function (MarketCompany $company) {
-            Log::info('Компания маркетплейса сохранена: ' . $company->id . ' / ' . $company->url);
-        });
+        static::saved(
+            function (
+                MarketCompany $company
+            ): void {
+                Log::info(
+                    'Компания маркетплейса сохранена: '
+                    . $company->id
+                    . ' / '
+                    . $company->url
+                );
+            }
+        );
 
-        static::deleted(function (MarketCompany $company) {
-            Log::info('Компания маркетплейса удалена: ' . $company->id . ' / ' . $company->url);
-        });
+        static::deleted(
+            function (
+                MarketCompany $company
+            ): void {
+                Log::info(
+                    'Компания маркетплейса удалена: '
+                    . $company->id
+                    . ' / '
+                    . $company->url
+                );
+            }
+        );
     }
 
-    /* ======================== HELPERS ======================== */
+    /* ======================== Helpers ======================== */
 
+    /** Компания активна */
     public function isActive(): bool
     {
         return (bool) $this->activity;
     }
 
+    /** Компания прошла модерацию */
     public function isApproved(): bool
     {
         return (int) $this->moderation_status === 1;
     }
 
+    /** Компания находится в текущем окне показа */
     public function isPublishedNow(): bool
     {
         $now = now();
 
-        if ($this->show_from_at && $now->lt($this->show_from_at)) {
+        if (
+            $this->show_from_at
+            && $now->lt(
+                $this->show_from_at
+            )
+        ) {
             return false;
         }
 
-        if ($this->show_to_at && $now->gt($this->show_to_at)) {
+        if (
+            $this->show_to_at
+            && $now->gt(
+                $this->show_to_at
+            )
+        ) {
             return false;
         }
 
         return true;
     }
 
-    public function getTranslatedTitle(?string $locale = null, string $fallback = 'ru'): ?string
-    {
-        return $this->translationOrFallback($locale, $fallback)?->title;
-    }
+    /* ======================== Base scopes ======================== */
 
-    /* ======================== Scopes ======================== */
-
-    public function scopeOrdered(Builder $query): Builder
-    {
-        return $query->orderBy('sort')->orderByDesc('id');
-    }
-
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('activity', true);
-    }
-
-    public function scopeApproved(Builder $query): Builder
-    {
-        return $query->where('moderation_status', 1);
-    }
-
-    public function scopePublished(Builder $query): Builder
-    {
-        return $query->where('status', 'published');
-    }
-
-    public function scopeInShowWindow(Builder $query): Builder
-    {
+    /** Сортировка по умолчанию */
+    public function scopeOrdered(
+        Builder $query
+    ): Builder {
         return $query
-            ->where(function (Builder $q) {
-                $q->whereNull('show_from_at')
-                    ->orWhere('show_from_at', '<=', now());
-            })
-            ->where(function (Builder $q) {
-                $q->whereNull('show_to_at')
-                    ->orWhere('show_to_at', '>=', now());
-            });
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            );
     }
 
-    public function scopeForPublic(Builder $query): Builder
-    {
+    /** Активные компании */
+    public function scopeActive(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'activity',
+            true
+        );
+    }
+
+    /** Одобренные компании */
+    public function scopeApproved(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'moderation_status',
+            1
+        );
+    }
+
+    /** Опубликованные компании */
+    public function scopePublished(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'status',
+            'published'
+        );
+    }
+
+    /** Компании в текущем окне показа */
+    public function scopeInShowWindow(
+        Builder $query
+    ): Builder {
+        return $query
+            ->where(
+                function (
+                    Builder $query
+                ): void {
+                    $query
+                        ->whereNull(
+                            'show_from_at'
+                        )
+                        ->orWhere(
+                            'show_from_at',
+                            '<=',
+                            now()
+                        );
+                }
+            )
+            ->where(
+                function (
+                    Builder $query
+                ): void {
+                    $query
+                        ->whereNull(
+                            'show_to_at'
+                        )
+                        ->orWhere(
+                            'show_to_at',
+                            '>=',
+                            now()
+                        );
+                }
+            );
+    }
+
+    /** Публичные компании */
+    public function scopeForPublic(
+        Builder $query
+    ): Builder {
         return $query
             ->approved()
             ->published()
@@ -239,184 +385,805 @@ class MarketCompany extends Model
             ->inShowWindow();
     }
 
-    public function scopeInLeft(Builder $query): Builder
-    {
-        return $query->where('left', true);
+    /** Компании левой колонки */
+    public function scopeInLeft(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'left',
+            true
+        );
     }
 
-    public function scopeInMain(Builder $query): Builder
-    {
-        return $query->where('main', true);
+    /** Компании главного блока */
+    public function scopeInMain(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'main',
+            true
+        );
     }
 
-    public function scopeInRight(Builder $query): Builder
-    {
-        return $query->where('right', true);
+    /** Компании правой колонки */
+    public function scopeInRight(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'right',
+            true
+        );
     }
 
-    public function scopeSearch(Builder $query, ?string $term, ?string $locale = null): Builder
-    {
-        if (!$term) {
+    /* ======================== Search ======================== */
+
+    /**
+     * Поиск компаний.
+     *
+     * Семантика совпадает с frontend Index:
+     * - url;
+     * - legal_name;
+     * - bin_iin;
+     * - email;
+     * - phone;
+     * - city;
+     * - title текущего перевода;
+     * - short текущего перевода;
+     * - description текущего перевода;
+     * - имя владельца;
+     * - email владельца.
+     *
+     * Для переводимых полей используется
+     * исключительно указанная locale.
+     */
+    public function scopeSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        $term = trim(
+            (string) $term
+        );
+
+        if ($term === '') {
             return $query;
         }
 
-        $locale = $locale ?: app()->getLocale();
+        $locale = $locale
+            ?: app()->getLocale();
 
-        return $query->where(function (Builder $q) use ($term, $locale) {
-            $q->where('url', 'like', "%{$term}%")
-                ->orWhere('legal_name', 'like', "%{$term}%")
-                ->orWhere('bin_iin', 'like', "%{$term}%")
-                ->orWhere('email', 'like', "%{$term}%")
-                ->orWhere('phone', 'like', "%{$term}%")
-                ->orWhere('city', 'like', "%{$term}%")
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
-                                ->orWhere('subtitle', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%");
-                        });
-                })
-                ->orWhereHas('products', function (Builder $productQuery) use ($term, $locale) {
-                    $productQuery
-                        ->where('url', 'like', "%{$term}%")
-                        ->orWhere('sku', 'like', "%{$term}%")
-                        ->orWhere('vendor_code', 'like', "%{$term}%")
-                        ->orWhere('barcode', 'like', "%{$term}%")
-                        ->orWhereHas('translations', function (Builder $translationQuery) use ($term, $locale) {
+        $like = "%{$term}%";
+
+        return $query->where(
+            function (
+                Builder $query
+            ) use (
+                $like,
+                $locale
+            ): void {
+                $query
+                    ->where(
+                        'market_companies.url',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'market_companies.legal_name',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'market_companies.bin_iin',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'market_companies.email',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'market_companies.phone',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'market_companies.city',
+                        'like',
+                        $like
+                    )
+
+                    /** Перевод текущей локали */
+                    ->orWhereHas(
+                        'translations',
+                        function (
+                            Builder $translationQuery
+                        ) use (
+                            $locale,
+                            $like
+                        ): void {
                             $translationQuery
-                                ->where('locale', $locale)
-                                ->where(function (Builder $sq) use ($term) {
-                                    $sq->where('title', 'like', "%{$term}%")
-                                        ->orWhere('subtitle', 'like', "%{$term}%")
-                                        ->orWhere('short', 'like', "%{$term}%");
-                                });
-                        });
-                });
-        });
+                                ->where(
+                                    'locale',
+                                    $locale
+                                )
+                                ->where(
+                                    function (
+                                        Builder $query
+                                    ) use (
+                                        $like
+                                    ): void {
+                                        $query
+                                            ->where(
+                                                'title',
+                                                'like',
+                                                $like
+                                            )
+                                            ->orWhere(
+                                                'short',
+                                                'like',
+                                                $like
+                                            )
+                                            ->orWhere(
+                                                'description',
+                                                'like',
+                                                $like
+                                            );
+                                    }
+                                );
+                        }
+                    )
+
+                    /** Владелец */
+                    ->orWhereHas(
+                        'owner',
+                        function (
+                            Builder $ownerQuery
+                        ) use (
+                            $like
+                        ): void {
+                            $ownerQuery
+                                ->where(
+                                    'name',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'email',
+                                    'like',
+                                    $like
+                                );
+                        }
+                    );
+            }
+        );
     }
 
-    public function scopeSortByParam(Builder $query, ?string $sort, ?string $locale = null): Builder
-    {
-        $locale = $locale ?: app()->getLocale();
+    /* ======================== Sorting ======================== */
+
+    /**
+     * Сортировка и фильтрация компаний
+     * по параметру Index.
+     */
+    public function scopeSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale = $locale
+            ?: app()->getLocale();
 
         return match ($sort) {
-            'idAsc' => $query->orderBy('id', 'asc'),
-            'idDesc' => $query->orderBy('id', 'desc'),
+            /** ID */
+            'idAsc' =>
+            $query->orderBy(
+                'market_companies.id',
+                'asc'
+            ),
 
-            'sortAsc' => $query->orderBy('sort', 'asc')->orderBy('id', 'asc'),
-            'sortDesc' => $query->orderBy('sort', 'desc')->orderBy('id', 'desc'),
+            'idDesc' =>
+            $query->orderBy(
+                'market_companies.id',
+                'desc'
+            ),
 
-            'titleAsc' => $query
-                ->leftJoin('market_company_translations as mct_sort', function ($join) use ($locale) {
-                    $join->on('mct_sort.market_company_id', '=', 'market_companies.id')
-                        ->where('mct_sort.locale', '=', $locale);
-                })
-                ->orderBy('mct_sort.title', 'asc')
-                ->orderByDesc('market_companies.id')
-                ->select('market_companies.*'),
+            /** Sort */
+            'sortAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.sort',
+                    'asc'
+                )
+                ->orderBy(
+                    'market_companies.id',
+                    'asc'
+                ),
 
-            'titleDesc' => $query
-                ->leftJoin('market_company_translations as mct_sort', function ($join) use ($locale) {
-                    $join->on('mct_sort.market_company_id', '=', 'market_companies.id')
-                        ->where('mct_sort.locale', '=', $locale);
-                })
-                ->orderBy('mct_sort.title', 'desc')
-                ->orderByDesc('market_companies.id')
-                ->select('market_companies.*'),
+            'sortDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.sort',
+                    'desc'
+                )
+                ->orderBy(
+                    'market_companies.id',
+                    'desc'
+                ),
 
-            'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
-            'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
+            /** Title текущей локали */
+            'titleAsc' =>
+            $query
+                ->leftJoin(
+                    'market_company_translations as mct_sort',
+                    function (
+                        $join
+                    ) use (
+                        $locale
+                    ): void {
+                        $join
+                            ->on(
+                                'mct_sort.market_company_id',
+                                '=',
+                                'market_companies.id'
+                            )
+                            ->where(
+                                'mct_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'market_companies.*'
+                )
+                ->orderBy(
+                    'mct_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'legalNameAsc' => $query->orderBy('legal_name', 'asc')->orderByDesc('id'),
-            'legalNameDesc' => $query->orderBy('legal_name', 'desc')->orderByDesc('id'),
+            'titleDesc' =>
+            $query
+                ->leftJoin(
+                    'market_company_translations as mct_sort',
+                    function (
+                        $join
+                    ) use (
+                        $locale
+                    ): void {
+                        $join
+                            ->on(
+                                'mct_sort.market_company_id',
+                                '=',
+                                'market_companies.id'
+                            )
+                            ->where(
+                                'mct_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'market_companies.*'
+                )
+                ->orderBy(
+                    'mct_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'companyTypeAsc' => $query->orderBy('company_type', 'asc')->orderByDesc('id'),
-            'companyTypeDesc' => $query->orderBy('company_type', 'desc')->orderByDesc('id'),
+            /** URL */
+            'urlAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.url',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'cityAsc' => $query->orderBy('city', 'asc')->orderByDesc('id'),
-            'cityDesc' => $query->orderBy('city', 'desc')->orderByDesc('id'),
+            'urlDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.url',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+            /** Юридическое название */
+            'legalNameAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.legal_name',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'productsAsc' => $query
-                ->withCount('products')
-                ->orderBy('products_count', 'asc')
-                ->orderByDesc('market_companies.id'),
+            'legalNameDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.legal_name',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'productsDesc' => $query
-                ->withCount('products')
-                ->orderBy('products_count', 'desc')
-                ->orderByDesc('market_companies.id'),
+            /** Тип компании */
+            'companyTypeAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.company_type',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
-            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
+            'companyTypeDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.company_type',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
-            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
+            /** Город */
+            'cityAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.city',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
-            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
+            'cityDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.city',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+            /** Просмотры */
+            'viewsAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.views',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+            'viewsDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.views',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
-            'activity' => $query->where('activity', true)->orderByDesc('id'),
-            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+            /** Дата публикации */
+            'publishedAtAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.published_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'leftAsc' => $query->orderBy('left', 'asc')->orderByDesc('id'),
-            'leftDesc' => $query->orderBy('left', 'desc')->orderByDesc('id'),
-            'left' => $query->where('left', true)->orderByDesc('id'),
-            'noLeft' => $query->where('left', false)->orderByDesc('id'),
+            'publishedAtDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.published_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'mainAsc' => $query->orderBy('main', 'asc')->orderByDesc('id'),
-            'mainDesc' => $query->orderBy('main', 'desc')->orderByDesc('id'),
-            'main' => $query->where('main', true)->orderByDesc('id'),
-            'noMain' => $query->where('main', false)->orderByDesc('id'),
+            /** Начало показа */
+            'showFromAtAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.show_from_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'rightAsc' => $query->orderBy('right', 'asc')->orderByDesc('id'),
-            'rightDesc' => $query->orderBy('right', 'desc')->orderByDesc('id'),
-            'right' => $query->where('right', true)->orderByDesc('id'),
-            'noRight' => $query->where('right', false)->orderByDesc('id'),
+            'showFromAtDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.show_from_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
-            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
-            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
-            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
-            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+            /** Окончание показа */
+            'showToAtAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.show_to_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'ownerNameAsc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_companies.user_id')
-                ->orderBy('owner_sort.name', 'asc')
-                ->orderByDesc('market_companies.id')
-                ->select('market_companies.*'),
+            'showToAtDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.show_to_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'ownerNameDesc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_companies.user_id')
-                ->orderBy('owner_sort.name', 'desc')
-                ->orderByDesc('market_companies.id')
-                ->select('market_companies.*'),
+            /** Дата создания */
+            'createdAtAsc',
+            'dateAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.created_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'ownerEmailAsc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_companies.user_id')
-                ->orderBy('owner_sort.email', 'asc')
-                ->orderByDesc('market_companies.id')
-                ->select('market_companies.*'),
+            'createdAtDesc',
+            'dateDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            'ownerEmailDesc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_companies.user_id')
-                ->orderBy('owner_sort.email', 'desc')
-                ->orderByDesc('market_companies.id')
-                ->select('market_companies.*'),
+            /** Дата обновления */
+            'updatedAtAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.updated_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
 
-            default => $query->ordered(),
+            'updatedAtDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.updated_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            /** Активность */
+            'activityAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.activity',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'activityDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.activity',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'activity' =>
+            $query
+                ->where(
+                    'market_companies.activity',
+                    true
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'inactive' =>
+            $query
+                ->where(
+                    'market_companies.activity',
+                    false
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            /** Left */
+            'leftAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.left',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'leftDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.left',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'left' =>
+            $query
+                ->where(
+                    'market_companies.left',
+                    true
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'noLeft' =>
+            $query
+                ->where(
+                    'market_companies.left',
+                    false
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            /** Main */
+            'mainAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.main',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'mainDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.main',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'main' =>
+            $query
+                ->where(
+                    'market_companies.main',
+                    true
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'noMain' =>
+            $query
+                ->where(
+                    'market_companies.main',
+                    false
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            /** Right */
+            'rightAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.right',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'rightDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.right',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'right' =>
+            $query
+                ->where(
+                    'market_companies.right',
+                    true
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'noRight' =>
+            $query
+                ->where(
+                    'market_companies.right',
+                    false
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            /** Модерация */
+            'moderationStatusAsc' =>
+            $query
+                ->orderBy(
+                    'market_companies.moderation_status',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'moderationStatusDesc' =>
+            $query
+                ->orderBy(
+                    'market_companies.moderation_status',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'moderationPending' =>
+            $query
+                ->where(
+                    'market_companies.moderation_status',
+                    0
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'moderationApproved' =>
+            $query
+                ->where(
+                    'market_companies.moderation_status',
+                    1
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'moderationRejected' =>
+            $query
+                ->where(
+                    'market_companies.moderation_status',
+                    2
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            /** Имя владельца */
+            'ownerNameAsc' =>
+            $query
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'market_companies.user_id'
+                )
+                ->addSelect(
+                    'market_companies.*'
+                )
+                ->orderBy(
+                    'owner_sort.name',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'ownerNameDesc' =>
+            $query
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'market_companies.user_id'
+                )
+                ->addSelect(
+                    'market_companies.*'
+                )
+                ->orderBy(
+                    'owner_sort.name',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            /** Email владельца */
+            'ownerEmailAsc' =>
+            $query
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'market_companies.user_id'
+                )
+                ->addSelect(
+                    'market_companies.*'
+                )
+                ->orderBy(
+                    'owner_sort.email',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            'ownerEmailDesc' =>
+            $query
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'market_companies.user_id'
+                )
+                ->addSelect(
+                    'market_companies.*'
+                )
+                ->orderBy(
+                    'owner_sort.email',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_companies.id'
+                ),
+
+            default =>
+            $query->ordered(),
         };
     }
 }

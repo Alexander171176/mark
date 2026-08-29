@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Admin\Market\MarketCompany;
 use App\Http\Controllers\Admin\Market\BaseMarketAdminController;
 use App\Http\Requests\Admin\Market\MarketCompany\MarketCompanyRequest;
 use App\Http\Resources\Admin\Market\MarketCompany\MarketCompanyResource;
+use App\Http\Resources\Admin\Market\MarketCompany\MarketCompanySharedResource;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -52,25 +55,64 @@ class MarketCompanyController extends BaseMarketAdminController
         'meta_desc',
     ];
 
-    /** Список компаний (серверный / клиентский режим) */
+    /**
+     * Список компаний.
+     *
+     * Поддерживает:
+     * - frontend;
+     * - server;
+     * - auto.
+     *
+     * Для Index загружается только перевод
+     * текущей локали.
+     */
     public function index(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
 
-        $perPage = $settings->int('adminMarketCompaniesPerPage', 6);
-        $defaultSort = $settings->string('adminMarketCompaniesDefaultSort', 'idDesc');
+        $perPage = $settings->int(
+            'adminMarketCompaniesPerPage',
+            6
+        );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $defaultSort = $settings->string(
+            'adminMarketCompaniesDefaultSort',
+            'idDesc'
+        );
 
-        $processingMode = $settings->string('adminMarketCompaniesProcessingMode', 'frontend');
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
 
-        $companiesCount = $this->baseQuery()->count();
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer($processingMode, $companiesCount, 300);
+        $processingMode = $settings->string(
+            'adminMarketCompaniesProcessingMode',
+            'frontend'
+        );
+
+        /**
+         * Первый COUNT нужен ProcessingModeService
+         * для выбора frontend/server режима.
+         */
+        $companiesCount = $this->baseQuery()
+            ->count();
+
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $companiesCount,
+            300
+        );
 
         try {
             $companies = $this->getIndexCompanies(
@@ -78,75 +120,145 @@ class MarketCompanyController extends BaseMarketAdminController
                 useServerProcessing: $useServerProcessing,
                 perPage: $perPage,
                 sort: $sortParam,
-                search: $search,
+                search: $search
             );
 
-            return Inertia::render('Admin/Market/MarketCompanies/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/Market/MarketCompanies/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminMarketCompaniesPerPage' => $perPage,
-                'adminMarketCompaniesDefaultSort' => $defaultSort,
-                'adminMarketCompaniesProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'companies' => MarketCompanyResource::collection($companies),
-                'companiesCount' => $companiesCount,
+                    'adminMarketCompaniesPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
-            ]);
+                    'adminMarketCompaniesDefaultSort' =>
+                        $defaultSort,
+
+                    'adminMarketCompaniesProcessingMode' =>
+                        $processingMode,
+
+                    /**
+                     * Index использует компактный
+                     * SharedResource.
+                     */
+                    'companies' =>
+                        MarketCompanySharedResource::collection(
+                            $companies
+                        ),
+
+                    'companiesCount' =>
+                        $companiesCount,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки списка market companies: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки списка market companies: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return Inertia::render('Admin/Market/MarketCompanies/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/Market/MarketCompanies/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminMarketCompaniesPerPage' => $perPage,
-                'adminMarketCompaniesDefaultSort' => $defaultSort,
-                'adminMarketCompaniesProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'companies' => [],
-                'companiesCount' => 0,
+                    'adminMarketCompaniesPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminMarketCompaniesDefaultSort' =>
+                        $defaultSort,
 
-                'error' => 'Ошибка загрузки компаний.',
-            ]);
+                    'adminMarketCompaniesProcessingMode' =>
+                        $processingMode,
+
+                    'companies' => [],
+
+                    'companiesCount' => 0,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'error' =>
+                        'Ошибка загрузки компаний.',
+                ]
+            );
         }
     }
 
     /** Страница создания компании */
     public function create(Request $request): Response
     {
-        $currentLocale = $this->resolveLocale($request);
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
 
-        return Inertia::render('Admin/Market/MarketCompanies/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+        return Inertia::render(
+            'Admin/Market/MarketCompanies/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+            ]
+        );
     }
 
     /** Создание компании */
-    public function store(MarketCompanyRequest $request): RedirectResponse
-    {
+    public function store(
+        MarketCompanyRequest $request
+    ): RedirectResponse {
         $data = $request->validated();
 
         $translations = $data['translations'] ?? [];
 
-        unset($data['translations']);
-        unset($data['logo'], $data['signature'], $data['stamp']);
+        unset(
+            $data['translations'],
+            $data['logo'],
+            $data['signature'],
+            $data['stamp']
+        );
 
         $user = auth()->user();
 
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
+        /**
+         * Обычный пользователь может создавать
+         * компанию только от своего имени
+         * и не управляет модерацией.
+         */
+        if (
+            $user
+            && method_exists(
+                $user,
+                'hasRole'
+            )
+            && ! $user->hasRole('admin')
+        ) {
             $data['user_id'] = $user->id;
 
             unset(
@@ -156,87 +268,179 @@ class MarketCompanyController extends BaseMarketAdminController
                 $data['moderation_note']
             );
         } else {
-            $data['user_id'] = $data['user_id'] ?? $user?->id;
+            $data['user_id'] =
+                $data['user_id']
+                ?? $user?->id;
         }
 
         try {
-            DB::transaction(function () use (&$company, $data, $translations) {
-                if (!isset($data['sort']) || is_null($data['sort'])) {
-                    $maxSort = MarketCompany::query()->max('sort');
-                    $data['sort'] = is_null($maxSort) ? 0 : $maxSort + 1;
+            DB::transaction(
+                function () use (
+                    &$company,
+                    $data,
+                    $translations
+                ): void {
+                    if (
+                        ! isset($data['sort'])
+                        || $data['sort'] === null
+                    ) {
+                        $maxSort = MarketCompany::query()
+                            ->max('sort');
+
+                        $data['sort'] =
+                            $maxSort === null
+                                ? 0
+                                : $maxSort + 1;
+                    }
+
+                    $company = MarketCompany::create(
+                        $data
+                    );
+
+                    $this->syncTranslations(
+                        $company,
+                        $translations
+                    );
                 }
+            );
 
-                $company = MarketCompany::create($data);
-
-                $this->syncTranslations($company, $translations);
-            });
-
+            /**
+             * Файлы сохраняются после создания,
+             * чтобы компания уже имела ID.
+             */
             if ($request->hasFile('logo')) {
                 $company->update([
-                    'logo' => $request->file('logo')->store('market/companies/logos', 'public'),
+                    'logo' =>
+                        $request
+                            ->file('logo')
+                            ->store(
+                                'market/companies/logos',
+                                'public'
+                            ),
                 ]);
             }
 
             if ($request->hasFile('signature')) {
                 $company->update([
-                    'signature' => $request->file('signature')->store('market/companies/signatures', 'public'),
+                    'signature' =>
+                        $request
+                            ->file('signature')
+                            ->store(
+                                'market/companies/signatures',
+                                'public'
+                            ),
                 ]);
             }
 
             if ($request->hasFile('stamp')) {
                 $company->update([
-                    'stamp' => $request->file('stamp')->store('market/companies/stamps', 'public'),
+                    'stamp' =>
+                        $request
+                            ->file('stamp')
+                            ->store(
+                                'market/companies/stamps',
+                                'public'
+                            ),
                 ]);
             }
 
             return redirect()
-                ->route('admin.marketCompanies.index')
-                ->with('success', 'Компания успешно создана.');
+                ->route(
+                    'admin.marketCompanies.index'
+                )
+                ->with(
+                    'success',
+                    'Компания успешно создана.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при создании market company: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при создании market company: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при создании компании.');
+                ->with(
+                    'error',
+                    'Ошибка при создании компании.'
+                );
         }
     }
 
     /** Перенаправление просмотра на редактирование */
-    public function show(string $id): RedirectResponse
-    {
-        return redirect()->route('admin.marketCompanies.edit', $id);
+    public function show(
+        string $id
+    ): RedirectResponse {
+        return redirect()->route(
+            'admin.marketCompanies.edit',
+            $id
+        );
     }
 
-    /** Страница редактирования компании */
-    public function edit(int $marketCompany, Request $request): Response
-    {
+    /**
+     * Страница редактирования компании.
+     *
+     * Для Edit намеренно загружаются
+     * ВСЕ переводы компании, поскольку
+     * TranslationTabs редактирует все локали.
+     */
+    public function edit(
+        int $marketCompany,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
+
         $company = $this->baseQuery()
             ->with([
-                'owner',
-                'moderator',
+                'owner:id,name,email,profile_photo_path',
+                'moderator:id,name',
+
+                /**
+                 * Здесь ограничения locale нет
+                 * намеренно.
+                 */
                 'translations',
             ])
-            ->findOrFail($marketCompany);
+            ->findOrFail(
+                $marketCompany
+            );
 
-        $currentLocale = $this->resolveLocale($request);
+        return Inertia::render(
+            'Admin/Market/MarketCompanies/Edit',
+            [
+                'company' =>
+                    new MarketCompanyResource(
+                        $company
+                    ),
 
-        return Inertia::render('Admin/Market/MarketCompanies/Edit', [
-            'company' => new MarketCompanyResource($company),
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+                'currentLocale' =>
+                    $currentLocale,
+
+                'availableLocales' =>
+                    $this->availableLocales(),
+            ]
+        );
     }
 
     /** Обновление компании */
-    public function update(MarketCompanyRequest $request, int $marketCompany): RedirectResponse
-    {
-        $company = $this->baseQuery()->findOrFail($marketCompany);
+    public function update(
+        MarketCompanyRequest $request,
+        int $marketCompany
+    ): RedirectResponse {
+        $company = $this->baseQuery()
+            ->findOrFail(
+                $marketCompany
+            );
 
         $data = $request->validated();
 
-        $translations = $data['translations'] ?? [];
+        $translations =
+            $data['translations'] ?? [];
 
         unset(
             $data['translations'],
@@ -248,8 +452,21 @@ class MarketCompanyController extends BaseMarketAdminController
 
         $user = auth()->user();
 
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
-            $data['user_id'] = $user->id;
+        /**
+         * Обычный пользователь сохраняется
+         * владельцем своей компании
+         * и не может изменять модерацию.
+         */
+        if (
+            $user
+            && method_exists(
+                $user,
+                'hasRole'
+            )
+            && ! $user->hasRole('admin')
+        ) {
+            $data['user_id'] =
+                $user->id;
 
             unset(
                 $data['moderation_status'],
@@ -260,137 +477,302 @@ class MarketCompanyController extends BaseMarketAdminController
         }
 
         try {
-            DB::transaction(function () use ($company, $data, $translations) {
-                $company->update($data);
+            DB::transaction(
+                function () use (
+                    $company,
+                    $data,
+                    $translations
+                ): void {
+                    $company->update(
+                        $data
+                    );
 
-                $this->syncTranslations($company, $translations);
-            });
+                    $this->syncTranslations(
+                        $company,
+                        $translations
+                    );
+                }
+            );
 
             if ($request->hasFile('logo')) {
                 $company->update([
-                    'logo' => $request->file('logo')->store('market/companies/logos', 'public'),
+                    'logo' =>
+                        $request
+                            ->file('logo')
+                            ->store(
+                                'market/companies/logos',
+                                'public'
+                            ),
                 ]);
             }
 
             if ($request->hasFile('signature')) {
                 $company->update([
-                    'signature' => $request->file('signature')->store('market/companies/signatures', 'public'),
+                    'signature' =>
+                        $request
+                            ->file('signature')
+                            ->store(
+                                'market/companies/signatures',
+                                'public'
+                            ),
                 ]);
             }
 
             if ($request->hasFile('stamp')) {
                 $company->update([
-                    'stamp' => $request->file('stamp')->store('market/companies/stamps', 'public'),
+                    'stamp' =>
+                        $request
+                            ->file('stamp')
+                            ->store(
+                                'market/companies/stamps',
+                                'public'
+                            ),
                 ]);
             }
 
             return redirect()
-                ->route('admin.marketCompanies.index')
-                ->with('success', 'Компания успешно обновлена.');
+                ->route(
+                    'admin.marketCompanies.index'
+                )
+                ->with(
+                    'success',
+                    'Компания успешно обновлена.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при обновлении market company ID ' . $company->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при обновлении market company ID '
+                . $company->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при обновлении компании.');
+                ->with(
+                    'error',
+                    'Ошибка при обновлении компании.'
+                );
         }
     }
 
-    /** Удаление компании */
-    public function destroy(int $marketCompany): RedirectResponse
-    {
+    /**
+     * Удаление компании.
+     *
+     * Предварительно загружать translations
+     * не требуется: используется relation DELETE.
+     */
+    public function destroy(
+        int $marketCompany
+    ): RedirectResponse {
         $company = $this->baseQuery()
-            ->with('translations')
-            ->findOrFail($marketCompany);
+            ->findOrFail(
+                $marketCompany
+            );
 
         try {
-            DB::transaction(function () use ($company) {
-                $company->translations()->delete();
-                $company->delete();
-            });
+            DB::transaction(
+                function () use (
+                    $company
+                ): void {
+                    $company
+                        ->translations()
+                        ->delete();
+
+                    $company->delete();
+                }
+            );
 
             return redirect()
-                ->route('admin.marketCompanies.index')
-                ->with('success', 'Компания успешно удалена.');
+                ->route(
+                    'admin.marketCompanies.index'
+                )
+                ->with(
+                    'success',
+                    'Компания успешно удалена.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при удалении market company ID ' . $company->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при удалении market company ID '
+                . $company->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при удалении компании.');
+            return back()->with(
+                'error',
+                'Ошибка при удалении компании.'
+            );
         }
     }
 
-    /** Массовое удаление компаний */
-    public function bulkDestroy(Request $request): RedirectResponse
-    {
+    /**
+     * Массовое удаление компаний.
+     *
+     * Доступность компаний проверяется
+     * через baseQuery().
+     */
+    public function bulkDestroy(
+        Request $request
+    ): RedirectResponse {
         $validated = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:market_companies,id'],
+            'ids' => [
+                'required',
+                'array',
+            ],
+
+            'ids.*' => [
+                'required',
+                'integer',
+                'exists:market_companies,id',
+            ],
         ]);
 
         $ids = $validated['ids'];
 
         $allowedIds = $this->baseQuery()
-            ->whereIn('id', $ids)
+            ->whereIn(
+                'id',
+                $ids
+            )
             ->pluck('id')
             ->toArray();
 
-        if (count($allowedIds) !== count($ids)) {
-            return back()->with('error', 'Часть компаний недоступна для удаления.');
+        if (
+            count($allowedIds)
+            !== count($ids)
+        ) {
+            return back()->with(
+                'error',
+                'Часть компаний недоступна для удаления.'
+            );
         }
 
         try {
-            DB::transaction(function () use ($allowedIds) {
-                $companies = MarketCompany::query()
-                    ->whereIn('id', $allowedIds)
-                    ->with('translations')
-                    ->get();
+            DB::transaction(
+                function () use (
+                    $allowedIds
+                ): void {
+                    /**
+                     * Загружать translations не требуется.
+                     * Для каждой компании relation выполняет
+                     * прямой DELETE.
+                     */
+                    $companies = MarketCompany::query()
+                        ->whereIn(
+                            'id',
+                            $allowedIds
+                        )
+                        ->get();
 
-                foreach ($companies as $company) {
-                    $company->translations()->delete();
-                    $company->delete();
+                    foreach (
+                        $companies as $company
+                    ) {
+                        $company
+                            ->translations()
+                            ->delete();
+
+                        $company->delete();
+                    }
                 }
-            });
+            );
 
-            return back()->with('success', 'Выбранные компании успешно удалены.');
+            return back()->with(
+                'success',
+                'Выбранные компании успешно удалены.'
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка bulkDestroy market companies: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка bulkDestroy market companies: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при массовом удалении компаний.');
+            return back()->with(
+                'error',
+                'Ошибка при массовом удалении компаний.'
+            );
         }
     }
 
-    /** Базовый запрос списка компаний */
-    private function indexQuery(): Builder
-    {
+    /**
+     * Базовый запрос Index.
+     *
+     * В Index:
+     * - owner загружается пакетно;
+     * - moderator загружается пакетно;
+     * - translations ограничены currentLocale.
+     *
+     * Никакие fallback-запросы Resource
+     * выполнять не должен.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'owner',
-                'moderator',
-                'translations',
+                'owner:id,name,email,profile_photo_path',
+
+                'moderator:id,name',
+
+                'translations' =>
+                    function (
+                        $query
+                    ) use (
+                        $locale
+                    ): void {
+                        $query->where(
+                            'locale',
+                            $locale
+                        );
+                    },
             ]);
     }
 
-    /** Получение списка компаний для индекса */
+    /**
+     * Получение списка компаний
+     * для Index.
+     *
+     * server:
+     * - поиск в БД;
+     * - сортировка в БД;
+     * - paginator.
+     *
+     * frontend:
+     * - полный набор;
+     * - локальный поиск/сортировка/пагинация.
+     */
     private function getIndexCompanies(
         string $locale,
         bool $useServerProcessing,
         int $perPage,
         string $sort,
         string $search = ''
-    ) {
-        $query = $this->indexQuery();
+    ): LengthAwarePaginator|Collection {
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 

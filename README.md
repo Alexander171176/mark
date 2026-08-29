@@ -941,6 +941,7 @@ Analytics
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompany -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompanyTranslation -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketCompany/MarketCompanyResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketCompany/MarketCompanySharedResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketCompany/MarketCompanyTranslationResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketCompany/MarketCompanyRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketCompany/MarketCompanyController --resource` <br>

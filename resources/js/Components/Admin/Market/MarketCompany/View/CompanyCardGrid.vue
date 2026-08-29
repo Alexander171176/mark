@@ -14,9 +14,20 @@ import ModerationButton from '@/Components/Admin/UI/Buttons/ModerationButton.vue
 const { t } = useI18n()
 
 const props = defineProps({
-    companies: { type: Array, default: () => [] },
-    selectedCompanies: { type: Array, default: () => [] },
-    isAdmin: { type: Boolean, default: false },
+    companies: {
+        type: Array,
+        default: () => [],
+    },
+
+    selectedCompanies: {
+        type: Array,
+        default: () => [],
+    },
+
+    isAdmin: {
+        type: Boolean,
+        default: false,
+    },
 })
 
 const emits = defineEmits([
@@ -31,64 +42,113 @@ const emits = defineEmits([
     'approve',
 ])
 
+/** Локальный список для drag&drop */
 const localCompanies = ref([])
 
+/** Синхронизация входного списка */
 watch(
     () => props.companies,
     (newVal) => {
-        localCompanies.value = JSON.parse(JSON.stringify(newVal || []))
+        localCompanies.value = JSON.parse(
+            JSON.stringify(newVal || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
+/** Завершение drag&drop */
 const handleDragEnd = () => {
-    emits('update-sort-order', localCompanies.value.map(company => company.id))
+    emits(
+        'update-sort-order',
+        localCompanies.value.map(
+            (company) => company.id
+        )
+    )
 }
 
+/** Выбрать / снять все компании */
 const toggleAll = (event) => {
-    emits('toggle-all', {
-        ids: localCompanies.value.map(company => company.id),
-        checked: event.target.checked,
-    })
+    emits(
+        'toggle-all',
+        {
+            ids: localCompanies.value.map(
+                (company) => company.id
+            ),
+            checked: event.target.checked,
+        }
+    )
 }
 
+/** Все компании текущего списка выбраны */
 const allSelected = () => {
-    return localCompanies.value.length
-        && localCompanies.value.every(company => props.selectedCompanies.includes(company.id))
+    return !!localCompanies.value.length
+        && localCompanies.value.every(
+            (company) =>
+                props.selectedCompanies.includes(
+                    company.id
+                )
+        )
 }
 
-const companyTranslation = (company) => company?.translation || {}
-
+/** Название компании */
 const companyTitle = (company) => {
-    return companyTranslation(company)?.title
+    return company?.translation?.title
         || company?.legal_name
         || `ID: ${company?.id}`
 }
 
-const companyShort = (company) => companyTranslation(company)?.short || ''
+/** Краткое описание */
+const companyShort = (company) => {
+    return company?.translation?.short || ''
+}
 
+/** Статусы публикации */
 const statusLabelKeyMap = {
     draft: 'statusDraft',
     published: 'statusPublished',
     archived: 'statusArchived',
 }
-const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
 
-const ownerName = (company) => company?.owner?.name || t('noData')
-const ownerEmail = (company) => company?.owner?.email || ''
+const getStatusLabel = (status) => {
+    return t(
+        statusLabelKeyMap[status]
+        || status
+        || 'no'
+    )
+}
 
+/** Имя владельца */
+const ownerName = (company) => {
+    return company?.owner?.name
+        || t('noData')
+}
+
+/** Email владельца */
+const ownerEmail = (company) => {
+    return company?.owner?.email || ''
+}
+
+/** Полное название владельца */
 const ownerTitle = (company) => {
     const owner = company?.owner
 
-    if (!owner) return t('noData')
+    if (!owner) {
+        return t('noData')
+    }
 
     return `${owner.name || ''}${owner.email ? ' — ' + owner.email : ''}`.trim()
 }
 
+/** Аватар владельца */
 const ownerAvatar = (company) => {
-    return company?.owner?.profile_photo_url || '/storage/profile-photos/default-image.png'
+    return company?.owner?.profile_photo_url
+        || '/storage/profile-photos/default-image.png'
 }
 
+/** URL логотипа */
 const logoUrl = (company) => {
     if (!company?.logo) {
         return '/storage/market/companies/logos/default-image-light.png'
@@ -99,82 +159,130 @@ const logoUrl = (company) => {
         : `/storage/${company.logo}`
 }
 
+/** Форматирование даты */
 const formatDate = (dateStr) => {
-    if (!dateStr) return ''
+    if (!dateStr) {
+        return ''
+    }
 
     const date = new Date(dateStr)
 
-    if (isNaN(date)) return ''
+    if (Number.isNaN(date.getTime())) {
+        return ''
+    }
 
-    return date.toLocaleDateString('ru-RU', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    })
+    return date.toLocaleDateString(
+        'ru-RU',
+        {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        }
+    )
 }
 
-const truncateText = (text, maxLength = 80) => {
-    if (!text) return ''
+/** Обрезка текста */
+const truncateText = (
+    text,
+    maxLength = 80
+) => {
+    if (!text) {
+        return ''
+    }
 
     return text.length > maxLength
-        ? text.slice(0, maxLength).trimEnd() + '…'
+        ? text
+        .slice(0, maxLength)
+        .trimEnd() + '…'
         : text
 }
 
+/** Локализованное название типа компании */
+const companyTypeLabelKeyMap = {
+    company: 'marketCompanyTypeCompany',
+    entrepreneur: 'marketCompanyTypeEntrepreneur',
+    individual: 'marketCompanyTypeIndividual',
+}
+
 const companyTypeLabel = (type) => {
-    if (type === 'entrepreneur') return 'ИП'
-    if (type === 'individual') return 'Физ. лицо'
-
-    return 'Компания'
+    return t(
+        companyTypeLabelKeyMap[type]
+        || 'marketCompanyTypeCompany'
+    )
 }
 
+/** Локализованная информация по НДС */
 const vatLabel = (company) => {
-    if (!company?.vat_enabled) return 'Без НДС'
+    if (!company?.vat_enabled) {
+        return t('marketCompanyWithoutVat')
+    }
 
-    return company?.vat_rate
-        ? `НДС ${company.vat_rate}%`
-        : 'С НДС'
+    if (company?.vat_rate) {
+        return `${t('marketCompanyVat')} ${company.vat_rate}%`
+    }
+
+    return t('marketCompanyWithVat')
 }
 
+/** Бейдж модерации */
 const moderationBadge = (status) => {
-    const s = Number(status ?? 0)
+    const moderationStatus =
+        Number(status ?? 0)
 
-    if (s === 1) {
+    if (moderationStatus === 1) {
         return {
             text: t('statusSelectApproved'),
-            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 ' +
-                'dark:bg-emerald-900/40 dark:text-emerald-300',
+            class:
+                'bg-emerald-100 text-emerald-700 border-emerald-300 '
+                + 'dark:bg-emerald-900/40 dark:text-emerald-300',
         }
     }
 
-    if (s === 2) {
+    if (moderationStatus === 2) {
         return {
             text: t('statusSelectRejected'),
-            class: 'bg-rose-100 text-rose-700 border-rose-300 ' +
-                'dark:bg-rose-900/40 dark:text-rose-300',
+            class:
+                'bg-rose-100 text-rose-700 border-rose-300 '
+                + 'dark:bg-rose-900/40 dark:text-rose-300',
         }
     }
 
     return {
         text: t('underModeration'),
-        class: 'bg-amber-100 text-amber-800 border-amber-300 ' +
-            'dark:bg-amber-900/40 dark:text-amber-300',
+        class:
+            'bg-amber-100 text-amber-800 border-amber-300 '
+            + 'dark:bg-amber-900/40 dark:text-amber-300',
     }
 }
 
+/** Открытые блоки владельца */
 const openedOwnerBlocks = ref([])
 
+/** Блок владельца открыт */
 const isOwnerBlockOpen = (companyId) => {
-    return openedOwnerBlocks.value.includes(companyId)
+    return openedOwnerBlocks.value.includes(
+        companyId
+    )
 }
 
+/** Открытие / закрытие блока владельца */
 const toggleOwnerBlock = (companyId) => {
-    if (isOwnerBlockOpen(companyId)) {
-        openedOwnerBlocks.value = openedOwnerBlocks.value.filter(id => id !== companyId)
+    if (
+        isOwnerBlockOpen(
+            companyId
+        )
+    ) {
+        openedOwnerBlocks.value =
+            openedOwnerBlocks.value.filter(
+                (id) => id !== companyId
+            )
+
         return
     }
 
-    openedOwnerBlocks.value.push(companyId)
+    openedOwnerBlocks.value.push(
+        companyId
+    )
 }
 </script>
 
@@ -197,6 +305,7 @@ const toggleOwnerBlock = (companyId) => {
                        dark:text-slate-200 cursor-pointer"
             >
                 <span>{{ t('selectAll') }}</span>
+
                 <input
                     type="checkbox"
                     class="mx-2"
@@ -206,14 +315,17 @@ const toggleOwnerBlock = (companyId) => {
             </label>
         </div>
 
-        <div v-if="localCompanies.length" class="p-3">
+        <div
+            v-if="localCompanies.length"
+            class="p-3"
+        >
             <draggable
                 tag="div"
                 v-model="localCompanies"
                 item-key="id"
                 handle=".handle"
-                @end="handleDragEnd"
                 class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                @end="handleDragEnd"
             >
                 <template #item="{ element: company }">
                     <div
@@ -233,9 +345,12 @@ const toggleOwnerBlock = (companyId) => {
                                            dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
+                                        <path d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
                                     </svg>
                                 </button>
 
@@ -243,7 +358,7 @@ const toggleOwnerBlock = (companyId) => {
                                     class="text-[10px] font-semibold px-1.5 py-0.5 rounded-sm
                                            border border-gray-400 bg-slate-200 dark:bg-slate-700
                                            text-slate-800 dark:text-blue-100"
-                                :title="`[${company.sort}] / ${formatDate(company.published_at)}`"
+                                    :title="`[${company.sort}] / ${formatDate(company.published_at)}`"
                                 >
                                     ID: {{ company.id }}
                                 </div>
@@ -252,7 +367,9 @@ const toggleOwnerBlock = (companyId) => {
                                     type="button"
                                     class="text-slate-400 hover:text-blue-600
                                            dark:hover:text-blue-300"
-                            :title="isOwnerBlockOpen(company.id) ? t('hideOwner') : t('showOwner')"
+                                    :title="isOwnerBlockOpen(company.id)
+                                        ? t('hideOwner')
+                                        : t('showOwner')"
                                     @click.prevent="toggleOwnerBlock(company.id)"
                                 >
                                     <svg
@@ -274,9 +391,9 @@ const toggleOwnerBlock = (companyId) => {
                                 <span
                                     class="text-[10px] px-2 py-0.5 rounded-sm border font-semibold"
                                     :class="moderationBadge(company.moderation_status).class"
-                            :title="company.moderation_note && company.moderated_at
-                                ? `${company.moderation_note} [${formatDate(company.moderated_at)}]`
-                                : null"
+                                    :title="company.moderation_note && company.moderated_at
+                                        ? `${company.moderation_note} [${formatDate(company.moderated_at)}]`
+                                        : null"
                                 >
                                     {{ moderationBadge(company.moderation_status).text }}
                                 </span>
@@ -297,9 +414,9 @@ const toggleOwnerBlock = (companyId) => {
                                 <img
                                     :src="ownerAvatar(company)"
                                     :title="ownerTitle(company)"
+                                    :alt="t('owner')"
                                     class="h-12 w-12 rounded-full object-cover
                                            border border-slate-300 dark:border-slate-600"
-                                    :alt="t('owner')"
                                 />
 
                                 <div
@@ -323,15 +440,18 @@ const toggleOwnerBlock = (companyId) => {
                                 <div
                                     v-if="company.show_from_at"
                                     class="flex flex-col items-center justify-center
-                                       text-center text-[10px] text-slate-500 dark:text-slate-300"
+                                           text-center text-[10px] text-slate-500 dark:text-slate-300"
                                 >
-                                    {{ t('show') }}: {{ company.show_from_at }} / {{ company.show_to_at }}
+                                    {{ t('show') }}:
+                                    {{ company.show_from_at }}
+                                    /
+                                    {{ company.show_to_at }}
                                 </div>
 
                                 <div
                                     v-else
                                     class="flex flex-col items-center justify-center
-                                       text-center text-[10px] text-slate-500 dark:text-slate-300"
+                                           text-center text-[10px] text-slate-500 dark:text-slate-300"
                                 >
                                     {{ formatDate(company.published_at) }}
                                 </div>
@@ -397,13 +517,22 @@ const toggleOwnerBlock = (companyId) => {
                                 </div>
 
                                 <div class="text-center">
-                                    <span class="font-semibold">{{ t('city') }}:</span>
+                                    <span class="font-semibold">
+                                        {{ t('city') }}:
+                                    </span>
+
                                     {{ company.city || '—' }}
-                                    <span v-if="company.region">/ {{ company.region }}</span>
+
+                                    <span v-if="company.region">
+                                        / {{ company.region }}
+                                    </span>
                                 </div>
 
                                 <div class="text-center">
-                                    <span class="font-semibold">{{ t('contacts') }}:</span>
+                                    <span class="font-semibold">
+                                        {{ t('contacts') }}:
+                                    </span>
+
                                     {{ company.phone || '—' }}
                                 </div>
 
@@ -415,9 +544,14 @@ const toggleOwnerBlock = (companyId) => {
                                     {{ company.email }}
                                 </div>
 
-                                <div class="font-semibold text-center my-1
-                                            text-fuchsia-700 dark:text-fuchsia-300">
-                                    <span>{{ t('status') }}: </span>
+                                <div
+                                    class="font-semibold text-center my-1
+                                           text-fuchsia-700 dark:text-fuchsia-300"
+                                >
+                                    <span>
+                                        {{ t('status') }}:
+                                    </span>
+
                                     {{ getStatusLabel(company.status) }}
                                 </div>
                             </div>
@@ -430,7 +564,10 @@ const toggleOwnerBlock = (companyId) => {
                                     class="flex items-center justify-center space-x-1"
                                     :title="t('views')"
                                 >
-                                    <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 16 16">
+                                    <svg
+                                        class="w-4 h-4 fill-current shrink-0"
+                                        viewBox="0 0 16 16"
+                                    >
                                         <path
                                             class="fill-current text-blue-600 dark:text-blue-300"
                                             d="M8 2C3.246 2 .251 7.29.127 7.515a.998.998 0 0 0 .002.975c.07.125 1.044 1.801 2.695 3.274C4.738 13.582 6.283 14 8 14c4.706 0 7.743-5.284 7.872-5.507a1 1 0 0 0 0-.98A13.292 13.292 0 0 0 8 2zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"
@@ -443,15 +580,15 @@ const toggleOwnerBlock = (companyId) => {
                                 </div>
 
                                 <div class="flex justify-center space-x-1">
-                                <span
-                                    class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
-                                    :class="moderationBadge(company.moderation_status).class"
-                                    :title="company.moderation_note && company.moderated_at
-                                        ? `${company.moderation_note} [${formatDate(company.moderated_at)}]`
-                                        : null"
-                                >
-                                    {{ moderationBadge(company.moderation_status).text }}
-                                </span>
+                                    <span
+                                        class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
+                                        :class="moderationBadge(company.moderation_status).class"
+                                        :title="company.moderation_note && company.moderated_at
+                                            ? `${company.moderation_note} [${formatDate(company.moderated_at)}]`
+                                            : null"
+                                    >
+                                        {{ moderationBadge(company.moderation_status).text }}
+                                    </span>
 
                                     <ModerationButton
                                         :isAdmin="isAdmin"
@@ -471,35 +608,37 @@ const toggleOwnerBlock = (companyId) => {
                             <div class="flex items-center space-x-1">
                                 <LeftToggle
                                     :isActive="company.left"
-                                    @toggle-left="$emit('toggle-left', company)"
                                     :title="company.left ? t('enabled') : t('disabled')"
+                                    @toggle-left="$emit('toggle-left', company)"
                                 />
 
                                 <MainToggle
                                     :isActive="company.main"
-                                    @toggle-main="$emit('toggle-main', company)"
                                     :title="company.main ? t('enabled') : t('disabled')"
+                                    @toggle-main="$emit('toggle-main', company)"
                                 />
 
                                 <RightToggle
                                     :isActive="company.right"
-                                    @toggle-right="$emit('toggle-right', company)"
                                     :title="company.right ? t('enabled') : t('disabled')"
+                                    @toggle-right="$emit('toggle-right', company)"
                                 />
                             </div>
 
                             <div class="flex items-center space-x-1">
                                 <ActivityToggle
                                     :isActive="company.activity"
-                                    @toggle-activity="$emit('toggle-activity', company)"
                                     :title="company.activity ? t('enabled') : t('disabled')"
+                                    @toggle-activity="$emit('toggle-activity', company)"
                                 />
 
                                 <IconEdit
                                     :href="route('admin.marketCompanies.edit', { marketCompany: company.id })"
                                 />
 
-                                <DeleteIconButton @delete="$emit('delete', company)" />
+                                <DeleteIconButton
+                                    @delete="$emit('delete', company)"
+                                />
                             </div>
                         </div>
                     </div>
@@ -507,7 +646,10 @@ const toggleOwnerBlock = (companyId) => {
             </draggable>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

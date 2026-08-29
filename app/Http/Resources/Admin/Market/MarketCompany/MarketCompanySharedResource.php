@@ -5,18 +5,18 @@ namespace App\Http\Resources\Admin\Market\MarketCompany;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class MarketCompanyResource extends JsonResource
+class MarketCompanySharedResource extends JsonResource
 {
     /**
-     * Полный ресурс компании.
+     * Компактный ресурс компании.
      *
-     * Используется преимущественно
-     * для Edit / Details.
+     * Используется для Index, таблиц,
+     * карточек и связанных списков.
      *
      * Controller должен заранее загрузить:
-     * - translations — все переводы компании;
+     * - translations только currentLocale;
      * - owner;
-     * - moderator.
+     * - moderator при необходимости.
      *
      * Ресурс не выполняет SQL-запросов.
      *
@@ -24,7 +24,7 @@ class MarketCompanyResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $translation = $this->currentTranslation();
+        $translation = $this->loadedTranslation();
 
         return [
             /** Основные идентификаторы */
@@ -51,7 +51,7 @@ class MarketCompanyResource extends JsonResource
             'signature' => $this->signature,
             'stamp' => $this->stamp,
 
-            /** Адрес и геолокация */
+            /** Адрес */
             'country' => $this->country,
             'region' => $this->region,
             'city' => $this->city,
@@ -86,14 +86,12 @@ class MarketCompanyResource extends JsonResource
             'status' => $this->status,
 
             /** Модерация */
-            'moderation_status' =>
-                (int) $this->moderation_status,
+            'moderation_status' => (int) $this->moderation_status,
 
             'is_approved' =>
                 (int) $this->moderation_status === 1,
 
-            'moderated_by' =>
-                $this->moderated_by,
+            'moderated_by' => $this->moderated_by,
 
             'moderated_at' =>
                 $this->moderated_at?->toISOString(),
@@ -114,25 +112,15 @@ class MarketCompanyResource extends JsonResource
             /** Счётчики */
             'views' => (int) $this->views,
 
-            /** Текущий перевод */
+            /**
+             * Единственный перевод,
+             * заранее ограниченный Controller.
+             */
             'translation' => $translation
                 ? new MarketCompanyTranslationResource(
                     $translation
                 )
                 : null,
-
-            /**
-             * Все переводы.
-             *
-             * Edit Controller загружает
-             * полную коллекцию translations.
-             */
-            'translations' =>
-                MarketCompanyTranslationResource::collection(
-                    $this->whenLoaded(
-                        'translations'
-                    )
-                ),
 
             /** Владелец */
             'owner' => $this->whenLoaded(
@@ -170,34 +158,21 @@ class MarketCompanyResource extends JsonResource
     }
 
     /**
-     * Текущий перевод из уже загруженной
-     * полной коллекции translations.
+     * Получить перевод только из уже
+     * загруженной коллекции.
+     *
+     * Index Controller гарантирует,
+     * что translations содержит только
+     * currentLocale.
      *
      * Метод не выполняет SQL.
      */
-    protected function currentTranslation(): ?object
+    protected function loadedTranslation(): ?object
     {
         if (! $this->relationLoaded('translations')) {
             return null;
         }
 
-        $locale = app()->getLocale();
-
-        $fallbackLocale = config(
-            'app.fallback_locale',
-            'ru'
-        );
-
-        return $this->translations
-            ->firstWhere(
-                'locale',
-                $locale
-            )
-            ?? $this->translations
-            ->firstWhere(
-                'locale',
-                $fallbackLocale
-            )
-            ?? $this->translations->first();
+        return $this->translations->first();
     }
 }

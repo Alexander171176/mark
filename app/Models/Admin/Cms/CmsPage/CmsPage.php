@@ -62,33 +62,51 @@ class CmsPage extends Model
         'updated_at' => 'datetime',
     ];
 
+    /* ======================== Relations ======================== */
+
     /** Создатель страницы */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
 
     /** Родительская страница */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(self::class, 'parent_id');
+        return $this->belongsTo(
+            self::class,
+            'parent_id'
+        );
     }
 
     /** Дочерние страницы */
     public function children(): HasMany
     {
-        return $this->hasMany(self::class, 'parent_id')
+        return $this->hasMany(
+            self::class,
+            'parent_id'
+        )
             ->orderBy('sort')
             ->orderByDesc('id');
     }
 
-    /** Дочерние страницы рекурсивно */
+    /**
+     * Дочерние страницы рекурсивно.
+     *
+     * Relation отвечает только за построение дерева.
+     * Переводы намеренно здесь не загружаются.
+     *
+     * Нужные translations и другие relations
+     * должен определить Controller в зависимости
+     * от текущей локали и контекста использования.
+     */
     public function childrenRecursive(): HasMany
     {
         return $this->children()
             ->with([
-                'translations',
-                'translation',
                 'childrenRecursive',
             ])
             ->withCount([
@@ -96,7 +114,7 @@ class CmsPage extends Model
             ]);
     }
 
-    /** Переводы страницы */
+    /** Все переводы страницы */
     public function translations(): HasMany
     {
         return $this->hasMany(
@@ -105,39 +123,82 @@ class CmsPage extends Model
         );
     }
 
-    /** Текущий перевод страницы */
+    /**
+     * Перевод текущей локали.
+     *
+     * Relation сохраняется для существующей
+     * публичной логики и других мест приложения.
+     *
+     * Для Admin Index используем translations
+     * с ограничением locale из Controller.
+     */
     public function translation(): HasOne
     {
         return $this->hasOne(
             CmsPageTranslation::class,
             'cms_page_id'
-        )->where('locale', app()->getLocale());
+        )->where(
+            'locale',
+            app()->getLocale()
+        );
     }
 
-    /** Перевод с fallback */
+    /* ======================== Translation helpers ======================== */
+
+    /**
+     * Перевод текущей локали с fallback.
+     *
+     * Используется там, где действительно загружена
+     * полная коллекция translations.
+     */
     public function translationOrFallback(
         ?string $locale = null,
-        string $fallback = 'ru'
+        ?string $fallback = null
     ): ?CmsPageTranslation {
-        $locale = $locale ?: app()->getLocale();
+        $locale = $locale
+            ?: app()->getLocale();
 
-        return $this->translations->firstWhere('locale', $locale)
-            ?: $this->translations->firstWhere('locale', $fallback)
-                ?: $this->translations->first();
+        $fallback = $fallback
+            ?: config(
+                'app.fallback_locale',
+                'ru'
+            );
+
+        return $this->translations
+            ->firstWhere(
+                'locale',
+                $locale
+            )
+            ?: $this->translations
+                ->firstWhere(
+                    'locale',
+                    $fallback
+                )
+                ?: $this->translations
+                    ->first();
     }
 
     /** Получить title из текущего перевода */
     public function getTranslatedTitle(
         ?string $locale = null,
-        string $fallback = 'ru'
+        ?string $fallback = null
     ): ?string {
-        return $this->translationOrFallback(
-            locale: $locale,
-            fallback: $fallback
-        )?->title;
+        return $this
+            ->translationOrFallback(
+                locale: $locale,
+                fallback: $fallback
+            )
+            ?->title;
     }
 
-    /** Публичные дочерние страницы для меню */
+    /* ======================== Public tree relations ======================== */
+
+    /**
+     * Публичные дочерние страницы для меню.
+     *
+     * Текущую публичную архитектуру здесь
+     * намеренно не меняем.
+     */
     public function publicMenuChildren(): HasMany
     {
         return $this->children()
@@ -152,7 +213,12 @@ class CmsPage extends Model
             ]);
     }
 
-    /** Публичные дочерние страницы для футера */
+    /**
+     * Публичные дочерние страницы для футера.
+     *
+     * Текущую публичную архитектуру здесь
+     * намеренно не меняем.
+     */
     public function publicFooterChildren(): HasMany
     {
         return $this->children()
@@ -167,82 +233,146 @@ class CmsPage extends Model
             ]);
     }
 
+    /* ======================== Base scopes ======================== */
+
     /** Активные страницы */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('activity', true);
+    public function scopeActive(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'activity',
+            true
+        );
     }
 
     /** Опубликованные страницы */
-    public function scopePublished(Builder $query): Builder
-    {
+    public function scopePublished(
+        Builder $query
+    ): Builder {
         return $query
-            ->where('status', 'published')
-            ->where('activity', true)
-            ->whereNotNull('published_at');
+            ->where(
+                'status',
+                'published'
+            )
+            ->where(
+                'activity',
+                true
+            )
+            ->whereNotNull(
+                'published_at'
+            );
     }
 
     /** Сортировка по умолчанию */
-    public function scopeOrdered(Builder $query): Builder
-    {
-        return $query->orderBy('sort')->orderByDesc('id');
+    public function scopeOrdered(
+        Builder $query
+    ): Builder {
+        return $query
+            ->orderBy(
+                'sort'
+            )
+            ->orderByDesc(
+                'id'
+            );
     }
 
     /** Корневые страницы */
-    public function scopeRoot(Builder $query): Builder
-    {
-        return $query->whereNull('parent_id');
+    public function scopeRoot(
+        Builder $query
+    ): Builder {
+        return $query->whereNull(
+            'parent_id'
+        );
     }
 
     /** Страницы для меню */
-    public function scopeInMenu(Builder $query): Builder
-    {
-        return $query->where('in_menu', true);
+    public function scopeInMenu(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'in_menu',
+            true
+        );
     }
 
     /** Страницы для футера */
-    public function scopeInFooter(Builder $query): Builder
-    {
-        return $query->where('in_footer', true);
+    public function scopeInFooter(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'in_footer',
+            true
+        );
     }
 
     /** Страницы со своим CMS-контентом */
-    public function scopeWithOwnContent(Builder $query): Builder
-    {
-        return $query->where('show_content', true);
+    public function scopeWithOwnContent(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'show_content',
+            true
+        );
     }
 
     /** Страницы со своими SEO-полями */
-    public function scopeWithOwnSeo(Builder $query): Builder
-    {
-        return $query->where('show_seo', true);
+    public function scopeWithOwnSeo(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'show_seo',
+            true
+        );
     }
 
     /** Окно показа */
-    public function scopeInShowWindow(Builder $query): Builder
-    {
+    public function scopeInShowWindow(
+        Builder $query
+    ): Builder {
         return $query
-            ->where(function (Builder $q) {
-                $q->whereNull('show_from_at')
-                    ->orWhere('show_from_at', '<=', now());
-            })
-            ->where(function (Builder $q) {
-                $q->whereNull('show_to_at')
-                    ->orWhere('show_to_at', '>=', now());
-            });
+            ->where(
+                function (
+                    Builder $q
+                ): void {
+                    $q->whereNull(
+                        'show_from_at'
+                    )
+                        ->orWhere(
+                            'show_from_at',
+                            '<=',
+                            now()
+                        );
+                }
+            )
+            ->where(
+                function (
+                    Builder $q
+                ): void {
+                    $q->whereNull(
+                        'show_to_at'
+                    )
+                        ->orWhere(
+                            'show_to_at',
+                            '>=',
+                            now()
+                        );
+                }
+            );
     }
 
     /** Публичные страницы */
-    public function scopeForPublic(Builder $query): Builder
-    {
+    public function scopeForPublic(
+        Builder $query
+    ): Builder {
         return $query
             ->published()
             ->inShowWindow();
     }
 
     /** Публичные страницы меню */
-    public function scopeForMenu(Builder $query): Builder
-    {
+    public function scopeForMenu(
+        Builder $query
+    ): Builder {
         return $query
             ->forPublic()
             ->inMenu()
@@ -250,188 +380,774 @@ class CmsPage extends Model
     }
 
     /** Публичные страницы футера */
-    public function scopeForFooter(Builder $query): Builder
-    {
+    public function scopeForFooter(
+        Builder $query
+    ): Builder {
         return $query
             ->forPublic()
             ->inFooter()
             ->ordered();
     }
 
-    /** Поиск */
+    /* ======================== Search ======================== */
+
+    /**
+     * Поиск CMS страниц.
+     *
+     * Семантика приведена к текущему frontend Index:
+     * - id;
+     * - url;
+     * - icon;
+     * - views;
+     * - status;
+     * - title;
+     * - short;
+     * - description;
+     * - title родителя;
+     * - имя владельца;
+     * - email владельца.
+     *
+     * Для переводимых полей используется
+     * исключительно указанная locale.
+     */
     public function scopeSearch(
         Builder $query,
         ?string $term,
         ?string $locale = null
     ): Builder {
-        $term = trim((string) $term);
+        $term = trim(
+            (string) $term
+        );
 
         if ($term === '') {
             return $query;
         }
 
-        $locale = $locale ?: app()->getLocale();
+        $locale = $locale
+            ?: app()->getLocale();
 
-        return $query->where(function (Builder $q) use ($term, $locale) {
-            $q->where('cms_pages.url', 'like', "%{$term}%")
-                ->orWhere('cms_pages.icon', 'like', "%{$term}%")
-                ->orWhere('cms_pages.status', 'like', "%{$term}%")
+        return $query->where(
+            function (
+                Builder $query
+            ) use (
+                $term,
+                $locale
+            ): void {
+                $like = "%{$term}%";
 
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
-                                ->orWhere('subtitle', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%")
-                                ->orWhere('meta_title', 'like', "%{$term}%")
-                                ->orWhere('meta_keywords', 'like', "%{$term}%")
-                                ->orWhere('meta_desc', 'like', "%{$term}%");
-                        });
-                })
+                $query
+                    ->where(
+                        'cms_pages.id',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'cms_pages.url',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'cms_pages.icon',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'cms_pages.views',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'cms_pages.status',
+                        'like',
+                        $like
+                    )
 
-                ->orWhereHas('parent.translations', function (Builder $pq) use ($term, $locale) {
-                    $pq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
-                                ->orWhere('subtitle', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%");
-                        });
-                })
+                    /** Текущий перевод страницы */
+                    ->orWhereHas(
+                        'translations',
+                        function (
+                            Builder $translationQuery
+                        ) use (
+                            $locale,
+                            $like
+                        ): void {
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                )
+                                ->where(
+                                    function (
+                                        Builder $query
+                                    ) use (
+                                        $like
+                                    ): void {
+                                        $query
+                                            ->where(
+                                                'title',
+                                                'like',
+                                                $like
+                                            )
+                                            ->orWhere(
+                                                'short',
+                                                'like',
+                                                $like
+                                            )
+                                            ->orWhere(
+                                                'description',
+                                                'like',
+                                                $like
+                                            );
+                                    }
+                                );
+                        }
+                    )
 
-                ->orWhereHas('owner', function (Builder $oq) use ($term) {
-                    $oq->where('name', 'like', "%{$term}%")
-                        ->orWhere('email', 'like', "%{$term}%");
-                });
-        });
+                    /** Название родительской страницы */
+                    ->orWhereHas(
+                        'parent.translations',
+                        function (
+                            Builder $translationQuery
+                        ) use (
+                            $locale,
+                            $like
+                        ): void {
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                )
+                                ->where(
+                                    'title',
+                                    'like',
+                                    $like
+                                );
+                        }
+                    )
+
+                    /** Владелец */
+                    ->orWhereHas(
+                        'owner',
+                        function (
+                            Builder $ownerQuery
+                        ) use (
+                            $like
+                        ): void {
+                            $ownerQuery
+                                ->where(
+                                    'name',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'email',
+                                    'like',
+                                    $like
+                                );
+                        }
+                    );
+            }
+        );
     }
 
-    /** Сортировка по параметру */
+    /* ======================== Sorting ======================== */
+
+    /**
+     * Сортировка и фильтрация по параметру.
+     *
+     * Набор параметров соответствует SortSelect.vue
+     * и frontend-сортировке Index.vue.
+     */
     public function scopeSortByParam(
         Builder $query,
         ?string $sort,
         ?string $locale = null
     ): Builder {
-        $locale = $locale ?: app()->getLocale();
+        $locale = $locale
+            ?: app()->getLocale();
 
         return match ($sort) {
-            'idAsc' => $query->orderBy('cms_pages.id', 'asc'),
-            'idDesc' => $query->orderBy('cms_pages.id', 'desc'),
+            /** ID */
+            'idAsc' => $query
+                ->orderBy(
+                    'cms_pages.id',
+                    'asc'
+                ),
 
-            'sortAsc' => $query->orderBy('cms_pages.sort', 'asc')->orderByDesc('cms_pages.id'),
-            'sortDesc' => $query->orderBy('cms_pages.sort', 'desc')->orderByDesc('cms_pages.id'),
+            'idDesc' => $query
+                ->orderBy(
+                    'cms_pages.id',
+                    'desc'
+                ),
 
-            'levelAsc' => $query->orderBy('cms_pages.level', 'asc')->orderByDesc('cms_pages.id'),
-            'levelDesc' => $query->orderBy('cms_pages.level', 'desc')->orderByDesc('cms_pages.id'),
+            /** Sort */
+            'sortAsc' => $query
+                ->orderBy(
+                    'cms_pages.sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'parentAsc' => $query->orderBy('cms_pages.parent_id', 'asc')->orderByDesc('cms_pages.id'),
-            'parentDesc' => $query->orderBy('cms_pages.parent_id', 'desc')->orderByDesc('cms_pages.id'),
+            'sortDesc' => $query
+                ->orderBy(
+                    'cms_pages.sort',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'urlAsc' => $query->orderBy('cms_pages.url', 'asc')->orderByDesc('cms_pages.id'),
-            'urlDesc' => $query->orderBy('cms_pages.url', 'desc')->orderByDesc('cms_pages.id'),
+            /** Level */
+            'levelAsc' => $query
+                ->orderBy(
+                    'cms_pages.level',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'viewsAsc' => $query->orderBy('cms_pages.views', 'asc')->orderByDesc('cms_pages.id'),
-            'viewsDesc' => $query->orderBy('cms_pages.views', 'desc')->orderByDesc('cms_pages.id'),
+            'levelDesc' => $query
+                ->orderBy(
+                    'cms_pages.level',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'activityAsc' => $query->orderBy('cms_pages.activity', 'asc')->orderByDesc('cms_pages.id'),
-            'activityDesc' => $query->orderBy('cms_pages.activity', 'desc')->orderByDesc('cms_pages.id'),
-            'activity' => $query->where('cms_pages.activity', true)->orderByDesc('cms_pages.id'),
-            'inactive' => $query->where('cms_pages.activity', false)->orderByDesc('cms_pages.id'),
+            /** Parent */
+            'parentAsc' => $query
+                ->orderBy(
+                    'cms_pages.parent_id',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'inMenuAsc' => $query->orderBy('cms_pages.in_menu', 'asc')->orderByDesc('cms_pages.id'),
-            'inMenuDesc' => $query->orderBy('cms_pages.in_menu', 'desc')->orderByDesc('cms_pages.id'),
-            'inMenu' => $query->where('cms_pages.in_menu', true)->orderByDesc('cms_pages.id'),
-            'notInMenu' => $query->where('cms_pages.in_menu', false)->orderByDesc('cms_pages.id'),
+            'parentDesc' => $query
+                ->orderBy(
+                    'cms_pages.parent_id',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'inFooterAsc' => $query->orderBy('cms_pages.in_footer', 'asc')->orderByDesc('cms_pages.id'),
-            'inFooterDesc' => $query->orderBy('cms_pages.in_footer', 'desc')->orderByDesc('cms_pages.id'),
-            'inFooter' => $query->where('cms_pages.in_footer', true)->orderByDesc('cms_pages.id'),
-            'notInFooter' => $query->where('cms_pages.in_footer', false)->orderByDesc('cms_pages.id'),
+            /** URL */
+            'urlAsc' => $query
+                ->orderBy(
+                    'cms_pages.url',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'showContentAsc' => $query->orderBy('cms_pages.show_content', 'asc')->orderByDesc('cms_pages.id'),
-            'showContentDesc' => $query->orderBy('cms_pages.show_content', 'desc')->orderByDesc('cms_pages.id'),
-            'showContent' => $query->where('cms_pages.show_content', true)->orderByDesc('cms_pages.id'),
-            'notShowContent' => $query->where('cms_pages.show_content', false)->orderByDesc('cms_pages.id'),
+            'urlDesc' => $query
+                ->orderBy(
+                    'cms_pages.url',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'showSeoAsc' => $query->orderBy('cms_pages.show_seo', 'asc')->orderByDesc('cms_pages.id'),
-            'showSeoDesc' => $query->orderBy('cms_pages.show_seo', 'desc')->orderByDesc('cms_pages.id'),
-            'showSeo' => $query->where('cms_pages.show_seo', true)->orderByDesc('cms_pages.id'),
-            'notShowSeo' => $query->where('cms_pages.show_seo', false)->orderByDesc('cms_pages.id'),
+            /** Views */
+            'viewsAsc' => $query
+                ->orderBy(
+                    'cms_pages.views',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'statusAsc' => $query->orderBy('cms_pages.status', 'asc')->orderByDesc('cms_pages.id'),
-            'statusDesc' => $query->orderBy('cms_pages.status', 'desc')->orderByDesc('cms_pages.id'),
-            'statusDraft' => $query->where('cms_pages.status', 'draft')->orderByDesc('cms_pages.id'),
-            'statusPublished' => $query->where('cms_pages.status', 'published')->orderByDesc('cms_pages.id'),
-            'statusArchived' => $query->where('cms_pages.status', 'archived')->orderByDesc('cms_pages.id'),
+            'viewsDesc' => $query
+                ->orderBy(
+                    'cms_pages.views',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
+            /** Activity */
+            'activityAsc' => $query
+                ->orderBy(
+                    'cms_pages.activity',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'activityDesc' => $query
+                ->orderBy(
+                    'cms_pages.activity',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'activity' => $query
+                ->where(
+                    'cms_pages.activity',
+                    true
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'inactive' => $query
+                ->where(
+                    'cms_pages.activity',
+                    false
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            /** Menu */
+            'inMenuAsc' => $query
+                ->orderBy(
+                    'cms_pages.in_menu',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'inMenuDesc' => $query
+                ->orderBy(
+                    'cms_pages.in_menu',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'inMenu' => $query
+                ->where(
+                    'cms_pages.in_menu',
+                    true
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'notInMenu' => $query
+                ->where(
+                    'cms_pages.in_menu',
+                    false
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            /** Footer */
+            'inFooterAsc' => $query
+                ->orderBy(
+                    'cms_pages.in_footer',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'inFooterDesc' => $query
+                ->orderBy(
+                    'cms_pages.in_footer',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'inFooter' => $query
+                ->where(
+                    'cms_pages.in_footer',
+                    true
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'notInFooter' => $query
+                ->where(
+                    'cms_pages.in_footer',
+                    false
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            /** HTML */
+            'showContentAsc' => $query
+                ->orderBy(
+                    'cms_pages.show_content',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'showContentDesc' => $query
+                ->orderBy(
+                    'cms_pages.show_content',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'showContent' => $query
+                ->where(
+                    'cms_pages.show_content',
+                    true
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'notShowContent' => $query
+                ->where(
+                    'cms_pages.show_content',
+                    false
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            /** SEO */
+            'showSeoAsc' => $query
+                ->orderBy(
+                    'cms_pages.show_seo',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'showSeoDesc' => $query
+                ->orderBy(
+                    'cms_pages.show_seo',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'showSeo' => $query
+                ->where(
+                    'cms_pages.show_seo',
+                    true
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'notShowSeo' => $query
+                ->where(
+                    'cms_pages.show_seo',
+                    false
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            /** Status */
+            'statusAsc' => $query
+                ->orderBy(
+                    'cms_pages.status',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'statusDesc' => $query
+                ->orderBy(
+                    'cms_pages.status',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'statusDraft' => $query
+                ->where(
+                    'cms_pages.status',
+                    'draft'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'statusPublished' => $query
+                ->where(
+                    'cms_pages.status',
+                    'published'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'statusArchived' => $query
+                ->where(
+                    'cms_pages.status',
+                    'archived'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            /** Owner name */
             'ownerNameAsc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'cms_pages.user_id')
-                ->orderBy('owner_sort.name', 'asc')
-                ->orderByDesc('cms_pages.id')
-                ->select('cms_pages.*'),
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'cms_pages.user_id'
+                )
+                ->addSelect(
+                    'cms_pages.*'
+                )
+                ->orderBy(
+                    'owner_sort.name',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
             'ownerNameDesc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'cms_pages.user_id')
-                ->orderBy('owner_sort.name', 'desc')
-                ->orderByDesc('cms_pages.id')
-                ->select('cms_pages.*'),
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'cms_pages.user_id'
+                )
+                ->addSelect(
+                    'cms_pages.*'
+                )
+                ->orderBy(
+                    'owner_sort.name',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
+            /** Owner email */
             'ownerEmailAsc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'cms_pages.user_id')
-                ->orderBy('owner_sort.email', 'asc')
-                ->orderByDesc('cms_pages.id')
-                ->select('cms_pages.*'),
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'cms_pages.user_id'
+                )
+                ->addSelect(
+                    'cms_pages.*'
+                )
+                ->orderBy(
+                    'owner_sort.email',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
             'ownerEmailDesc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'cms_pages.user_id')
-                ->orderBy('owner_sort.email', 'desc')
-                ->orderByDesc('cms_pages.id')
-                ->select('cms_pages.*'),
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'cms_pages.user_id'
+                )
+                ->addSelect(
+                    'cms_pages.*'
+                )
+                ->orderBy(
+                    'owner_sort.email',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'publishedAtAsc' => $query->orderBy('cms_pages.published_at', 'asc')->orderByDesc('cms_pages.id'),
-            'publishedAtDesc' => $query->orderBy('cms_pages.published_at', 'desc')->orderByDesc('cms_pages.id'),
+            /** Published */
+            'publishedAtAsc' => $query
+                ->orderBy(
+                    'cms_pages.published_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'createdAtAsc', 'dateAsc' => $query->orderBy('cms_pages.created_at', 'asc')->orderByDesc('cms_pages.id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('cms_pages.created_at', 'desc')->orderByDesc('cms_pages.id'),
+            'publishedAtDesc' => $query
+                ->orderBy(
+                    'cms_pages.published_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'updatedAtAsc' => $query->orderBy('cms_pages.updated_at', 'asc')->orderByDesc('cms_pages.id'),
-            'updatedAtDesc' => $query->orderBy('cms_pages.updated_at', 'desc')->orderByDesc('cms_pages.id'),
+            /** Created */
+            'createdAtAsc',
+            'dateAsc' => $query
+                ->orderBy(
+                    'cms_pages.created_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
-            'childrenAsc' => $query->withCount('children')->orderBy('children_count', 'asc')->orderByDesc('cms_pages.id'),
-            'childrenDesc' => $query->withCount('children')->orderBy('children_count', 'desc')->orderByDesc('cms_pages.id'),
+            'createdAtDesc',
+            'dateDesc' => $query
+                ->orderBy(
+                    'cms_pages.created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
+            /** Updated */
+            'updatedAtAsc' => $query
+                ->orderBy(
+                    'cms_pages.updated_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'updatedAtDesc' => $query
+                ->orderBy(
+                    'cms_pages.updated_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            /** Children */
+            'childrenAsc' => $query
+                ->withCount(
+                    'children'
+                )
+                ->orderBy(
+                    'children_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            'childrenDesc' => $query
+                ->withCount(
+                    'children'
+                )
+                ->orderBy(
+                    'children_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
+
+            /** Title текущей локали */
             'titleAsc' => $query
-                ->leftJoin('cms_page_translations as cpt_sort', function ($join) use ($locale) {
-                    $join->on('cpt_sort.cms_page_id', '=', 'cms_pages.id')
-                        ->where('cpt_sort.locale', '=', $locale);
-                })
-                ->orderBy('cpt_sort.title', 'asc')
-                ->orderByDesc('cms_pages.id')
-                ->select('cms_pages.*'),
+                ->leftJoin(
+                    'cms_page_translations as cpt_sort',
+                    function (
+                        $join
+                    ) use (
+                        $locale
+                    ): void {
+                        $join
+                            ->on(
+                                'cpt_sort.cms_page_id',
+                                '=',
+                                'cms_pages.id'
+                            )
+                            ->where(
+                                'cpt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'cms_pages.*'
+                )
+                ->orderBy(
+                    'cpt_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
             'titleDesc' => $query
-                ->leftJoin('cms_page_translations as cpt_sort', function ($join) use ($locale) {
-                    $join->on('cpt_sort.cms_page_id', '=', 'cms_pages.id')
-                        ->where('cpt_sort.locale', '=', $locale);
-                })
-                ->orderBy('cpt_sort.title', 'desc')
-                ->orderByDesc('cms_pages.id')
-                ->select('cms_pages.*'),
+                ->leftJoin(
+                    'cms_page_translations as cpt_sort',
+                    function (
+                        $join
+                    ) use (
+                        $locale
+                    ): void {
+                        $join
+                            ->on(
+                                'cpt_sort.cms_page_id',
+                                '=',
+                                'cms_pages.id'
+                            )
+                            ->where(
+                                'cpt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'cms_pages.*'
+                )
+                ->orderBy(
+                    'cpt_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'cms_pages.id'
+                ),
 
+            /** Default */
             default => $query->ordered(),
         };
     }
 
+    /* ======================== Helpers ======================== */
+
     /** Страница корневая */
     public function isRoot(): bool
     {
-        return is_null($this->parent_id);
+        return $this->parent_id === null;
     }
 
     /** Есть дочерние страницы */
     public function hasChildren(): bool
     {
-        return $this->children()->exists();
+        return $this
+            ->children()
+            ->exists();
     }
 
     /** Страница активна */
@@ -445,7 +1161,7 @@ class CmsPage extends Model
     {
         return $this->status === 'published'
             && (bool) $this->activity
-            && ! is_null($this->published_at);
+            && $this->published_at !== null;
     }
 
     /** Использовать собственный HTML-контент */

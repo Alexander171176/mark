@@ -36,7 +36,11 @@ class ReviewResource extends JsonResource
 
             /** Ответ владельца сущности или администратора */
             'reply' => $this->reply,
-            'replied_by' => $this->replied_by,
+
+            'replied_by' => $this->replied_by !== null
+                ? (int) $this->replied_by
+                : null,
+
             'replied_at' => $this->replied_at?->toISOString(),
             'has_reply' => filled($this->reply),
 
@@ -47,7 +51,10 @@ class ReviewResource extends JsonResource
             'is_approved' => (int) $this->moderation_status === 1,
             'is_rejected' => (int) $this->moderation_status === 2,
 
-            'moderated_by' => $this->moderated_by,
+            'moderated_by' => $this->moderated_by !== null
+                ? (int) $this->moderated_by
+                : null,
+
             'moderated_at' => $this->moderated_at?->toISOString(),
             'moderation_note' => $this->moderation_note,
 
@@ -67,19 +74,22 @@ class ReviewResource extends JsonResource
             ),
 
             /** Автор отзыва */
-            'author' => $this->whenLoaded('author', function () {
-                return $this->userPayload($this->author);
-            }),
+            'author' => $this->whenLoaded(
+                'author',
+                fn () => $this->userPayload($this->author)
+            ),
 
             /** Пользователь, оставивший ответ */
-            'replier' => $this->whenLoaded('replier', function () {
-                return $this->userPayload($this->replier);
-            }),
+            'replier' => $this->whenLoaded(
+                'replier',
+                fn () => $this->userPayload($this->replier)
+            ),
 
             /** Модератор */
-            'moderator' => $this->whenLoaded('moderator', function () {
-                return $this->userPayload($this->moderator);
-            }),
+            'moderator' => $this->whenLoaded(
+                'moderator',
+                fn () => $this->userPayload($this->moderator)
+            ),
 
             /** Изображения отзыва */
             'images' => ReviewImageResource::collection(
@@ -95,8 +105,9 @@ class ReviewResource extends JsonResource
     /**
      * Компактные данные полиморфной сущности.
      *
-     * Ресурс не зависит от конкретного типа:
-     * товара, комплекта, курса или другой сущности.
+     * Ресурс не выполняет запросы самостоятельно.
+     * Для переводимых сущностей Controller должен заранее
+     * загрузить translations только для currentLocale.
      *
      * @return array<string, mixed>|null
      */
@@ -108,25 +119,39 @@ class ReviewResource extends JsonResource
             return null;
         }
 
+        $translation = $this->reviewableTranslation(
+            $reviewable
+        );
+
         return [
+            /** Основные идентификаторы */
             'id' => (int) $reviewable->getKey(),
 
             /** Алиас из morphMap */
             'type' => $this->reviewable_type,
 
-            /** PHP-класс нужен только административному интерфейсу */
+            /** PHP-класс нужен административному интерфейсу */
             'class' => $reviewable::class,
 
-            /** Универсальные поля, если они существуют у модели */
+            /** Универсальные поля сущности */
             'url' => $reviewable->url ?? null,
             'slug' => $reviewable->slug ?? null,
+
             'sku' => $reviewable->sku ?? null,
+            'vendor_code' => $reviewable->vendor_code ?? null,
+            'barcode' => $reviewable->barcode ?? null,
             'code' => $reviewable->code ?? null,
 
-            /** Отображаемое название сущности */
-            'title' => $this->reviewableTitle($reviewable),
+            /** Данные текущего перевода */
+            'title' => $translation?->title
+                ?? $translation?->name
+                    ?? $this->reviewableFallbackTitle($reviewable),
 
-            /** Состояние сущности, если поля существуют */
+            'subtitle' => $translation?->subtitle ?? null,
+            'short' => $translation?->short ?? null,
+            'description' => $translation?->description ?? null,
+
+            /** Состояние сущности */
             'activity' => isset($reviewable->activity)
                 ? (bool) $reviewable->activity
                 : null,
@@ -136,52 +161,30 @@ class ReviewResource extends JsonResource
     }
 
     /**
-     * Получить отображаемое название сущности.
+     * Получить уже загруженный перевод reviewable-сущности.
+     *
+     * Controller загружает translations только для currentLocale,
+     * поэтому первый элемент коллекции является текущим переводом.
+     *
+     * Метод не инициирует SQL-запросы.
      */
-    protected function reviewableTitle(object $reviewable): ?string
-    {
-        /*
-         * Если у сущности есть специальный helper,
-         * используем его первым.
-         */
-        if (method_exists($reviewable, 'getTranslatedTitle')) {
-            return $reviewable->getTranslatedTitle();
+    protected function reviewableTranslation(
+        object $reviewable
+    ): ?object {
+        if (! $reviewable->relationLoaded('translations')) {
+            return null;
         }
 
-        /*
-         * Текущий перевод был загружен отдельной связью.
-         */
-        if (
-            $reviewable->relationLoaded('translation')
-            && $reviewable->translation
-        ) {
-            return $reviewable->translation->title;
-        }
+        return $reviewable->translations->first();
+    }
 
-        /*
-         * Все переводы были загружены коллекцией.
-         */
-        if ($reviewable->relationLoaded('translations')) {
-            $translations = $reviewable->translations;
-
-            $translation = $translations->firstWhere(
-                'locale',
-                app()->getLocale()
-            )
-                ?: $translations->firstWhere(
-                    'locale',
-                    config('app.fallback_locale', 'ru')
-                )
-                    ?: $translations->first();
-
-            if ($translation) {
-                return $translation->title;
-            }
-        }
-
-        /*
-         * Для сущностей без системы переводов.
-         */
+    /**
+     * Fallback-название для сущностей без системы переводов
+     * или при отсутствии перевода текущей локали.
+     */
+    protected function reviewableFallbackTitle(
+        object $reviewable
+    ): ?string {
         return $reviewable->title
             ?? $reviewable->name
             ?? $reviewable->legal_name

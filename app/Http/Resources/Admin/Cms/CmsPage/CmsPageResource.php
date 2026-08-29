@@ -7,22 +7,36 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class CmsPageResource extends JsonResource
 {
+    /**
+     * Полный ресурс CMS страницы.
+     *
+     * Используется преимущественно для Edit / Details.
+     * Ресурс не выполняет дополнительные SQL-запросы.
+     *
+     * Controller должен заранее загрузить:
+     * - translations — все переводы страницы;
+     * - parent.translations — при необходимости;
+     * - owner;
+     * - children / childrenRecursive — при необходимости.
+     *
+     * @return array<string, mixed>
+     */
     public function toArray(Request $request): array
     {
-        $currentLocale = app()->getLocale();
-
-        $currentTranslation = $this->whenLoaded('translations', function () use ($currentLocale) {
-            return $this->translations->firstWhere('locale', $currentLocale)
-                ?: $this->translations->firstWhere('locale', config('app.fallback_locale', 'ru'))
-                    ?: $this->translations->first();
-        });
+        $translation = $this->currentTranslation();
 
         return [
-            'id' => $this->id,
-            'user_id' => $this->user_id,
+            /** Основные идентификаторы */
+            'id' => (int) $this->id,
+            'user_id' => $this->user_id !== null
+                ? (int) $this->user_id
+                : null,
 
             /** Дерево */
-            'parent_id' => $this->parent_id,
+            'parent_id' => $this->parent_id !== null
+                ? (int) $this->parent_id
+                : null,
+
             'level' => (int) $this->level,
             'is_root' => $this->parent_id === null,
 
@@ -36,58 +50,147 @@ class CmsPageResource extends JsonResource
             'show_content' => (bool) $this->show_content,
             'show_seo' => (bool) $this->show_seo,
 
+            /** Сортировка и активность */
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,
 
             /** Публикация */
             'status' => $this->status,
 
-            /** Окно показа */
-            'published_at' => $this->published_at?->format('Y-m-d'),
-            'show_from_at' => $this->show_from_at?->format('Y-m-d\TH:i'),
-            'show_to_at' => $this->show_to_at?->format('Y-m-d\TH:i'),
+            'published_at' => $this->published_at
+                ? $this->published_at->format('Y-m-d')
+                : null,
+
+            'show_from_at' => $this->show_from_at
+                ? $this->show_from_at->format('Y-m-d\TH:i')
+                : null,
+
+            'show_to_at' => $this->show_to_at
+                ? $this->show_to_at->format('Y-m-d\TH:i')
+                : null,
 
             /** Счётчики */
             'views' => (int) $this->views,
 
+            'children_count' => $this->whenCounted(
+                'children'
+            ),
+
             /** Текущий перевод */
-            'translation' => $currentTranslation
-                ? new CmsPageTranslationResource($currentTranslation)
+            'translation' => $translation
+                ? new CmsPageTranslationResource(
+                    $translation
+                )
                 : null,
 
-            /** Все переводы */
-            'translations' => CmsPageTranslationResource::collection(
-                $this->whenLoaded('translations')
+            /**
+             * Все переводы.
+             *
+             * Для Edit Controller загружает полную
+             * коллекцию translations.
+             */
+            'translations' =>
+                CmsPageTranslationResource::collection(
+                    $this->whenLoaded(
+                        'translations'
+                    )
+                ),
+
+            /** Родитель */
+            'parent' => $this->whenLoaded(
+                'parent',
+                fn () => $this->parent
+                    ? new CmsPageSharedResource(
+                        $this->parent
+                    )
+                    : null
             ),
 
-            /** Relations */
-            'parent' => new CmsPageSharedResource(
-                $this->whenLoaded('parent')
+            /** Прямые дочерние страницы */
+            'children' =>
+                CmsPageSharedResource::collection(
+                    $this->whenLoaded(
+                        'children'
+                    )
+                ),
+
+            /** Рекурсивное дерево */
+            'children_recursive' =>
+                CmsPageSharedResource::collection(
+                    $this->whenLoaded(
+                        'childrenRecursive'
+                    )
+                ),
+
+            /** Владелец */
+            'owner' => $this->whenLoaded(
+                'owner',
+                fn () => $this->ownerPayload()
             ),
 
-            'children' => CmsPageSharedResource::collection(
-                $this->whenLoaded('children')
-            ),
+            /** Даты */
+            'created_at' =>
+                $this->created_at?->toISOString(),
 
-            'children_recursive' => CmsPageSharedResource::collection(
-                $this->whenLoaded('childrenRecursive')
-            ),
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
+        ];
+    }
 
-            'owner' => $this->whenLoaded('owner', function () {
-                return [
-                    'id' => $this->owner?->id,
-                    'name' => $this->owner?->name,
-                    'email' => $this->owner?->email,
-                    'profile_photo_url' => $this->owner?->profile_photo_url,
-                ];
-            }),
+    /**
+     * Текущий перевод из уже загруженной
+     * коллекции translations.
+     *
+     * Для полного ресурса translations обычно
+     * содержит все локали.
+     *
+     * Метод не инициирует SQL.
+     */
+    protected function currentTranslation(): ?object
+    {
+        if (! $this->relationLoaded('translations')) {
+            return null;
+        }
 
-            /** Counts */
-            'children_count' => $this->whenCounted('children'),
+        $locale = app()->getLocale();
 
-            /** Timestamps */
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return $this->translations
+            ->firstWhere(
+                'locale',
+                $locale
+            )
+            ?? $this->translations
+            ->firstWhere(
+                'locale',
+                $fallbackLocale
+            )
+            ?? $this->translations
+                ->first();
+    }
+
+    /**
+     * Компактные данные владельца.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function ownerPayload(): ?array
+    {
+        if (! $this->owner) {
+            return null;
+        }
+
+        return [
+            'id' => (int) $this->owner->id,
+            'name' => $this->owner->name,
+            'email' => $this->owner->email,
+
+            'profile_photo_url' =>
+                $this->owner->profile_photo_url,
         ];
     }
 }

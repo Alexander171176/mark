@@ -2,6 +2,7 @@
 
 namespace App\Models\Admin\Review;
 
+use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -215,16 +216,25 @@ class Review extends Model
             );
     }
 
-    /** Поиск по содержимому отзыва и связанным пользователям */
+    /**
+     * Поиск по отзыву, связанным пользователям
+     * и полиморфной reviewable-сущности.
+     *
+     * Для переводимых reviewable-сущностей
+     * поиск выполняется только по currentLocale.
+     */
     public function scopeSearch(
         Builder $query,
-        ?string $term
+        ?string $term,
+        ?string $locale = null
     ): Builder {
         $term = trim((string) $term);
 
         if ($term === '') {
             return $query;
         }
+
+        $locale = $locale ?: app()->getLocale();
 
         $words = collect(
             preg_split(
@@ -240,91 +250,207 @@ class Review extends Model
             return $query;
         }
 
-        return $query->where(function (Builder $searchQuery) use ($words) {
-            foreach ($words as $word) {
-                $searchQuery->where(function (Builder $wordQuery) use ($word) {
-                    $wordQuery
-                        ->where(
-                            'reviews.advantages',
-                            'like',
-                            "%{$word}%"
-                        )
-                        ->orWhere(
-                            'reviews.disadvantages',
-                            'like',
-                            "%{$word}%"
-                        )
-                        ->orWhere(
-                            'reviews.comment',
-                            'like',
-                            "%{$word}%"
-                        )
-                        ->orWhere(
-                            'reviews.reply',
-                            'like',
-                            "%{$word}%"
-                        )
-                        ->orWhere(
-                            'reviews.moderation_note',
-                            'like',
-                            "%{$word}%"
-                        )
-                        ->orWhere(
-                            'reviews.reviewable_type',
-                            'like',
-                            "%{$word}%"
-                        )
-                        ->orWhereHas(
-                            'author',
-                            function (Builder $authorQuery) use ($word) {
-                                $authorQuery
-                                    ->where(
-                                        'name',
-                                        'like',
-                                        "%{$word}%"
-                                    )
-                                    ->orWhere(
-                                        'email',
-                                        'like',
-                                        "%{$word}%"
-                                    );
-                            }
-                        )
-                        ->orWhereHas(
-                            'replier',
-                            function (Builder $replierQuery) use ($word) {
-                                $replierQuery
-                                    ->where(
-                                        'name',
-                                        'like',
-                                        "%{$word}%"
-                                    )
-                                    ->orWhere(
-                                        'email',
-                                        'like',
-                                        "%{$word}%"
-                                    );
-                            }
-                        )
-                        ->orWhereHas(
-                            'moderator',
-                            function (Builder $moderatorQuery) use ($word) {
-                                $moderatorQuery
-                                    ->where(
-                                        'name',
-                                        'like',
-                                        "%{$word}%"
-                                    )
-                                    ->orWhere(
-                                        'email',
-                                        'like',
-                                        "%{$word}%"
-                                    );
-                            }
-                        );
-                });
+        return $query->where(
+            function (Builder $searchQuery) use (
+                $words,
+                $locale
+            ): void {
+                foreach ($words as $word) {
+                    $searchQuery->where(
+                        function (Builder $wordQuery) use (
+                            $word,
+                            $locale
+                        ): void {
+                            $wordQuery
+                                /** Основные поля отзыва */
+                                ->where(
+                                    'reviews.advantages',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'reviews.disadvantages',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'reviews.comment',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'reviews.reply',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'reviews.moderation_note',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'reviews.reviewable_type',
+                                    'like',
+                                    "%{$word}%"
+                                )
+
+                                /** Автор отзыва */
+                                ->orWhereHas(
+                                    'author',
+                                    function (
+                                        Builder $authorQuery
+                                    ) use ($word): void {
+                                        $authorQuery
+                                            ->where(
+                                                'name',
+                                                'like',
+                                                "%{$word}%"
+                                            )
+                                            ->orWhere(
+                                                'email',
+                                                'like',
+                                                "%{$word}%"
+                                            );
+                                    }
+                                )
+
+                                /** Пользователь, оставивший ответ */
+                                ->orWhereHas(
+                                    'replier',
+                                    function (
+                                        Builder $replierQuery
+                                    ) use ($word): void {
+                                        $replierQuery
+                                            ->where(
+                                                'name',
+                                                'like',
+                                                "%{$word}%"
+                                            )
+                                            ->orWhere(
+                                                'email',
+                                                'like',
+                                                "%{$word}%"
+                                            );
+                                    }
+                                )
+
+                                /** Модератор */
+                                ->orWhereHas(
+                                    'moderator',
+                                    function (
+                                        Builder $moderatorQuery
+                                    ) use ($word): void {
+                                        $moderatorQuery
+                                            ->where(
+                                                'name',
+                                                'like',
+                                                "%{$word}%"
+                                            )
+                                            ->orWhere(
+                                                'email',
+                                                'like',
+                                                "%{$word}%"
+                                            );
+                                    }
+                                )
+
+                                /**
+                                 * MarketProduct.
+                                 *
+                                 * Поиск по собственным полям товара
+                                 * и переводу только currentLocale.
+                                 */
+                                ->orWhereHasMorph(
+                                    'reviewable',
+                                    [
+                                        MarketProduct::class,
+                                    ],
+                                    function (
+                                        Builder $productQuery
+                                    ) use (
+                                        $word,
+                                        $locale
+                                    ): void {
+                                        $productQuery
+                                            ->where(
+                                                function (
+                                                    Builder $marketProductQuery
+                                                ) use (
+                                                    $word,
+                                                    $locale
+                                                ): void {
+                                                    $marketProductQuery
+                                                        ->where(
+                                                            'market_products.url',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'market_products.sku',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'market_products.vendor_code',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'market_products.barcode',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhereHas(
+                                                            'translations',
+                                                            function (
+                                                                Builder $translationQuery
+                                                            ) use (
+                                                                $word,
+                                                                $locale
+                                                            ): void {
+                                                                $translationQuery
+                                                                    ->where(
+                                                                        'locale',
+                                                                        $locale
+                                                                    )
+                                                                    ->where(
+                                                                        function (
+                                                                            Builder $translationSearch
+                                                                        ) use ($word): void {
+                                                                            $translationSearch
+                                                                                ->where(
+                                                                                    'title',
+                                                                                    'like',
+                                                                                    "%{$word}%"
+                                                                                )
+                                                                                ->orWhere(
+                                                                                    'subtitle',
+                                                                                    'like',
+                                                                                    "%{$word}%"
+                                                                                )
+                                                                                ->orWhere(
+                                                                                    'short',
+                                                                                    'like',
+                                                                                    "%{$word}%"
+                                                                                )
+                                                                                ->orWhere(
+                                                                                    'description',
+                                                                                    'like',
+                                                                                    "%{$word}%"
+                                                                                );
+                                                                        }
+                                                                    );
+                                                            }
+                                                        );
+                                                }
+                                            );
+                                    }
+                                );
+                        }
+                    );
+                }
             }
-        });
+        );
     }
 
     /** Сортировка и фильтрация по параметру */

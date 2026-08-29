@@ -25,51 +25,67 @@ const emit = defineEmits([
     'toggle-seo',
 ])
 
+/* ======================== Owner ======================== */
+
+/** Открытые блоки владельцев */
 const openedOwnerBlocks = ref([])
 
+/** Проверка открытого блока владельца */
 const isOwnerBlockOpen = (pageId) => {
     return openedOwnerBlocks.value.includes(pageId)
 }
 
+/** Переключение блока владельца */
 const toggleOwnerBlock = (pageId) => {
     if (isOwnerBlockOpen(pageId)) {
-        openedOwnerBlocks.value = openedOwnerBlocks.value.filter(id => id !== pageId)
+        openedOwnerBlocks.value = openedOwnerBlocks.value.filter(
+            (id) => id !== pageId
+        )
+
         return
     }
 
     openedOwnerBlocks.value.push(pageId)
 }
 
-const getTranslation = (page) => {
-    return page?.translation || page?.translations?.[0] || {}
-}
+/* ======================== Translation contract ======================== */
 
+/** Название страницы */
 const getTitle = (page) => {
-    return page?.title
-        || getTranslation(page)?.title
+    return page?.translation?.title
         || `ID: ${page?.id}`
 }
 
+/** Краткое описание */
 const getShort = (page) => {
-    return page?.short
-        || getTranslation(page)?.short
-        || ''
+    return page?.translation?.short || ''
 }
 
+/** Полное описание */
 const getDescription = (page) => {
-    return page?.description
-        || getTranslation(page)?.description
-        || ''
+    return page?.translation?.description || ''
 }
 
+/** Название родительской страницы */
+const parentTitle = (page) => {
+    return page?.parent?.translation?.title
+        || t('noData')
+}
+
+/* ======================== Helpers ======================== */
+
+/** Ограничение длины текста */
 const truncateText = (text, maxLength = 80) => {
-    if (!text) return ''
+    if (!text) {
+        return ''
+    }
 
     return text.length > maxLength
         ? text.slice(0, maxLength).trimEnd() + '…'
         : text
 }
 
+/** Выбор всех страниц текущего списка */
 const toggleAll = (event) => {
     emit('toggle-all', {
         ids: props.pages.map((page) => page.id),
@@ -77,49 +93,68 @@ const toggleAll = (event) => {
     })
 }
 
+/** Безопасный SVG icon */
 const getSafeIcon = (icon) => {
-    if (!icon) return null
+    if (!icon) {
+        return null
+    }
 
     const trimmed = icon.trim()
 
-    if (trimmed.startsWith('<svg') && trimmed.endsWith('</svg>')) {
+    if (
+        trimmed.startsWith('<svg')
+        && trimmed.endsWith('</svg>')
+    ) {
         return trimmed
     }
 
     return null
 }
 
+/** Ключи локализации статусов */
 const statusLabelKeyMap = {
     draft: 'statusDraft',
     published: 'statusPublished',
     archived: 'statusArchived',
 }
 
-const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
+/** Название статуса */
+const getStatusLabel = (status) => {
+    return t(
+        statusLabelKeyMap[status]
+        || status
+        || 'no'
+    )
+}
 
-const ownerName = (page) => page?.owner?.name || t('noData')
-const ownerEmail = (page) => page?.owner?.email || ''
+/** Имя владельца */
+const ownerName = (page) => {
+    return page?.owner?.name || t('noData')
+}
 
+/** Email владельца */
+const ownerEmail = (page) => {
+    return page?.owner?.email || ''
+}
+
+/** Подсказка владельца */
 const ownerTitle = (page) => {
     const owner = page?.owner
 
-    if (!owner) return t('noData')
+    if (!owner) {
+        return t('noData')
+    }
 
     return `${owner.name || ''}${owner.email ? ' — ' + owner.email : ''}`.trim()
 }
 
+/** Аватар владельца */
 const ownerAvatar = (page) => {
     return page?.owner?.profile_photo_url
         || '/storage/profile-photos/default-image.png'
 }
 
-const parentTitle = (page) => {
-    return page?.parent?.title
-        || page?.parent?.translation?.title
-        || page?.parent?.translations?.[0]?.title
-        || t('noData')
-}
-
+/** CSS-класс состояния флага */
 const badgeClass = (enabled) => {
     return enabled
         ? 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300'
@@ -142,7 +177,8 @@ const badgeClass = (enabled) => {
 
             <label
                 v-if="pages.length"
-                class="flex items-center text-xs text-slate-600 dark:text-slate-200 cursor-pointer"
+                class="flex items-center text-xs
+                       text-slate-600 dark:text-slate-200 cursor-pointer"
             >
                 <span>{{ t('selectAll') }}</span>
 
@@ -171,7 +207,8 @@ const badgeClass = (enabled) => {
                         <div class="flex items-center space-x-2">
                             <div
                                 class="text-[10px] font-semibold px-1.5 py-0.5 rounded-sm
-                                       border border-gray-400 bg-slate-200 dark:bg-slate-700
+                                       border border-gray-400
+                                       bg-slate-200 dark:bg-slate-700
                                        text-slate-800 dark:text-blue-100"
                                 :title="`sort: ${page.sort}`"
                             >
@@ -238,7 +275,6 @@ const badgeClass = (enabled) => {
                     </div>
 
                     <div class="flex flex-col flex-1 px-3 py-3 space-y-2">
-
                         <div class="flex flex-wrap justify-center gap-1 font-semibold">
                             <span
                                 class="text-[10px] px-2 py-0.5 rounded-sm border
@@ -317,6 +353,7 @@ const badgeClass = (enabled) => {
                         </div>
 
                         <div
+                            v-if="getShort(page)"
                             class="font-semibold text-[12px] text-center
                                    text-cyan-700 dark:text-cyan-300"
                             :title="getShort(page)"
@@ -326,7 +363,8 @@ const badgeClass = (enabled) => {
 
                         <div
                             v-if="getDescription(page)"
-                            class="text-[11px] text-center text-slate-600 dark:text-slate-300"
+                            class="text-[11px] text-center
+                                   text-slate-600 dark:text-slate-300"
                             :title="getDescription(page)"
                         >
                             {{ truncateText(getDescription(page), 100) }}
@@ -362,23 +400,31 @@ const badgeClass = (enabled) => {
                         </div>
 
                         <div class="flex flex-wrap justify-center gap-1">
-                            <span class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
-                                  :class="badgeClass(page.in_menu)">
+                            <span
+                                class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
+                                :class="badgeClass(page.in_menu)"
+                            >
                                 Menu
                             </span>
 
-                            <span class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
-                                  :class="badgeClass(page.in_footer)">
+                            <span
+                                class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
+                                :class="badgeClass(page.in_footer)"
+                            >
                                 Footer
                             </span>
 
-                            <span class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
-                                  :class="badgeClass(page.show_content)">
+                            <span
+                                class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
+                                :class="badgeClass(page.show_content)"
+                            >
                                 HTML
                             </span>
 
-                            <span class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
-                                  :class="badgeClass(page.show_seo)">
+                            <span
+                                class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
+                                :class="badgeClass(page.show_seo)"
+                            >
                                 SEO
                             </span>
                         </div>
@@ -403,7 +449,7 @@ const badgeClass = (enabled) => {
                                 type="button"
                                 class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
                                 :class="badgeClass(page.in_footer)"
-                                title="Footer"
+                                :title="page.in_footer ? t('showInFooter') : t('notShowInFooter')"
                                 @click.stop="emit('toggle-footer', page)"
                             >
                                 F
@@ -413,7 +459,7 @@ const badgeClass = (enabled) => {
                                 type="button"
                                 class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
                                 :class="badgeClass(page.show_content)"
-                                title="HTML"
+                                :title="page.show_content ? t('showHtml') : t('notShowHtml')"
                                 @click.stop="emit('toggle-content', page)"
                             >
                                 H
@@ -423,7 +469,7 @@ const badgeClass = (enabled) => {
                                 type="button"
                                 class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
                                 :class="badgeClass(page.show_seo)"
-                                title="SEO"
+                                :title="page.show_seo ? t('showSeo') : t('notShowSeo')"
                                 @click.stop="emit('toggle-seo', page)"
                             >
                                 S
@@ -450,7 +496,10 @@ const badgeClass = (enabled) => {
             </div>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

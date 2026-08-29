@@ -1,5 +1,5 @@
 <script setup>
-import { defineOptions, defineProps, defineEmits, ref, watch, computed } from 'vue'
+import { computed, defineEmits, defineOptions, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
@@ -9,13 +9,15 @@ import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue
 
 const { t } = useI18n()
 
-defineOptions({ name: 'PageTreeDraggable' })
+defineOptions({
+    name: 'PageTreeDraggable',
+})
 
 const props = defineProps({
     page: { type: Object, required: true },
     level: { type: Number, default: 0 },
     selectedPages: { type: Array, default: () => [] },
-    isAdmin: { type: Boolean, default: false }
+    isAdmin: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
@@ -26,16 +28,23 @@ const emit = defineEmits([
     'toggle-menu',
     'toggle-footer',
     'toggle-content',
-    'toggle-seo'
+    'toggle-seo',
 ])
 
+/* ======================== Tree state ======================== */
+
+/** Ключ состояния раскрытия узла */
 const storageKey = computed(() => {
     return `admin.cms.pages.tree.expanded.${props.page.id}`
 })
 
+/** Узел раскрыт */
 const isExpanded = ref(true)
+
+/** Локальная копия дочерних страниц для draggable */
 const localChildren = ref([])
 
+/** Получение сохранённого состояния раскрытия */
 const readExpandedState = () => {
     const savedValue = localStorage.getItem(storageKey.value)
 
@@ -48,6 +57,7 @@ const readExpandedState = () => {
 
 isExpanded.value = readExpandedState()
 
+/** Обновление состояния при смене страницы */
 watch(
     () => props.page.id,
     () => {
@@ -55,6 +65,7 @@ watch(
     }
 )
 
+/** Переключение раскрытия узла */
 const toggleExpand = () => {
     isExpanded.value = !isExpanded.value
 
@@ -64,62 +75,88 @@ const toggleExpand = () => {
     )
 }
 
+/** Синхронизация дочерних страниц */
 watch(
     () => props.page.children,
     (children) => {
-        localChildren.value = Array.isArray(children) ? [...children] : []
+        localChildren.value = Array.isArray(children)
+            ? [...children]
+            : []
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
-const getTranslation = (page) => {
-    return page?.translation || page?.translations?.[0] || {}
-}
+/* ======================== Translation contract ======================== */
 
+/** Название страницы */
 const getTitle = (page) => {
-    return page?.title
-        || getTranslation(page)?.title
+    return page?.translation?.title
         || `ID: ${page?.id}`
 }
 
+/** Краткое описание страницы */
 const getShort = (page) => {
-    return page?.short
-        || getTranslation(page)?.short
-        || ''
+    return page?.translation?.short || ''
 }
 
+/* ======================== Drag & Drop ======================== */
+
+/** Передача изменения внутреннего дерева родителю */
 const handleInnerDragEnd = (event) => {
     emit('request-drag-end', event)
 }
 
+/* ======================== Helpers ======================== */
+
+/** Безопасный SVG icon */
 const getSafeIcon = (icon) => {
-    if (!icon) return null
+    if (!icon) {
+        return null
+    }
 
     const trimmed = icon.trim()
 
-    if (trimmed.startsWith('<svg') && trimmed.endsWith('</svg>')) {
+    if (
+        trimmed.startsWith('<svg')
+        && trimmed.endsWith('</svg>')
+    ) {
         return trimmed
     }
 
     return null
 }
 
+/** Ключи локализации статусов */
 const statusLabelKeyMap = {
     draft: 'statusDraft',
     published: 'statusPublished',
-    archived: 'statusArchived'
+    archived: 'statusArchived',
 }
 
-const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
+/** Название статуса */
+const getStatusLabel = (status) => {
+    return t(
+        statusLabelKeyMap[status]
+        || status
+        || 'no'
+    )
+}
 
+/** Подсказка владельца */
 const ownerTitle = (page) => {
     const owner = page?.owner
 
-    if (!owner) return t('noData')
+    if (!owner) {
+        return t('noData')
+    }
 
     return `${owner.name || ''}${owner.email ? ' — ' + owner.email : ''}`.trim()
 }
 
+/** CSS-класс состояния флага */
 const badgeClass = (enabled) => {
     return enabled
         ? 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300'
@@ -154,12 +191,12 @@ const badgeClass = (enabled) => {
                     </span>
 
                     <button
-                        v-if="page.children && page.children.length"
+                        v-if="page.children?.length"
                         type="button"
-                        :title="isExpanded ? t('collapse') : t('expand')"
-                        @click="toggleExpand"
                         class="flex-shrink-0 text-slate-900 hover:text-red-500
                                dark:text-slate-100 dark:hover:text-red-200"
+                        :title="isExpanded ? t('collapse') : t('expand')"
+                        @click="toggleExpand"
                     >
                         <svg
                             class="w-5 h-5 transform transition-transform duration-150"
@@ -291,7 +328,6 @@ const badgeClass = (enabled) => {
                 </div>
 
                 <div class="flex items-center space-x-1 flex-shrink-0 ml-4">
-
                     <div class="flex items-center gap-1">
                         <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 16 16">
                             <path
@@ -361,14 +397,16 @@ const badgeClass = (enabled) => {
                         })"
                     />
 
-                    <DeleteIconButton @click.stop="emit('delete', page)" />
+                    <DeleteIconButton
+                        @click.stop="emit('delete', page)"
+                    />
 
                     <div class="pl-1.5">
                         <input
                             type="checkbox"
+                            class="form-checkbox rounded-sm text-indigo-500 flex-shrink-0"
                             :checked="selectedPages.includes(page.id)"
                             @change="emit('toggle-select', page.id)"
-                            class="form-checkbox rounded-sm text-indigo-500 flex-shrink-0"
                         />
                     </div>
                 </div>
@@ -385,9 +423,9 @@ const badgeClass = (enabled) => {
                 item-key="id"
                 handle=".drag-handle"
                 group="cms-pages"
-                @end="handleInnerDragEnd"
                 class="cms-page-tree-children"
                 :data-parent-id="page.id"
+                @end="handleInnerDragEnd"
             >
                 <template #item="{ element: childPage }">
                     <PageTreeDraggable

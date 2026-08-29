@@ -6,7 +6,8 @@
  * Редактирование страницы CMS (CmsPage)
  * мультиязычная архитектура
  */
-import { ref, computed } from 'vue'
+
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { transliterate } from '@/utils/transliteration'
@@ -48,7 +49,12 @@ const props = defineProps({
 })
 
 /** Данные редактируемой страницы */
-const pageData = computed(() => props.page?.data ?? props.page)
+const pageData = computed(() => {
+    return props.page?.data
+        ?? props.page
+})
+
+/* ======================== Translations ======================== */
 
 /** Шаблон пустого перевода */
 const makeTranslation = () => ({
@@ -63,75 +69,139 @@ const makeTranslation = () => ({
 
 /** Локаль формы по умолчанию */
 const defaultLocale =
-    props.currentLocale ||
-    pageData.value.translation?.locale ||
-    props.availableLocales[0] ||
-    'ru'
+    props.currentLocale
+    || pageData.value.translation?.locale
+    || props.availableLocales[0]
+    || 'ru'
 
 /** Активная локаль вкладок */
-const activeLocale = ref(defaultLocale)
+const activeLocale = ref(
+    defaultLocale
+)
 
-/** Подготовка переводов страниц */
+/**
+ * Подготовка всех переводов страницы.
+ *
+ * CmsPageResource передаёт здесь
+ * все translations намеренно.
+ */
 const buildTranslations = () => {
     const result = {}
 
-    ;(pageData.value.translations || []).forEach((translation) => {
-        result[translation.locale] = {
-            title: translation.title || '',
-            subtitle: translation.subtitle || '',
-            short: translation.short || '',
-            description: translation.description || '',
-            meta_title: translation.meta_title || '',
-            meta_keywords: translation.meta_keywords || '',
-            meta_desc: translation.meta_desc || '',
-        }
-    })
+    ;(pageData.value.translations || [])
+        .forEach((translation) => {
+            result[translation.locale] = {
+                title:
+                    translation.title || '',
+
+                subtitle:
+                    translation.subtitle || '',
+
+                short:
+                    translation.short || '',
+
+                description:
+                    translation.description || '',
+
+                meta_title:
+                    translation.meta_title || '',
+
+                meta_keywords:
+                    translation.meta_keywords || '',
+
+                meta_desc:
+                    translation.meta_desc || '',
+            }
+        })
 
     if (!result[defaultLocale]) {
-        result[defaultLocale] = makeTranslation()
+        result[defaultLocale] =
+            makeTranslation()
     }
 
     return result
 }
 
+/* ======================== Form ======================== */
+
 /** Основная форма редактирования */
 const form = useForm({
     _method: 'PUT',
 
-    user_id: pageData.value.user_id || pageProps.props?.auth?.user?.id || null,
+    user_id:
+        pageData.value.user_id
+        || pageProps.props?.auth?.user?.id
+        || null,
 
-    parent_id: pageData.value.parent_id || null,
-    level: pageData.value.level || 1,
+    parent_id:
+        pageData.value.parent_id
+        || null,
 
-    url: pageData.value.url || '',
-    icon: pageData.value.icon || '',
+    level:
+        pageData.value.level
+        || 1,
 
-    in_menu: Boolean(pageData.value.in_menu),
-    in_footer: Boolean(pageData.value.in_footer),
-    show_content: Boolean(pageData.value.show_content),
-    show_seo: Boolean(pageData.value.show_seo),
+    url:
+        pageData.value.url
+        || '',
 
-    sort: pageData.value.sort ?? 0,
-    activity: Boolean(pageData.value.activity),
+    icon:
+        pageData.value.icon
+        || '',
 
-    status: pageData.value.status || 'draft',
+    in_menu:
+        Boolean(pageData.value.in_menu),
 
-    published_at: pageData.value.published_at || '',
-    show_from_at: pageData.value.show_from_at || '',
-    show_to_at: pageData.value.show_to_at || '',
+    in_footer:
+        Boolean(pageData.value.in_footer),
 
-    views: pageData.value.views ?? 0,
+    show_content:
+        Boolean(pageData.value.show_content),
 
-    translations: buildTranslations(),
+    show_seo:
+        Boolean(pageData.value.show_seo),
+
+    sort:
+        pageData.value.sort
+        ?? 0,
+
+    activity:
+        Boolean(pageData.value.activity),
+
+    status:
+        pageData.value.status
+        || 'draft',
+
+    published_at:
+        pageData.value.published_at
+        || '',
+
+    show_from_at:
+        pageData.value.show_from_at
+        || '',
+
+    show_to_at:
+        pageData.value.show_to_at
+        || '',
+
+    views:
+        pageData.value.views
+        ?? 0,
+
+    translations:
+        buildTranslations(),
 })
 
 /** Текущий активный перевод */
 const currentTranslation = computed(() => {
     if (!form.translations[activeLocale.value]) {
-        form.translations[activeLocale.value] = makeTranslation()
+        form.translations[activeLocale.value] =
+            makeTranslation()
     }
 
-    return form.translations[activeLocale.value]
+    return form.translations[
+        activeLocale.value
+        ]
 })
 
 /** Заголовок страницы */
@@ -141,36 +211,68 @@ const pageTitle = computed(() => {
         || `ID: ${pageData.value.id}`
 })
 
-/** Получение ошибки поля текущей локали */
+/** Ошибка поля текущей локали */
 const getError = (key) => {
-    return form.errors[`translations.${activeLocale.value}.${key}`]
+    return form.errors[
+        `translations.${activeLocale.value}.${key}`
+        ]
 }
 
-/** Получение названия родительской категории */
+/* ======================== Parent pages ======================== */
+
+/**
+ * Название родительской страницы.
+ *
+ * Список parents передаётся через
+ * CmsPageSharedResource и содержит
+ * только translation currentLocale.
+ */
 const getParentTitle = (cmsPage) => {
-    return cmsPage?.title
-        || cmsPage?.translation?.title
-        || cmsPage?.translations?.[0]?.title
+    return cmsPage?.translation?.title
         || `ID: ${cmsPage?.id}`
 }
 
-/** Построение списка родительских страниц */
-function buildParentOptions(pages, parentId = null, level = 0) {
+/** Построение иерархического списка родителей */
+const buildParentOptions = (
+    pages,
+    parentId = null,
+    level = 0
+) => {
     let result = []
 
     ;(pages || [])
-        .filter((cmsPage) => cmsPage.parent_id === parentId)
-        .filter((cmsPage) => Number(cmsPage.id) !== Number(pageData.value.id))
-        .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+        .filter(
+            (cmsPage) =>
+                cmsPage.parent_id === parentId
+        )
+        .filter(
+            (cmsPage) =>
+                Number(cmsPage.id)
+                !== Number(pageData.value.id)
+        )
+        .sort(
+            (a, b) =>
+                (a.sort || 0)
+                - (b.sort || 0)
+        )
         .forEach((cmsPage) => {
             result.push({
                 id: cmsPage.id,
-                title: `${'— '.repeat(level)}${getParentTitle(cmsPage)}`,
-                level: cmsPage.level || level + 1,
+
+                title:
+                    `${'— '.repeat(level)}${getParentTitle(cmsPage)}`,
+
+                level:
+                    cmsPage.level
+                    || level + 1,
             })
 
             result = result.concat(
-                buildParentOptions(pages, cmsPage.id, level + 1)
+                buildParentOptions(
+                    pages,
+                    cmsPage.id,
+                    level + 1
+                )
             )
         })
 
@@ -178,115 +280,229 @@ function buildParentOptions(pages, parentId = null, level = 0) {
 }
 
 /** Список родительских страниц */
-const parentOptions = computed(() => buildParentOptions(props.parents || []))
+const parentOptions = computed(() => {
+    return buildParentOptions(
+        props.parents || []
+    )
+})
+
+/* ======================== URL ======================== */
 
 /** Нормализация URL */
 const normalizeCmsUrl = (value) => {
     const raw = String(value || '').trim()
 
-    if (!raw) return ''
+    if (!raw) {
+        return ''
+    }
 
-    const cleaned = raw.replace(/^\/+|\/+$/g, '')
+    const cleaned = raw.replace(
+        /^\/+|\/+$/g,
+        ''
+    )
 
     return '/' + cleaned
         .split('/')
         .filter(Boolean)
-        .map(segment => transliterate(segment.toLowerCase()))
+        .map(
+            (segment) =>
+                transliterate(
+                    segment.toLowerCase()
+                )
+        )
         .join('/')
 }
 
 /** Автогенерация URL из названия */
 const handleUrlInputFocus = () => {
-    if (!form.url && currentTranslation.value.title) {
-        form.url = normalizeCmsUrl(currentTranslation.value.title)
+    if (
+        !form.url
+        && currentTranslation.value.title
+    ) {
+        form.url = normalizeCmsUrl(
+            currentTranslation.value.title
+        )
     }
 }
 
+/* ======================== SEO ======================== */
+
 /** Обрезка текста без разрыва слов */
-const truncateText = (text, maxLength, addEllipsis = false) => {
-    if (!text) return ''
+const truncateText = (
+    text,
+    maxLength,
+    addEllipsis = false
+) => {
+    if (!text) {
+        return ''
+    }
 
-    const str = String(text).replace(/(<([^>]+)>)/gi, '')
+    const string = String(text)
+        .replace(/(<([^>]+)>)/gi, '')
 
-    if (str.length <= maxLength) return str
+    if (string.length <= maxLength) {
+        return string
+    }
 
-    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
+    const lastSpaceIndex =
+        string.lastIndexOf(
+            ' ',
+            maxLength
+        )
 
-    const truncated = lastSpaceIndex === -1
-        ? str.substring(0, maxLength)
-        : str.substring(0, lastSpaceIndex)
+    const truncated =
+        lastSpaceIndex === -1
+            ? string.substring(
+                0,
+                maxLength
+            )
+            : string.substring(
+                0,
+                lastSpaceIndex
+            )
 
-    return addEllipsis ? `${truncated}...` : truncated
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
 }
 
-/** Очистка SEO-полей */
+/** Очистка SEO-полей текущего перевода */
 const clearMetaFields = () => {
-    const translation = currentTranslation.value
+    const translation =
+        currentTranslation.value
 
     translation.meta_title = ''
     translation.meta_keywords = ''
     translation.meta_desc = ''
 }
 
-/** Генерация SEO-полей */
+/** Генерация SEO-полей текущего перевода */
 const generateMetaFields = () => {
-    const translation = currentTranslation.value
+    const translation =
+        currentTranslation.value
 
-    if (translation.title && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.title, 255)
+    if (
+        translation.title
+        && !translation.meta_title
+    ) {
+        translation.meta_title =
+            truncateText(
+                translation.title,
+                255
+            )
     }
 
-    const sourceText = translation.short || translation.description || ''
+    const sourceText =
+        translation.short
+        || translation.description
+        || ''
 
-    if (!translation.meta_keywords && sourceText) {
-        let text = String(sourceText).replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+    if (
+        !translation.meta_keywords
+        && sourceText
+    ) {
+        let text = String(sourceText)
+            .replace(/(<([^>]+)>)/gi, '')
+
+        text = text.replace(
+            /[.,!?;:()[\]{}"'«»]/g,
+            ''
+        )
 
         const words = text
             .split(/\s+/)
-            .filter(word => word && word.length >= 3)
-            .map(word => word.toLowerCase())
-            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter(
+                (word) =>
+                    word
+                    && word.length >= 3
+            )
+            .map(
+                (word) =>
+                    word.toLowerCase()
+            )
+            .filter(
+                (value, index, self) =>
+                    self.indexOf(value)
+                    === index
+            )
 
-        translation.meta_keywords = truncateText(words.join(', '), 255)
+        translation.meta_keywords =
+            truncateText(
+                words.join(', '),
+                255
+            )
     }
 
-    if (!translation.meta_desc && sourceText) {
-        translation.meta_desc = truncateText(sourceText, 200, true)
+    if (
+        !translation.meta_desc
+        && sourceText
+    ) {
+        translation.meta_desc =
+            truncateText(
+                sourceText,
+                200,
+                true
+            )
     }
 }
+
+/* ======================== Submit ======================== */
 
 /** Отправка формы редактирования */
 const submitForm = () => {
     form.transform((data) => ({
         ...data,
 
-        parent_id: data.parent_id || null,
+        parent_id:
+            data.parent_id || null,
 
-        in_menu: data.in_menu ? 1 : 0,
-        in_footer: data.in_footer ? 1 : 0,
-        show_content: data.show_content ? 1 : 0,
-        show_seo: data.show_seo ? 1 : 0,
-        activity: data.activity ? 1 : 0,
+        in_menu:
+            data.in_menu ? 1 : 0,
 
-        url: normalizeCmsUrl(data.url),
+        in_footer:
+            data.in_footer ? 1 : 0,
+
+        show_content:
+            data.show_content ? 1 : 0,
+
+        show_seo:
+            data.show_seo ? 1 : 0,
+
+        activity:
+            data.activity ? 1 : 0,
+
+        url:
+            normalizeCmsUrl(data.url),
     }))
 
     form.post(
-        route('admin.cmsPages.update', {
-            cmsPage: pageData.value.id,
-        }),
+        route(
+            'admin.cmsPages.update',
+            {
+                cmsPage:
+                pageData.value.id,
+            }
+        ),
         {
             errorBag: 'updateCmsPage',
             preserveScroll: true,
 
             onSuccess: () => {
-                toast.success('CMS страница успешно обновлена!')
+                toast.success(
+                    'CMS страница успешно обновлена!'
+                )
             },
 
             onError: (errors) => {
-                const firstError = errors?.[Object.keys(errors)[0]]
-                toast.error(firstError || 'Пожалуйста, проверьте правильность заполнения полей.')
+                const firstError =
+                    errors?.[
+                        Object.keys(errors)[0]
+                        ]
+
+                toast.error(
+                    firstError
+                    || 'Пожалуйста, проверьте правильность заполнения полей.'
+                )
             },
         }
     )
@@ -393,7 +609,7 @@ const submitForm = () => {
                                 :value="parent.id"
                                 :disabled="parent.level >= 3"
                             >
-                                [ID:{{ parent.id }}] {{ parent.title }}
+                                {{ parent.title }} [ID:{{ parent.id }}]
                             </option>
                         </select>
 

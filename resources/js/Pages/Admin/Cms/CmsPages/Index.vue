@@ -38,7 +38,7 @@ import PageTreeDraggable from '@/Components/Admin/Cms/CmsPage/Tree/PageTreeDragg
 /** Сервисы страницы */
 const { t, locale } = useI18n()
 const toast = useToast()
-const page = usePage()
+const inertiaPage = usePage()
 
 /** Входные параметры страницы */
 const props = defineProps({
@@ -61,22 +61,33 @@ const props = defineProps({
     errors: { type: Object, default: () => ({}) },
 })
 
+/* ======================== Access ======================== */
+
 /** Проверка роли администратора */
 const isAdmin = computed(() => {
-    const roles = page.props?.auth?.user?.roles || []
+    const roles = inertiaPage.props?.auth?.user?.roles || []
+
     return roles.some((role) => role?.name === 'admin')
 })
 
+/* ======================== View mode ======================== */
+
+/** Режим отображения */
 const viewMode = ref(
     localStorage.getItem('admin_view_mode_cms_pages') || 'table'
 )
 
-/** Режим отображения: дерево или карточки */
+/** Сохранение режима отображения */
 watch(viewMode, (value) => {
-    localStorage.setItem('admin_view_mode_cms_pages', value)
+    localStorage.setItem(
+        'admin_view_mode_cms_pages',
+        value
+    )
 })
 
-/** Сохранение режима отображения */
+/* ======================== Incoming data ======================== */
+
+/** Нормализация плоского списка из ResourceCollection / paginator */
 const pagesList = computed(() => {
     if (Array.isArray(props.pages)) {
         return props.pages
@@ -93,70 +104,134 @@ const pagesList = computed(() => {
     return []
 })
 
-/** Нормализация списка страниц из props */
+/** Локальная копия дерева */
 const localPagesTree = ref([])
 
-/** Локальные копии дерева и плоского списка */
+/** Локальная копия плоского списка */
 const localPagesFlat = ref([])
 
-/** Обновление локального дерева */
+/** Синхронизация дерева */
 watch(
     () => props.pagesTree,
     (value) => {
-        localPagesTree.value = JSON.parse(JSON.stringify(value || []))
+        localPagesTree.value = JSON.parse(
+            JSON.stringify(value || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
-/** Обновление локального плоского списка */
+/** Синхронизация плоского списка */
 watch(
     pagesList,
     (value) => {
-        localPagesFlat.value = JSON.parse(JSON.stringify(value || []))
+        localPagesFlat.value = JSON.parse(
+            JSON.stringify(value || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
+
+/* ======================== Pagination ======================== */
 
 /** Количество элементов на странице */
-const itemsPerPage = ref(props.adminCmsPagesPerPage || 6)
-
-/** Сохранение количества элементов на странице */
-watch(itemsPerPage, (newVal) => {
-    router.put(
-        route('admin.settings.updateAdminCountCmsPages'),
-        { value: newVal },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} CMS страниц на странице.`),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления количества CMS страниц.'),
-        }
-    )
-})
-
-/** Текущий параметр сортировки */
-const sortParam = ref(
-    props.sortParam || props.adminCmsPagesDefaultSort || 'idDesc'
+const itemsPerPage = ref(
+    props.adminCmsPagesPerPage || 6
 )
 
-/** Сохранение выбранной сортировки */
-watch(sortParam, (newVal) => {
-    currentPage.value = 1
+/** Текущая страница frontend-пагинации */
+const currentPage = ref(1)
 
+/** Сохранение количества элементов на странице */
+watch(itemsPerPage, (newValue) => {
     router.put(
-        route('admin.settings.updateAdminSortCmsPages'),
-        { value: newVal },
+        route('admin.settings.updateAdminCountCmsPages'),
+        {
+            value: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
-                if (props.useServerProcessing && viewMode.value !== 'table') {
+                toast.info(
+                    `Показ ${newValue} CMS страниц на странице.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors.value
+                    || 'Ошибка обновления количества CMS страниц.'
+                )
+            },
+        }
+    )
+})
+
+/* ======================== Sorting ======================== */
+
+/** Текущий параметр сортировки */
+const sortParam = ref(
+    props.sortParam
+    || props.adminCmsPagesDefaultSort
+    || 'idDesc'
+)
+
+/** Синхронизация сортировки при новом ответе Inertia */
+watch(
+    () => props.sortParam,
+    (value) => {
+        if (value && value !== sortParam.value) {
+            sortParam.value = value
+        }
+    }
+)
+
+/** Сохранение выбранной сортировки */
+watch(sortParam, (newValue, oldValue) => {
+    if (newValue === oldValue) {
+        return
+    }
+
+    currentPage.value = 1
+
+    router.put(
+        route('admin.settings.updateAdminSortCmsPages'),
+        {
+            value: newValue,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                /**
+                 * В server режиме плоский список должен
+                 * заново пройти backend-сортировку.
+                 *
+                 * Дерево использует собственную иерархическую
+                 * сортировку и сюда не попадает.
+                 */
+                if (
+                    props.useServerProcessing
+                    && viewMode.value !== 'table'
+                ) {
                     router.get(
                         window.location.pathname,
                         {
-                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
-                            sort: newVal || undefined,
+                            ...Object.fromEntries(
+                                new URLSearchParams(
+                                    window.location.search
+                                )
+                            ),
+                            sort: newValue || undefined,
                             page: undefined,
                         },
                         {
@@ -167,202 +242,336 @@ watch(sortParam, (newVal) => {
                     )
                 }
 
-                toast.info('Сортировка CMS страниц успешно изменена.')
+                toast.info(
+                    'Сортировка CMS страниц успешно изменена.'
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления сортировки CMS страниц.')
+                toast.error(
+                    errors.value
+                    || 'Ошибка обновления сортировки CMS страниц.'
+                )
             },
         }
     )
 })
 
+/* ======================== Search ======================== */
+
 /** Поисковая строка */
-const searchQuery = ref(props.search || '')
+const searchQuery = ref(
+    props.search || ''
+)
 
-/** Текущая страница локальной пагинации */
-const currentPage = ref(1)
+/** Синхронизация server search после ответа Inertia */
+watch(
+    () => props.search,
+    (value) => {
+        const normalizedValue = value || ''
 
-/** Нормализация значения для поиска/сортировки */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+        if (normalizedValue !== searchQuery.value) {
+            searchQuery.value = normalizedValue
+        }
+    }
+)
+
+/** Нормализация значения для поиска и сортировки */
+const normalize = (value) => {
+    return String(value ?? '')
+        .trim()
+        .toLowerCase()
+}
 
 /** Безопасное преобразование в число */
 const safeNumber = (value) => {
     const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+
+    return Number.isFinite(number)
+        ? number
+        : 0
 }
 
 /** Безопасное преобразование даты */
 const safeDate = (value) => {
     const time = new Date(value || 0).getTime()
-    return Number.isFinite(time) ? time : 0
+
+    return Number.isFinite(time)
+        ? time
+        : 0
 }
 
-/** Получение текущего перевода страницы */
-const getPageTranslation = (cmsPage) => {
-    return cmsPage?.translation || cmsPage?.translations?.[0] || {}
-}
+/* ======================== Translation contract ======================== */
 
-/** Получение названия страницы */
+/** Название страницы */
 const getPageTitle = (cmsPage) => {
-    return cmsPage?.title
-        || getPageTranslation(cmsPage)?.title
+    return cmsPage?.translation?.title
         || `ID: ${cmsPage?.id}`
 }
 
-/** Получение краткого описания страницы */
-const getPageShort = (cmsPage) => {
-    return cmsPage?.short
-        || getPageTranslation(cmsPage)?.short
-        || ''
+/** Имя владельца */
+const getOwnerName = (cmsPage) => {
+    return cmsPage?.owner?.name || ''
 }
 
-/** Получение полного контента страницы */
-const getPageDescription = (cmsPage) => {
-    return cmsPage?.description
-        || getPageTranslation(cmsPage)?.description
-        || ''
+/** Email владельца */
+const getOwnerEmail = (cmsPage) => {
+    return cmsPage?.owner?.email || ''
 }
 
-/** Получение названия родительской страницы */
-const getParentTitle = (cmsPage) => {
-    return cmsPage?.parent?.title
-        || cmsPage?.parent?.translation?.title
-        || cmsPage?.parent?.translations?.[0]?.title
-        || ''
+/* ======================== Frontend sorting ======================== */
+
+/** Числовая сортировка по возрастанию */
+const byNumberAsc = (field) => (a, b) => {
+    return safeNumber(a?.[field])
+        - safeNumber(b?.[field])
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
 }
 
-/** Получение имени владельца */
-const getOwnerName = (cmsPage) => cmsPage?.owner?.name || ''
+/** Числовая сортировка по убыванию */
+const byNumberDesc = (field) => (a, b) => {
+    return safeNumber(b?.[field])
+        - safeNumber(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
 
-/** Получение email владельца */
-const getOwnerEmail = (cmsPage) => cmsPage?.owner?.email || ''
+/** Сортировка даты по возрастанию */
+const byDateAsc = (field) => (a, b) => {
+    return safeDate(a?.[field])
+        - safeDate(b?.[field])
+        || safeNumber(a?.id)
+        - safeNumber(b?.id)
+}
 
-/** Сортировка чисел по возрастанию */
-const byNumberAsc = (field) => (a, b) =>
-    safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
-
-/** Сортировка чисел по убыванию */
-const byNumberDesc = (field) => (a, b) =>
-    safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
-
-/** Сортировка дат по возрастанию */
-const byDateAsc = (field) => (a, b) =>
-    safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
-
-/** Сортировка дат по убыванию */
-const byDateDesc = (field) => (a, b) =>
-    safeDate(b?.[field]) - safeDate(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+/** Сортировка даты по убыванию */
+const byDateDesc = (field) => (a, b) => {
+    return safeDate(b?.[field])
+        - safeDate(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
 
 /** Локальная сортировка страниц */
 const sortPages = (items) => {
     const list = (items || []).slice()
 
-    if (sortParam.value === 'activity') return list.filter(item => !!item.activity)
-    if (sortParam.value === 'inactive') return list.filter(item => !item.activity)
+    /** Фильтры активности */
+    if (sortParam.value === 'activity') {
+        return list.filter((item) => !!item.activity)
+    }
 
-    if (sortParam.value === 'inMenu') return list.filter(item => !!item.in_menu)
-    if (sortParam.value === 'notInMenu') return list.filter(item => !item.in_menu)
+    if (sortParam.value === 'inactive') {
+        return list.filter((item) => !item.activity)
+    }
 
-    if (sortParam.value === 'inFooter') return list.filter(item => !!item.in_footer)
-    if (sortParam.value === 'notInFooter') return list.filter(item => !item.in_footer)
+    /** Фильтры меню */
+    if (sortParam.value === 'inMenu') {
+        return list.filter((item) => !!item.in_menu)
+    }
 
-    if (sortParam.value === 'showContent') return list.filter(item => !!item.show_content)
-    if (sortParam.value === 'notShowContent') return list.filter(item => !item.show_content)
+    if (sortParam.value === 'notInMenu') {
+        return list.filter((item) => !item.in_menu)
+    }
 
-    if (sortParam.value === 'showSeo') return list.filter(item => !!item.show_seo)
-    if (sortParam.value === 'notShowSeo') return list.filter(item => !item.show_seo)
+    /** Фильтры футера */
+    if (sortParam.value === 'inFooter') {
+        return list.filter((item) => !!item.in_footer)
+    }
 
-    if (sortParam.value === 'statusDraft') return list.filter(item => item?.status === 'draft')
-    if (sortParam.value === 'statusPublished') return list.filter(item => item?.status === 'published')
-    if (sortParam.value === 'statusArchived') return list.filter(item => item?.status === 'archived')
+    if (sortParam.value === 'notInFooter') {
+        return list.filter((item) => !item.in_footer)
+    }
+
+    /** Фильтры HTML */
+    if (sortParam.value === 'showContent') {
+        return list.filter((item) => !!item.show_content)
+    }
+
+    if (sortParam.value === 'notShowContent') {
+        return list.filter((item) => !item.show_content)
+    }
+
+    /** Фильтры SEO */
+    if (sortParam.value === 'showSeo') {
+        return list.filter((item) => !!item.show_seo)
+    }
+
+    if (sortParam.value === 'notShowSeo') {
+        return list.filter((item) => !item.show_seo)
+    }
+
+    /** Фильтры статуса */
+    if (sortParam.value === 'statusDraft') {
+        return list.filter(
+            (item) => item?.status === 'draft'
+        )
+    }
+
+    if (sortParam.value === 'statusPublished') {
+        return list.filter(
+            (item) => item?.status === 'published'
+        )
+    }
+
+    if (sortParam.value === 'statusArchived') {
+        return list.filter(
+            (item) => item?.status === 'archived'
+        )
+    }
 
     const sortMap = {
+        /** ID */
         idAsc: byNumberAsc('id'),
         idDesc: byNumberDesc('id'),
 
+        /** Sort */
         sortAsc: byNumberAsc('sort'),
         sortDesc: byNumberDesc('sort'),
 
+        /** Level */
         levelAsc: byNumberAsc('level'),
         levelDesc: byNumberDesc('level'),
 
+        /** Parent */
         parentAsc: byNumberAsc('parent_id'),
         parentDesc: byNumberDesc('parent_id'),
 
+        /** URL */
         urlAsc: (a, b) =>
-            normalize(a?.url).localeCompare(normalize(b?.url), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+            normalize(a?.url)
+                .localeCompare(
+                    normalize(b?.url),
+                    locale.value
+                )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
 
         urlDesc: (a, b) =>
-            normalize(b?.url).localeCompare(normalize(a?.url), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+            normalize(b?.url)
+                .localeCompare(
+                    normalize(a?.url),
+                    locale.value
+                )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
 
+        /** Title currentLocale */
         titleAsc: (a, b) =>
-            normalize(getPageTitle(a)).localeCompare(normalize(getPageTitle(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+            normalize(getPageTitle(a))
+                .localeCompare(
+                    normalize(getPageTitle(b)),
+                    locale.value
+                )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
 
         titleDesc: (a, b) =>
-            normalize(getPageTitle(b)).localeCompare(normalize(getPageTitle(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+            normalize(getPageTitle(b))
+                .localeCompare(
+                    normalize(getPageTitle(a)),
+                    locale.value
+                )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
 
+        /** Views */
         viewsAsc: byNumberAsc('views'),
         viewsDesc: byNumberDesc('views'),
 
+        /** Children */
         childrenAsc: byNumberAsc('children_count'),
         childrenDesc: byNumberDesc('children_count'),
 
+        /** Activity */
         activityAsc: byNumberAsc('activity'),
         activityDesc: byNumberDesc('activity'),
 
+        /** Menu */
         inMenuAsc: byNumberAsc('in_menu'),
         inMenuDesc: byNumberDesc('in_menu'),
 
+        /** Footer */
         inFooterAsc: byNumberAsc('in_footer'),
         inFooterDesc: byNumberDesc('in_footer'),
 
+        /** HTML */
         showContentAsc: byNumberAsc('show_content'),
         showContentDesc: byNumberDesc('show_content'),
 
+        /** SEO */
         showSeoAsc: byNumberAsc('show_seo'),
         showSeoDesc: byNumberDesc('show_seo'),
 
+        /** Owner name */
         ownerNameAsc: (a, b) =>
-            normalize(getOwnerName(a)).localeCompare(normalize(getOwnerName(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+            normalize(getOwnerName(a))
+                .localeCompare(
+                    normalize(getOwnerName(b)),
+                    locale.value
+                )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
 
         ownerNameDesc: (a, b) =>
-            normalize(getOwnerName(b)).localeCompare(normalize(getOwnerName(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+            normalize(getOwnerName(b))
+                .localeCompare(
+                    normalize(getOwnerName(a)),
+                    locale.value
+                )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
 
+        /** Owner email */
         ownerEmailAsc: (a, b) =>
-            normalize(getOwnerEmail(a)).localeCompare(normalize(getOwnerEmail(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+            normalize(getOwnerEmail(a))
+                .localeCompare(
+                    normalize(getOwnerEmail(b)),
+                    locale.value
+                )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
 
         ownerEmailDesc: (a, b) =>
-            normalize(getOwnerEmail(b)).localeCompare(normalize(getOwnerEmail(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+            normalize(getOwnerEmail(b))
+                .localeCompare(
+                    normalize(getOwnerEmail(a)),
+                    locale.value
+                )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
 
+        /** Status */
         statusAsc: (a, b) =>
-            normalize(a?.status).localeCompare(normalize(b?.status), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+            normalize(a?.status)
+                .localeCompare(
+                    normalize(b?.status),
+                    locale.value
+                )
+            || safeNumber(a?.id)
+            - safeNumber(b?.id),
 
         statusDesc: (a, b) =>
-            normalize(b?.status).localeCompare(normalize(a?.status), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+            normalize(b?.status)
+                .localeCompare(
+                    normalize(a?.status),
+                    locale.value
+                )
+            || safeNumber(b?.id)
+            - safeNumber(a?.id),
 
+        /** Published */
         publishedAtAsc: byDateAsc('published_at'),
         publishedAtDesc: byDateDesc('published_at'),
 
+        /** Created */
         createdAtAsc: byDateAsc('created_at'),
         createdAtDesc: byDateDesc('created_at'),
         dateAsc: byDateAsc('created_at'),
         dateDesc: byDateDesc('created_at'),
 
+        /** Updated */
         updatedAtAsc: byDateAsc('updated_at'),
         updatedAtDesc: byDateDesc('updated_at'),
     }
@@ -372,42 +581,78 @@ const sortPages = (items) => {
         : list
 }
 
-/** Локальный поиск страниц */
-const filteredPages = computed(() => {
-    let filtered = localPagesFlat.value || []
-    const query = normalize(searchQuery.value)
+/* ======================== Frontend search ======================== */
 
-    if (!query) {
-        return sortPages(filtered)
+/**
+ * Поля локального поиска.
+ *
+ * Полностью соответствуют scopeSearch() модели:
+ * - id
+ * - url
+ * - icon
+ * - views
+ * - status
+ * - translation.title
+ * - translation.short
+ * - translation.description
+ * - parent.translation.title
+ * - owner.name
+ * - owner.email
+ */
+const pageSearchValues = (cmsPage) => {
+    return [
+        cmsPage?.id,
+        cmsPage?.url,
+        cmsPage?.icon,
+        cmsPage?.views,
+        cmsPage?.status,
+
+        cmsPage?.translation?.title,
+        cmsPage?.translation?.short,
+        cmsPage?.translation?.description,
+
+        cmsPage?.parent?.translation?.title,
+
+        cmsPage?.owner?.name,
+        cmsPage?.owner?.email,
+    ]
+}
+
+/** Локальный поиск и сортировка страниц */
+const filteredPages = computed(() => {
+    const query = normalize(
+        searchQuery.value
+    )
+
+    let filtered = localPagesFlat.value || []
+
+    if (query) {
+        filtered = filtered.filter((cmsPage) => {
+            return pageSearchValues(cmsPage).some(
+                (value) => normalize(value).includes(query)
+            )
+        })
     }
 
-    filtered = filtered.filter((cmsPage) => {
-        const values = [
-            cmsPage?.id,
-            cmsPage?.url,
-            cmsPage?.icon,
-            cmsPage?.views,
-            cmsPage?.status,
-            getPageTitle(cmsPage),
-            getPageShort(cmsPage),
-            getPageDescription(cmsPage),
-            getParentTitle(cmsPage),
-            getOwnerName(cmsPage),
-            getOwnerEmail(cmsPage),
-        ]
-
-        return values.some(value => normalize(value).includes(query))
-    })
-
-    return sortPages(filtered)
+    return sortPages(
+        filtered
+    )
 })
 
 /** Локальная пагинация страниц */
 const paginatedPages = computed(() => {
-    const perPage = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * perPage
+    const perPage = Number(
+        itemsPerPage.value || 10
+    )
 
-    return filteredPages.value.slice(start, start + perPage)
+    const start = (
+        currentPage.value - 1
+    ) * perPage
+
+    return filteredPages.value.slice(
+        start,
+        start + perPage
+    )
 })
 
 /** Итоговый список для карточек */
@@ -418,29 +663,47 @@ const displayedPages = computed(() => {
 })
 
 /** Сброс страницы при изменении пагинации или поиска */
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+    ],
+    () => {
+        currentPage.value = 1
+    }
+)
+
+/* ======================== Single delete ======================== */
 
 /** Состояние модального окна удаления */
 const showConfirmDeleteModal = ref(false)
+
 const pageToDeleteId = ref(null)
 const pageToDeleteTitle = ref('')
 
 /** Подготовка подтверждения удаления */
 const confirmDelete = (pageOrId, title = null) => {
-    if (typeof pageOrId === 'object') {
+    if (
+        pageOrId
+        && typeof pageOrId === 'object'
+    ) {
         pageToDeleteId.value = pageOrId.id
-        pageToDeleteTitle.value = title || getPageTitle(pageOrId)
+
+        pageToDeleteTitle.value =
+            title
+            || getPageTitle(pageOrId)
     } else {
         pageToDeleteId.value = pageOrId
-        pageToDeleteTitle.value = title || `ID: ${pageOrId}`
+
+        pageToDeleteTitle.value =
+            title
+            || `ID: ${pageOrId}`
     }
 
     showConfirmDeleteModal.value = true
 }
 
-/** Закрытие модального окна удаления */
+/** Закрытие модального окна */
 const closeModal = () => {
     showConfirmDeleteModal.value = false
     pageToDeleteId.value = null
@@ -449,33 +712,75 @@ const closeModal = () => {
 
 /** Удаление одной страницы */
 const deletePage = () => {
-    if (pageToDeleteId.value === null) return
+    if (pageToDeleteId.value === null) {
+        return
+    }
 
     const idToDelete = pageToDeleteId.value
     const titleToDelete = pageToDeleteTitle.value
 
-    router.delete(route('admin.cmsPages.destroy', { cmsPage: idToDelete }), {
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => toast.success(`CMS страница "${titleToDelete || 'ID: ' + idToDelete}" удалена.`),
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Страница: ${titleToDelete || 'ID: ' + idToDelete})`)
-        },
-        onFinish: () => closeModal(),
-    })
+    router.delete(
+        route(
+            'admin.cmsPages.destroy',
+            {
+                cmsPage: idToDelete,
+            }
+        ),
+        {
+            preserveScroll: true,
+            preserveState: false,
+
+            onSuccess: () => {
+                toast.success(
+                    `CMS страница "${titleToDelete || 'ID: ' + idToDelete}" удалена.`
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey = Object.keys(
+                    errors || {}
+                )[0]
+
+                const errorMessage =
+                    errors.general
+                    || errors[errorKey]
+                    || 'Произошла ошибка при удалении.'
+
+                toast.error(
+                    `${errorMessage} (Страница: ${titleToDelete || 'ID: ' + idToDelete})`
+                )
+            },
+
+            onFinish: () => {
+                closeModal()
+            },
+        }
+    )
 }
 
+/* ======================== Local state patching ======================== */
+
 /** Обновление страницы в дереве */
-const patchPageInTree = (nodes, pageId, callback) => {
+const patchPageInTree = (
+    nodes,
+    pageId,
+    callback
+) => {
     for (const node of nodes) {
         if (node.id === pageId) {
             callback(node)
+
             return true
         }
 
-        if (node.children?.length && patchPageInTree(node.children, pageId, callback)) {
+        if (
+            node.children?.length
+            && patchPageInTree(
+                node.children,
+                pageId,
+                callback
+            )
+        ) {
             return true
         }
     }
@@ -484,64 +789,123 @@ const patchPageInTree = (nodes, pageId, callback) => {
 }
 
 /** Обновление страницы в плоском списке */
-const patchPageInFlat = (pageId, callback) => {
-    const index = localPagesFlat.value.findIndex((cmsPage) => cmsPage.id === pageId)
+const patchPageInFlat = (
+    pageId,
+    callback
+) => {
+    const index = localPagesFlat.value.findIndex(
+        (cmsPage) => cmsPage.id === pageId
+    )
 
     if (index !== -1) {
-        callback(localPagesFlat.value[index])
+        callback(
+            localPagesFlat.value[index]
+        )
     }
 }
+
+/* ======================== Activity ======================== */
 
 /** Переключение активности страницы */
 const toggleActivity = (cmsPage) => {
     const newActivity = !cmsPage.activity
     const title = getPageTitle(cmsPage)
-    const actionText = newActivity ? t('activated') : t('deactivated')
+
+    const actionText = newActivity
+        ? t('activated')
+        : t('deactivated')
 
     router.put(
-        route('admin.actions.cmsPages.updateActivity', { cmsPage: cmsPage.id }),
-        { activity: newActivity },
+        route(
+            'admin.actions.cmsPages.updateActivity',
+            {
+                cmsPage: cmsPage.id,
+            }
+        ),
+        {
+            activity: newActivity,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                patchPageInTree(localPagesTree.value, cmsPage.id, node => {
-                    node.activity = newActivity
-                })
 
-                patchPageInFlat(cmsPage.id, node => {
-                    node.activity = newActivity
-                })
+            onSuccess: () => {
+                patchPageInTree(
+                    localPagesTree.value,
+                    cmsPage.id,
+                    (node) => {
+                        node.activity = newActivity
+                    }
+                )
+
+                patchPageInFlat(
+                    cmsPage.id,
+                    (node) => {
+                        node.activity = newActivity
+                    }
+                )
 
                 cmsPage.activity = newActivity
-                toast.success(`CMS страница "${title}" ${actionText}.`)
+
+                toast.success(
+                    `CMS страница "${title}" ${actionText}.`
+                )
             },
+
             onError: (errors) => {
-                toast.error(errors.activity || errors.general || `Ошибка изменения активности для "${title}".`)
+                toast.error(
+                    errors.activity
+                    || errors.general
+                    || `Ошибка изменения активности для "${title}".`
+                )
             },
         }
     )
 }
 
-/** Переключение флагов страницы */
-const toggleBooleanFlag = (cmsPage, field, routeName, payloadKey, enabledText, disabledText) => {
+/* ======================== Boolean flags ======================== */
+
+/** Универсальное переключение булевого флага */
+const toggleBooleanFlag = (
+    cmsPage,
+    field,
+    routeName,
+    payloadKey,
+    enabledText,
+    disabledText
+) => {
     const newValue = !cmsPage[field]
     const title = getPageTitle(cmsPage)
 
     router.put(
-        route(routeName, { cmsPage: cmsPage.id }),
-        { [payloadKey]: newValue },
+        route(
+            routeName,
+            {
+                cmsPage: cmsPage.id,
+            }
+        ),
+        {
+            [payloadKey]: newValue,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                patchPageInTree(localPagesTree.value, cmsPage.id, node => {
-                    node[field] = newValue
-                })
 
-                patchPageInFlat(cmsPage.id, node => {
-                    node[field] = newValue
-                })
+            onSuccess: () => {
+                patchPageInTree(
+                    localPagesTree.value,
+                    cmsPage.id,
+                    (node) => {
+                        node[field] = newValue
+                    }
+                )
+
+                patchPageInFlat(
+                    cmsPage.id,
+                    (node) => {
+                        node[field] = newValue
+                    }
+                )
 
                 cmsPage[field] = newValue
 
@@ -551,6 +915,7 @@ const toggleBooleanFlag = (cmsPage, field, routeName, payloadKey, enabledText, d
                         : `CMS страница "${title}" ${disabledText}.`
                 )
             },
+
             onError: (errors) => {
                 toast.error(
                     errors[payloadKey]
@@ -562,7 +927,7 @@ const toggleBooleanFlag = (cmsPage, field, routeName, payloadKey, enabledText, d
     )
 }
 
-/** Переключение страницы активности в главном меню */
+/** Показывать страницу в главном меню */
 const toggleInMenu = (cmsPage) => {
     toggleBooleanFlag(
         cmsPage,
@@ -574,7 +939,7 @@ const toggleInMenu = (cmsPage) => {
     )
 }
 
-/** Переключение страницы активности в меню подвала */
+/** Показывать страницу в футере */
 const toggleInFooter = (cmsPage) => {
     toggleBooleanFlag(
         cmsPage,
@@ -586,7 +951,7 @@ const toggleInFooter = (cmsPage) => {
     )
 }
 
-/** Переключение показа контента страницы */
+/** Показывать HTML-контент страницы */
 const toggleShowContent = (cmsPage) => {
     toggleBooleanFlag(
         cmsPage,
@@ -598,7 +963,7 @@ const toggleShowContent = (cmsPage) => {
     )
 }
 
-/** Переключение показа SEO страницы */
+/** Использовать SEO страницы */
 const toggleShowSeo = (cmsPage) => {
     toggleBooleanFlag(
         cmsPage,
@@ -610,11 +975,16 @@ const toggleShowSeo = (cmsPage) => {
     )
 }
 
-/** Обработка изменения дерева через drag&drop */
+/* ======================== Drag & Drop ======================== */
+
+/** Обработка изменения дерева */
 const handleDragEnd = () => {
     const changes = []
 
-    const updateSortAndCollectChanges = (nodes, parentId) => {
+    const updateSortAndCollectChanges = (
+        nodes,
+        parentId
+    ) => {
         nodes.forEach((node, index) => {
             let changed = false
 
@@ -637,33 +1007,59 @@ const handleDragEnd = () => {
             }
 
             if (node.children?.length) {
-                updateSortAndCollectChanges(node.children, node.id)
+                updateSortAndCollectChanges(
+                    node.children,
+                    node.id
+                )
             }
         })
     }
 
-    updateSortAndCollectChanges(localPagesTree.value, null)
+    updateSortAndCollectChanges(
+        localPagesTree.value,
+        null
+    )
 
-    if (!changes.length) return
+    if (!changes.length) {
+        return
+    }
 
     router.put(
-        route('admin.actions.cmsPages.updateSortBulk'),
-        { items: changes },
+        route(
+            'admin.actions.cmsPages.updateSortBulk'
+        ),
+        {
+            items: changes,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.success('Иерархия CMS страниц успешно обновлена.'),
+
+            onSuccess: () => {
+                toast.success(
+                    'Иерархия CMS страниц успешно обновлена.'
+                )
+            },
+
             onError: (errors) => {
-                toast.error(errors.message || 'Ошибка обновления иерархии CMS страниц.')
+                toast.error(
+                    errors.message
+                    || 'Ошибка обновления иерархии CMS страниц.'
+                )
 
                 router.reload({
-                    only: ['pagesTree', 'pages'],
+                    only: [
+                        'pagesTree',
+                        'pages',
+                    ],
                     preserveScroll: true,
                 })
             },
         }
     )
 }
+
+/* ======================== Selection ======================== */
 
 /** Выбранные страницы */
 const selectedPages = ref([])
@@ -673,52 +1069,89 @@ const getAllIds = (nodes) => {
     let ids = []
 
     nodes.forEach((node) => {
-        ids.push(node.id)
+        ids.push(
+            node.id
+        )
 
         if (node.children?.length) {
-            ids = ids.concat(getAllIds(node.children))
+            ids = ids.concat(
+                getAllIds(
+                    node.children
+                )
+            )
         }
     })
 
     return ids
 }
 
-/** Выбор/снятие выбора всех страниц */
+/** Выбор или снятие выбора всех страниц */
 const toggleAll = (payload) => {
-    const checked = payload?.checked ?? payload?.target?.checked ?? false
+    const checked =
+        payload?.checked
+        ?? payload?.target?.checked
+        ?? false
 
     const ids = viewMode.value === 'table'
         ? getAllIds(localPagesTree.value)
-        : displayedPages.value.map(cmsPage => cmsPage.id)
+        : displayedPages.value.map(
+            (cmsPage) => cmsPage.id
+        )
 
-    selectedPages.value = checked ? ids : []
+    selectedPages.value = checked
+        ? ids
+        : []
 }
 
-/** Выбор/снятие выбора всех карточек */
-const toggleAllCards = ({ ids, checked }) => {
-    selectedPages.value = checked ? [...ids] : []
+/** Выбор или снятие выбора всех карточек */
+const toggleAllCards = ({
+                            ids,
+                            checked,
+                        }) => {
+    selectedPages.value = checked
+        ? [...ids]
+        : []
 }
 
 /** Выбор одной страницы */
 const toggleSelectPage = (pageId) => {
-    const index = selectedPages.value.indexOf(pageId)
+    const index = selectedPages.value.indexOf(
+        pageId
+    )
 
     if (index > -1) {
-        selectedPages.value.splice(index, 1)
-    } else {
-        selectedPages.value.push(pageId)
+        selectedPages.value.splice(
+            index,
+            1
+        )
+
+        return
     }
+
+    selectedPages.value.push(
+        pageId
+    )
 }
 
-/** Обновление активности выбранных категорий в дереве */
-const updateActivityByIds = (nodes, ids, activity) => {
+/* ======================== Bulk activity ======================== */
+
+/** Обновление активности страниц в дереве */
+const updateActivityByIds = (
+    nodes,
+    ids,
+    activity
+) => {
     nodes.forEach((node) => {
         if (ids.includes(node.id)) {
             node.activity = activity
         }
 
         if (node.children?.length) {
-            updateActivityByIds(node.children, ids, activity)
+            updateActivityByIds(
+                node.children,
+                ids,
+                activity
+            )
         }
     })
 }
@@ -726,14 +1159,21 @@ const updateActivityByIds = (nodes, ids, activity) => {
 /** Массовое переключение активности */
 const bulkToggleActivity = (newActivity) => {
     if (!selectedPages.value.length) {
-        toast.warning('Выберите CMS страницы для активации/деактивации.')
+        toast.warning(
+            'Выберите CMS страницы для активации/деактивации.'
+        )
+
         return
     }
 
-    const idsToUpdate = [...selectedPages.value]
+    const idsToUpdate = [
+        ...selectedPages.value,
+    ]
 
     router.put(
-        route('admin.actions.cmsPages.bulkUpdateActivity'),
+        route(
+            'admin.actions.cmsPages.bulkUpdateActivity'
+        ),
         {
             ids: idsToUpdate,
             activity: newActivity,
@@ -741,61 +1181,123 @@ const bulkToggleActivity = (newActivity) => {
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                updateActivityByIds(localPagesTree.value, idsToUpdate, newActivity)
 
-                localPagesFlat.value = localPagesFlat.value.map(item => {
-                    return idsToUpdate.includes(item.id)
-                        ? { ...item, activity: newActivity }
-                        : item
-                })
+            onSuccess: () => {
+                updateActivityByIds(
+                    localPagesTree.value,
+                    idsToUpdate,
+                    newActivity
+                )
+
+                localPagesFlat.value =
+                    localPagesFlat.value.map(
+                        (item) => {
+                            return idsToUpdate.includes(
+                                item.id
+                            )
+                                ? {
+                                    ...item,
+                                    activity: newActivity,
+                                }
+                                : item
+                        }
+                    )
 
                 selectedPages.value = []
-                toast.success('Активность выбранных CMS страниц обновлена.')
+
+                toast.success(
+                    'Активность выбранных CMS страниц обновлена.'
+                )
             },
+
             onError: (errors) => {
-                toast.error(errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.')
+                toast.error(
+                    errors?.ids
+                    || errors?.activity
+                    || errors?.general
+                    || 'Ошибка массового обновления активности.'
+                )
             },
         }
     )
 }
 
+/* ======================== Bulk delete ======================== */
+
 /** Массовое удаление страниц */
 const bulkDelete = () => {
     if (!selectedPages.value.length) {
-        toast.warning('Выберите хотя бы одну CMS страницу для удаления.')
+        toast.warning(
+            'Выберите хотя бы одну CMS страницу для удаления.'
+        )
+
         return
     }
 
-    if (!confirm('Вы уверены, что хотите удалить выбранные CMS страницы?')) return
+    if (
+        !confirm(
+            'Вы уверены, что хотите удалить выбранные CMS страницы?'
+        )
+    ) {
+        return
+    }
 
-    router.delete(route('admin.actions.cmsPages.bulkDestroy'), {
-        data: { ids: selectedPages.value },
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => {
-            selectedPages.value = []
-            toast.success('Выбранные CMS страницы успешно удалены.')
-        },
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            toast.error(errors[errorKey] || 'Ошибка при массовом удалении CMS страниц.')
-        },
-    })
+    router.delete(
+        route(
+            'admin.actions.cmsPages.bulkDestroy'
+        ),
+        {
+            data: {
+                ids: selectedPages.value,
+            },
+
+            preserveScroll: true,
+            preserveState: false,
+
+            onSuccess: () => {
+                selectedPages.value = []
+
+                toast.success(
+                    'Выбранные CMS страницы успешно удалены.'
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey = Object.keys(
+                    errors || {}
+                )[0]
+
+                toast.error(
+                    errors[errorKey]
+                    || 'Ошибка при массовом удалении CMS страниц.'
+                )
+            },
+        }
+    )
 }
+
+/* ======================== Bulk actions ======================== */
 
 /** Обработка выбранного массового действия */
 const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        toggleAll({ checked: true })
+        toggleAll({
+            checked: true,
+        })
     } else if (action === 'deselectAll') {
-        toggleAll({ checked: false })
+        toggleAll({
+            checked: false,
+        })
     } else if (action === 'activate') {
-        bulkToggleActivity(true)
+        bulkToggleActivity(
+            true
+        )
     } else if (action === 'deactivate') {
-        bulkToggleActivity(false)
+        bulkToggleActivity(
+            false
+        )
     } else if (action === 'delete') {
         bulkDelete()
     }
@@ -845,21 +1347,20 @@ const handleBulkAction = (event) => {
                     class="flex justify-between items-center flex-col md:flex-row my-3"
                 >
                     <ItemsPerPageSelect
-                        v-if="!useServerProcessing && viewMode !== 'table'"
+                        v-if="!useServerProcessing"
                         :items-per-page="itemsPerPage"
                         @update:itemsPerPage="itemsPerPage = $event"
                     />
 
                     <ServerItemsPerPageSelect
-                        v-if="useServerProcessing && viewMode !== 'table'"
+                        v-else
                         :items-per-page="itemsPerPage"
                         update-route="admin.settings.updateAdminCountCmsPages"
                     />
 
                     <SortSelect
-                        v-if="viewMode !== 'table'"
-                        :sortParam="sortParam"
-                        @update:sortParam="(value) => (sortParam = value)"
+                        :sort-param="sortParam"
+                        @update:sortParam="sortParam = $event"
                     />
                 </div>
 
@@ -867,14 +1368,18 @@ const handleBulkAction = (event) => {
                     v-if="pagesCount"
                     class="flex flex-col lg:flex-row items-center justify-between gap-3 mb-3"
                 >
-                    <CountTable>{{ pagesCount }}</CountTable>
+                    <CountTable>
+                        {{ pagesCount }}
+                    </CountTable>
 
                     <BulkActionSelect
                         :disabled="!selectedPages.length"
                         @change="handleBulkAction"
                     />
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
                 <div
@@ -895,6 +1400,7 @@ const handleBulkAction = (event) => {
                     />
                 </div>
 
+                <!-- Дерево -->
                 <div
                     v-if="viewMode === 'table'"
                     class="mt-2 border border-gray-400 bg-white dark:bg-slate-800"
@@ -902,10 +1408,12 @@ const handleBulkAction = (event) => {
                     <div
                         v-if="pagesCount"
                         class="flex justify-between items-center px-3 py-2
-                               border-b border-gray-400 bg-gray-100 dark:bg-slate-900"
+                               border-b border-gray-400
+                               bg-gray-100 dark:bg-slate-900"
                     >
                         <div class="text-xs text-slate-600 dark:text-slate-200">
-                            {{ t('selected') }}: {{ selectedPages.length }}
+                            {{ t('selected') }}:
+                            {{ selectedPages.length }}
                         </div>
 
                         <label
@@ -913,11 +1421,12 @@ const handleBulkAction = (event) => {
                                    text-slate-600 dark:text-slate-200 cursor-pointer"
                         >
                             <span>{{ t('selectAll') }}</span>
+
                             <input
                                 type="checkbox"
-                                @change="toggleAll"
                                 class="form-checkbox rounded-sm text-indigo-500 ml-2"
                                 :title="t('selectAll')"
+                                @change="toggleAll"
                             />
                         </label>
                     </div>
@@ -927,8 +1436,8 @@ const handleBulkAction = (event) => {
                         item-key="id"
                         group="cms-pages"
                         handle=".drag-handle"
-                        @end="handleDragEnd"
                         class="cms-page-tree-root p-1"
+                        @end="handleDragEnd"
                     >
                         <template #item="{ element }">
                             <PageTreeDraggable
@@ -949,7 +1458,8 @@ const handleBulkAction = (event) => {
                         <template #footer>
                             <div
                                 v-if="!localPagesTree.length"
-                                class="p-4 text-center text-slate-900 dark:text-slate-100"
+                                class="p-4 text-center
+                                       text-slate-900 dark:text-slate-100"
                             >
                                 {{ t('noData') }}
                             </div>
@@ -957,6 +1467,7 @@ const handleBulkAction = (event) => {
                     </draggable>
                 </div>
 
+                <!-- Карточки -->
                 <PageCardGrid
                     v-else
                     :pages="displayedPages"
@@ -994,11 +1505,11 @@ const handleBulkAction = (event) => {
 
         <DangerModal
             :show="showConfirmDeleteModal"
+            :on-cancel="closeModal"
+            :on-confirm="deletePage"
+            :cancel-text="t('cancel')"
+            :confirm-text="t('yesDelete')"
             @close="closeModal"
-            :onCancel="closeModal"
-            :onConfirm="deletePage"
-            :cancelText="t('cancel')"
-            :confirmText="t('yesDelete')"
         />
     </AdminLayout>
 </template>

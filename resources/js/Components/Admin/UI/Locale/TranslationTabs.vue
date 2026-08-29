@@ -15,7 +15,7 @@ const props = defineProps({
     },
     availableLocales: {
         type: Array,
-        default: () => ['ru', 'en', 'kk'],
+        default: () => ['ru', 'en', 'kk', 'zh',],
     },
     makeTranslation: {
         type: Function,

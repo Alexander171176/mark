@@ -59,6 +59,8 @@ class ReviewController extends Controller
     {
         $settings = app(AdminSettingsService::class);
 
+        $currentLocale = app()->getLocale();
+
         $perPage = $settings->int(
             'adminReviewsPerPage',
             10
@@ -75,7 +77,10 @@ class ReviewController extends Controller
         );
 
         $search = trim(
-            (string) $request->query('search', '')
+            (string) $request->query(
+                'search',
+                ''
+            )
         );
 
         $processingMode = $settings->string(
@@ -83,75 +88,105 @@ class ReviewController extends Controller
             'frontend'
         );
 
-        $reviewsCount = $this->baseQuery()->count();
+        $reviewsCount = $this
+            ->baseQuery()
+            ->count();
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
-                $processingMode,
-                $reviewsCount,
-                300
-            );
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $reviewsCount,
+            300
+        );
 
         try {
             $reviews = $this->getIndexReviews(
+                locale: $currentLocale,
                 useServerProcessing: $useServerProcessing,
                 perPage: $perPage,
                 sort: $sortParam,
                 search: $search
             );
 
-            return Inertia::render('Admin/Reviews/Index', [
-                'reviews' => ReviewResource::collection($reviews),
-                'reviewsCount' => $reviewsCount,
+            return Inertia::render(
+                'Admin/Reviews/Index',
+                [
+                    'reviews' => ReviewResource::collection(
+                        $reviews
+                    ),
 
-                'useServerProcessing' => $useServerProcessing,
+                    'reviewsCount' => $reviewsCount,
 
-                'adminReviewsProcessingMode' => $processingMode,
-                'adminReviewsPerPage' => $perPage,
-                'adminReviewsDefaultSort' => $defaultSort,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminReviewsProcessingMode' =>
+                        $processingMode,
 
-                'currentLocale' => app()->getLocale(),
-                'availableLocales' => config(
-                    'app.available_locales',
-                    ['ru']
-                ),
+                    'adminReviewsPerPage' =>
+                        $perPage,
 
-                'isAdmin' => $this->isAdmin(),
-            ]);
+                    'adminReviewsDefaultSort' =>
+                        $defaultSort,
+
+                    'sortParam' => $sortParam,
+                    'search' => $search,
+
+                    'currentLocale' => $currentLocale,
+
+                    'availableLocales' => config(
+                        'app.available_locales',
+                        ['ru']
+                    ),
+
+                    'isAdmin' => $this->isAdmin(),
+                ]
+            );
         } catch (Throwable $e) {
             Log::error(
-                'Ошибка загрузки списка отзывов: '.$e->getMessage(),
+                'Ошибка загрузки списка отзывов: '
+                .$e->getMessage(),
                 [
                     'exception' => $e,
                 ]
             );
 
-            return Inertia::render('Admin/Reviews/Index', [
-                'reviews' => [],
-                'reviewsCount' => 0,
+            return Inertia::render(
+                'Admin/Reviews/Index',
+                [
+                    'reviews' => [],
+                    'reviewsCount' => 0,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'adminReviewsProcessingMode' => $processingMode,
-                'adminReviewsPerPage' => $perPage,
-                'adminReviewsDefaultSort' => $defaultSort,
+                    'adminReviewsProcessingMode' =>
+                        $processingMode,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminReviewsPerPage' =>
+                        $perPage,
 
-                'currentLocale' => app()->getLocale(),
-                'availableLocales' => config(
-                    'app.available_locales',
-                    ['ru']
-                ),
+                    'adminReviewsDefaultSort' =>
+                        $defaultSort,
 
-                'isAdmin' => $this->isAdmin(),
+                    'sortParam' => $sortParam,
+                    'search' => $search,
 
-                'error' => __('admin/controllers.index_error'),
-            ]);
+                    'currentLocale' => $currentLocale,
+
+                    'availableLocales' => config(
+                        'app.available_locales',
+                        ['ru']
+                    ),
+
+                    'isAdmin' => $this->isAdmin(),
+
+                    'error' => __(
+                        'admin/controllers.index_error'
+                    ),
+                ]
+            );
         }
     }
 
@@ -163,32 +198,44 @@ class ReviewController extends Controller
     ): RedirectResponse {
         $this->ensureAdmin();
 
-        $reviewableType = $review->reviewable_type;
-        $reviewableId = (int) $review->reviewable_id;
+        $reviewableType =
+            (string) $review->reviewable_type;
+
+        $reviewableId =
+            (int) $review->reviewable_id;
 
         try {
-            DB::transaction(function () use (
-                $review,
-                $reviewableType,
-                $reviewableId
-            ): void {
-                $this->deleteReviewWithImages($review);
-
-                $this->recalculateReviewableRating(
+            DB::transaction(
+                function () use (
+                    $review,
                     $reviewableType,
                     $reviewableId
-                );
-            });
+                ): void {
+                    $this->deleteReviewWithImages(
+                        $review
+                    );
 
-            Log::info('Отзыв удалён.', [
-                'review_id' => $review->id,
-            ]);
+                    $this->recalculateReviewableRating(
+                        $reviewableType,
+                        $reviewableId
+                    );
+                }
+            );
+
+            Log::info(
+                'Отзыв удалён.',
+                [
+                    'review_id' => $review->id,
+                ]
+            );
 
             return redirect()
                 ->route('admin.reviews.index')
                 ->with(
                     'success',
-                    __('admin/controllers.deleted_success')
+                    __(
+                        'admin/controllers.deleted_success'
+                    )
                 );
         } catch (Throwable $e) {
             Log::error(
@@ -201,7 +248,9 @@ class ReviewController extends Controller
 
             return back()->with(
                 'error',
-                __('admin/controllers.deleted_error')
+                __(
+                    'admin/controllers.deleted_error'
+                )
             );
         }
     }
@@ -225,29 +274,51 @@ class ReviewController extends Controller
                 'required',
                 'integer',
                 'distinct',
-                Rule::exists('reviews', 'id'),
+                Rule::exists(
+                    'reviews',
+                    'id'
+                ),
             ],
         ]);
 
         try {
-            DB::transaction(function () use ($validated): void {
-                $reviews = Review::query()
-                    ->whereIn('id', $validated['ids'])
-                    ->with('images')
-                    ->get();
+            DB::transaction(
+                function () use (
+                    $validated
+                ): void {
+                    $reviews = Review::query()
+                        ->whereIn(
+                            'id',
+                            $validated['ids']
+                        )
+                        ->with('images')
+                        ->get();
 
-                $reviewables = $this->reviewableKeys($reviews);
+                    $reviewables =
+                        $this->reviewableKeys(
+                            $reviews
+                        );
 
-                foreach ($reviews as $review) {
-                    $this->deleteReviewWithImages($review);
+                    foreach (
+                        $reviews as $review
+                    ) {
+                        $this->deleteReviewWithImages(
+                            $review
+                        );
+                    }
+
+                    $this->recalculateReviewableRatings(
+                        $reviewables
+                    );
                 }
+            );
 
-                $this->recalculateReviewableRatings($reviewables);
-            });
-
-            Log::info('Отзывы удалены массово.', [
-                'ids' => $validated['ids'],
-            ]);
+            Log::info(
+                'Отзывы удалены массово.',
+                [
+                    'ids' => $validated['ids'],
+                ]
+            );
 
             $message = __(
                 'admin/controllers.bulk_deleted_success'
@@ -259,7 +330,10 @@ class ReviewController extends Controller
                     'message' => $message,
                     'reload' => true,
                 ])
-                : back()->with('success', $message);
+                : back()->with(
+                    'success',
+                    $message
+                );
         } catch (Throwable $e) {
             Log::error(
                 'Ошибка массового удаления отзывов: '
@@ -279,7 +353,10 @@ class ReviewController extends Controller
                     'success' => false,
                     'message' => $message,
                 ], 500)
-                : back()->with('error', $message);
+                : back()->with(
+                    'error',
+                    $message
+                );
         }
     }
 
@@ -295,32 +372,52 @@ class ReviewController extends Controller
         $validated = $request->validated();
 
         try {
-            DB::transaction(function () use (
-                $review,
-                $validated
-            ): void {
-                $review->update([
-                    'activity' => (bool) $validated['activity'],
-                ]);
+            DB::transaction(
+                function () use (
+                    $review,
+                    $validated
+                ): void {
+                    $review->update([
+                        'activity' =>
+                            (bool) $validated[
+                            'activity'
+                            ],
+                    ]);
 
-                $this->recalculateReviewableRating(
-                    $review->reviewable_type,
-                    (int) $review->reviewable_id
-                );
-            });
+                    $this->recalculateReviewableRating(
+                        (string) $review
+                            ->reviewable_type,
 
-            Log::info('Обновлена активность отзыва.', [
-                'review_id' => $review->id,
-                'activity' => $review->activity,
-            ]);
+                        (int) $review
+                            ->reviewable_id
+                    );
+                }
+            );
+
+            Log::info(
+                'Обновлена активность отзыва.',
+                [
+                    'review_id' =>
+                        $review->id,
+
+                    'activity' =>
+                        $review->activity,
+                ]
+            );
 
             return response()->json([
                 'success' => true,
-                'activity' => (bool) $review->activity,
+
+                'activity' =>
+                    (bool) $review->activity,
 
                 'message' => $review->activity
-                    ? __('admin/controllers.activated_success')
-                    : __('admin/controllers.deactivated_success'),
+                    ? __(
+                        'admin/controllers.activated_success'
+                    )
+                    : __(
+                        'admin/controllers.deactivated_success'
+                    ),
             ]);
         } catch (Throwable $e) {
             Log::error(
@@ -333,8 +430,10 @@ class ReviewController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' =>
-                    __('admin/controllers.activity_updated_error'),
+
+                'message' => __(
+                    'admin/controllers.activity_updated_error'
+                ),
             ], 500);
         }
     }
@@ -358,7 +457,10 @@ class ReviewController extends Controller
                 'required',
                 'integer',
                 'distinct',
-                Rule::exists('reviews', 'id'),
+                Rule::exists(
+                    'reviews',
+                    'id'
+                ),
             ],
 
             'activity' => [
@@ -368,31 +470,56 @@ class ReviewController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($validated): void {
-                $reviews = Review::query()
-                    ->whereIn('id', $validated['ids'])
-                    ->get([
-                        'id',
-                        'reviewable_type',
-                        'reviewable_id',
-                    ]);
+            DB::transaction(
+                function () use (
+                    $validated
+                ): void {
+                    $reviews = Review::query()
+                        ->whereIn(
+                            'id',
+                            $validated['ids']
+                        )
+                        ->get([
+                            'id',
+                            'reviewable_type',
+                            'reviewable_id',
+                        ]);
 
-                $reviewables = $this->reviewableKeys($reviews);
+                    $reviewables =
+                        $this->reviewableKeys(
+                            $reviews
+                        );
 
-                Review::query()
-                    ->whereIn('id', $validated['ids'])
-                    ->update([
-                        'activity' =>
-                            (bool) $validated['activity'],
-                    ]);
+                    Review::query()
+                        ->whereIn(
+                            'id',
+                            $validated['ids']
+                        )
+                        ->update([
+                            'activity' =>
+                                (bool) $validated[
+                                'activity'
+                                ],
+                        ]);
 
-                $this->recalculateReviewableRatings($reviewables);
-            });
+                    $this->recalculateReviewableRatings(
+                        $reviewables
+                    );
+                }
+            );
 
-            Log::info('Массово обновлена активность отзывов.', [
-                'ids' => $validated['ids'],
-                'activity' => (bool) $validated['activity'],
-            ]);
+            Log::info(
+                'Массово обновлена активность отзывов.',
+                [
+                    'ids' =>
+                        $validated['ids'],
+
+                    'activity' =>
+                        (bool) $validated[
+                        'activity'
+                        ],
+                ]
+            );
 
             $message = __(
                 'admin/controllers.bulk_activity_updated_success'
@@ -403,7 +530,10 @@ class ReviewController extends Controller
                     'success' => true,
                     'message' => $message,
                 ])
-                : back()->with('success', $message);
+                : back()->with(
+                    'success',
+                    $message
+                );
         } catch (Throwable $e) {
             Log::error(
                 'Ошибка bulkUpdateActivity отзывов: '
@@ -422,7 +552,10 @@ class ReviewController extends Controller
                     'success' => false,
                     'message' => $message,
                 ], 500)
-                : back()->with('error', $message);
+                : back()->with(
+                    'error',
+                    $message
+                );
         }
     }
 
@@ -439,7 +572,11 @@ class ReviewController extends Controller
             'moderation_status' => [
                 'required',
                 'integer',
-                Rule::in([0, 1, 2]),
+                Rule::in([
+                    0,
+                    1,
+                    2,
+                ]),
             ],
 
             'moderation_note' => [
@@ -448,7 +585,8 @@ class ReviewController extends Controller
                 'max:500',
 
                 Rule::requiredIf(
-                    fn () => (int) $request->input(
+                    fn () =>
+                        (int) $request->input(
                             'moderation_status'
                         ) === 2
                 ),
@@ -458,51 +596,72 @@ class ReviewController extends Controller
         $user = auth()->user();
 
         try {
-            DB::transaction(function () use (
-                $review,
-                $validated,
-                $user
-            ): void {
-                $moderationStatus = (int) $validated[
-                'moderation_status'
-                ];
+            DB::transaction(
+                function () use (
+                    $review,
+                    $validated,
+                    $user
+                ): void {
+                    $moderationStatus =
+                        (int) $validated[
+                        'moderation_status'
+                        ];
 
-                $review->update([
-                    'moderation_status' => $moderationStatus,
+                    $review->update([
+                        'moderation_status' =>
+                            $moderationStatus,
 
-                    'moderation_note' =>
-                        $validated['moderation_note'] ?? null,
+                        'moderation_note' =>
+                            $validated[
+                            'moderation_note'
+                            ] ?? null,
 
-                    'moderated_by' => $moderationStatus === 0
-                        ? null
-                        : $user->id,
+                        'moderated_by' =>
+                            $moderationStatus === 0
+                                ? null
+                                : $user->id,
 
-                    'moderated_at' => $moderationStatus === 0
-                        ? null
-                        : now(),
-                ]);
+                        'moderated_at' =>
+                            $moderationStatus === 0
+                                ? null
+                                : now(),
+                    ]);
 
-                $this->recalculateReviewableRating(
-                    $review->reviewable_type,
-                    (int) $review->reviewable_id
-                );
-            });
+                    $this->recalculateReviewableRating(
+                        (string) $review
+                            ->reviewable_type,
+
+                        (int) $review
+                            ->reviewable_id
+                    );
+                }
+            );
 
             $message = __(
                 'admin/controllers.updated_success'
             );
 
             if ($request->expectsJson()) {
-                $this->loadReviewRelations($review);
+                $this->loadReviewRelations(
+                    $review,
+                    app()->getLocale()
+                );
 
                 return response()->json([
                     'success' => true,
                     'message' => $message,
-                    'review' => new ReviewResource($review),
+
+                    'review' =>
+                        new ReviewResource(
+                            $review
+                        ),
                 ]);
             }
 
-            return back()->with('success', $message);
+            return back()->with(
+                'success',
+                $message
+            );
         } catch (Throwable $e) {
             Log::error(
                 "Ошибка модерации отзыва ID {$review->id}: "
@@ -521,27 +680,42 @@ class ReviewController extends Controller
                     'success' => false,
                     'message' => $message,
                 ], 500)
-                : back()->with('error', $message);
+                : back()->with(
+                    'error',
+                    $message
+                );
         }
     }
 
+    /* ======================== Index queries ======================== */
+
     /**
-     * Базовый запрос списка отзывов со связями.
+     * Базовый запрос списка отзывов со всеми
+     * необходимыми для ReviewResource связями.
+     *
+     * Для переводимых reviewable-сущностей
+     * загружается только currentLocale.
      */
-    private function indexReviewsQuery(): Builder
-    {
+    private function indexReviewsQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
                 'author:id,name,email,profile_photo_path',
+
                 'replier:id,name,email,profile_photo_path',
+
                 'moderator:id,name,email,profile_photo_path',
+
                 'images.media',
 
                 'reviewable' => function (
                     MorphTo $morphTo
-                ): void {
+                ) use ($locale): void {
                     $morphTo->morphWith(
-                        $this->reviewableMorphWith()
+                        $this->reviewableMorphWith(
+                            $locale
+                        )
                     );
                 },
             ])
@@ -549,78 +723,136 @@ class ReviewController extends Controller
     }
 
     /**
-     * Получение списка по выбранному режиму обработки.
+     * Получение списка по выбранному
+     * режиму обработки.
      */
     private function getIndexReviews(
+        string $locale,
         bool $useServerProcessing,
         int $perPage,
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexReviewsQuery();
+        $query =
+            $this->indexReviewsQuery(
+                $locale
+            );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search)
-                ->sortByParam($sort)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort)
+            ->sortByParam(
+                $sort
+            )
             ->get();
     }
 
     /**
      * Загрузка отношений одного отзыва.
+     *
+     * Используется после административных
+     * действий, когда необходимо вернуть
+     * обновлённый ReviewResource через JSON.
      */
     private function loadReviewRelations(
-        Review $review
+        Review $review,
+        string $locale
     ): void {
-        $review->load([
-            'author:id,name,email,profile_photo_path',
-            'replier:id,name,email,profile_photo_path',
-            'moderator:id,name,email,profile_photo_path',
-            'images.media',
+        $review
+            ->load([
+                'author:id,name,email,profile_photo_path',
 
-            'reviewable' => function (
-                MorphTo $morphTo
-            ): void {
-                $morphTo->morphWith(
-                    $this->reviewableMorphWith()
-                );
-            },
-        ])->loadCount('images');
+                'replier:id,name,email,profile_photo_path',
+
+                'moderator:id,name,email,profile_photo_path',
+
+                'images.media',
+
+                'reviewable' => function (
+                    MorphTo $morphTo
+                ) use ($locale): void {
+                    $morphTo->morphWith(
+                        $this->reviewableMorphWith(
+                            $locale
+                        )
+                    );
+                },
+            ])
+            ->loadCount(
+                'images'
+            );
     }
 
     /**
-     * Связи, загружаемые для разных reviewable-типов.
+     * Связи для конкретных reviewable-типов.
      *
-     * Позже сюда добавятся комплекты и курсы.
+     * Для переводимых сущностей Controller
+     * заранее загружает translations только
+     * для currentLocale.
      *
-     * @return array<class-string<Model>, array<int, string>>
+     * В callback намеренно отсутствует
+     * строгий тип Builder, поскольку Eloquent
+     * передаёт объект отношения.
+     *
+     * @return array<class-string<Model>, array<string, mixed>>
      */
-    private function reviewableMorphWith(): array
-    {
+    private function reviewableMorphWith(
+        string $locale
+    ): array {
         return [
             MarketProduct::class => [
-                'translations',
+                'translations' => function (
+                    $query
+                ) use ($locale): void {
+                    $query->where(
+                        'locale',
+                        $locale
+                    );
+                },
             ],
 
             /*
              * Позже:
              *
              * MarketBundle::class => [
-             *     'translations',
+             *     'translations' => function (
+             *         $query
+             *     ) use ($locale): void {
+             *         $query->where(
+             *             'locale',
+             *             $locale
+             *         );
+             *     },
              * ],
              *
              * SchoolCourse::class => [
-             *     'translations',
+             *     'translations' => function (
+             *         $query
+             *     ) use ($locale): void {
+             *         $query->where(
+             *             'locale',
+             *             $locale
+             *         );
+             *     },
              * ],
              */
         ];
     }
+
+    /* ======================== Delete helpers ======================== */
 
     /**
      * Удаление отзыва и неиспользуемых изображений.
@@ -628,12 +860,20 @@ class ReviewController extends Controller
     private function deleteReviewWithImages(
         Review $review
     ): void {
-        $imageIds = $review->images()
-            ->pluck('review_images.id')
-            ->map(fn ($id) => (int) $id)
+        $imageIds = $review
+            ->images()
+            ->pluck(
+                'review_images.id'
+            )
+            ->map(
+                fn ($id) => (int) $id
+            )
             ->all();
 
-        $review->images()->detach();
+        $review
+            ->images()
+            ->detach();
+
         $review->delete();
 
         if ($imageIds === []) {
@@ -641,22 +881,32 @@ class ReviewController extends Controller
         }
 
         $unusedImages = ReviewImage::query()
-            ->whereIn('id', $imageIds)
-            ->whereDoesntHave('reviews')
+            ->whereIn(
+                'id',
+                $imageIds
+            )
+            ->whereDoesntHave(
+                'reviews'
+            )
             ->get();
 
-        foreach ($unusedImages as $image) {
+        foreach (
+            $unusedImages as $image
+        ) {
             /*
              * ReviewImage наследуется от BaseImage.
-             * При удалении модели Spatie MediaLibrary удалит
-             * связанные файлы коллекции.
+             * При удалении модели Spatie MediaLibrary
+             * удалит связанные файлы коллекции.
              */
             $image->delete();
         }
     }
 
+    /* ======================== Reviewable helpers ======================== */
+
     /**
-     * Уникальные пары reviewable_type + reviewable_id.
+     * Уникальные пары
+     * reviewable_type + reviewable_id.
      *
      * @return Collection<int, array{
      *     type: string,
@@ -667,13 +917,22 @@ class ReviewController extends Controller
         Collection $reviews
     ): Collection {
         return $reviews
-            ->map(fn (Review $review) => [
-                'type' => (string) $review->reviewable_type,
-                'id' => (int) $review->reviewable_id,
-            ])
+            ->map(
+                fn (Review $review) => [
+                    'type' =>
+                        (string) $review
+                            ->reviewable_type,
+
+                    'id' =>
+                        (int) $review
+                            ->reviewable_id,
+                ]
+            )
             ->unique(
                 fn (array $item) =>
-                    $item['type'].'#'.$item['id']
+                    $item['type']
+                    .'#'
+                    .$item['id']
             )
             ->values();
     }
@@ -684,7 +943,9 @@ class ReviewController extends Controller
     private function recalculateReviewableRatings(
         Collection $reviewables
     ): void {
-        foreach ($reviewables as $reviewable) {
+        foreach (
+            $reviewables as $reviewable
+        ) {
             $this->recalculateReviewableRating(
                 $reviewable['type'],
                 $reviewable['id']
@@ -693,20 +954,25 @@ class ReviewController extends Controller
     }
 
     /**
-     * Пересчёт среднего рейтинга полиморфной сущности.
+     * Пересчёт среднего рейтинга
+     * полиморфной сущности.
      *
-     * В расчёт входят только активные и одобренные отзывы.
-     * Если у связанной модели нет rating_avg и rating_count,
+     * В расчёт входят только активные
+     * и одобренные отзывы.
+     *
+     * Если у связанной модели нет
+     * rating_avg и rating_count,
      * пересчёт безопасно пропускается.
      */
     private function recalculateReviewableRating(
         string $reviewableType,
         int $reviewableId
     ): void {
-        $reviewable = $this->resolveReviewable(
-            $reviewableType,
-            $reviewableId
-        );
+        $reviewable =
+            $this->resolveReviewable(
+                $reviewableType,
+                $reviewableId
+            );
 
         if (! $reviewable) {
             return;
@@ -725,41 +991,70 @@ class ReviewController extends Controller
         }
 
         $ratingQuery = Review::query()
-            ->where('reviewable_type', $reviewableType)
-            ->where('reviewable_id', $reviewableId)
-            ->where('activity', true)
-            ->where('moderation_status', 1);
+            ->where(
+                'reviewable_type',
+                $reviewableType
+            )
+            ->where(
+                'reviewable_id',
+                $reviewableId
+            )
+            ->where(
+                'activity',
+                true
+            )
+            ->where(
+                'moderation_status',
+                1
+            );
 
-        $ratingCount = (clone $ratingQuery)->count();
+        $ratingCount =
+            (clone $ratingQuery)
+                ->count();
 
-        $ratingAverage = $ratingCount > 0
-            ? round(
-                (float) (clone $ratingQuery)->avg('rating'),
+        $ratingAverage =
+            $ratingCount > 0
+                ? round(
+                (float) (
+                clone $ratingQuery
+                )->avg('rating'),
                 2
             )
-            : 0;
+                : 0;
 
-        $reviewable->forceFill([
-            'rating_avg' => $ratingAverage,
-            'rating_count' => $ratingCount,
-        ])->saveQuietly();
+        $reviewable
+            ->forceFill([
+                'rating_avg' =>
+                    $ratingAverage,
+
+                'rating_count' =>
+                    $ratingCount,
+            ])
+            ->saveQuietly();
     }
 
     /**
-     * Получение полиморфной модели по типу и ID.
+     * Получение полиморфной модели
+     * по morphMap-типу и ID.
      */
     private function resolveReviewable(
         string $reviewableType,
         int $reviewableId
     ): ?Model {
-        $modelClass = match ($reviewableType) {
-            'market_product' => MarketProduct::class,
+        $modelClass = match (
+        $reviewableType
+        ) {
+            'market_product' =>
+            MarketProduct::class,
 
             /*
              * Позже:
              *
-             * 'market_bundle' => MarketBundle::class,
-             * 'school_course' => SchoolCourse::class,
+             * 'market_bundle' =>
+             *     MarketBundle::class,
+             *
+             * 'school_course' =>
+             *     SchoolCourse::class,
              */
 
             default => null,
@@ -769,15 +1064,23 @@ class ReviewController extends Controller
             return null;
         }
 
-        return $modelClass::query()->find($reviewableId);
+        return $modelClass::query()
+            ->find(
+                $reviewableId
+            );
     }
+
+    /* ======================== Access ======================== */
 
     /**
      * Проверка административной роли.
      */
     private function ensureAdmin(): void
     {
-        abort_unless($this->isAdmin(), 403);
+        abort_unless(
+            $this->isAdmin(),
+            403
+        );
     }
 
     /**
@@ -789,8 +1092,13 @@ class ReviewController extends Controller
 
         return (bool) (
             $user
-            && method_exists($user, 'hasRole')
-            && $user->hasRole('admin')
+            && method_exists(
+                $user,
+                'hasRole'
+            )
+            && $user->hasRole(
+                'admin'
+            )
         );
     }
 }

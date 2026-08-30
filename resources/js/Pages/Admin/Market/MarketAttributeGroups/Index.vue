@@ -65,119 +65,199 @@ const props = defineProps({
 /** Проверка прав администратора */
 const isAdmin = computed(() => {
     const roles = page.props?.auth?.user?.roles || []
+
     return roles.some((role) => role?.name === 'admin')
 })
 
 /** Получение текущего перевода группы */
-const getGroupTranslation = (group) => group?.translation || group?.translations?.[0] || {}
+const getGroupTranslation = (group) => group?.translation || {}
 
 /** Получение названия группы */
-const getGroupTitle = (group) => getGroupTranslation(group)?.title || `ID: ${group?.id}`
+const getGroupTitle = (group) =>
+    getGroupTranslation(group)?.title
+    || `ID: ${group?.id}`
+
+/** Получение подзаголовка группы */
+const getGroupSubtitle = (group) =>
+    getGroupTranslation(group)?.subtitle || ''
 
 /** Получение краткого описания */
-const getGroupShort = (group) => getGroupTranslation(group)?.short || ''
+const getGroupShort = (group) =>
+    getGroupTranslation(group)?.short || ''
 
 /** Получение имени владельца */
-const getOwnerName = (group) => group?.owner?.name || ''
+const getOwnerName = (group) =>
+    group?.owner?.name || ''
 
 /** Получение Email владельца */
-const getOwnerEmail = (group) => group?.owner?.email || ''
+const getOwnerEmail = (group) =>
+    group?.owner?.email || ''
 
 /** Нормализация строки */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+const normalize = (value) =>
+    (value ?? '')
+        .toString()
+        .trim()
+        .toLowerCase()
 
 /** Безопасное преобразование в число */
 const safeNumber = (value) => {
     const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+
+    return Number.isFinite(number)
+        ? number
+        : 0
 }
 
 /** Безопасное преобразование даты */
 const safeDate = (value) => {
     const time = new Date(value || 0).getTime()
-    return Number.isFinite(time) ? time : 0
+
+    return Number.isFinite(time)
+        ? time
+        : 0
 }
 
 /** Безопасное получение статуса модерации */
 const moderationNum = (value) => {
     const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+
+    return Number.isFinite(number)
+        ? number
+        : 0
 }
 
 /** Режим отображения списка */
 const viewMode = ref(
-    localStorage.getItem('admin_view_mode_market_attribute_groups') || 'cards'
+    localStorage.getItem(
+        'admin_view_mode_market_attribute_groups'
+    ) || 'cards'
 )
 
-watch(viewMode, (value) => {
-    localStorage.setItem('admin_view_mode_market_attribute_groups', value)
-})
+watch(
+    viewMode,
+    (value) => {
+        localStorage.setItem(
+            'admin_view_mode_market_attribute_groups',
+            value
+        )
+    }
+)
 
 /** Количество элементов на странице */
-const itemsPerPage = ref(props.adminMarketAttributeGroupsPerPage || 10)
+const itemsPerPage = ref(
+    props.adminMarketAttributeGroupsPerPage || 10
+)
 
-watch(itemsPerPage, (newVal) => {
-    router.put(
-        route('admin.settings.updateAdminCountMarketAttributeGroups'),
-        { value: newVal },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} групп характеристик на странице.`),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва групп характеристик.'),
-        }
-    )
-})
+watch(
+    itemsPerPage,
+    (newVal) => {
+        router.put(
+            route(
+                'admin.settings.updateAdminCountMarketAttributeGroups'
+            ),
+            {
+                value: newVal,
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+
+                onSuccess: () => {
+                    toast.info(
+                        `Показ ${newVal} групп характеристик на странице.`
+                    )
+                },
+
+                onError: (errors) => {
+                    toast.error(
+                        errors.value
+                        || 'Ошибка обновления кол-ва групп характеристик.'
+                    )
+                },
+            }
+        )
+    }
+)
 
 /** Текущий параметр сортировки */
 const sortParam = ref(
-    props.sortParam || props.adminMarketAttributeGroupsDefaultSort || 'idDesc'
+    props.sortParam
+    || props.adminMarketAttributeGroupsDefaultSort
+    || 'idDesc'
 )
 
-watch(sortParam, (newVal) => {
-    router.put(
-        route('admin.settings.updateAdminSortMarketAttributeGroups'),
-        { value: newVal },
-        {
-            preserveScroll: true,
-            preserveState: true,
+watch(
+    sortParam,
+    (newVal) => {
+        router.put(
+            route(
+                'admin.settings.updateAdminSortMarketAttributeGroups'
+            ),
+            {
+                value: newVal,
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
 
-            onSuccess: () => {
-                if (props.useServerProcessing) {
-                    router.get(
-                        window.location.pathname,
-                        {
-                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
-                            sort: newVal || undefined,
-                            page: undefined,
-                        },
-                        {
-                            preserveScroll: true,
-                            preserveState: false,
-                            replace: true,
-                        }
+                onSuccess: () => {
+                    if (props.useServerProcessing) {
+                        router.get(
+                            window.location.pathname,
+                            {
+                                ...Object.fromEntries(
+                                    new URLSearchParams(
+                                        window.location.search
+                                    )
+                                ),
+                                sort: newVal || undefined,
+                                page: undefined,
+                            },
+                            {
+                                preserveScroll: true,
+                                preserveState: false,
+                                replace: true,
+                            }
+                        )
+                    }
+
+                    toast.info(
+                        'Сортировка групп характеристик успешно изменена.'
                     )
-                }
+                },
 
-                toast.info('Сортировка групп характеристик успешно изменена.')
-            },
-
-            onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления сортировки групп характеристик.')
-            },
-        }
-    )
-})
+                onError: (errors) => {
+                    toast.error(
+                        errors.value
+                        || 'Ошибка обновления сортировки групп характеристик.'
+                    )
+                },
+            }
+        )
+    }
+)
 
 /** Локальная копия списка групп */
 const localGroups = ref([])
 
 /** Исходный список групп */
 const groupsList = computed(() => {
-    if (Array.isArray(props.groups)) return props.groups
-    if (Array.isArray(props.groups?.data)) return props.groups.data
-    if (Array.isArray(props.groups?.data?.data)) return props.groups.data.data
-    if (Array.isArray(props.groups?.resource)) return props.groups.resource
+    if (Array.isArray(props.groups)) {
+        return props.groups
+    }
+
+    if (Array.isArray(props.groups?.data)) {
+        return props.groups.data
+    }
+
+    if (Array.isArray(props.groups?.data?.data)) {
+        return props.groups.data.data
+    }
+
+    if (Array.isArray(props.groups?.resource)) {
+        return props.groups.resource
+    }
 
     return []
 })
@@ -185,9 +265,16 @@ const groupsList = computed(() => {
 watch(
     groupsList,
     (newVal) => {
-        localGroups.value = JSON.parse(JSON.stringify(newVal || []))
+        localGroups.value = JSON.parse(
+            JSON.stringify(
+                newVal || []
+            )
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
 /** Окно подтверждения удаления */
@@ -200,258 +287,683 @@ const groupToDeleteId = ref(null)
 const groupToDeleteTitle = ref('')
 
 /** Подготовка удаления группы */
-const confirmDelete = (groupOrId, title = null) => {
-    if (typeof groupOrId === 'object') {
-        groupToDeleteId.value = groupOrId.id
-        groupToDeleteTitle.value = title || getGroupTitle(groupOrId)
+const confirmDelete = (
+    groupOrId,
+    title = null
+) => {
+    if (
+        typeof groupOrId === 'object'
+        && groupOrId !== null
+    ) {
+        groupToDeleteId.value =
+            groupOrId.id
+
+        groupToDeleteTitle.value =
+            title
+            || getGroupTitle(
+                groupOrId
+            )
     } else {
-        groupToDeleteId.value = groupOrId
-        groupToDeleteTitle.value = title || `ID: ${groupOrId}`
+        groupToDeleteId.value =
+            groupOrId
+
+        groupToDeleteTitle.value =
+            title
+            || `ID: ${groupOrId}`
     }
 
-    showConfirmDeleteModal.value = true
+    showConfirmDeleteModal.value =
+        true
 }
 
 /** Закрытие окна удаления */
 const closeModal = () => {
-    showConfirmDeleteModal.value = false
-    groupToDeleteId.value = null
-    groupToDeleteTitle.value = ''
+    showConfirmDeleteModal.value =
+        false
+
+    groupToDeleteId.value =
+        null
+
+    groupToDeleteTitle.value =
+        ''
 }
 
 /** Удаление группы */
 const deleteGroup = () => {
-    if (groupToDeleteId.value === null) return
+    if (
+        groupToDeleteId.value === null
+    ) {
+        return
+    }
 
-    const idToDelete = groupToDeleteId.value
-    const titleToDelete = groupToDeleteTitle.value
+    const idToDelete =
+        groupToDeleteId.value
 
-    router.delete(route('admin.marketAttributeGroups.destroy', { marketAttributeGroup: idToDelete }), {
-        preserveScroll: true,
-        preserveState: false,
+    const titleToDelete =
+        groupToDeleteTitle.value
 
-        onSuccess: () => {
-            toast.success(`Группа характеристик "${titleToDelete || 'ID: ' + idToDelete}" удалена.`)
-        },
+    router.delete(
+        route(
+            'admin.marketAttributeGroups.destroy',
+            {
+                marketAttributeGroup:
+                idToDelete,
+            }
+        ),
+        {
+            preserveScroll: true,
+            preserveState: false,
 
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Группа: ${titleToDelete || 'ID: ' + idToDelete})`)
-        },
+            onSuccess: () => {
+                toast.success(
+                    `Группа характеристик "${titleToDelete || 'ID: ' + idToDelete}" удалена.`
+                )
+            },
 
-        onFinish: () => closeModal(),
-    })
+            onError: (errors) => {
+                const errorKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                const errorMsg =
+                    errors.general
+                    || errors[errorKey]
+                    || 'Произошла ошибка при удалении.'
+
+                toast.error(
+                    `${errorMsg} (Группа: ${titleToDelete || 'ID: ' + idToDelete})`
+                )
+            },
+
+            onFinish: () =>
+                closeModal(),
+        }
+    )
 }
 
 /** Локальное обновление записи */
-const patchLocalGroup = (groupId, callback) => {
-    const index = localGroups.value.findIndex((group) => group.id === groupId)
+const patchLocalGroup = (
+    groupId,
+    callback
+) => {
+    const index =
+        localGroups.value.findIndex(
+            (group) =>
+                group.id === groupId
+        )
 
     if (index !== -1) {
-        callback(localGroups.value[index])
+        callback(
+            localGroups.value[index]
+        )
     }
 }
 
 /** Переключение активности */
 const toggleActivity = (group) => {
-    const newActivity = !group.activity
-    const title = getGroupTitle(group)
-    const actionText = newActivity ? t('activated') : t('deactivated')
+    const newActivity =
+        ! group.activity
+
+    const title =
+        getGroupTitle(group)
+
+    const actionText =
+        newActivity
+            ? t('activated')
+            : t('deactivated')
 
     router.put(
-        route('admin.actions.marketAttributeGroups.updateActivity', { marketAttributeGroup: group.id }),
-        { activity: newActivity },
+        route(
+            'admin.actions.marketAttributeGroups.updateActivity',
+            {
+                marketAttributeGroup:
+                group.id,
+            }
+        ),
+        {
+            activity:
+            newActivity,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
-                patchLocalGroup(group.id, (node) => {
-                    node.activity = newActivity
-                })
+                patchLocalGroup(
+                    group.id,
+                    (node) => {
+                        node.activity =
+                            newActivity
+                    }
+                )
 
-                toast.success(`Группа характеристик "${title}" ${actionText}.`)
+                toast.success(
+                    `Группа характеристик "${title}" ${actionText}.`
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.activity || errors.general || `Ошибка изменения активности для "${title}".`)
+                toast.error(
+                    errors.activity
+                    || errors.general
+                    || `Ошибка изменения активности для "${title}".`
+                )
             },
         }
     )
 }
 
 /** Поисковая строка */
-const searchQuery = ref(props.search || '')
+const searchQuery = ref(
+    props.search || ''
+)
 
 /** Текущая страница пагинации */
 const currentPage = ref(1)
 
 /** Сортировка чисел по возрастанию */
-const byNumberAsc = (field) => (a, b) =>
-    safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byNumberAsc = (field) =>
+    (a, b) =>
+        safeNumber(a?.[field])
+        - safeNumber(b?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
 
 /** Сортировка чисел по убыванию */
-const byNumberDesc = (field) => (a, b) =>
-    safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byNumberDesc = (field) =>
+    (a, b) =>
+        safeNumber(b?.[field])
+        - safeNumber(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
 
 /** Сортировка дат по возрастанию */
-const byDateAsc = (field) => (a, b) =>
-    safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byDateAsc = (field) =>
+    (a, b) =>
+        safeDate(a?.[field])
+        - safeDate(b?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
 
 /** Сортировка дат по убыванию */
-const byDateDesc = (field) => (a, b) =>
-    safeDate(b?.[field]) - safeDate(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byDateDesc = (field) =>
+    (a, b) =>
+        safeDate(b?.[field])
+        - safeDate(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
 
 /** Сортировка списка групп */
 const sortGroups = (groups) => {
-    const list = (groups || []).slice()
+    const list =
+        (groups || []).slice()
 
-    if (sortParam.value === 'activity') return list.filter((group) => !!group.activity)
-    if (sortParam.value === 'inactive') return list.filter((group) => !group.activity)
+    /** Фильтры активности */
+    if (
+        sortParam.value === 'activity'
+    ) {
+        return list.filter(
+            (group) =>
+                !! group.activity
+        )
+    }
 
-    if (sortParam.value === 'statusDraft') return list.filter((group) => group?.status === 'draft')
-    if (sortParam.value === 'statusPublished') return list.filter((group) => group?.status === 'published')
-    if (sortParam.value === 'statusArchived') return list.filter((group) => group?.status === 'archived')
+    if (
+        sortParam.value === 'inactive'
+    ) {
+        return list.filter(
+            (group) =>
+                ! group.activity
+        )
+    }
 
-    if (sortParam.value === 'moderationPending') return list.filter((group) => moderationNum(group?.moderation_status) === 0)
-    if (sortParam.value === 'moderationApproved') return list.filter((group) => moderationNum(group?.moderation_status) === 1)
-    if (sortParam.value === 'moderationRejected') return list.filter((group) => moderationNum(group?.moderation_status) === 2)
+    /** Фильтры статуса */
+    if (
+        sortParam.value === 'statusDraft'
+    ) {
+        return list.filter(
+            (group) =>
+                group?.status === 'draft'
+        )
+    }
+
+    if (
+        sortParam.value === 'statusPublished'
+    ) {
+        return list.filter(
+            (group) =>
+                group?.status === 'published'
+        )
+    }
+
+    if (
+        sortParam.value === 'statusArchived'
+    ) {
+        return list.filter(
+            (group) =>
+                group?.status === 'archived'
+        )
+    }
+
+    /** Фильтры модерации */
+    if (
+        sortParam.value === 'moderationPending'
+    ) {
+        return list.filter(
+            (group) =>
+                moderationNum(
+                    group?.moderation_status
+                ) === 0
+        )
+    }
+
+    if (
+        sortParam.value === 'moderationApproved'
+    ) {
+        return list.filter(
+            (group) =>
+                moderationNum(
+                    group?.moderation_status
+                ) === 1
+        )
+    }
+
+    if (
+        sortParam.value === 'moderationRejected'
+    ) {
+        return list.filter(
+            (group) =>
+                moderationNum(
+                    group?.moderation_status
+                ) === 2
+        )
+    }
 
     const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
+        /** ID */
+        idAsc:
+            byNumberAsc('id'),
 
-        sortAsc: byNumberAsc('sort'),
-        sortDesc: byNumberDesc('sort'),
+        idDesc:
+            byNumberDesc('id'),
 
-        titleAsc: (a, b) =>
-            normalize(getGroupTitle(a)).localeCompare(normalize(getGroupTitle(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        /** Sort */
+        sortAsc:
+            byNumberAsc('sort'),
 
-        titleDesc: (a, b) =>
-            normalize(getGroupTitle(b)).localeCompare(normalize(getGroupTitle(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        sortDesc:
+            byNumberDesc('sort'),
 
-        codeAsc: (a, b) =>
-            normalize(a?.code).localeCompare(normalize(b?.code), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        /** Title */
+        titleAsc:
+            (a, b) =>
+                normalize(
+                    getGroupTitle(a)
+                ).localeCompare(
+                    normalize(
+                        getGroupTitle(b)
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        codeDesc: (a, b) =>
-            normalize(b?.code).localeCompare(normalize(a?.code), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        titleDesc:
+            (a, b) =>
+                normalize(
+                    getGroupTitle(b)
+                ).localeCompare(
+                    normalize(
+                        getGroupTitle(a)
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        colorAsc: (a, b) =>
-            normalize(a?.color).localeCompare(normalize(b?.color), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        /** Code */
+        codeAsc:
+            (a, b) =>
+                normalize(
+                    a?.code
+                ).localeCompare(
+                    normalize(
+                        b?.code
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        colorDesc: (a, b) =>
-            normalize(b?.color).localeCompare(normalize(a?.color), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        codeDesc:
+            (a, b) =>
+                normalize(
+                    b?.code
+                ).localeCompare(
+                    normalize(
+                        a?.code
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        attributesCountAsc: byNumberAsc('attributes_count'),
-        attributesCountDesc: byNumberDesc('attributes_count'),
+        /** Color */
+        colorAsc:
+            (a, b) =>
+                normalize(
+                    a?.color
+                ).localeCompare(
+                    normalize(
+                        b?.color
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        statusAsc: (a, b) =>
-            normalize(a?.status).localeCompare(normalize(b?.status), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        colorDesc:
+            (a, b) =>
+                normalize(
+                    b?.color
+                ).localeCompare(
+                    normalize(
+                        a?.color
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        statusDesc: (a, b) =>
-            normalize(b?.status).localeCompare(normalize(a?.status), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        /** Attributes count */
+        attributesCountAsc:
+            byNumberAsc(
+                'attributes_count'
+            ),
 
-        activityAsc: byNumberAsc('activity'),
-        activityDesc: byNumberDesc('activity'),
+        attributesCountDesc:
+            byNumberDesc(
+                'attributes_count'
+            ),
 
-        moderationStatusAsc: (a, b) =>
-            moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        /** Status */
+        statusAsc:
+            (a, b) =>
+                normalize(
+                    a?.status
+                ).localeCompare(
+                    normalize(
+                        b?.status
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        moderationStatusDesc: (a, b) =>
-            moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        statusDesc:
+            (a, b) =>
+                normalize(
+                    b?.status
+                ).localeCompare(
+                    normalize(
+                        a?.status
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        ownerNameAsc: (a, b) =>
-            normalize(getOwnerName(a)).localeCompare(normalize(getOwnerName(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        /** Activity */
+        activityAsc:
+            byNumberAsc(
+                'activity'
+            ),
 
-        ownerNameDesc: (a, b) =>
-            normalize(getOwnerName(b)).localeCompare(normalize(getOwnerName(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        activityDesc:
+            byNumberDesc(
+                'activity'
+            ),
 
-        ownerEmailAsc: (a, b) =>
-            normalize(getOwnerEmail(a)).localeCompare(normalize(getOwnerEmail(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        /** Moderation */
+        moderationStatusAsc:
+            (a, b) =>
+                moderationNum(
+                    a?.moderation_status
+                )
+                - moderationNum(
+                    b?.moderation_status
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        ownerEmailDesc: (a, b) =>
-            normalize(getOwnerEmail(b)).localeCompare(normalize(getOwnerEmail(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        moderationStatusDesc:
+            (a, b) =>
+                moderationNum(
+                    b?.moderation_status
+                )
+                - moderationNum(
+                    a?.moderation_status
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        publishedAtAsc: byDateAsc('published_at'),
-        publishedAtDesc: byDateDesc('published_at'),
+        /** Owner name */
+        ownerNameAsc:
+            (a, b) =>
+                normalize(
+                    getOwnerName(a)
+                ).localeCompare(
+                    normalize(
+                        getOwnerName(b)
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        showFromAtAsc: byDateAsc('show_from_at'),
-        showFromAtDesc: byDateDesc('show_from_at'),
+        ownerNameDesc:
+            (a, b) =>
+                normalize(
+                    getOwnerName(b)
+                ).localeCompare(
+                    normalize(
+                        getOwnerName(a)
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        showToAtAsc: byDateAsc('show_to_at'),
-        showToAtDesc: byDateDesc('show_to_at'),
+        /** Owner email */
+        ownerEmailAsc:
+            (a, b) =>
+                normalize(
+                    getOwnerEmail(a)
+                ).localeCompare(
+                    normalize(
+                        getOwnerEmail(b)
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        createdAtAsc: byDateAsc('created_at'),
-        createdAtDesc: byDateDesc('created_at'),
-        dateAsc: byDateAsc('created_at'),
-        dateDesc: byDateDesc('created_at'),
+        ownerEmailDesc:
+            (a, b) =>
+                normalize(
+                    getOwnerEmail(b)
+                ).localeCompare(
+                    normalize(
+                        getOwnerEmail(a)
+                    ),
+                    locale.value
+                )
+                || safeNumber(b?.id)
+                - safeNumber(a?.id),
 
-        updatedAtAsc: byDateAsc('updated_at'),
-        updatedAtDesc: byDateDesc('updated_at'),
+        /** Dates */
+        publishedAtAsc:
+            byDateAsc(
+                'published_at'
+            ),
+
+        publishedAtDesc:
+            byDateDesc(
+                'published_at'
+            ),
+
+        showFromAtAsc:
+            byDateAsc(
+                'show_from_at'
+            ),
+
+        showFromAtDesc:
+            byDateDesc(
+                'show_from_at'
+            ),
+
+        showToAtAsc:
+            byDateAsc(
+                'show_to_at'
+            ),
+
+        showToAtDesc:
+            byDateDesc(
+                'show_to_at'
+            ),
+
+        createdAtAsc:
+            byDateAsc(
+                'created_at'
+            ),
+
+        createdAtDesc:
+            byDateDesc(
+                'created_at'
+            ),
+
+        dateAsc:
+            byDateAsc(
+                'created_at'
+            ),
+
+        dateDesc:
+            byDateDesc(
+                'created_at'
+            ),
+
+        updatedAtAsc:
+            byDateAsc(
+                'updated_at'
+            ),
+
+        updatedAtDesc:
+            byDateDesc(
+                'updated_at'
+            ),
     }
 
     return sortMap[sortParam.value]
-        ? list.sort(sortMap[sortParam.value])
+        ? list.sort(
+            sortMap[sortParam.value]
+        )
         : list
 }
 
-/** Отфильтрованный список */
+/**
+ * Отфильтрованный список.
+ *
+ * Семантика поиска совпадает
+ * с MarketAttributeGroup::scopeSearch():
+ * - code;
+ * - icon;
+ * - color;
+ * - status;
+ * - moderation_note;
+ * - translation.title;
+ * - translation.subtitle;
+ * - translation.short;
+ * - owner.name;
+ * - owner.email.
+ */
 const filteredGroups = computed(() => {
-    let filtered = localGroups.value || []
-    const query = normalize(searchQuery.value)
+    let filtered =
+        localGroups.value || []
 
-    if (!query) {
-        return sortGroups(filtered)
+    const query =
+        normalize(
+            searchQuery.value
+        )
+
+    if (! query) {
+        return sortGroups(
+            filtered
+        )
     }
 
-    filtered = filtered.filter((group) => {
-        const values = [
-            group?.id,
-            group?.code,
-            group?.icon,
-            group?.color,
-            group?.status,
-            group?.moderation_note,
-            group?.attributes_count,
-            getGroupTitle(group),
-            getGroupShort(group),
-            getOwnerName(group),
-            getOwnerEmail(group),
-            group?.moderator?.name,
-            group?.moderator?.email,
-        ]
+    filtered =
+        filtered.filter(
+            (group) => {
+                const values = [
+                    group?.code,
+                    group?.icon,
+                    group?.color,
+                    group?.status,
+                    group?.moderation_note,
 
-        return values.some((value) => normalize(value).includes(query))
-    })
+                    getGroupTitle(
+                        group
+                    ),
 
-    return sortGroups(filtered)
+                    getGroupSubtitle(
+                        group
+                    ),
+
+                    getGroupShort(
+                        group
+                    ),
+
+                    getOwnerName(
+                        group
+                    ),
+
+                    getOwnerEmail(
+                        group
+                    ),
+                ]
+
+                return values.some(
+                    (value) =>
+                        normalize(
+                            value
+                        ).includes(
+                            query
+                        )
+                )
+            }
+        )
+
+    return sortGroups(
+        filtered
+    )
 })
 
 /** Локальная пагинация */
 const paginatedGroups = computed(() => {
-    const perPage = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * perPage
+    const perPage =
+        Number(
+            itemsPerPage.value || 10
+        )
 
-    return filteredGroups.value.slice(start, start + perPage)
+    const start =
+        (currentPage.value - 1)
+        * perPage
+
+    return filteredGroups.value.slice(
+        start,
+        start + perPage
+    )
 })
 
 /** Отображаемый список */
@@ -461,65 +973,127 @@ const displayedGroups = computed(() => {
         : paginatedGroups.value
 })
 
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+    ],
+    () => {
+        currentPage.value = 1
+    }
+)
 
 /** Выбранные группы */
 const selectedGroups = ref([])
 
 /** Выделение всех элементов */
 const toggleAll = (payload) => {
-    const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? displayedGroups.value.map((group) => group.id)
+    const checked =
+        payload?.checked
+        ?? payload?.target?.checked
+        ?? false
+
+    const ids =
+        payload?.ids
+        ?? displayedGroups.value.map(
+            (group) =>
+                group.id
+        )
 
     if (checked) {
-        selectedGroups.value = [...new Set([...selectedGroups.value, ...ids])]
+        selectedGroups.value = [
+            ...new Set([
+                ...selectedGroups.value,
+                ...ids,
+            ]),
+        ]
     } else {
-        selectedGroups.value = selectedGroups.value.filter((id) => !ids.includes(id))
+        selectedGroups.value =
+            selectedGroups.value.filter(
+                (id) =>
+                    ! ids.includes(id)
+            )
     }
 }
 
 /** Переключение выбора строки */
 const toggleSelectGroup = (groupId) => {
-    const index = selectedGroups.value.indexOf(groupId)
+    const index =
+        selectedGroups.value.indexOf(
+            groupId
+        )
 
     if (index > -1) {
-        selectedGroups.value.splice(index, 1)
+        selectedGroups.value.splice(
+            index,
+            1
+        )
     } else {
-        selectedGroups.value.push(groupId)
+        selectedGroups.value.push(
+            groupId
+        )
     }
 }
 
 /** Массовое изменение активности */
 const bulkToggleActivity = (newActivity) => {
-    if (!selectedGroups.value.length) {
-        toast.warning('Выберите группы характеристик для активации/деактивации.')
+    if (
+        ! selectedGroups.value.length
+    ) {
+        toast.warning(
+            'Выберите группы характеристик для активации/деактивации.'
+        )
+
         return
     }
 
-    const idsToUpdate = [...selectedGroups.value]
+    const idsToUpdate = [
+        ...selectedGroups.value,
+    ]
 
     router.put(
-        route('admin.actions.marketAttributeGroups.bulkUpdateActivity'),
-        { ids: idsToUpdate, activity: newActivity },
+        route(
+            'admin.actions.marketAttributeGroups.bulkUpdateActivity'
+        ),
+        {
+            ids: idsToUpdate,
+            activity: newActivity,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
-                localGroups.value = localGroups.value.map((group) => {
-                    return idsToUpdate.includes(group.id)
-                        ? { ...group, activity: newActivity }
-                        : group
-                })
+                localGroups.value =
+                    localGroups.value.map(
+                        (group) => {
+                            return idsToUpdate.includes(
+                                group.id
+                            )
+                                ? {
+                                    ...group,
+                                    activity:
+                                    newActivity,
+                                }
+                                : group
+                        }
+                    )
 
-                selectedGroups.value = []
-                toast.success('Активность групп характеристик массово обновлена.')
+                selectedGroups.value =
+                    []
+
+                toast.success(
+                    'Активность групп характеристик массово обновлена.'
+                )
             },
 
             onError: (errors) => {
-                const msg = errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.'
+                const msg =
+                    errors?.ids
+                    || errors?.activity
+                    || errors?.general
+                    || 'Ошибка массового обновления активности.'
+
                 toast.error(msg)
             },
         }
@@ -528,43 +1102,97 @@ const bulkToggleActivity = (newActivity) => {
 
 /** Массовое удаление */
 const bulkDelete = () => {
-    if (!selectedGroups.value.length) {
-        toast.warning('Выберите хотя бы одну группу характеристик для удаления.')
+    if (
+        ! selectedGroups.value.length
+    ) {
+        toast.warning(
+            'Выберите хотя бы одну группу характеристик для удаления.'
+        )
+
         return
     }
 
-    if (!confirm('Вы уверены, что хотите удалить выбранные группы характеристик?')) return
+    if (
+        ! confirm(
+            'Вы уверены, что хотите удалить выбранные группы характеристик?'
+        )
+    ) {
+        return
+    }
 
-    router.delete(route('admin.actions.marketAttributeGroups.bulkDestroy'), {
-        data: { ids: selectedGroups.value },
-        preserveScroll: true,
-        preserveState: false,
+    router.delete(
+        route(
+            'admin.actions.marketAttributeGroups.bulkDestroy'
+        ),
+        {
+            data: {
+                ids:
+                selectedGroups.value,
+            },
 
-        onSuccess: () => {
-            selectedGroups.value = []
-            toast.success('Массовое удаление групп характеристик успешно завершено.')
-        },
+            preserveScroll: true,
+            preserveState: false,
 
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            toast.error(errors[errorKey] || 'Произошла ошибка при удалении групп характеристик.')
-        },
-    })
+            onSuccess: () => {
+                selectedGroups.value =
+                    []
+
+                toast.success(
+                    'Массовое удаление групп характеристик успешно завершено.'
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors[errorKey]
+                    || 'Произошла ошибка при удалении групп характеристик.'
+                )
+            },
+        }
+    )
 }
 
 /** Обработка массовых действий */
 const handleBulkAction = (event) => {
-    const action = event.target.value
+    const action =
+        event.target.value
 
-    if (action === 'selectAll') {
-        toggleAll({ target: { checked: true } })
-    } else if (action === 'deselectAll') {
-        toggleAll({ target: { checked: false } })
-    } else if (action === 'activate') {
-        bulkToggleActivity(true)
-    } else if (action === 'deactivate') {
-        bulkToggleActivity(false)
-    } else if (action === 'delete') {
+    if (
+        action === 'selectAll'
+    ) {
+        toggleAll({
+            target: {
+                checked: true,
+            },
+        })
+    } else if (
+        action === 'deselectAll'
+    ) {
+        toggleAll({
+            target: {
+                checked: false,
+            },
+        })
+    } else if (
+        action === 'activate'
+    ) {
+        bulkToggleActivity(
+            true
+        )
+    } else if (
+        action === 'deactivate'
+    ) {
+        bulkToggleActivity(
+            false
+        )
+    } else if (
+        action === 'delete'
+    ) {
         bulkDelete()
     }
 
@@ -572,55 +1200,108 @@ const handleBulkAction = (event) => {
 }
 
 /** Модерация группы */
-const approveGroup = (group, status = 1, note = '') => {
-    if (!group?.id) return
+const approveGroup = (
+    group,
+    status = 1,
+    note = ''
+) => {
+    if (! group?.id) {
+        return
+    }
 
     router.put(
-        route('admin.actions.marketAttributeGroups.approve', { marketAttributeGroup: group.id }),
+        route(
+            'admin.actions.marketAttributeGroups.approve',
+            {
+                marketAttributeGroup:
+                group.id,
+            }
+        ),
         {
-            moderation_status: status,
-            moderation_note: note,
+            moderation_status:
+            status,
+
+            moderation_note:
+            note,
         },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
-                patchLocalGroup(group.id, (node) => {
-                    node.moderation_status = status
-                    node.is_approved = status === 1
-                    node.moderation_note = note
-                })
+                patchLocalGroup(
+                    group.id,
+                    (node) => {
+                        node.moderation_status =
+                            status
 
-                toast.success(status === 1 ? 'Группа характеристик одобрена.' : 'Группа характеристик отклонена.')
+                        node.is_approved =
+                            status === 1
+
+                        node.moderation_note =
+                            note
+                    }
+                )
+
+                toast.success(
+                    status === 1
+                        ? 'Группа характеристик одобрена.'
+                        : 'Группа характеристик отклонена.'
+                )
             },
 
-            onError: () => toast.error('Ошибка модерации группы характеристик.'),
+            onError: () => {
+                toast.error(
+                    'Ошибка модерации группы характеристик.'
+                )
+            },
         }
     )
 }
 
 /** Массовое обновление сортировки */
-const handleSortOrderUpdate = (newOrderIds) => {
-    const items = newOrderIds.map((id, index) => ({
-        id,
-        sort: index,
-    }))
+const handleSortOrderUpdate = (
+    newOrderIds
+) => {
+    const items =
+        newOrderIds.map(
+            (id, index) => ({
+                id,
+                sort: index,
+            })
+        )
 
-    if (!items.length) return
+    if (! items.length) {
+        return
+    }
 
     router.put(
-        route('admin.actions.marketAttributeGroups.updateSortBulk'),
-        { items },
+        route(
+            'admin.actions.marketAttributeGroups.updateSortBulk'
+        ),
+        {
+            items,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
-            onSuccess: () => toast.success('Сортировка групп характеристик обновлена.'),
+            onSuccess: () => {
+                toast.success(
+                    'Сортировка групп характеристик обновлена.'
+                )
+            },
 
             onError: (errors) => {
-                console.error('Ошибка сортировки групп характеристик:', errors)
-                toast.error(errors.message || 'Ошибка обновления сортировки.')
+                console.error(
+                    'Ошибка сортировки групп характеристик:',
+                    errors
+                )
+
+                toast.error(
+                    errors.message
+                    || 'Ошибка обновления сортировки.'
+                )
             },
         }
     )
@@ -630,7 +1311,9 @@ const handleSortOrderUpdate = (newOrderIds) => {
 <template>
     <AdminLayout :title="t('marketAttributeGroups')">
         <template #header>
-            <TitlePage>{{ t('marketAttributeGroups') }}</TitlePage>
+            <TitlePage>
+                {{ t('marketAttributeGroups') }}
+            </TitlePage>
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
@@ -689,14 +1372,18 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     v-if="groupsCount"
                     class="flex flex-col lg:flex-row items-center justify-between gap-3"
                 >
-                    <CountTable>{{ groupsCount }}</CountTable>
+                    <CountTable>
+                        {{ groupsCount }}
+                    </CountTable>
 
                     <BulkActionSelect
                         v-if="groupsCount"
                         @change="handleBulkAction"
                     />
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
                 <div

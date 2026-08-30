@@ -8,7 +8,7 @@ import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
 import ModerationButton from '@/Components/Admin/UI/Buttons/ModerationButton.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = defineProps({
     groups: { type: Array, default: () => [] },
@@ -25,7 +25,10 @@ const emits = defineEmits([
     'approve',
 ])
 
+/** Локальная копия списка для drag&drop */
 const localGroups = ref([])
+
+/** Открытые блоки владельцев */
 const openedOwnerBlocks = ref([])
 
 watch(
@@ -36,30 +39,53 @@ watch(
     { immediate: true, deep: true }
 )
 
+/** Завершение drag&drop сортировки */
 const handleDragEnd = () => {
-    emits('update-sort-order', localGroups.value.map(group => group.id))
+    emits(
+        'update-sort-order',
+        localGroups.value.map(group => group.id)
+    )
 }
 
+/** Выделить / снять выделение текущего списка */
 const toggleAll = (event) => {
     emits('toggle-all', {
         ids: localGroups.value.map(group => group.id),
-        checked: event.target.checked,
+        checked: Boolean(event?.target?.checked),
     })
 }
 
+/** Все отображаемые группы выделены */
 const allSelected = () => {
-    return localGroups.value.length
+    return localGroups.value.length > 0
         && localGroups.value.every(group => props.selectedGroups.includes(group.id))
 }
 
+/** Текущий перевод */
 const groupTranslation = (group) => group?.translation || {}
-const groupTitle = (group) => groupTranslation(group)?.title || `ID: ${group?.id}`
-const groupShort = (group) => groupTranslation(group)?.short || ''
-const groupLocale = (group) => groupTranslation(group)?.locale || ''
 
-const ownerName = (group) => group?.owner?.name || t('noData')
-const ownerEmail = (group) => group?.owner?.email || ''
+/** Название группы */
+const groupTitle = (group) =>
+    groupTranslation(group)?.title
+    || `ID: ${group?.id}`
 
+/** Краткое описание */
+const groupShort = (group) =>
+    groupTranslation(group)?.short || ''
+
+/** Локаль загруженного перевода */
+const groupLocale = (group) =>
+    groupTranslation(group)?.locale || ''
+
+/** Имя владельца */
+const ownerName = (group) =>
+    group?.owner?.name || t('noData')
+
+/** Email владельца */
+const ownerEmail = (group) =>
+    group?.owner?.email || ''
+
+/** Полная подсказка владельца */
 const ownerTitle = (group) => {
     const owner = group?.owner
 
@@ -68,20 +94,32 @@ const ownerTitle = (group) => {
     return `${owner.name || ''}${owner.email ? ' — ' + owner.email : ''}`.trim()
 }
 
+/** Аватар владельца */
 const ownerAvatar = (group) => {
-    return group?.owner?.profile_photo_url || '/storage/profile-photos/default-image.png'
+    return group?.owner?.profile_photo_url
+        || '/storage/profile-photos/default-image.png'
 }
 
+/**
+ * Проверка SVG-иконки.
+ *
+ * Компонент принимает только строку,
+ * внешне похожую на SVG.
+ */
 const getSafeIcon = (icon) => {
-    if (!icon) return null
+    if (typeof icon !== 'string') return null
 
     const trimmed = icon.trim()
 
-    return trimmed.startsWith('<svg') && trimmed.endsWith('</svg>')
+    if (!trimmed) return null
+
+    return trimmed.startsWith('<svg')
+    && trimmed.endsWith('</svg>')
         ? trimmed
         : null
 }
 
+/** Название статуса публикации */
 const getStatusLabel = (status) => {
     const map = {
         draft: 'statusDraft',
@@ -92,32 +130,37 @@ const getStatusLabel = (status) => {
     return t(map[status] || status || 'no')
 }
 
+/** Форматирование даты с учётом текущей локали */
 const formatDate = (dateStr) => {
     if (!dateStr) return ''
 
     const date = new Date(dateStr)
 
-    if (isNaN(date)) return ''
+    if (Number.isNaN(date.getTime())) return ''
 
-    return date.toLocaleDateString('ru-RU', {
+    return date.toLocaleDateString(locale.value || undefined, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
     })
 }
 
+/** Ограничение длинного текста */
 const truncateText = (text, maxLength = 80) => {
     if (!text) return ''
 
-    return text.length > maxLength
-        ? text.slice(0, maxLength).trimEnd() + '…'
-        : text
+    const value = String(text)
+
+    return value.length > maxLength
+        ? value.slice(0, maxLength).trimEnd() + '…'
+        : value
 }
 
+/** Статус модерации */
 const moderationBadge = (status) => {
-    const s = Number(status ?? 0)
+    const value = Number(status ?? 0)
 
-    if (s === 1) {
+    if (value === 1) {
         return {
             text: t('statusSelectApproved'),
             class: 'bg-emerald-100 text-emerald-700 border-emerald-300 ' +
@@ -125,7 +168,7 @@ const moderationBadge = (status) => {
         }
     }
 
-    if (s === 2) {
+    if (value === 2) {
         return {
             text: t('statusSelectRejected'),
             class: 'bg-rose-100 text-rose-700 border-rose-300 ' +
@@ -140,13 +183,18 @@ const moderationBadge = (status) => {
     }
 }
 
+/** Проверка состояния блока владельца */
 const isOwnerBlockOpen = (groupId) => {
     return openedOwnerBlocks.value.includes(groupId)
 }
 
+/** Открыть / закрыть блок владельца */
 const toggleOwnerBlock = (groupId) => {
     if (isOwnerBlockOpen(groupId)) {
-        openedOwnerBlocks.value = openedOwnerBlocks.value.filter(id => id !== groupId)
+        openedOwnerBlocks.value = openedOwnerBlocks.value.filter(
+            id => id !== groupId
+        )
+
         return
     }
 
@@ -173,6 +221,7 @@ const toggleOwnerBlock = (groupId) => {
                        dark:text-slate-200 cursor-pointer"
             >
                 <span>{{ t('selectAll') }}</span>
+
                 <input
                     type="checkbox"
                     class="mx-2"
@@ -188,8 +237,8 @@ const toggleOwnerBlock = (groupId) => {
                 v-model="localGroups"
                 item-key="id"
                 handle=".handle"
-                @end="handleDragEnd"
                 class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                @end="handleDragEnd"
             >
                 <template #item="{ element: group }">
                     <div
@@ -209,9 +258,14 @@ const toggleOwnerBlock = (groupId) => {
                                            dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
                                         <path
-                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
+                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z"
+                                        />
                                     </svg>
                                 </button>
 
@@ -228,7 +282,9 @@ const toggleOwnerBlock = (groupId) => {
                                     type="button"
                                     class="text-slate-400 hover:text-blue-600
                                            dark:hover:text-blue-300"
-                                    :title="isOwnerBlockOpen(group.id) ? t('hideOwner') : t('showOwner')"
+                                    :title="isOwnerBlockOpen(group.id)
+                                        ? t('hideOwner')
+                                        : t('showOwner')"
                                     @click.prevent="toggleOwnerBlock(group.id)"
                                 >
                                     <svg
@@ -248,7 +304,8 @@ const toggleOwnerBlock = (groupId) => {
 
                             <div class="flex items-center space-x-2">
                                 <span
-                                    class="text-[10px] px-2 py-0.5 rounded-sm border font-semibold"
+                                    class="text-[10px] px-2 py-0.5 rounded-sm
+                                           border font-semibold"
                                     :class="moderationBadge(group.moderation_status).class"
                                     :title="group.moderation_note && group.moderated_at
                                         ? `${group.moderation_note} [${formatDate(group.moderated_at)}]`
@@ -260,7 +317,7 @@ const toggleOwnerBlock = (groupId) => {
                                 <input
                                     type="checkbox"
                                     :checked="selectedGroups.includes(group.id)"
-                                    @change="$emit('toggle-select', group.id)"
+                                    @change="emits('toggle-select', group.id)"
                                 />
                             </div>
                         </header>
@@ -298,14 +355,19 @@ const toggleOwnerBlock = (groupId) => {
 
                                 <div
                                     v-if="group.show_from_at"
-                                    class="text-center text-[10px] text-slate-500 dark:text-slate-300"
+                                    class="text-center text-[10px]
+                                           text-slate-500 dark:text-slate-300"
                                 >
-                                    {{ t('show') }}: {{ group.show_from_at }} / {{ group.show_to_at }}
+                                    {{ t('show') }}:
+                                    {{ group.show_from_at }}
+                                    /
+                                    {{ group.show_to_at || '—' }}
                                 </div>
 
                                 <div
                                     v-else
-                                    class="text-center text-[10px] text-slate-500 dark:text-slate-300"
+                                    class="text-center text-[10px]
+                                           text-slate-500 dark:text-slate-300"
                                 >
                                     {{ formatDate(group.published_at) }}
                                 </div>
@@ -318,8 +380,8 @@ const toggleOwnerBlock = (groupId) => {
                                            w-fit border-2 px-2 py-0.5 rounded-md"
                                     :style="{ borderColor: group.color || 'transparent' }"
                                     :title="group.show_from_at
-                                        ? `${t('show')}: ${group.show_from_at} / ${group.show_to_at}`
-                                        : `${formatDate(group.published_at)}`"
+                                        ? `${t('show')}: ${group.show_from_at} / ${group.show_to_at || '—'}`
+                                        : formatDate(group.published_at)"
                                 >
                                     <span :style="{ color: group.color || '#666666' }">
                                         {{ truncateText(groupTitle(group)) }}
@@ -343,13 +405,18 @@ const toggleOwnerBlock = (groupId) => {
                             <div
                                 v-if="group.color"
                                 class="flex items-center justify-center gap-1
-                                       font-semibold text-xs text-slate-700 dark:text-slate-300"
+                                       font-semibold text-xs
+                                       text-slate-700 dark:text-slate-300"
                             >
                                 <span
-                                    class="inline-block w-4 h-4 rounded-sm border border-slate-400"
+                                    class="inline-block w-4 h-4 rounded-sm
+                                           border border-slate-400"
                                     :style="{ backgroundColor: group.color }"
                                 ></span>
-                                <span>{{ group.color }}</span>
+
+                                <span>
+                                    {{ group.color }}
+                                </span>
                             </div>
 
                             <div
@@ -365,7 +432,10 @@ const toggleOwnerBlock = (groupId) => {
                                        font-semibold text-slate-600 dark:text-slate-200"
                             >
                                 <div class="flex items-center justify-center space-x-1">
-                                    <span>{{ t('attributes') }}:</span>
+                                    <span>
+                                        {{ t('attributes') }}:
+                                    </span>
+
                                     <span class="text-[12px] text-blue-600 dark:text-blue-300">
                                         {{ group.attributes_count ?? 0 }}
                                     </span>
@@ -376,13 +446,17 @@ const toggleOwnerBlock = (groupId) => {
                                 class="font-semibold text-center text-[11px]
                                        text-fuchsia-700 dark:text-fuchsia-300"
                             >
-                                <span>{{ t('status') }}: </span>
+                                <span>
+                                    {{ t('status') }}:
+                                </span>
+
                                 {{ getStatusLabel(group.status) }}
                             </div>
 
                             <div class="flex justify-center space-x-1">
                                 <span
-                                    class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
+                                    class="text-[10px] px-2 py-1 rounded-sm
+                                           border font-semibold"
                                     :class="moderationBadge(group.moderation_status).class"
                                     :title="group.moderation_note && group.moderated_at
                                         ? `${group.moderation_note} [${formatDate(group.moderated_at)}]`
@@ -396,20 +470,21 @@ const toggleOwnerBlock = (groupId) => {
                                     :status="group?.moderation_status ?? 0"
                                     :initialNote="group?.moderation_note || ''"
                                     mode="toggle"
-                                    @submit="({ status, note }) => $emit('approve', group, status, note)"
+                                    @submit="({ status, note }) => emits('approve', group, status, note)"
                                 />
                             </div>
                         </div>
 
                         <div
                             class="flex items-center justify-center px-3 py-2
-                                   border-t border-dashed border-slate-400 dark:border-slate-500"
+                                   border-t border-dashed
+                                   border-slate-400 dark:border-slate-500"
                         >
                             <div class="flex items-center space-x-1">
                                 <ActivityToggle
                                     :isActive="group.activity"
-                                    @toggle-activity="$emit('toggle-activity', group)"
                                     :title="group.activity ? t('enabled') : t('disabled')"
+                                    @toggle-activity="emits('toggle-activity', group)"
                                 />
 
                                 <IconEdit
@@ -418,7 +493,9 @@ const toggleOwnerBlock = (groupId) => {
                                     })"
                                 />
 
-                                <DeleteIconButton @delete="$emit('delete', group)" />
+                                <DeleteIconButton
+                                    @delete="emits('delete', group)"
+                                />
                             </div>
                         </div>
                     </div>
@@ -426,7 +503,10 @@ const toggleOwnerBlock = (groupId) => {
             </draggable>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

@@ -2,6 +2,7 @@
 
 namespace App\Models\Admin\Market\MarketAttributeGroup;
 
+use App\Models\Admin\Market\MarketAttribute\MarketAttribute;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -40,12 +41,12 @@ class MarketAttributeGroup extends Model
 
     protected $casts = [
         'user_id' => 'integer',
+        'moderated_by' => 'integer',
 
         'sort' => 'integer',
         'activity' => 'boolean',
 
         'moderation_status' => 'integer',
-        'moderated_by' => 'integer',
 
         'published_at' => 'datetime',
         'show_from_at' => 'datetime',
@@ -56,21 +57,27 @@ class MarketAttributeGroup extends Model
         'updated_at' => 'datetime',
     ];
 
-    /* ===================== Relations ===================== */
+    /* ======================== Relations ======================== */
 
     /** Создатель группы */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
 
     /** Модератор группы */
     public function moderator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'moderated_by');
+        return $this->belongsTo(
+            User::class,
+            'moderated_by'
+        );
     }
 
-    /** Переводы */
+    /** Все переводы группы */
     public function translations(): HasMany
     {
         return $this->hasMany(
@@ -79,220 +86,788 @@ class MarketAttributeGroup extends Model
         );
     }
 
-    /** Текущий перевод */
+    /**
+     * Перевод текущей локали.
+     *
+     * В Admin Index relation не используется:
+     * Controller самостоятельно загружает translations,
+     * ограниченные currentLocale.
+     *
+     * Relation сохраняется для других частей приложения,
+     * где может потребоваться прямой current-locale relation.
+     */
     public function translation(): HasOne
     {
         return $this->hasOne(
             MarketAttributeGroupTranslation::class,
             'market_attribute_group_id'
-        )->where('locale', app()->getLocale());
+        )->where(
+            'locale',
+            app()->getLocale()
+        );
     }
 
     /** Характеристики группы */
     public function attributes(): HasMany
     {
         return $this->hasMany(
-            \App\Models\Admin\Market\MarketAttribute\MarketAttribute::class,
+            MarketAttribute::class,
             'market_attribute_group_id'
         );
     }
 
-    /* ===================== Scopes ===================== */
+    /* ======================== Base scopes ======================== */
 
-    /** Только активные */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('activity', true);
+    /** Только активные группы */
+    public function scopeActive(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'market_attribute_groups.activity',
+            true
+        );
     }
 
-    /** Только опубликованные */
-    public function scopePublished(Builder $query): Builder
-    {
+    /** Только опубликованные группы */
+    public function scopePublished(
+        Builder $query
+    ): Builder {
         return $query
-            ->where('status', 'published')
-            ->where('activity', true)
-            ->whereNotNull('published_at');
+            ->where(
+                'market_attribute_groups.status',
+                'published'
+            )
+            ->where(
+                'market_attribute_groups.activity',
+                true
+            )
+            ->whereNotNull(
+                'market_attribute_groups.published_at'
+            );
     }
 
-    /** Только прошедшие модерацию */
-    public function scopeApproved(Builder $query): Builder
-    {
-        return $query->where('moderation_status', 1);
+    /** Только прошедшие модерацию группы */
+    public function scopeApproved(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'market_attribute_groups.moderation_status',
+            1
+        );
     }
 
     /** Сортировка по умолчанию */
-    public function scopeOrdered(Builder $query): Builder
-    {
+    public function scopeOrdered(
+        Builder $query
+    ): Builder {
         return $query
-            ->orderBy('sort')
-            ->orderByDesc('id');
+            ->orderBy(
+                'market_attribute_groups.sort',
+                'asc'
+            )
+            ->orderByDesc(
+                'market_attribute_groups.id'
+            );
     }
 
-    /** Сортировка по параметру списка */
+    /* ======================== Sorting ======================== */
+
+    /**
+     * Сортировка и фильтрация групп характеристик
+     * по параметру Admin Index.
+     *
+     * Для title используется перевод
+     * исключительно указанной locale.
+     *
+     * attributes_count должен быть заранее
+     * добавлен через withCount('attributes')
+     * в Index Controller.
+     */
     public function scopeSortByParam(
         Builder $query,
         ?string $sort,
         ?string $locale = null
     ): Builder {
-        $locale = $locale ?: app()->getLocale();
+        $locale = $locale
+            ?: app()->getLocale();
 
         return match ($sort) {
-            'idAsc' => $query->orderBy('id', 'asc'),
-            'idDesc' => $query->orderBy('id', 'desc'),
+            /** ID */
+            'idAsc' =>
+            $query->orderBy(
+                'market_attribute_groups.id',
+                'asc'
+            ),
 
-            'sortAsc' => $query->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sortDesc' => $query->orderBy('sort', 'desc')->orderByDesc('id'),
+            'idDesc' =>
+            $query->orderBy(
+                'market_attribute_groups.id',
+                'desc'
+            ),
 
-            'titleAsc' => $query
-                ->leftJoin('market_attribute_group_translations as sort_translations', function ($join) use ($locale) {
-                    $join->on('market_attribute_groups.id', '=', 'sort_translations.market_attribute_group_id')
-                        ->where('sort_translations.locale', '=', $locale);
-                })
-                ->select('market_attribute_groups.*')
-                ->orderBy('sort_translations.title', 'asc')
-                ->orderByDesc('market_attribute_groups.id'),
+            /** Sort */
+            'sortAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'titleDesc' => $query
-                ->leftJoin('market_attribute_group_translations as sort_translations', function ($join) use ($locale) {
-                    $join->on('market_attribute_groups.id', '=', 'sort_translations.market_attribute_group_id')
-                        ->where('sort_translations.locale', '=', $locale);
-                })
-                ->select('market_attribute_groups.*')
-                ->orderBy('sort_translations.title', 'desc')
-                ->orderByDesc('market_attribute_groups.id'),
+            'sortDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.sort',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'codeAsc' => $query->orderBy('code', 'asc')->orderByDesc('id'),
-            'codeDesc' => $query->orderBy('code', 'desc')->orderByDesc('id'),
+            /** Title текущей локали */
+            'titleAsc' =>
+            $query
+                ->leftJoin(
+                    'market_attribute_group_translations as magt_sort',
+                    function ($join) use ($locale): void {
+                        $join
+                            ->on(
+                                'magt_sort.market_attribute_group_id',
+                                '=',
+                                'market_attribute_groups.id'
+                            )
+                            ->where(
+                                'magt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'market_attribute_groups.*'
+                )
+                ->orderBy(
+                    'magt_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'colorAsc' => $query->orderBy('color', 'asc')->orderByDesc('id'),
-            'colorDesc' => $query->orderBy('color', 'desc')->orderByDesc('id'),
+            'titleDesc' =>
+            $query
+                ->leftJoin(
+                    'market_attribute_group_translations as magt_sort',
+                    function ($join) use ($locale): void {
+                        $join
+                            ->on(
+                                'magt_sort.market_attribute_group_id',
+                                '=',
+                                'market_attribute_groups.id'
+                            )
+                            ->where(
+                                'magt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->addSelect(
+                    'market_attribute_groups.*'
+                )
+                ->orderBy(
+                    'magt_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'attributesCountAsc' => $query
-                ->withCount('attributes')
-                ->orderBy('attributes_count', 'asc')
-                ->orderByDesc('market_attribute_groups.id'),
+            /** Code */
+            'codeAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.code',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'attributesCountDesc' => $query
-                ->withCount('attributes')
-                ->orderBy('attributes_count', 'desc')
-                ->orderByDesc('market_attribute_groups.id'),
+            'codeDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.code',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
-            'activity' => $query->where('activity', true)->orderByDesc('id'),
-            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+            /** Color */
+            'colorAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.color',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'statusAsc' => $query->orderBy('status', 'asc')->orderByDesc('id'),
-            'statusDesc' => $query->orderBy('status', 'desc')->orderByDesc('id'),
-            'statusDraft' => $query->where('status', 'draft')->orderByDesc('id'),
-            'statusPublished' => $query->where('status', 'published')->orderByDesc('id'),
-            'statusArchived' => $query->where('status', 'archived')->orderByDesc('id'),
+            'colorDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.color',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
-            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
+            /**
+             * Количество характеристик.
+             *
+             * attributes_count уже должен присутствовать
+             * в query через Index Controller.
+             */
+            'attributesCountAsc' =>
+            $query
+                ->orderBy(
+                    'attributes_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
-            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
+            'attributesCountDesc' =>
+            $query
+                ->orderBy(
+                    'attributes_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
-            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
+            /** Activity */
+            'activityAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.activity',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'activityDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.activity',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+            'activity' =>
+            $query
+                ->where(
+                    'market_attribute_groups.activity',
+                    true
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
-            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
-            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
-            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
-            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
+            'inactive' =>
+            $query
+                ->where(
+                    'market_attribute_groups.activity',
+                    false
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'ownerNameAsc' => $query
-                ->leftJoin('users as sort_users', 'market_attribute_groups.user_id', '=', 'sort_users.id')
-                ->select('market_attribute_groups.*')
-                ->orderBy('sort_users.name', 'asc')
-                ->orderByDesc('market_attribute_groups.id'),
+            /** Status */
+            'statusAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.status',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'ownerNameDesc' => $query
-                ->leftJoin('users as sort_users', 'market_attribute_groups.user_id', '=', 'sort_users.id')
-                ->select('market_attribute_groups.*')
-                ->orderBy('sort_users.name', 'desc')
-                ->orderByDesc('market_attribute_groups.id'),
+            'statusDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.status',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'ownerEmailAsc' => $query
-                ->leftJoin('users as sort_users', 'market_attribute_groups.user_id', '=', 'sort_users.id')
-                ->select('market_attribute_groups.*')
-                ->orderBy('sort_users.email', 'asc')
-                ->orderByDesc('market_attribute_groups.id'),
+            'statusDraft' =>
+            $query
+                ->where(
+                    'market_attribute_groups.status',
+                    'draft'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            'ownerEmailDesc' => $query
-                ->leftJoin('users as sort_users', 'market_attribute_groups.user_id', '=', 'sort_users.id')
-                ->select('market_attribute_groups.*')
-                ->orderBy('sort_users.email', 'desc')
-                ->orderByDesc('market_attribute_groups.id'),
+            'statusPublished' =>
+            $query
+                ->where(
+                    'market_attribute_groups.status',
+                    'published'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
 
-            default => $query->orderByDesc('id'),
+            'statusArchived' =>
+            $query
+                ->where(
+                    'market_attribute_groups.status',
+                    'archived'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            /** Published at */
+            'publishedAtAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.published_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'publishedAtDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.published_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            /** Show from */
+            'showFromAtAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.show_from_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'showFromAtDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.show_from_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            /** Show to */
+            'showToAtAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.show_to_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'showToAtDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.show_to_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            /** Created at */
+            'createdAtAsc', 'dateAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.created_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'createdAtDesc', 'dateDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            /** Updated at */
+            'updatedAtAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.updated_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'updatedAtDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.updated_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            /** Moderation */
+            'moderationPending' =>
+            $query
+                ->where(
+                    'market_attribute_groups.moderation_status',
+                    0
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'moderationApproved' =>
+            $query
+                ->where(
+                    'market_attribute_groups.moderation_status',
+                    1
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'moderationRejected' =>
+            $query
+                ->where(
+                    'market_attribute_groups.moderation_status',
+                    2
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'moderationStatusAsc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.moderation_status',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'moderationStatusDesc' =>
+            $query
+                ->orderBy(
+                    'market_attribute_groups.moderation_status',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            /** Owner name */
+            'ownerNameAsc' =>
+            $query
+                ->leftJoin(
+                    'users as owner_sort',
+                    'market_attribute_groups.user_id',
+                    '=',
+                    'owner_sort.id'
+                )
+                ->addSelect(
+                    'market_attribute_groups.*'
+                )
+                ->orderBy(
+                    'owner_sort.name',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'ownerNameDesc' =>
+            $query
+                ->leftJoin(
+                    'users as owner_sort',
+                    'market_attribute_groups.user_id',
+                    '=',
+                    'owner_sort.id'
+                )
+                ->addSelect(
+                    'market_attribute_groups.*'
+                )
+                ->orderBy(
+                    'owner_sort.name',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            /** Owner email */
+            'ownerEmailAsc' =>
+            $query
+                ->leftJoin(
+                    'users as owner_sort',
+                    'market_attribute_groups.user_id',
+                    '=',
+                    'owner_sort.id'
+                )
+                ->addSelect(
+                    'market_attribute_groups.*'
+                )
+                ->orderBy(
+                    'owner_sort.email',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            'ownerEmailDesc' =>
+            $query
+                ->leftJoin(
+                    'users as owner_sort',
+                    'market_attribute_groups.user_id',
+                    '=',
+                    'owner_sort.id'
+                )
+                ->addSelect(
+                    'market_attribute_groups.*'
+                )
+                ->orderBy(
+                    'owner_sort.email',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_attribute_groups.id'
+                ),
+
+            /** Default */
+            default =>
+            $query->orderByDesc(
+                'market_attribute_groups.id'
+            ),
         };
     }
 
-    /** Попадает в окно показа */
-    public function scopeInShowWindow(Builder $query): Builder
-    {
+    /* ======================== Publication ======================== */
+
+    /** Попадает в текущее окно показа */
+    public function scopeInShowWindow(
+        Builder $query
+    ): Builder {
         return $query
-            ->where(function (Builder $q) {
-                $q->whereNull('show_from_at')
-                    ->orWhere('show_from_at', '<=', now());
-            })
-            ->where(function (Builder $q) {
-                $q->whereNull('show_to_at')
-                    ->orWhere('show_to_at', '>=', now());
-            });
+            ->where(
+                function (Builder $query): void {
+                    $query
+                        ->whereNull(
+                            'market_attribute_groups.show_from_at'
+                        )
+                        ->orWhere(
+                            'market_attribute_groups.show_from_at',
+                            '<=',
+                            now()
+                        );
+                }
+            )
+            ->where(
+                function (Builder $query): void {
+                    $query
+                        ->whereNull(
+                            'market_attribute_groups.show_to_at'
+                        )
+                        ->orWhere(
+                            'market_attribute_groups.show_to_at',
+                            '>=',
+                            now()
+                        );
+                }
+            );
     }
 
     /** Публичные группы */
-    public function scopeForPublic(Builder $query): Builder
-    {
+    public function scopeForPublic(
+        Builder $query
+    ): Builder {
         return $query
             ->approved()
             ->published()
             ->inShowWindow();
     }
 
-    /** Поиск */
+    /* ======================== Search ======================== */
+
+    /**
+     * Поиск групп характеристик.
+     *
+     * Семантика должна совпадать
+     * с frontend Index:
+     * - code;
+     * - icon;
+     * - color;
+     * - status;
+     * - moderation_note;
+     * - title текущего перевода;
+     * - subtitle текущего перевода;
+     * - short текущего перевода;
+     * - имя владельца;
+     * - email владельца.
+     *
+     * Для переводимых полей используется
+     * исключительно указанная locale.
+     */
     public function scopeSearch(
         Builder $query,
         ?string $term,
         ?string $locale = null
     ): Builder {
-        if (!$term) {
+        $term = trim(
+            (string) $term
+        );
+
+        if ($term === '') {
             return $query;
         }
 
-        $locale = $locale ?: app()->getLocale();
+        $locale = $locale
+            ?: app()->getLocale();
 
-        return $query->where(function (Builder $q) use ($term, $locale) {
+        $like = "%{$term}%";
 
-            $q->where('code', 'like', "%{$term}%")
-                ->orWhere('icon', 'like', "%{$term}%")
-                ->orWhere('color', 'like', "%{$term}%")
-                ->orWhere('status', 'like', "%{$term}%")
-                ->orWhere('moderation_note', 'like', "%{$term}%")
+        return $query->where(
+            function (
+                Builder $query
+            ) use (
+                $like,
+                $locale
+            ): void {
+                $query
+                    ->where(
+                        'market_attribute_groups.code',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'market_attribute_groups.icon',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'market_attribute_groups.color',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'market_attribute_groups.status',
+                        'like',
+                        $like
+                    )
+                    ->orWhere(
+                        'market_attribute_groups.moderation_note',
+                        'like',
+                        $like
+                    )
 
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
-                                ->orWhere('subtitle', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%");
-                        });
-                })
+                    /** Перевод текущей локали */
+                    ->orWhereHas(
+                        'translations',
+                        function (
+                            Builder $translationQuery
+                        ) use (
+                            $locale,
+                            $like
+                        ): void {
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                )
+                                ->where(
+                                    function (
+                                        Builder $query
+                                    ) use (
+                                        $like
+                                    ): void {
+                                        $query
+                                            ->where(
+                                                'title',
+                                                'like',
+                                                $like
+                                            )
+                                            ->orWhere(
+                                                'subtitle',
+                                                'like',
+                                                $like
+                                            )
+                                            ->orWhere(
+                                                'short',
+                                                'like',
+                                                $like
+                                            );
+                                    }
+                                );
+                        }
+                    )
 
-                ->orWhereHas('owner', function (Builder $oq) use ($term) {
-                    $oq->where('name', 'like', "%{$term}%")
-                        ->orWhere('email', 'like', "%{$term}%");
-                });
-        });
+                    /** Владелец */
+                    ->orWhereHas(
+                        'owner',
+                        function (
+                            Builder $ownerQuery
+                        ) use (
+                            $like
+                        ): void {
+                            $ownerQuery
+                                ->where(
+                                    'name',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'email',
+                                    'like',
+                                    $like
+                                );
+                        }
+                    );
+            }
+        );
     }
 }

@@ -62,7 +62,9 @@ const groupsList = computed(() => {
 
 /** Название группы */
 const groupTitle = (group) => {
-    return group?.title || group?.translation?.title || group?.code || `ID: ${group?.id}`
+    return group?.translation?.title
+        || group?.code
+        || `ID: ${group?.id}`
 }
 
 /** Шаблон нового перевода */
@@ -122,6 +124,7 @@ const form = useForm({
     required: Boolean(attributeData.value.required),
     filterable: Boolean(attributeData.value.filterable),
     visible: Boolean(attributeData.value.visible),
+    use_for_variants: Boolean(attributeData.value.use_for_variants),
 
     sort: attributeData.value.sort ?? 0,
     activity: Boolean(attributeData.value.activity),
@@ -198,6 +201,7 @@ const submitForm = () => {
         activity: data.activity ? 1 : 0,
         moderation_status: Number(data.moderation_status ?? 0),
         sort: Number(data.sort ?? 0),
+        use_for_variants: data.use_for_variants ? 1 : 0,
     }))
 
     form.post(route('admin.marketAttributes.update', {
@@ -295,6 +299,15 @@ const submitForm = () => {
                             <LabelCheckbox
                                 for="visible"
                                 :text="t('visibleCard')"
+                                class="text-sm h-8 flex items-center"
+                            />
+                        </div>
+
+                        <div class="flex flex-row items-center gap-2">
+                            <ActivityCheckbox v-model="form.use_for_variants" />
+                            <LabelCheckbox
+                                for="use_for_variants"
+                                :text="t('showInVariants')"
                                 class="text-sm h-8 flex items-center"
                             />
                         </div>

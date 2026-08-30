@@ -5,13 +5,21 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 defineProps({
-    sortParam: String,
+    sortParam: {
+        type: String,
+        default: 'idDesc',
+    },
 })
 
-const emits = defineEmits(['update:sortParam'])
+const emits = defineEmits([
+    'update:sortParam',
+])
 
 const updateSort = (event) => {
-    emits('update:sortParam', event.target.value)
+    emits(
+        'update:sortParam',
+        event.target.value
+    )
 }
 </script>
 
@@ -46,16 +54,6 @@ const updateSort = (event) => {
             <option value="titleDesc">{{ t('title') }} Z→A</option>
             <option disabled>─────────────────</option>
 
-            <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
-            <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
-            <option value="activity">{{ t('active') }}</option>
-            <option value="inactive">{{ t('inactive') }}</option>
-            <option disabled>─────────────────</option>
-
-            <option value="codeAsc">{{ t('code') }} A→Z</option>
-            <option value="codeDesc">{{ t('code') }} Z→A</option>
-            <option disabled>─────────────────</option>
-
             <option value="groupTitleAsc">{{ t('group') }} A→Z</option>
             <option value="groupTitleDesc">{{ t('group') }} Z→A</option>
             <option disabled>─────────────────</option>
@@ -64,9 +62,12 @@ const updateSort = (event) => {
             <option value="codeDesc">{{ t('code') }} Z→A</option>
             <option disabled>─────────────────</option>
 
+            <option value="colorAsc">{{ t('typeColor') }} 0→F</option>
+            <option value="colorDesc">{{ t('typeColor') }} F→0</option>
+            <option disabled>─────────────────</option>
+
             <option value="typeAsc">{{ t('type') }} A→Z</option>
             <option value="typeDesc">{{ t('type') }} Z→A</option>
-
             <option value="unitAsc">{{ t('unit') }} A→Z</option>
             <option value="unitDesc">{{ t('unit') }} Z→A</option>
             <option disabled>─────────────────</option>
@@ -75,10 +76,10 @@ const updateSort = (event) => {
             <option value="valuesCountAsc">{{ t('values') }} 0→9</option>
             <option disabled>─────────────────</option>
 
-            <option value="visibleDesc">{{ t('show') }} ON→OFF</option>
-            <option value="visibleAsc">{{ t('show') }} OFF→ON</option>
-            <option value="visible">{{ t('show') }}</option>
-            <option value="hidden">{{ t('availabilityUnlisted') }}</option>
+            <option value="requiredDesc">{{ t('required') }} ON→OFF</option>
+            <option value="requiredAsc">{{ t('required') }} OFF→ON</option>
+            <option value="required">{{ t('required') }}</option>
+            <option value="notRequired">{{ t('notRequired') }}</option>
             <option disabled>─────────────────</option>
 
             <option value="filterableDesc">{{ t('showFilter') }} ON→OFF</option>
@@ -87,20 +88,22 @@ const updateSort = (event) => {
             <option value="notFilterable">{{ t('notFilterable') }}</option>
             <option disabled>─────────────────</option>
 
-            <option value="requiredDesc">{{ t('required') }} ON→OFF</option>
-            <option value="requiredAsc">{{ t('required') }} OFF→ON</option>
-            <option value="required">{{ t('required') }}</option>
-            <option value="notRequired">{{ t('notRequired') }}</option>
+            <option value="useForVariantsDesc">{{ t('variants') }} ON→OFF</option>
+            <option value="useForVariantsAsc">{{ t('variants') }} OFF→ON</option>
+            <option value="useForVariants">{{ t('variants') }}</option>
+            <option value="notForVariants">{{ t('notForVariants') }}</option>
+            <option disabled>─────────────────</option>
+
+            <option value="visibleDesc">{{ t('show') }} ON→OFF</option>
+            <option value="visibleAsc">{{ t('show') }} OFF→ON</option>
+            <option value="visible">{{ t('show') }}</option>
+            <option value="hidden">{{ t('availabilityUnlisted') }}</option>
             <option disabled>─────────────────</option>
 
             <option value="activityDesc">{{ t('activity') }} ON→OFF</option>
             <option value="activityAsc">{{ t('activity') }} OFF→ON</option>
             <option value="activity">{{ t('active') }}</option>
             <option value="inactive">{{ t('inactive') }}</option>
-            <option disabled>─────────────────</option>
-
-            <option value="colorAsc">{{ t('typeColor') }} 0→F</option>
-            <option value="colorDesc">{{ t('typeColor') }} F→0</option>
             <option disabled>─────────────────</option>
 
             <option value="statusAsc">{{ t('status') }} A→Z</option>
@@ -112,17 +115,14 @@ const updateSort = (event) => {
 
             <option value="publishedAtDesc">{{ t('publishedAt') }} ↓</option>
             <option value="publishedAtAsc">{{ t('publishedAt') }} ↑</option>
-
             <option value="showFromAtDesc">{{ t('showFromAt') }} ↓</option>
             <option value="showFromAtAsc">{{ t('showFromAt') }} ↑</option>
-
             <option value="showToAtDesc">{{ t('showToAt') }} ↓</option>
             <option value="showToAtAsc">{{ t('showToAt') }} ↑</option>
             <option disabled>─────────────────</option>
 
             <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
             <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
-
             <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
             <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
             <option disabled>─────────────────</option>
@@ -138,7 +138,6 @@ const updateSort = (event) => {
             <option value="ownerNameDesc">{{ t('owner') }} Z→A</option>
             <option value="ownerEmailAsc">{{ t('ownerEmail') }} A→Z</option>
             <option value="ownerEmailDesc">{{ t('ownerEmail') }} Z→A</option>
-            <option disabled>─────────────────</option>
         </select>
     </div>
 </template>

@@ -76,6 +76,7 @@ const form = useForm({
     required: false,
     filterable: false,
     visible: true,
+    use_for_variants: false,
 
     sort: 0,
     activity: true,
@@ -138,7 +139,9 @@ const colorForPicker = computed({
 
 /** Название группы */
 const groupTitle = (group) => {
-    return group?.title || group?.translation?.title || group?.code || `ID: ${group?.id}`
+    return group?.translation?.title
+        || group?.code
+        || `ID: ${group?.id}`
 }
 
 /** Автоматическая генерация системного кода */
@@ -159,6 +162,7 @@ const submitForm = () => {
         activity: data.activity ? 1 : 0,
         moderation_status: Number(data.moderation_status ?? 0),
         sort: Number(data.sort ?? 0),
+        use_for_variants: data.use_for_variants ? 1 : 0,
     }))
 
     form.post(route('admin.marketAttributes.store'), {
@@ -252,6 +256,15 @@ const submitForm = () => {
                             <LabelCheckbox
                                 for="visible"
                                 :text="t('visibleCard')"
+                                class="text-sm h-8 flex items-center"
+                            />
+                        </div>
+
+                        <div class="flex flex-row items-center gap-2">
+                            <ActivityCheckbox v-model="form.use_for_variants" />
+                            <LabelCheckbox
+                                for="use_for_variants"
+                                :text="t('showInVariants')"
                                 class="text-sm h-8 flex items-center"
                             />
                         </div>

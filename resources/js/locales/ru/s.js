@@ -17,6 +17,7 @@ export default {
     shapeCircle: 'Круг',
     showDetails: 'Показать детали',
     showFromAt: 'Начало публикации',
+    showInVariants: 'Показывать в вариантах',
     showOwner: 'Показать владельца',
     showToAt: 'Окончание публикации',
     score: 'Набранные баллы',

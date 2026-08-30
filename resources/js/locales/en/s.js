@@ -17,6 +17,7 @@ export default {
     shapeCircle: 'Circle',
     showDetails: 'Show details',
     showFromAt: 'Start of publication',
+    showInVariants: 'Show in variants',
     showOwner: 'Show owner',
     showToAt: 'End of publication',
     score: 'Points scored',

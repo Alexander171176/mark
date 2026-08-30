@@ -17,6 +17,7 @@ export default {
     shapeCircle: 'Шеңбер',
     showDetails: 'Мәліметтерді көрсету',
     showFromAt: 'Жарияланымның басталуы',
+    showInVariants: 'Опцияларда көрсету',
     showOwner: 'Шоу иесі',
     showToAt: 'Жарияланымның аяқталуы',
     score: 'Ұпайлар жиналды',

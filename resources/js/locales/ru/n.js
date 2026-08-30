@@ -11,6 +11,7 @@ export default {
     noContests: 'Количество боев признанных несостоявшимися',
     noCurrentImage: 'нет текущего изображения',
     noData: 'Нет данных для отображения.',
+    notForVariants: 'Нет вариантов',
     noHierarchyData: 'Нет данных иерархии',
     noImage: 'Нет изображения',
     noLeft: 'Убрать с левой колонки',

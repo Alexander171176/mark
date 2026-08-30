@@ -8,7 +8,7 @@ import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
 import ModerationButton from '@/Components/Admin/UI/Buttons/ModerationButton.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = defineProps({
     attributes: { type: Array, default: () => [] },
@@ -37,53 +37,87 @@ watch(
 )
 
 const handleDragEnd = () => {
-    emits('update-sort-order', localAttributes.value.map(attribute => attribute.id))
+    emits(
+        'update-sort-order',
+        localAttributes.value.map((attribute) => attribute.id)
+    )
 }
 
 const toggleAll = (event) => {
     emits('toggle-all', {
-        ids: localAttributes.value.map(attribute => attribute.id),
-        checked: event.target.checked,
+        ids: localAttributes.value.map((attribute) => attribute.id),
+        checked: Boolean(event?.target?.checked),
     })
 }
 
 const allSelected = () => {
-    return localAttributes.value.length
-        && localAttributes.value.every(attribute => props.selectedAttributes.includes(attribute.id))
+    return Boolean(
+        localAttributes.value.length
+        && localAttributes.value.every(
+            (attribute) =>
+                props.selectedAttributes.includes(attribute.id)
+        )
+    )
 }
 
-const attributeTranslation = (attribute) => attribute?.translation || {}
-const attributeTitle = (attribute) => attributeTranslation(attribute)?.title || `ID: ${attribute?.id}`
-const attributeShort = (attribute) => attributeTranslation(attribute)?.short || ''
+/* ===================== Translations ===================== */
 
-const groupTitle = (attribute) => {
-    return attribute?.group?.title
-        || attribute?.group?.translation?.title
-        || attribute?.group?.code
-        || '—'
-}
+const attributeTranslation = (attribute) =>
+    attribute?.translation || {}
 
-const ownerName = (attribute) => attribute?.owner?.name || t('noData')
-const ownerEmail = (attribute) => attribute?.owner?.email || ''
+const attributeTitle = (attribute) =>
+    attributeTranslation(attribute)?.title
+    || `ID: ${attribute?.id}`
+
+const attributeShort = (attribute) =>
+    attributeTranslation(attribute)?.short || ''
+
+const groupTranslation = (attribute) =>
+    attribute?.group?.translation || {}
+
+const groupTitle = (attribute) =>
+    groupTranslation(attribute)?.title
+    || attribute?.group?.code
+    || '—'
+
+/* ===================== Owner ===================== */
+
+const ownerName = (attribute) =>
+    attribute?.owner?.name
+    || t('noData')
+
+const ownerEmail = (attribute) =>
+    attribute?.owner?.email || ''
 
 const ownerTitle = (attribute) => {
     const owner = attribute?.owner
 
-    if (!owner) return t('noData')
+    if (!owner) {
+        return t('noData')
+    }
 
     return `${owner.name || ''}${owner.email ? ' — ' + owner.email : ''}`.trim()
 }
 
-const ownerAvatar = (attribute) => {
-    return attribute?.owner?.profile_photo_url || '/storage/profile-photos/default-image.png'
-}
+const ownerAvatar = (attribute) =>
+    attribute?.owner?.profile_photo_url
+    || '/storage/profile-photos/default-image.png'
+
+/* ===================== Helpers ===================== */
 
 const getSafeIcon = (icon) => {
-    if (!icon) return null
+    if (typeof icon !== 'string') {
+        return null
+    }
 
     const trimmed = icon.trim()
 
-    return trimmed.startsWith('<svg') && trimmed.endsWith('</svg>')
+    if (!trimmed) {
+        return null
+    }
+
+    return trimmed.startsWith('<svg')
+    && trimmed.endsWith('</svg>')
         ? trimmed
         : null
 }
@@ -95,54 +129,66 @@ const getStatusLabel = (status) => {
         archived: 'statusArchived',
     }
 
-    return t(map[status] || status || 'no')
+    return t(
+        map[status]
+        || status
+        || 'no'
+    )
 }
 
 const formatDate = (dateStr) => {
-    if (!dateStr) return ''
+    if (!dateStr) {
+        return ''
+    }
 
     const date = new Date(dateStr)
 
-    if (isNaN(date)) return ''
+    if (Number.isNaN(date.getTime())) {
+        return ''
+    }
 
-    return date.toLocaleDateString('ru-RU', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    })
+    return date.toLocaleDateString(
+        locale.value || undefined,
+        {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        }
+    )
 }
 
 const truncateText = (text, maxLength = 80) => {
-    if (!text) return ''
+    if (text === null || text === undefined || text === '') {
+        return ''
+    }
 
-    return text.length > maxLength
-        ? text.slice(0, maxLength).trimEnd() + '…'
-        : text
+    const value = String(text)
+
+    return value.length > maxLength
+        ? value.slice(0, maxLength).trimEnd() + '…'
+        : value
 }
 
 const moderationBadge = (status) => {
-    const s = Number(status ?? 0)
+    const value = Number(status ?? 0)
 
-    if (s === 1) {
+    if (value === 1) {
         return {
             text: t('statusSelectApproved'),
-            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 ' +
-                'dark:bg-emerald-900/40 dark:text-emerald-300',
+            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300',
         }
     }
 
-    if (s === 2) {
+    if (value === 2) {
         return {
             text: t('statusSelectRejected'),
-            class: 'bg-rose-100 text-rose-700 border-rose-300 ' +
-                'dark:bg-rose-900/40 dark:text-rose-300',
+            class: 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/40 dark:text-rose-300',
         }
     }
 
     return {
         text: t('underModeration'),
-        class: 'bg-amber-100 text-amber-800 border-amber-300 ' +
-            'dark:bg-amber-900/40 dark:text-amber-300',
+        class: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300',
     }
 }
 
@@ -159,27 +205,34 @@ const getTypeLabel = (type) => {
         multiselect: 'multiselect',
     }
 
-    return t(map[type] || type || 'noData')
+    return t(
+        map[type]
+        || type
+        || 'noData'
+    )
 }
 
 const booleanBadge = (value, label) => {
     return {
         text: value ? label : '—',
         class: value
-            ? 'bg-cyan-100 text-cyan-700 ' +
-            'border-cyan-300 dark:bg-cyan-900/40 dark:text-cyan-300'
-            : 'bg-slate-100 text-slate-500 ' +
-            'border-slate-300 dark:bg-slate-700 dark:text-slate-400',
+            ? 'bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-900/40 dark:text-cyan-300'
+            : 'bg-slate-100 text-slate-500 border-slate-300 dark:bg-slate-700 dark:text-slate-400',
     }
 }
 
-const isOwnerBlockOpen = (attributeId) => {
-    return openedOwnerBlocks.value.includes(attributeId)
-}
+/* ===================== Owner block ===================== */
+
+const isOwnerBlockOpen = (attributeId) =>
+    openedOwnerBlocks.value.includes(attributeId)
 
 const toggleOwnerBlock = (attributeId) => {
     if (isOwnerBlockOpen(attributeId)) {
-        openedOwnerBlocks.value = openedOwnerBlocks.value.filter(id => id !== attributeId)
+        openedOwnerBlocks.value =
+            openedOwnerBlocks.value.filter(
+                (id) => id !== attributeId
+            )
+
         return
     }
 
@@ -206,6 +259,7 @@ const toggleOwnerBlock = (attributeId) => {
                        dark:text-slate-200 cursor-pointer"
             >
                 <span>{{ t('selectAll') }}</span>
+
                 <input
                     type="checkbox"
                     class="mx-2"
@@ -215,7 +269,10 @@ const toggleOwnerBlock = (attributeId) => {
             </label>
         </div>
 
-        <div v-if="localAttributes.length" class="p-3">
+        <div
+            v-if="localAttributes.length"
+            class="p-3"
+        >
             <draggable
                 tag="div"
                 v-model="localAttributes"
@@ -242,9 +299,14 @@ const toggleOwnerBlock = (attributeId) => {
                                            dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
                                         <path
-                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
+                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z"
+                                        />
                                     </svg>
                                 </button>
 
@@ -252,7 +314,7 @@ const toggleOwnerBlock = (attributeId) => {
                                     class="text-[10px] font-semibold px-1.5 py-0.5 rounded-sm
                                            border border-gray-400 bg-slate-200 dark:bg-slate-700
                                            text-slate-800 dark:text-blue-100"
-                            :title="`[${attribute.sort}] / ${formatDate(attribute.published_at)}`"
+                                    :title="`[${attribute.sort}] / ${formatDate(attribute.published_at)}`"
                                 >
                                     ID: {{ attribute.id }}
                                 </div>
@@ -261,7 +323,9 @@ const toggleOwnerBlock = (attributeId) => {
                                     type="button"
                                     class="text-slate-400 hover:text-blue-600
                                            dark:hover:text-blue-300"
-                                    :title="isOwnerBlockOpen(attribute.id) ? t('hideOwner') : t('showOwner')"
+                                    :title="isOwnerBlockOpen(attribute.id)
+                                        ? t('hideOwner')
+                                        : t('showOwner')"
                                     @click.prevent="toggleOwnerBlock(attribute.id)"
                                 >
                                     <svg
@@ -281,7 +345,8 @@ const toggleOwnerBlock = (attributeId) => {
 
                             <div class="flex items-center space-x-2">
                                 <span
-                                    class="text-[10px] px-2 py-0.5 rounded-sm border font-semibold"
+                                    class="text-[10px] px-2 py-0.5 rounded-sm
+                                           border font-semibold"
                                     :class="moderationBadge(attribute.moderation_status).class"
                                 >
                                     {{ moderationBadge(attribute.moderation_status).text }}
@@ -290,7 +355,7 @@ const toggleOwnerBlock = (attributeId) => {
                                 <input
                                     type="checkbox"
                                     :checked="selectedAttributes.includes(attribute.id)"
-                                    @change="$emit('toggle-select', attribute.id)"
+                                    @change="emits('toggle-select', attribute.id)"
                                 />
                             </div>
                         </header>
@@ -331,12 +396,16 @@ const toggleOwnerBlock = (attributeId) => {
                                     class="mt-1 text-center text-[10px]
                                            text-gray-700 dark:text-gray-300"
                                 >
-                        {{ t('show') }}: {{ attribute.show_from_at }} / {{ attribute.show_to_at }}
+                                    {{ t('show') }}:
+                                    {{ formatDate(attribute.show_from_at) }}
+                                    /
+                                    {{ formatDate(attribute.show_to_at) }}
                                 </div>
 
                                 <div
                                     v-else
-                                    class="text-center text-[10px] text-slate-500 dark:text-slate-300"
+                                    class="text-center text-[10px]
+                                           text-slate-500 dark:text-slate-300"
                                 >
                                     {{ formatDate(attribute.published_at) }}
                                 </div>
@@ -349,7 +418,9 @@ const toggleOwnerBlock = (attributeId) => {
                                            w-fit border-2 px-2 py-0.5 rounded-md"
                                     :style="{ borderColor: attribute.color || 'transparent' }"
                                 >
-                                    <span :style="{ color: attribute.color || '#666666' }">
+                                    <span
+                                        :style="{ color: attribute.color || '#666666' }"
+                                    >
                                         {{ truncateText(attributeTitle(attribute)) }}
                                     </span>
                                 </div>
@@ -367,30 +438,40 @@ const toggleOwnerBlock = (attributeId) => {
                             <div
                                 v-if="attribute.color"
                                 class="flex items-center justify-center gap-1
-                                       font-semibold text-xs text-slate-700 dark:text-slate-300"
+                                       font-semibold text-xs
+                                       text-slate-700 dark:text-slate-300"
                             >
                                 <span
-                                    class="inline-block w-4 h-4 rounded-sm border border-slate-400"
+                                    class="inline-block w-4 h-4 rounded-sm
+                                           border border-slate-400"
                                     :style="{ backgroundColor: attribute.color }"
-                                ></span>
-                                <span>{{ attribute.color }}</span>
+                                />
+
+                                <span>
+                                    {{ attribute.color }}
+                                </span>
                             </div>
 
                             <div class="text-center text-xs text-slate-500 dark:text-slate-400">
-                                {{ t('code') }}: {{ truncateText(attribute.code, 90) }}
+                                {{ t('code') }}:
+                                {{ truncateText(attribute.code, 90) }}
                             </div>
 
                             <div
                                 class="flex items-center justify-center gap-2 text-[11px]
                                        font-semibold text-slate-600 dark:text-slate-200"
                             >
-                                <span class="px-2 py-0.5 rounded-sm
-                                             border border-slate-300 dark:border-slate-500">
+                                <span
+                                    class="px-2 py-0.5 rounded-sm
+                                           border border-slate-300 dark:border-slate-500"
+                                >
                                     {{ getTypeLabel(attribute.type) }}
                                 </span>
 
-                                <span class="px-2 py-0.5 rounded-sm
-                                             border border-slate-300 dark:border-slate-500">
+                                <span
+                                    class="px-2 py-0.5 rounded-sm
+                                           border border-slate-300 dark:border-slate-500"
+                                >
                                     {{ attribute.unit || '—' }}
                                 </span>
                             </div>
@@ -400,6 +481,7 @@ const toggleOwnerBlock = (attributeId) => {
                                        font-semibold text-slate-600 dark:text-slate-200"
                             >
                                 <span>{{ t('values') }}:</span>
+
                                 <span class="text-[12px] text-blue-600 dark:text-blue-300">
                                     {{ attribute.values_count ?? 0 }}
                                 </span>
@@ -409,7 +491,8 @@ const toggleOwnerBlock = (attributeId) => {
                                 class="text-center text-[11px] font-semibold
                                        text-gray-700 dark:text-gray-300"
                             >
-                                {{ t('group') }}: {{ truncateText(groupTitle(attribute), 80) }}
+                                {{ t('group') }}:
+                                {{ truncateText(groupTitle(attribute), 80) }}
                             </div>
 
                             <div
@@ -427,12 +510,14 @@ const toggleOwnerBlock = (attributeId) => {
                                 >
                                     {{ booleanBadge(attribute.visible, t('visibleCard')).text }}
                                 </span>
+
                                 <span
                                     class="text-[10px] px-2 py-0.5 rounded-sm border"
                                     :class="booleanBadge(attribute.filterable, t('showFilter')).class"
                                 >
                                     {{ booleanBadge(attribute.filterable, t('showFilter')).text }}
                                 </span>
+
                                 <span
                                     class="text-[10px] px-2 py-0.5 rounded-sm border"
                                     :class="booleanBadge(attribute.required, t('required')).class"
@@ -451,11 +536,12 @@ const toggleOwnerBlock = (attributeId) => {
 
                             <div class="flex justify-center space-x-1">
                                 <span
-                                    class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
+                                    class="text-[10px] px-2 py-1 rounded-sm
+                                           border font-semibold"
                                     :class="moderationBadge(attribute.moderation_status).class"
-                        :title="attribute.moderation_note && attribute.moderated_at
-                            ? `${attribute.moderation_note} [${formatDate(attribute.moderated_at)}]`
-                            : null"
+                                    :title="attribute.moderation_note && attribute.moderated_at
+                                        ? `${attribute.moderation_note} [${formatDate(attribute.moderated_at)}]`
+                                        : null"
                                 >
                                     {{ moderationBadge(attribute.moderation_status).text }}
                                 </span>
@@ -466,7 +552,7 @@ const toggleOwnerBlock = (attributeId) => {
                                     :initialNote="attribute?.moderation_note || ''"
                                     mode="toggle"
                                     @submit="({ status, note }) =>
-                                    $emit('approve', attribute, status, note)"
+                                        emits('approve', attribute, status, note)"
                                 />
                             </div>
                         </div>
@@ -478,8 +564,10 @@ const toggleOwnerBlock = (attributeId) => {
                             <div class="flex items-center space-x-1">
                                 <ActivityToggle
                                     :isActive="attribute.activity"
-                                    @toggle-activity="$emit('toggle-activity', attribute)"
-                                    :title="attribute.activity ? t('enabled') : t('disabled')"
+                                    @toggle-activity="emits('toggle-activity', attribute)"
+                                    :title="attribute.activity
+                                        ? t('enabled')
+                                        : t('disabled')"
                                 />
 
                                 <IconEdit
@@ -488,7 +576,9 @@ const toggleOwnerBlock = (attributeId) => {
                                     })"
                                 />
 
-                                <DeleteIconButton @delete="$emit('delete', attribute)" />
+                                <DeleteIconButton
+                                    @delete="emits('delete', attribute)"
+                                />
                             </div>
                         </div>
                     </div>
@@ -496,7 +586,10 @@ const toggleOwnerBlock = (attributeId) => {
             </draggable>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

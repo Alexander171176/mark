@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Market\BaseMarketAdminController;
 use App\Http\Requests\Admin\Market\MarketAttributeValue\MarketAttributeValueRequest;
 use App\Http\Resources\Admin\Market\MarketAttribute\MarketAttributeSharedResource;
 use App\Http\Resources\Admin\Market\MarketAttributeValue\MarketAttributeValueResource;
+use App\Http\Resources\Admin\Market\MarketAttributeValue\MarketAttributeValueSharedResource;
 use App\Models\Admin\Market\MarketAttribute\MarketAttribute;
 use App\Models\Admin\Market\MarketAttributeValue\MarketAttributeValue;
 use App\Services\Admin\ProcessingModeService;
@@ -35,28 +36,65 @@ class MarketAttributeValueController extends BaseMarketAdminController
         'description',
     ];
 
-    /** Список значений характеристик */
+    /**
+     * Список значений характеристик.
+     *
+     * Поддерживает:
+     * - frontend;
+     * - server;
+     * - auto.
+     *
+     * Для Index загружается только перевод
+     * текущей локали значения и характеристики.
+     */
     public function index(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
 
         $settings = app(AdminSettingsService::class);
 
-        $perPage = $settings->int('adminMarketAttributeValuesPerPage', 10);
-        $defaultSort = $settings->string('adminMarketAttributeValuesDefaultSort', 'idDesc');
+        $perPage = $settings->int(
+            'adminMarketAttributeValuesPerPage',
+            10
+        );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $defaultSort = $settings->string(
+            'adminMarketAttributeValuesDefaultSort',
+            'idDesc'
+        );
+
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
+
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
 
         $processingMode = $settings->string(
             'adminMarketAttributeValuesProcessingMode',
             'frontend'
         );
 
-        $valuesCount = $this->baseQuery()->count();
+        /**
+         * Первый COUNT используется
+         * ProcessingModeService для выбора
+         * frontend/server режима.
+         */
+        $valuesCount = $this->baseQuery()
+            ->count();
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer($processingMode, $valuesCount, 300);
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $valuesCount,
+            300
+        );
 
         try {
             $values = $this->getIndexValues(
@@ -64,48 +102,93 @@ class MarketAttributeValueController extends BaseMarketAdminController
                 useServerProcessing: $useServerProcessing,
                 perPage: $perPage,
                 sort: $sortParam,
-                search: $search,
+                search: $search
             );
 
-            return Inertia::render('Admin/Market/MarketAttributeValues/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/Market/MarketAttributeValues/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminMarketAttributeValuesPerPage' => $perPage,
-                'adminMarketAttributeValuesDefaultSort' => $defaultSort,
-                'adminMarketAttributeValuesProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'values' => MarketAttributeValueResource::collection($values),
-                'valuesCount' => $valuesCount,
+                    'adminMarketAttributeValuesPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
-            ]);
+                    'adminMarketAttributeValuesDefaultSort' =>
+                        $defaultSort,
+
+                    'adminMarketAttributeValuesProcessingMode' =>
+                        $processingMode,
+
+                    /**
+                     * Index использует компактный
+                     * SharedResource.
+                     */
+                    'values' =>
+                        MarketAttributeValueSharedResource::collection(
+                            $values
+                        ),
+
+                    'valuesCount' =>
+                        $valuesCount,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки списка market attribute values: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки списка market attribute values: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return Inertia::render('Admin/Market/MarketAttributeValues/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/Market/MarketAttributeValues/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'availableLocales' =>
+                        $this->availableLocales(),
 
-                'adminMarketAttributeValuesPerPage' => $perPage,
-                'adminMarketAttributeValuesDefaultSort' => $defaultSort,
-                'adminMarketAttributeValuesProcessingMode' => $processingMode,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'values' => [],
-                'valuesCount' => 0,
+                    'adminMarketAttributeValuesPerPage' =>
+                        $perPage,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminMarketAttributeValuesDefaultSort' =>
+                        $defaultSort,
 
-                'error' => 'Ошибка загрузки значений характеристик.',
-            ]);
+                    'adminMarketAttributeValuesProcessingMode' =>
+                        $processingMode,
+
+                    'values' => [],
+
+                    'valuesCount' => 0,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'error' =>
+                        'Ошибка загрузки значений характеристик.',
+                ]
+            );
         }
     }
 
@@ -114,28 +197,52 @@ class MarketAttributeValueController extends BaseMarketAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        return Inertia::render('Admin/Market/MarketAttributeValues/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+        return Inertia::render(
+            'Admin/Market/MarketAttributeValues/Create',
+            [
+                'currentLocale' =>
+                    $currentLocale,
 
-            'attributes' => MarketAttributeSharedResource::collection(
-                $this->attributesForSelect()
-            ),
-        ]);
+                'availableLocales' =>
+                    $this->availableLocales(),
+
+                'attributes' =>
+                    MarketAttributeSharedResource::collection(
+                        $this->attributesForSelect(
+                            $currentLocale
+                        )
+                    ),
+            ]
+        );
     }
 
     /** Создание значения характеристики */
-    public function store(MarketAttributeValueRequest $request): RedirectResponse
-    {
+    public function store(
+        MarketAttributeValueRequest $request
+    ): RedirectResponse {
         $data = $request->validated();
 
-        $translations = $data['translations'] ?? [];
+        $translations =
+            $data['translations'] ?? [];
 
-        unset($data['translations']);
+        unset(
+            $data['translations']
+        );
 
         $user = auth()->user();
 
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
+        /**
+         * Обычный пользователь
+         * не управляет модерацией.
+         */
+        if (
+            $user
+            && method_exists(
+                $user,
+                'hasRole'
+            )
+            && ! $user->hasRole('admin')
+        ) {
             unset(
                 $data['moderation_status'],
                 $data['moderated_by'],
@@ -145,64 +252,112 @@ class MarketAttributeValueController extends BaseMarketAdminController
         }
 
         try {
-            DB::transaction(function () use (&$value, $data, $translations) {
-                if (!isset($data['sort']) || is_null($data['sort'])) {
-                    $maxSort = MarketAttributeValue::query()
-                        ->where('market_attribute_id', $data['market_attribute_id'])
-                        ->max('sort');
+            DB::transaction(
+                function () use (
+                    $data,
+                    $translations
+                ): void {
+                    if (
+                        ! isset($data['sort'])
+                        || $data['sort'] === null
+                    ) {
+                        $maxSort =
+                            MarketAttributeValue::query()
+                                ->where(
+                                    'market_attribute_values.market_attribute_id',
+                                    $data['market_attribute_id']
+                                )
+                                ->max(
+                                    'market_attribute_values.sort'
+                                );
 
-                    $data['sort'] = is_null($maxSort) ? 0 : $maxSort + 1;
+                        $data['sort'] =
+                            $maxSort === null
+                                ? 0
+                                : $maxSort + 1;
+                    }
+
+                    $value =
+                        MarketAttributeValue::create(
+                            $data
+                        );
+
+                    $this->syncTranslations(
+                        $value,
+                        $translations
+                    );
                 }
-
-                $value = MarketAttributeValue::create($data);
-
-                $this->syncTranslations($value, $translations);
-            });
+            );
 
             return redirect()
-                ->route('admin.marketAttributeValues.index')
-                ->with('success', 'Значение характеристики успешно создано.');
+                ->route(
+                    'admin.marketAttributeValues.index'
+                )
+                ->with(
+                    'success',
+                    'Значение характеристики успешно создано.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при создании market attribute value: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при создании market attribute value: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при создании значения характеристики.');
+                ->with(
+                    'error',
+                    'Ошибка при создании значения характеристики.'
+                );
         }
     }
 
     /** Перенаправление просмотра на редактирование */
-    public function show(string $id): RedirectResponse
-    {
-        return redirect()->route('admin.marketAttributeValues.edit', $id);
+    public function show(
+        string $id
+    ): RedirectResponse {
+        return redirect()->route(
+            'admin.marketAttributeValues.edit',
+            $id
+        );
     }
 
-    /** Страница редактирования значения характеристики */
-    public function edit(int $marketAttributeValue, Request $request): Response
-    {
-        $value = $this->baseQuery()
-            ->with([
-                'attribute.translations',
-                'attribute.group.translations',
-                'moderator',
-                'translations',
-            ])
-            ->findOrFail($marketAttributeValue);
-
+    /**
+     * Страница редактирования значения характеристики.
+     *
+     * Для редактируемого значения загружаются
+     * только все собственные translations,
+     * необходимые TranslationTabs.
+     *
+     * Родительская характеристика выбирается
+     * через отдельный attributesForSelect().
+     */
+    public function edit(
+        int $marketAttributeValue,
+        Request $request
+    ): Response {
         $currentLocale = $this->resolveLocale($request);
 
-        return Inertia::render('Admin/Market/MarketAttributeValues/Edit', [
-            'value' => new MarketAttributeValueResource($value),
+        $value = $this->baseQuery()
+            ->with('translations')
+            ->findOrFail($marketAttributeValue);
 
-            'attributes' => MarketAttributeSharedResource::collection(
-                $this->attributesForSelect()
-            ),
+        return Inertia::render(
+            'Admin/Market/MarketAttributeValues/Edit',
+            [
+                'value' => new MarketAttributeValueResource($value),
 
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+                'attributes' => MarketAttributeSharedResource::collection(
+                    $this->attributesForSelect($currentLocale)
+                ),
+
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+            ]
+        );
     }
 
     /** Обновление значения характеристики */
@@ -210,11 +365,15 @@ class MarketAttributeValueController extends BaseMarketAdminController
         MarketAttributeValueRequest $request,
         int $marketAttributeValue
     ): RedirectResponse {
-        $value = $this->baseQuery()->findOrFail($marketAttributeValue);
+        $value = $this->baseQuery()
+            ->findOrFail(
+                $marketAttributeValue
+            );
 
         $data = $request->validated();
 
-        $translations = $data['translations'] ?? [];
+        $translations =
+            $data['translations'] ?? [];
 
         unset(
             $data['translations'],
@@ -223,7 +382,18 @@ class MarketAttributeValueController extends BaseMarketAdminController
 
         $user = auth()->user();
 
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
+        /**
+         * Обычный пользователь
+         * не управляет модерацией.
+         */
+        if (
+            $user
+            && method_exists(
+                $user,
+                'hasRole'
+            )
+            && ! $user->hasRole('admin')
+        ) {
             unset(
                 $data['moderation_status'],
                 $data['moderated_by'],
@@ -233,104 +403,232 @@ class MarketAttributeValueController extends BaseMarketAdminController
         }
 
         try {
-            DB::transaction(function () use ($value, $data, $translations) {
-                $value->update($data);
+            DB::transaction(
+                function () use (
+                    $value,
+                    $data,
+                    $translations
+                ): void {
+                    $value->update(
+                        $data
+                    );
 
-                $this->syncTranslations($value, $translations);
-            });
+                    $this->syncTranslations(
+                        $value,
+                        $translations
+                    );
+                }
+            );
 
             return redirect()
-                ->route('admin.marketAttributeValues.index')
-                ->with('success', 'Значение характеристики успешно обновлено.');
+                ->route(
+                    'admin.marketAttributeValues.index'
+                )
+                ->with(
+                    'success',
+                    'Значение характеристики успешно обновлено.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при обновлении market attribute value ID ' . $value->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при обновлении market attribute value ID '
+                . $value->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при обновлении значения характеристики.');
+                ->with(
+                    'error',
+                    'Ошибка при обновлении значения характеристики.'
+                );
         }
     }
 
     /** Удаление значения характеристики */
-    public function destroy(int $marketAttributeValue): RedirectResponse
-    {
+    public function destroy(
+        int $marketAttributeValue
+    ): RedirectResponse {
         $value = $this->baseQuery()
-            ->with('translations')
-            ->findOrFail($marketAttributeValue);
+            ->findOrFail(
+                $marketAttributeValue
+            );
 
         try {
-            DB::transaction(function () use ($value) {
-                $value->translations()->delete();
-                $value->delete();
-            });
+            DB::transaction(
+                function () use (
+                    $value
+                ): void {
+                    /**
+                     * Предварительно загружать translations
+                     * здесь не требуется.
+                     */
+                    $value
+                        ->translations()
+                        ->delete();
+
+                    $value->delete();
+                }
+            );
 
             return redirect()
-                ->route('admin.marketAttributeValues.index')
-                ->with('success', 'Значение характеристики успешно удалено.');
+                ->route(
+                    'admin.marketAttributeValues.index'
+                )
+                ->with(
+                    'success',
+                    'Значение характеристики успешно удалено.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при удалении market attribute value ID ' . $value->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при удалении market attribute value ID '
+                . $value->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при удалении значения характеристики.');
+            return back()->with(
+                'error',
+                'Ошибка при удалении значения характеристики.'
+            );
         }
     }
 
     /** Массовое удаление значений характеристик */
-    public function bulkDestroy(Request $request): RedirectResponse
-    {
+    public function bulkDestroy(
+        Request $request
+    ): RedirectResponse {
         $validated = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:market_attribute_values,id'],
+            'ids' => [
+                'required',
+                'array',
+            ],
+
+            'ids.*' => [
+                'required',
+                'integer',
+                'exists:market_attribute_values,id',
+            ],
         ]);
 
         $ids = $validated['ids'];
 
+        /**
+         * Проверяем доступность всех значений
+         * через baseQuery().
+         */
         $allowedIds = $this->baseQuery()
-            ->whereIn('id', $ids)
-            ->pluck('id')
+            ->whereIn(
+                'market_attribute_values.id',
+                $ids
+            )
+            ->pluck(
+                'market_attribute_values.id'
+            )
             ->toArray();
 
-        if (count($allowedIds) !== count($ids)) {
-            return back()->with('error', 'Часть значений характеристик недоступна для удаления.');
+        if (
+            count($allowedIds)
+            !== count($ids)
+        ) {
+            return back()->with(
+                'error',
+                'Часть значений характеристик недоступна для удаления.'
+            );
         }
 
         try {
-            DB::transaction(function () use ($allowedIds) {
-                DB::table('market_attribute_value_translations')
-                    ->whereIn('market_attribute_value_id', $allowedIds)
-                    ->delete();
+            DB::transaction(
+                function () use (
+                    $allowedIds
+                ): void {
+                    DB::table(
+                        'market_attribute_value_translations'
+                    )
+                        ->whereIn(
+                            'market_attribute_value_id',
+                            $allowedIds
+                        )
+                        ->delete();
 
-                MarketAttributeValue::query()
-                    ->whereIn('id', $allowedIds)
-                    ->delete();
-            });
+                    MarketAttributeValue::query()
+                        ->whereIn(
+                            'market_attribute_values.id',
+                            $allowedIds
+                        )
+                        ->delete();
+                }
+            );
 
-            return back()->with('success', 'Выбранные значения характеристик успешно удалены.');
+            return back()->with(
+                'success',
+                'Выбранные значения характеристик успешно удалены.'
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка bulkDestroy market attribute values: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка bulkDestroy market attribute values: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при массовом удалении значений характеристик.');
+            return back()->with(
+                'error',
+                'Ошибка при массовом удалении значений характеристик.'
+            );
         }
     }
 
-    /** Базовый запрос списка значений характеристик */
-    private function indexQuery(): Builder
-    {
+    /**
+     * Базовый запрос Index.
+     *
+     * Для Index:
+     * - translations значения ограничены currentLocale;
+     * - translations характеристики ограничены currentLocale;
+     * - attribute.group не загружается;
+     * - moderator загружается одним batch-запросом;
+     * - fallback SQL отсутствует.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'attribute.translations',
-                'attribute.group.translations',
-                'moderator',
-                'translations',
+                'attribute',
+
+                'attribute.translations' =>
+                    fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
+
+                /**
+                 * Moderator нужен для одинаковой
+                 * семантики frontend/server search.
+                 */
+                'moderator:id,name,email',
+
+                'translations' =>
+                    fn ($query) =>
+                    $query->where(
+                        'locale',
+                        $locale
+                    ),
             ]);
     }
 
-    /** Получение списка значений характеристик для индекса */
+    /**
+     * Получение списка значений характеристик
+     * для Admin Index.
+     */
     private function getIndexValues(
         string $locale,
         bool $useServerProcessing,
@@ -338,30 +636,60 @@ class MarketAttributeValueController extends BaseMarketAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
+        /**
+         * Server:
+         * поиск, сортировка и пагинация
+         * выполняются в БД.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend / Auto→Frontend:
+         * полный набор возвращается клиенту,
+         * поиск, сортировка и пагинация
+         * выполняются в Vue.
+         */
         return $query
             ->ordered()
             ->get();
     }
 
-    /** Характеристики для select */
-    private function attributesForSelect()
-    {
+    /**
+     * Характеристики для select.
+     *
+     * Для Create/Edit требуется только:
+     * - основная модель характеристики;
+     * - перевод текущей локали.
+     */
+    private function attributesForSelect(
+        string $locale
+    ) {
         return MarketAttribute::query()
             ->with([
-                'translations',
-                'group.translations',
+                'translations' => fn ($query) =>
+                $query->where(
+                    'locale',
+                    $locale
+                ),
             ])
-            ->withCount('values')
             ->active()
             ->approved()
             ->ordered()

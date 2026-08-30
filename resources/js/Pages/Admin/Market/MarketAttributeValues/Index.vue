@@ -9,7 +9,7 @@
  * - серверный поиск/сортировка/пагинация
  */
 
-import { defineProps, ref, watch, computed } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { router, usePage } from '@inertiajs/vue3'
@@ -65,81 +65,186 @@ const props = defineProps({
 /** Проверка прав администратора */
 const isAdmin = computed(() => {
     const roles = page.props?.auth?.user?.roles || []
+
     return roles.some((role) => role?.name === 'admin')
 })
 
-/** Получение текущего перевода */
-const getValueTranslation = (value) => value?.translation || value?.translations?.[0] || {}
+/* ===================== Translation helpers ===================== */
 
-/** Получение названия значения */
-const getValueTitle = (value) => getValueTranslation(value)?.title || `ID: ${value?.id}`
+/** Перевод значения характеристики */
+const getValueTranslation = (value) => value?.translation || {}
 
-/** Получение краткого описания */
-const getValueShort = (value) => getValueTranslation(value)?.short || ''
-
-/** Получение названия характеристики */
-const getAttributeTitle = (value) => {
-    return value?.attribute?.title
-        || value?.attribute?.translation?.title
-        || value?.attribute?.code
-        || ''
+/**
+ * Реальное название перевода.
+ *
+ * Используется для поиска и сортировки,
+ * чтобы fallback ID не становился
+ * частью бизнес-данных.
+ */
+const getValueTranslationTitle = (value) => {
+    return getValueTranslation(value)?.title || ''
 }
 
+/** Название для отображения */
+const getValueTitle = (value) => {
+    return getValueTranslationTitle(value)
+        || `ID: ${value?.id}`
+}
+
+/** Подзаголовок значения */
+const getValueSubtitle = (value) => {
+    return getValueTranslation(value)?.subtitle || ''
+}
+
+/** Краткое описание значения */
+const getValueShort = (value) => {
+    return getValueTranslation(value)?.short || ''
+}
+
+/** Полное описание значения */
+const getValueDescription = (value) => {
+    return getValueTranslation(value)?.description || ''
+}
+
+/** Перевод родительской характеристики */
+const getAttributeTranslation = (value) => {
+    return value?.attribute?.translation || {}
+}
+
+/**
+ * Реальное название характеристики.
+ *
+ * Используется для поиска и сортировки.
+ */
+const getAttributeTranslationTitle = (value) => {
+    return getAttributeTranslation(value)?.title || ''
+}
+
+/** Подзаголовок характеристики */
+const getAttributeSubtitle = (value) => {
+    return getAttributeTranslation(value)?.subtitle || ''
+}
+
+/** Краткое описание характеристики */
+const getAttributeShort = (value) => {
+    return getAttributeTranslation(value)?.short || ''
+}
+
+/** Полное описание характеристики */
+const getAttributeDescription = (value) => {
+    return getAttributeTranslation(value)?.description || ''
+}
+
+/** Имя модератора */
+const getModeratorName = (value) => {
+    return value?.moderator?.name || ''
+}
+
+/** Email модератора */
+const getModeratorEmail = (value) => {
+    return value?.moderator?.email || ''
+}
+
+/* ===================== Normalization helpers ===================== */
+
 /** Нормализация строки */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+const normalize = (value) => {
+    return (value ?? '')
+        .toString()
+        .trim()
+        .toLowerCase()
+}
 
 /** Безопасное преобразование в число */
 const safeNumber = (value) => {
     const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+
+    return Number.isFinite(number)
+        ? number
+        : 0
 }
 
 /** Безопасное преобразование даты */
 const safeDate = (value) => {
     const time = new Date(value || 0).getTime()
-    return Number.isFinite(time) ? time : 0
+
+    return Number.isFinite(time)
+        ? time
+        : 0
 }
 
 /** Безопасное получение статуса модерации */
 const moderationNum = (value) => {
     const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+
+    return Number.isFinite(number)
+        ? number
+        : 0
 }
+
+/* ===================== View mode ===================== */
 
 /** Режим отображения списка */
 const viewMode = ref(
-    localStorage.getItem('admin_view_mode_market_attribute_values') || 'cards'
+    localStorage.getItem('admin_view_mode_market_attribute_values')
+    || 'cards'
 )
 
 watch(viewMode, (value) => {
-    localStorage.setItem('admin_view_mode_market_attribute_values', value)
+    localStorage.setItem(
+        'admin_view_mode_market_attribute_values',
+        value
+    )
 })
 
+/* ===================== Per page ===================== */
+
 /** Количество элементов на странице */
-const itemsPerPage = ref(props.adminMarketAttributeValuesPerPage || 10)
+const itemsPerPage = ref(
+    props.adminMarketAttributeValuesPerPage || 10
+)
 
 watch(itemsPerPage, (newVal) => {
     router.put(
         route('admin.settings.updateAdminCountMarketAttributeValues'),
-        { value: newVal },
+        {
+            value: newVal,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} значений характеристик на странице.`),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва значений.'),
+
+            onSuccess: () => {
+                toast.info(
+                    `Показ ${newVal} значений характеристик на странице.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors.value
+                    || 'Ошибка обновления кол-ва значений.'
+                )
+            },
         }
     )
 })
 
+/* ===================== Sorting setting ===================== */
+
 /** Текущий параметр сортировки */
 const sortParam = ref(
-    props.sortParam || props.adminMarketAttributeValuesDefaultSort || 'idDesc'
+    props.sortParam
+    || props.adminMarketAttributeValuesDefaultSort
+    || 'idDesc'
 )
 
 watch(sortParam, (newVal) => {
     router.put(
         route('admin.settings.updateAdminSortMarketAttributeValues'),
-        { value: newVal },
+        {
+            value: newVal,
+        },
         {
             preserveScroll: true,
             preserveState: true,
@@ -149,7 +254,12 @@ watch(sortParam, (newVal) => {
                     router.get(
                         window.location.pathname,
                         {
-                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                            ...Object.fromEntries(
+                                new URLSearchParams(
+                                    window.location.search
+                                )
+                            ),
+
                             sort: newVal || undefined,
                             page: undefined,
                         },
@@ -161,25 +271,43 @@ watch(sortParam, (newVal) => {
                     )
                 }
 
-                toast.info('Сортировка значений характеристик успешно изменена.')
+                toast.info(
+                    'Сортировка значений характеристик успешно изменена.'
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления сортировки значений.')
+                toast.error(
+                    errors.value
+                    || 'Ошибка обновления сортировки значений.'
+                )
             },
         }
     )
 })
+
+/* ===================== Source data ===================== */
 
 /** Локальная копия списка */
 const localValues = ref([])
 
 /** Исходный список */
 const valuesList = computed(() => {
-    if (Array.isArray(props.values)) return props.values
-    if (Array.isArray(props.values?.data)) return props.values.data
-    if (Array.isArray(props.values?.data?.data)) return props.values.data.data
-    if (Array.isArray(props.values?.resource)) return props.values.resource
+    if (Array.isArray(props.values)) {
+        return props.values
+    }
+
+    if (Array.isArray(props.values?.data)) {
+        return props.values.data
+    }
+
+    if (Array.isArray(props.values?.data?.data)) {
+        return props.values.data.data
+    }
+
+    if (Array.isArray(props.values?.resource)) {
+        return props.values.resource
+    }
 
     return []
 })
@@ -187,10 +315,19 @@ const valuesList = computed(() => {
 watch(
     valuesList,
     (newVal) => {
-        localValues.value = JSON.parse(JSON.stringify(newVal || []))
+        localValues.value = JSON.parse(
+            JSON.stringify(
+                newVal || []
+            )
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
+
+/* ===================== Delete ===================== */
 
 /** Окно подтверждения удаления */
 const showConfirmDeleteModal = ref(false)
@@ -202,13 +339,27 @@ const valueToDeleteId = ref(null)
 const valueToDeleteTitle = ref('')
 
 /** Подготовка удаления */
-const confirmDelete = (valueOrId, title = null) => {
-    if (typeof valueOrId === 'object') {
-        valueToDeleteId.value = valueOrId.id
-        valueToDeleteTitle.value = title || getValueTitle(valueOrId)
+const confirmDelete = (
+    valueOrId,
+    title = null
+) => {
+    if (
+        valueOrId
+        && typeof valueOrId === 'object'
+    ) {
+        valueToDeleteId.value =
+            valueOrId.id
+
+        valueToDeleteTitle.value =
+            title
+            || getValueTitle(valueOrId)
     } else {
-        valueToDeleteId.value = valueOrId
-        valueToDeleteTitle.value = title || `ID: ${valueOrId}`
+        valueToDeleteId.value =
+            valueOrId
+
+        valueToDeleteTitle.value =
+            title
+            || `ID: ${valueOrId}`
     }
 
     showConfirmDeleteModal.value = true
@@ -223,227 +374,647 @@ const closeModal = () => {
 
 /** Удаление */
 const deleteValue = () => {
-    if (valueToDeleteId.value === null) return
-
-    const idToDelete = valueToDeleteId.value
-    const titleToDelete = valueToDeleteTitle.value
-
-    router.delete(route('admin.marketAttributeValues.destroy', { marketAttributeValue: idToDelete }), {
-        preserveScroll: true,
-        preserveState: false,
-
-        onSuccess: () => {
-            toast.success(`Значение характеристики "${titleToDelete || 'ID: ' + idToDelete}" удалено.`)
-        },
-
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Значение: ${titleToDelete || 'ID: ' + idToDelete})`)
-        },
-
-        onFinish: () => closeModal(),
-    })
-}
-
-/** Локальное обновление записи */
-const patchLocalValue = (valueId, callback) => {
-    const index = localValues.value.findIndex((value) => value.id === valueId)
-
-    if (index !== -1) {
-        callback(localValues.value[index])
+    if (
+        valueToDeleteId.value === null
+    ) {
+        return
     }
-}
 
-/** Переключение активности */
-const toggleActivity = (value) => {
-    const newActivity = !value.activity
-    const title = getValueTitle(value)
-    const actionText = newActivity ? t('activated') : t('deactivated')
+    const idToDelete =
+        valueToDeleteId.value
 
-    router.put(
-        route('admin.actions.marketAttributeValues.updateActivity', { marketAttributeValue: value.id }),
-        { activity: newActivity },
+    const titleToDelete =
+        valueToDeleteTitle.value
+
+    router.delete(
+        route(
+            'admin.marketAttributeValues.destroy',
+            {
+                marketAttributeValue: idToDelete,
+            }
+        ),
         {
             preserveScroll: true,
-            preserveState: true,
+            preserveState: false,
 
             onSuccess: () => {
-                patchLocalValue(value.id, (node) => {
-                    node.activity = newActivity
-                })
-
-                toast.success(`Значение характеристики "${title}" ${actionText}.`)
+                toast.success(
+                    `Значение характеристики "${titleToDelete || 'ID: ' + idToDelete}" удалено.`
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.activity || errors.general || `Ошибка изменения активности для "${title}".`)
+                const errorKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                const errorMsg =
+                    errors.general
+                    || errors[errorKey]
+                    || 'Произошла ошибка при удалении.'
+
+                toast.error(
+                    `${errorMsg} (Значение: ${titleToDelete || 'ID: ' + idToDelete})`
+                )
+            },
+
+            onFinish: () => {
+                closeModal()
             },
         }
     )
 }
 
+/* ===================== Local patch ===================== */
+
+/** Локальное обновление записи */
+const patchLocalValue = (
+    valueId,
+    callback
+) => {
+    const index = localValues.value.findIndex(
+        (value) => value.id === valueId
+    )
+
+    if (index !== -1) {
+        callback(
+            localValues.value[index]
+        )
+    }
+}
+
+/* ===================== Activity ===================== */
+
+/** Переключение активности */
+const toggleActivity = (value) => {
+    const newActivity =
+        ! value.activity
+
+    const title =
+        getValueTitle(value)
+
+    const actionText =
+        newActivity
+            ? t('activated')
+            : t('deactivated')
+
+    router.put(
+        route(
+            'admin.actions.marketAttributeValues.updateActivity',
+            {
+                marketAttributeValue: value.id,
+            }
+        ),
+        {
+            activity: newActivity,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                patchLocalValue(
+                    value.id,
+                    (node) => {
+                        node.activity =
+                            newActivity
+
+                        node.is_active =
+                            newActivity
+                    }
+                )
+
+                toast.success(
+                    `Значение характеристики "${title}" ${actionText}.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors.activity
+                    || errors.general
+                    || `Ошибка изменения активности для "${title}".`
+                )
+            },
+        }
+    )
+}
+
+/* ===================== Search / Pagination ===================== */
+
 /** Поисковая строка */
-const searchQuery = ref(props.search || '')
+const searchQuery = ref(
+    props.search || ''
+)
 
 /** Текущая страница пагинации */
 const currentPage = ref(1)
 
-/** Сортировка чисел по возрастанию */
-const byNumberAsc = (field) => (a, b) =>
-    safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+/* ===================== Sort helpers ===================== */
 
-/** Сортировка чисел по убыванию */
-const byNumberDesc = (field) => (a, b) =>
-    safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+/**
+ * Числовая сортировка по возрастанию.
+ *
+ * При равенстве сервер использует id DESC.
+ */
+const byNumberAsc = (field) => (a, b) => {
+    return safeNumber(a?.[field])
+        - safeNumber(b?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
 
-/** Сортировка дат по возрастанию */
-const byDateAsc = (field) => (a, b) =>
-    safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+/**
+ * Числовая сортировка по убыванию.
+ *
+ * При равенстве сервер использует id DESC.
+ */
+const byNumberDesc = (field) => (a, b) => {
+    return safeNumber(b?.[field])
+        - safeNumber(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
 
-/** Сортировка дат по убыванию */
-const byDateDesc = (field) => (a, b) =>
-    safeDate(b?.[field]) - safeDate(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+/**
+ * Сортировка даты по возрастанию.
+ *
+ * При равенстве сервер использует id DESC.
+ */
+const byDateAsc = (field) => (a, b) => {
+    return safeDate(a?.[field])
+        - safeDate(b?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+/**
+ * Сортировка даты по убыванию.
+ *
+ * При равенстве сервер использует id DESC.
+ */
+const byDateDesc = (field) => (a, b) => {
+    return safeDate(b?.[field])
+        - safeDate(a?.[field])
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+/**
+ * Строковая сортировка по возрастанию.
+ *
+ * getter должен возвращать реальные данные,
+ * а не display fallback.
+ */
+const byStringAsc = (getter) => (a, b) => {
+    return normalize(
+            getter(a)
+        ).localeCompare(
+            normalize(
+                getter(b)
+            ),
+            locale.value
+        )
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+/** Строковая сортировка по убыванию */
+const byStringDesc = (getter) => (a, b) => {
+    return normalize(
+            getter(b)
+        ).localeCompare(
+            normalize(
+                getter(a)
+            ),
+            locale.value
+        )
+        || safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+/** Сортировка по ID DESC */
+const byIdDesc = (a, b) => {
+    return safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
+/* ===================== Local sorting ===================== */
 
 /** Сортировка списка */
 const sortValues = (values) => {
-    const list = (values || []).slice()
+    const list =
+        (values || []).slice()
 
-    if (sortParam.value === 'activity') return list.filter((value) => !!value.activity)
-    if (sortParam.value === 'inactive') return list.filter((value) => !value.activity)
-
-    if (sortParam.value === 'statusDraft') return list.filter((value) => value?.status === 'draft')
-    if (sortParam.value === 'statusPublished') return list.filter((value) => value?.status === 'published')
-    if (sortParam.value === 'statusArchived') return list.filter((value) => value?.status === 'archived')
-
-    if (sortParam.value === 'moderationPending') return list.filter((value) => moderationNum(value?.moderation_status) === 0)
-    if (sortParam.value === 'moderationApproved') return list.filter((value) => moderationNum(value?.moderation_status) === 1)
-    if (sortParam.value === 'moderationRejected') return list.filter((value) => moderationNum(value?.moderation_status) === 2)
-
-    const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
-
-        sortAsc: byNumberAsc('sort'),
-        sortDesc: byNumberDesc('sort'),
-
-        titleAsc: (a, b) =>
-            normalize(getValueTitle(a)).localeCompare(normalize(getValueTitle(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        titleDesc: (a, b) =>
-            normalize(getValueTitle(b)).localeCompare(normalize(getValueTitle(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        attributeTitleAsc: (a, b) =>
-            normalize(getAttributeTitle(a)).localeCompare(normalize(getAttributeTitle(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        attributeTitleDesc: (a, b) =>
-            normalize(getAttributeTitle(b)).localeCompare(normalize(getAttributeTitle(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        codeAsc: (a, b) =>
-            normalize(a?.code).localeCompare(normalize(b?.code), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        codeDesc: (a, b) =>
-            normalize(b?.code).localeCompare(normalize(a?.code), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        colorAsc: (a, b) =>
-            normalize(a?.color).localeCompare(normalize(b?.color), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        colorDesc: (a, b) =>
-            normalize(b?.color).localeCompare(normalize(a?.color), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        statusAsc: (a, b) =>
-            normalize(a?.status).localeCompare(normalize(b?.status), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        statusDesc: (a, b) =>
-            normalize(b?.status).localeCompare(normalize(a?.status), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        activityAsc: byNumberAsc('activity'),
-        activityDesc: byNumberDesc('activity'),
-
-        moderationStatusAsc: (a, b) =>
-            moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status)
-            || safeNumber(a?.id) - safeNumber(b?.id),
-
-        moderationStatusDesc: (a, b) =>
-            moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status)
-            || safeNumber(b?.id) - safeNumber(a?.id),
-
-        publishedAtAsc: byDateAsc('published_at'),
-        publishedAtDesc: byDateDesc('published_at'),
-
-        showFromAtAsc: byDateAsc('show_from_at'),
-        showFromAtDesc: byDateDesc('show_from_at'),
-
-        showToAtAsc: byDateAsc('show_to_at'),
-        showToAtDesc: byDateDesc('show_to_at'),
-
-        createdAtAsc: byDateAsc('created_at'),
-        createdAtDesc: byDateDesc('created_at'),
-        dateAsc: byDateAsc('created_at'),
-        dateDesc: byDateDesc('created_at'),
-
-        updatedAtAsc: byDateAsc('updated_at'),
-        updatedAtDesc: byDateDesc('updated_at'),
+    /**
+     * Фильтрующие режимы сортировки
+     * на backend после фильтра используют
+     * market_attribute_values.id DESC.
+     */
+    if (
+        sortParam.value === 'activity'
+    ) {
+        return list
+            .filter(
+                (value) =>
+                    value?.activity
+            )
+            .sort(byIdDesc)
     }
 
-    return sortMap[sortParam.value]
-        ? list.sort(sortMap[sortParam.value])
+    if (
+        sortParam.value === 'inactive'
+    ) {
+        return list
+            .filter(
+                (value) =>
+                    ! value?.activity
+            )
+            .sort(byIdDesc)
+    }
+
+    if (sortParam.value === 'statusDraft') {
+        return list
+            .filter(
+                (value) =>
+                    value?.status
+                    === 'draft'
+            )
+            .sort(byIdDesc)
+    }
+
+    if (
+        sortParam.value
+        === 'statusPublished'
+    ) {
+        return list
+            .filter(
+                (value) =>
+                    value?.status
+                    === 'published'
+            )
+            .sort(byIdDesc)
+    }
+
+    if (
+        sortParam.value
+        === 'statusArchived'
+    ) {
+        return list
+            .filter(
+                (value) =>
+                    value?.status
+                    === 'archived'
+            )
+            .sort(byIdDesc)
+    }
+
+    if (
+        sortParam.value
+        === 'moderationPending'
+    ) {
+        return list
+            .filter(
+                (value) =>
+                    moderationNum(
+                        value?.moderation_status
+                    ) === 0
+            )
+            .sort(byIdDesc)
+    }
+
+    if (
+        sortParam.value
+        === 'moderationApproved'
+    ) {
+        return list
+            .filter(
+                (value) =>
+                    moderationNum(
+                        value?.moderation_status
+                    ) === 1
+            )
+            .sort(byIdDesc)
+    }
+
+    if (
+        sortParam.value
+        === 'moderationRejected'
+    ) {
+        return list
+            .filter(
+                (value) =>
+                    moderationNum(
+                        value?.moderation_status
+                    ) === 2
+            )
+            .sort(byIdDesc)
+    }
+
+    const sortMap = {
+        idAsc: (a, b) =>
+            safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        idDesc: byIdDesc,
+
+        sortAsc:
+            byNumberAsc('sort'),
+
+        sortDesc:
+            byNumberDesc('sort'),
+
+        /**
+         * Используем именно translation.title.
+         * Fallback `ID: ...` не должен влиять
+         * на сортировку.
+         */
+        titleAsc:
+            byStringAsc(
+                getValueTranslationTitle
+            ),
+
+        titleDesc:
+            byStringDesc(
+                getValueTranslationTitle
+            ),
+
+        /**
+         * Backend сортирует по
+         * market_attribute_translations.title,
+         * поэтому code fallback здесь не используем.
+         */
+        attributeTitleAsc:
+            byStringAsc(
+                getAttributeTranslationTitle
+            ),
+
+        attributeTitleDesc:
+            byStringDesc(
+                getAttributeTranslationTitle
+            ),
+
+        codeAsc:
+            byStringAsc(
+                (value) =>
+                    value?.code
+                    || ''
+            ),
+
+        codeDesc:
+            byStringDesc(
+                (value) =>
+                    value?.code
+                    || ''
+            ),
+
+        colorAsc:
+            byStringAsc(
+                (value) =>
+                    value?.color
+                    || ''
+            ),
+
+        colorDesc:
+            byStringDesc(
+                (value) =>
+                    value?.color
+                    || ''
+            ),
+
+        activityAsc:
+            byNumberAsc(
+                'activity'
+            ),
+
+        activityDesc:
+            byNumberDesc(
+                'activity'
+            ),
+
+        statusAsc:
+            byStringAsc(
+                (value) =>
+                    value?.status
+                    || ''
+            ),
+
+        statusDesc:
+            byStringDesc(
+                (value) =>
+                    value?.status
+                    || ''
+            ),
+
+        moderationStatusAsc:
+            byNumberAsc(
+                'moderation_status'
+            ),
+
+        moderationStatusDesc:
+            byNumberDesc(
+                'moderation_status'
+            ),
+
+        publishedAtAsc:
+            byDateAsc(
+                'published_at'
+            ),
+
+        publishedAtDesc:
+            byDateDesc(
+                'published_at'
+            ),
+
+        showFromAtAsc:
+            byDateAsc(
+                'show_from_at'
+            ),
+
+        showFromAtDesc:
+            byDateDesc(
+                'show_from_at'
+            ),
+
+        showToAtAsc:
+            byDateAsc(
+                'show_to_at'
+            ),
+
+        showToAtDesc:
+            byDateDesc(
+                'show_to_at'
+            ),
+
+        createdAtAsc:
+            byDateAsc(
+                'created_at'
+            ),
+
+        createdAtDesc:
+            byDateDesc(
+                'created_at'
+            ),
+
+        dateAsc:
+            byDateAsc(
+                'created_at'
+            ),
+
+        dateDesc:
+            byDateDesc(
+                'created_at'
+            ),
+
+        updatedAtAsc:
+            byDateAsc(
+                'updated_at'
+            ),
+
+        updatedAtDesc:
+            byDateDesc(
+                'updated_at'
+            ),
+    }
+
+    return sortMap[
+        sortParam.value
+        ]
+        ? list.sort(
+            sortMap[
+                sortParam.value
+                ]
+        )
         : list
 }
 
-/** Отфильтрованный список */
-const filteredValues = computed(() => {
-    let filtered = localValues.value || []
-    const query = normalize(searchQuery.value)
+/* ===================== Local search ===================== */
 
-    if (!query) {
-        return sortValues(filtered)
+/**
+ * Отфильтрованный список.
+ *
+ * Frontend search повторяет
+ * MarketAttributeValue::scopeSearch():
+ *
+ * Value:
+ * - code;
+ * - color;
+ * - status;
+ * - moderation_note;
+ * - translation title/subtitle/short/description.
+ *
+ * Attribute:
+ * - code;
+ * - type;
+ * - unit;
+ * - translation title/subtitle/short/description.
+ *
+ * Moderator:
+ * - name;
+ * - email.
+ */
+const filteredValues = computed(() => {
+    let filtered =
+        localValues.value || []
+
+    const query =
+        normalize(
+            searchQuery.value
+        )
+
+    if (! query) {
+        return sortValues(
+            filtered
+        )
     }
 
-    filtered = filtered.filter((value) => {
-        const values = [
-            value?.id,
-            value?.code,
-            value?.icon,
-            value?.color,
-            value?.status,
-            value?.moderation_note,
-            getValueTitle(value),
-            getValueShort(value),
-            getAttributeTitle(value),
-            value?.attribute?.code,
-            value?.attribute?.type,
-            value?.attribute?.unit,
-            value?.moderator?.name,
-            value?.moderator?.email,
-        ]
+    filtered = filtered.filter(
+        (value) => {
+            const searchableValues = [
+                /** MarketAttributeValue */
+                value?.code,
+                value?.color,
+                value?.status,
+                value?.moderation_note,
 
-        return values.some((item) => normalize(item).includes(query))
-    })
+                /** MarketAttributeValue translation */
+                getValueTranslationTitle(
+                    value
+                ),
+                getValueSubtitle(
+                    value
+                ),
+                getValueShort(
+                    value
+                ),
+                getValueDescription(
+                    value
+                ),
 
-    return sortValues(filtered)
+                /** MarketAttribute */
+                value?.attribute?.code,
+                value?.attribute?.type,
+                value?.attribute?.unit,
+
+                /** MarketAttribute translation */
+                getAttributeTranslationTitle(
+                    value
+                ),
+                getAttributeSubtitle(
+                    value
+                ),
+                getAttributeShort(
+                    value
+                ),
+                getAttributeDescription(
+                    value
+                ),
+
+                /** Moderator */
+                getModeratorName(
+                    value
+                ),
+                getModeratorEmail(
+                    value
+                ),
+            ]
+
+            return searchableValues.some(
+                (item) =>
+                    normalize(
+                        item
+                    ).includes(
+                        query
+                    )
+            )
+        }
+    )
+
+    return sortValues(
+        filtered
+    )
 })
 
 /** Локальная пагинация */
 const paginatedValues = computed(() => {
-    const perPage = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * perPage
+    const perPage =
+        Number(
+            itemsPerPage.value
+            || 10
+        )
 
-    return filteredValues.value.slice(start, start + perPage)
+    const start =
+        (
+            currentPage.value
+            - 1
+        )
+        * perPage
+
+    return filteredValues.value.slice(
+        start,
+        start + perPage
+    )
 })
 
 /** Отображаемый список */
@@ -453,166 +1024,361 @@ const displayedValues = computed(() => {
         : paginatedValues.value
 })
 
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+    ],
+    () => {
+        currentPage.value = 1
+    }
+)
+
+/* ===================== Selection ===================== */
 
 /** Выбранные значения характеристик */
 const selectedValues = ref([])
 
 /** Выделение всех элементов */
 const toggleAll = (payload) => {
-    const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? displayedValues.value.map((value) => value.id)
+    const checked =
+        Boolean(
+            payload?.checked
+            ?? payload?.target?.checked
+            ?? false
+        )
+
+    const ids =
+        payload?.ids
+        ?? displayedValues.value.map(
+            (value) => value.id
+        )
 
     if (checked) {
-        selectedValues.value = [...new Set([...selectedValues.value, ...ids])]
-    } else {
-        selectedValues.value = selectedValues.value.filter((id) => !ids.includes(id))
+        selectedValues.value = [
+            ...new Set([
+                ...selectedValues.value,
+                ...ids,
+            ]),
+        ]
+
+        return
     }
+
+    selectedValues.value =
+        selectedValues.value.filter(
+            (id) =>
+                ! ids.includes(id)
+        )
 }
 
 /** Переключение выбора строки */
 const toggleSelectValue = (valueId) => {
-    const index = selectedValues.value.indexOf(valueId)
+    const index =
+        selectedValues.value.indexOf(
+            valueId
+        )
 
     if (index > -1) {
-        selectedValues.value.splice(index, 1)
-    } else {
-        selectedValues.value.push(valueId)
-    }
-}
+        selectedValues.value.splice(
+            index,
+            1
+        )
 
-/** Массовое изменение активности */
-const bulkToggleActivity = (newActivity) => {
-    if (!selectedValues.value.length) {
-        toast.warning('Выберите значения характеристик для активации/деактивации.')
         return
     }
 
-    const idsToUpdate = [...selectedValues.value]
+    selectedValues.value.push(
+        valueId
+    )
+}
+
+/* ===================== Bulk activity ===================== */
+
+/** Массовое изменение активности */
+const bulkToggleActivity = (
+    newActivity
+) => {
+    if (
+        ! selectedValues.value.length
+    ) {
+        toast.warning(
+            'Выберите значения характеристик для активации/деактивации.'
+        )
+
+        return
+    }
+
+    const idsToUpdate = [
+        ...selectedValues.value,
+    ]
 
     router.put(
-        route('admin.actions.marketAttributeValues.bulkUpdateActivity'),
-        { ids: idsToUpdate, activity: newActivity },
+        route(
+            'admin.actions.marketAttributeValues.bulkUpdateActivity'
+        ),
+        {
+            ids: idsToUpdate,
+            activity: newActivity,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
-                localValues.value = localValues.value.map((value) => {
-                    return idsToUpdate.includes(value.id)
-                        ? { ...value, activity: newActivity }
-                        : value
-                })
+                localValues.value =
+                    localValues.value.map(
+                        (value) => {
+                            if (
+                                ! idsToUpdate.includes(
+                                    value.id
+                                )
+                            ) {
+                                return value
+                            }
+
+                            return {
+                                ...value,
+                                activity:
+                                newActivity,
+
+                                is_active:
+                                newActivity,
+                            }
+                        }
+                    )
 
                 selectedValues.value = []
-                toast.success('Активность значений характеристик массово обновлена.')
+
+                toast.success(
+                    'Активность значений характеристик массово обновлена.'
+                )
             },
 
             onError: (errors) => {
-                const msg = errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.'
+                const msg =
+                    errors?.ids
+                    || errors?.activity
+                    || errors?.general
+                    || 'Ошибка массового обновления активности.'
+
                 toast.error(msg)
             },
         }
     )
 }
 
+/* ===================== Bulk delete ===================== */
+
 /** Массовое удаление */
 const bulkDelete = () => {
-    if (!selectedValues.value.length) {
-        toast.warning('Выберите хотя бы одно значение характеристики для удаления.')
+    if (
+        ! selectedValues.value.length
+    ) {
+        toast.warning(
+            'Выберите хотя бы одно значение характеристики для удаления.'
+        )
+
         return
     }
 
-    if (!confirm('Вы уверены, что хотите удалить выбранные значения характеристик?')) return
+    if (
+        ! confirm(
+            'Вы уверены, что хотите удалить выбранные значения характеристик?'
+        )
+    ) {
+        return
+    }
 
-    router.delete(route('admin.actions.marketAttributeValues.bulkDestroy'), {
-        data: { ids: selectedValues.value },
-        preserveScroll: true,
-        preserveState: false,
+    router.delete(
+        route(
+            'admin.actions.marketAttributeValues.bulkDestroy'
+        ),
+        {
+            data: {
+                ids:
+                selectedValues.value,
+            },
 
-        onSuccess: () => {
-            selectedValues.value = []
-            toast.success('Массовое удаление значений характеристик успешно завершено.')
-        },
+            preserveScroll: true,
+            preserveState: false,
 
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            toast.error(errors[errorKey] || 'Произошла ошибка при удалении значений характеристик.')
-        },
-    })
+            onSuccess: () => {
+                selectedValues.value = []
+
+                toast.success(
+                    'Массовое удаление значений характеристик успешно завершено.'
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey =
+                    Object.keys(
+                        errors || {}
+                    )[0]
+
+                toast.error(
+                    errors[errorKey]
+                    || 'Произошла ошибка при удалении значений характеристик.'
+                )
+            },
+        }
+    )
 }
+
+/* ===================== Bulk actions ===================== */
 
 /** Обработка массовых действий */
 const handleBulkAction = (event) => {
-    const action = event.target.value
+    const action =
+        event.target.value
 
-    if (action === 'selectAll') {
-        toggleAll({ target: { checked: true } })
-    } else if (action === 'deselectAll') {
-        toggleAll({ target: { checked: false } })
-    } else if (action === 'activate') {
-        bulkToggleActivity(true)
-    } else if (action === 'deactivate') {
-        bulkToggleActivity(false)
-    } else if (action === 'delete') {
+    if (
+        action === 'selectAll'
+    ) {
+        toggleAll({
+            checked: true,
+        })
+    } else if (
+        action === 'deselectAll'
+    ) {
+        toggleAll({
+            checked: false,
+        })
+    } else if (
+        action === 'activate'
+    ) {
+        bulkToggleActivity(
+            true
+        )
+    } else if (
+        action === 'deactivate'
+    ) {
+        bulkToggleActivity(
+            false
+        )
+    } else if (
+        action === 'delete'
+    ) {
         bulkDelete()
     }
 
     event.target.value = ''
 }
 
+/* ===================== Moderation ===================== */
+
 /** Модерация */
-const approveValue = (value, status = 1, note = '') => {
-    if (!value?.id) return
+const approveValue = (
+    value,
+    status = 1,
+    note = ''
+) => {
+    if (! value?.id) {
+        return
+    }
 
     router.put(
-        route('admin.actions.marketAttributeValues.approve', { marketAttributeValue: value.id }),
+        route(
+            'admin.actions.marketAttributeValues.approve',
+            {
+                marketAttributeValue:
+                value.id,
+            }
+        ),
         {
-            moderation_status: status,
-            moderation_note: note,
+            moderation_status:
+            status,
+
+            moderation_note:
+            note,
         },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
-                patchLocalValue(value.id, (node) => {
-                    node.moderation_status = status
-                    node.is_approved = status === 1
-                    node.moderation_note = note
-                })
+                patchLocalValue(
+                    value.id,
+                    (node) => {
+                        node.moderation_status =
+                            status
 
-                toast.success(status === 1 ? 'Значение характеристики одобрено.' : 'Значение характеристики отклонено.')
+                        node.is_pending =
+                            status === 0
+
+                        node.is_approved =
+                            status === 1
+
+                        node.is_rejected =
+                            status === 2
+
+                        node.moderation_note =
+                            note
+                    }
+                )
+
+                toast.success(
+                    status === 1
+                        ? 'Значение характеристики одобрено.'
+                        : 'Значение характеристики отклонено.'
+                )
             },
 
-            onError: () => toast.error('Ошибка модерации значения характеристики.'),
+            onError: () => {
+                toast.error(
+                    'Ошибка модерации значения характеристики.'
+                )
+            },
         }
     )
 }
 
-/** Массовое обновление сортировки */
-const handleSortOrderUpdate = (newOrderIds) => {
-    const items = newOrderIds.map((id, index) => ({
-        id,
-        sort: index,
-    }))
+/* ===================== Drag & Drop ===================== */
 
-    if (!items.length) return
+/** Массовое обновление сортировки */
+const handleSortOrderUpdate = (
+    newOrderIds
+) => {
+    const items =
+        newOrderIds.map(
+            (id, index) => ({
+                id,
+                sort: index,
+            })
+        )
+
+    if (! items.length) {
+        return
+    }
 
     router.put(
-        route('admin.actions.marketAttributeValues.updateSortBulk'),
-        { items },
+        route(
+            'admin.actions.marketAttributeValues.updateSortBulk'
+        ),
+        {
+            items,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
-            onSuccess: () => toast.success('Сортировка значений характеристик обновлена.'),
+            onSuccess: () => {
+                toast.success(
+                    'Сортировка значений характеристик обновлена.'
+                )
+            },
 
             onError: (errors) => {
-                console.error('Ошибка сортировки значений характеристик:', errors)
-                toast.error(errors.message || 'Ошибка обновления сортировки.')
+                console.error(
+                    'Ошибка сортировки значений характеристик:',
+                    errors
+                )
+
+                toast.error(
+                    errors.message
+                    || 'Ошибка обновления сортировки.'
+                )
             },
         }
     )
@@ -622,7 +1388,9 @@ const handleSortOrderUpdate = (newOrderIds) => {
 <template>
     <AdminLayout :title="t('marketAttributeValues')">
         <template #header>
-            <TitlePage>{{ t('marketAttributeValues') }}</TitlePage>
+            <TitlePage>
+                {{ t('marketAttributeValues') }}
+            </TitlePage>
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
@@ -681,14 +1449,18 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     v-if="valuesCount"
                     class="flex flex-col lg:flex-row items-center justify-between gap-3"
                 >
-                    <CountTable>{{ valuesCount }}</CountTable>
+                    <CountTable>
+                        {{ valuesCount }}
+                    </CountTable>
 
                     <BulkActionSelect
                         v-if="valuesCount"
                         @change="handleBulkAction"
                     />
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
                 <div

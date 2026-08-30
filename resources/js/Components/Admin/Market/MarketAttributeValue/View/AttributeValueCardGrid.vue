@@ -8,7 +8,7 @@ import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
 import ModerationButton from '@/Components/Admin/UI/Buttons/ModerationButton.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = defineProps({
     values: { type: Array, default: () => [] },
@@ -25,66 +25,158 @@ const emits = defineEmits([
     'approve',
 ])
 
+/* ===================== Local data ===================== */
+
 const localValues = ref([])
+
+/** Открытые информационные блоки характеристик */
 const openedAttributeBlocks = ref([])
 
 watch(
     () => props.values,
     (newVal) => {
-        localValues.value = JSON.parse(JSON.stringify(newVal || []))
+        localValues.value = JSON.parse(
+            JSON.stringify(newVal || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
+/* ===================== Drag & Drop ===================== */
+
 const handleDragEnd = () => {
-    emits('update-sort-order', localValues.value.map(value => value.id))
+    emits(
+        'update-sort-order',
+        localValues.value.map(
+            (value) => value.id
+        )
+    )
 }
+
+/* ===================== Selection ===================== */
 
 const toggleAll = (event) => {
     emits('toggle-all', {
-        ids: localValues.value.map(value => value.id),
-        checked: event.target.checked,
+        ids: localValues.value.map(
+            (value) => value.id
+        ),
+
+        checked: Boolean(
+            event?.target?.checked
+        ),
     })
 }
 
 const allSelected = () => {
-    return localValues.value.length
-        && localValues.value.every(value => props.selectedValues.includes(value.id))
+    return localValues.value.length > 0
+        && localValues.value.every(
+            (value) =>
+                props.selectedValues.includes(
+                    value.id
+                )
+        )
 }
 
-const valueTranslation = (value) => value?.translation || {}
-const valueTitle = (value) => valueTranslation(value)?.title || `ID: ${value?.id}`
-const valueShort = (value) => valueTranslation(value)?.short || ''
-const valueDescription = (value) => valueTranslation(value)?.description || ''
+/* ===================== Value helpers ===================== */
 
+/** Перевод значения */
+const valueTranslation = (value) => {
+    return value?.translation || {}
+}
+
+/** Название значения */
+const valueTitle = (value) => {
+    return valueTranslation(value)?.title
+        || `ID: ${value?.id}`
+}
+
+/** Краткое описание значения */
+const valueShort = (value) => {
+    return valueTranslation(value)?.short
+        || ''
+}
+
+/** Полное описание значения */
+const valueDescription = (value) => {
+    return valueTranslation(value)?.description
+        || ''
+}
+
+/* ===================== Attribute helpers ===================== */
+
+/** Перевод характеристики */
+const attributeTranslation = (value) => {
+    return value?.attribute?.translation
+        || {}
+}
+
+/**
+ * Название характеристики.
+ *
+ * Используется новый контракт
+ * attribute.translation.title.
+ */
 const attributeTitle = (value) => {
-    return value?.attribute?.title
-        || value?.attribute?.translation?.title
+    return attributeTranslation(value)?.title
         || value?.attribute?.code
         || '—'
 }
 
+/** Дополнительная информация характеристики */
 const attributeInfo = (value) => {
-    const attribute = value?.attribute
+    const attribute =
+        value?.attribute
 
-    if (!attribute) return '—'
+    if (! attribute) {
+        return '—'
+    }
 
     return [
-        attribute.code,
-        attribute.type ? getTypeLabel(attribute.type) : null,
-        attribute.unit,
-    ].filter(Boolean).join(' / ')
+            attribute.code,
+            attribute.type
+                ? getTypeLabel(
+                    attribute.type
+                )
+                : null,
+            attribute.unit,
+        ]
+            .filter(Boolean)
+            .join(' / ')
+        || '—'
 }
 
+/* ===================== Icon ===================== */
+
+/**
+ * Базовая проверка SVG.
+ *
+ * Проверка структуры строки не является
+ * полноценной SVG-санацией.
+ */
 const getSafeIcon = (icon) => {
-    if (!icon) return null
+    if (
+        typeof icon !== 'string'
+    ) {
+        return null
+    }
 
-    const trimmed = icon.trim()
+    const trimmed =
+        icon.trim()
 
-    return trimmed.startsWith('<svg') && trimmed.endsWith('</svg>')
+    if (! trimmed) {
+        return null
+    }
+
+    return trimmed.startsWith('<svg')
+    && trimmed.endsWith('</svg>')
         ? trimmed
         : null
 }
+
+/* ===================== Status helpers ===================== */
 
 const getStatusLabel = (status) => {
     const map = {
@@ -93,7 +185,11 @@ const getStatusLabel = (status) => {
         archived: 'statusArchived',
     }
 
-    return t(map[status] || status || 'no')
+    return t(
+        map[status]
+        || status
+        || 'no'
+    )
 }
 
 const getTypeLabel = (type) => {
@@ -109,68 +205,126 @@ const getTypeLabel = (type) => {
         multiselect: 'multiselect',
     }
 
-    return t(map[type] || type || 'noData')
+    return t(
+        map[type]
+        || type
+        || 'noData'
+    )
 }
 
 const moderationBadge = (status) => {
-    const s = Number(status ?? 0)
+    const moderationStatus =
+        Number(status ?? 0)
 
-    if (s === 1) {
+    if (
+        moderationStatus === 1
+    ) {
         return {
-            text: t('statusSelectApproved'),
-            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 ' +
-                'dark:bg-emerald-900/40 dark:text-emerald-300',
+            text:
+                t('statusSelectApproved'),
+
+            class:
+                'bg-emerald-100 text-emerald-700 border-emerald-300 '
+                + 'dark:bg-emerald-900/40 dark:text-emerald-300',
         }
     }
 
-    if (s === 2) {
+    if (
+        moderationStatus === 2
+    ) {
         return {
-            text: t('statusSelectRejected'),
-            class: 'bg-rose-100 text-rose-700 border-rose-300 ' +
-                'dark:bg-rose-900/40 dark:text-rose-300',
+            text:
+                t('statusSelectRejected'),
+
+            class:
+                'bg-rose-100 text-rose-700 border-rose-300 '
+                + 'dark:bg-rose-900/40 dark:text-rose-300',
         }
     }
 
     return {
-        text: t('underModeration'),
-        class: 'bg-amber-100 text-amber-800 border-amber-300 ' +
-            'dark:bg-amber-900/40 dark:text-amber-300',
+        text:
+            t('underModeration'),
+
+        class:
+            'bg-amber-100 text-amber-800 border-amber-300 '
+            + 'dark:bg-amber-900/40 dark:text-amber-300',
     }
 }
 
+/* ===================== Formatting ===================== */
+
 const formatDate = (dateStr) => {
-    if (!dateStr) return ''
+    if (! dateStr) {
+        return ''
+    }
 
-    const date = new Date(dateStr)
+    const date =
+        new Date(dateStr)
 
-    if (isNaN(date)) return ''
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return ''
+    }
 
-    return date.toLocaleDateString('ru-RU', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    })
+    return date.toLocaleDateString(
+        locale.value || undefined,
+        {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        }
+    )
 }
 
-const truncateText = (text, maxLength = 80) => {
-    if (!text) return ''
+const truncateText = (
+    text,
+    maxLength = 80
+) => {
+    if (
+        text === null
+        || text === undefined
+        || text === ''
+    ) {
+        return ''
+    }
 
-    return text.length > maxLength
-        ? text.slice(0, maxLength).trimEnd() + '…'
-        : text
+    const value =
+        String(text)
+
+    return value.length > maxLength
+        ? `${value.slice(0, maxLength).trimEnd()}…`
+        : value
 }
+
+/* ===================== Attribute block ===================== */
 
 const isAttributeBlockOpen = (valueId) => {
-    return openedAttributeBlocks.value.includes(valueId)
+    return openedAttributeBlocks.value.includes(
+        valueId
+    )
 }
 
 const toggleAttributeBlock = (valueId) => {
-    if (isAttributeBlockOpen(valueId)) {
-        openedAttributeBlocks.value = openedAttributeBlocks.value.filter(id => id !== valueId)
+    if (
+        isAttributeBlockOpen(
+            valueId
+        )
+    ) {
+        openedAttributeBlocks.value =
+            openedAttributeBlocks.value.filter(
+                (id) => id !== valueId
+            )
+
         return
     }
 
-    openedAttributeBlocks.value.push(valueId)
+    openedAttributeBlocks.value.push(
+        valueId
+    )
 }
 </script>
 
@@ -193,6 +347,7 @@ const toggleAttributeBlock = (valueId) => {
                        dark:text-slate-200 cursor-pointer"
             >
                 <span>{{ t('selectAll') }}</span>
+
                 <input
                     type="checkbox"
                     class="mx-2"
@@ -202,7 +357,10 @@ const toggleAttributeBlock = (valueId) => {
             </label>
         </div>
 
-        <div v-if="localValues.length" class="p-3">
+        <div
+            v-if="localValues.length"
+            class="p-3"
+        >
             <draggable
                 tag="div"
                 v-model="localValues"
@@ -229,9 +387,14 @@ const toggleAttributeBlock = (valueId) => {
                                            dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
                                         <path
-                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
+                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z"
+                                        />
                                     </svg>
                                 </button>
 
@@ -277,7 +440,7 @@ const toggleAttributeBlock = (valueId) => {
                                 <input
                                     type="checkbox"
                                     :checked="selectedValues.includes(value.id)"
-                                    @change="$emit('toggle-select', value.id)"
+                                    @change="emits('toggle-select', value.id)"
                                 />
                             </div>
                         </header>
@@ -304,13 +467,6 @@ const toggleAttributeBlock = (valueId) => {
                                     :title="attributeInfo(value)"
                                 >
                                     {{ attributeInfo(value) }}
-                                </div>
-
-                                <div
-                                    v-if="value?.attribute?.values_count !== undefined"
-                                    class="mt-1 text-[10px] text-cyan-700 dark:text-cyan-300"
-                                >
-                                    {{ t('values') }}: {{ value.attribute.values_count }}
                                 </div>
                             </div>
 
@@ -345,18 +501,23 @@ const toggleAttributeBlock = (valueId) => {
                                     class="inline-block w-4 h-4 rounded-sm border border-slate-400"
                                     :style="{ backgroundColor: value.color }"
                                 ></span>
-                                <span>{{ value.color }}</span>
+
+                                <span>
+                                    {{ value.color }}
+                                </span>
                             </div>
 
                             <div class="text-center text-xs text-slate-500 dark:text-slate-400">
-                                {{ t('code') }}: {{ truncateText(value.code, 90) }}
+                                {{ t('code') }}:
+                                {{ truncateText(value.code, 90) || '—' }}
                             </div>
 
                             <div
                                 class="text-center text-[11px] font-semibold
                                        text-gray-700 dark:text-gray-300"
                             >
-                                {{ t('attribute') }}: {{ truncateText(attributeTitle(value), 80) }}
+                                {{ t('attribute') }}:
+                                {{ truncateText(attributeTitle(value), 80) }}
                             </div>
 
                             <div
@@ -378,7 +539,10 @@ const toggleAttributeBlock = (valueId) => {
                                 v-if="value.show_from_at"
                                 class="text-center text-[10px] text-gray-700 dark:text-gray-300"
                             >
-                                {{ t('show') }}: {{ value.show_from_at }} / {{ value.show_to_at }}
+                                {{ t('show') }}:
+                                {{ formatDate(value.show_from_at) }}
+                                /
+                                {{ formatDate(value.show_to_at) || '—' }}
                             </div>
 
                             <div
@@ -392,7 +556,10 @@ const toggleAttributeBlock = (valueId) => {
                                 class="font-semibold text-center text-[11px]
                                        text-fuchsia-700 dark:text-fuchsia-300"
                             >
-                                <span>{{ t('status') }}: </span>
+                                <span>
+                                    {{ t('status') }}:
+                                </span>
+
                                 {{ getStatusLabel(value.status) }}
                             </div>
 
@@ -412,8 +579,7 @@ const toggleAttributeBlock = (valueId) => {
                                     :status="value?.moderation_status ?? 0"
                                     :initialNote="value?.moderation_note || ''"
                                     mode="toggle"
-                                    @submit="({ status, note }) =>
-                                        $emit('approve', value, status, note)"
+                                    @submit="({ status, note }) => emits('approve', value, status, note)"
                                 />
                             </div>
                         </div>
@@ -425,7 +591,7 @@ const toggleAttributeBlock = (valueId) => {
                             <div class="flex items-center space-x-1">
                                 <ActivityToggle
                                     :isActive="value.activity"
-                                    @toggle-activity="$emit('toggle-activity', value)"
+                                    @toggle-activity="emits('toggle-activity', value)"
                                     :title="value.activity ? t('enabled') : t('disabled')"
                                 />
 
@@ -435,7 +601,9 @@ const toggleAttributeBlock = (valueId) => {
                                     })"
                                 />
 
-                                <DeleteIconButton @delete="$emit('delete', value)" />
+                                <DeleteIconButton
+                                    @delete="emits('delete', value)"
+                                />
                             </div>
                         </div>
                     </div>
@@ -443,7 +611,10 @@ const toggleAttributeBlock = (valueId) => {
             </draggable>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

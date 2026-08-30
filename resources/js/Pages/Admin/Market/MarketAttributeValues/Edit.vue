@@ -6,7 +6,7 @@
  * Редактирование значения характеристики MarketAttributeValue
  */
 
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -43,38 +43,55 @@ const props = defineProps({
 })
 
 /** Данные редактируемого значения характеристики */
-const valueData = computed(() => props.value?.data || props.value || {})
+const valueData = computed(() => {
+    return props.value?.data
+        || props.value
+        || {}
+})
 
 /** Список характеристик для select */
 const attributesList = computed(() => {
     if (Array.isArray(props.attributes)) return props.attributes
     if (Array.isArray(props.attributes?.data)) return props.attributes.data
+
     return []
 })
 
-/** Получение названия характеристик */
+/** Список типов характеристик */
+const attributeTypes = computed(() => [
+    { value: 'string', label: t('string') },
+    { value: 'text', label: t('text') },
+    { value: 'integer', label: t('integer') },
+    { value: 'decimal', label: t('float') },
+    { value: 'boolean', label: t('boolean') },
+    { value: 'date', label: t('date') },
+    { value: 'datetime', label: t('datetime') },
+    { value: 'select', label: t('typeSelect') },
+    { value: 'multiselect', label: t('multiselect') },
+])
+
+/** Название характеристики */
 const attributeTitle = (attribute) => {
-    return attribute?.title
-        || attribute?.translation?.title
-        || attribute?.code
+    return attribute?.translation?.title
         || `ID: ${attribute?.id}`
 }
 
-/** Получение данных характеристик */
-const attributeInfo = (attribute) => {
-    return [
-        attribute?.code,
-        attribute?.type,
-        attribute?.unit,
-    ].filter(Boolean).join(' / ')
+/** Локализованное название типа характеристики */
+const attributeTypeTitle = (type) => {
+    return attributeTypes.value.find(
+        (item) => item.value === type
+    )?.label || type || ''
 }
 
-/** Заголовок страницы */
-const pageTitle = computed(() => {
-    return currentTranslation.value.title
-        || valueData.value.translation?.title
-        || `ID: ${valueData.value.id}`
-})
+/** Дополнительная информация характеристики */
+const attributeInfo = (attribute) => {
+    return [
+        attributeTypeTitle(attribute?.type),
+        attribute?.unit,
+    ]
+        .filter(Boolean)
+        .join(' / ')
+}
 
 /** Создание пустого перевода */
 const makeTranslation = () => ({
@@ -87,8 +104,15 @@ const makeTranslation = () => ({
 /** Подготовка переводов из БД */
 const makeTranslations = () => {
     const result = {}
-    const translations = valueData.value?.translations || []
-    const list = Array.isArray(translations?.data) ? translations.data : translations
+
+    const translations =
+        valueData.value?.translations
+        || []
+
+    const list =
+        Array.isArray(translations?.data)
+            ? translations.data
+            : translations
 
     if (Array.isArray(list)) {
         list.forEach((translation) => {
@@ -103,17 +127,22 @@ const makeTranslations = () => {
         })
     }
 
-    const locale = props.currentLocale || 'ru'
+    const currentLocale =
+        props.currentLocale
+        || 'ru'
 
-    if (!result[locale]) {
-        result[locale] = makeTranslation()
+    if (!result[currentLocale]) {
+        result[currentLocale] = makeTranslation()
     }
 
     return result
 }
 
 /** Локаль по умолчанию */
-const defaultLocale = props.currentLocale || valueData.value?.translation?.locale || 'ru'
+const defaultLocale =
+    props.currentLocale
+    || valueData.value?.translation?.locale
+    || 'ru'
 
 /** Активная локаль редактора */
 const activeLocale = ref(defaultLocale)
@@ -122,7 +151,9 @@ const activeLocale = ref(defaultLocale)
 const form = useForm({
     _method: 'put',
 
-    market_attribute_id: valueData.value.market_attribute_id || '',
+    market_attribute_id:
+        valueData.value.market_attribute_id
+        ?? '',
 
     code: valueData.value.code || '',
     icon: valueData.value.icon || '',
@@ -133,16 +164,38 @@ const form = useForm({
 
     status: valueData.value.status || 'draft',
 
-    moderation_status: Number(valueData.value.moderation_status ?? 0),
-    moderated_by: valueData.value.moderated_by || null,
-    moderated_at: valueData.value.moderated_at || null,
-    moderation_note: valueData.value.moderation_note || '',
+    moderation_status:
+        Number(
+            valueData.value.moderation_status
+            ?? 0
+        ),
 
-    published_at: valueData.value.published_at || '',
-    show_from_at: valueData.value.show_from_at || '',
-    show_to_at: valueData.value.show_to_at || '',
+    moderated_by:
+        valueData.value.moderated_by
+        ?? null,
 
-    translations: makeTranslations(),
+    moderated_at:
+        valueData.value.moderated_at
+        ?? null,
+
+    moderation_note:
+        valueData.value.moderation_note
+        || '',
+
+    published_at:
+        valueData.value.published_at
+        || '',
+
+    show_from_at:
+        valueData.value.show_from_at
+        || '',
+
+    show_to_at:
+        valueData.value.show_to_at
+        || '',
+
+    translations:
+        makeTranslations(),
 })
 
 /** Текущий перевод */
@@ -154,19 +207,31 @@ const currentTranslation = computed(() => {
     return form.translations[activeLocale.value]
 })
 
+/** Заголовок страницы */
+const pageTitle = computed(() => {
+    return currentTranslation.value.title
+        || valueData.value.translation?.title
+        || `ID: ${valueData.value.id}`
+})
+
 /** Получение ошибки текущей локали */
 const getError = (key) => {
     return form.errors[`translations.${activeLocale.value}.${key}`]
 }
 
 /** Проверка корректности HEX-цвета */
-const isValidHexColor = (value) => /^#([0-9A-Fa-f]{6})$/.test(value || '')
+const isValidHexColor = (value) => {
+    return /^#([0-9A-Fa-f]{6})$/.test(value || '')
+}
 
 /** Цвет для color picker */
 const colorForPicker = computed({
     get() {
-        return isValidHexColor(form.color) ? form.color : '#3b82f6'
+        return isValidHexColor(form.color)
+            ? form.color
+            : '#3b82f6'
     },
+
     set(value) {
         form.color = value
     },
@@ -174,8 +239,13 @@ const colorForPicker = computed({
 
 /** Автоматическая генерация системного кода */
 const handleCodeFocus = () => {
-    if (!form.code && currentTranslation.value.title) {
-        form.code = transliterate(currentTranslation.value.title.toLowerCase())
+    if (
+        !form.code
+        && currentTranslation.value.title
+    ) {
+        form.code = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
     }
 }
 
@@ -189,21 +259,35 @@ const submitForm = () => {
         sort: Number(data.sort ?? 0),
     }))
 
-    form.post(route('admin.marketAttributeValues.update', {
-        marketAttributeValue: valueData.value.id,
-    }), {
-        errorBag: 'editMarketAttributeValue',
-        preserveScroll: true,
+    form.post(
+        route(
+            'admin.marketAttributeValues.update',
+            {
+                marketAttributeValue:
+                valueData.value.id,
+            }
+        ),
+        {
+            errorBag: 'editMarketAttributeValue',
+            preserveScroll: true,
 
-        onSuccess: () => {
-            toast.success('Значение характеристики успешно обновлено.')
-        },
+            onSuccess: () => {
+                toast.success(
+                    'Значение характеристики успешно обновлено.'
+                )
+            },
 
-        onError: (errors) => {
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors[firstKey] || 'Проверьте корректность заполнения полей.')
-        },
-    })
+            onError: (errors) => {
+                const firstKey =
+                    Object.keys(errors || {})[0]
+
+                toast.error(
+                    errors[firstKey]
+                    || 'Проверьте корректность заполнения полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -225,13 +309,16 @@ const submitForm = () => {
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
                     <DefaultButton :href="route('admin.marketAttributeValues.index')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                 viewBox="0 0 16 16">
+                            <svg
+                                class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                viewBox="0 0 16 16"
+                            >
                                 <path
                                     d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                 />
                             </svg>
                         </template>
+
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
@@ -240,6 +327,7 @@ const submitForm = () => {
                     <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
                         <div class="flex flex-row items-center gap-2">
                             <ActivityCheckbox v-model="form.activity" />
+
                             <LabelCheckbox
                                 for="activity"
                                 :text="t('activity')"
@@ -248,14 +336,23 @@ const submitForm = () => {
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
-                            <LabelInput for="sort" :value="t('sort')" class="text-sm" />
+                            <LabelInput
+                                for="sort"
+                                :value="t('sort')"
+                                class="text-sm"
+                            />
+
                             <InputNumber
                                 id="sort"
                                 type="number"
                                 v-model.number="form.sort"
                                 class="w-full lg:w-28"
                             />
-                            <InputError class="mt-2 lg:mt-0" :message="form.errors.sort" />
+
+                            <InputError
+                                class="mt-2 lg:mt-0"
+                                :message="form.errors.sort"
+                            />
                         </div>
                     </div>
 
@@ -267,7 +364,7 @@ const submitForm = () => {
 
                         <select
                             id="market_attribute_id"
-                            v-model="form.market_attribute_id"
+                            v-model.number="form.market_attribute_id"
                             required
                             class="w-full px-2 py-0.5 form-select bg-white
                                    text-gray-600 border border-slate-400
@@ -282,13 +379,16 @@ const submitForm = () => {
                                 :value="attribute.id"
                             >
                                 {{ attributeTitle(attribute) }}
-                                <span v-if="attributeInfo(attribute)">
+                                <template v-if="attributeInfo(attribute)">
                                     — {{ attributeInfo(attribute) }}
-                                </span>
+                                </template>
                             </option>
                         </select>
 
-                        <InputError class="mt-2" :message="form.errors.market_attribute_id" />
+                        <InputError
+                            class="mt-2"
+                            :message="form.errors.market_attribute_id"
+                        />
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -308,39 +408,66 @@ const submitForm = () => {
                                 <option value="archived">{{ t('statusArchived') }}</option>
                             </select>
 
-                            <InputError class="mt-2" :message="form.errors.status" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.status"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="published_at" :value="t('publishedAt')" />
+                            <LabelInput
+                                for="published_at"
+                                :value="t('publishedAt')"
+                            />
+
                             <InputText
                                 id="published_at"
                                 type="date"
                                 v-model="form.published_at"
                             />
-                            <InputError class="mt-2" :message="form.errors.published_at" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.published_at"
+                            />
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                         <div class="flex flex-col items-start">
-                            <LabelInput for="show_from_at" :value="t('showFromAt')" />
+                            <LabelInput
+                                for="show_from_at"
+                                :value="t('showFromAt')"
+                            />
+
                             <InputText
                                 id="show_from_at"
                                 type="datetime-local"
                                 v-model="form.show_from_at"
                             />
-                            <InputError class="mt-2" :message="form.errors.show_from_at" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.show_from_at"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="show_to_at" :value="t('showToAt')" />
+                            <LabelInput
+                                for="show_to_at"
+                                :value="t('showToAt')"
+                            />
+
                             <InputText
                                 id="show_to_at"
                                 type="datetime-local"
                                 v-model="form.show_to_at"
                             />
-                            <InputError class="mt-2" :message="form.errors.show_to_at" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.show_to_at"
+                            />
                         </div>
                     </div>
 
@@ -373,7 +500,10 @@ const submitForm = () => {
                                 autocomplete="off"
                             />
 
-                            <InputError class="mt-2" :message="getError('title')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('title')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -390,7 +520,10 @@ const submitForm = () => {
                                 autocomplete="off"
                             />
 
-                            <InputError class="mt-2" :message="getError('subtitle')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('subtitle')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -410,7 +543,10 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="getError('short')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('short')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -424,7 +560,10 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="getError('description')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('description')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -442,11 +581,17 @@ const submitForm = () => {
                                 @focus="handleCodeFocus"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.code" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.code"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
-                            <LabelInput for="color" :value="t('typeColor')" />
+                            <LabelInput
+                                for="color"
+                                :value="t('typeColor')"
+                            />
 
                             <div class="flex items-center gap-3 w-full">
                                 <InputText
@@ -466,7 +611,10 @@ const submitForm = () => {
                                 />
                             </div>
 
-                            <InputError class="mt-2" :message="form.errors.color" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.color"
+                            />
                         </div>
 
                         <SvgIconField
@@ -479,13 +627,16 @@ const submitForm = () => {
                     <div class="flex items-center justify-center mt-4 gap-3">
                         <DefaultButton :href="route('admin.marketAttributeValues.index')">
                             <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                     viewBox="0 0 16 16">
+                                <svg
+                                    class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                    viewBox="0 0 16 16"
+                                >
                                     <path
                                         d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('back') }}
                         </DefaultButton>
 

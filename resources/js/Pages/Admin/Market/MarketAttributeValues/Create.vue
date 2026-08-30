@@ -6,7 +6,7 @@
  * Создание значения характеристики MarketAttributeValue
  */
 
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -105,39 +105,68 @@ const getError = (key) => {
 }
 
 /** Проверка корректности HEX-цвета */
-const isValidHexColor = (value) => /^#([0-9A-Fa-f]{6})$/.test(value || '')
+const isValidHexColor = (value) => {
+    return /^#([0-9A-Fa-f]{6})$/.test(value || '')
+}
 
 /** Цвет для color picker */
 const colorForPicker = computed({
     get() {
-        return isValidHexColor(form.color) ? form.color : '#3b82f6'
+        return isValidHexColor(form.color)
+            ? form.color
+            : '#3b82f6'
     },
+
     set(value) {
         form.color = value
     },
 })
 
+/** Список типов характеристик */
+const attributeTypes = computed(() => [
+    { value: 'string', label: t('string') },
+    { value: 'text', label: t('text') },
+    { value: 'integer', label: t('integer') },
+    { value: 'decimal', label: t('float') },
+    { value: 'boolean', label: t('boolean') },
+    { value: 'date', label: t('date') },
+    { value: 'datetime', label: t('datetime') },
+    { value: 'select', label: t('typeSelect') },
+    { value: 'multiselect', label: t('multiselect') },
+])
+
 /** Название характеристики */
 const attributeTitle = (attribute) => {
-    return attribute?.title
-        || attribute?.translation?.title
-        || attribute?.code
+    return attribute?.translation?.title
         || `ID: ${attribute?.id}`
 }
 
-/** Информация по характеристике */
+/** Локализованное название типа характеристики */
+const attributeTypeTitle = (type) => {
+    return attributeTypes.value.find(
+        (item) => item.value === type
+    )?.label || type || ''
+}
+
+/** Дополнительная информация характеристики */
 const attributeInfo = (attribute) => {
     return [
-        attribute?.code,
-        attribute?.type,
+        attributeTypeTitle(attribute?.type),
         attribute?.unit,
-    ].filter(Boolean).join(' / ')
+    ]
+        .filter(Boolean)
+        .join(' / ')
 }
 
 /** Автоматическая генерация системного кода */
 const handleCodeFocus = () => {
-    if (!form.code && currentTranslation.value.title) {
-        form.code = transliterate(currentTranslation.value.title.toLowerCase())
+    if (
+        !form.code
+        && currentTranslation.value.title
+    ) {
+        form.code = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
     }
 }
 
@@ -151,19 +180,28 @@ const submitForm = () => {
         sort: Number(data.sort ?? 0),
     }))
 
-    form.post(route('admin.marketAttributeValues.store'), {
-        errorBag: 'createMarketAttributeValue',
-        preserveScroll: true,
+    form.post(
+        route('admin.marketAttributeValues.store'),
+        {
+            errorBag: 'createMarketAttributeValue',
+            preserveScroll: true,
 
-        onSuccess: () => {
-            toast.success('Значение характеристики успешно создано.')
-        },
+            onSuccess: () => {
+                toast.success(
+                    'Значение характеристики успешно создано.'
+                )
+            },
 
-        onError: (errors) => {
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors[firstKey] || 'Проверьте корректность заполнения полей.')
-        },
-    })
+            onError: (errors) => {
+                const firstKey = Object.keys(errors || {})[0]
+
+                toast.error(
+                    errors[firstKey]
+                    || 'Проверьте корректность заполнения полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -183,13 +221,16 @@ const submitForm = () => {
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
                     <DefaultButton :href="route('admin.marketAttributeValues.index')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                 viewBox="0 0 16 16">
+                            <svg
+                                class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                viewBox="0 0 16 16"
+                            >
                                 <path
                                     d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                 />
                             </svg>
                         </template>
+
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
@@ -198,6 +239,7 @@ const submitForm = () => {
                     <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
                         <div class="flex flex-row items-center gap-2">
                             <ActivityCheckbox v-model="form.activity" />
+
                             <LabelCheckbox
                                 for="activity"
                                 :text="t('activity')"
@@ -206,14 +248,23 @@ const submitForm = () => {
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
-                            <LabelInput for="sort" :value="t('sort')" class="text-sm" />
+                            <LabelInput
+                                for="sort"
+                                :value="t('sort')"
+                                class="text-sm"
+                            />
+
                             <InputNumber
                                 id="sort"
                                 type="number"
                                 v-model.number="form.sort"
                                 class="w-full lg:w-28"
                             />
-                            <InputError class="mt-2 lg:mt-0" :message="form.errors.sort" />
+
+                            <InputError
+                                class="mt-2 lg:mt-0"
+                                :message="form.errors.sort"
+                            />
                         </div>
                     </div>
 
@@ -225,7 +276,7 @@ const submitForm = () => {
 
                         <select
                             id="market_attribute_id"
-                            v-model="form.market_attribute_id"
+                            v-model.number="form.market_attribute_id"
                             required
                             class="w-full px-2 py-0.5 form-select bg-white
                                    text-gray-600 border border-slate-400
@@ -240,18 +291,25 @@ const submitForm = () => {
                                 :value="attribute.id"
                             >
                                 {{ attributeTitle(attribute) }}
-                                <span v-if="attributeInfo(attribute)">
+                                <template v-if="attributeInfo(attribute)">
                                     — {{ attributeInfo(attribute) }}
-                                </span>
+                                </template>
                             </option>
                         </select>
 
-                        <InputError class="mt-2" :message="form.errors.market_attribute_id" />
+                        <InputError
+                            class="mt-2"
+                            :message="form.errors.market_attribute_id"
+                        />
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                         <div class="flex flex-col items-start">
-                            <LabelInput for="status" :value="t('status')" />
+                            <LabelInput
+                                for="status"
+                                :value="t('status')"
+                            />
+
                             <select
                                 id="status"
                                 v-model="form.status"
@@ -264,39 +322,67 @@ const submitForm = () => {
                                 <option value="published">{{ t('statusPublished') }}</option>
                                 <option value="archived">{{ t('statusArchived') }}</option>
                             </select>
-                            <InputError class="mt-2" :message="form.errors.status" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.status"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="published_at" :value="t('publishedAt')" />
+                            <LabelInput
+                                for="published_at"
+                                :value="t('publishedAt')"
+                            />
+
                             <InputText
                                 id="published_at"
                                 type="date"
                                 v-model="form.published_at"
                             />
-                            <InputError class="mt-2" :message="form.errors.published_at" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.published_at"
+                            />
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                         <div class="flex flex-col items-start">
-                            <LabelInput for="show_from_at" :value="t('showFromAt')" />
+                            <LabelInput
+                                for="show_from_at"
+                                :value="t('showFromAt')"
+                            />
+
                             <InputText
                                 id="show_from_at"
                                 type="datetime-local"
                                 v-model="form.show_from_at"
                             />
-                            <InputError class="mt-2" :message="form.errors.show_from_at" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.show_from_at"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="show_to_at" :value="t('showToAt')" />
+                            <LabelInput
+                                for="show_to_at"
+                                :value="t('showToAt')"
+                            />
+
                             <InputText
                                 id="show_to_at"
                                 type="datetime-local"
                                 v-model="form.show_to_at"
                             />
-                            <InputError class="mt-2" :message="form.errors.show_to_at" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.show_to_at"
+                            />
                         </div>
                     </div>
 
@@ -329,7 +415,10 @@ const submitForm = () => {
                                 autocomplete="off"
                             />
 
-                            <InputError class="mt-2" :message="getError('title')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('title')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -337,6 +426,7 @@ const submitForm = () => {
                                 for="subtitle"
                                 :value="`${t('subtitle')} [${activeLocale.toUpperCase()}]`"
                             />
+
                             <InputText
                                 id="subtitle"
                                 type="text"
@@ -344,17 +434,22 @@ const submitForm = () => {
                                 maxlength="255"
                                 autocomplete="off"
                             />
-                            <InputError class="mt-2" :message="getError('subtitle')" />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('subtitle')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
                             <div class="flex justify-between w-full">
                                 <LabelInput
                                     for="short"
-                                :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
+                                    :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
                                 />
+
                                 <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                        {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
+                                    {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
                                 </div>
                             </div>
 
@@ -363,7 +458,10 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="getError('short')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('short')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -377,7 +475,10 @@ const submitForm = () => {
                                 class="w-full"
                             />
 
-                            <InputError class="mt-2" :message="getError('description')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('description')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -395,11 +496,17 @@ const submitForm = () => {
                                 @focus="handleCodeFocus"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.code" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.code"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
-                            <LabelInput for="color" :value="t('typeColor')" />
+                            <LabelInput
+                                for="color"
+                                :value="t('typeColor')"
+                            />
 
                             <div class="flex items-center gap-3 w-full">
                                 <InputText
@@ -419,7 +526,10 @@ const submitForm = () => {
                                 />
                             </div>
 
-                            <InputError class="mt-2" :message="form.errors.color" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.color"
+                            />
                         </div>
 
                         <SvgIconField
@@ -432,13 +542,16 @@ const submitForm = () => {
                     <div class="flex items-center justify-center mt-4 gap-3">
                         <DefaultButton :href="route('admin.marketAttributeValues.index')">
                             <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                     viewBox="0 0 16 16">
+                                <svg
+                                    class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                    viewBox="0 0 16 16"
+                                >
                                     <path
                                         d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('back') }}
                         </DefaultButton>
 

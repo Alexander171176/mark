@@ -6,11 +6,12 @@
  * Редактирование Категорий товаров (MarketCategory)
  * мультиязычная архитектура
  */
-import { ref, computed } from 'vue'
+
+import { computed, ref } from 'vue'
+import { useForm, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { transliterate } from '@/utils/transliteration'
-import { useForm, usePage } from '@inertiajs/vue3'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
@@ -57,7 +58,9 @@ const props = defineProps({
 })
 
 /** Данные редактируемой категории */
-const categoryData = computed(() => props.category?.data ?? props.category)
+const categoryData = computed(() => {
+    return props.category?.data ?? props.category
+})
 
 /** Шаблон пустого перевода */
 const makeTranslation = () => ({
@@ -71,20 +74,29 @@ const makeTranslation = () => ({
 })
 
 /** Локаль формы по умолчанию */
-const defaultLocale =
-    props.currentLocale ||
-    categoryData.value.translation?.locale ||
-    props.availableLocales[0] ||
-    'ru'
+const defaultLocale = props.currentLocale
+    || categoryData.value.translation?.locale
+    || props.availableLocales[0]
+    || 'ru'
 
 /** Активная локаль вкладок */
 const activeLocale = ref(defaultLocale)
 
-/** Подготовка переводов категории */
+/** Подготовка всех переводов категории */
 const buildTranslations = () => {
     const result = {}
 
-    ;(categoryData.value.translations || []).forEach((translation) => {
+    const translations = Array.isArray(
+        categoryData.value.translations
+    )
+        ? categoryData.value.translations
+        : []
+
+    translations.forEach((translation) => {
+        if (!translation?.locale) {
+            return
+        }
+
         result[translation.locale] = {
             title: translation.title || '',
             subtitle: translation.subtitle || '',
@@ -107,7 +119,9 @@ const buildTranslations = () => {
 const form = useForm({
     _method: 'PUT',
 
-    user_id: categoryData.value.user_id || page.props?.auth?.user?.id || null,
+    user_id: categoryData.value.user_id
+        || page.props?.auth?.user?.id
+        || null,
 
     parent_id: categoryData.value.parent_id || null,
     level: categoryData.value.level || 1,
@@ -115,9 +129,9 @@ const form = useForm({
     url: categoryData.value.url || '',
     icon: categoryData.value.icon || '',
 
-    in_menu: Boolean(categoryData.value.in_menu),
+    in_menu: categoryData.value.in_menu ?? false,
     sort: categoryData.value.sort ?? 0,
-    activity: Boolean(categoryData.value.activity),
+    activity: categoryData.value.activity ?? false,
 
     status: categoryData.value.status || 'draft',
 
@@ -150,35 +164,48 @@ const pageTitle = computed(() => {
         || `ID: ${categoryData.value.id}`
 })
 
-/** Получение ошибки поля текущей локали */
+/** Ошибка поля текущей локали */
 const getError = (key) => {
     return form.errors[`translations.${activeLocale.value}.${key}`]
 }
 
-/** Получение названия родительской категории */
+/** Название родительской категории */
 const getParentTitle = (category) => {
-    return category?.title
-        || category?.translation?.title
-        || category?.translations?.[0]?.title
-        || `ID: ${category?.id}`
+    return category?.translation?.title || `ID: ${category?.id}`
 }
 
-/** Построение списка родительских категорий */
-function buildParentOptions(categories, parentId = null, level = 0) {
+/** Построение иерархического списка родителей */
+const buildParentOptions = (
+    categories,
+    parentId = null,
+    depth = 0
+) => {
+    const items = Array.isArray(categories)
+        ? categories
+        : []
+
     let result = []
 
-    ;(categories || [])
+    items
         .filter((category) => category.parent_id === parentId)
-        .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+        .sort((a, b) => {
+            const sortResult = (a.sort ?? 0) - (b.sort ?? 0)
+
+            return sortResult || Number(b.id) - Number(a.id)
+        })
         .forEach((category) => {
             result.push({
                 id: category.id,
-                title: `${'— '.repeat(level)}${getParentTitle(category)}`,
-                level: category.level || level + 1,
+                title: `${'— '.repeat(depth)}${getParentTitle(category)}`,
+                level: category.level ?? depth + 1,
             })
 
             result = result.concat(
-                buildParentOptions(categories, category.id, level + 1)
+                buildParentOptions(
+                    items,
+                    category.id,
+                    depth + 1
+                )
             )
         })
 
@@ -186,18 +213,33 @@ function buildParentOptions(categories, parentId = null, level = 0) {
 }
 
 /** Список родительских категорий */
-const parentOptions = computed(() => buildParentOptions(props.parents || []))
+const parentOptions = computed(() => {
+    return buildParentOptions(props.parents)
+})
 
 /** Существующие изображения категории */
 const existingImages = ref(
-    (categoryData.value.images || [])
-        .filter(img => img.url || img.webp_url || img.image_url || img.thumb_url)
-        .map(img => ({
-            id: img.id,
-            url: img.webp_url || img.image_url || img.thumb_url || img.url,
-            order: img.order || 0,
-            alt: img.alt || '',
-            caption: img.caption || '',
+    (
+        Array.isArray(categoryData.value.images)
+            ? categoryData.value.images
+            : []
+    )
+        .filter((image) => {
+            return image.url
+                || image.webp_url
+                || image.image_url
+                || image.thumb_url
+        })
+        .map((image) => ({
+            id: image.id,
+            url: image.webp_url
+                || image.image_url
+                || image.thumb_url
+                || image.url,
+
+            order: image.order ?? 0,
+            alt: image.alt || '',
+            caption: image.caption || '',
         }))
 )
 
@@ -206,47 +248,73 @@ const newImages = ref([])
 
 /** Обновление существующих изображений */
 const handleExistingImagesUpdate = (images) => {
-    existingImages.value = images || []
+    existingImages.value = Array.isArray(images)
+        ? images
+        : []
 }
 
 /** Удаление существующего изображения */
 const handleDeleteExistingImage = (deletedId) => {
-    if (!deletedId) return
+    if (!deletedId) {
+        return
+    }
 
     if (!form.deletedImages.includes(deletedId)) {
         form.deletedImages.push(deletedId)
     }
 
-    existingImages.value = existingImages.value.filter(img => img.id !== deletedId)
+    existingImages.value = existingImages.value.filter(
+        (image) => image.id !== deletedId
+    )
 }
 
 /** Обновление новых изображений */
 const handleNewImagesUpdate = (images) => {
-    newImages.value = images || []
+    newImages.value = Array.isArray(images)
+        ? images
+        : []
 }
 
 /** Автогенерация URL из названия */
 const handleUrlInputFocus = () => {
-    if (!form.url && currentTranslation.value.title) {
-        form.url = transliterate(currentTranslation.value.title.toLowerCase())
+    if (
+        !form.url
+        && currentTranslation.value.title
+    ) {
+        form.url = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
     }
 }
 
 /** Обрезка текста без разрыва слов */
-const truncateText = (text, maxLength, addEllipsis = false) => {
-    if (!text) return ''
+const truncateText = (
+    text,
+    maxLength,
+    addEllipsis = false
+) => {
+    if (!text) {
+        return ''
+    }
 
-    const str = String(text)
+    const value = String(text)
 
-    if (str.length <= maxLength) return str
+    if (value.length <= maxLength) {
+        return value
+    }
 
-    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
+    const lastSpaceIndex = value.lastIndexOf(
+        ' ',
+        maxLength
+    )
 
     const truncated = lastSpaceIndex === -1
-        ? str.substring(0, maxLength)
-        : str.substring(0, lastSpaceIndex)
+        ? value.substring(0, maxLength)
+        : value.substring(0, lastSpaceIndex)
 
-    return addEllipsis ? `${truncated}...` : truncated
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
 }
 
 /** Очистка SEO-полей */
@@ -262,26 +330,55 @@ const clearMetaFields = () => {
 const generateMetaFields = () => {
     const translation = currentTranslation.value
 
-    if (translation.title && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.title, 255)
+    if (
+        translation.title
+        && !translation.meta_title
+    ) {
+        translation.meta_title = truncateText(
+            translation.title,
+            255
+        )
     }
 
-    if (!translation.meta_keywords && translation.short) {
-        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+    if (
+        !translation.meta_keywords
+        && translation.short
+    ) {
+        let text = String(translation.short)
+            .replace(/(<([^>]+)>)/gi, '')
+
+        text = text.replace(
+            /[.,!?;:()[\]{}"'«»]/g,
+            ''
+        )
 
         const words = text
             .split(/\s+/)
-            .filter(word => word && word.length >= 3)
-            .map(word => word.toLowerCase())
-            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter((word) => word && word.length >= 3)
+            .map((word) => word.toLowerCase())
+            .filter((value, index, self) => {
+                return self.indexOf(value) === index
+            })
 
-        translation.meta_keywords = truncateText(words.join(', '), 255)
+        translation.meta_keywords = truncateText(
+            words.join(', '),
+            255
+        )
     }
 
-    if (translation.short && !translation.meta_desc) {
-        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        translation.meta_desc = truncateText(descText, 200, true)
+    if (
+        translation.short
+        && !translation.meta_desc
+    ) {
+        const description = String(
+            translation.short
+        ).replace(/(<([^>]+)>)/gi, '')
+
+        translation.meta_desc = truncateText(
+            description,
+            200,
+            true
+        )
     }
 }
 
@@ -295,6 +392,7 @@ const submitForm = () => {
             activity: data.activity ? 1 : 0,
 
             parent_id: data.parent_id || null,
+
             moderated_by: null,
             moderated_at: null,
         }
@@ -302,33 +400,36 @@ const submitForm = () => {
         delete transformed.images
         delete transformed.deletedImages
 
-        let i = 0
+        let index = 0
 
-        existingImages.value.forEach((img) => {
-            transformed[`images[${i}][id]`] = img.id
-            transformed[`images[${i}][order]`] = img.order ?? 0
-            transformed[`images[${i}][alt]`] = img.alt ?? ''
-            transformed[`images[${i}][caption]`] = img.caption ?? ''
+        existingImages.value.forEach((image) => {
+            transformed[`images[${index}][id]`] = image.id
+            transformed[`images[${index}][order]`] = image.order ?? 0
+            transformed[`images[${index}][alt]`] = image.alt ?? ''
+            transformed[`images[${index}][caption]`] = image.caption ?? ''
 
-            if (img.file instanceof File) {
-                transformed[`images[${i}][file]`] = img.file
+            if (image.file instanceof File) {
+                transformed[`images[${index}][file]`] = image.file
             }
 
-            i++
+            index++
         })
 
-        newImages.value.forEach((img) => {
-            if (img.file) {
-                transformed[`images[${i}][file]`] = img.file
-                transformed[`images[${i}][order]`] = img.order ?? 0
-                transformed[`images[${i}][alt]`] = img.alt ?? ''
-                transformed[`images[${i}][caption]`] = img.caption ?? ''
-                i++
+        newImages.value.forEach((image) => {
+            if (!image.file) {
+                return
             }
+
+            transformed[`images[${index}][file]`] = image.file
+            transformed[`images[${index}][order]`] = image.order ?? 0
+            transformed[`images[${index}][alt]`] = image.alt ?? ''
+            transformed[`images[${index}][caption]`] = image.caption ?? ''
+
+            index++
         })
 
-        form.deletedImages.forEach((id, index) => {
-            transformed[`deletedImages[${index}]`] = id
+        form.deletedImages.forEach((id, deletedIndex) => {
+            transformed[`deletedImages[${deletedIndex}]`] = id
         })
 
         return transformed
@@ -344,17 +445,28 @@ const submitForm = () => {
             preserveScroll: true,
 
             onSuccess: () => {
-                toast.success('Категория успешно обновлена!')
+                toast.success(
+                    'Категория успешно обновлена!'
+                )
+
                 newImages.value = []
                 form.deletedImages = []
             },
 
             onError: (errors) => {
-                console.error('Не удалось обновить категорию:', errors)
+                console.error(
+                    'Не удалось обновить категорию:',
+                    errors
+                )
 
-                const firstError = errors?.[Object.keys(errors)[0]]
+                const firstError = errors?.[
+                    Object.keys(errors)[0]
+                    ]
 
-                toast.error(firstError || 'Пожалуйста, проверьте правильность заполнения полей.')
+                toast.error(
+                    firstError
+                    || 'Пожалуйста, проверьте правильность заполнения полей.'
+                )
             },
         }
     )
@@ -365,7 +477,9 @@ const submitForm = () => {
     <AdminLayout :title="t('editMarketCategory')">
         <template #header>
             <TitlePage>
-                {{ t('editMarketCategory') }}: {{ pageTitle }} [ID: {{ categoryData.id }}]
+                {{ t('editMarketCategory') }}:
+                {{ pageTitle }}
+                [ID: {{ categoryData.id }}]
             </TitlePage>
         </template>
 
@@ -377,40 +491,85 @@ const submitForm = () => {
                        bg-opacity-95 dark:bg-opacity-95"
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
-                    <DefaultButton :href="route('admin.marketCategories.index')">
+                    <DefaultButton
+                        :href="route('admin.marketCategories.index')"
+                    >
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                 viewBox="0 0 16 16">
+                            <svg
+                                class="w-4 h-4 fill-current
+                                       text-slate-100 shrink-0 mr-2"
+                                viewBox="0 0 16 16"
+                            >
                                 <path
                                     d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                 />
                             </svg>
                         </template>
+
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
 
-                <form @submit.prevent="submitForm" enctype="multipart/form-data" class="p-3 w-full">
-                    <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
+                <form
+                    class="p-3 w-full"
+                    enctype="multipart/form-data"
+                    @submit.prevent="submitForm"
+                >
+                    <!-- Основные настройки -->
+                    <div
+                        class="mb-3 flex justify-between
+                               flex-col lg:flex-row
+                               items-center gap-4"
+                    >
                         <div class="flex flex-row items-center gap-2">
-                            <ActivityCheckbox v-model="form.activity" />
-                            <LabelCheckbox for="activity" :text="t('activity')" class="text-sm h-8 flex items-center" />
+                            <ActivityCheckbox
+                                v-model="form.activity"
+                            />
+
+                            <LabelCheckbox
+                                for="activity"
+                                :text="t('activity')"
+                                class="text-sm h-8 flex items-center"
+                            />
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
-                            <ActivityCheckbox v-model="form.in_menu" />
-                            <LabelCheckbox for="in_menu" :text="t('showInMenu')" class="text-sm h-8 flex items-center" />
+                            <ActivityCheckbox
+                                v-model="form.in_menu"
+                            />
+
+                            <LabelCheckbox
+                                for="in_menu"
+                                :text="t('showInMenu')"
+                                class="text-sm h-8 flex items-center"
+                            />
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
-                            <LabelInput for="sort" :value="t('sort')" class="text-sm" />
-                            <InputNumber id="sort" type="number" v-model="form.sort" class="w-full lg:w-28" />
-                            <InputError class="mt-2 lg:mt-0" :message="form.errors.sort" />
+                            <LabelInput
+                                for="sort"
+                                :value="t('sort')"
+                                class="text-sm"
+                            />
+
+                            <InputNumber
+                                id="sort"
+                                v-model="form.sort"
+                                type="number"
+                                class="w-full lg:w-28"
+                            />
+
+                            <InputError
+                                class="mt-2 lg:mt-0"
+                                :message="form.errors.sort"
+                            />
                         </div>
                     </div>
 
+                    <!-- Переводы -->
                     <div
-                        class="my-5 p-3 border border-slate-300 dark:border-slate-500
+                        class="my-5 p-3
+                               border border-slate-300 dark:border-slate-500
                                bg-white dark:bg-slate-800 rounded-sm"
                     >
                         <TranslationTabs
@@ -425,19 +584,29 @@ const submitForm = () => {
 
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput for="title">
-                                <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                                {{ t('title') }} [{{ activeLocale.toUpperCase() }}]
+                                <span
+                                    class="text-red-500 dark:text-red-300
+                                           font-semibold"
+                                >
+                                    *
+                                </span>
+
+                                {{ t('title') }}
+                                [{{ activeLocale.toUpperCase() }}]
                             </LabelInput>
 
                             <InputText
                                 id="title"
-                                type="text"
                                 v-model="currentTranslation.title"
+                                type="text"
                                 required
                                 maxlength="255"
                             />
 
-                            <InputError class="mt-2" :message="getError('title')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('title')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -448,12 +617,15 @@ const submitForm = () => {
 
                             <InputText
                                 id="subtitle"
-                                type="text"
                                 v-model="currentTranslation.subtitle"
+                                type="text"
                                 maxlength="255"
                             />
 
-                            <InputError class="mt-2" :message="getError('subtitle')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('subtitle')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -463,13 +635,24 @@ const submitForm = () => {
                                     :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
                                 />
 
-                                <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                    {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
+                                <div
+                                    class="text-md text-gray-900
+                                           dark:text-gray-400 mt-1"
+                                >
+                                    {{ (currentTranslation.short || '').length }}
+                                    / 255 {{ t('characters') }}
                                 </div>
                             </div>
 
-                            <MetaDescTextarea v-model="currentTranslation.short" class="w-full" />
-                            <InputError class="mt-2" :message="getError('short')" />
+                            <MetaDescTextarea
+                                v-model="currentTranslation.short"
+                                class="w-full"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('short')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -478,8 +661,15 @@ const submitForm = () => {
                                 :value="`${t('description')} [${activeLocale.toUpperCase()}]`"
                             />
 
-                            <TinyEditor v-model="currentTranslation.description" :height="400" />
-                            <InputError class="mt-2" :message="getError('description')" />
+                            <TinyEditor
+                                v-model="currentTranslation.description"
+                                :height="400"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('description')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -490,12 +680,15 @@ const submitForm = () => {
 
                             <InputText
                                 id="meta_title"
-                                type="text"
                                 v-model="currentTranslation.meta_title"
+                                type="text"
                                 maxlength="255"
                             />
 
-                            <InputError class="mt-2" :message="getError('meta_title')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('meta_title')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -506,12 +699,15 @@ const submitForm = () => {
 
                             <InputText
                                 id="meta_keywords"
-                                type="text"
                                 v-model="currentTranslation.meta_keywords"
+                                type="text"
                                 maxlength="255"
                             />
 
-                            <InputError class="mt-2" :message="getError('meta_keywords')" />
+                            <InputError
+                                class="mt-2"
+                                :message="getError('meta_keywords')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
@@ -520,30 +716,48 @@ const submitForm = () => {
                                 :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
                             />
 
-                            <MetaDescTextarea v-model="currentTranslation.meta_desc" class="w-full" />
-                            <InputError class="mt-2" :message="getError('meta_desc')" />
+                            <MetaDescTextarea
+                                v-model="currentTranslation.meta_desc"
+                                class="w-full"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('meta_desc')"
+                            />
                         </div>
 
                         <div class="flex justify-end gap-2 mt-4">
-                            <ClearMetaButton @click.prevent="clearMetaFields">
+                            <ClearMetaButton
+                                @click.prevent="clearMetaFields"
+                            >
                                 {{ t('clearMetaFields') }}
                             </ClearMetaButton>
 
-                            <MetatagsButton @click.prevent="generateMetaFields">
+                            <MetatagsButton
+                                @click.prevent="generateMetaFields"
+                            >
                                 {{ t('generateMetaTags') }}
                             </MetatagsButton>
                         </div>
                     </div>
 
+                    <!-- Родитель -->
                     <div class="mb-4 flex flex-col items-start">
-                        <LabelInput for="parent_id" :value="t('parentCategory')" />
+                        <LabelInput
+                            for="parent_id"
+                            :value="t('parentCategory')"
+                        />
 
                         <select
                             id="parent_id"
                             v-model="form.parent_id"
-                            class="w-full px-2 py-0.5 form-select rounded-sm shadow-sm
-                                   bg-white dark:bg-cyan-800 dark:text-slate-100 text-gray-600
-                                   border border-slate-400 dark:border-slate-600"
+                            class="w-full px-2 py-0.5
+                                   form-select rounded-sm shadow-sm
+                                   bg-white dark:bg-cyan-800
+                                   dark:text-slate-100 text-gray-600
+                                   border border-slate-400
+                                   dark:border-slate-600"
                         >
                             <option :value="null">
                                 — {{ t('rootCategory') }} —
@@ -555,88 +769,141 @@ const submitForm = () => {
                                 :value="parent.id"
                                 :disabled="parent.level >= 3"
                             >
-                                [ID:{{ parent.id }}] {{ parent.title }}
+                                {{ parent.title }} [ID:{{ parent.id }}]
                             </option>
                         </select>
 
-                        <InputError class="mt-2" :message="form.errors.parent_id" />
+                        <InputError
+                            class="mt-2"
+                            :message="form.errors.parent_id"
+                        />
                     </div>
 
+                    <!-- URL -->
                     <div class="mb-4 flex flex-col items-start">
                         <LabelInput for="url">
-                            <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                            <span
+                                class="text-red-500 dark:text-red-300
+                                       font-semibold"
+                            >
+                                *
+                            </span>
+
                             URL
                         </LabelInput>
 
                         <InputText
                             id="url"
-                            type="text"
                             v-model="form.url"
+                            type="text"
                             required
                             @focus="handleUrlInputFocus"
                         />
 
-                        <InputError class="mt-2" :message="form.errors.url" />
+                        <InputError
+                            class="mt-2"
+                            :message="form.errors.url"
+                        />
                     </div>
 
+                    <!-- Публикация -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
                         <div class="flex flex-col items-start">
-                            <LabelInput for="status" :value="t('status')" />
+                            <LabelInput
+                                for="status"
+                                :value="t('status')"
+                            />
 
                             <select
                                 id="status"
                                 v-model="form.status"
-                                class="w-full px-2 py-0.5 form-select rounded-sm shadow-sm
-                                       bg-white dark:bg-cyan-800 dark:text-slate-100 text-gray-600
-                                       border border-slate-400 dark:border-slate-600"
+                                class="w-full px-2 py-0.5
+                                       form-select rounded-sm shadow-sm
+                                       bg-white dark:bg-cyan-800
+                                       dark:text-slate-100 text-gray-600
+                                       border border-slate-400
+                                       dark:border-slate-600"
                             >
-                                <option value="draft">{{ t('statusDraft') }}</option>
-                                <option value="published">{{ t('statusPublished') }}</option>
-                                <option value="archived">{{ t('statusArchived') }}</option>
+                                <option value="draft">
+                                    {{ t('statusDraft') }}
+                                </option>
+
+                                <option value="published">
+                                    {{ t('statusPublished') }}
+                                </option>
+
+                                <option value="archived">
+                                    {{ t('statusArchived') }}
+                                </option>
                             </select>
 
-                            <InputError class="mt-2" :message="form.errors.status" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.status"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="published_at" :value="t('publishedAt')" />
+                            <LabelInput
+                                for="published_at"
+                                :value="t('publishedAt')"
+                            />
 
                             <InputText
                                 id="published_at"
-                                type="date"
                                 v-model="form.published_at"
+                                type="date"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.published_at" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.published_at"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="show_from_at" :value="t('showFromAt')" />
+                            <LabelInput
+                                for="show_from_at"
+                                :value="t('showFromAt')"
+                            />
 
                             <InputText
                                 id="show_from_at"
-                                type="datetime-local"
                                 v-model="form.show_from_at"
+                                type="datetime-local"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.show_from_at" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.show_from_at"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="show_to_at" :value="t('showToAt')" />
+                            <LabelInput
+                                for="show_to_at"
+                                :value="t('showToAt')"
+                            />
 
                             <InputText
                                 id="show_to_at"
-                                type="datetime-local"
                                 v-model="form.show_to_at"
+                                type="datetime-local"
                             />
 
-                            <InputError class="mt-2" :message="form.errors.show_to_at" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.show_to_at"
+                            />
                         </div>
                     </div>
 
+                    <!-- Модерация -->
                     <div class="mb-4 flex flex-col items-start">
-                        <LabelInput for="moderation_note" :value="t('moderationNote')" />
+                        <LabelInput
+                            for="moderation_note"
+                            :value="t('moderationNote')"
+                        />
 
                         <DescriptionTextarea
                             id="moderation_note"
@@ -644,17 +911,24 @@ const submitForm = () => {
                             class="w-full"
                         />
 
-                        <InputError class="mt-2" :message="form.errors.moderation_note" />
+                        <InputError
+                            class="mt-2"
+                            :message="form.errors.moderation_note"
+                        />
                     </div>
 
+                    <!-- SVG -->
                     <SvgIconField
                         v-model="form.icon"
                         :label="t('svg')"
                         :error="form.errors.icon"
                     />
 
+                    <!-- Изображения -->
                     <div class="mt-4">
-                        <template v-if="imageProcessorEnabled && imagePreset">
+                        <template
+                            v-if="imageProcessorEnabled && imagePreset"
+                        >
                             <MultiImagePresetEdit
                                 :images="existingImages"
                                 :preset="imagePreset"
@@ -680,23 +954,41 @@ const submitForm = () => {
                             />
                         </template>
 
-                        <div v-if="newImages.length" class="text-xs text-slate-600 dark:text-slate-300 mt-2">
-                            {{ t('images') }}: {{ newImages.length }}
+                        <div
+                            v-if="newImages.length"
+                            class="text-xs text-slate-600
+                                   dark:text-slate-300 mt-2"
+                        >
+                            {{ t('images') }}:
+                            {{ newImages.length }}
                         </div>
 
-                        <InputError class="mt-2" :message="form.errors.images" />
+                        <InputError
+                            class="mt-2"
+                            :message="form.errors.images"
+                        />
                     </div>
 
-                    <div class="flex items-center justify-center mt-6">
-                        <DefaultButton :href="route('admin.marketCategories.index')">
+                    <!-- Кнопки -->
+                    <div
+                        class="flex items-center
+                               justify-center mt-6"
+                    >
+                        <DefaultButton
+                            :href="route('admin.marketCategories.index')"
+                        >
                             <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                     viewBox="0 0 16 16">
+                                <svg
+                                    class="w-4 h-4 fill-current
+                                           text-slate-100 shrink-0 mr-2"
+                                    viewBox="0 0 16 16"
+                                >
                                     <path
                                         d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('back') }}
                         </DefaultButton>
 

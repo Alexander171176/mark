@@ -4,29 +4,17 @@ namespace App\Http\Resources\Admin\Market\MarketCategory;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Http\Resources\MissingValue;
 
 class MarketCategorySharedResource extends JsonResource
 {
+    /**
+     * Компактный ресурс категории для Index, дерева и select.
+     *
+     * Ресурс не выполняет SQL-запросов и работает
+     * только с уже загруженными relations.
+     */
     public function toArray(Request $request): array
     {
-        $currentLocale = app()->getLocale();
-
-        $translation = $this->whenLoaded('translations', function () use ($currentLocale) {
-            return $this->translations->firstWhere('locale', $currentLocale)
-                ?: $this->translations->firstWhere(
-                    'locale',
-                    config('app.fallback_locale', 'ru')
-                )
-                    ?: $this->translations->first();
-        });
-
-        $firstImage = $this->whenLoaded('images', fn () => $this->images->first());
-
-        $thumbnailUrl = !($firstImage instanceof MissingValue) && $firstImage
-            ? $firstImage->thumb_url
-            : null;
-
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -45,44 +33,80 @@ class MarketCategorySharedResource extends JsonResource
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,
 
-            /** Публикация / модерация */
+            /** Публикация */
             'status' => $this->status,
+
+            /** Модерация */
             'moderation_status' => (int) $this->moderation_status,
+            'is_pending' => (int) $this->moderation_status === 0,
             'is_approved' => (int) $this->moderation_status === 1,
+            'is_rejected' => (int) $this->moderation_status === 2,
+            'moderated_at' => $this->moderated_at?->toISOString(),
+            'moderation_note' => $this->moderation_note,
 
-            /** Перевод для дерева */
-            'locale' => $translation?->locale,
-            'title' => $translation?->title,
-            'subtitle' => $translation?->subtitle,
-            'short' => $translation?->short,
+            /** Окно публикации */
+            'published_at' => $this->published_at?->format('Y-m-d'),
+            'show_from_at' => $this->show_from_at?->format('Y-m-d\TH:i'),
+            'show_to_at' => $this->show_to_at?->format('Y-m-d\TH:i'),
 
-            /** Изображение для дерева */
-            'thumbnail_url' => $thumbnailUrl,
+            /** Счётчики */
+            'views' => (int) $this->views,
+            'children_count' => $this->whenCounted('children'),
+            'images_count' => $this->whenCounted('images'),
+            'products_count' => $this->whenCounted('products'),
 
-            /** Дети */
+            /** Перевод текущей локали */
+            'translation' => $this->currentTranslation(),
+
+            /** Родитель */
+            'parent' => $this->whenLoaded('parent', function () {
+                return $this->parent
+                    ? new self($this->parent)
+                    : null;
+            }),
+
+            /** Владелец */
+            'owner' => $this->whenLoaded('owner', function () {
+                return [
+                    'id' => $this->owner?->id,
+                    'name' => $this->owner?->name,
+                    'email' => $this->owner?->email,
+                    'profile_photo_url' => $this->owner?->profile_photo_url,
+                ];
+            }),
+
+            /** Изображения */
+            'images' => MarketCategoryImageResource::collection(
+                $this->whenLoaded('images')
+            ),
+
+            /** Дочерние категории */
             'children' => self::collection(
                 $this->whenLoaded('children')
-            ),
-
-            /** Counts */
-            'children_count' => $this->when(
-                isset($this->children_count),
-                fn () => (int) $this->children_count
-            ),
-
-            'products_count' => $this->when(
-                isset($this->products_count),
-                fn () => (int) $this->products_count
-            ),
-
-            'images_count' => $this->when(
-                isset($this->images_count),
-                fn () => (int) $this->images_count
             ),
 
             /** Timestamps */
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    /**
+     * Текущий перевод из уже загруженной коллекции.
+     *
+     * В Index Controller relation translations
+     * должна быть ограничена currentLocale.
+     */
+    private function currentTranslation(): ?MarketCategoryTranslationResource
+    {
+        if (!$this->relationLoaded('translations')) {
+            return null;
+        }
+
+        $translation = $this->translations->first();
+
+        return $translation
+            ? new MarketCategoryTranslationResource($translation)
+            : null;
     }
 }

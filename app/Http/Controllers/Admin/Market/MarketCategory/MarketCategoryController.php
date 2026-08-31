@@ -79,11 +79,24 @@ class MarketCategoryController extends BaseMarketAdminController
 
         $settings = app(AdminSettingsService::class);
 
-        $perPage = $settings->int('adminMarketCategoriesPerPage', 6);
-        $defaultSort = $settings->string('adminMarketCategoriesDefaultSort', 'idDesc');
+        $perPage = $settings->int(
+            'adminMarketCategoriesPerPage',
+            6
+        );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $defaultSort = $settings->string(
+            'adminMarketCategoriesDefaultSort',
+            'idDesc'
+        );
+
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
+
+        $search = trim(
+            (string) $request->query('search', '')
+        );
 
         $processingMode = $settings->string(
             'adminMarketCategoriesProcessingMode',
@@ -100,8 +113,20 @@ class MarketCategoryController extends BaseMarketAdminController
             );
 
         try {
-            $categoriesTree = $this->getIndexCategoriesTree();
+            /**
+             * Дерево загружается независимо от режима обработки
+             * плоского списка, потому что является отдельным
+             * представлением Index.
+             */
+            $categoriesTree = $this->getIndexCategoriesTree(
+                $currentLocale
+            );
 
+            /**
+             * Vue использует relation children,
+             * поэтому рекурсивный childrenRecursive
+             * преобразуем в children.
+             */
             $this->prepareTreeChildren($categoriesTree);
 
             $categoriesFlat = $this->getIndexCategories(
@@ -112,47 +137,66 @@ class MarketCategoryController extends BaseMarketAdminController
                 search: $search
             );
 
-            return Inertia::render('Admin/Market/MarketCategories/Index', [
-                'categoriesTree' => MarketCategoryResource::collection($categoriesTree),
-                'categories' => MarketCategoryResource::collection($categoriesFlat),
-                'categoriesCount' => $categoriesCount,
+            return Inertia::render(
+                'Admin/Market/MarketCategories/Index',
+                [
+                    /**
+                     * Index использует компактный контракт.
+                     * Полный Resource здесь больше не нужен.
+                     */
+                    'categoriesTree' => MarketCategorySharedResource::collection(
+                        $categoriesTree
+                    ),
 
-                'useServerProcessing' => $useServerProcessing,
+                    'categories' => MarketCategorySharedResource::collection(
+                        $categoriesFlat
+                    ),
 
-                'adminMarketCategoriesPerPage' => $perPage,
-                'adminMarketCategoriesDefaultSort' => $defaultSort,
-                'adminMarketCategoriesProcessingMode' => $processingMode,
+                    'categoriesCount' => $categoriesCount,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'useServerProcessing' => $useServerProcessing,
 
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
-            ]);
+                    'adminMarketCategoriesPerPage' => $perPage,
+                    'adminMarketCategoriesDefaultSort' => $defaultSort,
+                    'adminMarketCategoriesProcessingMode' => $processingMode,
+
+                    'sortParam' => $sortParam,
+                    'search' => $search,
+
+                    'currentLocale' => $currentLocale,
+                    'availableLocales' => $this->availableLocales(),
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки списка market categories: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки списка market categories: ' . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return Inertia::render('Admin/Market/MarketCategories/Index', [
-                'categoriesTree' => [],
-                'categories' => [],
-                'categoriesCount' => 0,
+            return Inertia::render(
+                'Admin/Market/MarketCategories/Index',
+                [
+                    'categoriesTree' => [],
+                    'categories' => [],
+                    'categoriesCount' => 0,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'useServerProcessing' => $useServerProcessing,
 
-                'adminMarketCategoriesPerPage' => $perPage,
-                'adminMarketCategoriesDefaultSort' => $defaultSort,
-                'adminMarketCategoriesProcessingMode' => $processingMode,
+                    'adminMarketCategoriesPerPage' => $perPage,
+                    'adminMarketCategoriesDefaultSort' => $defaultSort,
+                    'adminMarketCategoriesProcessingMode' => $processingMode,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'sortParam' => $sortParam,
+                    'search' => $search,
 
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+                    'currentLocale' => $currentLocale,
+                    'availableLocales' => $this->availableLocales(),
 
-                'error' => 'Ошибка загрузки категорий.',
-            ]);
+                    'error' => 'Ошибка загрузки категорий.',
+                ]
+            );
         }
     }
 
@@ -161,21 +205,26 @@ class MarketCategoryController extends BaseMarketAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        $parents = $this->baseQuery()
-            ->with(['translations'])
-            ->withCount(['children', 'images'])
-            ->ordered()
-            ->get();
+        return Inertia::render(
+            'Admin/Market/MarketCategories/Create',
+            [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
 
-        return Inertia::render('Admin/Market/MarketCategories/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
+                /**
+                 * Для select родителей нужны только:
+                 * id, parent_id, level, sort и translation.
+                 *
+                 * children_count/images_count здесь не нужны.
+                 */
+                'parents' => MarketCategorySharedResource::collection(
+                    $this->parentsForSelect($currentLocale)
+                ),
 
-            'parents' => MarketCategorySharedResource::collection($parents),
-
-            'imageProcessorEnabled' => $this->imageProcessorEnabled(),
-            'imagePreset' => $this->imagePresetPayload(),
-        ]);
+                'imageProcessorEnabled' => $this->imageProcessorEnabled(),
+                'imagePreset' => $this->imagePresetPayload(),
+            ]
+        );
     }
 
     /** Создание категории */
@@ -194,7 +243,11 @@ class MarketCategoryController extends BaseMarketAdminController
 
         $user = auth()->user();
 
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
+        if (
+            $user
+            && method_exists($user, 'hasRole')
+            && !$user->hasRole('admin')
+        ) {
             $data['user_id'] = $user->id;
 
             unset(
@@ -214,82 +267,119 @@ class MarketCategoryController extends BaseMarketAdminController
                 $translations,
                 $imagesData
             ) {
-                $this->ensureAllowedLevel($data['parent_id'] ?? null);
+                $parentId = $data['parent_id'] ?? null;
 
-                $data['level'] = $this->resolveLevel($data['parent_id'] ?? null);
+                $this->ensureAllowedLevel($parentId);
 
-                if (!isset($data['sort']) || is_null($data['sort'])) {
+                $data['level'] = $this->resolveLevel($parentId);
+
+                if (
+                    !isset($data['sort'])
+                    || is_null($data['sort'])
+                ) {
                     $maxSort = MarketCategory::query()
-                        ->where('parent_id', $data['parent_id'] ?? null)
-                        ->max('sort');
+                        ->where(
+                            'market_categories.parent_id',
+                            $parentId
+                        )
+                        ->max('market_categories.sort');
 
-                    $data['sort'] = is_null($maxSort) ? 0 : $maxSort + 1;
+                    $data['sort'] = is_null($maxSort)
+                        ? 0
+                        : $maxSort + 1;
                 }
 
                 $category = MarketCategory::create($data);
 
-                $this->syncTranslations($category, $translations);
-                $this->syncImages($category, $request, $imagesData);
+                $this->syncTranslations(
+                    $category,
+                    $translations
+                );
+
+                $this->syncImages(
+                    $category,
+                    $request,
+                    $imagesData
+                );
             });
 
             return redirect()
                 ->route('admin.marketCategories.index')
-                ->with('success', 'Категория успешно создана.');
+                ->with(
+                    'success',
+                    'Категория успешно создана.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при создании market category: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при создании market category: ' . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', $e instanceof InvalidArgumentException
-                    ? $e->getMessage()
-                    : 'Ошибка при создании категории.');
+                ->with(
+                    'error',
+                    $e instanceof InvalidArgumentException
+                        ? $e->getMessage()
+                        : 'Ошибка при создании категории.'
+                );
         }
     }
 
     /** Редирект просмотра на редактирование */
     public function show(string $id): RedirectResponse
     {
-        return redirect()->route('admin.marketCategories.edit', $id);
+        return redirect()->route(
+            'admin.marketCategories.edit',
+            $id
+        );
     }
 
     /** Страница редактирования категории */
-    public function edit(int $marketCategory, Request $request): Response
-    {
+    public function edit(
+        int $marketCategory,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale($request);
+
+        /**
+         * Edit использует:
+         * - собственные scalar-поля;
+         * - все собственные translations;
+         * - images.
+         *
+         * owner/moderator/parent/counts форме не нужны.
+         */
         $category = $this->baseQuery()
             ->with([
-                'owner',
-                'moderator',
-                'parent.translations',
                 'translations',
-                'images',
-            ])
-            ->withCount([
-                'children',
-                'images',
+                'images.media',
             ])
             ->findOrFail($marketCategory);
 
-        $currentLocale = $this->resolveLocale($request);
+        return Inertia::render(
+            'Admin/Market/MarketCategories/Edit',
+            [
+                'category' => new MarketCategoryResource(
+                    $category
+                ),
 
-        $parents = $this->baseQuery()
-            ->where('id', '!=', $category->id)
-            ->with(['translations'])
-            ->withCount(['children', 'images'])
-            ->ordered()
-            ->get();
+                'parents' => MarketCategorySharedResource::collection(
+                    $this->parentsForSelect(
+                        locale: $currentLocale,
+                        excludeCategoryId: $category->id
+                    )
+                ),
 
-        return Inertia::render('Admin/Market/MarketCategories/Edit', [
-            'category' => new MarketCategoryResource($category),
-            'parents' => MarketCategorySharedResource::collection($parents),
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
 
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-
-            'imageProcessorEnabled' => $this->imageProcessorEnabled(),
-            'imagePreset' => $this->imagePresetPayload(),
-        ]);
+                'imageProcessorEnabled' => $this->imageProcessorEnabled(),
+                'imagePreset' => $this->imagePresetPayload(),
+            ]
+        );
     }
 
     /** Обновление категории */
@@ -297,6 +387,10 @@ class MarketCategoryController extends BaseMarketAdminController
         MarketCategoryRequest $request,
         int $marketCategory
     ): RedirectResponse {
+        /**
+         * Сохраняем загрузку images для совместимости
+         * с текущей логикой syncImages().
+         */
         $category = $this->baseQuery()
             ->with('images')
             ->findOrFail($marketCategory);
@@ -316,7 +410,11 @@ class MarketCategoryController extends BaseMarketAdminController
 
         $user = auth()->user();
 
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
+        if (
+            $user
+            && method_exists($user, 'hasRole')
+            && !$user->hasRole('admin')
+        ) {
             $data['user_id'] = $user->id;
 
             unset(
@@ -336,53 +434,88 @@ class MarketCategoryController extends BaseMarketAdminController
                 $imagesData,
                 $deletedImageIds
             ) {
-                if (!empty($data['parent_id']) && (int) $data['parent_id'] === (int) $category->id) {
-                    throw new InvalidArgumentException('Категория не может быть родителем самой себя.');
+                $parentId = $data['parent_id'] ?? null;
+
+                if (
+                    !empty($parentId)
+                    && (int) $parentId === (int) $category->id
+                ) {
+                    throw new InvalidArgumentException(
+                        'Категория не может быть родителем самой себя.'
+                    );
                 }
 
                 $this->ensureParentIsNotDescendant(
                     categoryId: $category->id,
-                    parentId: $data['parent_id'] ?? null
+                    parentId: $parentId
                 );
 
-                $this->ensureAllowedLevel($data['parent_id'] ?? null);
+                $this->ensureAllowedLevel($parentId);
 
-                $data['level'] = $this->resolveLevel($data['parent_id'] ?? null);
+                $data['level'] = $this->resolveLevel(
+                    $parentId
+                );
 
                 $category->update($data);
 
-                $this->syncTranslations($category, $translations);
-                $this->syncImages($category, $request, $imagesData, $deletedImageIds);
+                $this->syncTranslations(
+                    $category,
+                    $translations
+                );
+
+                $this->syncImages(
+                    $category,
+                    $request,
+                    $imagesData,
+                    $deletedImageIds
+                );
             });
 
             return redirect()
                 ->route('admin.marketCategories.index')
-                ->with('success', 'Категория успешно обновлена.');
+                ->with(
+                    'success',
+                    'Категория успешно обновлена.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при обновлении market category ID ' . $category->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при обновлении market category ID '
+                . $category->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', $e instanceof InvalidArgumentException
-                    ? $e->getMessage()
-                    : 'Ошибка при обновлении категории.');
+                ->with(
+                    'error',
+                    $e instanceof InvalidArgumentException
+                        ? $e->getMessage()
+                        : 'Ошибка при обновлении категории.'
+                );
         }
     }
 
     /** Удаление категории */
-    public function destroy(int $marketCategory): RedirectResponse
-    {
+    public function destroy(
+        int $marketCategory
+    ): RedirectResponse {
+        /**
+         * relations заранее не загружаем:
+         * ниже используются relation-query.
+         */
         $category = $this->baseQuery()
-            ->with(['images', 'translations'])
             ->findOrFail($marketCategory);
 
         try {
             DB::transaction(function () use ($category) {
                 if ($category->children()->exists()) {
                     throw new InvalidArgumentException(
-                        'Нельзя удалить категорию: сначала удалите или переместите дочерние категории.'
+                        'Нельзя удалить категорию: '
+                        . 'сначала удалите или переместите дочерние категории.'
                     );
                 }
 
@@ -392,67 +525,105 @@ class MarketCategoryController extends BaseMarketAdminController
 
                 if (!empty($imageIds)) {
                     $category->images()->detach();
+
                     $this->deleteImages($imageIds);
                 }
 
                 $category->translations()->delete();
+
                 $category->delete();
             });
 
             return redirect()
                 ->route('admin.marketCategories.index')
-                ->with('success', 'Категория успешно удалена.');
+                ->with(
+                    'success',
+                    'Категория успешно удалена.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при удалении market category ID ' . $category->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при удалении market category ID '
+                . $category->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return back()->with('error', $e instanceof InvalidArgumentException
-                ? $e->getMessage()
-                : 'Ошибка при удалении категории.');
+            return back()->with(
+                'error',
+                $e instanceof InvalidArgumentException
+                    ? $e->getMessage()
+                    : 'Ошибка при удалении категории.'
+            );
         }
     }
 
     /** Массовое удаление категорий */
-    public function bulkDestroy(Request $request): RedirectResponse
-    {
+    public function bulkDestroy(
+        Request $request
+    ): RedirectResponse {
         $validated = $request->validate([
             'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:market_categories,id'],
+            'ids.*' => [
+                'required',
+                'integer',
+                'exists:market_categories,id',
+            ],
         ]);
 
         $ids = $validated['ids'];
 
         $allowedIds = $this->baseQuery()
-            ->whereIn('id', $ids)
-            ->pluck('id')
+            ->whereIn(
+                'market_categories.id',
+                $ids
+            )
+            ->pluck('market_categories.id')
             ->toArray();
 
         if (count($allowedIds) !== count($ids)) {
-            return back()->with('error', 'Часть категорий недоступна для удаления.');
+            return back()->with(
+                'error',
+                'Часть категорий недоступна для удаления.'
+            );
         }
 
         try {
             DB::transaction(function () use ($allowedIds) {
                 $hasChildren = MarketCategory::query()
-                    ->whereIn('parent_id', $allowedIds)
+                    ->whereIn(
+                        'market_categories.parent_id',
+                        $allowedIds
+                    )
                     ->exists();
 
                 if ($hasChildren) {
                     throw new InvalidArgumentException(
-                        'Нельзя удалить выбранные категории, пока у них есть дочерние категории.'
+                        'Нельзя удалить выбранные категории, '
+                        . 'пока у них есть дочерние категории.'
                     );
                 }
 
                 $imageIds = MarketCategoryImage::query()
-                    ->whereHas('categories', function (Builder $query) use ($allowedIds) {
-                        $query->whereIn('market_categories.id', $allowedIds);
-                    })
-                    ->pluck('id')
+                    ->whereHas(
+                        'categories',
+                        function (Builder $query) use ($allowedIds) {
+                            $query->whereIn(
+                                'market_categories.id',
+                                $allowedIds
+                            );
+                        }
+                    )
+                    ->pluck('market_category_images.id')
                     ->toArray();
 
                 DB::table('market_category_has_images')
-                    ->whereIn('market_category_id', $allowedIds)
+                    ->whereIn(
+                        'market_category_id',
+                        $allowedIds
+                    )
                     ->delete();
 
                 if (!empty($imageIds)) {
@@ -460,103 +631,230 @@ class MarketCategoryController extends BaseMarketAdminController
                 }
 
                 DB::table('market_category_translations')
-                    ->whereIn('market_category_id', $allowedIds)
+                    ->whereIn(
+                        'market_category_id',
+                        $allowedIds
+                    )
                     ->delete();
 
                 MarketCategory::query()
-                    ->whereIn('id', $allowedIds)
+                    ->whereIn(
+                        'market_categories.id',
+                        $allowedIds
+                    )
                     ->delete();
             });
 
-            return back()->with('success', 'Выбранные категории успешно удалены.');
+            return back()->with(
+                'success',
+                'Выбранные категории успешно удалены.'
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка bulkDestroy market categories: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка bulkDestroy market categories: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return back()->with('error', $e instanceof InvalidArgumentException
-                ? $e->getMessage()
-                : 'Ошибка при массовом удалении категорий.');
+            return back()->with(
+                'error',
+                $e instanceof InvalidArgumentException
+                    ? $e->getMessage()
+                    : 'Ошибка при массовом удалении категорий.'
+            );
         }
     }
 
     /** Массовое обновление сортировки дерева */
-    public function updateSortBulk(Request $request): RedirectResponse|JsonResponse
-    {
+    public function updateSortBulk(
+        Request $request
+    ): RedirectResponse|JsonResponse {
         $validated = $request->validate([
-            'items' => ['required_without:categories', 'array'],
-            'items.*.id' => ['required_with:items', 'integer', 'exists:market_categories,id'],
-            'items.*.sort' => ['required_with:items', 'integer', 'min:0'],
-            'items.*.parent_id' => ['nullable', 'integer', 'exists:market_categories,id'],
+            'items' => [
+                'required_without:categories',
+                'array',
+                'min:1',
+            ],
 
-            'categories' => ['required_without:items', 'array'],
-            'categories.*.id' => ['required_with:categories', 'integer', 'exists:market_categories,id'],
-            'categories.*.sort' => ['required_with:categories', 'integer', 'min:0'],
-            'categories.*.parent_id' => ['nullable', 'integer', 'exists:market_categories,id'],
+            'items.*.id' => [
+                'required_with:items',
+                'integer',
+                'min:1',
+            ],
+
+            'items.*.sort' => [
+                'required_with:items',
+                'integer',
+                'min:0',
+            ],
+
+            'items.*.parent_id' => [
+                'nullable',
+                'integer',
+                'min:1',
+            ],
+
+            /*
+             * Сохраняем совместимость со старым
+             * названием payload categories.
+             */
+            'categories' => [
+                'required_without:items',
+                'array',
+                'min:1',
+            ],
+
+            'categories.*.id' => [
+                'required_with:categories',
+                'integer',
+                'min:1',
+            ],
+
+            'categories.*.sort' => [
+                'required_with:categories',
+                'integer',
+                'min:0',
+            ],
+
+            'categories.*.parent_id' => [
+                'nullable',
+                'integer',
+                'min:1',
+            ],
         ]);
 
-        $items = $validated['items'] ?? $validated['categories'];
-        $ids = array_column($items, 'id');
-
-        $allowedIds = $this->baseQuery()
-            ->whereIn('id', $ids)
-            ->pluck('id')
-            ->toArray();
-
-        if (count($allowedIds) !== count($ids)) {
-            $message = 'Часть категорий недоступна для изменения сортировки.';
-
-            return $request->expectsJson()
-                ? response()->json(['message' => $message], 400)
-                : back()->with('error', $message);
-        }
+        $items = $validated['items']
+            ?? $validated['categories'];
 
         try {
-            DB::transaction(function () use ($items) {
-                foreach ($items as $row) {
-                    $categoryId = (int) $row['id'];
-                    $parentId = $row['parent_id'] ?? null;
+            /*
+             * Frontend отправляет полный snapshot дерева.
+             * Одним запросом получаем все доступные категории.
+             */
+            $allowedIds = $this->baseQuery()
+                ->pluck('market_categories.id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
 
-                    if (!empty($parentId) && (int) $parentId === $categoryId) {
-                        throw new InvalidArgumentException(
-                            'Категория не может быть родителем самой себя.'
-                        );
-                    }
+            /*
+             * Проверяем целостность полного snapshot:
+             * доступность ID, дубликаты, parent_id и полноту дерева.
+             */
+            $tree = $this->validateTreeStructure(
+                $items,
+                $allowedIds
+            );
 
-                    $this->ensureParentIsNotDescendant(
-                        categoryId: $categoryId,
-                        parentId: $parentId
-                    );
+            /*
+             * Уровни рассчитываются только из нового дерева,
+             * поэтому старые parent_id/level в БД здесь
+             * не влияют на результат.
+             */
+            $levels = $this->calculateTreeLevels($tree);
 
-                    $this->ensureAllowedLevel($parentId);
+            $ids = [];
+            $sortCases = [];
+            $sortBindings = [];
+            $parentCases = [];
+            $parentBindings = [];
+            $levelCases = [];
+            $levelBindings = [];
 
-                    MarketCategory::query()
-                        ->whereKey($categoryId)
-                        ->update([
-                            'sort' => (int) $row['sort'],
-                            'parent_id' => $parentId,
-                            'level' => $this->resolveLevel($parentId),
-                        ]);
-                }
+            foreach ($tree as $categoryId => $node) {
+                $categoryId = (int) $categoryId;
+
+                $ids[] = $categoryId;
+
+                $sortCases[] = 'WHEN ? THEN ?';
+                $sortBindings[] = $categoryId;
+                $sortBindings[] = (int) $node['sort'];
+
+                $parentCases[] = 'WHEN ? THEN ?';
+                $parentBindings[] = $categoryId;
+                $parentBindings[] = $node['parent_id'];
+
+                $levelCases[] = 'WHEN ? THEN ?';
+                $levelBindings[] = $categoryId;
+                $levelBindings[] = (int) $levels[$categoryId];
+            }
+
+            $placeholders = implode(
+                ',',
+                array_fill(0, count($ids), '?')
+            );
+
+            $sql = '
+                UPDATE market_categories
+                SET
+                    sort = CASE id '
+                . implode(' ', $sortCases)
+                . ' END,
+                    parent_id = CASE id '
+                . implode(' ', $parentCases)
+                . ' END,
+                    level = CASE id '
+                . implode(' ', $levelCases)
+                . ' END,
+                    updated_at = ?
+                WHERE id IN (' . $placeholders . ')
+            ';
+
+            $bindings = [
+                ...$sortBindings,
+                ...$parentBindings,
+                ...$levelBindings,
+                now(),
+                ...$ids,
+            ];
+
+            DB::transaction(function () use (
+                $sql,
+                $bindings
+            ): void {
+                DB::update(
+                    $sql,
+                    $bindings
+                );
             });
 
             $message = 'Сортировка дерева категорий обновлена.';
 
             return $request->expectsJson()
-                ? response()->json(['message' => $message])
-                : back()->with('success', $message);
+                ? response()->json([
+                    'message' => $message,
+                ])
+                : back()->with(
+                    'success',
+                    $message
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка updateSortBulk market categories: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка updateSortBulk market categories: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             $message = $e instanceof InvalidArgumentException
                 ? $e->getMessage()
-                : 'Ошибка при массовом обновлении сортировки категорий.';
+                : 'Ошибка при массовом обновлении '
+                . 'сортировки категорий.';
 
-            return $request->expectsJson()
-                ? response()->json(['message' => $message], 500)
-                : back()->with('error', $message);
+            if ($request->expectsJson()) {
+                return response()->json(
+                    ['message' => $message],
+                    $e instanceof InvalidArgumentException
+                        ? 422
+                        : 500
+                );
+            }
+
+            return back()->withErrors([
+                'general' => $message,
+            ]);
         }
     }
 
@@ -566,10 +864,14 @@ class MarketCategoryController extends BaseMarketAdminController
         int $marketCategory
     ): RedirectResponse|JsonResponse {
         $validated = $request->validate([
-            'in_menu' => ['required', 'boolean'],
+            'in_menu' => [
+                'required',
+                'boolean',
+            ],
         ]);
 
-        $category = $this->baseQuery()->findOrFail($marketCategory);
+        $category = $this->baseQuery()
+            ->findOrFail($marketCategory);
 
         $category->update([
             'in_menu' => (bool) $validated['in_menu'],
@@ -580,20 +882,37 @@ class MarketCategoryController extends BaseMarketAdminController
             : 'Категория скрыта из главного меню.';
 
         return $request->expectsJson()
-            ? response()->json(['message' => $message])
-            : back()->with('success', $message);
+            ? response()->json([
+                'message' => $message,
+            ])
+            : back()->with(
+                'success',
+                $message
+            );
     }
 
-    /** Базовый запрос для Index */
-    private function indexQuery(): Builder
-    {
+    /**
+     * Базовый запрос плоского Index.
+     *
+     * Все переводимые relations загружаются
+     * только для currentLocale.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'owner',
-                'moderator',
-                'parent.translations',
-                'translations',
-                'images',
+                'translations' => fn ($query) => $query
+                    ->where('locale', $locale),
+
+                'parent',
+
+                'parent.translations' => fn ($query) => $query
+                    ->where('locale', $locale),
+
+                'owner:id,name,email,profile_photo_path',
+
+                'images.media',
             ])
             ->withCount([
                 'children',
@@ -609,12 +928,20 @@ class MarketCategoryController extends BaseMarketAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
                 ->paginate($perPage)
                 ->withQueryString();
         }
@@ -624,17 +951,27 @@ class MarketCategoryController extends BaseMarketAdminController
             ->get();
     }
 
-    /** Дерево категорий */
-    private function getIndexCategoriesTree()
-    {
+    /**
+     * Дерево категорий.
+     *
+     * Загружаются максимум три уровня.
+     * Для каждого уровня:
+     * - один перевод currentLocale;
+     * - owner;
+     * - images.media;
+     * - children_count;
+     * - images_count.
+     */
+    private function getIndexCategoriesTree(
+        string $locale
+    ) {
         return $this->baseQuery()
-            ->with([
-                'owner',
-                'moderator',
-                'translations',
-                'images',
-                'childrenRecursive',
-            ])
+            ->with(
+                $this->treeRelations(
+                    locale: $locale,
+                    depth: $this->maxCategoryLevel - 1
+                )
+            )
             ->withCount([
                 'children',
                 'images',
@@ -644,26 +981,265 @@ class MarketCategoryController extends BaseMarketAdminController
             ->get();
     }
 
+    /**
+     * Relations для рекурсивного дерева.
+     *
+     * depth:
+     * 2 = корень → уровень 2 → уровень 3.
+     */
+    private function treeRelations(
+        string $locale,
+        int $depth
+    ): array {
+        $relations = [
+            'translations' => fn ($query) => $query
+                ->where('locale', $locale),
+
+            'owner:id,name,email,profile_photo_path',
+
+            'images.media',
+        ];
+
+        if ($depth > 0) {
+            $relations['childrenRecursive'] = function ($query) use ($locale, $depth) {
+                $query
+                    ->with(
+                        $this->treeRelations(
+                            locale: $locale,
+                            depth: $depth - 1
+                        )
+                    )
+                    ->withCount([
+                        'children',
+                        'images',
+                    ]);
+            };
+        }
+
+        return $relations;
+    }
+
+    /**
+     * Категории для выбора родителя.
+     *
+     * Здесь не нужны:
+     * owner, moderator, images и counts.
+     */
+    private function parentsForSelect(
+        string $locale,
+        ?int $excludeCategoryId = null
+    ) {
+        $query = $this->baseQuery()
+            ->with([
+                'translations' => fn ($query) => $query
+                    ->where('locale', $locale),
+            ]);
+
+        if ($excludeCategoryId !== null) {
+            $query->where(
+                'market_categories.id',
+                '!=',
+                $excludeCategoryId
+            );
+        }
+
+        return $query
+            ->ordered()
+            ->get();
+    }
+
+    /**
+     * Проверка полного snapshot дерева категорий.
+     *
+     * Возвращает нормализованную карту:
+     * categoryId => [
+     *     id,
+     *     sort,
+     *     parent_id
+     * ]
+     */
+    private function validateTreeStructure(
+        array $items,
+        array $allowedIds
+    ): array {
+        $allowedMap = array_fill_keys(
+            $allowedIds,
+            true
+        );
+
+        $tree = [];
+
+        foreach ($items as $row) {
+            $categoryId = (int) $row['id'];
+
+            $parentId = isset($row['parent_id'])
+                ? (int) $row['parent_id']
+                : null;
+
+            if (isset($tree[$categoryId])) {
+                throw new InvalidArgumentException(
+                    'В дереве обнаружена дублирующаяся '
+                    . 'категория ID ' . $categoryId . '.'
+                );
+            }
+
+            if (!isset($allowedMap[$categoryId])) {
+                throw new InvalidArgumentException(
+                    'Категория ID ' . $categoryId
+                    . ' недоступна для изменения.'
+                );
+            }
+
+            if (
+                $parentId !== null
+                && $parentId === $categoryId
+            ) {
+                throw new InvalidArgumentException(
+                    'Категория не может быть '
+                    . 'родителем самой себя.'
+                );
+            }
+
+            $tree[$categoryId] = [
+                'id' => $categoryId,
+                'sort' => (int) $row['sort'],
+                'parent_id' => $parentId,
+            ];
+        }
+
+        /*
+         * Drag&drop работает именно с полным snapshot.
+         * Поэтому потеря даже одной доступной категории
+         * означает некорректное состояние дерева.
+         */
+        $missingIds = array_diff(
+            $allowedIds,
+            array_keys($tree)
+        );
+
+        if (!empty($missingIds)) {
+            throw new InvalidArgumentException(
+                'Передано неполное состояние дерева категорий.'
+            );
+        }
+
+        /*
+         * Каждый parent_id обязан существовать
+         * внутри того же snapshot.
+         */
+        foreach ($tree as $node) {
+            $parentId = $node['parent_id'];
+
+            if (
+                $parentId !== null
+                && !isset($tree[$parentId])
+            ) {
+                throw new InvalidArgumentException(
+                    'Родительская категория ID '
+                    . $parentId
+                    . ' отсутствует в дереве.'
+                );
+            }
+        }
+
+        return $tree;
+    }
+
+    /**
+     * Расчёт уровней категорий по новому snapshot дерева.
+     *
+     * Одновременно проверяет:
+     * - отсутствие циклов;
+     * - максимальную глубину дерева.
+     */
+    private function calculateTreeLevels(
+        array $tree
+    ): array {
+        $levels = [];
+        $visiting = [];
+
+        $resolve = function (
+            int $categoryId
+        ) use (
+            &$resolve,
+            &$levels,
+            &$visiting,
+            $tree
+        ): int {
+            if (isset($levels[$categoryId])) {
+                return $levels[$categoryId];
+            }
+
+            if (isset($visiting[$categoryId])) {
+                throw new InvalidArgumentException(
+                    'Обнаружен цикл в иерархии категорий.'
+                );
+            }
+
+            $visiting[$categoryId] = true;
+
+            $parentId = $tree[$categoryId]['parent_id'];
+
+            $level = $parentId === null
+                ? 1
+                : $resolve($parentId) + 1;
+
+            unset($visiting[$categoryId]);
+
+            if ($level > $this->maxCategoryLevel) {
+                throw new InvalidArgumentException(
+                    'Нельзя переместить категорию ID '
+                    . $categoryId
+                    . ': максимальная глубина дерева — '
+                    . $this->maxCategoryLevel
+                    . ' уровня.'
+                );
+            }
+
+            $levels[$categoryId] = $level;
+
+            return $level;
+        };
+
+        foreach (array_keys($tree) as $categoryId) {
+            $resolve((int) $categoryId);
+        }
+
+        return $levels;
+    }
+
     /** Определение уровня вложенности */
-    private function resolveLevel(?int $parentId): int
-    {
+    private function resolveLevel(
+        ?int $parentId
+    ): int {
         if (!$parentId) {
             return 1;
         }
 
         $parent = $this->baseQuery()
-            ->select('id', 'level')
+            ->select([
+                'market_categories.id',
+                'market_categories.level',
+            ])
             ->find($parentId);
 
-        return $parent ? ((int) $parent->level) + 1 : 1;
+        return $parent
+            ? ((int) $parent->level) + 1
+            : 1;
     }
 
     /** Проверка максимальной глубины */
-    private function ensureAllowedLevel(?int $parentId): void
-    {
-        if ($this->resolveLevel($parentId) > $this->maxCategoryLevel) {
+    private function ensureAllowedLevel(
+        ?int $parentId
+    ): void {
+        if (
+            $this->resolveLevel($parentId)
+            > $this->maxCategoryLevel
+        ) {
             throw new InvalidArgumentException(
-                'Нельзя создавать категорию глубже ' . $this->maxCategoryLevel . ' уровня вложенности.'
+                'Нельзя создавать категорию глубже '
+                . $this->maxCategoryLevel
+                . ' уровня вложенности.'
             );
         }
     }
@@ -678,13 +1254,20 @@ class MarketCategoryController extends BaseMarketAdminController
         }
 
         $parent = MarketCategory::query()
-            ->select(['id', 'parent_id'])
+            ->select([
+                'market_categories.id',
+                'market_categories.parent_id',
+            ])
             ->find($parentId);
 
         while ($parent) {
-            if ((int) $parent->id === $categoryId) {
+            if (
+                (int) $parent->id
+                === $categoryId
+            ) {
                 throw new InvalidArgumentException(
-                    'Категорию нельзя переместить внутрь своей дочерней категории.'
+                    'Категорию нельзя переместить '
+                    . 'внутрь своей дочерней категории.'
                 );
             }
 
@@ -693,20 +1276,46 @@ class MarketCategoryController extends BaseMarketAdminController
             }
 
             $parent = MarketCategory::query()
-                ->select(['id', 'parent_id'])
+                ->select([
+                    'market_categories.id',
+                    'market_categories.parent_id',
+                ])
                 ->find($parent->parent_id);
         }
     }
 
-    /** Подготовка childrenRecursive для Vue */
-    private function prepareTreeChildren($nodes): void
-    {
+    /**
+     * Подготовка childrenRecursive для Vue.
+     *
+     * SharedResource ожидает relation children,
+     * поэтому заменяем её уже загруженным
+     * childrenRecursive без дополнительных SQL.
+     */
+    private function prepareTreeChildren(
+        $nodes
+    ): void {
         $nodes->each(function ($node) {
-            if ($node->relationLoaded('childrenRecursive')) {
-                $node->setRelation('children', $node->childrenRecursive);
-                $this->prepareTreeChildren($node->childrenRecursive);
-            } elseif ($node->relationLoaded('children')) {
-                $this->prepareTreeChildren($node->children);
+            if (
+                $node->relationLoaded(
+                    'childrenRecursive'
+                )
+            ) {
+                $node->setRelation(
+                    'children',
+                    $node->childrenRecursive
+                );
+
+                $this->prepareTreeChildren(
+                    $node->childrenRecursive
+                );
+
+                return;
+            }
+
+            if ($node->relationLoaded('children')) {
+                $this->prepareTreeChildren(
+                    $node->children
+                );
             }
         });
     }

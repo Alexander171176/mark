@@ -88,28 +88,22 @@ class MarketCategory extends Model
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id')
-            ->orderBy('sort')
-            ->orderByDesc('id');
+            ->orderBy('market_categories.sort')
+            ->orderByDesc('market_categories.id');
     }
 
     /** Дочерние категории рекурсивно */
     public function childrenRecursive(): HasMany
     {
-        return $this->children()
-            ->with([
-                'translations',
-                'translation',
-                'images.media',
-                'childrenRecursive',
-            ])
-            ->withCount([
-                'children',
-                'images',
-            ]);
+        return $this->children();
     }
 
     /**
-     * Публичные дочерние категории для каталога.
+     * Публичные дочерние категории каталога.
+     *
+     * Публичный контракт остаётся самостоятельным:
+     * здесь загрузка переводов и изображений допустима,
+     * так как relation предназначена для публичного дерева.
      */
     public function publicCatalogChildren(): HasMany
     {
@@ -134,7 +128,15 @@ class MarketCategory extends Model
         );
     }
 
-    /** Текущий перевод категории */
+    /**
+     * Текущий перевод категории.
+     *
+     * Relation сохраняется для публичной части
+     * и внешних сценариев.
+     *
+     * Admin Index использует translations,
+     * ограниченные текущей локалью в Controller.
+     */
     public function translation(): HasOne
     {
         return $this->hasOne(
@@ -172,7 +174,13 @@ class MarketCategory extends Model
             ->orderByPivot('order');
     }
 
-    /** Перевод с fallback */
+    /**
+     * Перевод с fallback.
+     *
+     * Метод работает с уже загруженной коллекцией translations.
+     * Если translations заранее не загружены,
+     * стандартный Eloquent property может выполнить запрос.
+     */
     public function translationOrFallback(
         ?string $locale = null,
         string $fallback = 'ru'
@@ -198,22 +206,22 @@ class MarketCategory extends Model
     /** Активные категории */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('activity', true);
+        return $query->where('market_categories.activity', true);
     }
 
     /** Опубликованные категории */
     public function scopePublished(Builder $query): Builder
     {
         return $query
-            ->where('status', 'published')
-            ->where('activity', true)
-            ->whereNotNull('published_at');
+            ->where('market_categories.status', 'published')
+            ->where('market_categories.activity', true)
+            ->whereNotNull('market_categories.published_at');
     }
 
     /** Одобренные категории */
     public function scopeApproved(Builder $query): Builder
     {
-        return $query->where('moderation_status', 1);
+        return $query->where('market_categories.moderation_status', 1);
     }
 
     /** Только опубликованные и одобренные */
@@ -227,19 +235,21 @@ class MarketCategory extends Model
     /** Сортировка по умолчанию */
     public function scopeOrdered(Builder $query): Builder
     {
-        return $query->orderBy('sort')->orderByDesc('id');
+        return $query
+            ->orderBy('market_categories.sort')
+            ->orderByDesc('market_categories.id');
     }
 
     /** Корневые категории */
     public function scopeRoot(Builder $query): Builder
     {
-        return $query->whereNull('parent_id');
+        return $query->whereNull('market_categories.parent_id');
     }
 
     /** Категории для меню */
     public function scopeInMenu(Builder $query): Builder
     {
-        return $query->where('in_menu', true);
+        return $query->where('market_categories.in_menu', true);
     }
 
     /** Окно показа */
@@ -247,12 +257,12 @@ class MarketCategory extends Model
     {
         return $query
             ->where(function (Builder $q) {
-                $q->whereNull('show_from_at')
-                    ->orWhere('show_from_at', '<=', now());
+                $q->whereNull('market_categories.show_from_at')
+                    ->orWhere('market_categories.show_from_at', '<=', now());
             })
             ->where(function (Builder $q) {
-                $q->whereNull('show_to_at')
-                    ->orWhere('show_to_at', '>=', now());
+                $q->whereNull('market_categories.show_to_at')
+                    ->orWhere('market_categories.show_to_at', '>=', now());
             });
     }
 
@@ -274,7 +284,10 @@ class MarketCategory extends Model
             ->ordered();
     }
 
-    /** Поиск */
+    /**
+     * Поиск по категории, переводу текущей локали,
+     * родительской категории и владельцу.
+     */
     public function scopeSearch(
         Builder $query,
         ?string $term,
@@ -294,35 +307,26 @@ class MarketCategory extends Model
                 ->orWhere('market_categories.status', 'like', "%{$term}%")
                 ->orWhere('market_categories.moderation_note', 'like', "%{$term}%")
 
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
+                ->orWhereHas('translations', function (Builder $translationQuery) use ($term, $locale) {
+                    $translationQuery
+                        ->where('locale', $locale)
+                        ->where(function (Builder $q) use ($term) {
+                            $q->where('title', 'like', "%{$term}%")
                                 ->orWhere('subtitle', 'like', "%{$term}%")
                                 ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%")
-                                ->orWhere('meta_title', 'like', "%{$term}%")
-                                ->orWhere('meta_keywords', 'like', "%{$term}%")
-                                ->orWhere('meta_desc', 'like', "%{$term}%");
+                                ->orWhere('description', 'like', "%{$term}%");
                         });
                 })
 
-                ->orWhereHas('parent.translations', function (Builder $pq) use ($term, $locale) {
-                    $pq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
-                                ->orWhere('subtitle', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%");
-                        });
+                ->orWhereHas('parent.translations', function (Builder $parentTranslationQuery) use ($term, $locale) {
+                    $parentTranslationQuery
+                        ->where('locale', $locale)
+                        ->where('title', 'like', "%{$term}%");
                 })
 
-                ->orWhereHas('owner', function (Builder $oq) use ($term) {
-                    $oq->where('name', 'like', "%{$term}%")
-                        ->orWhere('email', 'like', "%{$term}%");
-                })
-
-                ->orWhereHas('moderator', function (Builder $mq) use ($term) {
-                    $mq->where('name', 'like', "%{$term}%")
+                ->orWhereHas('owner', function (Builder $ownerQuery) use ($term) {
+                    $ownerQuery
+                        ->where('name', 'like', "%{$term}%")
                         ->orWhere('email', 'like', "%{$term}%");
                 });
         });
@@ -338,81 +342,205 @@ class MarketCategory extends Model
 
         return match ($sort) {
             'idAsc' => $query->orderBy('market_categories.id', 'asc'),
+
             'idDesc' => $query->orderBy('market_categories.id', 'desc'),
 
-            'sortAsc' => $query->orderBy('market_categories.sort', 'asc')->orderByDesc('market_categories.id'),
-            'sortDesc' => $query->orderBy('market_categories.sort', 'desc')->orderByDesc('market_categories.id'),
+            'sortAsc' => $query
+                ->orderBy('market_categories.sort', 'asc')
+                ->orderByDesc('market_categories.id'),
 
-            'levelAsc' => $query->orderBy('market_categories.level', 'asc')->orderByDesc('market_categories.id'),
-            'levelDesc' => $query->orderBy('market_categories.level', 'desc')->orderByDesc('market_categories.id'),
+            'sortDesc' => $query
+                ->orderBy('market_categories.sort', 'desc')
+                ->orderByDesc('market_categories.id'),
 
-            'parentAsc' => $query->orderBy('market_categories.parent_id', 'asc')->orderByDesc('market_categories.id'),
-            'parentDesc' => $query->orderBy('market_categories.parent_id', 'desc')->orderByDesc('market_categories.id'),
+            'levelAsc' => $query
+                ->orderBy('market_categories.level', 'asc')
+                ->orderByDesc('market_categories.id'),
 
-            'urlAsc' => $query->orderBy('market_categories.url', 'asc')->orderByDesc('market_categories.id'),
-            'urlDesc' => $query->orderBy('market_categories.url', 'desc')->orderByDesc('market_categories.id'),
+            'levelDesc' => $query
+                ->orderBy('market_categories.level', 'desc')
+                ->orderByDesc('market_categories.id'),
 
-            'viewsAsc' => $query->orderBy('market_categories.views', 'asc')->orderByDesc('market_categories.id'),
-            'viewsDesc' => $query->orderBy('market_categories.views', 'desc')->orderByDesc('market_categories.id'),
+            'parentAsc' => $query
+                ->orderBy('market_categories.parent_id', 'asc')
+                ->orderByDesc('market_categories.id'),
 
-            'activityAsc' => $query->orderBy('market_categories.activity', 'asc')->orderByDesc('market_categories.id'),
-            'activityDesc' => $query->orderBy('market_categories.activity', 'desc')->orderByDesc('market_categories.id'),
-            'activity' => $query->where('market_categories.activity', true)->orderByDesc('market_categories.id'),
-            'inactive' => $query->where('market_categories.activity', false)->orderByDesc('market_categories.id'),
+            'parentDesc' => $query
+                ->orderBy('market_categories.parent_id', 'desc')
+                ->orderByDesc('market_categories.id'),
 
-            'inMenuAsc' => $query->orderBy('market_categories.in_menu', 'asc')->orderByDesc('market_categories.id'),
-            'inMenuDesc' => $query->orderBy('market_categories.in_menu', 'desc')->orderByDesc('market_categories.id'),
-            'inMenu' => $query->where('market_categories.in_menu', true)->orderByDesc('market_categories.id'),
-            'notInMenu' => $query->where('market_categories.in_menu', false)->orderByDesc('market_categories.id'),
+            'urlAsc' => $query
+                ->orderBy('market_categories.url', 'asc')
+                ->orderByDesc('market_categories.id'),
 
-            'statusAsc' => $query->orderBy('market_categories.status', 'asc')->orderByDesc('market_categories.id'),
-            'statusDesc' => $query->orderBy('market_categories.status', 'desc')->orderByDesc('market_categories.id'),
-            'statusDraft' => $query->where('market_categories.status', 'draft')->orderByDesc('market_categories.id'),
-            'statusPublished' => $query->where('market_categories.status', 'published')->orderByDesc('market_categories.id'),
-            'statusArchived' => $query->where('market_categories.status', 'archived')->orderByDesc('market_categories.id'),
+            'urlDesc' => $query
+                ->orderBy('market_categories.url', 'desc')
+                ->orderByDesc('market_categories.id'),
+
+            'viewsAsc' => $query
+                ->orderBy('market_categories.views', 'asc')
+                ->orderByDesc('market_categories.id'),
+
+            'viewsDesc', 'views' => $query
+                ->orderBy('market_categories.views', 'desc')
+                ->orderByDesc('market_categories.id'),
+
+            'activityAsc' => $query
+                ->orderBy('market_categories.activity', 'asc')
+                ->orderByDesc('market_categories.id'),
+
+            'activityDesc' => $query
+                ->orderBy('market_categories.activity', 'desc')
+                ->orderByDesc('market_categories.id'),
+
+            'activity' => $query
+                ->where('market_categories.activity', true)
+                ->orderByDesc('market_categories.id'),
+
+            'inactive' => $query
+                ->where('market_categories.activity', false)
+                ->orderByDesc('market_categories.id'),
+
+            'inMenuAsc' => $query
+                ->orderBy('market_categories.in_menu', 'asc')
+                ->orderByDesc('market_categories.id'),
+
+            'inMenuDesc' => $query
+                ->orderBy('market_categories.in_menu', 'desc')
+                ->orderByDesc('market_categories.id'),
+
+            'inMenu' => $query
+                ->where('market_categories.in_menu', true)
+                ->orderByDesc('market_categories.id'),
+
+            'notInMenu' => $query
+                ->where('market_categories.in_menu', false)
+                ->orderByDesc('market_categories.id'),
+
+            'statusAsc' => $query
+                ->orderBy('market_categories.status', 'asc')
+                ->orderByDesc('market_categories.id'),
+
+            'statusDesc' => $query
+                ->orderBy('market_categories.status', 'desc')
+                ->orderByDesc('market_categories.id'),
+
+            'statusDraft' => $query
+                ->where('market_categories.status', 'draft')
+                ->orderByDesc('market_categories.id'),
+
+            'statusPublished' => $query
+                ->where('market_categories.status', 'published')
+                ->orderByDesc('market_categories.id'),
+
+            'statusArchived' => $query
+                ->where('market_categories.status', 'archived')
+                ->orderByDesc('market_categories.id'),
 
             'ownerNameAsc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_categories.user_id')
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'market_categories.user_id'
+                )
                 ->orderBy('owner_sort.name', 'asc')
                 ->orderByDesc('market_categories.id')
-                ->select('market_categories.*'),
+                ->addSelect('market_categories.*'),
 
             'ownerNameDesc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_categories.user_id')
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'market_categories.user_id'
+                )
                 ->orderBy('owner_sort.name', 'desc')
                 ->orderByDesc('market_categories.id')
-                ->select('market_categories.*'),
+                ->addSelect('market_categories.*'),
 
             'ownerEmailAsc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_categories.user_id')
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'market_categories.user_id'
+                )
                 ->orderBy('owner_sort.email', 'asc')
                 ->orderByDesc('market_categories.id')
-                ->select('market_categories.*'),
+                ->addSelect('market_categories.*'),
 
             'ownerEmailDesc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_categories.user_id')
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'market_categories.user_id'
+                )
                 ->orderBy('owner_sort.email', 'desc')
                 ->orderByDesc('market_categories.id')
-                ->select('market_categories.*'),
+                ->addSelect('market_categories.*'),
 
-            'moderationStatusAsc' => $query->orderBy('market_categories.moderation_status', 'asc')->orderByDesc('market_categories.id'),
-            'moderationStatusDesc' => $query->orderBy('market_categories.moderation_status', 'desc')->orderByDesc('market_categories.id'),
-            'moderationPending' => $query->where('market_categories.moderation_status', 0)->orderByDesc('market_categories.id'),
-            'moderationApproved' => $query->where('market_categories.moderation_status', 1)->orderByDesc('market_categories.id'),
-            'moderationRejected' => $query->where('market_categories.moderation_status', 2)->orderByDesc('market_categories.id'),
+            'moderationStatusAsc' => $query
+                ->orderBy('market_categories.moderation_status', 'asc')
+                ->orderByDesc('market_categories.id'),
 
-            'publishedAtAsc' => $query->orderBy('market_categories.published_at', 'asc')->orderByDesc('market_categories.id'),
-            'publishedAtDesc' => $query->orderBy('market_categories.published_at', 'desc')->orderByDesc('market_categories.id'),
+            'moderationStatusDesc' => $query
+                ->orderBy('market_categories.moderation_status', 'desc')
+                ->orderByDesc('market_categories.id'),
 
-            'createdAtAsc', 'dateAsc' => $query->orderBy('market_categories.created_at', 'asc')->orderByDesc('market_categories.id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('market_categories.created_at', 'desc')->orderByDesc('market_categories.id'),
+            'moderationPending' => $query
+                ->where('market_categories.moderation_status', 0)
+                ->orderByDesc('market_categories.id'),
 
-            'updatedAtAsc' => $query->orderBy('market_categories.updated_at', 'asc')->orderByDesc('market_categories.id'),
-            'updatedAtDesc' => $query->orderBy('market_categories.updated_at', 'desc')->orderByDesc('market_categories.id'),
+            'moderationApproved' => $query
+                ->where('market_categories.moderation_status', 1)
+                ->orderByDesc('market_categories.id'),
 
-            'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('market_categories.id'),
-            'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('market_categories.id'),
+            'moderationRejected' => $query
+                ->where('market_categories.moderation_status', 2)
+                ->orderByDesc('market_categories.id'),
 
+            'publishedAtAsc' => $query
+                ->orderBy('market_categories.published_at', 'asc')
+                ->orderByDesc('market_categories.id'),
+
+            'publishedAtDesc' => $query
+                ->orderBy('market_categories.published_at', 'desc')
+                ->orderByDesc('market_categories.id'),
+
+            'createdAtAsc', 'dateAsc' => $query
+                ->orderBy('market_categories.created_at', 'asc')
+                ->orderByDesc('market_categories.id'),
+
+            'createdAtDesc', 'dateDesc' => $query
+                ->orderBy('market_categories.created_at', 'desc')
+                ->orderByDesc('market_categories.id'),
+
+            'updatedAtAsc' => $query
+                ->orderBy('market_categories.updated_at', 'asc')
+                ->orderByDesc('market_categories.id'),
+
+            'updatedAtDesc' => $query
+                ->orderBy('market_categories.updated_at', 'desc')
+                ->orderByDesc('market_categories.id'),
+
+            /**
+             * images_count должен быть добавлен Controller
+             * через withCount('images') для Index.
+             */
+            'imagesAsc' => $query
+                ->orderBy('images_count', 'asc')
+                ->orderByDesc('market_categories.id'),
+
+            'imagesDesc' => $query
+                ->orderBy('images_count', 'desc')
+                ->orderByDesc('market_categories.id'),
+
+            /**
+             * products_count не загружается постоянно.
+             * Добавляется только при явной сортировке по товарам.
+             */
             'productsAsc' => $query
                 ->withCount('products')
                 ->orderBy('products_count', 'asc')
@@ -423,26 +551,59 @@ class MarketCategory extends Model
                 ->orderBy('products_count', 'desc')
                 ->orderByDesc('market_categories.id'),
 
-            'childrenAsc' => $query->withCount('children')->orderBy('children_count', 'asc')->orderByDesc('market_categories.id'),
-            'childrenDesc' => $query->withCount('children')->orderBy('children_count', 'desc')->orderByDesc('market_categories.id'),
+            /**
+             * children_count должен быть добавлен Controller
+             * через withCount('children') для Index.
+             */
+            'childrenAsc' => $query
+                ->orderBy('children_count', 'asc')
+                ->orderByDesc('market_categories.id'),
+
+            'childrenDesc' => $query
+                ->orderBy('children_count', 'desc')
+                ->orderByDesc('market_categories.id'),
 
             'titleAsc' => $query
-                ->leftJoin('market_category_translations as mct_sort', function ($join) use ($locale) {
-                    $join->on('mct_sort.market_category_id', '=', 'market_categories.id')
-                        ->where('mct_sort.locale', '=', $locale);
-                })
+                ->leftJoin(
+                    'market_category_translations as mct_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'mct_sort.market_category_id',
+                                '=',
+                                'market_categories.id'
+                            )
+                            ->where(
+                                'mct_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
                 ->orderBy('mct_sort.title', 'asc')
                 ->orderByDesc('market_categories.id')
-                ->select('market_categories.*'),
+                ->addSelect('market_categories.*'),
 
             'titleDesc' => $query
-                ->leftJoin('market_category_translations as mct_sort', function ($join) use ($locale) {
-                    $join->on('mct_sort.market_category_id', '=', 'market_categories.id')
-                        ->where('mct_sort.locale', '=', $locale);
-                })
+                ->leftJoin(
+                    'market_category_translations as mct_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'mct_sort.market_category_id',
+                                '=',
+                                'market_categories.id'
+                            )
+                            ->where(
+                                'mct_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
                 ->orderBy('mct_sort.title', 'desc')
                 ->orderByDesc('market_categories.id')
-                ->select('market_categories.*'),
+                ->addSelect('market_categories.*'),
 
             default => $query->ordered(),
         };

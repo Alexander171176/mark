@@ -8,7 +8,7 @@
  * - локальный поиск/сортировка/пагинация
  * - серверный поиск/сортировка/пагинация
  */
-import { defineProps, ref, watch, computed } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { router, usePage } from '@inertiajs/vue3'
@@ -63,32 +63,79 @@ const isAdmin = computed(() => {
     return roles.some((role) => role?.name === 'admin')
 })
 
-/** Получение перевода магазина */
+/** Перевод магазина */
 const getShopTranslation = (shop) => shop?.translation || {}
 
-/** Получение названия магазина */
+/** Название магазина для отображения */
 const getShopTitle = (shop) => getShopTranslation(shop)?.title || `ID: ${shop?.id}`
 
-/** Получение краткого описания магазина */
+/** Поля перевода магазина для поиска/сортировки */
+const getShopTranslationTitle = (shop) => getShopTranslation(shop)?.title || ''
+const getShopSubtitle = (shop) => getShopTranslation(shop)?.subtitle || ''
 const getShopShort = (shop) => getShopTranslation(shop)?.short || ''
-
-/** Получение полного описания магазина */
 const getShopDescription = (shop) => getShopTranslation(shop)?.description || ''
 
-/** Получение названия компании */
+/** Перевод компании */
+const getCompanyTranslation = (shop) => shop?.company?.translation || {}
+
+/** Название компании для отображения */
 const getCompanyTitle = (shop) => {
-    return shop?.company?.translation?.title
+    return getCompanyTranslation(shop)?.title
         || shop?.company?.legal_name
         || `Company ID: ${shop?.market_company_id}`
 }
 
-/** Нормализация строки */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+/** Название компании текущей локали для поиска */
+const getCompanyTranslationTitle = (shop) => getCompanyTranslation(shop)?.title || ''
 
-/** Нормализация статуса модерации */
-const moderationNum = (value) => {
+/** Нормализация строки */
+const normalize = (value) => String(value ?? '').trim().toLowerCase()
+
+/** Нормализация числа */
+const numberValue = (value) => {
     const number = Number(value)
     return Number.isFinite(number) ? number : 0
+}
+
+/** Нормализация статуса модерации */
+const moderationNum = (value) => numberValue(value)
+
+/** Числовое значение даты */
+const dateValue = (value) => {
+    if (!value) return 0
+
+    const timestamp = new Date(value).getTime()
+    return Number.isNaN(timestamp) ? 0 : timestamp
+}
+
+/** Стабильный tie-break по ID DESC */
+const compareIdDesc = (a, b) => numberValue(b?.id) - numberValue(a?.id)
+
+/** Сравнение чисел с ID DESC при равенстве */
+const compareNumber = (aValue, bValue, direction, a, b) => {
+    const result = (numberValue(aValue) - numberValue(bValue)) * direction
+    return result !== 0 ? result : compareIdDesc(a, b)
+}
+
+/** Сравнение строк с ID DESC при равенстве */
+const compareText = (aValue, bValue, direction, a, b) => {
+    const result = normalize(aValue).localeCompare(
+        normalize(bValue),
+        locale.value || undefined
+    ) * direction
+
+    return result !== 0 ? result : compareIdDesc(a, b)
+}
+
+/** Сравнение дат с ID DESC при равенстве */
+const compareDate = (aValue, bValue, direction, a, b) => {
+    const result = (dateValue(aValue) - dateValue(bValue)) * direction
+    return result !== 0 ? result : compareIdDesc(a, b)
+}
+
+/** Фильтр с серверным порядком ID DESC */
+const filterBy = (list, callback) => {
+    return list.filter(callback).sort(compareIdDesc)
 }
 
 /** Режим отображения списка */
@@ -111,7 +158,9 @@ watch(itemsPerPage, (newVal) => {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => toast.info(`Показ ${newVal} магазинов на странице.`),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва магазинов.'),
+            onError: (errors) => {
+                toast.error(errors.value || 'Ошибка обновления кол-ва магазинов.')
+            },
         }
     )
 })
@@ -223,15 +272,21 @@ const deleteShop = () => {
     router.delete(route('admin.marketShops.destroy', { marketShop: idToDelete }), {
         preserveScroll: true,
         preserveState: false,
+
         onSuccess: () => {
             toast.success(`Магазин "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
         },
+
         onError: (errors) => {
             const errorKey = Object.keys(errors)[0]
-            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
+            const errorMsg = errors.general
+                || errors[errorKey]
+                || 'Произошла ошибка при удалении.'
+
             toast.error(`${errorMsg} (Магазин: ${titleToDelete || 'ID: ' + idToDelete})`)
         },
-        onFinish: () => closeModal(),
+
+        onFinish: closeModal,
     })
 }
 
@@ -256,6 +311,7 @@ const toggleActivity = (shop) => {
         {
             preserveScroll: true,
             preserveState: true,
+
             onSuccess: () => {
                 patchLocalShop(shop.id, (node) => {
                     node.activity = newActivity
@@ -263,8 +319,13 @@ const toggleActivity = (shop) => {
 
                 toast.success(`Магазин "${title}" ${actionText}.`)
             },
+
             onError: (errors) => {
-                toast.error(errors.activity || errors.general || `Ошибка изменения активности для "${title}".`)
+                toast.error(
+                    errors.activity
+                    || errors.general
+                    || `Ошибка изменения активности для "${title}".`
+                )
             },
         }
     )
@@ -281,6 +342,7 @@ const toggleLeft = (shop) => {
         {
             preserveScroll: true,
             preserveState: true,
+
             onSuccess: () => {
                 patchLocalShop(shop.id, (node) => {
                     node.left = newLeft
@@ -288,8 +350,13 @@ const toggleLeft = (shop) => {
 
                 toast.success(`Позиция left для магазина "${title}" обновлена.`)
             },
+
             onError: (errors) => {
-                toast.error(errors.left || errors.general || `Ошибка изменения left для "${title}".`)
+                toast.error(
+                    errors.left
+                    || errors.general
+                    || `Ошибка изменения left для "${title}".`
+                )
             },
         }
     )
@@ -306,6 +373,7 @@ const toggleMain = (shop) => {
         {
             preserveScroll: true,
             preserveState: true,
+
             onSuccess: () => {
                 patchLocalShop(shop.id, (node) => {
                     node.main = newMain
@@ -313,8 +381,13 @@ const toggleMain = (shop) => {
 
                 toast.success(`Позиция main для магазина "${title}" обновлена.`)
             },
+
             onError: (errors) => {
-                toast.error(errors.main || errors.general || `Ошибка изменения main для "${title}".`)
+                toast.error(
+                    errors.main
+                    || errors.general
+                    || `Ошибка изменения main для "${title}".`
+                )
             },
         }
     )
@@ -331,6 +404,7 @@ const toggleRight = (shop) => {
         {
             preserveScroll: true,
             preserveState: true,
+
             onSuccess: () => {
                 patchLocalShop(shop.id, (node) => {
                     node.right = newRight
@@ -338,8 +412,13 @@ const toggleRight = (shop) => {
 
                 toast.success(`Позиция right для магазина "${title}" обновлена.`)
             },
+
             onError: (errors) => {
-                toast.error(errors.right || errors.general || `Ошибка изменения right для "${title}".`)
+                toast.error(
+                    errors.right
+                    || errors.general
+                    || `Ошибка изменения right для "${title}".`
+                )
             },
         }
     )
@@ -349,111 +428,408 @@ const toggleRight = (shop) => {
 const searchQuery = ref(props.search || '')
 const currentPage = ref(1)
 
-/** Сортировка магазинов */
+/**
+ * Локальная сортировка магазинов.
+ *
+ * Повторяет MarketShop::scopeSortByParam().
+ * Для всех сортировок, кроме чистого ID,
+ * при равенстве используется ID DESC.
+ */
 const sortShops = (shops) => {
-    const list = (shops || []).slice()
+    const list = [...(shops || [])]
+    const sort = sortParam.value
 
-    if (sortParam.value === 'activityAsc') {
-        return list.sort((a, b) => Number(a.activity) - Number(b.activity))
-    }
-    if (sortParam.value === 'activityDesc') {
-        return list.sort((a, b) => Number(b.activity) - Number(a.activity))
+    if (sort === 'idAsc') {
+        return list.sort((a, b) => numberValue(a?.id) - numberValue(b?.id))
     }
 
-    if (sortParam.value === 'leftAsc') {
-        return list.sort((a, b) => Number(a.left) - Number(b.left))
-    }
-    if (sortParam.value === 'leftDesc') {
-        return list.sort((a, b) => Number(b.left) - Number(a.left))
+    if (sort === 'idDesc') {
+        return list.sort(compareIdDesc)
     }
 
-    if (sortParam.value === 'mainAsc') {
-        return list.sort((a, b) => Number(a.main) - Number(b.main))
-    }
-    if (sortParam.value === 'mainDesc') {
-        return list.sort((a, b) => Number(b.main) - Number(a.main))
+    if (sort === 'sortAsc') {
+        return list.sort((a, b) => compareNumber(a?.sort, b?.sort, 1, a, b))
     }
 
-    if (sortParam.value === 'rightAsc') {
-        return list.sort((a, b) => Number(a.right) - Number(b.right))
-    }
-    if (sortParam.value === 'rightDesc') {
-        return list.sort((a, b) => Number(b.right) - Number(a.right))
+    if (sort === 'sortDesc') {
+        return list.sort((a, b) => compareNumber(a?.sort, b?.sort, -1, a, b))
     }
 
-    if (sortParam.value === 'ownerNameAsc') return list.sort((a, b) => normalize(a?.owner?.name).localeCompare(normalize(b?.owner?.name), locale.value))
-    if (sortParam.value === 'ownerNameDesc') return list.sort((a, b) => normalize(b?.owner?.name).localeCompare(normalize(a?.owner?.name), locale.value))
-    if (sortParam.value === 'ownerEmailAsc') return list.sort((a, b) => normalize(a?.owner?.email).localeCompare(normalize(b?.owner?.email), locale.value))
-    if (sortParam.value === 'ownerEmailDesc') return list.sort((a, b) => normalize(b?.owner?.email).localeCompare(normalize(a?.owner?.email), locale.value))
+    if (sort === 'titleAsc') {
+        return list.sort((a, b) => compareText(
+            getShopTranslationTitle(a),
+            getShopTranslationTitle(b),
+            1,
+            a,
+            b
+        ))
+    }
 
-    if (sortParam.value === 'companyLegalNameAsc') return list.sort((a, b) => normalize(a?.company?.legal_name).localeCompare(normalize(b?.company?.legal_name), locale.value))
-    if (sortParam.value === 'companyLegalNameDesc') return list.sort((a, b) => normalize(b?.company?.legal_name).localeCompare(normalize(a?.company?.legal_name), locale.value))
+    if (sort === 'titleDesc') {
+        return list.sort((a, b) => compareText(
+            getShopTranslationTitle(a),
+            getShopTranslationTitle(b),
+            -1,
+            a,
+            b
+        ))
+    }
 
-    if (sortParam.value === 'idAsc') return list.sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
-    if (sortParam.value === 'idDesc') return list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))
-    if (sortParam.value === 'sortAsc') return list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-    if (sortParam.value === 'sortDesc') return list.sort((a, b) => (b.sort ?? 0) - (a.sort ?? 0))
+    if (sort === 'urlAsc') {
+        return list.sort((a, b) => compareText(a?.url, b?.url, 1, a, b))
+    }
 
-    if (sortParam.value === 'titleAsc') return list.sort((a, b) => normalize(getShopTitle(a)).localeCompare(normalize(getShopTitle(b)), locale.value))
-    if (sortParam.value === 'titleDesc') return list.sort((a, b) => normalize(getShopTitle(b)).localeCompare(normalize(getShopTitle(a)), locale.value))
+    if (sort === 'urlDesc') {
+        return list.sort((a, b) => compareText(a?.url, b?.url, -1, a, b))
+    }
 
-    if (sortParam.value === 'urlAsc') return list.sort((a, b) => normalize(a?.url).localeCompare(normalize(b?.url), locale.value))
-    if (sortParam.value === 'urlDesc') return list.sort((a, b) => normalize(b?.url).localeCompare(normalize(a?.url), locale.value))
+    if (sort === 'emailAsc') {
+        return list.sort((a, b) => compareText(a?.email, b?.email, 1, a, b))
+    }
 
-    if (sortParam.value === 'emailAsc') return list.sort((a, b) => normalize(a?.email).localeCompare(normalize(b?.email), locale.value))
-    if (sortParam.value === 'emailDesc') return list.sort((a, b) => normalize(b?.email).localeCompare(normalize(a?.email), locale.value))
+    if (sort === 'emailDesc') {
+        return list.sort((a, b) => compareText(a?.email, b?.email, -1, a, b))
+    }
 
-    if (sortParam.value === 'phoneAsc') return list.sort((a, b) => normalize(a?.phone).localeCompare(normalize(b?.phone), locale.value))
-    if (sortParam.value === 'phoneDesc') return list.sort((a, b) => normalize(b?.phone).localeCompare(normalize(a?.phone), locale.value))
+    if (sort === 'phoneAsc') {
+        return list.sort((a, b) => compareText(a?.phone, b?.phone, 1, a, b))
+    }
 
-    if (sortParam.value === 'statusAsc') return list.sort((a, b) => normalize(a?.status).localeCompare(normalize(b?.status), locale.value))
-    if (sortParam.value === 'statusDesc') return list.sort((a, b) => normalize(b?.status).localeCompare(normalize(a?.status), locale.value))
-    if (sortParam.value === 'statusDraft') return list.filter((shop) => shop?.status === 'draft')
-    if (sortParam.value === 'statusPublished') return list.filter((shop) => shop?.status === 'published')
-    if (sortParam.value === 'statusArchived') return list.filter((shop) => shop?.status === 'archived')
+    if (sort === 'phoneDesc') {
+        return list.sort((a, b) => compareText(a?.phone, b?.phone, -1, a, b))
+    }
 
-    if (sortParam.value === 'activity') return list.filter((shop) => !!shop.activity)
-    if (sortParam.value === 'inactive') return list.filter((shop) => !shop.activity)
+    if (sort === 'statusAsc') {
+        return list.sort((a, b) => compareText(a?.status, b?.status, 1, a, b))
+    }
 
-    if (sortParam.value === 'left') return list.filter((shop) => !!shop.left)
-    if (sortParam.value === 'noLeft') return list.filter((shop) => !shop.left)
-    if (sortParam.value === 'main') return list.filter((shop) => !!shop.main)
-    if (sortParam.value === 'noMain') return list.filter((shop) => !shop.main)
-    if (sortParam.value === 'right') return list.filter((shop) => !!shop.right)
-    if (sortParam.value === 'noRight') return list.filter((shop) => !shop.right)
+    if (sort === 'statusDesc') {
+        return list.sort((a, b) => compareText(a?.status, b?.status, -1, a, b))
+    }
 
-    if (sortParam.value === 'publishedAtDesc') return list.sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0))
-    if (sortParam.value === 'publishedAtAsc') return list.sort((a, b) => new Date(a.published_at || 0) - new Date(b.published_at || 0))
+    if (sort === 'statusDraft') {
+        return filterBy(list, (shop) => shop?.status === 'draft')
+    }
 
-    if (sortParam.value === 'showFromAtDesc') return list.sort((a, b) => new Date(b.show_from_at || 0) - new Date(a.show_from_at || 0))
-    if (sortParam.value === 'showFromAtAsc') return list.sort((a, b) => new Date(a.show_from_at || 0) - new Date(b.show_from_at || 0))
+    if (sort === 'statusPublished') {
+        return filterBy(list, (shop) => shop?.status === 'published')
+    }
 
-    if (sortParam.value === 'showToAtDesc') return list.sort((a, b) => new Date(b.show_to_at || 0) - new Date(a.show_to_at || 0))
-    if (sortParam.value === 'showToAtAsc') return list.sort((a, b) => new Date(a.show_to_at || 0) - new Date(b.show_to_at || 0))
+    if (sort === 'statusArchived') {
+        return filterBy(list, (shop) => shop?.status === 'archived')
+    }
 
-    if (sortParam.value === 'createdAtDesc' || sortParam.value === 'dateDesc') return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-    if (sortParam.value === 'createdAtAsc' || sortParam.value === 'dateAsc') return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+    if (sort === 'publishedAtAsc') {
+        return list.sort((a, b) => compareDate(
+            a?.published_at,
+            b?.published_at,
+            1,
+            a,
+            b
+        ))
+    }
 
-    if (sortParam.value === 'updatedAtDesc') return list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
-    if (sortParam.value === 'updatedAtAsc') return list.sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
+    if (sort === 'publishedAtDesc') {
+        return list.sort((a, b) => compareDate(
+            a?.published_at,
+            b?.published_at,
+            -1,
+            a,
+            b
+        ))
+    }
 
-    if (sortParam.value === 'views' || sortParam.value === 'viewsDesc') return list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
-    if (sortParam.value === 'viewsAsc') return list.sort((a, b) => (a.views ?? 0) - (b.views ?? 0))
+    if (sort === 'showFromAtAsc') {
+        return list.sort((a, b) => compareDate(
+            a?.show_from_at,
+            b?.show_from_at,
+            1,
+            a,
+            b
+        ))
+    }
 
-    if (sortParam.value === 'imagesDesc') return list.sort((a, b) => (b.images_count ?? 0) - (a.images_count ?? 0))
-    if (sortParam.value === 'imagesAsc') return list.sort((a, b) => (a.images_count ?? 0) - (b.images_count ?? 0))
+    if (sort === 'showFromAtDesc') {
+        return list.sort((a, b) => compareDate(
+            a?.show_from_at,
+            b?.show_from_at,
+            -1,
+            a,
+            b
+        ))
+    }
 
-    if (sortParam.value === 'moderationPending') return list.filter((shop) => moderationNum(shop?.moderation_status) === 0)
-    if (sortParam.value === 'moderationApproved') return list.filter((shop) => moderationNum(shop?.moderation_status) === 1)
-    if (sortParam.value === 'moderationRejected') return list.filter((shop) => moderationNum(shop?.moderation_status) === 2)
+    if (sort === 'showToAtAsc') {
+        return list.sort((a, b) => compareDate(
+            a?.show_to_at,
+            b?.show_to_at,
+            1,
+            a,
+            b
+        ))
+    }
 
-    if (sortParam.value === 'moderationStatusAsc') return list.sort((a, b) => moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status))
-    if (sortParam.value === 'moderationStatusDesc') return list.sort((a, b) => moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status))
+    if (sort === 'showToAtDesc') {
+        return list.sort((a, b) => compareDate(
+            a?.show_to_at,
+            b?.show_to_at,
+            -1,
+            a,
+            b
+        ))
+    }
 
+    if (sort === 'createdAtAsc' || sort === 'dateAsc') {
+        return list.sort((a, b) => compareDate(
+            a?.created_at,
+            b?.created_at,
+            1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'createdAtDesc' || sort === 'dateDesc') {
+        return list.sort((a, b) => compareDate(
+            a?.created_at,
+            b?.created_at,
+            -1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'updatedAtAsc') {
+        return list.sort((a, b) => compareDate(
+            a?.updated_at,
+            b?.updated_at,
+            1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'updatedAtDesc') {
+        return list.sort((a, b) => compareDate(
+            a?.updated_at,
+            b?.updated_at,
+            -1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'viewsAsc') {
+        return list.sort((a, b) => compareNumber(a?.views, b?.views, 1, a, b))
+    }
+
+    if (sort === 'viewsDesc' || sort === 'views') {
+        return list.sort((a, b) => compareNumber(a?.views, b?.views, -1, a, b))
+    }
+
+    if (sort === 'imagesAsc') {
+        return list.sort((a, b) => compareNumber(
+            a?.images_count,
+            b?.images_count,
+            1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'imagesDesc') {
+        return list.sort((a, b) => compareNumber(
+            a?.images_count,
+            b?.images_count,
+            -1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'activityAsc') {
+        return list.sort((a, b) => compareNumber(a?.activity, b?.activity, 1, a, b))
+    }
+
+    if (sort === 'activityDesc') {
+        return list.sort((a, b) => compareNumber(a?.activity, b?.activity, -1, a, b))
+    }
+
+    if (sort === 'activity') {
+        return filterBy(list, (shop) => Boolean(shop?.activity))
+    }
+
+    if (sort === 'inactive') {
+        return filterBy(list, (shop) => !shop?.activity)
+    }
+
+    if (sort === 'leftAsc') {
+        return list.sort((a, b) => compareNumber(a?.left, b?.left, 1, a, b))
+    }
+
+    if (sort === 'leftDesc') {
+        return list.sort((a, b) => compareNumber(a?.left, b?.left, -1, a, b))
+    }
+
+    if (sort === 'left') {
+        return filterBy(list, (shop) => Boolean(shop?.left))
+    }
+
+    if (sort === 'noLeft') {
+        return filterBy(list, (shop) => !shop?.left)
+    }
+
+    if (sort === 'mainAsc') {
+        return list.sort((a, b) => compareNumber(a?.main, b?.main, 1, a, b))
+    }
+
+    if (sort === 'mainDesc') {
+        return list.sort((a, b) => compareNumber(a?.main, b?.main, -1, a, b))
+    }
+
+    if (sort === 'main') {
+        return filterBy(list, (shop) => Boolean(shop?.main))
+    }
+
+    if (sort === 'noMain') {
+        return filterBy(list, (shop) => !shop?.main)
+    }
+
+    if (sort === 'rightAsc') {
+        return list.sort((a, b) => compareNumber(a?.right, b?.right, 1, a, b))
+    }
+
+    if (sort === 'rightDesc') {
+        return list.sort((a, b) => compareNumber(a?.right, b?.right, -1, a, b))
+    }
+
+    if (sort === 'right') {
+        return filterBy(list, (shop) => Boolean(shop?.right))
+    }
+
+    if (sort === 'noRight') {
+        return filterBy(list, (shop) => !shop?.right)
+    }
+
+    if (sort === 'moderationStatusAsc') {
+        return list.sort((a, b) => compareNumber(
+            moderationNum(a?.moderation_status),
+            moderationNum(b?.moderation_status),
+            1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'moderationStatusDesc') {
+        return list.sort((a, b) => compareNumber(
+            moderationNum(a?.moderation_status),
+            moderationNum(b?.moderation_status),
+            -1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'moderationPending') {
+        return filterBy(
+            list,
+            (shop) => moderationNum(shop?.moderation_status) === 0
+        )
+    }
+
+    if (sort === 'moderationApproved') {
+        return filterBy(
+            list,
+            (shop) => moderationNum(shop?.moderation_status) === 1
+        )
+    }
+
+    if (sort === 'moderationRejected') {
+        return filterBy(
+            list,
+            (shop) => moderationNum(shop?.moderation_status) === 2
+        )
+    }
+
+    if (sort === 'ownerNameAsc') {
+        return list.sort((a, b) => compareText(
+            a?.owner?.name,
+            b?.owner?.name,
+            1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'ownerNameDesc') {
+        return list.sort((a, b) => compareText(
+            a?.owner?.name,
+            b?.owner?.name,
+            -1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'ownerEmailAsc') {
+        return list.sort((a, b) => compareText(
+            a?.owner?.email,
+            b?.owner?.email,
+            1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'ownerEmailDesc') {
+        return list.sort((a, b) => compareText(
+            a?.owner?.email,
+            b?.owner?.email,
+            -1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'companyLegalNameAsc') {
+        return list.sort((a, b) => compareText(
+            a?.company?.legal_name,
+            b?.company?.legal_name,
+            1,
+            a,
+            b
+        ))
+    }
+
+    if (sort === 'companyLegalNameDesc') {
+        return list.sort((a, b) => compareText(
+            a?.company?.legal_name,
+            b?.company?.legal_name,
+            -1,
+            a,
+            b
+        ))
+    }
+
+    /**
+     * Неизвестный параметр:
+     * исходный frontend-набор уже приходит ordered()
+     * из Controller: sort ASC, id DESC.
+     */
     return list
 }
 
-/** Фильтрация магазинов */
+/**
+ * Локальная фильтрация.
+ *
+ * Повторяет MarketShop::scopeSearch():
+ * - url/email/phone/status/moderation_note магазина;
+ * - title/subtitle/short/description перевода;
+ * - name/email владельца;
+ * - url/legal_name/email/phone компании;
+ * - title перевода компании.
+ */
 const filteredShops = computed(() => {
     let filtered = localShops.value || []
     const query = normalize(searchQuery.value)
@@ -463,27 +839,34 @@ const filteredShops = computed(() => {
     }
 
     filtered = filtered.filter((shop) => {
-        const title = normalize(getShopTitle(shop))
-        const short = normalize(getShopShort(shop))
-        const description = normalize(getShopDescription(shop))
-        const url = normalize(shop?.url)
-        const email = normalize(shop?.email)
-        const phone = normalize(shop?.phone)
-        const companyTitle = normalize(getCompanyTitle(shop))
-        const companyLegalName = normalize(shop?.company?.legal_name)
-        const ownerName = normalize(shop?.owner?.name)
-        const ownerEmail = normalize(shop?.owner?.email)
+        const translation = getShopTranslation(shop)
+        const company = shop?.company || {}
+        const companyTranslationTitle = getCompanyTranslationTitle(shop)
 
-        return title.includes(query)
-            || short.includes(query)
-            || description.includes(query)
-            || url.includes(query)
-            || email.includes(query)
-            || phone.includes(query)
-            || companyTitle.includes(query)
-            || companyLegalName.includes(query)
-            || ownerName.includes(query)
-            || ownerEmail.includes(query)
+        const searchableValues = [
+            shop?.url,
+            shop?.email,
+            shop?.phone,
+            shop?.status,
+            shop?.moderation_note,
+
+            translation?.title,
+            translation?.subtitle,
+            translation?.short,
+            translation?.description,
+
+            shop?.owner?.name,
+            shop?.owner?.email,
+
+            company?.url,
+            company?.legal_name,
+            company?.email,
+            company?.phone,
+
+            companyTranslationTitle,
+        ]
+
+        return searchableValues.some((value) => normalize(value).includes(query))
     })
 
     return sortShops(filtered)
@@ -504,8 +887,8 @@ const displayedShops = computed(() => {
         : paginatedShops.value
 })
 
-/** Сброс страницы при изменениях */
-watch([itemsPerPage, searchQuery], () => {
+/** Сброс страницы при изменении пагинации, поиска или сортировки */
+watch([itemsPerPage, searchQuery, sortParam], () => {
     currentPage.value = 1
 })
 
@@ -514,13 +897,22 @@ const selectedShops = ref([])
 
 /** Массовое выделение */
 const toggleAll = (payload) => {
-    const checked = payload?.checked ?? payload?.target?.checked ?? false
+    const checked = Boolean(
+        payload?.checked
+        ?? payload?.target?.checked
+        ?? false
+    )
+
     const ids = payload?.ids ?? displayedShops.value.map((shop) => shop.id)
 
     if (checked) {
-        selectedShops.value = [...new Set([...selectedShops.value, ...ids])]
+        selectedShops.value = [
+            ...new Set([...selectedShops.value, ...ids]),
+        ]
     } else {
-        selectedShops.value = selectedShops.value.filter((id) => !ids.includes(id))
+        selectedShops.value = selectedShops.value.filter(
+            (id) => !ids.includes(id)
+        )
     }
 }
 
@@ -543,17 +935,19 @@ const bulkToggleActivity = (newActivity) => {
     }
 
     const idsToUpdate = [...selectedShops.value]
+    const activity = Boolean(newActivity)
 
     router.put(
         route('admin.actions.marketShops.bulkUpdateActivity'),
-        { ids: idsToUpdate, activity: newActivity },
+        { ids: idsToUpdate, activity },
         {
             preserveScroll: true,
             preserveState: true,
+
             onSuccess: () => {
                 localShops.value = localShops.value.map((shop) => {
                     if (idsToUpdate.includes(shop.id)) {
-                        return { ...shop, activity: newActivity }
+                        return { ...shop, activity }
                     }
 
                     return shop
@@ -562,8 +956,13 @@ const bulkToggleActivity = (newActivity) => {
                 selectedShops.value = []
                 toast.success('Активность магазинов массово обновлена')
             },
+
             onError: (errors) => {
-                const msg = errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности'
+                const msg = errors?.ids
+                    || errors?.activity
+                    || errors?.general
+                    || 'Ошибка массового обновления активности'
+
                 toast.error(msg)
             },
         }
@@ -578,17 +977,19 @@ const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
     }
 
     const idsToUpdate = [...selectedShops.value]
+    const value = Boolean(newValue)
 
     router.put(
         route(routeName),
-        { ids: idsToUpdate, [field]: newValue },
+        { ids: idsToUpdate, [field]: value },
         {
             preserveScroll: true,
             preserveState: true,
+
             onSuccess: () => {
                 localShops.value = localShops.value.map((shop) => {
                     if (idsToUpdate.includes(shop.id)) {
-                        return { ...shop, [field]: newValue }
+                        return { ...shop, [field]: value }
                     }
 
                     return shop
@@ -597,8 +998,13 @@ const bulkToggleFlag = (field, newValue, routeName, successMessage) => {
                 selectedShops.value = []
                 toast.success(successMessage)
             },
+
             onError: (errors) => {
-                const msg = errors?.ids || errors?.[field] || errors?.general || 'Ошибка массового обновления'
+                const msg = errors?.ids
+                    || errors?.[field]
+                    || errors?.general
+                    || 'Ошибка массового обновления'
+
                 toast.error(msg)
             },
         }
@@ -618,13 +1024,18 @@ const bulkDelete = () => {
         data: { ids: selectedShops.value },
         preserveScroll: true,
         preserveState: false,
+
         onSuccess: () => {
             selectedShops.value = []
             toast.success('Массовое удаление магазинов успешно завершено.')
         },
+
         onError: (errors) => {
             const errorKey = Object.keys(errors)[0]
-            toast.error(errors[errorKey] || 'Произошла ошибка при удалении магазинов.')
+            toast.error(
+                errors[errorKey]
+                || 'Произошла ошибка при удалении магазинов.'
+            )
         },
     })
 }
@@ -634,25 +1045,55 @@ const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        toggleAll({ target: { checked: true } })
+        toggleAll({ checked: true })
     } else if (action === 'deselectAll') {
-        toggleAll({ target: { checked: false } })
+        toggleAll({ checked: false })
     } else if (action === 'activate') {
         bulkToggleActivity(true)
     } else if (action === 'deactivate') {
         bulkToggleActivity(false)
     } else if (action === 'left') {
-        bulkToggleFlag('left', true, 'admin.actions.marketShops.bulkUpdateLeft', 'Магазины добавлены в левую колонку')
+        bulkToggleFlag(
+            'left',
+            true,
+            'admin.actions.marketShops.bulkUpdateLeft',
+            'Магазины добавлены в левую колонку'
+        )
     } else if (action === 'noLeft') {
-        bulkToggleFlag('left', false, 'admin.actions.marketShops.bulkUpdateLeft', 'Магазины убраны из левой колонки')
+        bulkToggleFlag(
+            'left',
+            false,
+            'admin.actions.marketShops.bulkUpdateLeft',
+            'Магазины убраны из левой колонки'
+        )
     } else if (action === 'main') {
-        bulkToggleFlag('main', true, 'admin.actions.marketShops.bulkUpdateMain', 'Магазины добавлены в главный блок')
+        bulkToggleFlag(
+            'main',
+            true,
+            'admin.actions.marketShops.bulkUpdateMain',
+            'Магазины добавлены в главный блок'
+        )
     } else if (action === 'noMain') {
-        bulkToggleFlag('main', false, 'admin.actions.marketShops.bulkUpdateMain', 'Магазины убраны из главного блока')
+        bulkToggleFlag(
+            'main',
+            false,
+            'admin.actions.marketShops.bulkUpdateMain',
+            'Магазины убраны из главного блока'
+        )
     } else if (action === 'right') {
-        bulkToggleFlag('right', true, 'admin.actions.marketShops.bulkUpdateRight', 'Магазины добавлены в правую колонку')
+        bulkToggleFlag(
+            'right',
+            true,
+            'admin.actions.marketShops.bulkUpdateRight',
+            'Магазины добавлены в правую колонку'
+        )
     } else if (action === 'noRight') {
-        bulkToggleFlag('right', false, 'admin.actions.marketShops.bulkUpdateRight', 'Магазины убраны из правой колонки')
+        bulkToggleFlag(
+            'right',
+            false,
+            'admin.actions.marketShops.bulkUpdateRight',
+            'Магазины убраны из правой колонки'
+        )
     } else if (action === 'delete') {
         bulkDelete()
     }
@@ -664,21 +1105,34 @@ const handleBulkAction = (event) => {
 const approveShop = (shop, status = 1, note = '') => {
     if (!shop?.id) return
 
+    const moderationStatus = moderationNum(status)
+
     router.put(
         route('admin.actions.marketShops.approve', { marketShop: shop.id }),
-        { moderation_status: status, moderation_note: note },
+        {
+            moderation_status: moderationStatus,
+            moderation_note: note,
+        },
         {
             preserveScroll: true,
             preserveState: true,
+
             onSuccess: () => {
                 patchLocalShop(shop.id, (node) => {
-                    node.moderation_status = status
-                    node.is_approved = status === 1
+                    node.moderation_status = moderationStatus
+                    node.is_pending = moderationStatus === 0
+                    node.is_approved = moderationStatus === 1
+                    node.is_rejected = moderationStatus === 2
                     node.moderation_note = note
                 })
 
-                toast.success(status === 1 ? 'Магазин одобрен' : 'Магазин отклонён')
+                toast.success(
+                    moderationStatus === 1
+                        ? 'Магазин одобрен'
+                        : 'Магазин отклонён'
+                )
             },
+
             onError: () => toast.error('Ошибка модерации магазина'),
         }
     )
@@ -699,7 +1153,17 @@ const handleSortOrderUpdate = (newOrderIds) => {
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.success('Сортировка магазинов обновлена'),
+
+            onSuccess: () => {
+                items.forEach((item) => {
+                    patchLocalShop(item.id, (shop) => {
+                        shop.sort = item.sort
+                    })
+                })
+
+                toast.success('Сортировка магазинов обновлена')
+            },
+
             onError: (errors) => {
                 console.error('Ошибка сортировки магазинов:', errors)
                 toast.error(errors.message || 'Ошибка обновления сортировки')
@@ -763,7 +1227,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
                     <SortSelect
                         :sortParam="sortParam"
-                        @update:sortParam="(val) => (sortParam = val)"
+                        @update:sortParam="(value) => (sortParam = value)"
                     />
                 </div>
 

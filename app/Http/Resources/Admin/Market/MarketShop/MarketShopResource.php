@@ -8,16 +8,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class MarketShopResource extends JsonResource
 {
+    /**
+     * Преобразование ресурса магазина.
+     */
     public function toArray(Request $request): array
     {
-        $currentLocale = app()->getLocale();
-
-        $currentTranslation = $this->whenLoaded('translations', function () use ($currentLocale) {
-            return $this->translations->firstWhere('locale', $currentLocale)
-                ?: $this->translations->firstWhere('locale', config('app.fallback_locale', 'ru'))
-                    ?: $this->translations->first();
-        });
-
         return [
             'id' => $this->id,
             'market_company_id' => $this->market_company_id,
@@ -42,7 +37,9 @@ class MarketShopResource extends JsonResource
 
             /** Модерация */
             'moderation_status' => (int) $this->moderation_status,
+            'is_pending' => (int) $this->moderation_status === 0,
             'is_approved' => (int) $this->moderation_status === 1,
+            'is_rejected' => (int) $this->moderation_status === 2,
             'moderated_by' => $this->moderated_by,
             'moderated_at' => $this->moderated_at?->toISOString(),
             'moderation_note' => $this->moderation_note,
@@ -56,9 +53,7 @@ class MarketShopResource extends JsonResource
             'views' => (int) $this->views,
 
             /** Текущий перевод */
-            'translation' => $currentTranslation
-                ? new MarketShopTranslationResource($currentTranslation)
-                : null,
+            'translation' => $this->currentTranslation(),
 
             /** Все переводы */
             'translations' => MarketShopTranslationResource::collection(
@@ -90,6 +85,7 @@ class MarketShopResource extends JsonResource
                 return [
                     'id' => $this->moderator?->id,
                     'name' => $this->moderator?->name,
+                    'email' => $this->moderator?->email,
                 ];
             }),
 
@@ -97,5 +93,26 @@ class MarketShopResource extends JsonResource
                 $this->whenLoaded('images')
             ),
         ];
+    }
+
+    /**
+     * Текущий перевод из уже загруженной коллекции translations.
+     */
+    private function currentTranslation(): ?MarketShopTranslationResource
+    {
+        if (!$this->relationLoaded('translations')) {
+            return null;
+        }
+
+        $locale = app()->getLocale();
+        $fallbackLocale = config('app.fallback_locale', 'ru');
+
+        $translation = $this->translations->firstWhere('locale', $locale)
+            ?: $this->translations->firstWhere('locale', $fallbackLocale)
+                ?: $this->translations->first();
+
+        return $translation
+            ? new MarketShopTranslationResource($translation)
+            : null;
     }
 }

@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, defineEmits, watch, ref } from 'vue'
+import { defineEmits, defineProps, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
@@ -11,7 +11,7 @@ import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
 import ModerationButton from '@/Components/Admin/UI/Buttons/ModerationButton.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = defineProps({
     shops: { type: Array, default: () => [] },
@@ -33,6 +33,7 @@ const emits = defineEmits([
 
 const localShops = ref([])
 
+/** Синхронизация списка магазинов */
 watch(
     () => props.shops,
     (newVal) => {
@@ -41,139 +42,225 @@ watch(
     { immediate: true, deep: true }
 )
 
+/** Завершение drag&drop */
 const handleDragEnd = () => {
-    emits('update-sort-order', localShops.value.map(shop => shop.id))
+    emits(
+        'update-sort-order',
+        localShops.value.map((shop) => shop.id)
+    )
 }
 
+/** Выделение / снятие выделения всех отображаемых магазинов */
 const toggleAll = (event) => {
     emits('toggle-all', {
-        ids: localShops.value.map(shop => shop.id),
-        checked: event.target.checked,
+        ids: localShops.value.map((shop) => shop.id),
+        checked: Boolean(event?.target?.checked),
     })
 }
 
+/** Все отображаемые магазины выбраны */
 const allSelected = () => {
-    return localShops.value.length
-        && localShops.value.every(shop => props.selectedShops.includes(shop.id))
+    return localShops.value.length > 0
+        && localShops.value.every((shop) => props.selectedShops.includes(shop.id))
 }
 
+/** Перевод магазина */
 const shopTranslation = (shop) => shop?.translation || {}
 
-const shopTitle = (shop) => shopTranslation(shop)?.title || `ID: ${shop?.id}`
+/** Название магазина */
+const shopTitle = (shop) => {
+    return shopTranslation(shop)?.title || `ID: ${shop?.id}`
+}
 
+/** Перевод компании */
 const companyTranslation = (shop) => shop?.company?.translation || {}
 
+/** Название компании */
 const companyTitle = (shop) => {
     return companyTranslation(shop)?.title
         || shop?.company?.legal_name
         || `Company ID: ${shop?.market_company_id}`
 }
 
+/** Локализованный статус публикации */
 const statusLabelKeyMap = {
     draft: 'statusDraft',
     published: 'statusPublished',
     archived: 'statusArchived',
 }
-const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
 
+const getStatusLabel = (status) => {
+    return t(statusLabelKeyMap[status] || status || 'no')
+}
+
+/** Информация владельца */
 const ownerTitle = (shop) => {
     const owner = shop?.owner
 
-    if (!owner) return t('noData')
+    if (!owner) {
+        return t('noData')
+    }
 
-    return `${owner.name || ''}${owner.email ? ' — ' + owner.email : ''}`.trim()
+    return `${owner.name || ''}${owner.email ? ` — ${owner.email}` : ''}`.trim()
 }
 
+/** Аватар владельца */
 const ownerAvatar = (shop) => {
-    return shop?.owner?.profile_photo_url || '/storage/profile-photos/default-image.png'
+    return shop?.owner?.profile_photo_url
+        || '/storage/profile-photos/default-image.png'
 }
 
+/** URL логотипа */
 const logoUrl = (shop) => {
-    if (!shop?.logo) {
+    const logo = shop?.logo
+
+    if (!logo) {
         return '/storage/market/market_shops/logos/default-image-light.png'
     }
 
-    return shop.logo.startsWith('/storage/')
-        ? shop.logo
-        : `/storage/${shop.logo}`
+    return logo.startsWith('/storage/')
+        ? logo
+        : `/storage/${logo}`
 }
 
+/** Главное изображение магазина */
 const getPrimaryImage = (shop) => {
-    if (shop.images && shop.images.length) {
-        return [...shop.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0]
+    const images = Array.isArray(shop?.images)
+        ? shop.images
+        : []
+
+    if (!images.length) {
+        return null
     }
 
-    return null
+    return [...images].sort(
+        (a, b) => Number(a?.order ?? 0) - Number(b?.order ?? 0)
+    )[0]
 }
 
+/** URL главного изображения */
 const imageUrl = (shop) => {
     const image = getPrimaryImage(shop)
 
     return image?.webp_url
         || image?.thumb_url
-        || image?.image_url
         || image?.url
         || '/storage/market/market_shop_images/default-image.png'
 }
 
+/** Alt изображения */
 const imageAlt = (shop) => {
-    const image = getPrimaryImage(shop)
-
-    return image?.alt || shopTitle(shop)
+    return getPrimaryImage(shop)?.alt || shopTitle(shop)
 }
 
+/** Title изображения */
 const imageTitle = (shop) => {
-    const image = getPrimaryImage(shop)
-
-    return image?.caption || shopTitle(shop)
+    return getPrimaryImage(shop)?.caption || shopTitle(shop)
 }
 
+/** Данные бейджа модерации */
 const moderationBadge = (status) => {
-    const s = Number(status ?? 0)
+    const normalizedStatus = Number(status ?? 0)
 
-    if (s === 1) {
+    if (normalizedStatus === 1) {
         return {
             text: t('statusSelectApproved'),
-            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 ' +
-                'dark:bg-emerald-900/40 dark:text-emerald-300',
+            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300',
         }
     }
 
-    if (s === 2) {
+    if (normalizedStatus === 2) {
         return {
             text: t('statusSelectRejected'),
-            class: 'bg-rose-100 text-rose-700 border-rose-300 ' +
-                'dark:bg-rose-900/40 dark:text-rose-300',
+            class: 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/40 dark:text-rose-300',
         }
     }
 
     return {
         text: t('underModeration'),
-        class: 'bg-amber-100 text-amber-800 border-amber-300 ' +
-            'dark:bg-amber-900/40 dark:text-amber-300',
+        class: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300',
     }
 }
 
+/** Локаль для Intl */
+const dateLocale = () => {
+    const currentLocale = locale.value || 'ru'
+
+    const locales = {
+        ru: 'ru-RU',
+        en: 'en-US',
+        kk: 'kk-KZ',
+        kz: 'kk-KZ',
+    }
+
+    return locales[currentLocale]
+        || currentLocale
+        || 'ru-RU'
+}
+
+/** Форматирование даты */
 const formatDate = (dateStr) => {
-    if (!dateStr) return ''
+    if (!dateStr) {
+        return ''
+    }
 
     const date = new Date(dateStr)
 
-    if (isNaN(date)) return ''
+    if (Number.isNaN(date.getTime())) {
+        return ''
+    }
 
-    return date.toLocaleDateString('ru-RU', {
+    return new Intl.DateTimeFormat(dateLocale(), {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-    })
+    }).format(date)
 }
 
-const truncateText = (text, maxLength = 50) => {
-    if (!text) return ''
+/** Форматирование даты и времени */
+const formatDateTime = (dateStr) => {
+    if (!dateStr) {
+        return ''
+    }
 
-    return text.length > maxLength
-        ? text.slice(0, maxLength).trimEnd() + '…'
-        : text
+    const date = new Date(dateStr)
+
+    if (Number.isNaN(date.getTime())) {
+        return ''
+    }
+
+    return new Intl.DateTimeFormat(dateLocale(), {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date)
+}
+
+/** Текст окна отображения */
+const showWindowTitle = (shop) => {
+    if (!shop?.show_from_at && !shop?.show_to_at) {
+        return formatDate(shop?.published_at)
+    }
+
+    const from = formatDateTime(shop?.show_from_at)
+    const to = formatDateTime(shop?.show_to_at)
+
+    return `${t('show')}: ${from || '—'} / ${to || '—'}`
+}
+
+/** Обрезание текста */
+const truncateText = (text, maxLength = 50) => {
+    const value = String(text ?? '')
+
+    if (!value) {
+        return ''
+    }
+
+    return value.length > maxLength
+        ? `${value.slice(0, maxLength).trimEnd()}…`
+        : value
 }
 </script>
 
@@ -196,6 +283,7 @@ const truncateText = (text, maxLength = 50) => {
                        dark:text-slate-200 cursor-pointer"
             >
                 <span>{{ t('selectAll') }}</span>
+
                 <input
                     type="checkbox"
                     class="mx-2"
@@ -216,33 +304,45 @@ const truncateText = (text, maxLength = 50) => {
                 >
                 <tr>
                     <th class="px-1 py-3 w-px">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             class="w-4 h-4 fill-current text-slate-800 dark:text-slate-200"
-                             height="24" width="24" viewBox="0 0 24 24">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="w-4 h-4 fill-current text-slate-800 dark:text-slate-200"
+                            height="24"
+                            width="24"
+                            viewBox="0 0 24 24"
+                        >
                             <path
-                                d="M12.707,2.293a1,1,0,0,0-1.414,0l-5,5A1,1,0,0,0,7.707,8.707L12,4.414l4.293,4.293a1,1,0,0,0,1.414-1.414Z"></path>
+                                d="M12.707,2.293a1,1,0,0,0-1.414,0l-5,5A1,1,0,0,0,7.707,8.707L12,4.414l4.293,4.293a1,1,0,0,0,1.414-1.414Z" />
                             <path
-                                d="M16.293,15.293,12,19.586,7.707,15.293a1,1,0,0,0-1.414,1.414l5,5a1,1,0,0,0,1.414,0l5-5a1,1,0,0,0-1.414-1.414Z"></path>
+                                d="M16.293,15.293,12,19.586,7.707,15.293a1,1,0,0,0-1.414,1.414l5,5a1,1,0,0,0,1.414,0l5-5a1,1,0,0,0-1.414-1.414Z" />
                         </svg>
                     </th>
+
                     <th class="px-1 py-3 whitespace-nowrap w-px">
-                        <div class="font-semibold text-center">{{ t('id') }}</div>
+                        <div class="font-semibold text-center">
+                            {{ t('id') }}
+                        </div>
                     </th>
+
                     <th class="px-1 py-3 whitespace-nowrap w-px">
                         <div class="flex justify-center" :title="t('owner')">
                             <svg class="w-6 h-6 fill-current shrink-0" viewBox="0 0 24 24">
-                                <path d="M3,7H1V2A1,1,0,0,1,2,1H7V3H3Z"></path>
-                                <path d="M23,7H21V3H17V1h5a1,1,0,0,1,1,1Z"></path>
-                                <path d="M7,23H2a1,1,0,0,1-1-1V17H3v4H7Z"></path>
-                                <path d="M22,23H17V21h4V17h2v5A1,1,0,0,1,22,23Z"></path>
+                                <path d="M3,7H1V2A1,1,0,0,1,2,1H7V3H3Z" />
+                                <path d="M23,7H21V3H17V1h5a1,1,0,0,1,1,1Z" />
+                                <path d="M7,23H2a1,1,0,0,1-1-1V17H3v4H7Z" />
+                                <path d="M22,23H17V21h4V17h2v5A1,1,0,0,1,22,23Z" />
                                 <path
-                                    d="M18.242,18.03l-2.727-.681a1,1,0,0,1-.744-.806l-.249-1.491A6.792,6.792,0,0,0,17,10V9A5,5,0,0,0,7,9v1a6.792,6.792,0,0,0,2.478,5.052l-.249,1.491a1,1,0,0,1-.743.806l-2.728.681A1,1,0,0,0,6,20H18a1,1,0,0,0,.242-1.97Z"></path>
+                                    d="M18.242,18.03l-2.727-.681a1,1,0,0,1-.744-.806l-.249-1.491A6.792,6.792,0,0,0,17,10V9A5,5,0,0,0,7,9v1a6.792,6.792,0,0,0,2.478,5.052l-.249,1.491a1,1,0,0,1-.743.806l-2.728.681A1,1,0,0,0,6,20H18a1,1,0,0,0,.242-1.97Z" />
                             </svg>
                         </div>
                     </th>
+
                     <th class="px-1 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-left">{{ t('company') }}</div>
+                        <div class="font-semibold text-left">
+                            {{ t('company') }}
+                        </div>
                     </th>
+
                     <th class="px-1 py-3">
                         <div class="flex justify-center" :title="t('image')">
                             <svg class="w-6 h-6 fill-current shrink-0" viewBox="0 0 512 512">
@@ -251,21 +351,28 @@ const truncateText = (text, maxLength = 50) => {
                             </svg>
                         </div>
                     </th>
+
                     <th class="px-1 py-3">
                         <div class="flex justify-center" :title="t('logo')">
-                            <svg
-                                class="w-6 h-6 fill-current shrink-0"
-                                viewBox="0 0 512 512">
-                                <path d="M274.835 12.646l25.516 62.393c4.213 10.301 16.671 14.349 26.134 8.492l57.316-35.479c15.49-9.588 34.808 4.447 30.475 22.142l-16.03 65.475c-2.647 10.81 5.053 21.408 16.152 22.231l67.224 4.987c18.167 1.348 25.546 24.057 11.641 35.826L441.81 242.26c-8.495 7.19-8.495 20.289 0 27.479l51.454 43.548c13.906 11.769 6.527 34.478-11.641 35.826l-67.224 4.987c-11.099.823-18.799 11.421-16.152 22.231l16.03 65.475c4.332 17.695-14.986 31.73-30.475 22.142l-57.316-35.479c-9.463-5.858-21.922-1.81-26.134 8.492l-25.516 62.393c-6.896 16.862-30.774 16.862-37.67 0l-25.516-62.393c-4.213-10.301-16.671-14.349-26.134-8.492l-57.317 35.479c-15.49 9.588-34.808-4.447-30.475-22.142l16.03-65.475c2.647-10.81-5.053-21.408-16.152-22.231l-67.224-4.987c-18.167-1.348-25.546-24.057-11.641-35.826L70.19 269.74c8.495-7.19 8.495-20.289 0-27.479l-51.454-43.548c-13.906-11.769-6.527-34.478 11.641-35.826l67.224-4.987c11.099-.823 18.799-11.421 16.152-22.231l-16.03-65.475c-4.332-17.695 14.986-31.73 30.475-22.142l57.317 35.479c9.463 5.858 21.921 1.81 26.134-8.492l25.516-62.393c6.896-16.861 30.774-16.861 37.67 0zM392 256c0-74.991-61.01-136-136-136-74.991 0-136 61.009-136 136s61.009 136 136 136c74.99 0 136-61.009 136-136zm-32 0c0 57.346-46.654 104-104 104s-104-46.654-104-104 46.654-104 104-104 104 46.654 104 104z" />
+                            <svg class="w-6 h-6 fill-current shrink-0" viewBox="0 0 512 512">
+                                <path
+                                    d="M274.835 12.646l25.516 62.393c4.213 10.301 16.671 14.349 26.134 8.492l57.316-35.479c15.49-9.588 34.808 4.447 30.475 22.142l-16.03 65.475c-2.647 10.81 5.053 21.408 16.152 22.231l67.224 4.987c18.167 1.348 25.546 24.057 11.641 35.826L441.81 242.26c-8.495 7.19-8.495 20.289 0 27.479l51.454 43.548c13.906 11.769 6.527 34.478-11.641 35.826l-67.224 4.987c-11.099.823-18.799 11.421-16.152 22.231l16.03 65.475c4.332 17.695-14.986 31.73-30.475 22.142l-57.316-35.479c-9.463-5.858-21.922-1.81-26.134 8.492l-25.516 62.393c-6.896 16.862-30.774 16.862-37.67 0l-25.516-62.393c-4.213-10.301-16.671-14.349-26.134-8.492l-57.317 35.479c-15.49 9.588-34.808-4.447-30.475-22.142l16.03-65.475c2.647-10.81-5.053-21.408-16.152-22.231l-67.224-4.987c-18.167-1.348-25.546-24.057-11.641-35.826L70.19 269.74c8.495-7.19 8.495-20.289 0-27.479l-51.454-43.548c-13.906-11.769-6.527-34.478 11.641-35.826l67.224-4.987c11.099-.823 18.799-11.421 16.152-22.231l-16.03-65.475c-4.332-17.695 14.986-31.73 30.475-22.142l57.317 35.479c9.463 5.858 21.921 1.81 26.134-8.492l25.516-62.393c6.896-16.861 30.774-16.861 37.67 0zM392 256c0-74.991-61.01-136-136-136-74.991 0-136 61.009-136 136s61.009 136 136 136c74.99 0 136-61.009 136-136zm-32 0c0 57.346-46.654 104-104 104s-104-46.654-104-104 46.654-104 104-104 104 46.654 104 104z" />
                             </svg>
                         </div>
                     </th>
+
                     <th class="px-1 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-left">{{ t('store') }}</div>
+                        <div class="font-semibold text-left">
+                            {{ t('store') }}
+                        </div>
                     </th>
+
                     <th class="px-1 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-left">{{ t('contacts') }}</div>
+                        <div class="font-semibold text-left">
+                            {{ t('contacts') }}
+                        </div>
                     </th>
+
                     <th class="px-1 py-3 whitespace-nowrap">
                         <div class="flex justify-center" :title="t('views')">
                             <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 16 16">
@@ -276,15 +383,25 @@ const truncateText = (text, maxLength = 50) => {
                             </svg>
                         </div>
                     </th>
+
                     <th class="px-1 py-3 whitespace-nowrap">
-                        <div class="font-medium text-center">{{ t('show') }}</div>
+                        <div class="font-medium text-center">
+                            {{ t('show') }}
+                        </div>
                     </th>
+
                     <th class="px-1 py-3 whitespace-nowrap">
-                        <div class="font-medium text-center">{{ t('status') }}</div>
+                        <div class="font-medium text-center">
+                            {{ t('status') }}
+                        </div>
                     </th>
+
                     <th class="px-1 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-end">{{ t('actions') }}</div>
+                        <div class="font-semibold text-end">
+                            {{ t('actions') }}
+                        </div>
                     </th>
+
                     <th class="px-1 py-1 whitespace-nowrap text-center">
                         <input
                             type="checkbox"
@@ -296,8 +413,8 @@ const truncateText = (text, maxLength = 50) => {
                 </thead>
 
                 <draggable
-                    tag="tbody"
                     v-model="localShops"
+                    tag="tbody"
                     item-key="id"
                     handle=".handle"
                     @end="handleDragEnd"
@@ -317,6 +434,7 @@ const truncateText = (text, maxLength = 50) => {
                                         d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
                                 </svg>
                             </td>
+
                             <td class="px-1 py-1 whitespace-nowrap w-px">
                                 <div
                                     class="text-center text-blue-600 dark:text-blue-200"
@@ -325,27 +443,31 @@ const truncateText = (text, maxLength = 50) => {
                                     {{ shop.id }}
                                 </div>
                             </td>
+
                             <td class="px-1 py-1">
                                 <div class="flex justify-center">
                                     <img
                                         :src="ownerAvatar(shop)"
                                         :title="ownerTitle(shop)"
+                                        :alt="t('owner')"
                                         class="h-6 w-6 rounded-full object-cover
                                                border border-slate-300 dark:border-slate-600"
-                                        :alt="t('owner')"
                                     />
                                 </div>
                             </td>
+
                             <td class="px-1 py-1">
                                 <div class="text-left text-xs">
                                     <div class="text-indigo-700 dark:text-indigo-300">
                                         {{ truncateText(companyTitle(shop), 50) }}
                                     </div>
+
                                     <div class="text-[10px] text-slate-500 dark:text-slate-300">
                                         {{ truncateText(shop?.company?.legal_name, 60) }}
                                     </div>
                                 </div>
                             </td>
+
                             <td class="px-1 py-1 w-12">
                                 <div class="flex justify-center">
                                     <img
@@ -357,6 +479,7 @@ const truncateText = (text, maxLength = 50) => {
                                     />
                                 </div>
                             </td>
+
                             <td class="px-1 py-1 w-12">
                                 <div class="flex justify-center">
                                     <img
@@ -368,18 +491,17 @@ const truncateText = (text, maxLength = 50) => {
                                     />
                                 </div>
                             </td>
+
                             <td class="px-1 py-1">
                                 <div class="text-left">
                                     <a
-                                        :href="`/market/shops/${encodeURIComponent(shop.url)}`"
+                                        :href="`/market/shops/${encodeURIComponent(shop.url || '')}`"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        :title="showWindowTitle(shop)"
                                         class="text-blue-700 dark:text-blue-300
                                                text-sm hover:underline
                                                hover:text-amber-700 dark:hover:text-amber-200"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        :title="shop.show_from_at
-                                            ? `${t('show')}: ${shop.show_from_at} / ${shop.show_to_at}`
-                                            : `${formatDate(shop.published_at)}`"
                                     >
                                         {{ truncateText(shopTitle(shop), 70) }}
                                     </a>
@@ -393,42 +515,47 @@ const truncateText = (text, maxLength = 50) => {
                                     </div>
                                 </div>
                             </td>
+
                             <td class="px-1 py-1 whitespace-nowrap">
                                 <div class="text-left text-xs">
                                     <div class="text-amber-700 dark:text-amber-300">
                                         {{ shop.phone || '—' }}
                                     </div>
+
                                     <div class="text-[10px] text-slate-500 dark:text-slate-300">
                                         {{ shop.email || '' }}
                                     </div>
                                 </div>
                             </td>
+
                             <td class="px-1 py-1 whitespace-nowrap">
                                 <div class="text-center text-blue-600 dark:text-blue-300">
-                                    {{ shop.views }}
+                                    {{ shop.views ?? 0 }}
                                 </div>
                             </td>
+
                             <td class="px-1 py-1 whitespace-nowrap">
                                 <div class="flex justify-center space-x-2">
                                     <LeftToggle
-                                        :isActive="shop.left"
-                                        @toggle-left="$emit('toggle-left', shop)"
+                                        :isActive="Boolean(shop.left)"
                                         :title="shop.left ? t('enabled') : t('disabled')"
+                                        @toggle-left="emits('toggle-left', shop)"
                                     />
 
                                     <MainToggle
-                                        :isActive="shop.main"
-                                        @toggle-main="$emit('toggle-main', shop)"
+                                        :isActive="Boolean(shop.main)"
                                         :title="shop.main ? t('enabled') : t('disabled')"
+                                        @toggle-main="emits('toggle-main', shop)"
                                     />
 
                                     <RightToggle
-                                        :isActive="shop.right"
-                                        @toggle-right="$emit('toggle-right', shop)"
+                                        :isActive="Boolean(shop.right)"
                                         :title="shop.right ? t('enabled') : t('disabled')"
+                                        @toggle-right="emits('toggle-right', shop)"
                                     />
                                 </div>
                             </td>
+
                             <td class="px-1 py-1 whitespace-nowrap">
                                 <div class="flex items-center justify-center gap-1">
                                     <span
@@ -436,7 +563,7 @@ const truncateText = (text, maxLength = 50) => {
                                                border font-semibold"
                                         :class="moderationBadge(shop.moderation_status).class"
                                         :title="shop.moderation_note && shop.moderated_at
-                                            ? `${shop.moderation_note} [${formatDate(shop.moderated_at)}]`
+                                            ? `${shop.moderation_note} [${formatDateTime(shop.moderated_at)}]`
                                             : null"
                                     >
                                         {{ moderationBadge(shop.moderation_status).text }}
@@ -447,31 +574,35 @@ const truncateText = (text, maxLength = 50) => {
                                         :status="shop?.moderation_status ?? 0"
                                         :initialNote="shop?.moderation_note || ''"
                                         mode="toggle"
-                                        @submit="({ status, note }) => $emit('approve', shop, status, note)"
+                                        @submit="({ status, note }) => emits('approve', shop, status, note)"
                                     />
                                 </div>
                             </td>
+
                             <td class="px-1 py-1 whitespace-nowrap">
                                 <div class="flex justify-center space-x-1">
                                     <ActivityToggle
-                                        :isActive="shop.activity"
-                                        @toggle-activity="$emit('toggle-activity', shop)"
+                                        :isActive="Boolean(shop.activity)"
                                         :title="shop.activity ? t('enabled') : t('disabled')"
+                                        @toggle-activity="emits('toggle-activity', shop)"
                                     />
 
                                     <IconEdit
                                         :href="route('admin.marketShops.edit', { marketShop: shop.id })"
                                     />
 
-                                    <DeleteIconButton @delete="$emit('delete', shop)" />
+                                    <DeleteIconButton
+                                        @delete="emits('delete', shop)"
+                                    />
                                 </div>
                             </td>
+
                             <td class="px-1 py-1 whitespace-nowrap">
                                 <div class="text-center">
                                     <input
                                         type="checkbox"
                                         :checked="selectedShops.includes(shop.id)"
-                                        @change="$emit('toggle-select', shop.id)"
+                                        @change="emits('toggle-select', shop.id)"
                                     />
                                 </div>
                             </td>
@@ -480,7 +611,10 @@ const truncateText = (text, maxLength = 50) => {
                 </draggable>
             </table>
 
-            <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+            <div
+                v-else
+                class="p-5 text-center text-slate-700 dark:text-slate-100"
+            >
                 {{ t('noData') }}
             </div>
         </div>

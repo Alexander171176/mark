@@ -275,16 +275,22 @@ const submitForm = () => {
                     </DefaultButton>
                 </div>
 
-                <form @submit.prevent="submitForm" enctype="multipart/form-data" class="p-3 w-full">
+                <form @submit.prevent="submitForm" enctype="multipart/form-data"
+                      class="p-3 w-full">
                     <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
                         <div class="flex flex-row items-center gap-2">
                             <ActivityCheckbox v-model="form.activity" />
-                            <LabelCheckbox for="activity" :text="t('activity')" class="text-sm h-8 flex items-center" />
+                            <LabelCheckbox for="activity" :text="t('activity')"
+                                           class="text-sm h-8 flex items-center" />
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
                             <LabelInput for="sort" :value="t('sort')" class="text-sm" />
-                            <InputNumber id="sort" type="number" v-model="form.sort" class="w-full lg:w-28" />
+                            <InputNumber
+                                id="sort"
+                                type="number"
+                                v-model="form.sort"
+                                class="w-full lg:w-28" />
                             <InputError class="mt-2 lg:mt-0" :message="form.errors.sort" />
                         </div>
                     </div>
@@ -292,17 +298,26 @@ const submitForm = () => {
                     <div class="mb-3 flex justify-between flex-col lg:flex-row items-center gap-4">
                         <div class="flex flex-row items-center gap-2">
                             <ActivityCheckbox v-model="form.left" />
-                            <LabelCheckbox for="left" :text="t('left')" class="text-sm h-8 flex items-center" />
+                            <LabelCheckbox
+                                for="left"
+                                :text="t('left')"
+                                class="text-sm h-8 flex items-center" />
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
                             <ActivityCheckbox v-model="form.main" />
-                            <LabelCheckbox for="main" :text="t('main')" class="text-sm h-8 flex items-center" />
+                            <LabelCheckbox
+                                for="main"
+                                :text="t('main')"
+                                class="text-sm h-8 flex items-center" />
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
                             <ActivityCheckbox v-model="form.right" />
-                            <LabelCheckbox for="right" :text="t('right')" class="text-sm h-8 flex items-center" />
+                            <LabelCheckbox
+                                for="right"
+                                :text="t('right')"
+                                class="text-sm h-8 flex items-center" />
                         </div>
                     </div>
 
@@ -357,11 +372,11 @@ const submitForm = () => {
                             <div class="flex justify-between w-full">
                                 <LabelInput
                                     for="short"
-                                    :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
+                                :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
                                 />
 
                                 <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                                    {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
+                        {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
                                 </div>
                             </div>
 
@@ -417,7 +432,9 @@ const submitForm = () => {
                                 :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
                             />
 
-                            <MetaDescTextarea v-model="currentTranslation.meta_desc" class="w-full" />
+                            <MetaDescTextarea
+                                v-model="currentTranslation.meta_desc"
+                                class="w-full" />
                             <InputError class="mt-2" :message="getError('meta_desc')" />
                         </div>
 
@@ -513,7 +530,8 @@ const submitForm = () => {
                             :empty-text="t('noImage')"
                             accept="image/png,image/jpeg,image/webp"
                             :error="form.errors.logo"
-                            preview-class="h-24 w-36 object-cover rounded-sm border border-slate-400"
+                            preview-class="h-24 w-36 object-cover rounded-sm
+                                           border border-slate-400"
                         />
                     </div>
 
@@ -528,27 +546,42 @@ const submitForm = () => {
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             <div class="flex flex-col items-start">
                                 <LabelInput for="instagram" value="Instagram" />
-                                <InputText id="instagram" type="url" v-model="form.social_links.instagram" />
+                                <InputText
+                                    id="instagram"
+                                    type="url"
+                                    v-model="form.social_links.instagram" />
                             </div>
 
                             <div class="flex flex-col items-start">
                                 <LabelInput for="whatsapp" value="WhatsApp" />
-                                <InputText id="whatsapp" type="url" v-model="form.social_links.whatsapp" />
+                                <InputText
+                                    id="whatsapp"
+                                    type="url"
+                                    v-model="form.social_links.whatsapp" />
                             </div>
 
                             <div class="flex flex-col items-start">
                                 <LabelInput for="telegram" value="Telegram" />
-                                <InputText id="telegram" type="url" v-model="form.social_links.telegram" />
+                                <InputText
+                                    id="telegram"
+                                    type="url"
+                                    v-model="form.social_links.telegram" />
                             </div>
 
                             <div class="flex flex-col items-start">
                                 <LabelInput for="facebook" value="Facebook" />
-                                <InputText id="facebook" type="url" v-model="form.social_links.facebook" />
+                                <InputText
+                                    id="facebook"
+                                    type="url"
+                                    v-model="form.social_links.facebook" />
                             </div>
 
                             <div class="flex flex-col items-start">
                                 <LabelInput for="youtube" value="YouTube" />
-                                <InputText id="youtube" type="url" v-model="form.social_links.youtube" />
+                                <InputText
+                                    id="youtube"
+                                    type="url"
+                                    v-model="form.social_links.youtube" />
                             </div>
                         </div>
 
@@ -564,13 +597,19 @@ const submitForm = () => {
 
                         <div class="flex flex-col items-start">
                             <LabelInput for="show_from_at" :value="t('showFromAt')" />
-                            <InputText id="show_from_at" type="datetime-local" v-model="form.show_from_at" />
+                            <InputText
+                                id="show_from_at"
+                                type="datetime-local"
+                                v-model="form.show_from_at" />
                             <InputError class="mt-2" :message="form.errors.show_from_at" />
                         </div>
 
                         <div class="flex flex-col items-start">
                             <LabelInput for="show_to_at" :value="t('showToAt')" />
-                            <InputText id="show_to_at" type="datetime-local" v-model="form.show_to_at" />
+                            <InputText
+                                id="show_to_at"
+                                type="datetime-local"
+                                v-model="form.show_to_at" />
                             <InputError class="mt-2" :message="form.errors.show_to_at" />
                         </div>
                     </div>
@@ -587,7 +626,8 @@ const submitForm = () => {
                             @update:images="handleNewImagesUpdate"
                         />
 
-                        <div v-if="newImages.length" class="text-xs text-slate-600 dark:text-slate-300 mt-2">
+                        <div v-if="newImages.length"
+                             class="text-xs text-slate-600 dark:text-slate-300 mt-2">
                             {{ t('images') }}: {{ newImages.length }}
                         </div>
                     </div>

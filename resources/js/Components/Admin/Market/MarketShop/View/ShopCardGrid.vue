@@ -11,7 +11,7 @@ import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
 import ModerationButton from '@/Components/Admin/UI/Buttons/ModerationButton.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = defineProps({
     shops: { type: Array, default: () => [] },
@@ -34,6 +34,7 @@ const emits = defineEmits([
 const localShops = ref([])
 const openedOwnerBlocks = ref([])
 
+/** Синхронизация списка магазинов */
 watch(
     () => props.shops,
     (newVal) => {
@@ -42,150 +43,254 @@ watch(
     { immediate: true, deep: true }
 )
 
+/** Завершение drag&drop */
 const handleDragEnd = () => {
-    emits('update-sort-order', localShops.value.map(shop => shop.id))
+    emits(
+        'update-sort-order',
+        localShops.value.map((shop) => shop.id)
+    )
 }
 
+/** Выделение / снятие выделения всех карточек */
 const toggleAll = (event) => {
     emits('toggle-all', {
-        ids: localShops.value.map(shop => shop.id),
-        checked: event.target.checked,
+        ids: localShops.value.map((shop) => shop.id),
+        checked: Boolean(event?.target?.checked),
     })
 }
 
+/** Все отображаемые магазины выбраны */
 const allSelected = () => {
-    return localShops.value.length
-        && localShops.value.every(shop => props.selectedShops.includes(shop.id))
+    return localShops.value.length > 0
+        && localShops.value.every((shop) => props.selectedShops.includes(shop.id))
 }
 
+/** Перевод магазина */
 const shopTranslation = (shop) => shop?.translation || {}
-const shopTitle = (shop) => shopTranslation(shop)?.title || `ID: ${shop?.id}`
-const shopShort = (shop) => shopTranslation(shop)?.short || ''
 
+/** Название магазина */
+const shopTitle = (shop) => {
+    return shopTranslation(shop)?.title || `ID: ${shop?.id}`
+}
+
+/** Краткое описание */
+const shopShort = (shop) => {
+    return shopTranslation(shop)?.short || ''
+}
+
+/** Перевод компании */
 const companyTranslation = (shop) => shop?.company?.translation || {}
 
+/** Название компании */
 const companyTitle = (shop) => {
     return companyTranslation(shop)?.title
         || shop?.company?.legal_name
         || `Company ID: ${shop?.market_company_id}`
 }
 
+/** Локализованный статус */
 const statusLabelKeyMap = {
     draft: 'statusDraft',
     published: 'statusPublished',
     archived: 'statusArchived',
 }
-const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
 
-const ownerName = (shop) => shop?.owner?.name || t('noData')
-const ownerEmail = (shop) => shop?.owner?.email || ''
+const getStatusLabel = (status) => {
+    return t(statusLabelKeyMap[status] || status || 'no')
+}
 
+/** Имя владельца */
+const ownerName = (shop) => {
+    return shop?.owner?.name || t('noData')
+}
+
+/** Email владельца */
+const ownerEmail = (shop) => {
+    return shop?.owner?.email || ''
+}
+
+/** Полное описание владельца */
 const ownerTitle = (shop) => {
     const owner = shop?.owner
-    if (!owner) return t('noData')
 
-    return `${owner.name || ''}${owner.email ? ' — ' + owner.email : ''}`.trim()
+    if (!owner) {
+        return t('noData')
+    }
+
+    return `${owner.name || ''}${owner.email ? ` — ${owner.email}` : ''}`.trim()
 }
 
+/** Аватар владельца */
 const ownerAvatar = (shop) => {
-    return shop?.owner?.profile_photo_url || '/storage/profile-photos/default-image.png'
+    return shop?.owner?.profile_photo_url
+        || '/storage/profile-photos/default-image.png'
 }
 
+/** URL логотипа */
 const logoUrl = (shop) => {
-    if (!shop?.logo) {
+    const logo = shop?.logo
+
+    if (!logo) {
         return '/storage/market/market_shops/logos/default-image-light.png'
     }
 
-    return shop.logo.startsWith('/storage/')
-        ? shop.logo
-        : `/storage/${shop.logo}`
+    return logo.startsWith('/storage/')
+        ? logo
+        : `/storage/${logo}`
 }
 
+/** Главное изображение */
 const getPrimaryImage = (shop) => {
-    if (shop.images && shop.images.length) {
-        return [...shop.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0]
+    const images = Array.isArray(shop?.images)
+        ? shop.images
+        : []
+
+    if (!images.length) {
+        return null
     }
 
-    return null
+    return [...images].sort(
+        (a, b) => Number(a?.order ?? 0) - Number(b?.order ?? 0)
+    )[0]
 }
 
+/** URL изображения */
 const imageUrl = (shop) => {
     const image = getPrimaryImage(shop)
 
     return image?.webp_url
         || image?.thumb_url
-        || image?.image_url
         || image?.url
         || '/storage/market/market_shop_images/default-image.png'
 }
 
+/** Alt изображения */
 const imageAlt = (shop) => {
-    const image = getPrimaryImage(shop)
-
-    return image?.alt || shopTitle(shop)
+    return getPrimaryImage(shop)?.alt || shopTitle(shop)
 }
 
+/** Title изображения */
 const imageTitle = (shop) => {
-    const image = getPrimaryImage(shop)
-
-    return image?.caption || shopTitle(shop)
+    return getPrimaryImage(shop)?.caption || shopTitle(shop)
 }
 
+/** Локаль для Intl */
+const dateLocale = () => {
+    const currentLocale = locale.value || 'ru'
+
+    const locales = {
+        ru: 'ru-RU',
+        en: 'en-US',
+        kk: 'kk-KZ',
+        kz: 'kk-KZ',
+    }
+
+    return locales[currentLocale]
+        || currentLocale
+        || 'ru-RU'
+}
+
+/** Форматирование даты */
 const formatDate = (dateStr) => {
-    if (!dateStr) return ''
+    if (!dateStr) {
+        return ''
+    }
 
     const date = new Date(dateStr)
 
-    if (isNaN(date)) return ''
+    if (Number.isNaN(date.getTime())) {
+        return ''
+    }
 
-    return date.toLocaleDateString('ru-RU', {
+    return new Intl.DateTimeFormat(dateLocale(), {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-    })
+    }).format(date)
 }
 
+/** Форматирование даты и времени */
+const formatDateTime = (dateStr) => {
+    if (!dateStr) {
+        return ''
+    }
+
+    const date = new Date(dateStr)
+
+    if (Number.isNaN(date.getTime())) {
+        return ''
+    }
+
+    return new Intl.DateTimeFormat(dateLocale(), {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date)
+}
+
+/** Окно показа */
+const showWindow = (shop) => {
+    if (!shop?.show_from_at && !shop?.show_to_at) {
+        return formatDate(shop?.published_at)
+    }
+
+    const from = formatDateTime(shop?.show_from_at)
+    const to = formatDateTime(shop?.show_to_at)
+
+    return `${t('show')}: ${from || '—'} / ${to || '—'}`
+}
+
+/** Обрезание текста */
 const truncateText = (text, maxLength = 80) => {
-    if (!text) return ''
+    const value = String(text ?? '')
 
-    return text.length > maxLength
-        ? text.slice(0, maxLength).trimEnd() + '…'
-        : text
+    if (!value) {
+        return ''
+    }
+
+    return value.length > maxLength
+        ? `${value.slice(0, maxLength).trimEnd()}…`
+        : value
 }
 
+/** Бейдж модерации */
 const moderationBadge = (status) => {
-    const s = Number(status ?? 0)
+    const normalizedStatus = Number(status ?? 0)
 
-    if (s === 1) {
+    if (normalizedStatus === 1) {
         return {
             text: t('statusSelectApproved'),
-            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 ' +
-                'dark:bg-emerald-900/40 dark:text-emerald-300',
+            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300',
         }
     }
 
-    if (s === 2) {
+    if (normalizedStatus === 2) {
         return {
             text: t('statusSelectRejected'),
-            class: 'bg-rose-100 text-rose-700 border-rose-300 ' +
-                'dark:bg-rose-900/40 dark:text-rose-300',
+            class: 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/40 dark:text-rose-300',
         }
     }
 
     return {
         text: t('underModeration'),
-        class: 'bg-amber-100 text-amber-800 border-amber-300 ' +
-            'dark:bg-amber-900/40 dark:text-amber-300',
+        class: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300',
     }
 }
 
+/** Проверка открытого блока владельца */
 const isOwnerBlockOpen = (shopId) => {
     return openedOwnerBlocks.value.includes(shopId)
 }
 
+/** Переключение блока владельца */
 const toggleOwnerBlock = (shopId) => {
     if (isOwnerBlockOpen(shopId)) {
-        openedOwnerBlocks.value = openedOwnerBlocks.value.filter(id => id !== shopId)
+        openedOwnerBlocks.value = openedOwnerBlocks.value.filter(
+            (id) => id !== shopId
+        )
+
         return
     }
 
@@ -212,6 +317,7 @@ const toggleOwnerBlock = (shopId) => {
                        dark:text-slate-200 cursor-pointer"
             >
                 <span>{{ t('selectAll') }}</span>
+
                 <input
                     type="checkbox"
                     class="mx-2"
@@ -223,12 +329,12 @@ const toggleOwnerBlock = (shopId) => {
 
         <div v-if="localShops.length" class="p-3">
             <draggable
-                tag="div"
                 v-model="localShops"
+                tag="div"
                 item-key="id"
                 handle=".handle"
-                @end="handleDragEnd"
                 class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                @end="handleDragEnd"
             >
                 <template #item="{ element: shop }">
                     <div
@@ -244,8 +350,8 @@ const toggleOwnerBlock = (shopId) => {
                             <div class="flex items-center space-x-2">
                                 <button
                                     type="button"
-                                    class="handle cursor-move text-slate-400 hover:text-slate-700
-                                           dark:hover:text-slate-100"
+                                    class="handle cursor-move text-slate-400
+                                           hover:text-slate-700 dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -267,7 +373,9 @@ const toggleOwnerBlock = (shopId) => {
                                     type="button"
                                     class="text-slate-400 hover:text-blue-600
                                            dark:hover:text-blue-300"
-                                :title="isOwnerBlockOpen(shop.id) ? t('hideOwner') : t('showOwner')"
+                                    :title="isOwnerBlockOpen(shop.id)
+                                        ? t('hideOwner')
+                                        : t('showOwner')"
                                     @click.prevent="toggleOwnerBlock(shop.id)"
                                 >
                                     <svg
@@ -290,7 +398,7 @@ const toggleOwnerBlock = (shopId) => {
                                     class="text-[10px] px-2 py-0.5 rounded-sm border font-semibold"
                                     :class="moderationBadge(shop.moderation_status).class"
                                     :title="shop.moderation_note && shop.moderated_at
-                                        ? `${shop.moderation_note} [${formatDate(shop.moderated_at)}]`
+                                        ? `${shop.moderation_note} [${formatDateTime(shop.moderated_at)}]`
                                         : null"
                                 >
                                     {{ moderationBadge(shop.moderation_status).text }}
@@ -299,7 +407,7 @@ const toggleOwnerBlock = (shopId) => {
                                 <input
                                     type="checkbox"
                                     :checked="selectedShops.includes(shop.id)"
-                                    @change="$emit('toggle-select', shop.id)"
+                                    @change="emits('toggle-select', shop.id)"
                                 />
                             </div>
                         </header>
@@ -312,9 +420,9 @@ const toggleOwnerBlock = (shopId) => {
                                 <img
                                     :src="ownerAvatar(shop)"
                                     :title="ownerTitle(shop)"
+                                    :alt="t('owner')"
                                     class="h-12 w-12 rounded-full object-cover
                                            border border-slate-300 dark:border-slate-600"
-                                    :alt="t('owner')"
                                 />
 
                                 <div
@@ -336,21 +444,11 @@ const toggleOwnerBlock = (shopId) => {
                                 </div>
 
                                 <div
-                                    v-if="shop.show_from_at"
                                     class="flex flex-col items-center justify-center
                                            text-center text-[10px]
                                            text-slate-500 dark:text-slate-300"
                                 >
-                                    {{ t('show') }}: {{ shop.show_from_at }} / {{ shop.show_to_at }}
-                                </div>
-
-                                <div
-                                    v-else
-                                    class="flex flex-col items-center justify-center
-                                           text-center text-[10px]
-                                           text-slate-500 dark:text-slate-300"
-                                >
-                                    {{ formatDate(shop.published_at) }}
+                                    {{ showWindow(shop) }}
                                 </div>
                             </div>
 
@@ -374,7 +472,7 @@ const toggleOwnerBlock = (shopId) => {
                             </div>
 
                             <a
-                                :href="`/market/shops/${encodeURIComponent(shop.url)}`"
+                                :href="`/market/shops/${encodeURIComponent(shop.url || '')}`"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="text-sm font-semibold
@@ -404,6 +502,7 @@ const toggleOwnerBlock = (shopId) => {
                             </div>
 
                             <div
+                                v-if="shopShort(shop)"
                                 class="font-semibold text-[12px] text-center
                                        text-sky-700 dark:text-sky-300"
                             >
@@ -415,7 +514,8 @@ const toggleOwnerBlock = (shopId) => {
                                        text-slate-600 dark:text-slate-300"
                             >
                                 <div class="text-center font-semibold">
-                                    <span>{{ t('contacts') }}:</span>
+                                    <span>{{ t('contacts') }}: </span>
+
                                     <span class="text-amber-700 dark:text-amber-300">
                                         {{ shop.phone || '—' }}
                                     </span>
@@ -468,8 +568,10 @@ const toggleOwnerBlock = (shopId) => {
                                 class="grid grid-cols-1 gap-0.5 text-[11px]
                                        text-slate-600 dark:text-slate-300"
                             >
-                                <div class="font-semibold text-center
-                                            text-fuchsia-700 dark:text-fuchsia-300">
+                                <div
+                                    class="font-semibold text-center
+                                           text-fuchsia-700 dark:text-fuchsia-300"
+                                >
                                     <span>{{ t('status') }}: </span>
                                     {{ getStatusLabel(shop.status) }}
                                 </div>
@@ -480,7 +582,7 @@ const toggleOwnerBlock = (shopId) => {
                                     class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
                                     :class="moderationBadge(shop.moderation_status).class"
                                     :title="shop.moderation_note && shop.moderated_at
-                                        ? `${shop.moderation_note} [${formatDate(shop.moderated_at)}]`
+                                        ? `${shop.moderation_note} [${formatDateTime(shop.moderated_at)}]`
                                         : null"
                                 >
                                     {{ moderationBadge(shop.moderation_status).text }}
@@ -491,7 +593,7 @@ const toggleOwnerBlock = (shopId) => {
                                     :status="shop?.moderation_status ?? 0"
                                     :initialNote="shop?.moderation_note || ''"
                                     mode="toggle"
-                                    @submit="({ status, note }) => $emit('approve', shop, status, note)"
+                                    @submit="({ status, note }) => emits('approve', shop, status, note)"
                                 />
                             </div>
                         </div>
@@ -502,36 +604,38 @@ const toggleOwnerBlock = (shopId) => {
                         >
                             <div class="flex items-center space-x-1">
                                 <LeftToggle
-                                    :isActive="shop.left"
-                                    @toggle-left="$emit('toggle-left', shop)"
+                                    :isActive="Boolean(shop.left)"
                                     :title="shop.left ? t('enabled') : t('disabled')"
+                                    @toggle-left="emits('toggle-left', shop)"
                                 />
 
                                 <MainToggle
-                                    :isActive="shop.main"
-                                    @toggle-main="$emit('toggle-main', shop)"
+                                    :isActive="Boolean(shop.main)"
                                     :title="shop.main ? t('enabled') : t('disabled')"
+                                    @toggle-main="emits('toggle-main', shop)"
                                 />
 
                                 <RightToggle
-                                    :isActive="shop.right"
-                                    @toggle-right="$emit('toggle-right', shop)"
+                                    :isActive="Boolean(shop.right)"
                                     :title="shop.right ? t('enabled') : t('disabled')"
+                                    @toggle-right="emits('toggle-right', shop)"
                                 />
                             </div>
 
                             <div class="flex items-center space-x-1">
                                 <ActivityToggle
-                                    :isActive="shop.activity"
-                                    @toggle-activity="$emit('toggle-activity', shop)"
+                                    :isActive="Boolean(shop.activity)"
                                     :title="shop.activity ? t('enabled') : t('disabled')"
+                                    @toggle-activity="emits('toggle-activity', shop)"
                                 />
 
                                 <IconEdit
                                     :href="route('admin.marketShops.edit', { marketShop: shop.id })"
                                 />
 
-                                <DeleteIconButton @delete="$emit('delete', shop)" />
+                                <DeleteIconButton
+                                    @delete="emits('delete', shop)"
+                                />
                             </div>
                         </div>
                     </div>
@@ -539,7 +643,10 @@ const toggleOwnerBlock = (shopId) => {
             </draggable>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

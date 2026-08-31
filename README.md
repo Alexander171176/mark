@@ -955,6 +955,7 @@ Analytics
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShopImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_market_shop_has_images_table --create=market_shop_has_images` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketShop/MarketShopResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Market/MarketShop/MarketShopSharedResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketShop/MarketShopTranslationResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketShop/MarketShopImageResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketShop/MarketShopRequest` <br>

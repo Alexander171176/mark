@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Admin\Market\MarketShop;
 
 use App\Http\Controllers\Admin\Market\BaseMarketAdminController;
 use App\Http\Requests\Admin\Market\MarketShop\MarketShopRequest;
-use App\Http\Resources\Admin\Market\MarketCompany\MarketCompanyResource;
+use App\Http\Resources\Admin\Market\MarketCompany\MarketCompanySharedResource;
 use App\Http\Resources\Admin\Market\MarketShop\MarketShopResource;
+use App\Http\Resources\Admin\Market\MarketShop\MarketShopSharedResource;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketShop\MarketShop;
 use App\Models\Admin\Market\MarketShop\MarketShopImage;
@@ -111,7 +112,7 @@ class MarketShopController extends BaseMarketAdminController
                 'adminMarketShopsDefaultSort' => $defaultSort,
                 'adminMarketShopsProcessingMode' => $processingMode,
 
-                'shops' => MarketShopResource::collection($shops),
+                'shops' => MarketShopSharedResource::collection($shops),
                 'shopsCount' => $shopsCount,
 
                 'sortParam' => $sortParam,
@@ -152,8 +153,8 @@ class MarketShopController extends BaseMarketAdminController
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
 
-            'companies' => MarketCompanyResource::collection(
-                $this->availableCompaniesForCreate()
+            'companies' => MarketCompanySharedResource::collection(
+                $this->availableCompaniesForCreate($currentLocale)
             ),
 
             'imageProcessorEnabled' => $this->imageProcessorEnabled(),
@@ -181,7 +182,7 @@ class MarketShopController extends BaseMarketAdminController
             $data['user_id'] = $user->id;
 
             $company = MarketCompany::query()
-                ->where('user_id', $user->id)
+                ->where('market_companies.user_id', $user->id)
                 ->firstOrFail();
 
             $data['market_company_id'] = $company->id;
@@ -205,7 +206,7 @@ class MarketShopController extends BaseMarketAdminController
                 $imagesData
             ) {
                 if (!isset($data['sort']) || is_null($data['sort'])) {
-                    $maxSort = MarketShop::query()->max('sort');
+                    $maxSort = MarketShop::query()->max('market_shops.sort');
                     $data['sort'] = is_null($maxSort) ? 0 : $maxSort + 1;
                 }
 
@@ -244,28 +245,23 @@ class MarketShopController extends BaseMarketAdminController
     /** Страница редактирования магазина */
     public function edit(int $marketShop, Request $request): Response
     {
+        $currentLocale = $this->resolveLocale($request);
+
         $shop = $this->baseQuery()
             ->with([
-                'company.translations',
-                'owner',
-                'moderator',
                 'translations',
-                'images',
-            ])
-            ->withCount([
-                'images',
+                'images.media',
             ])
             ->findOrFail($marketShop);
 
-        $currentLocale = $this->resolveLocale($request);
-
         return Inertia::render('Admin/Market/MarketShops/Edit', [
             'shop' => new MarketShopResource($shop),
+
             'currentLocale' => $currentLocale,
             'availableLocales' => $this->availableLocales(),
 
-            'companies' => MarketCompanyResource::collection(
-                $this->availableCompaniesForEdit($shop)
+            'companies' => MarketCompanySharedResource::collection(
+                $this->availableCompaniesForEdit($shop, $currentLocale)
             ),
 
             'imageProcessorEnabled' => $this->imageProcessorEnabled(),
@@ -349,9 +345,7 @@ class MarketShopController extends BaseMarketAdminController
     /** Удаление магазина */
     public function destroy(int $marketShop): RedirectResponse
     {
-        $shop = $this->baseQuery()
-            ->with(['images', 'translations'])
-            ->findOrFail($marketShop);
+        $shop = $this->baseQuery()->findOrFail($marketShop);
 
         try {
             DB::transaction(function () use ($shop) {
@@ -360,7 +354,9 @@ class MarketShopController extends BaseMarketAdminController
                 }
 
                 $this->deleteImages(
-                    $shop->images()->pluck('market_shop_images.id')->toArray()
+                    $shop->images()
+                        ->pluck('market_shop_images.id')
+                        ->toArray()
                 );
 
                 $shop->images()->detach();
@@ -391,8 +387,8 @@ class MarketShopController extends BaseMarketAdminController
         $ids = $validated['ids'];
 
         $allowedIds = $this->baseQuery()
-            ->whereIn('id', $ids)
-            ->pluck('id')
+            ->whereIn('market_shops.id', $ids)
+            ->pluck('market_shops.id')
             ->toArray();
 
         if (count($allowedIds) !== count($ids)) {
@@ -402,8 +398,7 @@ class MarketShopController extends BaseMarketAdminController
         try {
             DB::transaction(function () use ($allowedIds) {
                 $shops = MarketShop::query()
-                    ->whereIn('id', $allowedIds)
-                    ->with('images')
+                    ->whereIn('market_shops.id', $allowedIds)
                     ->get();
 
                 foreach ($shops as $shop) {
@@ -412,7 +407,9 @@ class MarketShopController extends BaseMarketAdminController
                     }
 
                     $this->deleteImages(
-                        $shop->images()->pluck('market_shop_images.id')->toArray()
+                        $shop->images()
+                            ->pluck('market_shop_images.id')
+                            ->toArray()
                     );
 
                     $shop->images()->detach();
@@ -431,23 +428,36 @@ class MarketShopController extends BaseMarketAdminController
         }
     }
 
-    /** Базовый запрос списка магазинов */
-    private function indexQuery(): Builder
+    /**
+     * Базовый запрос списка магазинов.
+     *
+     * Для Index загружаются только данные,
+     * необходимые MarketShopSharedResource:
+     * - перевод магазина текущей локали;
+     * - компания и её перевод текущей локали;
+     * - владелец;
+     * - изображения вместе с Spatie media;
+     * - количество изображений.
+     */
+    private function indexQuery(string $locale): Builder
     {
         return $this->baseQuery()
             ->with([
-                'company.translations',
-                'owner',
-                'moderator',
-                'translations',
-                'images',
+                'translations' => fn ($query) => $query
+                    ->where('locale', $locale),
+
+                'company',
+                'company.translations' => fn ($query) => $query
+                    ->where('locale', $locale),
+
+                'owner:id,name,email,profile_photo_path',
+
+                'images.media',
             ])
-            ->withCount([
-                'images',
-            ]);
+            ->withCount('images');
     }
 
-    /** Получение списка магазинов для индекса */
+    /** Получение списка магазинов для Index */
     private function getIndexShops(
         string $locale,
         bool $useServerProcessing,
@@ -455,7 +465,7 @@ class MarketShopController extends BaseMarketAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery($locale);
 
         if ($useServerProcessing) {
             return $query
@@ -470,18 +480,25 @@ class MarketShopController extends BaseMarketAdminController
             ->get();
     }
 
-    /** Компании для создания магазина */
-    private function availableCompaniesForCreate()
+    /**
+     * Компании для Create.
+     *
+     * Для select загружается только перевод текущей локали.
+     */
+    private function availableCompaniesForCreate(string $locale)
     {
         $user = auth()->user();
 
         $query = MarketCompany::query()
-            ->with(['translations'])
-            ->orderBy('id');
+            ->with([
+                'translations' => fn ($query) => $query
+                    ->where('locale', $locale),
+            ])
+            ->orderBy('market_companies.id');
 
         if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
             return $query
-                ->where('user_id', $user->id)
+                ->where('market_companies.user_id', $user->id)
                 ->whereDoesntHave('shop')
                 ->get();
         }
@@ -491,19 +508,30 @@ class MarketShopController extends BaseMarketAdminController
             ->get();
     }
 
-    /** Компании для редактирования магазина */
-    private function availableCompaniesForEdit(MarketShop $shop)
-    {
+    /**
+     * Компании для Edit.
+     *
+     * Для select загружается только перевод текущей локали.
+     * Текущая компания магазина остаётся доступной,
+     * даже если у неё уже существует shop.
+     */
+    private function availableCompaniesForEdit(
+        MarketShop $shop,
+        string $locale
+    ) {
         $user = auth()->user();
 
         $query = MarketCompany::query()
-            ->with(['translations'])
-            ->orderBy('id');
+            ->with([
+                'translations' => fn ($query) => $query
+                    ->where('locale', $locale),
+            ])
+            ->orderBy('market_companies.id');
 
         if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
             return $query
-                ->where('user_id', $user->id)
-                ->where('id', $shop->market_company_id)
+                ->where('market_companies.user_id', $user->id)
+                ->where('market_companies.id', $shop->market_company_id)
                 ->get();
         }
 
@@ -511,7 +539,7 @@ class MarketShopController extends BaseMarketAdminController
             ->where(function (Builder $query) use ($shop) {
                 $query
                     ->whereDoesntHave('shop')
-                    ->orWhere('id', $shop->market_company_id);
+                    ->orWhere('market_companies.id', $shop->market_company_id);
             })
             ->get();
     }

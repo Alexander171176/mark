@@ -72,10 +72,7 @@ class MarketShop extends Model
     /** Товары магазина */
     public function products(): HasMany
     {
-        return $this->hasMany(
-            MarketProduct::class,
-            'market_shop_id'
-        );
+        return $this->hasMany(MarketProduct::class, 'market_shop_id');
     }
 
     /** Создатель магазина */
@@ -118,52 +115,54 @@ class MarketShop extends Model
     /** Активные магазины */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('activity', true);
+        return $query->where('market_shops.activity', true);
     }
 
     /** Опубликованные магазины */
     public function scopePublished(Builder $query): Builder
     {
         return $query
-            ->where('status', 'published')
-            ->where('activity', true)
-            ->whereNotNull('published_at');
+            ->where('market_shops.status', 'published')
+            ->where('market_shops.activity', true)
+            ->whereNotNull('market_shops.published_at');
     }
 
     /** Одобренные магазины */
     public function scopeApproved(Builder $query): Builder
     {
-        return $query->where('moderation_status', 1);
+        return $query->where('market_shops.moderation_status', 1);
     }
 
     /** Сортировка по умолчанию */
     public function scopeOrdered(Builder $query): Builder
     {
-        return $query->orderBy('sort')->orderByDesc('id');
+        return $query
+            ->orderBy('market_shops.sort')
+            ->orderByDesc('market_shops.id');
     }
 
     /** Левая колонка */
     public function scopeLeft(Builder $query): Builder
     {
-        return $query->where('left', true);
+        return $query->where('market_shops.left', true);
     }
 
     /** Главная зона */
     public function scopeMain(Builder $query): Builder
     {
-        return $query->where('main', true);
+        return $query->where('market_shops.main', true);
     }
 
     /** Правая колонка */
     public function scopeRight(Builder $query): Builder
     {
-        return $query->where('right', true);
+        return $query->where('market_shops.right', true);
     }
 
     /** Магазин компании */
     public function scopeForCompany(Builder $query, int $companyId): Builder
     {
-        return $query->where('market_company_id', $companyId);
+        return $query->where('market_shops.market_company_id', $companyId);
     }
 
     /** Окно показа */
@@ -171,12 +170,12 @@ class MarketShop extends Model
     {
         return $query
             ->where(function (Builder $q) {
-                $q->whereNull('show_from_at')
-                    ->orWhere('show_from_at', '<=', now());
+                $q->whereNull('market_shops.show_from_at')
+                    ->orWhere('market_shops.show_from_at', '<=', now());
             })
             ->where(function (Builder $q) {
-                $q->whereNull('show_to_at')
-                    ->orWhere('show_to_at', '>=', now());
+                $q->whereNull('market_shops.show_to_at')
+                    ->orWhere('market_shops.show_to_at', '>=', now());
             });
     }
 
@@ -189,62 +188,56 @@ class MarketShop extends Model
             ->inShowWindow();
     }
 
-    /** Поиск по магазину, переводам, владельцу и компании */
+    /**
+     * Поиск по магазину, переводу текущей локали,
+     * владельцу и компании.
+     */
     public function scopeSearch(Builder $query, ?string $term, ?string $locale = null): Builder
     {
-        if (!$term) {
+        $term = trim((string) $term);
+
+        if ($term === '') {
             return $query;
         }
 
         $locale = $locale ?: app()->getLocale();
 
         return $query->where(function (Builder $q) use ($term, $locale) {
-            $q->where('url', 'like', "%{$term}%")
-                ->orWhere('email', 'like', "%{$term}%")
-                ->orWhere('phone', 'like', "%{$term}%")
-                ->orWhere('status', 'like', "%{$term}%")
-                ->orWhere('moderation_note', 'like', "%{$term}%")
+            $q->where('market_shops.url', 'like', "%{$term}%")
+                ->orWhere('market_shops.email', 'like', "%{$term}%")
+                ->orWhere('market_shops.phone', 'like', "%{$term}%")
+                ->orWhere('market_shops.status', 'like', "%{$term}%")
+                ->orWhere('market_shops.moderation_note', 'like', "%{$term}%")
 
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
+                ->orWhereHas('translations', function (Builder $translationQuery) use ($term, $locale) {
+                    $translationQuery
+                        ->where('locale', $locale)
+                        ->where(function (Builder $q) use ($term) {
+                            $q->where('title', 'like', "%{$term}%")
                                 ->orWhere('subtitle', 'like', "%{$term}%")
                                 ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%")
-                                ->orWhere('meta_title', 'like', "%{$term}%")
-                                ->orWhere('meta_keywords', 'like', "%{$term}%")
-                                ->orWhere('meta_desc', 'like', "%{$term}%");
+                                ->orWhere('description', 'like', "%{$term}%");
                         });
                 })
 
-                ->orWhereHas('owner', function (Builder $oq) use ($term) {
-                    $oq->where('name', 'like', "%{$term}%")
+                ->orWhereHas('owner', function (Builder $ownerQuery) use ($term) {
+                    $ownerQuery
+                        ->where('name', 'like', "%{$term}%")
                         ->orWhere('email', 'like', "%{$term}%");
                 })
 
-                ->orWhereHas('company', function (Builder $cq) use ($term) {
-                    $cq->where('url', 'like', "%{$term}%")
-                        ->orWhere('legal_name', 'like', "%{$term}%")
-                        ->orWhere('bin_iin', 'like', "%{$term}%")
-                        ->orWhere('email', 'like', "%{$term}%")
-                        ->orWhere('phone', 'like', "%{$term}%");
-                })
-
-                ->orWhereHas('products', function (Builder $productQuery) use ($term, $locale) {
-                    $productQuery
-                        ->where('url', 'like', "%{$term}%")
-                        ->orWhere('sku', 'like', "%{$term}%")
-                        ->orWhere('vendor_code', 'like', "%{$term}%")
-                        ->orWhere('barcode', 'like', "%{$term}%")
+                ->orWhereHas('company', function (Builder $companyQuery) use ($term, $locale) {
+                    $companyQuery
+                        ->where(function (Builder $q) use ($term) {
+                            $q->where('url', 'like', "%{$term}%")
+                                ->orWhere('legal_name', 'like', "%{$term}%")
+                                ->orWhere('email', 'like', "%{$term}%")
+                                ->orWhere('phone', 'like', "%{$term}%");
+                        })
                         ->orWhereHas('translations', function (Builder $translationQuery) use ($term, $locale) {
                             $translationQuery
                                 ->where('locale', $locale)
-                                ->where(function (Builder $sq) use ($term) {
-                                    $sq->where('title', 'like', "%{$term}%")
-                                        ->orWhere('subtitle', 'like', "%{$term}%")
-                                        ->orWhere('short', 'like', "%{$term}%");
-                                });
+                                ->where('title', 'like', "%{$term}%");
                         });
                 });
         });
@@ -256,11 +249,16 @@ class MarketShop extends Model
         $locale = $locale ?: app()->getLocale();
 
         return match ($sort) {
-            'idAsc' => $query->orderBy('id', 'asc'),
-            'idDesc' => $query->orderBy('id', 'desc'),
+            'idAsc' => $query->orderBy('market_shops.id', 'asc'),
+            'idDesc' => $query->orderBy('market_shops.id', 'desc'),
 
-            'sortAsc' => $query->orderBy('sort', 'asc')->orderBy('id', 'asc'),
-            'sortDesc' => $query->orderBy('sort', 'desc')->orderBy('id', 'desc'),
+            'sortAsc' => $query
+                ->orderBy('market_shops.sort', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'sortDesc' => $query
+                ->orderBy('market_shops.sort', 'desc')
+                ->orderByDesc('market_shops.id'),
 
             'titleAsc' => $query
                 ->leftJoin('market_shop_translations as mst_sort', function ($join) use ($locale) {
@@ -269,7 +267,7 @@ class MarketShop extends Model
                 })
                 ->orderBy('mst_sort.title', 'asc')
                 ->orderByDesc('market_shops.id')
-                ->select('market_shops.*'),
+                ->addSelect('market_shops.*'),
 
             'titleDesc' => $query
                 ->leftJoin('market_shop_translations as mst_sort', function ($join) use ($locale) {
@@ -278,44 +276,115 @@ class MarketShop extends Model
                 })
                 ->orderBy('mst_sort.title', 'desc')
                 ->orderByDesc('market_shops.id')
-                ->select('market_shops.*'),
+                ->addSelect('market_shops.*'),
 
-            'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
-            'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
+            'urlAsc' => $query
+                ->orderBy('market_shops.url', 'asc')
+                ->orderByDesc('market_shops.id'),
 
-            'emailAsc' => $query->orderBy('email', 'asc')->orderByDesc('id'),
-            'emailDesc' => $query->orderBy('email', 'desc')->orderByDesc('id'),
+            'urlDesc' => $query
+                ->orderBy('market_shops.url', 'desc')
+                ->orderByDesc('market_shops.id'),
 
-            'phoneAsc' => $query->orderBy('phone', 'asc')->orderByDesc('id'),
-            'phoneDesc' => $query->orderBy('phone', 'desc')->orderByDesc('id'),
+            'emailAsc' => $query
+                ->orderBy('market_shops.email', 'asc')
+                ->orderByDesc('market_shops.id'),
 
-            'statusAsc' => $query->orderBy('status', 'asc')->orderByDesc('id'),
-            'statusDesc' => $query->orderBy('status', 'desc')->orderByDesc('id'),
-            'statusDraft' => $query->where('status', 'draft')->orderByDesc('id'),
-            'statusPublished' => $query->where('status', 'published')->orderByDesc('id'),
-            'statusArchived' => $query->where('status', 'archived')->orderByDesc('id'),
+            'emailDesc' => $query
+                ->orderBy('market_shops.email', 'desc')
+                ->orderByDesc('market_shops.id'),
 
-            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
-            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
+            'phoneAsc' => $query
+                ->orderBy('market_shops.phone', 'asc')
+                ->orderByDesc('market_shops.id'),
 
-            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
-            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
+            'phoneDesc' => $query
+                ->orderBy('market_shops.phone', 'desc')
+                ->orderByDesc('market_shops.id'),
 
-            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
-            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
+            'statusAsc' => $query
+                ->orderBy('market_shops.status', 'asc')
+                ->orderByDesc('market_shops.id'),
 
-            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'statusDesc' => $query
+                ->orderBy('market_shops.status', 'desc')
+                ->orderByDesc('market_shops.id'),
 
-            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+            'statusDraft' => $query
+                ->where('market_shops.status', 'draft')
+                ->orderByDesc('market_shops.id'),
 
-            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+            'statusPublished' => $query
+                ->where('market_shops.status', 'published')
+                ->orderByDesc('market_shops.id'),
 
-            'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
-            'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+            'statusArchived' => $query
+                ->where('market_shops.status', 'archived')
+                ->orderByDesc('market_shops.id'),
 
+            'publishedAtAsc' => $query
+                ->orderBy('market_shops.published_at', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'publishedAtDesc' => $query
+                ->orderBy('market_shops.published_at', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            'showFromAtAsc' => $query
+                ->orderBy('market_shops.show_from_at', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'showFromAtDesc' => $query
+                ->orderBy('market_shops.show_from_at', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            'showToAtAsc' => $query
+                ->orderBy('market_shops.show_to_at', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'showToAtDesc' => $query
+                ->orderBy('market_shops.show_to_at', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            'createdAtAsc', 'dateAsc' => $query
+                ->orderBy('market_shops.created_at', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'createdAtDesc', 'dateDesc' => $query
+                ->orderBy('market_shops.created_at', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            'updatedAtAsc' => $query
+                ->orderBy('market_shops.updated_at', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'updatedAtDesc' => $query
+                ->orderBy('market_shops.updated_at', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            'viewsAsc' => $query
+                ->orderBy('market_shops.views', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'viewsDesc', 'views' => $query
+                ->orderBy('market_shops.views', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            /**
+             * images_count загружается Controller через withCount('images').
+             */
+            'imagesAsc' => $query
+                ->orderBy('images_count', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'imagesDesc' => $query
+                ->orderBy('images_count', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            /**
+             * products_count используется только при явной
+             * сортировке по количеству товаров.
+             */
             'productsAsc' => $query
                 ->withCount('products')
                 ->orderBy('products_count', 'asc')
@@ -326,67 +395,135 @@ class MarketShop extends Model
                 ->orderBy('products_count', 'desc')
                 ->orderByDesc('market_shops.id'),
 
-            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
-            'activity' => $query->where('activity', true)->orderByDesc('id'),
-            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+            'activityAsc' => $query
+                ->orderBy('market_shops.activity', 'asc')
+                ->orderByDesc('market_shops.id'),
 
-            'leftAsc' => $query->orderBy('left', 'asc')->orderByDesc('id'),
-            'leftDesc' => $query->orderBy('left', 'desc')->orderByDesc('id'),
-            'left' => $query->where('left', true)->orderByDesc('id'),
-            'noLeft' => $query->where('left', false)->orderByDesc('id'),
+            'activityDesc' => $query
+                ->orderBy('market_shops.activity', 'desc')
+                ->orderByDesc('market_shops.id'),
 
-            'mainAsc' => $query->orderBy('main', 'asc')->orderByDesc('id'),
-            'mainDesc' => $query->orderBy('main', 'desc')->orderByDesc('id'),
-            'main' => $query->where('main', true)->orderByDesc('id'),
-            'noMain' => $query->where('main', false)->orderByDesc('id'),
+            'activity' => $query
+                ->where('market_shops.activity', true)
+                ->orderByDesc('market_shops.id'),
 
-            'rightAsc' => $query->orderBy('right', 'asc')->orderByDesc('id'),
-            'rightDesc' => $query->orderBy('right', 'desc')->orderByDesc('id'),
-            'right' => $query->where('right', true)->orderByDesc('id'),
-            'noRight' => $query->where('right', false)->orderByDesc('id'),
+            'inactive' => $query
+                ->where('market_shops.activity', false)
+                ->orderByDesc('market_shops.id'),
 
-            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
-            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
-            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
-            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
-            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+            'leftAsc' => $query
+                ->orderBy('market_shops.left', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'leftDesc' => $query
+                ->orderBy('market_shops.left', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            'left' => $query
+                ->where('market_shops.left', true)
+                ->orderByDesc('market_shops.id'),
+
+            'noLeft' => $query
+                ->where('market_shops.left', false)
+                ->orderByDesc('market_shops.id'),
+
+            'mainAsc' => $query
+                ->orderBy('market_shops.main', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'mainDesc' => $query
+                ->orderBy('market_shops.main', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            'main' => $query
+                ->where('market_shops.main', true)
+                ->orderByDesc('market_shops.id'),
+
+            'noMain' => $query
+                ->where('market_shops.main', false)
+                ->orderByDesc('market_shops.id'),
+
+            'rightAsc' => $query
+                ->orderBy('market_shops.right', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'rightDesc' => $query
+                ->orderBy('market_shops.right', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            'right' => $query
+                ->where('market_shops.right', true)
+                ->orderByDesc('market_shops.id'),
+
+            'noRight' => $query
+                ->where('market_shops.right', false)
+                ->orderByDesc('market_shops.id'),
+
+            'moderationStatusAsc' => $query
+                ->orderBy('market_shops.moderation_status', 'asc')
+                ->orderByDesc('market_shops.id'),
+
+            'moderationStatusDesc' => $query
+                ->orderBy('market_shops.moderation_status', 'desc')
+                ->orderByDesc('market_shops.id'),
+
+            'moderationPending' => $query
+                ->where('market_shops.moderation_status', 0)
+                ->orderByDesc('market_shops.id'),
+
+            'moderationApproved' => $query
+                ->where('market_shops.moderation_status', 1)
+                ->orderByDesc('market_shops.id'),
+
+            'moderationRejected' => $query
+                ->where('market_shops.moderation_status', 2)
+                ->orderByDesc('market_shops.id'),
 
             'ownerNameAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_shops.user_id')
                 ->orderBy('owner_sort.name', 'asc')
                 ->orderByDesc('market_shops.id')
-                ->select('market_shops.*'),
+                ->addSelect('market_shops.*'),
 
             'ownerNameDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_shops.user_id')
                 ->orderBy('owner_sort.name', 'desc')
                 ->orderByDesc('market_shops.id')
-                ->select('market_shops.*'),
+                ->addSelect('market_shops.*'),
 
             'ownerEmailAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_shops.user_id')
                 ->orderBy('owner_sort.email', 'asc')
                 ->orderByDesc('market_shops.id')
-                ->select('market_shops.*'),
+                ->addSelect('market_shops.*'),
 
             'ownerEmailDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_shops.user_id')
                 ->orderBy('owner_sort.email', 'desc')
                 ->orderByDesc('market_shops.id')
-                ->select('market_shops.*'),
+                ->addSelect('market_shops.*'),
 
             'companyLegalNameAsc' => $query
-                ->leftJoin('market_companies as company_sort', 'company_sort.id', '=', 'market_shops.market_company_id')
+                ->leftJoin(
+                    'market_companies as company_sort',
+                    'company_sort.id',
+                    '=',
+                    'market_shops.market_company_id'
+                )
                 ->orderBy('company_sort.legal_name', 'asc')
                 ->orderByDesc('market_shops.id')
-                ->select('market_shops.*'),
+                ->addSelect('market_shops.*'),
 
             'companyLegalNameDesc' => $query
-                ->leftJoin('market_companies as company_sort', 'company_sort.id', '=', 'market_shops.market_company_id')
+                ->leftJoin(
+                    'market_companies as company_sort',
+                    'company_sort.id',
+                    '=',
+                    'market_shops.market_company_id'
+                )
                 ->orderBy('company_sort.legal_name', 'desc')
                 ->orderByDesc('market_shops.id')
-                ->select('market_shops.*'),
+                ->addSelect('market_shops.*'),
 
             default => $query->ordered(),
         };

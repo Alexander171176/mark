@@ -9,7 +9,7 @@
  * - серверный поиск/сортировка/пагинация
  */
 
-import { defineProps, ref, watch, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { router, usePage } from '@inertiajs/vue3'
@@ -61,19 +61,28 @@ const props = defineProps({
 /** Проверка роли администратора */
 const isAdmin = computed(() => {
     const roles = page.props?.auth?.user?.roles || []
+
     return roles.some((role) => role?.name === 'admin')
 })
 
+/* ===================== Helpers ===================== */
+
 /** Получение перевода тега */
-const getTagTranslation = (tag) => tag?.translation || tag?.translations?.[0] || {}
+const getTagTranslation = (tag) => tag?.translation || {}
+
+/** Получение названия без fallback */
+const getTagTitleValue = (tag) => getTagTranslation(tag)?.title || ''
 
 /** Получение названия тега */
-const getTagTitle = (tag) => getTagTranslation(tag)?.title || `ID: ${tag?.id}`
+const getTagTitle = (tag) => getTagTitleValue(tag) || `ID: ${tag?.id}`
 
-/** Получение краткого описания тега */
+/** Получение подзаголовка */
+const getTagSubtitle = (tag) => getTagTranslation(tag)?.subtitle || ''
+
+/** Получение краткого описания */
 const getTagShort = (tag) => getTagTranslation(tag)?.short || ''
 
-/** Получение полного описания тега */
+/** Получение полного описания */
 const getTagDescription = (tag) => getTagTranslation(tag)?.description || ''
 
 /** Получение имени владельца */
@@ -83,63 +92,106 @@ const getOwnerName = (tag) => tag?.owner?.name || ''
 const getOwnerEmail = (tag) => tag?.owner?.email || ''
 
 /** Нормализация строки */
-const normalize = (value) => (value ?? '').toString().trim().toLowerCase()
+const normalize = (value) => {
+    return (value ?? '')
+        .toString()
+        .trim()
+        .toLowerCase()
+}
 
 /** Безопасное преобразование в число */
 const safeNumber = (value) => {
     const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+
+    return Number.isFinite(number)
+        ? number
+        : 0
 }
 
 /** Безопасное преобразование даты */
 const safeDate = (value) => {
     const time = new Date(value || 0).getTime()
-    return Number.isFinite(time) ? time : 0
+
+    return Number.isFinite(time)
+        ? time
+        : 0
 }
 
 /** Нормализация статуса модерации */
 const moderationNum = (value) => {
     const number = Number(value)
-    return Number.isFinite(number) ? number : 0
+
+    return Number.isFinite(number)
+        ? number
+        : 0
 }
+
+/* ===================== View mode ===================== */
 
 /** Режим отображения списка */
 const viewMode = ref(
-    localStorage.getItem('admin_view_mode_market_tags') || 'cards'
+    localStorage.getItem('admin_view_mode_market_tags')
+    || 'cards'
 )
 
 /** Сохранение режима отображения */
 watch(viewMode, (value) => {
-    localStorage.setItem('admin_view_mode_market_tags', value)
+    localStorage.setItem(
+        'admin_view_mode_market_tags',
+        value
+    )
 })
 
+/* ===================== Per page ===================== */
+
 /** Количество элементов на странице */
-const itemsPerPage = ref(props.adminMarketTagsPerPage || 10)
+const itemsPerPage = ref(
+    props.adminMarketTagsPerPage || 10
+)
 
 /** Обновление количества элементов */
 watch(itemsPerPage, (newVal) => {
     router.put(
         route('admin.settings.updateAdminCountMarketTags'),
-        { value: newVal },
+        {
+            value: newVal,
+        },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => toast.info(`Показ ${newVal} тегов на странице.`),
-            onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва тегов.'),
+
+            onSuccess: () => {
+                toast.info(
+                    `Показ ${newVal} тегов на странице.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors.value
+                    || 'Ошибка обновления кол-ва тегов.'
+                )
+            },
         }
     )
 })
 
+/* ===================== Sorting ===================== */
+
 /** Текущая сортировка */
 const sortParam = ref(
-    props.sortParam || props.adminMarketTagsDefaultSort || 'idDesc'
+    props.sortParam
+    || props.adminMarketTagsDefaultSort
+    || 'idDesc'
 )
 
 /** Обновление сортировки */
 watch(sortParam, (newVal) => {
     router.put(
         route('admin.settings.updateAdminSortMarketTags'),
-        { value: newVal },
+        {
+            value: newVal,
+        },
         {
             preserveScroll: true,
             preserveState: true,
@@ -149,7 +201,12 @@ watch(sortParam, (newVal) => {
                     router.get(
                         window.location.pathname,
                         {
-                            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+                            ...Object.fromEntries(
+                                new URLSearchParams(
+                                    window.location.search
+                                )
+                            ),
+
                             sort: newVal || undefined,
                             page: undefined,
                         },
@@ -161,20 +218,34 @@ watch(sortParam, (newVal) => {
                     )
                 }
 
-                toast.info('Сортировка тегов успешно изменена.')
+                toast.info(
+                    'Сортировка тегов успешно изменена.'
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.value || 'Ошибка обновления сортировки тегов.')
+                toast.error(
+                    errors.value
+                    || 'Ошибка обновления сортировки тегов.'
+                )
             },
         }
     )
 })
 
+/* ===================== Data ===================== */
+
 /** Локальный список тегов */
 const localTags = ref([])
 
-/** Нормализация списка тегов */
+/**
+ * Нормализация списка тегов.
+ *
+ * Поддерживает:
+ * - обычную ResourceCollection;
+ * - paginator;
+ * - прямой массив.
+ */
 const tagsList = computed(() => {
     if (Array.isArray(props.tags)) {
         return props.tags
@@ -199,10 +270,19 @@ const tagsList = computed(() => {
 watch(
     tagsList,
     (newVal) => {
-        localTags.value = JSON.parse(JSON.stringify(newVal || []))
+        localTags.value = JSON.parse(
+            JSON.stringify(
+                newVal || []
+            )
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
+
+/* ===================== Delete ===================== */
 
 /** Модальное окно удаления */
 const showConfirmDeleteModal = ref(false)
@@ -210,13 +290,21 @@ const tagToDeleteId = ref(null)
 const tagToDeleteTitle = ref('')
 
 /** Подготовка удаления тега */
-const confirmDelete = (tagOrId, title = null) => {
-    if (typeof tagOrId === 'object') {
+const confirmDelete = (
+    tagOrId,
+    title = null
+) => {
+    if (
+        tagOrId
+        && typeof tagOrId === 'object'
+    ) {
         tagToDeleteId.value = tagOrId.id
-        tagToDeleteTitle.value = title || getTagTitle(tagOrId)
+        tagToDeleteTitle.value = title
+            || getTagTitle(tagOrId)
     } else {
         tagToDeleteId.value = tagOrId
-        tagToDeleteTitle.value = title || `ID: ${tagOrId}`
+        tagToDeleteTitle.value = title
+            || `ID: ${tagOrId}`
     }
 
     showConfirmDeleteModal.value = true
@@ -231,236 +319,508 @@ const closeModal = () => {
 
 /** Удаление тега */
 const deleteTag = () => {
-    if (tagToDeleteId.value === null) return
+    if (tagToDeleteId.value === null) {
+        return
+    }
 
     const idToDelete = tagToDeleteId.value
     const titleToDelete = tagToDeleteTitle.value
 
-    router.delete(route('admin.marketTags.destroy', { marketTag: idToDelete }), {
-        preserveScroll: true,
-        preserveState: false,
-
-        onSuccess: () => {
-            toast.success(`Тег "${titleToDelete || 'ID: ' + idToDelete}" удалён.`)
-        },
-
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            const errorMsg = errors.general || errors[errorKey] || 'Произошла ошибка при удалении.'
-            toast.error(`${errorMsg} (Тег: ${titleToDelete || 'ID: ' + idToDelete})`)
-        },
-
-        onFinish: () => closeModal(),
-    })
-}
-
-/** Локальное обновление тега */
-const patchLocalTag = (tagId, callback) => {
-    const index = localTags.value.findIndex((tag) => tag.id === tagId)
-
-    if (index !== -1) {
-        callback(localTags.value[index])
-    }
-}
-
-/** Переключение активности */
-const toggleActivity = (tag) => {
-    const newActivity = !tag.activity
-    const title = getTagTitle(tag)
-    const actionText = newActivity ? t('activated') : t('deactivated')
-
-    router.put(
-        route('admin.actions.marketTags.updateActivity', { marketTag: tag.id }),
-        { activity: newActivity },
+    router.delete(
+        route(
+            'admin.marketTags.destroy',
+            {
+                marketTag: idToDelete,
+            }
+        ),
         {
             preserveScroll: true,
-            preserveState: true,
+            preserveState: false,
 
             onSuccess: () => {
-                patchLocalTag(tag.id, (node) => {
-                    node.activity = newActivity
-                })
-
-                toast.success(`Тег "${title}" ${actionText}.`)
+                toast.success(
+                    `Тег "${titleToDelete || 'ID: ' + idToDelete}" удалён.`
+                )
             },
 
             onError: (errors) => {
-                toast.error(errors.activity || errors.general || `Ошибка изменения активности для "${title}".`)
+                const errorKey = Object.keys(
+                    errors || {}
+                )[0]
+
+                const errorMsg = errors.general
+                    || errors[errorKey]
+                    || 'Произошла ошибка при удалении.'
+
+                toast.error(
+                    `${errorMsg} (Тег: ${titleToDelete || 'ID: ' + idToDelete})`
+                )
+            },
+
+            onFinish: () => {
+                closeModal()
             },
         }
     )
 }
 
+/* ===================== Local patch ===================== */
+
+/** Локальное обновление тега */
+const patchLocalTag = (
+    tagId,
+    callback
+) => {
+    const index = localTags.value.findIndex(
+        (tag) => tag.id === tagId
+    )
+
+    if (index !== -1) {
+        callback(
+            localTags.value[index]
+        )
+    }
+}
+
+/* ===================== Activity ===================== */
+
+/** Переключение активности */
+const toggleActivity = (tag) => {
+    const newActivity = !tag.activity
+    const title = getTagTitle(tag)
+
+    const actionText = newActivity
+        ? t('activated')
+        : t('deactivated')
+
+    router.put(
+        route(
+            'admin.actions.marketTags.updateActivity',
+            {
+                marketTag: tag.id,
+            }
+        ),
+        {
+            activity: newActivity,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+
+            onSuccess: () => {
+                patchLocalTag(
+                    tag.id,
+                    (node) => {
+                        node.activity = newActivity
+                    }
+                )
+
+                toast.success(
+                    `Тег "${title}" ${actionText}.`
+                )
+            },
+
+            onError: (errors) => {
+                toast.error(
+                    errors.activity
+                    || errors.general
+                    || `Ошибка изменения активности для "${title}".`
+                )
+            },
+        }
+    )
+}
+
+/* ===================== Search / pagination ===================== */
+
 /** Поиск и пагинация */
-const searchQuery = ref(props.search || '')
+const searchQuery = ref(
+    props.search || ''
+)
+
 const currentPage = ref(1)
 
+/** ID по убыванию */
+const byIdDesc = (a, b) => {
+    return safeNumber(b?.id)
+        - safeNumber(a?.id)
+}
+
 /** Сортировка по числу по возрастанию */
-const byNumberAsc = (field) => (a, b) =>
-    safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byNumberAsc = (field) => (a, b) => {
+    return safeNumber(a?.[field])
+        - safeNumber(b?.[field])
+        || byIdDesc(a, b)
+}
 
 /** Сортировка по числу по убыванию */
-const byNumberDesc = (field) => (a, b) =>
-    safeNumber(b?.[field]) - safeNumber(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byNumberDesc = (field) => (a, b) => {
+    return safeNumber(b?.[field])
+        - safeNumber(a?.[field])
+        || byIdDesc(a, b)
+}
 
 /** Сортировка по дате по возрастанию */
-const byDateAsc = (field) => (a, b) =>
-    safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byDateAsc = (field) => (a, b) => {
+    return safeDate(a?.[field])
+        - safeDate(b?.[field])
+        || byIdDesc(a, b)
+}
 
 /** Сортировка по дате по убыванию */
-const byDateDesc = (field) => (a, b) =>
-    safeDate(b?.[field]) - safeDate(a?.[field])
-    || safeNumber(b?.id) - safeNumber(a?.id)
+const byDateDesc = (field) => (a, b) => {
+    return safeDate(b?.[field])
+        - safeDate(a?.[field])
+        || byIdDesc(a, b)
+}
+
+/** Сортировка строк по возрастанию */
+const byStringAsc = (
+    valueResolver
+) => (a, b) => {
+    return normalize(
+            valueResolver(a)
+        ).localeCompare(
+            normalize(
+                valueResolver(b)
+            ),
+            locale.value
+        )
+        || byIdDesc(a, b)
+}
+
+/** Сортировка строк по убыванию */
+const byStringDesc = (
+    valueResolver
+) => (a, b) => {
+    return normalize(
+            valueResolver(b)
+        ).localeCompare(
+            normalize(
+                valueResolver(a)
+            ),
+            locale.value
+        )
+        || byIdDesc(a, b)
+}
+
+/**
+ * Фильтр с серверным порядком.
+ *
+ * Backend для специальных фильтров
+ * возвращает записи по ID DESC.
+ */
+const filterWithIdDesc = (
+    list,
+    callback
+) => {
+    return list
+        .filter(callback)
+        .sort(byIdDesc)
+}
 
 /** Сортировка тегов */
 const sortTags = (tags) => {
-    const list = (tags || []).slice()
+    const list = Array.isArray(tags)
+        ? tags.slice()
+        : []
 
-    if (sortParam.value === 'activity') return list.filter((tag) => !!tag.activity)
-    if (sortParam.value === 'inactive') return list.filter((tag) => !tag.activity)
+    /** Активность */
+    if (sortParam.value === 'activity') {
+        return filterWithIdDesc(
+            list,
+            (tag) => !!tag.activity
+        )
+    }
 
-    if (sortParam.value === 'statusDraft') return list.filter((tag) => tag?.status === 'draft')
-    if (sortParam.value === 'statusPublished') return list.filter((tag) => tag?.status === 'published')
-    if (sortParam.value === 'statusArchived') return list.filter((tag) => tag?.status === 'archived')
+    if (sortParam.value === 'inactive') {
+        return filterWithIdDesc(
+            list,
+            (tag) => !tag.activity
+        )
+    }
 
-    if (sortParam.value === 'moderationPending') return list.filter((tag) => moderationNum(tag?.moderation_status) === 0)
-    if (sortParam.value === 'moderationApproved') return list.filter((tag) => moderationNum(tag?.moderation_status) === 1)
-    if (sortParam.value === 'moderationRejected') return list.filter((tag) => moderationNum(tag?.moderation_status) === 2)
+    /** Статус */
+    if (sortParam.value === 'statusDraft') {
+        return filterWithIdDesc(
+            list,
+            (tag) => tag?.status === 'draft'
+        )
+    }
 
+    if (sortParam.value === 'statusPublished') {
+        return filterWithIdDesc(
+            list,
+            (tag) => tag?.status === 'published'
+        )
+    }
+
+    if (sortParam.value === 'statusArchived') {
+        return filterWithIdDesc(
+            list,
+            (tag) => tag?.status === 'archived'
+        )
+    }
+
+    /** Модерация */
+    if (sortParam.value === 'moderationPending') {
+        return filterWithIdDesc(
+            list,
+            (tag) => moderationNum(
+                tag?.moderation_status
+            ) === 0
+        )
+    }
+
+    if (sortParam.value === 'moderationApproved') {
+        return filterWithIdDesc(
+            list,
+            (tag) => moderationNum(
+                tag?.moderation_status
+            ) === 1
+        )
+    }
+
+    if (sortParam.value === 'moderationRejected') {
+        return filterWithIdDesc(
+            list,
+            (tag) => moderationNum(
+                tag?.moderation_status
+            ) === 2
+        )
+    }
+
+    /** Обычные сортировки */
     const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
+        idAsc: (a, b) =>
+            safeNumber(a?.id)
+            - safeNumber(b?.id),
+
+        idDesc: byIdDesc,
 
         sortAsc: byNumberAsc('sort'),
         sortDesc: byNumberDesc('sort'),
 
-        titleAsc: (a, b) =>
-            normalize(getTagTitle(a)).localeCompare(normalize(getTagTitle(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        titleAsc: byStringAsc(
+            getTagTitleValue
+        ),
 
-        titleDesc: (a, b) =>
-            normalize(getTagTitle(b)).localeCompare(normalize(getTagTitle(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        titleDesc: byStringDesc(
+            getTagTitleValue
+        ),
 
-        urlAsc: (a, b) =>
-            normalize(a?.url).localeCompare(normalize(b?.url), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        urlAsc: byStringAsc(
+            (tag) => tag?.url
+        ),
 
-        urlDesc: (a, b) =>
-            normalize(b?.url).localeCompare(normalize(a?.url), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        urlDesc: byStringDesc(
+            (tag) => tag?.url
+        ),
 
-        colorAsc: (a, b) =>
-            normalize(a?.color).localeCompare(normalize(b?.color), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        colorAsc: byStringAsc(
+            (tag) => tag?.color
+        ),
 
-        colorDesc: (a, b) =>
-            normalize(b?.color).localeCompare(normalize(a?.color), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        colorDesc: byStringDesc(
+            (tag) => tag?.color
+        ),
 
-        statusAsc: (a, b) =>
-            normalize(a?.status).localeCompare(normalize(b?.status), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        activityAsc: byNumberAsc(
+            'activity'
+        ),
 
-        statusDesc: (a, b) =>
-            normalize(b?.status).localeCompare(normalize(a?.status), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        activityDesc: byNumberDesc(
+            'activity'
+        ),
 
-        activityAsc: byNumberAsc('activity'),
-        activityDesc: byNumberDesc('activity'),
+        viewsAsc: byNumberAsc(
+            'views'
+        ),
 
-        viewsAsc: byNumberAsc('views'),
-        viewsDesc: byNumberDesc('views'),
+        viewsDesc: byNumberDesc(
+            'views'
+        ),
 
-        moderationStatusAsc: (a, b) =>
-            moderationNum(a?.moderation_status) - moderationNum(b?.moderation_status)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        statusAsc: byStringAsc(
+            (tag) => tag?.status
+        ),
 
-        moderationStatusDesc: (a, b) =>
-            moderationNum(b?.moderation_status) - moderationNum(a?.moderation_status)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        statusDesc: byStringDesc(
+            (tag) => tag?.status
+        ),
 
-        ownerNameAsc: (a, b) =>
-            normalize(getOwnerName(a)).localeCompare(normalize(getOwnerName(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        moderationStatusAsc: (
+            a,
+            b
+        ) => {
+            return moderationNum(
+                    a?.moderation_status
+                )
+                - moderationNum(
+                    b?.moderation_status
+                )
+                || byIdDesc(a, b)
+        },
 
-        ownerNameDesc: (a, b) =>
-            normalize(getOwnerName(b)).localeCompare(normalize(getOwnerName(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        moderationStatusDesc: (
+            a,
+            b
+        ) => {
+            return moderationNum(
+                    b?.moderation_status
+                )
+                - moderationNum(
+                    a?.moderation_status
+                )
+                || byIdDesc(a, b)
+        },
 
-        ownerEmailAsc: (a, b) =>
-            normalize(getOwnerEmail(a)).localeCompare(normalize(getOwnerEmail(b)), locale.value)
-            || safeNumber(a?.id) - safeNumber(b?.id),
+        ownerNameAsc: byStringAsc(
+            getOwnerName
+        ),
 
-        ownerEmailDesc: (a, b) =>
-            normalize(getOwnerEmail(b)).localeCompare(normalize(getOwnerEmail(a)), locale.value)
-            || safeNumber(b?.id) - safeNumber(a?.id),
+        ownerNameDesc: byStringDesc(
+            getOwnerName
+        ),
 
-        publishedAtAsc: byDateAsc('published_at'),
-        publishedAtDesc: byDateDesc('published_at'),
+        ownerEmailAsc: byStringAsc(
+            getOwnerEmail
+        ),
 
-        showFromAtAsc: byDateAsc('show_from_at'),
-        showFromAtDesc: byDateDesc('show_from_at'),
+        ownerEmailDesc: byStringDesc(
+            getOwnerEmail
+        ),
 
-        showToAtAsc: byDateAsc('show_to_at'),
-        showToAtDesc: byDateDesc('show_to_at'),
+        publishedAtAsc: byDateAsc(
+            'published_at'
+        ),
 
-        createdAtAsc: byDateAsc('created_at'),
-        createdAtDesc: byDateDesc('created_at'),
-        dateAsc: byDateAsc('created_at'),
-        dateDesc: byDateDesc('created_at'),
+        publishedAtDesc: byDateDesc(
+            'published_at'
+        ),
 
-        updatedAtAsc: byDateAsc('updated_at'),
-        updatedAtDesc: byDateDesc('updated_at'),
+        showFromAtAsc: byDateAsc(
+            'show_from_at'
+        ),
+
+        showFromAtDesc: byDateDesc(
+            'show_from_at'
+        ),
+
+        showToAtAsc: byDateAsc(
+            'show_to_at'
+        ),
+
+        showToAtDesc: byDateDesc(
+            'show_to_at'
+        ),
+
+        createdAtAsc: byDateAsc(
+            'created_at'
+        ),
+
+        createdAtDesc: byDateDesc(
+            'created_at'
+        ),
+
+        dateAsc: byDateAsc(
+            'created_at'
+        ),
+
+        dateDesc: byDateDesc(
+            'created_at'
+        ),
+
+        updatedAtAsc: byDateAsc(
+            'updated_at'
+        ),
+
+        updatedAtDesc: byDateDesc(
+            'updated_at'
+        ),
     }
 
-    return sortMap[sortParam.value]
-        ? list.sort(sortMap[sortParam.value])
+    const sorter = sortMap[
+        sortParam.value
+        ]
+
+    return sorter
+        ? list.sort(sorter)
         : list
 }
 
-/** Фильтрация тегов */
+/**
+ * Фильтрация тегов.
+ *
+ * Семантика совпадает с MarketTag::scopeSearch():
+ * - url
+ * - icon
+ * - color
+ * - status
+ * - moderation_note
+ * - translation: title/subtitle/short/description
+ * - owner: name/email
+ */
 const filteredTags = computed(() => {
     let filtered = localTags.value || []
-    const query = normalize(searchQuery.value)
+
+    const query = normalize(
+        searchQuery.value
+    )
 
     if (!query) {
-        return sortTags(filtered)
+        return sortTags(
+            filtered
+        )
     }
 
-    filtered = filtered.filter((tag) => {
-        const values = [
-            tag?.id,
-            tag?.url,
-            tag?.icon,
-            tag?.color,
-            tag?.status,
-            tag?.moderation_note,
-            tag?.views,
-            getTagTitle(tag),
-            getTagShort(tag),
-            getTagDescription(tag),
-            getOwnerName(tag),
-            getOwnerEmail(tag),
-            tag?.moderator?.name,
-            tag?.moderator?.email,
-        ]
+    filtered = filtered.filter(
+        (tag) => {
+            const values = [
+                tag?.url,
+                tag?.icon,
+                tag?.color,
+                tag?.status,
+                tag?.moderation_note,
 
-        return values.some((value) => normalize(value).includes(query))
-    })
+                getTagTitleValue(tag),
+                getTagSubtitle(tag),
+                getTagShort(tag),
+                getTagDescription(tag),
 
-    return sortTags(filtered)
+                getOwnerName(tag),
+                getOwnerEmail(tag),
+            ]
+
+            return values.some(
+                (value) => normalize(
+                    value
+                ).includes(
+                    query
+                )
+            )
+        }
+    )
+
+    return sortTags(
+        filtered
+    )
 })
 
 /** Пагинация тегов */
 const paginatedTags = computed(() => {
-    const perPage = Number(itemsPerPage.value || 10)
-    const start = (currentPage.value - 1) * perPage
+    const perPage = Number(
+        itemsPerPage.value || 10
+    )
 
-    return filteredTags.value.slice(start, start + perPage)
+    const start = (
+        currentPage.value - 1
+    ) * perPage
+
+    return filteredTags.value.slice(
+        start,
+        start + perPage
+    )
 })
 
 /** Список для отображения */
@@ -471,66 +831,131 @@ const displayedTags = computed(() => {
 })
 
 /** Сброс страницы при изменениях */
-watch([itemsPerPage, searchQuery], () => {
-    currentPage.value = 1
-})
+watch(
+    [
+        itemsPerPage,
+        searchQuery,
+        sortParam,
+    ],
+    () => {
+        currentPage.value = 1
+    }
+)
+
+/* ===================== Selection ===================== */
 
 /** Выбранные теги */
 const selectedTags = ref([])
 
 /** Массовое выделение */
 const toggleAll = (payload) => {
-    const checked = payload?.checked ?? payload?.target?.checked ?? false
-    const ids = payload?.ids ?? displayedTags.value.map((tag) => tag.id)
+    const checked = Boolean(
+        payload?.checked
+        ?? payload?.target?.checked
+        ?? false
+    )
+
+    const ids = payload?.ids
+        ?? displayedTags.value.map(
+            (tag) => tag.id
+        )
 
     if (checked) {
-        selectedTags.value = [...new Set([...selectedTags.value, ...ids])]
-    } else {
-        selectedTags.value = selectedTags.value.filter((id) => !ids.includes(id))
+        selectedTags.value = [
+            ...new Set([
+                ...selectedTags.value,
+                ...ids,
+            ]),
+        ]
+
+        return
     }
+
+    selectedTags.value = selectedTags.value.filter(
+        (id) => !ids.includes(id)
+    )
 }
 
 /** Переключение выбора тега */
 const toggleSelectTag = (tagId) => {
-    const index = selectedTags.value.indexOf(tagId)
+    const index = selectedTags.value.indexOf(
+        tagId
+    )
 
     if (index > -1) {
-        selectedTags.value.splice(index, 1)
-    } else {
-        selectedTags.value.push(tagId)
-    }
-}
+        selectedTags.value.splice(
+            index,
+            1
+        )
 
-/** Массовое обновление активности */
-const bulkToggleActivity = (newActivity) => {
-    if (!selectedTags.value.length) {
-        toast.warning('Выберите теги для активации/деактивации.')
         return
     }
 
-    const idsToUpdate = [...selectedTags.value]
+    selectedTags.value.push(
+        tagId
+    )
+}
+
+/* ===================== Bulk actions ===================== */
+
+/** Массовое обновление активности */
+const bulkToggleActivity = (
+    newActivity
+) => {
+    if (!selectedTags.value.length) {
+        toast.warning(
+            'Выберите теги для активации/деактивации.'
+        )
+
+        return
+    }
+
+    const idsToUpdate = [
+        ...selectedTags.value,
+    ]
 
     router.put(
-        route('admin.actions.marketTags.bulkUpdateActivity'),
-        { ids: idsToUpdate, activity: newActivity },
+        route(
+            'admin.actions.marketTags.bulkUpdateActivity'
+        ),
+        {
+            ids: idsToUpdate,
+            activity: newActivity,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
             onSuccess: () => {
-                localTags.value = localTags.value.map((tag) => {
-                    return idsToUpdate.includes(tag.id)
-                        ? { ...tag, activity: newActivity }
-                        : tag
-                })
+                localTags.value = localTags.value.map(
+                    (tag) => {
+                        return idsToUpdate.includes(
+                            tag.id
+                        )
+                            ? {
+                                ...tag,
+                                activity: newActivity,
+                            }
+                            : tag
+                    }
+                )
 
                 selectedTags.value = []
-                toast.success('Активность тегов массово обновлена.')
+
+                toast.success(
+                    'Активность тегов массово обновлена.'
+                )
             },
 
             onError: (errors) => {
-                const msg = errors?.ids || errors?.activity || errors?.general || 'Ошибка массового обновления активности.'
-                toast.error(msg)
+                const message = errors?.ids
+                    || errors?.activity
+                    || errors?.general
+                    || 'Ошибка массового обновления активности.'
+
+                toast.error(
+                    message
+                )
             },
         }
     )
@@ -539,27 +964,53 @@ const bulkToggleActivity = (newActivity) => {
 /** Массовое удаление */
 const bulkDelete = () => {
     if (!selectedTags.value.length) {
-        toast.warning('Выберите хотя бы один тег для удаления.')
+        toast.warning(
+            'Выберите хотя бы один тег для удаления.'
+        )
+
         return
     }
 
-    if (!confirm('Вы уверены, что хотите удалить выбранные теги?')) return
+    if (
+        !confirm(
+            'Вы уверены, что хотите удалить выбранные теги?'
+        )
+    ) {
+        return
+    }
 
-    router.delete(route('admin.actions.marketTags.bulkDestroy'), {
-        data: { ids: selectedTags.value },
-        preserveScroll: true,
-        preserveState: false,
+    router.delete(
+        route(
+            'admin.actions.marketTags.bulkDestroy'
+        ),
+        {
+            data: {
+                ids: selectedTags.value,
+            },
 
-        onSuccess: () => {
-            selectedTags.value = []
-            toast.success('Массовое удаление тегов успешно завершено.')
-        },
+            preserveScroll: true,
+            preserveState: false,
 
-        onError: (errors) => {
-            const errorKey = Object.keys(errors || {})[0]
-            toast.error(errors[errorKey] || 'Произошла ошибка при удалении тегов.')
-        },
-    })
+            onSuccess: () => {
+                selectedTags.value = []
+
+                toast.success(
+                    'Массовое удаление тегов успешно завершено.'
+                )
+            },
+
+            onError: (errors) => {
+                const errorKey = Object.keys(
+                    errors || {}
+                )[0]
+
+                toast.error(
+                    errors[errorKey]
+                    || 'Произошла ошибка при удалении тегов.'
+                )
+            },
+        }
+    )
 }
 
 /** Обработка массовых действий */
@@ -567,28 +1018,65 @@ const handleBulkAction = (event) => {
     const action = event.target.value
 
     if (action === 'selectAll') {
-        toggleAll({ target: { checked: true } })
-    } else if (action === 'deselectAll') {
-        toggleAll({ target: { checked: false } })
-    } else if (action === 'activate') {
-        bulkToggleActivity(true)
-    } else if (action === 'deactivate') {
-        bulkToggleActivity(false)
-    } else if (action === 'delete') {
+        toggleAll({
+            target: {
+                checked: true,
+            },
+        })
+    } else if (
+        action === 'deselectAll'
+    ) {
+        toggleAll({
+            target: {
+                checked: false,
+            },
+        })
+    } else if (
+        action === 'activate'
+    ) {
+        bulkToggleActivity(
+            true
+        )
+    } else if (
+        action === 'deactivate'
+    ) {
+        bulkToggleActivity(
+            false
+        )
+    } else if (
+        action === 'delete'
+    ) {
         bulkDelete()
     }
 
     event.target.value = ''
 }
 
+/* ===================== Moderation ===================== */
+
 /** Модерация тега */
-const approveTag = (tag, status = 1, note = '') => {
-    if (!tag?.id) return
+const approveTag = (
+    tag,
+    status = 1,
+    note = ''
+) => {
+    if (!tag?.id) {
+        return
+    }
+
+    const moderationStatus = Number(
+        status ?? 0
+    )
 
     router.put(
-        route('admin.actions.marketTags.approve', { marketTag: tag.id }),
+        route(
+            'admin.actions.marketTags.approve',
+            {
+                marketTag: tag.id,
+            }
+        ),
         {
-            moderation_status: status,
+            moderation_status: moderationStatus,
             moderation_note: note,
         },
         {
@@ -596,41 +1084,77 @@ const approveTag = (tag, status = 1, note = '') => {
             preserveState: true,
 
             onSuccess: () => {
-                patchLocalTag(tag.id, (node) => {
-                    node.moderation_status = status
-                    node.is_approved = status === 1
-                    node.moderation_note = note
-                })
+                patchLocalTag(
+                    tag.id,
+                    (node) => {
+                        node.moderation_status = moderationStatus
+                        node.is_pending = moderationStatus === 0
+                        node.is_approved = moderationStatus === 1
+                        node.is_rejected = moderationStatus === 2
+                        node.moderation_note = note
+                    }
+                )
 
-                toast.success(status === 1 ? 'Тег одобрен.' : 'Тег отклонён.')
+                toast.success(
+                    moderationStatus === 1
+                        ? 'Тег одобрен.'
+                        : 'Тег отклонён.'
+                )
             },
 
-            onError: () => toast.error('Ошибка модерации тега.'),
+            onError: () => {
+                toast.error(
+                    'Ошибка модерации тега.'
+                )
+            },
         }
     )
 }
 
-/** Обновление порядка сортировки */
-const handleSortOrderUpdate = (newOrderIds) => {
-    const items = newOrderIds.map((id, index) => ({
-        id,
-        sort: index,
-    }))
+/* ===================== Sort order ===================== */
 
-    if (!items.length) return
+/** Обновление порядка сортировки */
+const handleSortOrderUpdate = (
+    newOrderIds
+) => {
+    const items = newOrderIds.map(
+        (id, index) => ({
+            id,
+            sort: index,
+        })
+    )
+
+    if (!items.length) {
+        return
+    }
 
     router.put(
-        route('admin.actions.marketTags.updateSortBulk'),
-        { items },
+        route(
+            'admin.actions.marketTags.updateSortBulk'
+        ),
+        {
+            items,
+        },
         {
             preserveScroll: true,
             preserveState: true,
 
-            onSuccess: () => toast.success('Сортировка тегов обновлена.'),
+            onSuccess: () => {
+                toast.success(
+                    'Сортировка тегов обновлена.'
+                )
+            },
 
             onError: (errors) => {
-                console.error('Ошибка сортировки тегов:', errors)
-                toast.error(errors.message || 'Ошибка обновления сортировки.')
+                console.error(
+                    'Ошибка сортировки тегов:',
+                    errors
+                )
+
+                toast.error(
+                    errors.message
+                    || 'Ошибка обновления сортировки.'
+                )
             },
         }
     )
@@ -640,7 +1164,9 @@ const handleSortOrderUpdate = (newOrderIds) => {
 <template>
     <AdminLayout :title="t('marketTags')">
         <template #header>
-            <TitlePage>{{ t('marketTags') }}</TitlePage>
+            <TitlePage>
+                {{ t('marketTags') }}
+            </TitlePage>
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
@@ -691,7 +1217,7 @@ const handleSortOrderUpdate = (newOrderIds) => {
 
                     <SortSelect
                         :sortParam="sortParam"
-                        @update:sortParam="(val) => (sortParam = val)"
+                        @update:sortParam="(value) => (sortParam = value)"
                     />
                 </div>
 
@@ -699,14 +1225,17 @@ const handleSortOrderUpdate = (newOrderIds) => {
                     v-if="tagsCount"
                     class="flex flex-col lg:flex-row items-center justify-between gap-3"
                 >
-                    <CountTable>{{ tagsCount }}</CountTable>
+                    <CountTable>
+                        {{ tagsCount }}
+                    </CountTable>
 
                     <BulkActionSelect
-                        v-if="tagsCount"
                         @change="handleBulkAction"
                     />
 
-                    <ToggleViewButton v-model:viewMode="viewMode" />
+                    <ToggleViewButton
+                        v-model:viewMode="viewMode"
+                    />
                 </div>
 
                 <div

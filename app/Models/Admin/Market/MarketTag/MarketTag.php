@@ -68,13 +68,19 @@ class MarketTag extends Model
     /** Создатель тега */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
 
     /** Модератор тега */
     public function moderator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'moderated_by');
+        return $this->belongsTo(
+            User::class,
+            'moderated_by'
+        );
     }
 
     /** Переводы */
@@ -86,13 +92,21 @@ class MarketTag extends Model
         );
     }
 
-    /** Текущий перевод */
+    /**
+     * Текущий перевод.
+     *
+     * Relation оставляем для публичных и внешних сценариев.
+     * Admin Index использует translations с фильтром currentLocale.
+     */
     public function translation(): HasOne
     {
         return $this->hasOne(
             MarketTagTranslation::class,
             'market_tag_id'
-        )->where('locale', app()->getLocale());
+        )->where(
+            'locale',
+            app()->getLocale()
+        );
     }
 
     /** Товары тега */
@@ -111,32 +125,55 @@ class MarketTag extends Model
     /* ===================== Scopes ===================== */
 
     /** Только активные */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('activity', true);
+    public function scopeActive(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'market_tags.activity',
+            true
+        );
     }
 
     /** Только опубликованные */
-    public function scopePublished(Builder $query): Builder
-    {
+    public function scopePublished(
+        Builder $query
+    ): Builder {
         return $query
-            ->where('status', 'published')
-            ->where('activity', true)
-            ->whereNotNull('published_at');
+            ->where(
+                'market_tags.status',
+                'published'
+            )
+            ->where(
+                'market_tags.activity',
+                true
+            )
+            ->whereNotNull(
+                'market_tags.published_at'
+            );
     }
 
     /** Только прошедшие модерацию */
-    public function scopeApproved(Builder $query): Builder
-    {
-        return $query->where('moderation_status', 1);
+    public function scopeApproved(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'market_tags.moderation_status',
+            1
+        );
     }
 
     /** Сортировка по умолчанию */
-    public function scopeOrdered(Builder $query): Builder
-    {
+    public function scopeOrdered(
+        Builder $query
+    ): Builder {
         return $query
-            ->orderBy('sort')
-            ->orderByDesc('id');
+            ->orderBy(
+                'market_tags.sort',
+                'asc'
+            )
+            ->orderByDesc(
+                'market_tags.id'
+            );
     }
 
     /** Сортировка по параметру списка */
@@ -145,192 +182,594 @@ class MarketTag extends Model
         ?string $sort,
         ?string $locale = null
     ): Builder {
-        $locale = $locale ?: app()->getLocale();
+        $locale = $locale
+            ?: app()->getLocale();
 
         return match ($sort) {
-            'idAsc' => $query->orderBy('id', 'asc'),
-            'idDesc' => $query->orderBy('id', 'desc'),
+            'idAsc' => $query->orderBy(
+                'market_tags.id',
+                'asc'
+            ),
 
-            'sortAsc' => $query->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sortDesc' => $query->orderBy('sort', 'desc')->orderByDesc('id'),
+            'idDesc' => $query->orderBy(
+                'market_tags.id',
+                'desc'
+            ),
+
+            'sortAsc' => $query
+                ->orderBy(
+                    'market_tags.sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'sortDesc' => $query
+                ->orderBy(
+                    'market_tags.sort',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
             'titleAsc' => $query
-                ->leftJoin('market_tag_translations as sort_translations', function ($join) use ($locale) {
-                    $join->on('market_tags.id', '=', 'sort_translations.market_tag_id')
-                        ->where('sort_translations.locale', '=', $locale);
-                })
-                ->select('market_tags.*')
-                ->orderBy('sort_translations.title', 'asc')
-                ->orderByDesc('market_tags.id'),
+                ->leftJoin(
+                    'market_tag_translations as sort_translations',
+                    function ($join) use ($locale) {
+                        $join->on(
+                            'market_tags.id',
+                            '=',
+                            'sort_translations.market_tag_id'
+                        )->where(
+                            'sort_translations.locale',
+                            '=',
+                            $locale
+                        );
+                    }
+                )
+                ->addSelect('market_tags.*')
+                ->orderBy(
+                    'sort_translations.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
             'titleDesc' => $query
-                ->leftJoin('market_tag_translations as sort_translations', function ($join) use ($locale) {
-                    $join->on('market_tags.id', '=', 'sort_translations.market_tag_id')
-                        ->where('sort_translations.locale', '=', $locale);
-                })
-                ->select('market_tags.*')
-                ->orderBy('sort_translations.title', 'desc')
-                ->orderByDesc('market_tags.id'),
+                ->leftJoin(
+                    'market_tag_translations as sort_translations',
+                    function ($join) use ($locale) {
+                        $join->on(
+                            'market_tags.id',
+                            '=',
+                            'sort_translations.market_tag_id'
+                        )->where(
+                            'sort_translations.locale',
+                            '=',
+                            $locale
+                        );
+                    }
+                )
+                ->addSelect('market_tags.*')
+                ->orderBy(
+                    'sort_translations.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
-            'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
+            'urlAsc' => $query
+                ->orderBy(
+                    'market_tags.url',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'colorAsc' => $query->orderBy('color', 'asc')->orderByDesc('id'),
-            'colorDesc' => $query->orderBy('color', 'desc')->orderByDesc('id'),
+            'urlDesc' => $query
+                ->orderBy(
+                    'market_tags.url',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
-            'activity' => $query->where('activity', true)->orderByDesc('id'),
-            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+            'colorAsc' => $query
+                ->orderBy(
+                    'market_tags.color',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+            'colorDesc' => $query
+                ->orderBy(
+                    'market_tags.color',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
+            'activityAsc' => $query
+                ->orderBy(
+                    'market_tags.activity',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'activityDesc' => $query
+                ->orderBy(
+                    'market_tags.activity',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'activity' => $query
+                ->where(
+                    'market_tags.activity',
+                    true
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'inactive' => $query
+                ->where(
+                    'market_tags.activity',
+                    false
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'viewsAsc' => $query
+                ->orderBy(
+                    'market_tags.views',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'viewsDesc' => $query
+                ->orderBy(
+                    'market_tags.views',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            /*
+             * products_count не загружается постоянно.
+             * Он добавляется только для конкретной сортировки.
+             */
             'productsAsc' => $query
                 ->withCount('products')
-                ->orderBy('products_count', 'asc')
-                ->orderByDesc('market_tags.id'),
+                ->orderBy(
+                    'products_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
             'productsDesc' => $query
                 ->withCount('products')
-                ->orderBy('products_count', 'desc')
-                ->orderByDesc('market_tags.id'),
+                ->orderBy(
+                    'products_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'statusAsc' => $query->orderBy('status', 'asc')->orderByDesc('id'),
-            'statusDesc' => $query->orderBy('status', 'desc')->orderByDesc('id'),
-            'statusDraft' => $query->where('status', 'draft')->orderByDesc('id'),
-            'statusPublished' => $query->where('status', 'published')->orderByDesc('id'),
-            'statusArchived' => $query->where('status', 'archived')->orderByDesc('id'),
+            'statusAsc' => $query
+                ->orderBy(
+                    'market_tags.status',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
-            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
+            'statusDesc' => $query
+                ->orderBy(
+                    'market_tags.status',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
-            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
+            'statusDraft' => $query
+                ->where(
+                    'market_tags.status',
+                    'draft'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
-            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
+            'statusPublished' => $query
+                ->where(
+                    'market_tags.status',
+                    'published'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'statusArchived' => $query
+                ->where(
+                    'market_tags.status',
+                    'archived'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+            'publishedAtAsc' => $query
+                ->orderBy(
+                    'market_tags.published_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
-            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
-            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
-            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
-            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
+            'publishedAtDesc' => $query
+                ->orderBy(
+                    'market_tags.published_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'showFromAtAsc' => $query
+                ->orderBy(
+                    'market_tags.show_from_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'showFromAtDesc' => $query
+                ->orderBy(
+                    'market_tags.show_from_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'showToAtAsc' => $query
+                ->orderBy(
+                    'market_tags.show_to_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'showToAtDesc' => $query
+                ->orderBy(
+                    'market_tags.show_to_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'createdAtAsc',
+            'dateAsc' => $query
+                ->orderBy(
+                    'market_tags.created_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'createdAtDesc',
+            'dateDesc' => $query
+                ->orderBy(
+                    'market_tags.created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'updatedAtAsc' => $query
+                ->orderBy(
+                    'market_tags.updated_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'updatedAtDesc' => $query
+                ->orderBy(
+                    'market_tags.updated_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'moderationPending' => $query
+                ->where(
+                    'market_tags.moderation_status',
+                    0
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'moderationApproved' => $query
+                ->where(
+                    'market_tags.moderation_status',
+                    1
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'moderationRejected' => $query
+                ->where(
+                    'market_tags.moderation_status',
+                    2
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'moderationStatusAsc' => $query
+                ->orderBy(
+                    'market_tags.moderation_status',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
+
+            'moderationStatusDesc' => $query
+                ->orderBy(
+                    'market_tags.moderation_status',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
             'ownerNameAsc' => $query
-                ->leftJoin('users as sort_users', 'market_tags.user_id', '=', 'sort_users.id')
-                ->select('market_tags.*')
-                ->orderBy('sort_users.name', 'asc')
-                ->orderByDesc('market_tags.id'),
+                ->leftJoin(
+                    'users as sort_users',
+                    'market_tags.user_id',
+                    '=',
+                    'sort_users.id'
+                )
+                ->addSelect('market_tags.*')
+                ->orderBy(
+                    'sort_users.name',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
             'ownerNameDesc' => $query
-                ->leftJoin('users as sort_users', 'market_tags.user_id', '=', 'sort_users.id')
-                ->select('market_tags.*')
-                ->orderBy('sort_users.name', 'desc')
-                ->orderByDesc('market_tags.id'),
+                ->leftJoin(
+                    'users as sort_users',
+                    'market_tags.user_id',
+                    '=',
+                    'sort_users.id'
+                )
+                ->addSelect('market_tags.*')
+                ->orderBy(
+                    'sort_users.name',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
             'ownerEmailAsc' => $query
-                ->leftJoin('users as sort_users', 'market_tags.user_id', '=', 'sort_users.id')
-                ->select('market_tags.*')
-                ->orderBy('sort_users.email', 'asc')
-                ->orderByDesc('market_tags.id'),
+                ->leftJoin(
+                    'users as sort_users',
+                    'market_tags.user_id',
+                    '=',
+                    'sort_users.id'
+                )
+                ->addSelect('market_tags.*')
+                ->orderBy(
+                    'sort_users.email',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
             'ownerEmailDesc' => $query
-                ->leftJoin('users as sort_users', 'market_tags.user_id', '=', 'sort_users.id')
-                ->select('market_tags.*')
-                ->orderBy('sort_users.email', 'desc')
-                ->orderByDesc('market_tags.id'),
+                ->leftJoin(
+                    'users as sort_users',
+                    'market_tags.user_id',
+                    '=',
+                    'sort_users.id'
+                )
+                ->addSelect('market_tags.*')
+                ->orderBy(
+                    'sort_users.email',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_tags.id'
+                ),
 
-            default => $query->orderByDesc('id'),
+            default => $query->ordered(),
         };
     }
 
     /** Попадает в окно показа */
-    public function scopeInShowWindow(Builder $query): Builder
-    {
+    public function scopeInShowWindow(
+        Builder $query
+    ): Builder {
         return $query
-            ->where(function (Builder $q) {
-                $q->whereNull('show_from_at')
-                    ->orWhere('show_from_at', '<=', now());
-            })
-            ->where(function (Builder $q) {
-                $q->whereNull('show_to_at')
-                    ->orWhere('show_to_at', '>=', now());
-            });
+            ->where(
+                function (Builder $q) {
+                    $q->whereNull(
+                        'market_tags.show_from_at'
+                    )->orWhere(
+                        'market_tags.show_from_at',
+                        '<=',
+                        now()
+                    );
+                }
+            )
+            ->where(
+                function (Builder $q) {
+                    $q->whereNull(
+                        'market_tags.show_to_at'
+                    )->orWhere(
+                        'market_tags.show_to_at',
+                        '>=',
+                        now()
+                    );
+                }
+            );
     }
 
     /** Публичные теги */
-    public function scopeForPublic(Builder $query): Builder
-    {
+    public function scopeForPublic(
+        Builder $query
+    ): Builder {
         return $query
             ->approved()
             ->published()
             ->inShowWindow();
     }
 
-    /** Поиск */
+    /**
+     * Поиск для Admin Index.
+     *
+     * Семантика должна совпадать
+     * с локальным поиском Index.vue.
+     */
     public function scopeSearch(
         Builder $query,
         ?string $term,
         ?string $locale = null
     ): Builder {
-        if (!$term) {
+        $term = trim((string) $term);
+
+        if ($term === '') {
             return $query;
         }
 
-        $locale = $locale ?: app()->getLocale();
+        $locale = $locale
+            ?: app()->getLocale();
 
-        return $query->where(function (Builder $q) use ($term, $locale) {
-
-            $q->where('url', 'like', "%{$term}%")
-                ->orWhere('icon', 'like', "%{$term}%")
-                ->orWhere('color', 'like', "%{$term}%")
-                ->orWhere('status', 'like', "%{$term}%")
-                ->orWhere('moderation_note', 'like', "%{$term}%")
-
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-
-                            $sq->where('title', 'like', "%{$term}%")
-                                ->orWhere('subtitle', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%")
-                                ->orWhere('meta_title', 'like', "%{$term}%")
-                                ->orWhere('meta_keywords', 'like', "%{$term}%")
-                                ->orWhere('meta_desc', 'like', "%{$term}%");
-                        });
-                })
-
-                ->orWhereHas('owner', function (Builder $oq) use ($term) {
-
-                    $oq->where('name', 'like', "%{$term}%")
-                        ->orWhere('email', 'like', "%{$term}%");
-                })
-
-                ->orWhereHas('products', function (Builder $productQuery) use ($term, $locale) {
-                    $productQuery
-                        ->where('market_products.url', 'like', "%{$term}%")
-                        ->orWhere('market_products.sku', 'like', "%{$term}%")
-                        ->orWhere('market_products.vendor_code', 'like', "%{$term}%")
-                        ->orWhere('market_products.barcode', 'like', "%{$term}%")
-                        ->orWhereHas('translations', function (Builder $translationQuery) use ($term, $locale) {
+        return $query->where(
+            function (Builder $q) use (
+                $term,
+                $locale
+            ) {
+                $q->where(
+                    'market_tags.url',
+                    'like',
+                    "%{$term}%"
+                )
+                    ->orWhere(
+                        'market_tags.icon',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'market_tags.color',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'market_tags.status',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'market_tags.moderation_note',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhereHas(
+                        'translations',
+                        function (Builder $translationQuery) use (
+                            $term,
+                            $locale
+                        ) {
                             $translationQuery
-                                ->where('locale', $locale)
-                                ->where(function (Builder $sq) use ($term) {
-                                    $sq->where('title', 'like', "%{$term}%")
-                                        ->orWhere('subtitle', 'like', "%{$term}%")
-                                        ->orWhere('short', 'like', "%{$term}%");
-                                });
-                        });
-                });
-        });
+                                ->where(
+                                    'locale',
+                                    $locale
+                                )
+                                ->where(
+                                    function (Builder $searchQuery) use ($term) {
+                                        $searchQuery
+                                            ->where(
+                                                'title',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'subtitle',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'short',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'description',
+                                                'like',
+                                                "%{$term}%"
+                                            );
+                                    }
+                                );
+                        }
+                    )
+                    ->orWhereHas(
+                        'owner',
+                        function (Builder $ownerQuery) use ($term) {
+                            $ownerQuery
+                                ->where(
+                                    'name',
+                                    'like',
+                                    "%{$term}%"
+                                )
+                                ->orWhere(
+                                    'email',
+                                    'like',
+                                    "%{$term}%"
+                                );
+                        }
+                    );
+            }
+        );
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Market\MarketTag;
 use App\Http\Controllers\Admin\Market\BaseMarketAdminController;
 use App\Http\Requests\Admin\Market\MarketTag\MarketTagRequest;
 use App\Http\Resources\Admin\Market\MarketTag\MarketTagResource;
+use App\Http\Resources\Admin\Market\MarketTag\MarketTagSharedResource;
 use App\Models\Admin\Market\MarketTag\MarketTag;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
@@ -58,11 +59,27 @@ class MarketTagController extends BaseMarketAdminController
 
         $settings = app(AdminSettingsService::class);
 
-        $perPage = $settings->int('adminMarketTagsPerPage', 10);
-        $defaultSort = $settings->string('adminMarketTagsDefaultSort', 'idDesc');
+        $perPage = $settings->int(
+            'adminMarketTagsPerPage',
+            10
+        );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $defaultSort = $settings->string(
+            'adminMarketTagsDefaultSort',
+            'idDesc'
+        );
+
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
+
+        $search = trim(
+            (string) $request->query(
+                'search',
+                ''
+            )
+        );
 
         $processingMode = $settings->string(
             'adminMarketTagsProcessingMode',
@@ -71,8 +88,13 @@ class MarketTagController extends BaseMarketAdminController
 
         $tagsCount = $this->baseQuery()->count();
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer($processingMode, $tagsCount, 300);
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $tagsCount,
+            300
+        );
 
         try {
             $tags = $this->getIndexTags(
@@ -80,48 +102,61 @@ class MarketTagController extends BaseMarketAdminController
                 useServerProcessing: $useServerProcessing,
                 perPage: $perPage,
                 sort: $sortParam,
-                search: $search,
+                search: $search
             );
 
-            return Inertia::render('Admin/Market/MarketTags/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/Market/MarketTags/Index',
+                [
+                    'currentLocale' => $currentLocale,
+                    'availableLocales' => $this->availableLocales(),
 
-                'useServerProcessing' => $useServerProcessing,
+                    'useServerProcessing' => $useServerProcessing,
 
-                'adminMarketTagsPerPage' => $perPage,
-                'adminMarketTagsDefaultSort' => $defaultSort,
-                'adminMarketTagsProcessingMode' => $processingMode,
+                    'adminMarketTagsPerPage' => $perPage,
+                    'adminMarketTagsDefaultSort' => $defaultSort,
+                    'adminMarketTagsProcessingMode' => $processingMode,
 
-                'tags' => MarketTagResource::collection($tags),
-                'tagsCount' => $tagsCount,
+                    'tags' => MarketTagSharedResource::collection(
+                        $tags
+                    ),
 
-                'sortParam' => $sortParam,
-                'search' => $search,
-            ]);
+                    'tagsCount' => $tagsCount,
+
+                    'sortParam' => $sortParam,
+                    'search' => $search,
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки списка market tags: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки списка market tags: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return Inertia::render('Admin/Market/MarketTags/Index', [
-                'currentLocale' => $currentLocale,
-                'availableLocales' => $this->availableLocales(),
+            return Inertia::render(
+                'Admin/Market/MarketTags/Index',
+                [
+                    'currentLocale' => $currentLocale,
+                    'availableLocales' => $this->availableLocales(),
 
-                'useServerProcessing' => $useServerProcessing,
+                    'useServerProcessing' => $useServerProcessing,
 
-                'adminMarketTagsPerPage' => $perPage,
-                'adminMarketTagsDefaultSort' => $defaultSort,
-                'adminMarketTagsProcessingMode' => $processingMode,
+                    'adminMarketTagsPerPage' => $perPage,
+                    'adminMarketTagsDefaultSort' => $defaultSort,
+                    'adminMarketTagsProcessingMode' => $processingMode,
 
-                'tags' => [],
-                'tagsCount' => 0,
+                    'tags' => [],
+                    'tagsCount' => 0,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'sortParam' => $sortParam,
+                    'search' => $search,
 
-                'error' => 'Ошибка загрузки тегов.',
-            ]);
+                    'error' => 'Ошибка загрузки тегов.',
+                ]
+            );
         }
     }
 
@@ -130,24 +165,37 @@ class MarketTagController extends BaseMarketAdminController
     {
         $currentLocale = $this->resolveLocale($request);
 
-        return Inertia::render('Admin/Market/MarketTags/Create', [
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+        return Inertia::render(
+            'Admin/Market/MarketTags/Create',
+            [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+            ]
+        );
     }
 
     /** Создание тега */
-    public function store(MarketTagRequest $request): RedirectResponse
-    {
+    public function store(
+        MarketTagRequest $request
+    ): RedirectResponse {
         $data = $request->validated();
 
         $translations = $data['translations'] ?? [];
 
-        unset($data['translations']);
+        unset(
+            $data['translations']
+        );
 
         $user = auth()->user();
 
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
+        if (
+            $user
+            && method_exists(
+                $user,
+                'hasRole'
+            )
+            && !$user->hasRole('admin')
+        ) {
             $data['user_id'] = $user->id;
 
             unset(
@@ -157,60 +205,102 @@ class MarketTagController extends BaseMarketAdminController
                 $data['moderation_note']
             );
         } else {
-            $data['user_id'] = $data['user_id'] ?? $user?->id;
+            $data['user_id'] = $data['user_id']
+                ?? $user?->id;
         }
 
         try {
-            DB::transaction(function () use (&$tag, $data, $translations) {
-                if (!isset($data['sort']) || is_null($data['sort'])) {
-                    $maxSort = MarketTag::query()->max('sort');
-                    $data['sort'] = is_null($maxSort) ? 0 : $maxSort + 1;
+            DB::transaction(
+                function () use (
+                    &$tag,
+                    $data,
+                    $translations
+                ) {
+                    if (
+                        !isset($data['sort'])
+                        || is_null($data['sort'])
+                    ) {
+                        $maxSort = MarketTag::query()
+                            ->max('market_tags.sort');
+
+                        $data['sort'] = is_null($maxSort)
+                            ? 0
+                            : $maxSort + 1;
+                    }
+
+                    $tag = MarketTag::create(
+                        $data
+                    );
+
+                    $this->syncTranslations(
+                        $tag,
+                        $translations
+                    );
                 }
-
-                $tag = MarketTag::create($data);
-
-                $this->syncTranslations($tag, $translations);
-            });
+            );
 
             return redirect()
-                ->route('admin.marketTags.index')
-                ->with('success', 'Тег успешно создан.');
+                ->route(
+                    'admin.marketTags.index'
+                )
+                ->with(
+                    'success',
+                    'Тег успешно создан.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при создании market tag: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при создании market tag: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при создании тега.');
+                ->with(
+                    'error',
+                    'Ошибка при создании тега.'
+                );
         }
     }
 
     /** Перенаправление просмотра на редактирование */
-    public function show(string $id): RedirectResponse
-    {
-        return redirect()->route('admin.marketTags.edit', $id);
+    public function show(
+        string $id
+    ): RedirectResponse {
+        return redirect()->route(
+            'admin.marketTags.edit',
+            $id
+        );
     }
 
     /** Страница редактирования тега */
-    public function edit(int $marketTag, Request $request): Response
-    {
+    public function edit(
+        int $marketTag,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale(
+            $request
+        );
+
         $tag = $this->baseQuery()
-            ->with([
-                'owner',
-                'moderator',
-                'translations',
-            ])
-            ->findOrFail($marketTag);
+            ->with('translations')
+            ->findOrFail(
+                $marketTag
+            );
 
-        $currentLocale = $this->resolveLocale($request);
+        return Inertia::render(
+            'Admin/Market/MarketTags/Edit',
+            [
+                'tag' => new MarketTagResource(
+                    $tag
+                ),
 
-        return Inertia::render('Admin/Market/MarketTags/Edit', [
-            'tag' => new MarketTagResource($tag),
-
-            'currentLocale' => $currentLocale,
-            'availableLocales' => $this->availableLocales(),
-        ]);
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
+            ]
+        );
     }
 
     /** Обновление тега */
@@ -218,11 +308,15 @@ class MarketTagController extends BaseMarketAdminController
         MarketTagRequest $request,
         int $marketTag
     ): RedirectResponse {
-        $tag = $this->baseQuery()->findOrFail($marketTag);
+        $tag = $this->baseQuery()
+            ->findOrFail(
+                $marketTag
+            );
 
         $data = $request->validated();
 
-        $translations = $data['translations'] ?? [];
+        $translations = $data['translations']
+            ?? [];
 
         unset(
             $data['translations'],
@@ -231,7 +325,14 @@ class MarketTagController extends BaseMarketAdminController
 
         $user = auth()->user();
 
-        if ($user && method_exists($user, 'hasRole') && !$user->hasRole('admin')) {
+        if (
+            $user
+            && method_exists(
+                $user,
+                'hasRole'
+            )
+            && !$user->hasRole('admin')
+        ) {
             $data['user_id'] = $user->id;
 
             unset(
@@ -243,99 +344,198 @@ class MarketTagController extends BaseMarketAdminController
         }
 
         try {
-            DB::transaction(function () use ($tag, $data, $translations) {
-                $tag->update($data);
+            DB::transaction(
+                function () use (
+                    $tag,
+                    $data,
+                    $translations
+                ) {
+                    $tag->update(
+                        $data
+                    );
 
-                $this->syncTranslations($tag, $translations);
-            });
+                    $this->syncTranslations(
+                        $tag,
+                        $translations
+                    );
+                }
+            );
 
             return redirect()
-                ->route('admin.marketTags.index')
-                ->with('success', 'Тег успешно обновлён.');
+                ->route(
+                    'admin.marketTags.index'
+                )
+                ->with(
+                    'success',
+                    'Тег успешно обновлён.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при обновлении market tag ID ' . $tag->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при обновлении market tag ID '
+                . $tag->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
                 ->withInput()
-                ->with('error', 'Ошибка при обновлении тега.');
+                ->with(
+                    'error',
+                    'Ошибка при обновлении тега.'
+                );
         }
     }
 
     /** Удаление тега */
-    public function destroy(int $marketTag): RedirectResponse
-    {
+    public function destroy(
+        int $marketTag
+    ): RedirectResponse {
         $tag = $this->baseQuery()
-            ->with('translations')
-            ->findOrFail($marketTag);
+            ->findOrFail(
+                $marketTag
+            );
 
         try {
-            DB::transaction(function () use ($tag) {
-                $tag->translations()->delete();
-                $tag->delete();
-            });
+            DB::transaction(
+                function () use ($tag) {
+                    $tag->translations()
+                        ->delete();
+
+                    $tag->delete();
+                }
+            );
 
             return redirect()
-                ->route('admin.marketTags.index')
-                ->with('success', 'Тег успешно удалён.');
+                ->route(
+                    'admin.marketTags.index'
+                )
+                ->with(
+                    'success',
+                    'Тег успешно удалён.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка при удалении market tag ID ' . $tag->id . ': ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка при удалении market tag ID '
+                . $tag->id
+                . ': '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при удалении тега.');
+            return back()->with(
+                'error',
+                'Ошибка при удалении тега.'
+            );
         }
     }
 
     /** Массовое удаление тегов */
-    public function bulkDestroy(Request $request): RedirectResponse
-    {
+    public function bulkDestroy(
+        Request $request
+    ): RedirectResponse {
         $validated = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'exists:market_tags,id'],
+            'ids' => [
+                'required',
+                'array',
+            ],
+            'ids.*' => [
+                'required',
+                'integer',
+                'exists:market_tags,id',
+            ],
         ]);
 
         $ids = $validated['ids'];
 
         $allowedIds = $this->baseQuery()
-            ->whereIn('id', $ids)
-            ->pluck('id')
+            ->whereIn(
+                'market_tags.id',
+                $ids
+            )
+            ->pluck(
+                'market_tags.id'
+            )
             ->toArray();
 
-        if (count($allowedIds) !== count($ids)) {
-            return back()->with('error', 'Часть тегов недоступна для удаления.');
+        if (
+            count($allowedIds)
+            !== count($ids)
+        ) {
+            return back()->with(
+                'error',
+                'Часть тегов недоступна для удаления.'
+            );
         }
 
         try {
-            DB::transaction(function () use ($allowedIds) {
-                DB::table('market_tag_translations')
-                    ->whereIn('market_tag_id', $allowedIds)
-                    ->delete();
+            DB::transaction(
+                function () use (
+                    $allowedIds
+                ) {
+                    DB::table(
+                        'market_tag_translations'
+                    )
+                        ->whereIn(
+                            'market_tag_id',
+                            $allowedIds
+                        )
+                        ->delete();
 
-                MarketTag::query()
-                    ->whereIn('id', $allowedIds)
-                    ->delete();
-            });
+                    MarketTag::query()
+                        ->whereIn(
+                            'market_tags.id',
+                            $allowedIds
+                        )
+                        ->delete();
+                }
+            );
 
-            return back()->with('success', 'Выбранные теги успешно удалены.');
+            return back()->with(
+                'success',
+                'Выбранные теги успешно удалены.'
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка bulkDestroy market tags: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка bulkDestroy market tags: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return back()->with('error', 'Ошибка при массовом удалении тегов.');
+            return back()->with(
+                'error',
+                'Ошибка при массовом удалении тегов.'
+            );
         }
     }
 
-    /** Базовый запрос списка тегов */
-    private function indexQuery(): Builder
-    {
+    /**
+     * Базовый запрос списка тегов.
+     *
+     * Для Admin Index:
+     * - только перевод текущей локали;
+     * - только данные владельца, необходимые интерфейсу;
+     * - moderator не загружается;
+     * - products_count постоянно не загружается.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         return $this->baseQuery()
             ->with([
-                'owner',
-                'moderator',
-                'translations',
+                'translations' => fn ($query) => $query
+                    ->where(
+                        'locale',
+                        $locale
+                    ),
+
+                'owner:id,name,email,profile_photo_path',
             ]);
     }
 
@@ -347,13 +547,23 @@ class MarketTagController extends BaseMarketAdminController
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->search(
+                    $search,
+                    $locale
+                )
+                ->sortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 

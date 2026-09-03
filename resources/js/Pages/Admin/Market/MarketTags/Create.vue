@@ -5,7 +5,8 @@
  *
  * Создание тега товаров MarketTag
  */
-import { ref, computed } from 'vue'
+
+import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -80,28 +81,55 @@ const form = useForm({
     },
 })
 
-/** Текущий перевод */
-const currentTranslation = computed(() => {
-    if (!form.translations[activeLocale.value]) {
-        form.translations[activeLocale.value] = makeTranslation()
+/** Создание перевода для локали при необходимости */
+const ensureTranslation = (localeCode) => {
+    if (!localeCode) {
+        return
     }
 
+    if (!form.translations[localeCode]) {
+        form.translations[localeCode] = makeTranslation()
+    }
+}
+
+/** Контроль активной локали */
+watch(
+    activeLocale,
+    (localeCode) => {
+        ensureTranslation(localeCode)
+    },
+    {
+        immediate: true,
+    }
+)
+
+/** Текущий перевод */
+const currentTranslation = computed(() => {
     return form.translations[activeLocale.value]
 })
 
 /** Получение ошибки текущего языка */
 const getError = (key) => {
-    return form.errors[`translations.${activeLocale.value}.${key}`]
+    return form.errors[
+        `translations.${activeLocale.value}.${key}`
+        ]
 }
 
 /** Проверка HEX-цвета */
-const isValidHexColor = (value) => /^#([0-9A-Fa-f]{6})$/.test(value || '')
+const isValidHexColor = (value) => {
+    return /^#([0-9A-Fa-f]{6})$/.test(
+        value || ''
+    )
+}
 
 /** Цвет для color picker */
 const colorForPicker = computed({
     get() {
-        return isValidHexColor(form.color) ? form.color : '#22c55e'
+        return isValidHexColor(form.color)
+            ? form.color
+            : '#22c55e'
     },
+
     set(value) {
         form.color = value
     },
@@ -109,76 +137,167 @@ const colorForPicker = computed({
 
 /** Автоматическая генерация URL */
 const handleUrlFocus = () => {
-    if (!form.url && currentTranslation.value.title) {
-        form.url = transliterate(currentTranslation.value.title.toLowerCase())
+    if (
+        !form.url
+        && currentTranslation.value?.title
+    ) {
+        form.url = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
     }
 }
 
 /** Обрезка текста до указанной длины */
-const truncateText = (text, maxLength, addEllipsis = false) => {
-    if (!text) return ''
+const truncateText = (
+    text,
+    maxLength,
+    addEllipsis = false
+) => {
+    if (!text) {
+        return ''
+    }
 
-    const str = String(text)
+    const value = String(text)
 
-    if (str.length <= maxLength) return str
+    if (value.length <= maxLength) {
+        return value
+    }
 
-    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
+    const lastSpaceIndex = value.lastIndexOf(
+        ' ',
+        maxLength
+    )
+
     const truncated = lastSpaceIndex === -1
-        ? str.substring(0, maxLength)
-        : str.substring(0, lastSpaceIndex)
+        ? value.substring(0, maxLength)
+        : value.substring(0, lastSpaceIndex)
 
-    return addEllipsis ? `${truncated}...` : truncated
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
 }
 
 /** Генерация SEO-полей */
 const generateMetaFields = () => {
     const translation = currentTranslation.value
 
-    if (translation.title && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.title, 255)
+    if (!translation) {
+        return
     }
 
-    if (!translation.meta_keywords && translation.short) {
-        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+    if (
+        translation.title
+        && !translation.meta_title
+    ) {
+        translation.meta_title = truncateText(
+            translation.title,
+            255
+        )
+    }
+
+    if (
+        !translation.meta_keywords
+        && translation.short
+    ) {
+        let text = String(
+            translation.short
+        ).replace(
+            /(<([^>]+)>)/gi,
+            ''
+        )
+
+        text = text.replace(
+            /[.,!?;:()[\]{}"'«»]/g,
+            ''
+        )
 
         const words = text
             .split(/\s+/)
-            .filter(word => word && word.length >= 3)
-            .map(word => word.toLowerCase())
-            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter(
+                (word) => word
+                    && word.length >= 3
+            )
+            .map(
+                (word) => word.toLowerCase()
+            )
+            .filter(
+                (value, index, self) => {
+                    return self.indexOf(value)
+                        === index
+                }
+            )
 
-        translation.meta_keywords = truncateText(words.join(', '), 255)
+        translation.meta_keywords = truncateText(
+            words.join(', '),
+            255
+        )
     }
 
-    if (translation.short && !translation.meta_desc) {
-        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        translation.meta_desc = truncateText(descText, 255, true)
+    if (
+        translation.short
+        && !translation.meta_desc
+    ) {
+        const description = String(
+            translation.short
+        ).replace(
+            /(<([^>]+)>)/gi,
+            ''
+        )
+
+        translation.meta_desc = truncateText(
+            description,
+            255,
+            true
+        )
     }
 }
 
 /** Отправка формы */
 const submitForm = () => {
-    form.transform((data) => ({
-        ...data,
-        activity: data.activity ? 1 : 0,
-        moderation_status: Number(data.moderation_status ?? 0),
-        sort: Number(data.sort ?? 0),
-    }))
+    form.transform(
+        (data) => ({
+            ...data,
 
-    form.post(route('admin.marketTags.store'), {
-        errorBag: 'createMarketTag',
-        preserveScroll: true,
+            activity: data.activity
+                ? 1
+                : 0,
 
-        onSuccess: () => {
-            toast.success('Тег успешно создан.')
-        },
+            moderation_status: Number(
+                data.moderation_status ?? 0
+            ),
 
-        onError: (errors) => {
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors[firstKey] || 'Проверьте корректность заполнения полей.')
-        },
-    })
+            sort: Number(
+                data.sort ?? 0
+            ),
+        })
+    )
+
+    form.post(
+        route(
+            'admin.marketTags.store'
+        ),
+        {
+            errorBag: 'createMarketTag',
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Тег успешно создан.'
+                )
+            },
+
+            onError: (errors) => {
+                const firstKey = Object.keys(
+                    errors || {}
+                )[0]
+
+                toast.error(
+                    errors[firstKey]
+                    || 'Проверьте корректность заполнения полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 

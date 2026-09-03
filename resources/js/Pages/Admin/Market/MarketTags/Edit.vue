@@ -5,7 +5,8 @@
  *
  * Редактирование тега товаров MarketTag
  */
-import { ref, computed } from 'vue'
+
+import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -39,14 +40,16 @@ const props = defineProps({
     errors: { type: Object, default: () => ({}) },
 })
 
-/** Данные редактируемого тега */
-const tagData = computed(() => props.tag?.data || props.tag || {})
-
-/** Заголовок страницы */
-const pageTitle = computed(() => {
-    return currentTranslation.value.title
-        || tagData.value.translation?.title
-        || `ID: ${tagData.value.id}`
+/**
+ * Данные редактируемого тега.
+ *
+ * Поддерживает как прямой Resource,
+ * так и обёртку { data: {...} }.
+ */
+const tagData = computed(() => {
+    return props.tag?.data
+        || props.tag
+        || {}
 })
 
 /** Создание пустого перевода */
@@ -60,42 +63,59 @@ const makeTranslation = () => ({
     meta_desc: '',
 })
 
-/** Подготовка переводов из БД */
+/** Подготовка всех переводов из Resource */
 const makeTranslations = () => {
     const result = {}
-    const translations = tagData.value?.translations || []
-    const list = Array.isArray(translations?.data) ? translations.data : translations
+
+    const translations = tagData.value?.translations
+        || []
+
+    const list = Array.isArray(
+        translations?.data
+    )
+        ? translations.data
+        : translations
 
     if (Array.isArray(list)) {
-        list.forEach((translation) => {
-            if (!translation?.locale) return
+        list.forEach(
+            (translation) => {
+                if (!translation?.locale) {
+                    return
+                }
 
-            result[translation.locale] = {
-                title: translation.title || '',
-                subtitle: translation.subtitle || '',
-                short: translation.short || '',
-                description: translation.description || '',
-                meta_title: translation.meta_title || '',
-                meta_keywords: translation.meta_keywords || '',
-                meta_desc: translation.meta_desc || '',
+                result[translation.locale] = {
+                    title: translation.title || '',
+                    subtitle: translation.subtitle || '',
+                    short: translation.short || '',
+                    description: translation.description || '',
+                    meta_title: translation.meta_title || '',
+                    meta_keywords: translation.meta_keywords || '',
+                    meta_desc: translation.meta_desc || '',
+                }
             }
-        })
+        )
     }
 
-    const locale = props.currentLocale || 'ru'
+    const localeCode = props.currentLocale
+        || tagData.value?.translation?.locale
+        || 'ru'
 
-    if (!result[locale]) {
-        result[locale] = makeTranslation()
+    if (!result[localeCode]) {
+        result[localeCode] = makeTranslation()
     }
 
     return result
 }
 
 /** Локаль по умолчанию */
-const defaultLocale = props.currentLocale || tagData.value?.translation?.locale || 'ru'
+const defaultLocale = props.currentLocale
+    || tagData.value?.translation?.locale
+    || 'ru'
 
 /** Активная локаль редактора */
-const activeLocale = ref(defaultLocale)
+const activeLocale = ref(
+    defaultLocale
+)
 
 /** Форма редактирования */
 const form = useForm({
@@ -106,44 +126,96 @@ const form = useForm({
     color: tagData.value.color || '#22c55e',
 
     sort: tagData.value.sort ?? 0,
-    activity: Boolean(tagData.value.activity),
+    activity: Boolean(
+        tagData.value.activity
+    ),
 
-    status: tagData.value.status || 'draft',
+    status: tagData.value.status
+        || 'draft',
 
-    moderation_status: Number(tagData.value.moderation_status ?? 0),
-    moderated_by: tagData.value.moderated_by || null,
-    moderated_at: tagData.value.moderated_at || null,
-    moderation_note: tagData.value.moderation_note || '',
+    moderation_status: Number(
+        tagData.value.moderation_status ?? 0
+    ),
 
-    published_at: tagData.value.published_at || '',
-    show_from_at: tagData.value.show_from_at || '',
-    show_to_at: tagData.value.show_to_at || '',
+    moderated_by: tagData.value.moderated_by
+        ?? null,
+
+    moderated_at: tagData.value.moderated_at
+        ?? null,
+
+    moderation_note: tagData.value.moderation_note
+        || '',
+
+    published_at: tagData.value.published_at
+        || '',
+
+    show_from_at: tagData.value.show_from_at
+        || '',
+
+    show_to_at: tagData.value.show_to_at
+        || '',
 
     translations: makeTranslations(),
 })
 
-/** Текущий перевод */
-const currentTranslation = computed(() => {
-    if (!form.translations[activeLocale.value]) {
-        form.translations[activeLocale.value] = makeTranslation()
+/** Создание перевода для локали при необходимости */
+const ensureTranslation = (localeCode) => {
+    if (!localeCode) {
+        return
     }
 
-    return form.translations[activeLocale.value]
+    if (!form.translations[localeCode]) {
+        form.translations[localeCode] = makeTranslation()
+    }
+}
+
+/** Контроль активной локали */
+watch(
+    activeLocale,
+    (localeCode) => {
+        ensureTranslation(localeCode)
+    },
+    {
+        immediate: true,
+    }
+)
+
+/** Текущий перевод формы */
+const currentTranslation = computed(() => {
+    return form.translations[
+        activeLocale.value
+        ]
+})
+
+/** Заголовок страницы */
+const pageTitle = computed(() => {
+    return currentTranslation.value?.title
+        || tagData.value?.translation?.title
+        || `ID: ${tagData.value?.id ?? ''}`
 })
 
 /** Получение ошибки текущего языка */
 const getError = (key) => {
-    return form.errors[`translations.${activeLocale.value}.${key}`]
+    return form.errors[
+        `translations.${activeLocale.value}.${key}`
+        ]
 }
 
 /** Проверка HEX-цвета */
-const isValidHexColor = (value) => /^#([0-9A-Fa-f]{6})$/.test(value || '')
+const isValidHexColor = (value) => {
+    return /^#([0-9A-Fa-f]{6})$/.test(
+        value || ''
+    )
+}
 
 /** Цвет для color picker */
 const colorForPicker = computed({
     get() {
-        return isValidHexColor(form.color) ? form.color : '#22c55e'
+        return isValidHexColor(form.color)
+            ? form.color
+            : '#22c55e'
     },
+
     set(value) {
         form.color = value
     },
@@ -151,76 +223,170 @@ const colorForPicker = computed({
 
 /** Автоматическая генерация URL */
 const handleUrlFocus = () => {
-    if (!form.url && currentTranslation.value.title) {
-        form.url = transliterate(currentTranslation.value.title.toLowerCase())
+    if (
+        !form.url
+        && currentTranslation.value?.title
+    ) {
+        form.url = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
     }
 }
 
 /** Обрезка текста до указанной длины */
-const truncateText = (text, maxLength, addEllipsis = false) => {
-    if (!text) return ''
+const truncateText = (
+    text,
+    maxLength,
+    addEllipsis = false
+) => {
+    if (!text) {
+        return ''
+    }
 
-    const str = String(text)
+    const value = String(text)
 
-    if (str.length <= maxLength) return str
+    if (value.length <= maxLength) {
+        return value
+    }
 
-    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
+    const lastSpaceIndex = value.lastIndexOf(
+        ' ',
+        maxLength
+    )
+
     const truncated = lastSpaceIndex === -1
-        ? str.substring(0, maxLength)
-        : str.substring(0, lastSpaceIndex)
+        ? value.substring(0, maxLength)
+        : value.substring(0, lastSpaceIndex)
 
-    return addEllipsis ? `${truncated}...` : truncated
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
 }
 
 /** Генерация SEO-полей */
 const generateMetaFields = () => {
     const translation = currentTranslation.value
 
-    if (translation.title && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.title, 255)
+    if (!translation) {
+        return
     }
 
-    if (!translation.meta_keywords && translation.short) {
-        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+    if (
+        translation.title
+        && !translation.meta_title
+    ) {
+        translation.meta_title = truncateText(
+            translation.title,
+            255
+        )
+    }
+
+    if (
+        !translation.meta_keywords
+        && translation.short
+    ) {
+        let text = String(
+            translation.short
+        ).replace(
+            /(<([^>]+)>)/gi,
+            ''
+        )
+
+        text = text.replace(
+            /[.,!?;:()[\]{}"'«»]/g,
+            ''
+        )
 
         const words = text
             .split(/\s+/)
-            .filter(word => word && word.length >= 3)
-            .map(word => word.toLowerCase())
-            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter(
+                (word) => word
+                    && word.length >= 3
+            )
+            .map(
+                (word) => word.toLowerCase()
+            )
+            .filter(
+                (value, index, self) => {
+                    return self.indexOf(value)
+                        === index
+                }
+            )
 
-        translation.meta_keywords = truncateText(words.join(', '), 255)
+        translation.meta_keywords = truncateText(
+            words.join(', '),
+            255
+        )
     }
 
-    if (translation.short && !translation.meta_desc) {
-        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        translation.meta_desc = truncateText(descText, 255, true)
+    if (
+        translation.short
+        && !translation.meta_desc
+    ) {
+        const description = String(
+            translation.short
+        ).replace(
+            /(<([^>]+)>)/gi,
+            ''
+        )
+
+        translation.meta_desc = truncateText(
+            description,
+            255,
+            true
+        )
     }
 }
 
 /** Отправка формы */
 const submitForm = () => {
-    form.transform((data) => ({
-        ...data,
-        activity: data.activity ? 1 : 0,
-        moderation_status: Number(data.moderation_status ?? 0),
-        sort: Number(data.sort ?? 0),
-    }))
+    form.transform(
+        (data) => ({
+            ...data,
 
-    form.post(route('admin.marketTags.update', { marketTag: tagData.value.id }), {
-        errorBag: 'editMarketTag',
-        preserveScroll: true,
+            activity: data.activity
+                ? 1
+                : 0,
 
-        onSuccess: () => {
-            toast.success('Тег успешно обновлён.')
-        },
+            moderation_status: Number(
+                data.moderation_status ?? 0
+            ),
 
-        onError: (errors) => {
-            const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors[firstKey] || 'Проверьте корректность заполнения полей.')
-        },
-    })
+            sort: Number(
+                data.sort ?? 0
+            ),
+        })
+    )
+
+    form.post(
+        route(
+            'admin.marketTags.update',
+            {
+                marketTag: tagData.value.id,
+            }
+        ),
+        {
+            errorBag: 'editMarketTag',
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success(
+                    'Тег успешно обновлён.'
+                )
+            },
+
+            onError: (errors) => {
+                const firstKey = Object.keys(
+                    errors || {}
+                )[0]
+
+                toast.error(
+                    errors[firstKey]
+                    || 'Проверьте корректность заполнения полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 

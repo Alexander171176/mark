@@ -4,25 +4,15 @@ namespace App\Http\Resources\Admin\Market\MarketBrand;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Http\Resources\MissingValue;
 
 class MarketBrandSharedResource extends JsonResource
 {
+    /**
+     * Компактный ресурс бренда для Index и связанных списков
+     */
     public function toArray(Request $request): array
     {
-        $currentLocale = app()->getLocale();
-
-        $translation = $this->whenLoaded('translations', function () use ($currentLocale) {
-            return $this->translations->firstWhere('locale', $currentLocale)
-                ?: $this->translations->firstWhere('locale', config('app.fallback_locale', 'ru'))
-                    ?: $this->translations->first();
-        });
-
-        $firstImage = $this->whenLoaded('images', fn () => $this->images->first());
-
-        $thumbnailUrl = !($firstImage instanceof MissingValue) && $firstImage
-            ? $firstImage->thumb_url
-            : null;
+        $translation = $this->currentTranslation();
 
         return [
             'id' => $this->id,
@@ -33,38 +23,77 @@ class MarketBrandSharedResource extends JsonResource
             'website' => $this->website,
             'logo' => $this->logo,
             'icon' => $this->icon,
-            'social_links' => $this->social_links,
 
-            /** Отображение */
+            /** Отображение / сортировка / активность */
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,
+
             'left' => (bool) $this->left,
             'main' => (bool) $this->main,
             'right' => (bool) $this->right,
 
-            /** Публикация / модерация */
+            /** Статус публикации */
             'status' => $this->status,
+
+            /** Модерация */
             'moderation_status' => (int) $this->moderation_status,
+
+            'is_pending' => (int) $this->moderation_status === 0,
             'is_approved' => (int) $this->moderation_status === 1,
+            'is_rejected' => (int) $this->moderation_status === 2,
 
-            /** Перевод */
-            'locale' => $translation?->locale,
-            'title' => $translation?->title,
-            'subtitle' => $translation?->subtitle,
-            'short' => $translation?->short,
+            'moderated_at' => $this->moderated_at?->toISOString(),
+            'moderation_note' => $this->moderation_note,
 
-            /** Изображение */
-            'thumbnail_url' => $thumbnailUrl,
+            /** Публикация / окно показа */
+            'published_at' => $this->published_at?->format('Y-m-d'),
+            'show_from_at' => $this->show_from_at?->format('Y-m-d\TH:i'),
+            'show_to_at' => $this->show_to_at?->format('Y-m-d\TH:i'),
 
-            /** Counts */
-            'images_count' => $this->when(
-                isset($this->images_count),
-                fn () => (int) $this->images_count
+            /** Статистика */
+            'views' => (int) $this->views,
+
+            /** Счётчики */
+            'images_count' => $this->whenCounted('images'),
+
+            /** Текущий перевод */
+            'translation' => $translation
+                ? new MarketBrandTranslationResource($translation)
+                : null,
+
+            /** Владелец */
+            'owner' => $this->whenLoaded('owner', function () {
+                return [
+                    'id' => $this->owner?->id,
+                    'name' => $this->owner?->name,
+                    'email' => $this->owner?->email,
+                    'profile_photo_url' => $this->owner?->profile_photo_url,
+                ];
+            }),
+
+            /** Изображения */
+            'images' => MarketBrandImageResource::collection(
+                $this->whenLoaded('images')
             ),
 
             /** Timestamps */
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    /**
+     * Перевод текущей локали.
+     *
+     * Controller для Index загружает translations
+     * уже с фильтром по locale.
+     */
+    private function currentTranslation()
+    {
+        if (!$this->relationLoaded('translations')) {
+            return null;
+        }
+
+        return $this->translations->first();
     }
 }

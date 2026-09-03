@@ -1,5 +1,5 @@
 <script setup>
-import { defineEmits, defineProps, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
@@ -11,7 +11,7 @@ import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
 import ModerationButton from '@/Components/Admin/UI/Buttons/ModerationButton.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = defineProps({
     brands: { type: Array, default: () => [] },
@@ -31,77 +31,160 @@ const emits = defineEmits([
     'approve',
 ])
 
+/** Локальный список брендов */
 const localBrands = ref([])
+
+/** Открытые блоки владельцев */
 const openedOwnerBlocks = ref([])
 
 watch(
     () => props.brands,
-    (newVal) => {
-        localBrands.value = JSON.parse(JSON.stringify(newVal || []))
+    newVal => {
+        localBrands.value = JSON.parse(
+            JSON.stringify(newVal || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
+/** Завершение drag&drop */
 const handleDragEnd = () => {
-    emits('update-sort-order', localBrands.value.map(brand => brand.id))
+    emits(
+        'update-sort-order',
+        localBrands.value.map(
+            brand => brand.id
+        )
+    )
 }
 
-const toggleAll = (event) => {
+/** Массовое выделение */
+const toggleAll = event => {
     emits('toggle-all', {
-        ids: localBrands.value.map(brand => brand.id),
-        checked: event.target.checked,
+        ids: localBrands.value.map(
+            brand => brand.id
+        ),
+        checked: Boolean(
+            event?.target?.checked
+        ),
     })
 }
 
+/** Все бренды выбраны */
 const allSelected = () => {
-    return localBrands.value.length
-        && localBrands.value.every(brand => props.selectedBrands.includes(brand.id))
+    return Boolean(
+        localBrands.value.length
+        && localBrands.value.every(
+            brand =>
+                props.selectedBrands.includes(
+                    brand.id
+                )
+        )
+    )
 }
 
-const brandTranslation = (brand) => brand?.translation || {}
-const brandTitle = (brand) => brandTranslation(brand)?.title || `ID: ${brand?.id}`
-const brandShort = (brand) => brandTranslation(brand)?.short || ''
+/** Текущий перевод */
+const brandTranslation = brand =>
+    brand?.translation || {}
 
+/** Название */
+const brandTitle = brand =>
+    brandTranslation(brand)?.title
+    || `ID: ${brand?.id}`
+
+/** Краткое описание */
+const brandShort = brand =>
+    brandTranslation(brand)?.short || ''
+
+/** Названия статусов */
 const statusLabelKeyMap = {
     draft: 'statusDraft',
     published: 'statusPublished',
     archived: 'statusArchived',
 }
-const getStatusLabel = (status) => t(statusLabelKeyMap[status] || status || 'no')
 
-const ownerName = (brand) => brand?.owner?.name || t('noData')
-const ownerEmail = (brand) => brand?.owner?.email || ''
+/** Текст статуса */
+const getStatusLabel = status =>
+    t(
+        statusLabelKeyMap[status]
+        || status
+        || 'no'
+    )
 
-const ownerTitle = (brand) => {
+/** Имя владельца */
+const ownerName = brand =>
+    brand?.owner?.name
+    || t('noData')
+
+/** Email владельца */
+const ownerEmail = brand =>
+    brand?.owner?.email || ''
+
+/** Полная подпись владельца */
+const ownerTitle = brand => {
     const owner = brand?.owner
-    if (!owner) return t('noData')
 
-    return `${owner.name || ''}${owner.email ? ' — ' + owner.email : ''}`.trim()
+    if (!owner) {
+        return t('noData')
+    }
+
+    return [
+        owner.name || '',
+        owner.email || '',
+    ]
+        .filter(Boolean)
+        .join(' — ')
 }
 
-const ownerAvatar = (brand) => {
-    return brand?.owner?.profile_photo_url || '/storage/profile-photos/default-image.png'
-}
+/** Аватар владельца */
+const ownerAvatar = brand =>
+    brand?.owner?.profile_photo_url
+    || '/storage/profile-photos/default-image.png'
 
-const logoUrl = (brand) => {
-    if (!brand?.logo) {
+/** URL логотипа */
+const logoUrl = brand => {
+    const logo = brand?.logo
+
+    if (!logo) {
         return '/storage/market/market_brands/logos/default-image-light.png'
     }
 
-    return brand.logo.startsWith('/storage/')
-        ? brand.logo
-        : `/storage/${brand.logo}`
-}
+    const value = String(logo)
 
-const getPrimaryImage = (brand) => {
-    if (brand.images && brand.images.length) {
-        return [...brand.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0]
+    if (
+        value.startsWith('http://')
+        || value.startsWith('https://')
+        || value.startsWith('/storage/')
+    ) {
+        return value
     }
 
-    return null
+    return `/storage/${value}`
 }
 
-const imageUrl = (brand) => {
+/** Основное изображение */
+const getPrimaryImage = brand => {
+    const images = Array.isArray(
+        brand?.images
+    )
+        ? brand.images
+        : []
+
+    if (!images.length) {
+        return null
+    }
+
+    return [...images].sort(
+        (a, b) =>
+            Number(a?.order ?? 0)
+            - Number(b?.order ?? 0)
+    )[0]
+}
+
+/** URL основного изображения */
+const imageUrl = brand => {
     const image = getPrimaryImage(brand)
 
     return image?.webp_url
@@ -111,81 +194,195 @@ const imageUrl = (brand) => {
         || '/storage/market/market_brand_images/default-image.png'
 }
 
-const imageAlt = (brand) => {
+/** ALT изображения */
+const imageAlt = brand => {
     const image = getPrimaryImage(brand)
 
-    return image?.alt || brandTitle(brand)
+    return image?.alt
+        || brandTitle(brand)
 }
 
-const imageTitle = (brand) => {
+/** TITLE изображения */
+const imageTitle = brand => {
     const image = getPrimaryImage(brand)
 
-    return image?.caption || brandTitle(brand)
+    return image?.caption
+        || brandTitle(brand)
 }
 
-const brandPublicUrl = (brand) => {
-    return `/market/brands/${encodeURIComponent(brand.url)}`
+/** Публичный URL бренда */
+const brandPublicUrl = brand => {
+    if (!brand?.url) {
+        return '#'
+    }
+
+    return `/market/brands/${encodeURIComponent(
+        String(brand.url)
+    )}`
 }
 
-const formatDate = (dateStr) => {
-    if (!dateStr) return ''
+/** Форматирование даты */
+const formatDate = dateStr => {
+    if (!dateStr) {
+        return ''
+    }
 
     const date = new Date(dateStr)
 
-    if (isNaN(date)) return ''
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return ''
+    }
 
-    return date.toLocaleDateString('ru-RU', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    })
+    return date.toLocaleDateString(
+        locale.value || undefined,
+        {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        }
+    )
 }
 
-const truncateText = (text, maxLength = 80) => {
-    if (!text) return ''
+/** Обрезка текста */
+const truncateText = (
+    text,
+    maxLength = 80
+) => {
+    if (!text) {
+        return ''
+    }
 
-    return text.length > maxLength
-        ? text.slice(0, maxLength).trimEnd() + '…'
-        : text
+    const value = String(text)
+
+    return value.length > maxLength
+        ? value
+        .slice(0, maxLength)
+        .trimEnd() + '…'
+        : value
 }
 
-const moderationBadge = (status) => {
-    const s = Number(status ?? 0)
+/** Badge модерации */
+const moderationBadge = status => {
+    const value = Number(
+        status ?? 0
+    )
 
-    if (s === 1) {
+    if (value === 1) {
         return {
             text: t('statusSelectApproved'),
-            class: 'bg-emerald-100 text-emerald-700 border-emerald-300 ' +
-                'dark:bg-emerald-900/40 dark:text-emerald-300',
+            class:
+                'bg-emerald-100 text-emerald-700 border-emerald-300 '
+                + 'dark:bg-emerald-900/40 dark:text-emerald-300',
         }
     }
 
-    if (s === 2) {
+    if (value === 2) {
         return {
             text: t('statusSelectRejected'),
-            class: 'bg-rose-100 text-rose-700 border-rose-300 ' +
-                'dark:bg-rose-900/40 dark:text-rose-300',
+            class:
+                'bg-rose-100 text-rose-700 border-rose-300 '
+                + 'dark:bg-rose-900/40 dark:text-rose-300',
         }
     }
 
     return {
         text: t('underModeration'),
-        class: 'bg-amber-100 text-amber-800 border-amber-300 ' +
-            'dark:bg-amber-900/40 dark:text-amber-300',
+        class:
+            'bg-amber-100 text-amber-800 border-amber-300 '
+            + 'dark:bg-amber-900/40 dark:text-amber-300',
     }
 }
 
-const isOwnerBlockOpen = (brandId) => {
-    return openedOwnerBlocks.value.includes(brandId)
-}
+/** Открыт ли блок владельца */
+const isOwnerBlockOpen = brandId =>
+    openedOwnerBlocks.value.includes(
+        brandId
+    )
 
-const toggleOwnerBlock = (brandId) => {
-    if (isOwnerBlockOpen(brandId)) {
-        openedOwnerBlocks.value = openedOwnerBlocks.value.filter(id => id !== brandId)
+/** Переключение блока владельца */
+const toggleOwnerBlock = brandId => {
+    if (
+        isOwnerBlockOpen(
+            brandId
+        )
+    ) {
+        openedOwnerBlocks.value =
+            openedOwnerBlocks.value.filter(
+                id => id !== brandId
+            )
+
         return
     }
 
-    openedOwnerBlocks.value.push(brandId)
+    openedOwnerBlocks.value.push(
+        brandId
+    )
+}
+
+/** Выбор бренда */
+const toggleSelect = brandId => {
+    emits(
+        'toggle-select',
+        brandId
+    )
+}
+
+/** Left */
+const emitToggleLeft = brand => {
+    emits(
+        'toggle-left',
+        brand
+    )
+}
+
+/** Main */
+const emitToggleMain = brand => {
+    emits(
+        'toggle-main',
+        brand
+    )
+}
+
+/** Right */
+const emitToggleRight = brand => {
+    emits(
+        'toggle-right',
+        brand
+    )
+}
+
+/** Activity */
+const emitToggleActivity = brand => {
+    emits(
+        'toggle-activity',
+        brand
+    )
+}
+
+/** Delete */
+const emitDelete = brand => {
+    emits(
+        'delete',
+        brand
+    )
+}
+
+/** Moderation */
+const emitApprove = (
+    brand,
+    status,
+    note
+) => {
+    emits(
+        'approve',
+        brand,
+        status,
+        note
+    )
 }
 </script>
 
@@ -208,6 +405,7 @@ const toggleOwnerBlock = (brandId) => {
                        dark:text-slate-200 cursor-pointer"
             >
                 <span>{{ t('selectAll') }}</span>
+
                 <input
                     type="checkbox"
                     class="mx-2"
@@ -217,7 +415,10 @@ const toggleOwnerBlock = (brandId) => {
             </label>
         </div>
 
-        <div v-if="localBrands.length" class="p-3">
+        <div
+            v-if="localBrands.length"
+            class="p-3"
+        >
             <draggable
                 tag="div"
                 v-model="localBrands"
@@ -240,13 +441,18 @@ const toggleOwnerBlock = (brandId) => {
                             <div class="flex items-center space-x-2">
                                 <button
                                     type="button"
-                                    class="handle cursor-move text-slate-400 hover:text-slate-700
-                                           dark:hover:text-slate-100"
+                                    class="handle cursor-move text-slate-400
+                                           hover:text-slate-700 dark:hover:text-slate-100"
                                     :title="t('dragDrop')"
                                 >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
                                         <path
-                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
+                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z"
+                                        />
                                     </svg>
                                 </button>
 
@@ -263,12 +469,17 @@ const toggleOwnerBlock = (brandId) => {
                                     type="button"
                                     class="text-slate-400 hover:text-blue-600
                                            dark:hover:text-blue-300"
-                    :title="isOwnerBlockOpen(brand.id) ? t('hideOwner') : t('showOwner')"
+                                    :title="isOwnerBlockOpen(brand.id)
+                                        ? t('hideOwner')
+                                        : t('showOwner')"
                                     @click.prevent="toggleOwnerBlock(brand.id)"
                                 >
                                     <svg
                                         class="w-4 h-4 transition-transform duration-200"
-                                        :class="{ 'rotate-180': isOwnerBlockOpen(brand.id) }"
+                                        :class="{
+                                            'rotate-180':
+                                                isOwnerBlockOpen(brand.id),
+                                        }"
                                         fill="currentColor"
                                         viewBox="0 0 20 20"
                                     >
@@ -287,8 +498,8 @@ const toggleOwnerBlock = (brandId) => {
                                            border font-semibold"
                                     :class="moderationBadge(brand.moderation_status).class"
                                     :title="brand.moderation_note && brand.moderated_at
-                                    ? `${brand.moderation_note} [${formatDate(brand.moderated_at)}]`
-                                    : null"
+                                        ? `${brand.moderation_note} [${formatDate(brand.moderated_at)}]`
+                                        : null"
                                 >
                                     {{ moderationBadge(brand.moderation_status).text }}
                                 </span>
@@ -296,7 +507,7 @@ const toggleOwnerBlock = (brandId) => {
                                 <input
                                     type="checkbox"
                                     :checked="selectedBrands.includes(brand.id)"
-                                    @change="$emit('toggle-select', brand.id)"
+                                    @change="toggleSelect(brand.id)"
                                 />
                             </div>
                         </header>
@@ -338,7 +549,10 @@ const toggleOwnerBlock = (brandId) => {
                                            text-center text-[10px] text-slate-500
                                            dark:text-slate-300"
                                 >
-                                {{ t('show') }}: {{ brand.show_from_at }} / {{ brand.show_to_at }}
+                                    {{ t('show') }}:
+                                    {{ brand.show_from_at }}
+                                    /
+                                    {{ brand.show_to_at }}
                                 </div>
 
                                 <div
@@ -351,7 +565,9 @@ const toggleOwnerBlock = (brandId) => {
                                 </div>
                             </div>
 
-                            <div class="relative w-full bg-slate-200 dark:bg-slate-900">
+                            <div
+                                class="relative w-full bg-slate-200 dark:bg-slate-900"
+                            >
                                 <img
                                     :src="imageUrl(brand)"
                                     :alt="imageAlt(brand)"
@@ -382,8 +598,10 @@ const toggleOwnerBlock = (brandId) => {
                                 {{ truncateText(brandTitle(brand), 90) }}
                             </a>
 
-                            <div class="text-center text-[11px] text-slate-500
-                                        dark:text-slate-300">
+                            <div
+                                class="text-center text-[11px] text-slate-500
+                                       dark:text-slate-300"
+                            >
                                 {{ truncateText(brand.url, 90) }}
                             </div>
 
@@ -415,14 +633,19 @@ const toggleOwnerBlock = (brandId) => {
                                     class="flex items-center justify-center space-x-1"
                                     :title="t('views')"
                                 >
-                                    <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 16 16">
+                                    <svg
+                                        class="w-4 h-4 fill-current shrink-0"
+                                        viewBox="0 0 16 16"
+                                    >
                                         <path
                                             class="fill-current text-blue-600 dark:text-blue-300"
                                             d="M8 2C3.246 2 .251 7.29.127 7.515a.998.998 0 0 0 .002.975c.07.125 1.044 1.801 2.695 3.274C4.738 13.582 6.283 14 8 14c4.706 0 7.743-5.284 7.872-5.507a1 1 0 0 0 0-.98A13.292 13.292 0 0 0 8 2zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"
                                         />
                                     </svg>
 
-                                    <span class="text-[12px] text-slate-700 dark:text-slate-200">
+                                    <span
+                                        class="text-[12px] text-slate-700 dark:text-slate-200"
+                                    >
                                         {{ brand.views ?? 0 }}
                                     </span>
                                 </div>
@@ -435,7 +658,9 @@ const toggleOwnerBlock = (brandId) => {
                                         {{ t('images') }}:
                                     </span>
 
-                                    <span class="text-[12px] text-slate-700 dark:text-slate-200">
+                                    <span
+                                        class="text-[12px] text-slate-700 dark:text-slate-200"
+                                    >
                                         {{ brand.images_count ?? 0 }}
                                     </span>
                                 </div>
@@ -445,20 +670,26 @@ const toggleOwnerBlock = (brandId) => {
                                 class="grid grid-cols-1 gap-0.5 text-[11px]
                                        text-slate-600 dark:text-slate-300"
                             >
-                                <div class="font-semibold text-center
-                                            text-fuchsia-700 dark:text-fuchsia-300">
-                                    <span>{{ t('status') }}: </span>
+                                <div
+                                    class="font-semibold text-center
+                                           text-fuchsia-700 dark:text-fuchsia-300"
+                                >
+                                    <span>
+                                        {{ t('status') }}:
+                                    </span>
+
                                     {{ getStatusLabel(brand.status) }}
                                 </div>
                             </div>
 
                             <div class="flex justify-center space-x-1">
                                 <span
-                                    class="text-[10px] px-2 py-1 rounded-sm border font-semibold"
+                                    class="text-[10px] px-2 py-1 rounded-sm
+                                           border font-semibold"
                                     :class="moderationBadge(brand.moderation_status).class"
                                     :title="brand.moderation_note && brand.moderated_at
-                                    ? `${brand.moderation_note} [${formatDate(brand.moderated_at)}]`
-                                    : null"
+                                        ? `${brand.moderation_note} [${formatDate(brand.moderated_at)}]`
+                                        : null"
                                 >
                                     {{ moderationBadge(brand.moderation_status).text }}
                                 </span>
@@ -469,7 +700,7 @@ const toggleOwnerBlock = (brandId) => {
                                     :initialNote="brand?.moderation_note || ''"
                                     mode="toggle"
                                     @submit="({ status, note }) =>
-                                    $emit('approve', brand, status, note)"
+                                        emitApprove(brand, status, note)"
                                 />
                             </div>
                         </div>
@@ -480,37 +711,41 @@ const toggleOwnerBlock = (brandId) => {
                         >
                             <div class="flex items-center space-x-1">
                                 <LeftToggle
-                                    :isActive="brand.left"
-                                    @toggle-left="$emit('toggle-left', brand)"
+                                    :isActive="Boolean(brand.left)"
                                     :title="brand.left ? t('enabled') : t('disabled')"
+                                    @toggle-left="emitToggleLeft(brand)"
                                 />
 
                                 <MainToggle
-                                    :isActive="brand.main"
-                                    @toggle-main="$emit('toggle-main', brand)"
+                                    :isActive="Boolean(brand.main)"
                                     :title="brand.main ? t('enabled') : t('disabled')"
+                                    @toggle-main="emitToggleMain(brand)"
                                 />
 
                                 <RightToggle
-                                    :isActive="brand.right"
-                                    @toggle-right="$emit('toggle-right', brand)"
+                                    :isActive="Boolean(brand.right)"
                                     :title="brand.right ? t('enabled') : t('disabled')"
+                                    @toggle-right="emitToggleRight(brand)"
                                 />
                             </div>
 
                             <div class="flex items-center space-x-1">
                                 <ActivityToggle
-                                    :isActive="brand.activity"
-                                    @toggle-activity="$emit('toggle-activity', brand)"
+                                    :isActive="Boolean(brand.activity)"
                                     :title="brand.activity ? t('enabled') : t('disabled')"
+                                    @toggle-activity="emitToggleActivity(brand)"
                                 />
 
                                 <IconEdit
-                                    :href="route('admin.marketBrands.edit',
-                                    { marketBrand: brand.id })"
+                                    :href="route(
+                                        'admin.marketBrands.edit',
+                                        { marketBrand: brand.id }
+                                    )"
                                 />
 
-                                <DeleteIconButton @delete="$emit('delete', brand)" />
+                                <DeleteIconButton
+                                    @delete="emitDelete(brand)"
+                                />
                             </div>
                         </div>
                     </div>
@@ -518,7 +753,10 @@ const toggleOwnerBlock = (brandId) => {
             </draggable>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

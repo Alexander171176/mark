@@ -5,7 +5,8 @@
  *
  * Редактирование бренда MarketBrand
  */
-import { ref, computed } from 'vue'
+
+import { computed, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useI18n } from 'vue-i18n'
 import { transliterate } from '@/utils/transliteration'
@@ -53,7 +54,11 @@ const props = defineProps({
 })
 
 /** Данные редактируемого бренда */
-const brandData = computed(() => props.brand?.data ?? props.brand)
+const brandData = computed(() => {
+    return props.brand?.data
+        ?? props.brand
+        ?? {}
+})
 
 /** Шаблон пустого перевода */
 const makeTranslation = () => ({
@@ -66,49 +71,101 @@ const makeTranslation = () => ({
     meta_desc: '',
 })
 
-/** Локаль формы по умолчанию */
-const defaultLocale =
-    props.currentLocale ||
-    brandData.value.translation?.locale ||
-    props.availableLocales[0] ||
-    'ru'
+/** Все переводы из Resource */
+const resourceTranslations = computed(() => {
+    const translations =
+        brandData.value?.translations
 
-/** Активная локаль вкладок */
-const activeLocale = ref(defaultLocale)
-
-/** Формирование публичного пути к файлу */
-const storageUrl = (path) => {
-    if (!path) return null
+    if (Array.isArray(translations)) {
+        return translations
+    }
 
     if (
-        path instanceof File ||
-        String(path).startsWith('http') ||
-        String(path).startsWith('/storage/')
+        Array.isArray(
+            translations?.data
+        )
     ) {
+        return translations.data
+    }
+
+    return []
+})
+
+/** Локаль формы по умолчанию */
+const defaultLocale =
+    props.currentLocale
+    || brandData.value?.translation?.locale
+    || props.availableLocales?.[0]
+    || 'ru'
+
+/** Активная локаль вкладок */
+const activeLocale = ref(
+    defaultLocale
+)
+
+/** Формирование публичного пути к файлу */
+const storageUrl = path => {
+    if (!path) {
+        return null
+    }
+
+    if (path instanceof File) {
         return path
     }
 
-    return `/storage/${path}`
+    const value = String(path)
+
+    if (
+        value.startsWith('http://')
+        || value.startsWith('https://')
+        || value.startsWith('/storage/')
+    ) {
+        return value
+    }
+
+    return `/storage/${value}`
 }
 
-/** Подготовка переводов бренда */
+/** Подготовка всех переводов бренда */
 const buildTranslations = () => {
     const result = {}
 
-    ;(brandData.value.translations || []).forEach((translation) => {
-        result[translation.locale] = {
-            title: translation.title || '',
-            subtitle: translation.subtitle || '',
-            short: translation.short || '',
-            description: translation.description || '',
-            meta_title: translation.meta_title || '',
-            meta_keywords: translation.meta_keywords || '',
-            meta_desc: translation.meta_desc || '',
+    resourceTranslations.value.forEach(
+        translation => {
+            if (!translation?.locale) {
+                return
+            }
+
+            result[
+                translation.locale
+                ] = {
+                title:
+                    translation.title || '',
+
+                subtitle:
+                    translation.subtitle || '',
+
+                short:
+                    translation.short || '',
+
+                description:
+                    translation.description || '',
+
+                meta_title:
+                    translation.meta_title || '',
+
+                meta_keywords:
+                    translation.meta_keywords || '',
+
+                meta_desc:
+                    translation.meta_desc || '',
+            }
         }
-    })
+    )
 
     if (!result[defaultLocale]) {
-        result[defaultLocale] = makeTranslation()
+        result[defaultLocale] =
+            makeTranslation()
     }
 
     return result
@@ -118,61 +175,163 @@ const buildTranslations = () => {
 const form = useForm({
     _method: 'PUT',
 
-    user_id: brandData.value.user_id || page.props?.auth?.user?.id || null,
+    user_id:
+        brandData.value?.user_id
+        || page.props?.auth?.user?.id
+        || null,
 
-    url: brandData.value.url || '',
-    website: brandData.value.website || '',
+    url:
+        brandData.value?.url || '',
+
+    website:
+        brandData.value?.website || '',
+
     logo: null,
-    icon: brandData.value.icon || '',
+
+    icon:
+        brandData.value?.icon || '',
 
     social_links: {
-        instagram: brandData.value.social_links?.instagram || '',
-        whatsapp: brandData.value.social_links?.whatsapp || '',
-        telegram: brandData.value.social_links?.telegram || '',
-        facebook: brandData.value.social_links?.facebook || '',
-        youtube: brandData.value.social_links?.youtube || '',
+        instagram:
+            brandData.value
+                ?.social_links
+                ?.instagram || '',
+
+        whatsapp:
+            brandData.value
+                ?.social_links
+                ?.whatsapp || '',
+
+        telegram:
+            brandData.value
+                ?.social_links
+                ?.telegram || '',
+
+        facebook:
+            brandData.value
+                ?.social_links
+                ?.facebook || '',
+
+        youtube:
+            brandData.value
+                ?.social_links
+                ?.youtube || '',
     },
 
-    sort: brandData.value.sort ?? 0,
-    activity: Boolean(brandData.value.activity),
-    left: Boolean(brandData.value.left),
-    main: Boolean(brandData.value.main),
-    right: Boolean(brandData.value.right),
+    sort:
+        brandData.value?.sort ?? 0,
 
-    status: brandData.value.status || 'draft',
-    moderation_status: brandData.value.moderation_status ?? 0,
-    moderation_note: brandData.value.moderation_note || '',
+    activity:
+        Boolean(
+            brandData.value?.activity
+        ),
 
-    published_at: brandData.value.published_at || '',
-    show_from_at: brandData.value.show_from_at || '',
-    show_to_at: brandData.value.show_to_at || '',
+    left:
+        Boolean(
+            brandData.value?.left
+        ),
 
-    translations: buildTranslations(),
+    main:
+        Boolean(
+            brandData.value?.main
+        ),
+
+    right:
+        Boolean(
+            brandData.value?.right
+        ),
+
+    status:
+        brandData.value?.status
+        || 'draft',
+
+    moderation_status:
+        brandData.value
+            ?.moderation_status
+        ?? 0,
+
+    moderation_note:
+        brandData.value
+            ?.moderation_note
+        || '',
+
+    published_at:
+        brandData.value
+            ?.published_at
+        || '',
+
+    show_from_at:
+        brandData.value
+            ?.show_from_at
+        || '',
+
+    show_to_at:
+        brandData.value
+            ?.show_to_at
+        || '',
+
+    translations:
+        buildTranslations(),
+
     deletedImages: [],
 })
 
 /** Предпросмотр логотипа */
-const logoPreview = computed(() => storageUrl(brandData.value.logo))
+const logoPreview = computed(() => {
+    return storageUrl(
+        brandData.value?.logo
+    )
+})
+
+/**
+ * Гарантирует наличие перевода.
+ *
+ * Изменение form выполняется вне computed.
+ */
+const ensureTranslation = localeCode => {
+    if (!localeCode) {
+        return
+    }
+
+    if (!form.translations[localeCode]) {
+        form.translations[localeCode] =
+            makeTranslation()
+    }
+}
+
+/** Подготовка перевода при переключении локали */
+watch(
+    activeLocale,
+    localeCode => {
+        ensureTranslation(localeCode)
+    },
+    {
+        immediate: true,
+    }
+)
 
 /** Текущий активный перевод */
 const currentTranslation = computed(() => {
-    if (!form.translations[activeLocale.value]) {
-        form.translations[activeLocale.value] = makeTranslation()
-    }
-
-    return form.translations[activeLocale.value]
+    return form.translations[
+        activeLocale.value
+        ] || makeTranslation()
 })
 
 /** Заголовок страницы */
 const pageTitle = computed(() => {
-    return currentTranslation.value.title
-        || brandData.value.translation?.title
-        || `ID: ${brandData.value.id}`
+    return currentTranslation.value
+            ?.title
+        || brandData.value
+            ?.translation
+            ?.title
+        || `ID: ${brandData.value?.id}`
 })
 
 /** Получение ошибки поля текущей локали */
-const getError = (key) => {
-    return form.errors[`translations.${activeLocale.value}.${key}`]
+const getError = key => {
+    return form.errors[
+        `translations.${activeLocale.value}.${key}`
+        ]
 }
 
 /** Пресет изображений галереи */
@@ -187,67 +346,151 @@ const galleryPreset = computed(() => {
     }
 })
 
+/** Исходные изображения Resource */
+const resourceImages = computed(() => {
+    const images =
+        brandData.value?.images
+
+    if (Array.isArray(images)) {
+        return images
+    }
+
+    if (
+        Array.isArray(
+            images?.data
+        )
+    ) {
+        return images.data
+    }
+
+    return []
+})
+
 /** Существующие изображения бренда */
 const existingImages = ref(
-    (brandData.value.images || [])
-        .filter(img => img.url || img.webp_url || img.image_url || img.thumb_url)
-        .map(img => ({
-            id: img.id,
-            url: img.webp_url || img.image_url || img.thumb_url || img.url,
-            order: img.order || 0,
-            alt: img.alt || '',
-            caption: img.caption || '',
-        }))
+    resourceImages.value
+        .filter(
+            image =>
+                image?.url
+                || image?.webp_url
+                || image?.image_url
+                || image?.thumb_url
+        )
+        .map(
+            image => ({
+                id: image.id,
+
+                url:
+                    image.webp_url
+                    || image.image_url
+                    || image.thumb_url
+                    || image.url,
+
+                order:
+                    image.order ?? 0,
+
+                alt:
+                    image.alt || '',
+
+                caption:
+                    image.caption || '',
+            })
+        )
 )
 
 /** Новые изображения бренда */
 const newImages = ref([])
 
 /** Обновление существующих изображений */
-const handleExistingImagesUpdate = (images) => {
-    existingImages.value = images || []
+const handleExistingImagesUpdate = images => {
+    existingImages.value =
+        Array.isArray(images)
+            ? images
+            : []
 }
 
 /** Пометка изображения на удаление */
-const handleDeleteExistingImage = (deletedId) => {
-    if (!form.deletedImages.includes(deletedId)) {
-        form.deletedImages.push(deletedId)
+const handleDeleteExistingImage = deletedId => {
+    if (
+        !form.deletedImages.includes(
+            deletedId
+        )
+    ) {
+        form.deletedImages.push(
+            deletedId
+        )
     }
 
-    existingImages.value = existingImages.value.filter(img => img.id !== deletedId)
+    existingImages.value =
+        existingImages.value.filter(
+            image =>
+                image.id !== deletedId
+        )
 }
 
 /** Обновление новых изображений */
-const handleNewImagesUpdate = (images) => {
-    newImages.value = images || []
+const handleNewImagesUpdate = images => {
+    newImages.value =
+        Array.isArray(images)
+            ? images
+            : []
 }
 
 /** Автогенерация URL из названия */
 const handleUrlInputFocus = () => {
-    if (!form.url && currentTranslation.value.title) {
-        form.url = transliterate(currentTranslation.value.title.toLowerCase())
+    const title =
+        currentTranslation.value?.title
+        || ''
+
+    if (!form.url && title) {
+        form.url = transliterate(
+            title.toLowerCase()
+        )
     }
 }
 
 /** Обрезка текста без разрыва слов */
-const truncateText = (text, maxLength, addEllipsis = false) => {
-    if (!text) return ''
+const truncateText = (
+    text,
+    maxLength,
+    addEllipsis = false
+) => {
+    if (!text) {
+        return ''
+    }
 
-    const str = String(text)
+    const value = String(text)
 
-    if (str.length <= maxLength) return str
+    if (value.length <= maxLength) {
+        return value
+    }
 
-    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
-    const truncated = lastSpaceIndex === -1
-        ? str.substring(0, maxLength)
-        : str.substring(0, lastSpaceIndex)
+    const lastSpaceIndex =
+        value.lastIndexOf(
+            ' ',
+            maxLength
+        )
 
-    return addEllipsis ? `${truncated}...` : truncated
+    const truncated =
+        lastSpaceIndex === -1
+            ? value.substring(
+                0,
+                maxLength
+            )
+            : value.substring(
+                0,
+                lastSpaceIndex
+            )
+
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
 }
 
 /** Очистка SEO-полей */
 const clearMetaFields = () => {
-    const translation = currentTranslation.value
+    const translation =
+        currentTranslation.value
 
     translation.meta_title = ''
     translation.meta_keywords = ''
@@ -256,53 +499,120 @@ const clearMetaFields = () => {
 
 /** Генерация SEO-полей */
 const generateMetaFields = () => {
-    const translation = currentTranslation.value
+    const translation =
+        currentTranslation.value
 
-    if (translation.title && !translation.meta_title) {
-        translation.meta_title = truncateText(translation.title, 255)
+    if (
+        translation.title
+        && !translation.meta_title
+    ) {
+        translation.meta_title =
+            truncateText(
+                translation.title,
+                255
+            )
     }
 
-    if (!translation.meta_keywords && translation.short) {
-        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+    if (
+        !translation.meta_keywords
+        && translation.short
+    ) {
+        let text = String(
+            translation.short
+        ).replace(
+            /(<([^>]+)>)/gi,
+            ''
+        )
+
+        text = text.replace(
+            /[.,!?;:()[\]{}"'«»]/g,
+            ''
+        )
 
         const words = text
             .split(/\s+/)
-            .filter(word => word && word.length >= 3)
-            .map(word => word.toLowerCase())
-            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter(
+                word =>
+                    word
+                    && word.length >= 3
+            )
+            .map(
+                word =>
+                    word.toLowerCase()
+            )
+            .filter(
+                (value, index, self) =>
+                    self.indexOf(value)
+                    === index
+            )
 
-        translation.meta_keywords = truncateText(words.join(', '), 255)
+        translation.meta_keywords =
+            truncateText(
+                words.join(', '),
+                255
+            )
     }
 
-    if (translation.short && !translation.meta_desc) {
-        const descText = String(translation.short).replace(/(<([^>]+)>)/gi, '')
-        translation.meta_desc = truncateText(descText, 200, true)
+    if (
+        translation.short
+        && !translation.meta_desc
+    ) {
+        const descText = String(
+            translation.short
+        ).replace(
+            /(<([^>]+)>)/gi,
+            ''
+        )
+
+        translation.meta_desc =
+            truncateText(
+                descText,
+                200,
+                true
+            )
     }
 }
 
 /** Подготовка файла к отправке */
-const fileOrNull = (value) => {
-    return value instanceof File ? value : null
+const fileOrNull = value => {
+    return value instanceof File
+        ? value
+        : null
 }
 
 /** Отправка формы редактирования */
 const submitForm = () => {
-    form.transform((data) => {
+    form.transform(data => {
         const transformed = {
             ...data,
 
-            activity: data.activity ? 1 : 0,
-            left: data.left ? 1 : 0,
-            main: data.main ? 1 : 0,
-            right: data.right ? 1 : 0,
+            activity:
+                data.activity ? 1 : 0,
 
-            logo: fileOrNull(data.logo),
+            left:
+                data.left ? 1 : 0,
 
-            social_links: Object.fromEntries(
-                Object.entries(data.social_links || {})
-                    .filter(([, value]) => String(value || '').trim() !== '')
+            main:
+                data.main ? 1 : 0,
+
+            right:
+                data.right ? 1 : 0,
+
+            logo: fileOrNull(
+                data.logo
             ),
+
+            social_links:
+                Object.fromEntries(
+                    Object.entries(
+                        data.social_links || {}
+                    ).filter(
+                        ([, value]) =>
+                            String(
+                                value || ''
+                            ).trim() !== ''
+                    )
+                ),
         }
 
         if (!transformed.logo) {
@@ -312,57 +622,120 @@ const submitForm = () => {
         delete transformed.images
         delete transformed.deletedImages
 
-        let i = 0
+        let imageIndex = 0
 
-        existingImages.value.forEach((img) => {
-            transformed[`images[${i}][id]`] = img.id
-            transformed[`images[${i}][order]`] = img.order ?? 0
-            transformed[`images[${i}][alt]`] = img.alt ?? ''
-            transformed[`images[${i}][caption]`] = img.caption ?? ''
+        existingImages.value.forEach(
+            image => {
+                transformed[
+                    `images[${imageIndex}][id]`
+                    ] = image.id
 
-            if (img.file instanceof File) {
-                transformed[`images[${i}][file]`] = img.file
+                transformed[
+                    `images[${imageIndex}][order]`
+                    ] = image.order ?? 0
+
+                transformed[
+                    `images[${imageIndex}][alt]`
+                    ] = image.alt ?? ''
+
+                transformed[
+                    `images[${imageIndex}][caption]`
+                    ] = image.caption ?? ''
+
+                if (
+                    image.file
+                    instanceof File
+                ) {
+                    transformed[
+                        `images[${imageIndex}][file]`
+                        ] = image.file
+                }
+
+                imageIndex++
             }
+        )
 
-            i++
-        })
+        newImages.value.forEach(
+            image => {
+                if (
+                    !(image?.file instanceof File)
+                ) {
+                    return
+                }
 
-        newImages.value.forEach((img) => {
-            if (img.file) {
-                transformed[`images[${i}][file]`] = img.file
-                transformed[`images[${i}][order]`] = img.order ?? 0
-                transformed[`images[${i}][alt]`] = img.alt ?? ''
-                transformed[`images[${i}][caption]`] = img.caption ?? ''
-                i++
+                transformed[
+                    `images[${imageIndex}][file]`
+                    ] = image.file
+
+                transformed[
+                    `images[${imageIndex}][order]`
+                    ] = image.order ?? 0
+
+                transformed[
+                    `images[${imageIndex}][alt]`
+                    ] = image.alt ?? ''
+
+                transformed[
+                    `images[${imageIndex}][caption]`
+                    ] = image.caption ?? ''
+
+                imageIndex++
             }
-        })
+        )
 
-        form.deletedImages.forEach((id, index) => {
-            transformed[`deletedImages[${index}]`] = id
-        })
+        form.deletedImages.forEach(
+            (id, index) => {
+                transformed[
+                    `deletedImages[${index}]`
+                    ] = id
+            }
+        )
 
         return transformed
     })
 
-    form.post(route('admin.marketBrands.update', { marketBrand: brandData.value.id }), {
-        forceFormData: true,
-        errorBag: 'updateMarketBrand',
-        preserveScroll: true,
+    form.post(
+        route(
+            'admin.marketBrands.update',
+            {
+                marketBrand:
+                brandData.value.id,
+            }
+        ),
+        {
+            forceFormData: true,
+            errorBag: 'updateMarketBrand',
+            preserveScroll: true,
 
-        onSuccess: () => {
-            toast.success('Бренд успешно обновлён!')
-            newImages.value = []
-            form.deletedImages = []
-        },
+            onSuccess: () => {
+                toast.success(
+                    'Бренд успешно обновлён!'
+                )
 
-        onError: (errors) => {
-            console.error('Не удалось обновить бренд:', errors)
+                newImages.value = []
+                form.deletedImages = []
+            },
 
-            const firstError = errors?.[Object.keys(errors)[0]]
+            onError: errors => {
+                console.error(
+                    'Не удалось обновить бренд:',
+                    errors
+                )
 
-            toast.error(firstError || 'Пожалуйста, проверьте правильность заполнения полей.')
-        },
-    })
+                const firstError =
+                    errors?.[
+                        Object.keys(
+                            errors || {}
+                        )[0]
+                        ]
+
+                toast.error(
+                    firstError
+                    || 'Пожалуйста, проверьте правильность заполнения полей.'
+                )
+            },
+        }
+    )
 }
 </script>
 
@@ -370,7 +743,9 @@ const submitForm = () => {
     <AdminLayout :title="t('editMarketBrand')">
         <template #header>
             <TitlePage>
-                {{ t('editMarketBrand') }}: {{ pageTitle }} [ID: {{ brandData.id }}]
+                {{ t('editMarketBrand') }}:
+                {{ pageTitle }}
+                [ID: {{ brandData.id }}]
             </TitlePage>
         </template>
 
@@ -384,76 +759,107 @@ const submitForm = () => {
                 <div class="sm:flex sm:justify-between sm:items-center mb-2">
                     <DefaultButton :href="route('admin.marketBrands.index')">
                         <template #icon>
-                            <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                 viewBox="0 0 16 16">
+                            <svg
+                                class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                viewBox="0 0 16 16"
+                            >
                                 <path
                                     d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                 />
                             </svg>
                         </template>
+
                         {{ t('back') }}
                     </DefaultButton>
                 </div>
 
-                <form @submit.prevent="submitForm"
-                      enctype="multipart/form-data"
-                      class="p-3 w-full">
-                    <div class="mb-3 flex justify-between flex-col
-                                lg:flex-row items-center gap-4">
-
+                <form
+                    class="p-3 w-full"
+                    enctype="multipart/form-data"
+                    @submit.prevent="submitForm"
+                >
+                    <div
+                        class="mb-3 flex justify-between flex-col
+                               lg:flex-row items-center gap-4"
+                    >
                         <div class="flex flex-row items-center gap-2">
-                            <ActivityCheckbox v-model="form.activity" />
+                            <ActivityCheckbox
+                                v-model="form.activity"
+                            />
+
                             <LabelCheckbox
                                 for="activity"
                                 :text="t('activity')"
-                                class="text-sm h-8 flex items-center" />
+                                class="text-sm h-8 flex items-center"
+                            />
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
-                            <LabelInput for="sort" :value="t('sort')" class="text-sm" />
+                            <LabelInput
+                                for="sort"
+                                :value="t('sort')"
+                                class="text-sm"
+                            />
+
                             <InputNumber
                                 id="sort"
-                                type="number"
                                 v-model="form.sort"
-                                class="w-full lg:w-28" />
-                            <InputError class="mt-2 lg:mt-0" :message="form.errors.sort" />
-                        </div>
+                                type="number"
+                                class="w-full lg:w-28"
+                            />
 
+                            <InputError
+                                class="mt-2 lg:mt-0"
+                                :message="form.errors.sort"
+                            />
+                        </div>
                     </div>
 
-                    <div class="mb-3 flex justify-between flex-col
-                                lg:flex-row items-center gap-4">
-
+                    <div
+                        class="mb-3 flex justify-between flex-col
+                               lg:flex-row items-center gap-4"
+                    >
                         <div class="flex flex-row items-center gap-2">
-                            <ActivityCheckbox v-model="form.left" />
+                            <ActivityCheckbox
+                                v-model="form.left"
+                            />
+
                             <LabelCheckbox
                                 for="left"
                                 :text="t('left')"
-                                class="text-sm h-8 flex items-center" />
+                                class="text-sm h-8 flex items-center"
+                            />
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
-                            <ActivityCheckbox v-model="form.main" />
+                            <ActivityCheckbox
+                                v-model="form.main"
+                            />
+
                             <LabelCheckbox
                                 for="main"
                                 :text="t('main')"
-                                class="text-sm h-8 flex items-center" />
+                                class="text-sm h-8 flex items-center"
+                            />
                         </div>
 
                         <div class="flex flex-row items-center gap-2">
-                            <ActivityCheckbox v-model="form.right" />
+                            <ActivityCheckbox
+                                v-model="form.right"
+                            />
+
                             <LabelCheckbox
                                 for="right"
                                 :text="t('right')"
-                                class="text-sm h-8 flex items-center" />
+                                class="text-sm h-8 flex items-center"
+                            />
                         </div>
-
                     </div>
 
                     <div
                         class="my-5 p-3 border border-slate-300 dark:border-slate-500
-                               bg-white dark:bg-slate-800 rounded-sm">
-
+                               bg-white dark:bg-slate-800 rounded-sm"
+                    >
                         <TranslationTabs
                             v-model="activeLocale"
                             :translations="form.translations"
@@ -467,92 +873,149 @@ const submitForm = () => {
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput for="title">
                                 <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
-                                {{ t('title') }} [{{ activeLocale.toUpperCase() }}]
+                                {{ t('title') }}
+                                [{{ activeLocale.toUpperCase() }}]
                             </LabelInput>
 
                             <InputText
                                 id="title"
-                                type="text"
                                 v-model="currentTranslation.title"
+                                type="text"
                                 required
-                                maxlength="255" />
-                            <InputError class="mt-2" :message="getError('title')" />
+                                maxlength="255"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('title')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput
                                 for="subtitle"
-                                :value="`${t('subtitle')} [${activeLocale.toUpperCase()}]`" />
+                                :value="`${t('subtitle')} [${activeLocale.toUpperCase()}]`"
+                            />
+
                             <InputText
                                 id="subtitle"
-                                type="text"
                                 v-model="currentTranslation.subtitle"
-                                maxlength="255" />
-                            <InputError class="mt-2" :message="getError('subtitle')" />
+                                type="text"
+                                maxlength="255"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('subtitle')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
                             <div class="flex justify-between w-full">
                                 <LabelInput
                                     for="short"
-                            :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`" />
+                                    :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
+                                />
+
                                 <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                        {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
+                                    {{ (currentTranslation.short || '').length }}
+                                    / 255 {{ t('characters') }}
                                 </div>
                             </div>
 
-                            <MetaDescTextarea v-model="currentTranslation.short" class="w-full" />
-                            <InputError class="mt-2" :message="getError('short')" />
+                            <MetaDescTextarea
+                                v-model="currentTranslation.short"
+                                class="w-full"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('short')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput
                                 for="description"
-                                :value="`${t('description')} [${activeLocale.toUpperCase()}]`" />
-                            <TinyEditor v-model="currentTranslation.description" :height="400" />
-                            <InputError class="mt-2" :message="getError('description')" />
+                                :value="`${t('description')} [${activeLocale.toUpperCase()}]`"
+                            />
+
+                            <TinyEditor
+                                v-model="currentTranslation.description"
+                                :height="400"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('description')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput
                                 for="meta_title"
-                                :value="`${t('metaTitle')} [${activeLocale.toUpperCase()}]`" />
+                                :value="`${t('metaTitle')} [${activeLocale.toUpperCase()}]`"
+                            />
+
                             <InputText
                                 id="meta_title"
-                                type="text"
                                 v-model="currentTranslation.meta_title"
-                                maxlength="255" />
-                            <InputError class="mt-2" :message="getError('meta_title')" />
+                                type="text"
+                                maxlength="255"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('meta_title')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput
                                 for="meta_keywords"
-                                :value="`${t('metaKeywords')} [${activeLocale.toUpperCase()}]`" />
+                                :value="`${t('metaKeywords')} [${activeLocale.toUpperCase()}]`"
+                            />
+
                             <InputText
                                 id="meta_keywords"
-                                type="text"
                                 v-model="currentTranslation.meta_keywords"
-                                maxlength="255" />
-                            <InputError class="mt-2" :message="getError('meta_keywords')" />
+                                type="text"
+                                maxlength="255"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('meta_keywords')"
+                            />
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput
                                 for="meta_desc"
-                            :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`" />
+                                :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
+                            />
+
                             <MetaDescTextarea
                                 v-model="currentTranslation.meta_desc"
-                                class="w-full" />
-                            <InputError class="mt-2" :message="getError('meta_desc')" />
+                                class="w-full"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="getError('meta_desc')"
+                            />
                         </div>
 
                         <div class="flex justify-end gap-2 mt-4">
-                            <ClearMetaButton @click.prevent="clearMetaFields">
+                            <ClearMetaButton
+                                @click.prevent="clearMetaFields"
+                            >
                                 {{ t('clearMetaFields') }}
                             </ClearMetaButton>
 
-                            <MetatagsButton @click.prevent="generateMetaFields">
+                            <MetatagsButton
+                                @click.prevent="generateMetaFields"
+                            >
                                 {{ t('generateMetaTags') }}
                             </MetatagsButton>
                         </div>
@@ -566,78 +1029,83 @@ const submitForm = () => {
 
                         <InputText
                             id="url"
-                            type="text"
                             v-model="form.url"
+                            type="text"
                             required
                             @focus="handleUrlInputFocus"
                         />
 
-                        <InputError class="mt-2" :message="form.errors.url" />
+                        <InputError
+                            class="mt-2"
+                            :message="form.errors.url"
+                        />
                     </div>
 
                     <div
                         class="my-5 p-3 border border-slate-300 dark:border-slate-500
-                               bg-white dark:bg-slate-800 rounded-sm">
-                        <div class="text-sm font-semibold
-                                    text-slate-700 dark:text-slate-200 mb-3">
+                               bg-white dark:bg-slate-800 rounded-sm"
+                    >
+                        <div class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
                             {{ t('socialLinks') }}
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             <div class="flex flex-col items-start">
                                 <LabelInput for="instagram" value="Instagram" />
-                                <InputText
-                                    id="instagram"
-                                    type="url"
-                                    v-model="form.social_links.instagram" />
+                                <InputText id="instagram" v-model="form.social_links.instagram" type="url" />
                             </div>
 
                             <div class="flex flex-col items-start">
                                 <LabelInput for="whatsapp" value="WhatsApp" />
-                                <InputText
-                                    id="whatsapp"
-                                    type="url"
-                                    v-model="form.social_links.whatsapp" />
+                                <InputText id="whatsapp" v-model="form.social_links.whatsapp" type="url" />
                             </div>
 
                             <div class="flex flex-col items-start">
                                 <LabelInput for="telegram" value="Telegram" />
-                                <InputText
-                                    id="telegram"
-                                    type="url"
-                                    v-model="form.social_links.telegram" />
+                                <InputText id="telegram" v-model="form.social_links.telegram" type="url" />
                             </div>
 
                             <div class="flex flex-col items-start">
                                 <LabelInput for="facebook" value="Facebook" />
-                                <InputText
-                                    id="facebook"
-                                    type="url"
-                                    v-model="form.social_links.facebook" />
+                                <InputText id="facebook" v-model="form.social_links.facebook" type="url" />
                             </div>
 
                             <div class="flex flex-col items-start">
                                 <LabelInput for="youtube" value="YouTube" />
-                                <InputText
-                                    id="youtube"
-                                    type="url"
-                                    v-model="form.social_links.youtube" />
+                                <InputText id="youtube" v-model="form.social_links.youtube" type="url" />
                             </div>
                         </div>
 
-                        <InputError class="mt-2" :message="form.errors.social_links" />
+                        <InputError
+                            class="mt-2"
+                            :message="form.errors.social_links"
+                        />
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-
                         <div class="flex flex-col items-start">
-                            <LabelInput for="website" :value="t('site')" />
-                            <InputText id="website" type="url" v-model="form.website" />
-                            <InputError class="mt-2" :message="form.errors.website" />
+                            <LabelInput
+                                for="website"
+                                :value="t('site')"
+                            />
+
+                            <InputText
+                                id="website"
+                                v-model="form.website"
+                                type="url"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.website"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="status" :value="t('status')" />
+                            <LabelInput
+                                for="status"
+                                :value="t('status')"
+                            />
 
                             <select
                                 id="status"
@@ -646,42 +1114,80 @@ const submitForm = () => {
                                        bg-white dark:bg-cyan-800 dark:text-slate-100 text-gray-600
                                        border border-slate-400 dark:border-slate-600"
                             >
-                                <option value="draft">{{ t('statusDraft') }}</option>
-                                <option value="published">{{ t('statusPublished') }}</option>
-                                <option value="archived">{{ t('statusArchived') }}</option>
+                                <option value="draft">
+                                    {{ t('statusDraft') }}
+                                </option>
+
+                                <option value="published">
+                                    {{ t('statusPublished') }}
+                                </option>
+
+                                <option value="archived">
+                                    {{ t('statusArchived') }}
+                                </option>
                             </select>
 
-                            <InputError class="mt-2" :message="form.errors.status" />
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.status"
+                            />
                         </div>
-
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-
                         <div class="flex flex-col items-start">
-                            <LabelInput for="published_at" :value="t('publishedAt')" />
-                            <InputText id="published_at" type="date" v-model="form.published_at" />
-                            <InputError class="mt-2" :message="form.errors.published_at" />
+                            <LabelInput
+                                for="published_at"
+                                :value="t('publishedAt')"
+                            />
+
+                            <InputText
+                                id="published_at"
+                                v-model="form.published_at"
+                                type="date"
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.published_at"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="show_from_at" :value="t('showFromAt')" />
+                            <LabelInput
+                                for="show_from_at"
+                                :value="t('showFromAt')"
+                            />
+
                             <InputText
                                 id="show_from_at"
+                                v-model="form.show_from_at"
                                 type="datetime-local"
-                                v-model="form.show_from_at" />
-                            <InputError class="mt-2" :message="form.errors.show_from_at" />
+                            />
+
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.show_from_at"
+                            />
                         </div>
 
                         <div class="flex flex-col items-start">
-                            <LabelInput for="show_to_at" :value="t('showToAt')" />
+                            <LabelInput
+                                for="show_to_at"
+                                :value="t('showToAt')"
+                            />
+
                             <InputText
                                 id="show_to_at"
+                                v-model="form.show_to_at"
                                 type="datetime-local"
-                                v-model="form.show_to_at" />
-                            <InputError class="mt-2" :message="form.errors.show_to_at" />
-                        </div>
+                            />
 
+                            <InputError
+                                class="mt-2"
+                                :message="form.errors.show_to_at"
+                            />
+                        </div>
                     </div>
 
                     <SvgIconField
@@ -698,8 +1204,7 @@ const submitForm = () => {
                         :empty-text="t('noImage')"
                         accept="image/png,image/jpeg,image/webp"
                         :error="form.errors.logo"
-                        preview-class="h-24 w-36 object-cover rounded-sm
-                                           border border-slate-400"
+                        preview-class="h-24 w-36 object-cover rounded-sm border border-slate-400"
                     />
 
                     <div class="mt-4">
@@ -729,28 +1234,37 @@ const submitForm = () => {
                             />
                         </template>
 
-                        <div v-if="newImages.length"
-                             class="text-xs text-slate-600 dark:text-slate-300 mt-2">
-                            {{ t('images') }}: {{ newImages.length }}
+                        <div
+                            v-if="newImages.length"
+                            class="text-xs text-slate-600 dark:text-slate-300 mt-2"
+                        >
+                            {{ t('images') }}:
+                            {{ newImages.length }}
                         </div>
                     </div>
 
                     <div class="flex items-center justify-center mt-4">
                         <DefaultButton :href="route('admin.marketBrands.index')">
                             <template #icon>
-                                <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
-                                     viewBox="0 0 16 16">
+                                <svg
+                                    class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                    viewBox="0 0 16 16"
+                                >
                                     <path
                                         d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
                                     />
                                 </svg>
                             </template>
+
                             {{ t('back') }}
                         </DefaultButton>
 
                         <PrimaryButton
                             class="ms-4 mb-0"
-                            :class="{ 'opacity-25': form.processing }"
+                            :class="{
+                                'opacity-25':
+                                    form.processing,
+                            }"
                             :disabled="form.processing"
                         >
                             {{ t('save') }}

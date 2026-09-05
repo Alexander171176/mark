@@ -108,9 +108,7 @@ const allBundlesSelected = () => {
 
 /** Текущий перевод комплекта. */
 const bundleTranslation = (bundle) => {
-    return bundle?.translation
-        || bundle?.translations?.[0]
-        || {}
+    return bundle?.translation || {}
 }
 
 /** Название комплекта. */
@@ -131,10 +129,7 @@ const bundleShort = (bundle) => {
 
 /** Название связанной переводимой сущности. */
 const relationTitle = (relation) => {
-    return relation?.title
-        || relation?.translation?.title
-        || relation?.translations?.[0]?.title
-        || ''
+    return relation?.translation?.title || ''
 }
 
 /** Название компании. */
@@ -444,11 +439,8 @@ const activeItemsCount = (bundle) => {
 
 /** Название позиции состава. */
 const itemTitle = (item) => {
-    return item?.display_title
-        || item?.variant?.translation?.title
-        || item?.variant?.title
+    return item?.variant?.translation?.title
         || item?.product?.translation?.title
-        || item?.product?.title
         || `ID: ${item?.id}`
 }
 
@@ -857,7 +849,8 @@ const bundlePublicUrl = (bundle) => {
                                     >
                                         <svg class="h-5 w-5 shrink-0 fill-current"
                                              viewBox="0 0 512 512">
-                                            <path d="M0 448V64h18v384H0zm26.857-.273V64H36v383.727h-9.143zm27.143 0V64h8.857v383.727H54zm44.857 0V64h8.857v383.727h-8.857zm36 0V64h17.714v383.727h-17.714zm44.857 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm35.715 0V64h18v383.727h-18zm44.857 0V64h18v383.727h-18zm35.999 0V64h18.001v383.727h-18.001zm36.001 0V64h18.001v383.727h-18.001zm26.857 0V64h18v383.727h-18zm45.143 0V64h26.857v383.727h-26.857zm35.714 0V64h9.143v383.727H476zm18 .273V64h18v384h-18z" />
+                                            <path
+                                                d="M0 448V64h18v384H0zm26.857-.273V64H36v383.727h-9.143zm27.143 0V64h8.857v383.727H54zm44.857 0V64h8.857v383.727h-8.857zm36 0V64h17.714v383.727h-17.714zm44.857 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm35.715 0V64h18v383.727h-18zm44.857 0V64h18v383.727h-18zm35.999 0V64h18.001v383.727h-18.001zm36.001 0V64h18.001v383.727h-18.001zm26.857 0V64h18v383.727h-18zm45.143 0V64h26.857v383.727h-26.857zm35.714 0V64h9.143v383.727H476zm18 .273V64h18v384h-18z" />
                                         </svg>
                                         <span
                                             v-if="bundle.barcode"
@@ -932,7 +925,7 @@ const bundlePublicUrl = (bundle) => {
                                     </div>
                                 </div>
                                 <div :title="t('statistics')"
-                                    class="flex flex-col gap-1 font-semibold"
+                                     class="flex flex-col gap-1 font-semibold"
                                 >
                                     <div class="flex flex-row items-center gap-1"
                                          :title="t('rating')">
@@ -940,7 +933,8 @@ const bundlePublicUrl = (bundle) => {
                                             class="w-3 h-3 fill-current shrink-0
                                                    text-red-500 dark:text-red-400"
                                             viewBox="0 0 24 24">
-                                            <path d="M12.746,1.464l3.11,6.3L22.81,8.776a.831.831,0,0,1,.461,1.418l-5.033,4.9,1.188,6.926a.832.832,0,0,1-1.207.877L12,19.632,5.78,22.9a.833.833,0,0,1-1.207-.878L5.761,15.1l-5.033-4.9a.831.831,0,0,1,.461-1.418L8.143,7.765l3.11-6.3A.833.833,0,0,1,12.746,1.464Z" ></path>
+                                            <path
+                                                d="M12.746,1.464l3.11,6.3L22.81,8.776a.831.831,0,0,1,.461,1.418l-5.033,4.9,1.188,6.926a.832.832,0,0,1-1.207.877L12,19.632,5.78,22.9a.833.833,0,0,1-1.207-.878L5.761,15.1l-5.033-4.9a.831.831,0,0,1,.461-1.418L8.143,7.765l3.11-6.3A.833.833,0,0,1,12.746,1.464Z"></path>
                                         </svg>
                                         <span>
                                 {{ formatRating(bundle) }} ({{ safeNumber(bundle.rating_count) }})
@@ -953,7 +947,8 @@ const bundlePublicUrl = (bundle) => {
                                             class="w-3 h-3 fill-current shrink-0
                                                    text-blue-600 dark:text-blue-300"
                                             viewBox="0 0 16 16">
-                                            <path d="M8 2C3.246 2 .251 7.29.127 7.515a.998.998 0 0 0 .002.975c.07.125 1.044 1.801 2.695 3.274C4.738 13.582 6.283 14 8 14c4.706 0 7.743-5.284 7.872-5.507a1 1 0 0 0 0-.98A13.292 13.292 0 0 0 8 2zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" ></path>
+                                            <path
+                                                d="M8 2C3.246 2 .251 7.29.127 7.515a.998.998 0 0 0 .002.975c.07.125 1.044 1.801 2.695 3.274C4.738 13.582 6.283 14 8 14c4.706 0 7.743-5.284 7.872-5.507a1 1 0 0 0 0-.98A13.292 13.292 0 0 0 8 2zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"></path>
                                         </svg>
                                         <span>
                                             {{ safeNumber(bundle.views) }}
@@ -967,7 +962,8 @@ const bundlePublicUrl = (bundle) => {
                                                    text-rose-400 dark:text-rose-300"
                                             viewBox="0 0 24 24">
                                             <path d="M3,9H1a1,1,0,0,0-1,1V22a1,1,0,0,0,1,1H4V10A1,1,0,0,0,3,9Z"></path>
-                                            <path d="M21.882,8.133A2.986,2.986,0,0,0,21,8H15V5c0-3.824-2.589-4.942-3.958-5a1.017,1.017,0,0,0-.734.277A1,1,0,0,0,10,1V5.638l-4,4.8V23H18.23A2.985,2.985,0,0,0,21.1,20.882l2.769-9A3,3,0,0,0,21.882,8.133Z"></path>
+                                            <path
+                                                d="M21.882,8.133A2.986,2.986,0,0,0,21,8H15V5c0-3.824-2.589-4.942-3.958-5a1.017,1.017,0,0,0-.734.277A1,1,0,0,0,10,1V5.638l-4,4.8V23H18.23A2.985,2.985,0,0,0,21.1,20.882l2.769-9A3,3,0,0,0,21.882,8.133Z"></path>
                                         </svg>
                                         <span>
                                          {{ safeNumber(bundle.likes_count) }}
@@ -1015,7 +1011,7 @@ const bundlePublicUrl = (bundle) => {
                                              'dark:text-violet-300'
                                     "
                                 >
-                            {{ bundle.calculate_price ? t('automaticPrice') : t('manualPrice') }}
+                                    {{ bundle.calculate_price ? t('automaticPrice') : t('manualPrice') }}
                                 </div>
                             </td>
 
@@ -1049,15 +1045,15 @@ const bundlePublicUrl = (bundle) => {
                                 <div class="flex flex-col justify-center items-center gap-1">
                                     <div class="flex flex-row items-center justify-center gap-1">
                                         <ActivityToggle
-                                        :isActive="bundle.activity"
-                                        :title="
+                                            :isActive="bundle.activity"
+                                            :title="
                                             bundle.activity ? t('enabled') : t('disabled')"
-                                        @toggle-activity="
+                                            @toggle-activity="
                                             emit(
                                                 'toggle-activity',
                                                 bundle
                                             )"
-                                    />
+                                        />
                                         <IconEdit
                                             :href="
                                             route(

@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Admin\Market\MarketProductBundle;
 use App\Http\Controllers\Admin\Market\BaseMarketAdminController;
 use App\Http\Requests\Admin\Market\MarketProductBundle\MarketProductBundleRequest;
 use App\Http\Resources\Admin\Finance\Currency\CurrencyResource;
-use App\Http\Resources\Admin\Market\MarketCompany\MarketCompanyResource;
+use App\Http\Resources\Admin\Market\MarketCompany\MarketCompanySharedResource;
 use App\Http\Resources\Admin\Market\MarketProduct\MarketProductSharedResource;
 use App\Http\Resources\Admin\Market\MarketProductBundle\MarketProductBundleResource;
+use App\Http\Resources\Admin\Market\MarketProductBundle\MarketProductBundleSharedResource;
 use App\Http\Resources\Admin\Market\MarketProductVariant\MarketProductVariantSharedResource;
-use App\Http\Resources\Admin\Market\MarketShop\MarketShopResource;
+use App\Http\Resources\Admin\Market\MarketShop\MarketShopSharedResource;
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
@@ -130,7 +131,7 @@ class MarketProductBundleController extends BaseMarketAdminController
                 'adminMarketProductBundlesDefaultSort' => $defaultSort,
                 'adminMarketProductBundlesProcessingMode' => $processingMode,
 
-                'bundles' => MarketProductBundleResource::collection($bundles),
+                'bundles' => MarketProductBundleSharedResource::collection($bundles),
                 'bundlesCount' => $bundlesCount,
 
                 'sortParam' => $sortParam,
@@ -319,7 +320,7 @@ class MarketProductBundleController extends BaseMarketAdminController
         $currentLocale = $this->resolveLocale($request);
 
         $bundle = $this->baseQuery()
-            ->with($this->bundleRelations())
+            ->with($this->editRelations($currentLocale))
             ->withCount($this->bundleCountRelations())
             ->findOrFail($marketProductBundle);
 
@@ -662,15 +663,18 @@ class MarketProductBundleController extends BaseMarketAdminController
         }
 
         $companies = $companiesQuery
-            ->with('translations')
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+            ])
             ->orderBy('sort')
             ->orderByDesc('id')
             ->get();
 
         $shops = $shopsQuery
             ->with([
-                'translations',
-                'company.translations',
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
             ])
             ->orderBy('sort')
             ->orderByDesc('id')
@@ -682,38 +686,20 @@ class MarketProductBundleController extends BaseMarketAdminController
             ->get();
 
         /**
-         * Товары загружаются с вариантами,
-         * чтобы пользователь мог выбрать товар,
-         * а затем конкретный вариант.
+         * Для формы достаточно:
+         * - текущего перевода товара;
+         * - валюты;
+         * - количества вариантов.
+         *
+         * Полный список вариантов передаётся отдельным prop `variants`.
          */
         $products = $productsQuery
             ->with([
-                'translations',
-                'images',
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
                 'currency',
-                'company.translations',
-                'shop.translations',
-
-                'variants' => function ($query): void {
-                    $query
-                        ->with([
-                            'translations',
-                            'images',
-                            'currency',
-                        ])
-                        ->orderByDesc('is_default')
-                        ->orderBy('sort')
-                        ->orderBy('id');
-                },
-
-                'defaultVariant.translations',
-                'defaultVariant.images',
-                'defaultVariant.currency',
             ])
-            ->withCount([
-                'images',
-                'variants',
-            ])
+            ->withCount('variants')
             ->whereHas(
                 'translations',
                 fn (Builder $query) => $query->where(
@@ -727,10 +713,13 @@ class MarketProductBundleController extends BaseMarketAdminController
 
         $variants = $variantsQuery
             ->with([
-                'translations',
-                'images',
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
                 'currency',
-                'product.translations',
+                'product',
+                'product.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+                'product.currency',
             ])
             ->orderBy('market_product_id')
             ->orderByDesc('is_default')
@@ -739,8 +728,8 @@ class MarketProductBundleController extends BaseMarketAdminController
             ->get();
 
         return [
-            'companies' => MarketCompanyResource::collection($companies),
-            'shops' => MarketShopResource::collection($shops),
+            'companies' => MarketCompanySharedResource::collection($companies),
+            'shops' => MarketShopSharedResource::collection($shops),
             'currencies' => CurrencyResource::collection($currencies),
 
             'products' => MarketProductSharedResource::collection($products),
@@ -751,10 +740,10 @@ class MarketProductBundleController extends BaseMarketAdminController
     /**
      * Базовый запрос списка комплектов.
      */
-    private function indexQuery(): Builder
+    private function indexQuery(string $locale): Builder
     {
         return $this->baseQuery()
-            ->with($this->bundleRelations())
+            ->with($this->indexRelations($locale))
             ->withCount($this->bundleCountRelations());
     }
 
@@ -769,7 +758,7 @@ class MarketProductBundleController extends BaseMarketAdminController
         string $sort,
         string $search = ''
     ): LengthAwarePaginator|Collection {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery($locale);
 
         if ($useServerProcessing) {
             return $query
@@ -781,7 +770,7 @@ class MarketProductBundleController extends BaseMarketAdminController
 
         /**
          * Во frontend-режиме сервер возвращает все записи.
-         * Сортировка выполняется в Index.vue.
+         * Поиск, фильтрация и сортировка выполняются в Index.vue.
          */
         return $query
             ->ordered()
@@ -789,44 +778,88 @@ class MarketProductBundleController extends BaseMarketAdminController
     }
 
     /**
-     * Отношения комплекта для списка и редактирования.
+     * Отношения для Index.
+     *
+     * Только данные, реально необходимые SharedResource/Table/Card:
+     * - current-locale переводы;
+     * - owner;
+     * - bundle images + media;
+     * - company/shop;
+     * - состав для расчётной цены, наличия и tooltip.
      *
      * @return array<int|string, mixed>
      */
-    private function bundleRelations(): array
+    private function indexRelations(string $locale): array
     {
         return [
-            'owner',
-            'moderator',
-            'translations',
-            'images',
+            'owner' => fn ($query) =>
+            $query->select(
+                'id',
+                'name',
+                'email',
+                'profile_photo_path'
+            ),
+
+            'translations' => fn ($query) =>
+            $query->where('locale', $locale),
+
+            'images.media',
             'currency',
 
-            'company.translations',
-            'shop.translations',
+            'company.translations' => fn ($query) =>
+            $query->where('locale', $locale),
 
-            'items' => function ($query): void {
-                $query
-                    ->with([
-                        'product.translations',
-                        'product.images',
-                        'product.currency',
+            'shop.translations' => fn ($query) =>
+            $query->where('locale', $locale),
 
-                        /**
-                         * Эти отношения нужны для определения
-                         * наличия товара без выбранного варианта.
-                         */
-                        'product.variants',
-                        'product.defaultVariant',
+            'items.product.translations' => fn ($query) =>
+            $query->where('locale', $locale),
 
-                        'variant.translations',
-                        'variant.images',
-                        'variant.currency',
-                        'variant.product.currency',
-                    ])
-                    ->orderBy('sort')
-                    ->orderBy('id');
-            },
+            'items.product.currency',
+
+            /**
+             * Нужны MarketProductBundleItem::availableQuantity()
+             * при позиции без явно выбранного варианта.
+             */
+            'items.product.variants',
+
+            'items.product.defaultVariant',
+
+            'items.variant.translations' => fn ($query) =>
+            $query->where('locale', $locale),
+
+            'items.variant.currency',
+            'items.variant.product.currency',
+        ];
+    }
+
+    /**
+     * Минимальный граф редактируемого комплекта.
+     *
+     * Собственные translations загружаются полностью для TranslationTabs.
+     * Связанные справочники формы приходят из sharedSelects().
+     *
+     * @return array<int|string, mixed>
+     */
+    private function editRelations(string $locale): array
+    {
+        return [
+            'translations',
+            'images.media',
+            'currency',
+
+            'items.product.translations' => fn ($query) =>
+            $query->where('locale', $locale),
+
+            'items.product.currency',
+            'items.product.variants',
+            'items.product.defaultVariant',
+
+            'items.variant.translations' => fn ($query) =>
+            $query->where('locale', $locale),
+
+            'items.variant.currency',
+            'items.variant.product.currency',
         ];
     }
 
@@ -843,7 +876,7 @@ class MarketProductBundleController extends BaseMarketAdminController
             'items as active_items_count' => function (
                 Builder $query
             ): void {
-                $query->where('activity', true);
+                $query->where('market_product_bundle_items.activity', true);
             },
 
             'images',

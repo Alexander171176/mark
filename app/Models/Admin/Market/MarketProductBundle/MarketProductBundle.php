@@ -114,7 +114,7 @@ class MarketProductBundle extends Model
 
     /* ======================== Relations ======================== */
 
-    /** Создатель / владелец комплекта */
+    /** Создатель / владелец комплекта. */
     public function owner(): BelongsTo
     {
         return $this->belongsTo(
@@ -123,7 +123,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Модератор комплекта */
+    /** Модератор комплекта. */
     public function moderator(): BelongsTo
     {
         return $this->belongsTo(
@@ -132,7 +132,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Компания-поставщик */
+    /** Компания-поставщик. */
     public function company(): BelongsTo
     {
         return $this->belongsTo(
@@ -141,7 +141,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Магазин комплекта */
+    /** Магазин комплекта. */
     public function shop(): BelongsTo
     {
         return $this->belongsTo(
@@ -150,7 +150,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Валюта комплекта */
+    /** Валюта комплекта. */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(
@@ -159,7 +159,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Все переводы комплекта */
+    /** Все переводы комплекта. */
     public function translations(): HasMany
     {
         return $this->hasMany(
@@ -168,7 +168,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Перевод текущей локали */
+    /** Перевод текущей локали. */
     public function translation(): HasOne
     {
         return $this->hasOne(
@@ -178,30 +178,30 @@ class MarketProductBundle extends Model
             ->where('locale', app()->getLocale());
     }
 
-    /** Все позиции комплекта */
+    /** Все позиции комплекта. */
     public function items(): HasMany
     {
         return $this->hasMany(
             MarketProductBundleItem::class,
             'market_product_bundle_id'
         )
-            ->orderBy('sort')
-            ->orderBy('id');
+            ->orderBy('market_product_bundle_items.sort')
+            ->orderBy('market_product_bundle_items.id');
     }
 
-    /** Только активные позиции комплекта */
+    /** Только активные позиции комплекта. */
     public function activeItems(): HasMany
     {
         return $this->hasMany(
             MarketProductBundleItem::class,
             'market_product_bundle_id'
         )
-            ->where('activity', true)
-            ->orderBy('sort')
-            ->orderBy('id');
+            ->where('market_product_bundle_items.activity', true)
+            ->orderBy('market_product_bundle_items.sort')
+            ->orderBy('market_product_bundle_items.id');
     }
 
-    /** Изображения комплекта */
+    /** Изображения комплекта. */
     public function images(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -236,7 +236,7 @@ class MarketProductBundle extends Model
                 ?: $this->translations->first();
     }
 
-    /** Получить название комплекта */
+    /** Получить название комплекта. */
     public function getTranslatedTitle(
         ?string $locale = null,
         ?string $fallback = null
@@ -249,13 +249,13 @@ class MarketProductBundle extends Model
 
     /* ======================== Price helpers ======================== */
 
-    /** Цена комплекта рассчитывается автоматически */
+    /** Цена комплекта рассчитывается автоматически. */
     public function usesCalculatedPrice(): bool
     {
         return (bool) $this->calculate_price;
     }
 
-    /** Цена комплекта задаётся вручную */
+    /** Цена комплекта задаётся вручную. */
     public function usesManualPrice(): bool
     {
         return ! $this->usesCalculatedPrice();
@@ -287,9 +287,7 @@ class MarketProductBundle extends Model
             ->get();
     }
 
-    /**
-     * Рассчитать полную цену состава комплекта.
-     */
+    /** Рассчитать полную цену состава комплекта. */
     public function calculatedPrice(): float
     {
         return round(
@@ -314,14 +312,14 @@ class MarketProductBundle extends Model
             : round((float) $this->price, 2);
     }
 
-    /** Есть старая цена */
+    /** Есть старая цена. */
     public function hasOldPrice(): bool
     {
         return ! is_null($this->old_price)
             && (float) $this->old_price > $this->effectivePrice();
     }
 
-    /** Есть оптовая цена */
+    /** Есть оптовая цена. */
     public function hasWholesalePrice(): bool
     {
         return ! is_null($this->wholesale_price)
@@ -330,9 +328,7 @@ class MarketProductBundle extends Model
             && (int) $this->wholesale_min_quantity > 0;
     }
 
-    /**
-     * Размер экономии относительно старой цены.
-     */
+    /** Размер экономии относительно старой цены. */
     public function savingAmount(): float
     {
         if (! $this->hasOldPrice()) {
@@ -345,9 +341,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /**
-     * Процент экономии относительно старой цены.
-     */
+    /** Процент экономии относительно старой цены. */
     public function savingPercent(): float
     {
         if (
@@ -365,7 +359,7 @@ class MarketProductBundle extends Model
 
     /* ======================== Availability helpers ======================== */
 
-    /** Есть позиции в комплекте */
+    /** Есть позиции в комплекте. */
     public function hasItems(): bool
     {
         if (isset($this->items_count)) {
@@ -377,7 +371,7 @@ class MarketProductBundle extends Model
             : $this->items()->exists();
     }
 
-    /** Количество позиций комплекта */
+    /** Количество позиций комплекта. */
     public function itemsCount(): int
     {
         if (isset($this->items_count)) {
@@ -420,7 +414,7 @@ class MarketProductBundle extends Model
         return (int) ($quantities->min() ?? 0);
     }
 
-    /** Комплект доступен для продажи */
+    /** Комплект доступен для продажи. */
     public function hasStock(): bool
     {
         return $this->availableQuantity() > 0;
@@ -428,19 +422,19 @@ class MarketProductBundle extends Model
 
     /* ======================== State helpers ======================== */
 
-    /** Комплект активен */
+    /** Комплект активен. */
     public function isActive(): bool
     {
         return (bool) $this->activity;
     }
 
-    /** Комплект одобрен */
+    /** Комплект одобрен. */
     public function isApproved(): bool
     {
         return (int) $this->moderation_status === 1;
     }
 
-    /** Комплект опубликован */
+    /** Комплект опубликован. */
     public function isPublished(): bool
     {
         return $this->status === 'published'
@@ -448,7 +442,7 @@ class MarketProductBundle extends Model
             && ! is_null($this->published_at);
     }
 
-    /** Комплект находится в окне показа */
+    /** Комплект находится в окне показа. */
     public function isPublishedNow(): bool
     {
         $now = now();
@@ -472,7 +466,7 @@ class MarketProductBundle extends Model
 
     /* ======================== Scopes ======================== */
 
-    /** Сортировка по умолчанию */
+    /** Сортировка по умолчанию. */
     public function scopeOrdered(Builder $query): Builder
     {
         return $query
@@ -480,7 +474,7 @@ class MarketProductBundle extends Model
             ->orderByDesc('market_product_bundles.id');
     }
 
-    /** Только активные комплекты */
+    /** Только активные комплекты. */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where(
@@ -489,7 +483,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Только неактивные комплекты */
+    /** Только неактивные комплекты. */
     public function scopeInactive(Builder $query): Builder
     {
         return $query->where(
@@ -498,7 +492,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Только опубликованные комплекты */
+    /** Только опубликованные комплекты. */
     public function scopePublished(Builder $query): Builder
     {
         return $query
@@ -515,7 +509,7 @@ class MarketProductBundle extends Model
             );
     }
 
-    /** Только одобренные комплекты */
+    /** Только одобренные комплекты. */
     public function scopeApproved(Builder $query): Builder
     {
         return $query->where(
@@ -524,19 +518,19 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Только комплекты с позициями */
+    /** Только комплекты с позициями. */
     public function scopeHasItems(Builder $query): Builder
     {
         return $query->whereHas('items');
     }
 
-    /** Только пустые комплекты */
+    /** Только пустые комплекты. */
     public function scopeWithoutItems(Builder $query): Builder
     {
         return $query->whereDoesntHave('items');
     }
 
-    /** Только комплекты с автоматическим расчётом цены */
+    /** Только комплекты с автоматическим расчётом цены. */
     public function scopeCalculatedPrice(Builder $query): Builder
     {
         return $query->where(
@@ -545,7 +539,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Только комплекты с ручной ценой */
+    /** Только комплекты с ручной ценой. */
     public function scopeManualPrice(Builder $query): Builder
     {
         return $query->where(
@@ -554,7 +548,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Новинки */
+    /** Новинки. */
     public function scopeNew(Builder $query): Builder
     {
         return $query->where(
@@ -563,7 +557,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Хиты продаж */
+    /** Хиты продаж. */
     public function scopeHit(Builder $query): Builder
     {
         return $query->where(
@@ -572,7 +566,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Распродажа */
+    /** Распродажа. */
     public function scopeSale(Builder $query): Builder
     {
         return $query->where(
@@ -581,7 +575,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Левая рекламная зона */
+    /** Левая рекламная зона. */
     public function scopeLeft(Builder $query): Builder
     {
         return $query->where(
@@ -590,7 +584,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Главная рекламная зона */
+    /** Главная рекламная зона. */
     public function scopeMain(Builder $query): Builder
     {
         return $query->where(
@@ -599,7 +593,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Правая рекламная зона */
+    /** Правая рекламная зона. */
     public function scopeRight(Builder $query): Builder
     {
         return $query->where(
@@ -608,7 +602,7 @@ class MarketProductBundle extends Model
         );
     }
 
-    /** Окно показа */
+    /** Окно показа. */
     public function scopeInShowWindow(Builder $query): Builder
     {
         return $query
@@ -636,7 +630,7 @@ class MarketProductBundle extends Model
             });
     }
 
-    /** Публично доступные комплекты */
+    /** Публично доступные комплекты. */
     public function scopeForPublic(Builder $query): Builder
     {
         return $query
@@ -648,6 +642,13 @@ class MarketProductBundle extends Model
 
     /**
      * Поиск комплектов.
+     *
+     * Backend-контракт:
+     * - системные поля комплекта;
+     * - текущий перевод комплекта;
+     * - компания и магазин по текущей локали;
+     * - владелец;
+     * - названия товаров и вариантов состава по текущей локали.
      */
     public function scopeSearch(
         Builder $query,
@@ -663,10 +664,7 @@ class MarketProductBundle extends Model
         $locale = $locale ?: app()->getLocale();
 
         return $query->where(
-            function (Builder $subQuery) use (
-                $term,
-                $locale
-            ): void {
+            function (Builder $subQuery) use ($term, $locale): void {
                 $subQuery
                     ->where(
                         'market_product_bundles.url',
@@ -700,16 +698,11 @@ class MarketProductBundle extends Model
                     )
                     ->orWhereHas(
                         'translations',
-                        function (Builder $translationQuery) use (
-                            $term,
-                            $locale
-                        ): void {
+                        function (Builder $translationQuery) use ($term, $locale): void {
                             $translationQuery
                                 ->where('locale', $locale)
                                 ->where(
-                                    function (
-                                        Builder $textQuery
-                                    ) use ($term): void {
+                                    function (Builder $textQuery) use ($term): void {
                                         $textQuery
                                             ->where(
                                                 'title',
@@ -730,21 +723,6 @@ class MarketProductBundle extends Model
                                                 'description',
                                                 'like',
                                                 "%{$term}%"
-                                            )
-                                            ->orWhere(
-                                                'meta_title',
-                                                'like',
-                                                "%{$term}%"
-                                            )
-                                            ->orWhere(
-                                                'meta_keywords',
-                                                'like',
-                                                "%{$term}%"
-                                            )
-                                            ->orWhere(
-                                                'meta_desc',
-                                                'like',
-                                                "%{$term}%"
                                             );
                                     }
                                 );
@@ -752,10 +730,7 @@ class MarketProductBundle extends Model
                     )
                     ->orWhereHas(
                         'company.translations',
-                        function (Builder $companyQuery) use (
-                            $term,
-                            $locale
-                        ): void {
+                        function (Builder $companyQuery) use ($term, $locale): void {
                             $companyQuery
                                 ->where('locale', $locale)
                                 ->where(
@@ -767,10 +742,7 @@ class MarketProductBundle extends Model
                     )
                     ->orWhereHas(
                         'shop.translations',
-                        function (Builder $shopQuery) use (
-                            $term,
-                            $locale
-                        ): void {
+                        function (Builder $shopQuery) use ($term, $locale): void {
                             $shopQuery
                                 ->where('locale', $locale)
                                 ->where(
@@ -782,9 +754,7 @@ class MarketProductBundle extends Model
                     )
                     ->orWhereHas(
                         'owner',
-                        function (Builder $ownerQuery) use (
-                            $term
-                        ): void {
+                        function (Builder $ownerQuery) use ($term): void {
                             $ownerQuery
                                 ->where(
                                     'name',
@@ -800,10 +770,7 @@ class MarketProductBundle extends Model
                     )
                     ->orWhereHas(
                         'items.product.translations',
-                        function (Builder $productQuery) use (
-                            $term,
-                            $locale
-                        ): void {
+                        function (Builder $productQuery) use ($term, $locale): void {
                             $productQuery
                                 ->where('locale', $locale)
                                 ->where(
@@ -815,10 +782,7 @@ class MarketProductBundle extends Model
                     )
                     ->orWhereHas(
                         'items.variant.translations',
-                        function (Builder $variantQuery) use (
-                            $term,
-                            $locale
-                        ): void {
+                        function (Builder $variantQuery) use ($term, $locale): void {
                             $variantQuery
                                 ->where('locale', $locale)
                                 ->where(
@@ -842,7 +806,7 @@ class MarketProductBundle extends Model
     ): Builder {
         $locale = $locale ?: app()->getLocale();
 
-        /** Обычная сортировка по колонке основной таблицы. */
+        /** Сортировка по колонке основной таблицы с детерминированным tie-break. */
         $orderByColumn = static function (
             Builder $builder,
             string $column,
@@ -853,7 +817,7 @@ class MarketProductBundle extends Model
                 ->orderByDesc('market_product_bundles.id');
         };
 
-        /** Фильтрация по булевому полю. */
+        /** Фильтрация по булевому полю с backend/frontend parity. */
         $filterBoolean = static function (
             Builder $builder,
             string $column,
@@ -865,10 +829,14 @@ class MarketProductBundle extends Model
         };
 
         return match ($sort) {
-            /** ID и ручная сортировка */
-            'idAsc' => $query->orderBy('market_product_bundles.id'),
-            'idDesc' => $query->orderByDesc('market_product_bundles.id'),
+            /** ID — без дополнительного tie-break. */
+            'idAsc' => $query
+                ->orderBy('market_product_bundles.id'),
 
+            'idDesc' => $query
+                ->orderByDesc('market_product_bundles.id'),
+
+            /** Ручная сортировка. */
             'sortAsc' => $orderByColumn(
                 $query,
                 'market_product_bundles.sort',
@@ -881,7 +849,7 @@ class MarketProductBundle extends Model
                 'desc'
             ),
 
-            /** Название */
+            /** Название. */
             'titleAsc', 'titleDesc' => $query
                 ->leftJoin(
                     'market_product_bundle_translations as mpbt_sort',
@@ -899,14 +867,14 @@ class MarketProductBundle extends Model
                             );
                     }
                 )
+                ->addSelect('market_product_bundles.*')
                 ->orderBy(
                     'mpbt_sort.title',
                     $sort === 'titleAsc' ? 'asc' : 'desc'
                 )
-                ->orderByDesc('market_product_bundles.id')
-                ->select('market_product_bundles.*'),
+                ->orderByDesc('market_product_bundles.id'),
 
-            /** Коды */
+            /** Коды. */
             'urlAsc' => $orderByColumn($query, 'market_product_bundles.url', 'asc'),
             'urlDesc' => $orderByColumn($query, 'market_product_bundles.url', 'desc'),
             'skuAsc' => $orderByColumn($query, 'market_product_bundles.sku', 'asc'),
@@ -916,7 +884,7 @@ class MarketProductBundle extends Model
             'barcodeAsc' => $orderByColumn($query, 'market_product_bundles.barcode', 'asc'),
             'barcodeDesc' => $orderByColumn($query, 'market_product_bundles.barcode', 'desc'),
 
-            /** Компания */
+            /** Компания. */
             'companyAsc', 'companyDesc' => $query
                 ->leftJoin(
                     'market_company_translations as mct_bundle_sort',
@@ -934,14 +902,14 @@ class MarketProductBundle extends Model
                             );
                     }
                 )
+                ->addSelect('market_product_bundles.*')
                 ->orderBy(
                     'mct_bundle_sort.title',
                     $sort === 'companyAsc' ? 'asc' : 'desc'
                 )
-                ->orderByDesc('market_product_bundles.id')
-                ->select('market_product_bundles.*'),
+                ->orderByDesc('market_product_bundles.id'),
 
-            /** Магазин */
+            /** Магазин. */
             'shopAsc', 'shopDesc' => $query
                 ->leftJoin(
                     'market_shop_translations as mst_bundle_sort',
@@ -959,14 +927,14 @@ class MarketProductBundle extends Model
                             );
                     }
                 )
+                ->addSelect('market_product_bundles.*')
                 ->orderBy(
                     'mst_bundle_sort.title',
                     $sort === 'shopAsc' ? 'asc' : 'desc'
                 )
-                ->orderByDesc('market_product_bundles.id')
-                ->select('market_product_bundles.*'),
+                ->orderByDesc('market_product_bundles.id'),
 
-            /** Владелец */
+            /** Владелец. */
             'ownerNameAsc', 'ownerNameDesc' => $query
                 ->leftJoin(
                     'users as bundle_owner_sort',
@@ -974,12 +942,12 @@ class MarketProductBundle extends Model
                     '=',
                     'market_product_bundles.user_id'
                 )
+                ->addSelect('market_product_bundles.*')
                 ->orderBy(
                     'bundle_owner_sort.name',
                     $sort === 'ownerNameAsc' ? 'asc' : 'desc'
                 )
-                ->orderByDesc('market_product_bundles.id')
-                ->select('market_product_bundles.*'),
+                ->orderByDesc('market_product_bundles.id'),
 
             'ownerEmailAsc', 'ownerEmailDesc' => $query
                 ->leftJoin(
@@ -988,20 +956,20 @@ class MarketProductBundle extends Model
                     '=',
                     'market_product_bundles.user_id'
                 )
+                ->addSelect('market_product_bundles.*')
                 ->orderBy(
                     'bundle_owner_sort.email',
                     $sort === 'ownerEmailAsc' ? 'asc' : 'desc'
                 )
-                ->orderByDesc('market_product_bundles.id')
-                ->select('market_product_bundles.*'),
+                ->orderByDesc('market_product_bundles.id'),
 
-            /** Режим формирования цены */
+            /** Режим формирования цены. */
             'calculatePriceAsc' => $orderByColumn($query, 'market_product_bundles.calculate_price', 'asc'),
             'calculatePriceDesc' => $orderByColumn($query, 'market_product_bundles.calculate_price', 'desc'),
             'calculatedPrice' => $filterBoolean($query, 'market_product_bundles.calculate_price', true),
             'manualPrice' => $filterBoolean($query, 'market_product_bundles.calculate_price', false),
 
-            /** Цены */
+            /** Цены. */
             'priceAsc' => $orderByColumn($query, 'market_product_bundles.price', 'asc'),
             'priceDesc' => $orderByColumn($query, 'market_product_bundles.price', 'desc'),
             'oldPriceAsc' => $orderByColumn($query, 'market_product_bundles.old_price', 'asc'),
@@ -1013,14 +981,12 @@ class MarketProductBundle extends Model
             'wholesaleMinQuantityAsc' => $orderByColumn($query, 'market_product_bundles.wholesale_min_quantity', 'asc'),
             'wholesaleMinQuantityDesc' => $orderByColumn($query, 'market_product_bundles.wholesale_min_quantity', 'desc'),
 
-            /** Позиции комплекта */
+            /** Позиции комплекта — aliases уже предоставляет Controller::withCount(). */
             'itemsAsc' => $query
-                ->withCount('items')
                 ->orderBy('items_count')
                 ->orderByDesc('market_product_bundles.id'),
 
             'itemsDesc' => $query
-                ->withCount('items')
                 ->orderByDesc('items_count')
                 ->orderByDesc('market_product_bundles.id'),
 
@@ -1032,18 +998,16 @@ class MarketProductBundle extends Model
                 ->whereDoesntHave('items')
                 ->orderByDesc('market_product_bundles.id'),
 
-            /** Изображения */
+            /** Изображения — alias images_count уже предоставляет Controller. */
             'imagesAsc' => $query
-                ->withCount('images')
                 ->orderBy('images_count')
                 ->orderByDesc('market_product_bundles.id'),
 
             'imagesDesc' => $query
-                ->withCount('images')
                 ->orderByDesc('images_count')
                 ->orderByDesc('market_product_bundles.id'),
 
-            /** Статистика */
+            /** Статистика. */
             'viewsAsc' => $orderByColumn($query, 'market_product_bundles.views', 'asc'),
             'viewsDesc' => $orderByColumn($query, 'market_product_bundles.views', 'desc'),
             'likesAsc' => $orderByColumn($query, 'market_product_bundles.likes_count', 'asc'),
@@ -1053,13 +1017,13 @@ class MarketProductBundle extends Model
             'ratingCountAsc' => $orderByColumn($query, 'market_product_bundles.rating_count', 'asc'),
             'ratingCountDesc' => $orderByColumn($query, 'market_product_bundles.rating_count', 'desc'),
 
-            /** Активность */
+            /** Активность. */
             'activityAsc' => $orderByColumn($query, 'market_product_bundles.activity', 'asc'),
             'activityDesc' => $orderByColumn($query, 'market_product_bundles.activity', 'desc'),
             'activity' => $filterBoolean($query, 'market_product_bundles.activity', true),
             'inactive' => $filterBoolean($query, 'market_product_bundles.activity', false),
 
-            /** Маркетинговые признаки */
+            /** Маркетинговые признаки. */
             'newAsc' => $orderByColumn($query, 'market_product_bundles.is_new', 'asc'),
             'newDesc' => $orderByColumn($query, 'market_product_bundles.is_new', 'desc'),
             'new' => $filterBoolean($query, 'market_product_bundles.is_new', true),
@@ -1075,7 +1039,7 @@ class MarketProductBundle extends Model
             'sale' => $filterBoolean($query, 'market_product_bundles.is_sale', true),
             'notSale' => $filterBoolean($query, 'market_product_bundles.is_sale', false),
 
-            /** Рекламные позиции */
+            /** Рекламные позиции. */
             'leftAsc' => $orderByColumn($query, 'market_product_bundles.left', 'asc'),
             'leftDesc' => $orderByColumn($query, 'market_product_bundles.left', 'desc'),
             'left' => $filterBoolean($query, 'market_product_bundles.left', true),
@@ -1091,7 +1055,7 @@ class MarketProductBundle extends Model
             'right' => $filterBoolean($query, 'market_product_bundles.right', true),
             'noRight' => $filterBoolean($query, 'market_product_bundles.right', false),
 
-            /** Статус публикации */
+            /** Статус публикации. */
             'statusAsc' => $orderByColumn($query, 'market_product_bundles.status', 'asc'),
             'statusDesc' => $orderByColumn($query, 'market_product_bundles.status', 'desc'),
 
@@ -1107,7 +1071,7 @@ class MarketProductBundle extends Model
                 ->where('market_product_bundles.status', 'archived')
                 ->orderByDesc('market_product_bundles.id'),
 
-            /** Модерация */
+            /** Модерация. */
             'moderationStatusAsc' => $orderByColumn($query, 'market_product_bundles.moderation_status', 'asc'),
             'moderationStatusDesc' => $orderByColumn($query, 'market_product_bundles.moderation_status', 'desc'),
 
@@ -1123,7 +1087,7 @@ class MarketProductBundle extends Model
                 ->where('market_product_bundles.moderation_status', 2)
                 ->orderByDesc('market_product_bundles.id'),
 
-            /** Даты */
+            /** Даты. */
             'publishedAtAsc' => $orderByColumn($query, 'market_product_bundles.published_at', 'asc'),
             'publishedAtDesc' => $orderByColumn($query, 'market_product_bundles.published_at', 'desc'),
             'showFromAtAsc' => $orderByColumn($query, 'market_product_bundles.show_from_at', 'asc'),
@@ -1135,9 +1099,8 @@ class MarketProductBundle extends Model
             'updatedAtAsc' => $orderByColumn($query, 'market_product_bundles.updated_at', 'asc'),
             'updatedAtDesc' => $orderByColumn($query, 'market_product_bundles.updated_at', 'desc'),
 
-            /** Сортировка по умолчанию */
+            /** По умолчанию. */
             default => $query->ordered(),
         };
     }
-
 }

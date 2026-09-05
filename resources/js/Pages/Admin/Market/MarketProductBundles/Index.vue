@@ -125,9 +125,7 @@ const isAdmin = computed(() => {
 
 /** Текущий перевод комплекта товаров */
 const getBundleTranslation = (bundle) => {
-    return bundle?.translation
-        || bundle?.translations?.[0]
-        || {}
+    return bundle?.translation || {}
 }
 
 /** Название комплекта товаров */
@@ -153,13 +151,14 @@ const getBundleDescription = (bundle) => {
 
 /** Название компании */
 const getCompanyTitle = (bundle) => {
-    return bundle?.company?.title ||
-        bundle?.company?.translation?.title || bundle?.company?.legal_name || ''
+    return bundle?.company?.translation?.title
+        || bundle?.company?.legal_name
+        || ''
 }
 
 /** Название магазина */
 const getShopTitle = (bundle) => {
-    return bundle?.shop?.title || bundle?.shop?.translation?.title || ''
+    return bundle?.shop?.translation?.title || ''
 }
 
 /** Имя владельца */
@@ -170,11 +169,6 @@ const getOwnerName = (bundle) => {
 /** Email владельца */
 const getOwnerEmail = (bundle) => {
     return bundle?.owner?.email || ''
-}
-
-/** Код валюты */
-const getCurrencyCode = (bundle) => {
-    return bundle?.currency?.code || ''
 }
 
 /* ======================== Normalization ======================== */
@@ -702,21 +696,10 @@ const bundleMatchesSearch = (bundle, query) => {
         : []
 
     const searchValues = [
-        bundle?.id,
         bundle?.url,
         bundle?.sku,
         bundle?.vendor_code,
         bundle?.barcode,
-
-        bundle?.price,
-        bundle?.old_price,
-        bundle?.purchase_price,
-        bundle?.wholesale_price,
-        bundle?.wholesale_min_quantity,
-        bundle?.calculated_price,
-        bundle?.effective_price,
-        bundle?.available_quantity,
-
         bundle?.status,
         bundle?.moderation_note,
 
@@ -725,29 +708,15 @@ const bundleMatchesSearch = (bundle, query) => {
         getBundleShort(bundle),
         getBundleDescription(bundle),
 
-        getCompanyTitle(bundle),
-        bundle?.company?.legal_name,
-        bundle?.company?.bin_iin,
-
-        getShopTitle(bundle),
-        bundle?.shop?.email,
-        bundle?.shop?.phone,
+        bundle?.company?.translation?.title,
+        bundle?.shop?.translation?.title,
 
         getOwnerName(bundle),
         getOwnerEmail(bundle),
-        getCurrencyCode(bundle),
 
         ...items.flatMap((item) => [
-            item?.display_title,
             item?.product?.translation?.title,
-            item?.product?.title,
             item?.variant?.translation?.title,
-            item?.variant?.title,
-            item?.quantity,
-            item?.unit_price,
-            item?.discount_type,
-            item?.discount_value,
-            item?.total_price,
         ]),
     ]
 
@@ -787,6 +756,13 @@ const compareText = (left, right) => {
  */
 const compareByIdDesc = (left, right) => {
     return safeNumber(right?.id) - safeNumber(left?.id)
+}
+
+/** Фильтрация с тем же детерминированным порядком, что и backend. */
+const filterByIdDesc = (list, predicate) => {
+    return list
+        .filter(predicate)
+        .sort(compareByIdDesc)
 }
 
 /** Сортировка числового поля по возрастанию. */
@@ -861,182 +837,129 @@ const sortedBundles = computed(() => {
 
     /* ======================== Filters ======================== */
 
-    /** Только активные комплекты */
     if (sort === 'activity') {
-        return list.filter(
-            (bundle) => bundle.activity
-        )
+        return filterByIdDesc(list, (bundle) => bundle.activity)
     }
 
-    /** Только неактивные комплекты */
     if (sort === 'inactive') {
-        return list.filter(
-            (bundle) => !bundle.activity
-        )
+        return filterByIdDesc(list, (bundle) => !bundle.activity)
     }
 
-    /** Только комплекты с позициями */
     if (sort === 'hasItems') {
-        return list.filter(
-            (bundle) =>
-                safeNumber(bundle.items_count) > 0
+        return filterByIdDesc(
+            list,
+            (bundle) => safeNumber(bundle.items_count) > 0
         )
     }
 
-    /** Только пустые комплекты */
     if (sort === 'withoutItems') {
-        return list.filter(
-            (bundle) =>
-                safeNumber(bundle.items_count) === 0
+        return filterByIdDesc(
+            list,
+            (bundle) => safeNumber(bundle.items_count) === 0
         )
     }
 
-    /** Только комплекты с автоматическим расчётом цены */
     if (sort === 'calculatedPrice') {
-        return list.filter(
+        return filterByIdDesc(
+            list,
             (bundle) => bundle.calculate_price
         )
     }
 
-    /** Только комплекты с ручной ценой */
     if (sort === 'manualPrice') {
-        return list.filter(
+        return filterByIdDesc(
+            list,
             (bundle) => !bundle.calculate_price
         )
     }
 
-    /** Только комплекты в левой рекламной позиции */
     if (sort === 'left') {
-        return list.filter(
-            (bundle) => bundle.left
-        )
+        return filterByIdDesc(list, (bundle) => bundle.left)
     }
 
-    /** Только комплекты вне левой рекламной позиции */
     if (sort === 'noLeft') {
-        return list.filter(
-            (bundle) => !bundle.left
-        )
+        return filterByIdDesc(list, (bundle) => !bundle.left)
     }
 
-    /** Только комплекты в главной рекламной позиции */
     if (sort === 'main') {
-        return list.filter(
-            (bundle) => bundle.main
-        )
+        return filterByIdDesc(list, (bundle) => bundle.main)
     }
 
-    /** Только комплекты вне главной рекламной позиции */
     if (sort === 'noMain') {
-        return list.filter(
-            (bundle) => !bundle.main
-        )
+        return filterByIdDesc(list, (bundle) => !bundle.main)
     }
 
-    /** Только комплекты в правой рекламной позиции */
     if (sort === 'right') {
-        return list.filter(
-            (bundle) => bundle.right
-        )
+        return filterByIdDesc(list, (bundle) => bundle.right)
     }
 
-    /** Только комплекты вне правой рекламной позиции */
     if (sort === 'noRight') {
-        return list.filter(
-            (bundle) => !bundle.right
-        )
+        return filterByIdDesc(list, (bundle) => !bundle.right)
     }
 
-    /** Только новинки */
     if (sort === 'new') {
-        return list.filter(
-            (bundle) => bundle.is_new
-        )
+        return filterByIdDesc(list, (bundle) => bundle.is_new)
     }
 
-    /** Только комплекты без признака новинки */
     if (sort === 'notNew') {
-        return list.filter(
-            (bundle) => !bundle.is_new
-        )
+        return filterByIdDesc(list, (bundle) => !bundle.is_new)
     }
 
-    /** Только хиты продаж */
     if (sort === 'hit') {
-        return list.filter(
-            (bundle) => bundle.is_hit
-        )
+        return filterByIdDesc(list, (bundle) => bundle.is_hit)
     }
 
-    /** Только комплекты без признака хита */
     if (sort === 'notHit') {
-        return list.filter(
-            (bundle) => !bundle.is_hit
-        )
+        return filterByIdDesc(list, (bundle) => !bundle.is_hit)
     }
 
-    /** Только комплекты распродажи */
     if (sort === 'sale') {
-        return list.filter(
-            (bundle) => bundle.is_sale
-        )
+        return filterByIdDesc(list, (bundle) => bundle.is_sale)
     }
 
-    /** Только комплекты без признака распродажи */
     if (sort === 'notSale') {
-        return list.filter(
-            (bundle) => !bundle.is_sale
-        )
+        return filterByIdDesc(list, (bundle) => !bundle.is_sale)
     }
 
-    /** Только черновики */
     if (sort === 'statusDraft') {
-        return list.filter(
+        return filterByIdDesc(
+            list,
             (bundle) => bundle.status === 'draft'
         )
     }
 
-    /** Только опубликованные комплекты */
     if (sort === 'statusPublished') {
-        return list.filter(
+        return filterByIdDesc(
+            list,
             (bundle) => bundle.status === 'published'
         )
     }
 
-    /** Только архивные комплекты */
     if (sort === 'statusArchived') {
-        return list.filter(
+        return filterByIdDesc(
+            list,
             (bundle) => bundle.status === 'archived'
         )
     }
 
-    /** Только комплекты на модерации */
     if (sort === 'moderationPending') {
-        return list.filter(
-            (bundle) =>
-                moderationNum(
-                    bundle.moderation_status
-                ) === 0
+        return filterByIdDesc(
+            list,
+            (bundle) => moderationNum(bundle.moderation_status) === 0
         )
     }
 
-    /** Только одобренные комплекты */
     if (sort === 'moderationApproved') {
-        return list.filter(
-            (bundle) =>
-                moderationNum(
-                    bundle.moderation_status
-                ) === 1
+        return filterByIdDesc(
+            list,
+            (bundle) => moderationNum(bundle.moderation_status) === 1
         )
     }
 
-    /** Только отклонённые комплекты */
     if (sort === 'moderationRejected') {
-        return list.filter(
-            (bundle) =>
-                moderationNum(
-                    bundle.moderation_status
-                ) === 2
+        return filterByIdDesc(
+            list,
+            (bundle) => moderationNum(bundle.moderation_status) === 2
         )
     }
 
@@ -1044,8 +967,11 @@ const sortedBundles = computed(() => {
 
     const sortMap = {
         /** ID */
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
+        idAsc: (left, right) =>
+            safeNumber(left?.id) - safeNumber(right?.id),
+
+        idDesc: (left, right) =>
+            safeNumber(right?.id) - safeNumber(left?.id),
 
         /** Ручная сортировка */
         sortAsc: byNumberAsc('sort'),

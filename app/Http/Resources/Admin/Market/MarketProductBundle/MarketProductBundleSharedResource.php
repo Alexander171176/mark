@@ -9,107 +9,49 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class MarketProductBundleSharedResource extends JsonResource
 {
     /**
-     * Компактное представление комплекта товаров.
+     * Компактное представление комплекта для Index и связанных списков.
+     *
+     * Не содержит translations[] и moderator.
+     * Все relations читаются только при предварительной eager loading.
      *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        $currentLocale = app()->getLocale();
-        $fallbackLocale = config('app.fallback_locale', 'ru');
+        $currentTranslation = $this->currentTranslation();
 
-        /**
-         * Текущий перевод с резервной локалью.
-         */
-        $currentTranslation = null;
-
-        if ($this->relationLoaded('translations')) {
-            $currentTranslation = $this->translations
-                ->firstWhere('locale', $currentLocale)
-                ?: $this->translations
-                    ->firstWhere('locale', $fallbackLocale)
-                    ?: $this->translations->first();
-        }
-
-        /**
-         * Загружены ли позиции комплекта для расчётов.
-         */
         $itemsLoaded = $this->relationLoaded('items')
             || $this->relationLoaded('activeItems');
 
-        /**
-         * Количество всех позиций.
-         */
-        $itemsCount = isset($this->items_count)
-            ? (int) $this->items_count
-            : (
-            $this->relationLoaded('items')
-                ? $this->items->count()
-                : null
-            );
+        $itemsCount = $this->itemsCountSafe();
+        $activeItemsCount = $this->activeItemsCountSafe();
 
-        /**
-         * Количество активных позиций.
-         */
-        $activeItemsCount = isset($this->active_items_count)
-            ? (int) $this->active_items_count
-            : (
-            $this->relationLoaded('activeItems')
-                ? $this->activeItems->count()
-                : (
-            $this->relationLoaded('items')
-                ? $this->items
-                ->where('activity', true)
-                ->count()
-                : null
-            )
-            );
-
-        /**
-         * Расчётная цена состава.
-         *
-         * Вычисляется только при загруженных позициях,
-         * чтобы ресурс не создавал дополнительные SQL-запросы.
-         */
         $calculatedPrice = $itemsLoaded
             ? $this->calculatedPrice()
             : null;
 
-        /**
-         * Фактическая цена комплекта.
-         */
         $effectivePrice = $this->usesManualPrice()
             ? round((float) $this->price, 2)
             : $calculatedPrice;
 
-        /**
-         * Расчётное количество доступных комплектов.
-         */
         $availableQuantity = $itemsLoaded
             ? $this->availableQuantity()
             : null;
 
-        /**
-         * Главное изображение комплекта.
-         */
         $mainImage = $this->relationLoaded('images')
             ? $this->images->first()
             : null;
 
         return [
-            /** Основные идентификаторы */
+            /** Идентификаторы */
             'id' => (int) $this->id,
-
             'user_id' => (int) $this->user_id,
-
             'market_company_id' => $this->market_company_id !== null
                 ? (int) $this->market_company_id
                 : null,
-
             'market_shop_id' => $this->market_shop_id !== null
                 ? (int) $this->market_shop_id
                 : null,
-
             'currency_id' => $this->currency_id !== null
                 ? (int) $this->currency_id
                 : null,
@@ -120,80 +62,45 @@ class MarketProductBundleSharedResource extends JsonResource
             'vendor_code' => $this->vendor_code,
             'barcode' => $this->barcode,
 
-            /** Режим формирования цены */
+            /** Формирование цены */
             'calculate_price' => (bool) $this->calculate_price,
-
-            'uses_calculated_price' =>
-                $this->usesCalculatedPrice(),
-
-            'uses_manual_price' =>
-                $this->usesManualPrice(),
+            'uses_calculated_price' => $this->usesCalculatedPrice(),
+            'uses_manual_price' => $this->usesManualPrice(),
 
             /** Сохранённые цены */
             'price' => $this->price,
             'old_price' => $this->old_price,
+            'purchase_price' => $this->purchase_price,
             'wholesale_price' => $this->wholesale_price,
-
-            'wholesale_min_quantity' =>
-                $this->wholesale_min_quantity !== null
-                    ? (int) $this->wholesale_min_quantity
-                    : null,
+            'wholesale_min_quantity' => $this->wholesale_min_quantity !== null
+                ? (int) $this->wholesale_min_quantity
+                : null,
 
             /** Расчётные цены */
             'calculated_price' => $calculatedPrice !== null
                 ? number_format($calculatedPrice, 2, '.', '')
                 : null,
-
             'effective_price' => $effectivePrice !== null
                 ? number_format($effectivePrice, 2, '.', '')
                 : null,
 
             /** Экономия */
-            'has_old_price' => $effectivePrice !== null
-                && $this->old_price !== null
-                && (float) $this->old_price > $effectivePrice,
-
-            'saving_amount' => $effectivePrice !== null
-            && $this->old_price !== null
-            && (float) $this->old_price > $effectivePrice
-                ? number_format(
-                    (float) $this->old_price - $effectivePrice,
-                    2,
-                    '.',
-                    ''
-                )
-                : '0.00',
-
-            'saving_percent' => $effectivePrice !== null
-            && $this->old_price !== null
-            && (float) $this->old_price > 0
-            && (float) $this->old_price > $effectivePrice
-                ? round(
-                    (
-                        (
-                            (float) $this->old_price
-                            - $effectivePrice
-                        )
-                        / (float) $this->old_price
-                    ) * 100,
-                    2
-                )
-                : 0.0,
-
-            'has_wholesale_price' =>
-                $this->hasWholesalePrice(),
+            'has_old_price' => $this->hasOldPriceSafe($effectivePrice),
+            'saving_amount' => $this->savingAmountSafe($effectivePrice),
+            'saving_percent' => $this->savingPercentSafe($effectivePrice),
+            'has_wholesale_price' => $this->hasWholesalePrice(),
 
             /** Наличие */
             'available_quantity' => $availableQuantity,
+            'has_stock' => $availableQuantity !== null
+                && $availableQuantity > 0,
 
-            'has_stock' => $availableQuantity !== null && $availableQuantity > 0,
-
-            /** Отображение */
+            /** Сортировка и активность */
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,
             'is_active' => $this->isActive(),
 
-            /** Рекламные позиции */
+            /** Размещение */
             'left' => (bool) $this->left,
             'main' => (bool) $this->main,
             'right' => (bool) $this->right,
@@ -209,11 +116,16 @@ class MarketProductBundleSharedResource extends JsonResource
             'is_published_now' => $this->isPublishedNow(),
 
             /** Модерация */
-            'moderation_status' =>
-                (int) $this->moderation_status,
+            'moderation_status' => (int) $this->moderation_status,
+            'is_pending' => (int) $this->moderation_status === 0,
+            'is_approved' => (int) $this->moderation_status === 1,
+            'is_rejected' => (int) $this->moderation_status === 2,
+            'moderation_note' => $this->moderation_note,
 
-            'is_approved' =>
-                (int) $this->moderation_status === 1,
+            /** Окно публикации */
+            'published_at' => $this->published_at?->format('Y-m-d\TH:i'),
+            'show_from_at' => $this->show_from_at?->format('Y-m-d\TH:i'),
+            'show_to_at' => $this->show_to_at?->format('Y-m-d\TH:i'),
 
             /** Статистика */
             'views' => (int) $this->views,
@@ -221,136 +133,225 @@ class MarketProductBundleSharedResource extends JsonResource
             'rating_avg' => $this->rating_avg,
             'rating_count' => (int) $this->rating_count,
 
-            /** Сведения о составе */
-            'has_items' => $itemsCount !== null && $itemsCount > 0,
+            /** Состав */
+            'has_items' => $itemsCount !== null
+                && $itemsCount > 0,
+            'has_active_items' => $activeItemsCount !== null
+                && $activeItemsCount > 0,
 
-            'has_active_items' => $activeItemsCount !== null && $activeItemsCount > 0,
-
-            /** Текущий перевод */
+            /** Только текущий перевод */
             'translation' => $currentTranslation
-                ? new MarketProductBundleTranslationResource(
-                    $currentTranslation
-                )
+                ? new MarketProductBundleTranslationResource($currentTranslation)
                 : null,
 
-            /**
-             * Название для селектов и компактных списков.
-             */
-            'title' => $currentTranslation?->title,
-
-            'display_title' => $currentTranslation?->title
-                ?: $this->sku
-                    ?: $this->url
-                        ?: "ID: {$this->id}",
+            /** Владелец нужен Index Table/Card */
+            'owner' => $this->whenLoaded(
+                'owner',
+                fn() => $this->compactUser($this->owner)
+            ),
 
             /** Валюта */
             'currency' => new CurrencyResource(
                 $this->whenLoaded('currency')
             ),
 
-            /** Компания-поставщик */
+            /** Связанные сущности */
             'company' => $this->whenLoaded(
                 'company',
-                function () use (
-                    $currentLocale,
-                    $fallbackLocale
-                ) {
-                    if (! $this->company) {
-                        return null;
-                    }
-
-                    $translation = null;
-
-                    if (
-                        $this->company
-                            ->relationLoaded('translations')
-                    ) {
-                        $translation = $this->company
-                            ->translations
-                            ->firstWhere(
-                                'locale',
-                                $currentLocale
-                            )
-                            ?: $this->company
-                                ->translations
-                                ->firstWhere(
-                                    'locale',
-                                    $fallbackLocale
-                                )
-                                ?: $this->company
-                                    ->translations
-                                    ->first();
-                    }
-
-                    return [
-                        'id' => (int) $this->company->id,
-                        'url' => $this->company->url,
-                        'legal_name' =>
-                            $this->company->legal_name,
-                        'title' => $translation?->title,
-                    ];
-                }
+                fn() => $this->compactCompany($this->company)
             ),
-
-            /** Магазин */
             'shop' => $this->whenLoaded(
                 'shop',
-                function () use (
-                    $currentLocale,
-                    $fallbackLocale
-                ) {
-                    if (! $this->shop) {
-                        return null;
-                    }
-
-                    $translation = null;
-
-                    if (
-                        $this->shop
-                            ->relationLoaded('translations')
-                    ) {
-                        $translation = $this->shop
-                            ->translations
-                            ->firstWhere(
-                                'locale',
-                                $currentLocale
-                            )
-                            ?: $this->shop
-                                ->translations
-                                ->firstWhere(
-                                    'locale',
-                                    $fallbackLocale
-                                )
-                                ?: $this->shop
-                                    ->translations
-                                    ->first();
-                    }
-
-                    return [
-                        'id' => (int) $this->shop->id,
-                        'url' => $this->shop->url,
-                        'title' => $translation?->title,
-                    ];
-                }
+                fn() => $this->compactShop($this->shop)
             ),
 
-            /** Главное изображение */
+            /**
+             * Позиции нужны Index:
+             * - для отображения состава;
+             * - frontend-поиска по товарам/вариантам;
+             * - расчётной цены и доступного количества.
+             */
+            'items' => MarketProductBundleItemResource::collection(
+                $this->whenLoaded('items')
+            ),
+
+            /** Главное изображение и полный массив для Table/Card */
             'image' => $mainImage
-                ? new MarketProductBundleImageResource(
-                    $mainImage
-                )
+                ? new MarketProductBundleImageResource($mainImage)
                 : null,
+            'images' => MarketProductBundleImageResource::collection(
+                $this->whenLoaded('images')
+            ),
 
             /** Счётчики */
             'items_count' => $this->whenCounted('items'),
-
             'active_items_count' => $this->when(
                 isset($this->active_items_count),
-                fn () => (int) $this->active_items_count
+                fn() => (int) $this->active_items_count
             ),
+            'images_count' => $this->whenCounted('images'),
 
-            'images_count' =>
-                $this->whenCounted('images'),
+            /** Даты нужны Index-сортировкам */
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
+        ];
+    }
+
+    /** Текущий перевод только из loaded translations. */
+    private function currentTranslation(): mixed
+    {
+        if (! $this->relationLoaded('translations')) {
+            return null;
+        }
+
+        $locale = app()->getLocale();
+
+        return $this->translations->firstWhere('locale', $locale)
+            ?: $this->translations->first();
+    }
+
+    /** Количество всех позиций без SQL. */
+    private function itemsCountSafe(): ?int
+    {
+        if (isset($this->items_count)) {
+            return (int) $this->items_count;
+        }
+
+        return $this->relationLoaded('items')
+            ? $this->items->count()
+            : null;
+    }
+
+    /** Количество активных позиций без SQL. */
+    private function activeItemsCountSafe(): ?int
+    {
+        if (isset($this->active_items_count)) {
+            return (int) $this->active_items_count;
+        }
+
+        if ($this->relationLoaded('activeItems')) {
+            return $this->activeItems->count();
+        }
+
+        return $this->relationLoaded('items')
+            ? $this->items->where('activity', true)->count()
+            : null;
+    }
+
+    /** Есть ли старая цена относительно фактической цены. */
+    private function hasOldPriceSafe(?float $effectivePrice): bool
+    {
+        return $effectivePrice !== null
+            && $this->old_price !== null
+            && (float) $this->old_price > $effectivePrice;
+    }
+
+    /** Размер экономии. */
+    private function savingAmountSafe(?float $effectivePrice): string
+    {
+        if (! $this->hasOldPriceSafe($effectivePrice)) {
+            return '0.00';
+        }
+
+        return number_format(
+            (float) $this->old_price - $effectivePrice,
+            2,
+            '.',
+            ''
+        );
+    }
+
+    /** Процент экономии. */
+    private function savingPercentSafe(?float $effectivePrice): float
+    {
+        if (
+            ! $this->hasOldPriceSafe($effectivePrice)
+            || (float) $this->old_price <= 0
+        ) {
+            return 0.0;
+        }
+
+        return round(
+            (
+                (
+                    (float) $this->old_price
+                    - $effectivePrice
+                )
+                / (float) $this->old_price
+            ) * 100,
+            2
+        );
+    }
+
+    /** Компактный пользователь. */
+    private function compactUser(mixed $user): ?array
+    {
+        if (! $user) {
+            return null;
+        }
+
+        return [
+            'id' => (int) $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'profile_photo_url' => $user->profile_photo_url,
+        ];
+    }
+
+    /** Компактная компания с nested translation. */
+    private function compactCompany(mixed $company): ?array
+    {
+        if (! $company) {
+            return null;
+        }
+
+        return [
+            'id' => (int) $company->id,
+            'url' => $company->url,
+            'legal_name' => $company->legal_name,
+            'activity' => (bool) $company->activity,
+            'translation' => $this->compactTranslation($company),
+        ];
+    }
+
+    /** Компактный магазин с nested translation. */
+    private function compactShop(mixed $shop): ?array
+    {
+        if (! $shop) {
+            return null;
+        }
+
+        return [
+            'id' => (int) $shop->id,
+            'url' => $shop->url,
+            'activity' => (bool) $shop->activity,
+            'translation' => $this->compactTranslation($shop),
+        ];
+    }
+
+    /** Текущий перевод связанной сущности только из loaded translations. */
+    private function compactTranslation(mixed $relation): ?array
+    {
+        if (
+            ! $relation
+            || ! $relation->relationLoaded('translations')
+        ) {
+            return null;
+        }
+
+        $translation = $relation->translations
+            ->firstWhere('locale', app()->getLocale())
+            ?: $relation->translations->first();
+
+        if (! $translation) {
+            return null;
+        }
+
+        return [
+            'locale' => $translation->locale,
+            'title' => $translation->title,
+            'subtitle' => $translation->subtitle,
+            'short' => $translation->short,
         ];
     }
 }

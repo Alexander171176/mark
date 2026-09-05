@@ -6,9 +6,9 @@ namespace App\Models;
 use App\Models\Admin\Blog\Comment\Comment;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
-use App\Models\Admin\Market\MarketProductReview\MarketProductReview;
 use App\Models\Admin\Market\MarketRecentlyViewedProduct\MarketRecentlyViewedProduct;
 use App\Models\Admin\Market\MarketShop\MarketShop;
+use App\Models\Admin\Review\Review;
 use App\Models\Admin\School\SchoolInstructorProfile\SchoolInstructorProfile;
 use App\Models\User\Like\BlogArticleLike;
 use App\Models\User\Like\BlogVideoLike;
@@ -143,7 +143,7 @@ class User extends Authenticatable /* implements MustVerifyEmail */
     public function moderatedMarketProductReviews(): HasMany
     {
         return $this->hasMany(
-            MarketProductReview::class,
+            Review::class,
             'moderated_by'
         );
     }
@@ -190,7 +190,7 @@ class User extends Authenticatable /* implements MustVerifyEmail */
     public function marketProductReviews(): HasMany
     {
         return $this->hasMany(
-            MarketProductReview::class,
+            Review::class,
             'user_id'
         );
     }
@@ -211,10 +211,22 @@ class User extends Authenticatable /* implements MustVerifyEmail */
     /** Сортировка по умолчанию */
     public function scopeOrdered(Builder $q): Builder
     {
-        return $q->orderByDesc('id');
+        return $q->orderByDesc('users.id');
     }
 
-    /** Поиск */
+    /**
+     * Поиск по данным, доступным в Admin User Index.
+     *
+     * Поиск выполняется по:
+     * - ID пользователя;
+     * - имени;
+     * - email;
+     * - названиям ролей;
+     * - названиям прямых разрешений.
+     *
+     * Несколько слов объединяются по принципу AND:
+     * каждое слово должно найти совпадение хотя бы в одном из полей/relations.
+     */
     public function scopeSearch(Builder $q, ?string $term): Builder
     {
         $term = trim((string) $term);
@@ -223,9 +235,11 @@ class User extends Authenticatable /* implements MustVerifyEmail */
             return $q;
         }
 
-        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term))
+        $words = collect(
+            preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term)
+        )
             ->map(fn ($word) => trim($word))
-            ->filter(fn ($word) => mb_strlen($word) >= 2)
+            ->filter(fn ($word) => $word !== '')
             ->values();
 
         if ($words->isEmpty()) {
@@ -235,115 +249,82 @@ class User extends Authenticatable /* implements MustVerifyEmail */
         return $q->where(function (Builder $query) use ($words) {
             foreach ($words as $word) {
                 $query->where(function (Builder $query) use ($word) {
+                    if (ctype_digit($word)) {
+                        $query->orWhere('users.id', (int) $word);
+                    }
+
                     $query
-                        ->where('users.name', 'like', "%{$word}%")
+                        ->orWhere('users.name', 'like', "%{$word}%")
                         ->orWhere('users.email', 'like', "%{$word}%")
-
-                        ->orWhereHas('roles', function (Builder $qq) use ($word) {
-                            $qq->where('name', 'like', "%{$word}%");
+                        ->orWhereHas('roles', function (Builder $query) use ($word) {
+                            $query->where('name', 'like', "%{$word}%");
                         })
-
-                        ->orWhereHas('permissions', function (Builder $qq) use ($word) {
-                            $qq->where('name', 'like', "%{$word}%");
-                        })
-
-                        ->orWhereHas('marketCompanies', function (Builder $qq) use ($word) {
-                            $qq->where('url', 'like', "%{$word}%")
-                                ->orWhere('legal_name', 'like', "%{$word}%")
-                                ->orWhere('bin_iin', 'like', "%{$word}%")
-                                ->orWhere('email', 'like', "%{$word}%");
-                        })
-
-                        ->orWhereHas('marketShops', function (Builder $qq) use ($word) {
-                            $qq->where('url', 'like', "%{$word}%")
-                                ->orWhere('email', 'like', "%{$word}%")
-                                ->orWhere('phone', 'like', "%{$word}%");
-                        })
-
-                        ->orWhereHas('marketProducts', function (Builder $qq) use ($word) {
-                            $qq->where('url', 'like', "%{$word}%")
-                                ->orWhere('sku', 'like', "%{$word}%")
-                                ->orWhere('vendor_code', 'like', "%{$word}%")
-                                ->orWhere('barcode', 'like', "%{$word}%");
+                        ->orWhereHas('permissions', function (Builder $query) use ($word) {
+                            $query->where('name', 'like', "%{$word}%");
                         });
                 });
             }
         });
     }
 
-    /** Сортировка по параметру */
+    /**
+     * Сортировка для Admin User Index.
+     *
+     * roles_count и permissions_count добавляются в UserController::indexQuery(),
+     * поэтому повторный withCount() здесь не нужен.
+     */
     public function scopeSortByParam(Builder $q, ?string $sort): Builder
     {
         return match ($sort) {
             'idAsc' => $q->orderBy('users.id', 'asc'),
             'idDesc' => $q->orderBy('users.id', 'desc'),
 
-            'name', 'nameAsc' => $q->orderBy('users.name', 'asc')->orderByDesc('users.id'),
-            'nameDesc' => $q->orderBy('users.name', 'desc')->orderByDesc('users.id'),
-
-            'emailAsc' => $q->orderBy('users.email', 'asc')->orderByDesc('users.id'),
-            'emailDesc' => $q->orderBy('users.email', 'desc')->orderByDesc('users.id'),
-
-            'rolesAsc' => $q->withCount('roles')->orderBy('roles_count', 'asc')->orderByDesc('users.id'),
-            'rolesDesc' => $q->withCount('roles')->orderBy('roles_count', 'desc')->orderByDesc('users.id'),
-
-            'permissionsAsc' => $q->withCount('permissions')->orderBy('permissions_count', 'asc')->orderByDesc('users.id'),
-            'permissionsDesc' => $q->withCount('permissions')->orderBy('permissions_count', 'desc')->orderByDesc('users.id'),
-
-            'createdAtAsc' => $q->orderBy('users.created_at', 'asc')->orderByDesc('users.id'),
-            'createdAtDesc' => $q->orderBy('users.created_at', 'desc')->orderByDesc('users.id'),
-
-            'updatedAtAsc' => $q->orderBy('users.updated_at', 'asc')->orderByDesc('users.id'),
-            'updatedAtDesc' => $q->orderBy('users.updated_at', 'desc')->orderByDesc('users.id'),
-
-            'marketCompaniesAsc' => $q
-                ->withCount('marketCompanies')
-                ->orderBy('market_companies_count', 'asc')
+            'name', 'nameAsc' => $q
+                ->orderBy('users.name', 'asc')
                 ->orderByDesc('users.id'),
 
-            'marketCompaniesDesc' => $q
-                ->withCount('marketCompanies')
-                ->orderBy('market_companies_count', 'desc')
+            'nameDesc' => $q
+                ->orderBy('users.name', 'desc')
                 ->orderByDesc('users.id'),
 
-            'marketShopsAsc' => $q
-                ->withCount('marketShops')
-                ->orderBy('market_shops_count', 'asc')
+            'emailAsc' => $q
+                ->orderBy('users.email', 'asc')
                 ->orderByDesc('users.id'),
 
-            'marketShopsDesc' => $q
-                ->withCount('marketShops')
-                ->orderBy('market_shops_count', 'desc')
+            'emailDesc' => $q
+                ->orderBy('users.email', 'desc')
                 ->orderByDesc('users.id'),
 
-            'marketProductsAsc' => $q
-                ->withCount('marketProducts')
-                ->orderBy('market_products_count', 'asc')
+            'rolesAsc' => $q
+                ->orderBy('roles_count', 'asc')
                 ->orderByDesc('users.id'),
 
-            'marketProductsDesc' => $q
-                ->withCount('marketProducts')
-                ->orderBy('market_products_count', 'desc')
+            'rolesDesc' => $q
+                ->orderBy('roles_count', 'desc')
                 ->orderByDesc('users.id'),
 
-            'marketProductLikesAsc' => $q
-                ->withCount('marketProductLikes')
-                ->orderBy('market_product_likes_count', 'asc')
+            'permissionsAsc' => $q
+                ->orderBy('permissions_count', 'asc')
                 ->orderByDesc('users.id'),
 
-            'marketProductLikesDesc' => $q
-                ->withCount('marketProductLikes')
-                ->orderBy('market_product_likes_count', 'desc')
+            'permissionsDesc' => $q
+                ->orderBy('permissions_count', 'desc')
                 ->orderByDesc('users.id'),
 
-            'marketProductReviewsAsc' => $q
-                ->withCount('marketProductReviews')
-                ->orderBy('market_product_reviews_count', 'asc')
+            'createdAtAsc' => $q
+                ->orderBy('users.created_at', 'asc')
                 ->orderByDesc('users.id'),
 
-            'marketProductReviewsDesc' => $q
-                ->withCount('marketProductReviews')
-                ->orderBy('market_product_reviews_count', 'desc')
+            'createdAtDesc' => $q
+                ->orderBy('users.created_at', 'desc')
+                ->orderByDesc('users.id'),
+
+            'updatedAtAsc' => $q
+                ->orderBy('users.updated_at', 'asc')
+                ->orderByDesc('users.id'),
+
+            'updatedAtDesc' => $q
+                ->orderBy('users.updated_at', 'desc')
                 ->orderByDesc('users.id'),
 
             default => $q->ordered(),

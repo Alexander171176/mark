@@ -1,61 +1,38 @@
 <script setup>
-import {defineProps, onMounted, watch} from 'vue';
-import {useForm} from '@inertiajs/vue3';
-import { useI18n } from 'vue-i18n';
-import VueMultiselect from 'vue-multiselect';
+import { useForm } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
+import VueMultiselect from 'vue-multiselect'
 
-import AdminLayout from '@/Layouts/AdminLayout.vue';
-import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue';
-import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue';
-import DeleteButton from '@/Components/Admin/UI/Buttons/DeleteButton.vue';
-import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue';
-import InputText from '@/Components/Admin/UI/Input/InputText.vue';
-import InputError from '@/Components/Admin/UI/Input/InputError.vue';
-import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import DeleteButton from '@/Components/Admin/UI/Buttons/DeleteButton.vue'
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
+import InputText from '@/Components/Admin/UI/Input/InputText.vue'
+import InputError from '@/Components/Admin/UI/Input/InputError.vue'
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
 
-const { t } = useI18n();
+const { t } = useI18n()
 
 const props = defineProps({
-    user: {
-        type: Object,
-        required: true
-    },
-    roles: Array,
-    permissions: Array,
+    user: { type: Object, required: true },
+    roles: { type: Array, default: () => [] },
+    permissions: { type: Array, default: () => [] },
 })
 
 const form = useForm({
     _method: 'PUT',
     name: props.user?.name ?? '',
     email: props.user?.email ?? '',
-    roles: [],
-    permissions: []
-});
-
-const submit = () => {
-    form.put(route("admin.users.update", props.user?.id), {
-        errorBag: 'updateUser',
-        onSuccess: () => {
-            //console.log("Пользователь успешно обновился");
-        },
-        onError: (errors) => {
-            console.error("Не удалось обновить пользователя:", errors);
-        }
-    });
-};
-
-onMounted(() => {
-    form.permissions = props.user?.permissions;
-    form.roles = props.user?.roles;
+    roles: [...(props.user?.roles || [])],
+    permissions: [...(props.user?.permissions || [])],
 })
 
-watch(
-    () => props.user,
-    () => {
-        form.permissions = props.user?.permissions;
-            form.roles = props.user?.roles
-    }
-)
+const submit = () => {
+    form.put(route('admin.users.update', props.user.id), {
+        errorBag: 'updateUser',
+    })
+}
 </script>
 
 <template>
@@ -76,7 +53,8 @@ watch(
                         <template #icon>
                             <!-- SVG -->
                             <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2" viewBox="0 0 16 16">
-                                <path d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"></path>
+                                <path
+                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"></path>
                             </svg>
                         </template>
                         {{ t('back') }}
@@ -127,6 +105,7 @@ watch(
                                         track-by="name"
                                         class="pb-16"
                         />
+                        <InputError class="mt-2" :message="form.errors.roles" />
                     </div>
 
                     <div class="mb-3">
@@ -140,6 +119,7 @@ watch(
                                         track-by="name"
                                         class="pb-16"
                         />
+                        <InputError class="mt-2" :message="form.errors.permissions" />
                     </div>
                     <div class="flex flex-wrap justify-around">
                         <div class="w-96 mb-2 mr-3
@@ -247,7 +227,8 @@ watch(
                             <template #icon>
                                 <!-- SVG -->
                                 <svg class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2" viewBox="0 0 16 16">
-                                    <path d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"></path>
+                                    <path
+                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"></path>
                                 </svg>
                             </template>
                             {{ t('back') }}

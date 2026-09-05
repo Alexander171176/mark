@@ -10,30 +10,48 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class UserResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
+     * Полное представление пользователя.
      *
-     * @param Request $request
+     * Основное назначение:
+     * - Edit;
+     * - детальные страницы;
+     * - места, где нужны полные данные ролей и прямых разрешений.
+     *
+     * Resource читает только заранее загруженные relations/counts
+     * и не должен создавать дополнительные SQL-запросы.
+     *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         return [
-            'id'                 => $this->id,
-            'name'               => $this->name,
-            'email'              => $this->email,
-            'email_verified_at'  => $this->email_verified_at?->toIso8601String(), // <--- ДОБАВЛЕНО
-            'profile_photo_url'  => $this->profile_photo_url, // <--- ДОБАВЛЕНО (из $appends)
-            'created_at'         => $this->created_at?->toIso8601String(), // <--- ДОБАВЛЕНО
-            'updated_at'         => $this->updated_at?->toIso8601String(), // <--- ДОБАВЛЕНО
+            /** Основные данные */
+            'id' => (int) $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
 
-            // Счетчики (если нужны и используются с withCount)
-            'roles_count'        => $this->whenCounted('roles'),       // <--- ДОБАВЛЕНО
-            'permissions_count'  => $this->whenCounted('permissions'), // <--- ДОБАВЛЕНО (прямые разрешения)
+            /** Верификация */
+            'email_verified_at' => $this->email_verified_at?->toISOString(),
 
-            // Полные данные связей
-            'roles'              => RoleResource::collection($this->whenLoaded('roles')),
-            'permissions'        => PermissionResource::collection($this->whenLoaded('permissions')), // Прямые разрешения
-            // 'all_permissions' => PermissionResource::collection($this->whenLoaded('allPermissions')), // Если загружали все разрешения (включая через роли)
+            /** Фото профиля */
+            'profile_photo_url' => $this->profile_photo_url,
+
+            /** Счётчики */
+            'roles_count' => $this->whenCounted('roles'),
+            'permissions_count' => $this->whenCounted('permissions'),
+
+            /** Полные связанные сущности */
+            'roles' => RoleResource::collection(
+                $this->whenLoaded('roles')
+            ),
+
+            'permissions' => PermissionResource::collection(
+                $this->whenLoaded('permissions')
+            ),
+
+            /** Даты */
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

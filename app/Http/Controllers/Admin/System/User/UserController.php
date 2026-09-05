@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\System\User\UpdateUserRequest;
 use App\Http\Resources\Admin\System\Permission\PermissionResource;
 use App\Http\Resources\Admin\System\Role\RoleResource;
 use App\Http\Resources\Admin\System\User\UserResource;
+use App\Http\Resources\Admin\System\User\UserSharedResource;
 use App\Models\User;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
@@ -49,7 +50,8 @@ class UserController extends Controller
             'frontend'
         );
 
-        $usersCount = $this->indexQuery()->count();
+        /** Лёгкий COUNT без eager loading и withCount. */
+        $usersCount = $this->baseQuery()->count();
 
         $useServerProcessing = app(ProcessingModeService::class)
             ->shouldUseServer(
@@ -77,7 +79,7 @@ class UserController extends Controller
                 'adminCountUsers' => $perPage,
                 'adminSortUsers' => $sortParam,
 
-                'users' => UserResource::collection($users),
+                'users' => UserSharedResource::collection($users),
                 'usersCount' => $usersCount,
 
                 'sortParam' => $sortParam,
@@ -116,13 +118,12 @@ class UserController extends Controller
     {
         // TODO: Проверка прав доступа $this->authorize('create-users', User::class);
 
-        // Прямой запрос без кэширования
         $roles = Role::all();
         $permissions = Permission::all();
 
         return Inertia::render('Admin/System/Users/Create', [
             'roles' => RoleResource::collection($roles),
-            'permissions' => PermissionResource::collection($permissions)
+            'permissions' => PermissionResource::collection($permissions),
         ]);
     }
 
@@ -136,28 +137,29 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
-            // Создаём пользователя
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => bcrypt('password'), // или сгенерируй/введи позже
+                'password' => $data['password'],
             ]);
 
-            // Синхронизация ролей
             $roleNames = collect($data['roles'] ?? [])->pluck('name')->toArray();
-            $user->syncRoles($roleNames);
-
-            // Синхронизация разрешений
             $permissionNames = collect($data['permissions'] ?? [])->pluck('name')->toArray();
+
+            $user->syncRoles($roleNames);
             $user->syncPermissions($permissionNames);
 
             DB::commit();
+
             return redirect()->route('admin.users.index')
                 ->with('success', __('admin/controllers.created_success'));
-
         } catch (Throwable $e) {
             DB::rollBack();
-            Log::error("Ошибка при создании пользователя: " . $e->getMessage());
+
+            Log::error('Ошибка при создании пользователя: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
             return back()->withInput()
                 ->with('error', __('admin/controllers.created_error'));
         }
@@ -170,14 +172,18 @@ class UserController extends Controller
     {
         // TODO: Проверка прав доступа $this->authorize('update-users', $user);
 
-        $user->load(['roles', 'permissions']);
+        $user->load([
+            'roles',
+            'permissions',
+        ]);
+
         $roles = Role::all();
         $permissions = Permission::all();
 
         return Inertia::render('Admin/System/Users/Edit', [
             'user' => new UserResource($user),
             'roles' => RoleResource::collection($roles),
-            'permissions' => PermissionResource::collection($permissions)
+            'permissions' => PermissionResource::collection($permissions),
         ]);
     }
 
@@ -191,7 +197,6 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
-            // Приводим к строкам имена
             $roleNames = collect($data['roles'] ?? [])->pluck('name')->toArray();
             $permissionNames = collect($data['permissions'] ?? [])->pluck('name')->toArray();
 
@@ -204,13 +209,16 @@ class UserController extends Controller
             ]);
 
             DB::commit();
+
             return redirect()->route('admin.users.index')
                 ->with('success', __('admin/controllers.updated_success'));
-
         } catch (Throwable $e) {
             DB::rollBack();
-            Log::error("Ошибка при обновлении пользователя ID {$user->id}: " . $e->getMessage());
-            Log::error("Тип ошибки: " . get_class($e));
+
+            Log::error("Ошибка при обновлении пользователя ID {$user->id}: " . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
             return back()->withInput()
                 ->with('error', __('admin/controllers.updated_error'));
         }
@@ -234,6 +242,7 @@ class UserController extends Controller
         }
 
         $userRoleNames = $user->roles->pluck('name');
+
         if ($userRoleNames->count() === 1 && $userRoleNames->first() === 'admin') {
             return redirect()->route('admin.users.index')
                 ->with('error', __('admin/controllers/users.cannot_delete_single_admin'));
@@ -242,31 +251,41 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
-            // Удаляем роли и разрешения явно
             $user->syncRoles([]);
             $user->syncPermissions([]);
             $user->delete();
 
             DB::commit();
 
-            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+            app()[\Spatie\Permission\PermissionRegistrar::class]
+                ->forgetCachedPermissions();
 
             Log::info("Пользователь удалён: ID {$user->id}");
+
             return redirect()->route('admin.users.index')
                 ->with('success', __('admin/controllers.deleted_success'));
-
         } catch (Throwable $e) {
             DB::rollBack();
-            Log::error("Ошибка при удалении пользователя ID {$user->id}: " . $e->getMessage());
+
+            Log::error("Ошибка при удалении пользователя ID {$user->id}: " . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
             return back()
                 ->with('error', __('admin/controllers.deleted_error'));
         }
     }
 
-    /** Базовый запрос для списка пользователей. */
+    /** Лёгкий базовый запрос без связей и счётчиков. */
+    private function baseQuery(): Builder
+    {
+        return User::query();
+    }
+
+    /** Запрос для Admin Index. */
     private function indexQuery(): Builder
     {
-        return User::query()
+        return $this->baseQuery()
             ->with([
                 'roles',
                 'permissions',

@@ -1,17 +1,16 @@
 <script setup>
-import { defineProps, defineEmits } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
 defineProps({
-    sortParam: String,
+    sortParam: { type: String, default: 'idDesc' },
 })
 
-const emits = defineEmits(['update:sortParam'])
+const emit = defineEmits(['update:sortParam'])
 
 const updateSort = (event) => {
-    emits('update:sortParam', event.target.value)
+    emit('update:sortParam', event.target.value)
 }
 </script>
 
@@ -54,6 +53,10 @@ const updateSort = (event) => {
 
             <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
             <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+
+            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
+            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
+            <option disabled>───────────</option>
         </select>
     </div>
 </template>

@@ -1,6 +1,7 @@
 export default {
     name: 'Имя',
     nameModule: 'Название модуля',
+    newImages: 'Новые изображения',
     newPassword: 'Новый пароль',
     next: 'Следующая',
     nickname: 'Псевдоним',

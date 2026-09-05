@@ -145,7 +145,7 @@ const isAdmin = computed(() => {
 
 /** Текущий перевод варианта */
 const getVariantTranslation = (variant) => {
-    return variant?.translation || variant?.translations?.[0] || {}
+    return variant?.translation || {}
 }
 
 /** Название варианта */
@@ -153,52 +153,9 @@ const getVariantTitle = (variant) => {
     return variant?.display_title || getVariantTranslation(variant)?.title || variant?.code || variant?.sku || `ID: ${variant?.id}`
 }
 
-/** Подзаголовок варианта */
-const getVariantSubtitle = (variant) => {
-    return getVariantTranslation(variant)?.subtitle || ''
-}
-
-/** Краткое описание варианта */
-const getVariantShort = (variant) => {
-    return getVariantTranslation(variant)?.short || ''
-}
-
-/** Полное описание варианта */
-const getVariantDescription = (variant) => {
-    return getVariantTranslation(variant)?.description || ''
-}
-
 /** Название родительского товара */
 const getProductTitle = (variant) => {
-    return variant?.product?.translation?.title || variant?.product?.title || variant?.product?.display_title || variant?.product?.translations?.[0]?.title || `ID: ${variant?.market_product_id}`
-}
-
-/** Код эффективной валюты */
-const getCurrencyCode = (variant) => {
-    return variant?.effective_currency?.code || variant?.currency?.code || variant?.product?.currency?.code || ''
-}
-
-/** Строка характеристик варианта */
-const getVariantValuesText = (variant) => {
-    const values = Array.isArray(variant?.values) ? variant.values : []
-
-    return values
-        .map((item) => {
-            if (item?.display_value) {
-                return item.display_value
-            }
-
-            const attributeTitle = item?.attribute_title || item?.attribute?.translation?.title || item?.attribute?.title || ''
-            const valueTitle = item?.value_title || item?.attribute_value?.translation?.title || item?.attribute_value?.title || ''
-
-            if (attributeTitle && valueTitle) {
-                return `${attributeTitle}: ${valueTitle}`
-            }
-
-            return valueTitle || attributeTitle
-        })
-        .filter(Boolean)
-        .join(', ')
+    return variant?.product?.translation?.title || `ID: ${variant?.market_product_id}`
 }
 
 /* ======================== Normalization ======================== */
@@ -610,66 +567,40 @@ const makeDefaultVariant = (variant) => {
 const searchQuery = ref(props.search || '')
 const currentPage = ref(1)
 
-/** Проверка совпадения варианта с поиском */
+/**
+ * Проверка совпадения варианта с поиском.
+ *
+ * Контракт полностью соответствует MarketProductVariant::scopeSearch():
+ * - code, sku, vendor_code, barcode;
+ * - status, moderation_note;
+ * - текущий перевод варианта: title, subtitle, short, description;
+ * - текущий перевод родительского товара: title;
+ * - moderator: name, email.
+ */
 const variantMatchesSearch = (variant, query) => {
     if (!query) {
         return true
     }
 
-    const values = Array.isArray(variant?.values) ? variant.values : []
+    const translation = getVariantTranslation(variant)
 
     const searchValues = [
-        variant?.id,
-        variant?.market_product_id,
-        variant?.currency_id,
-
         variant?.code,
         variant?.sku,
         variant?.vendor_code,
         variant?.barcode,
-
-        variant?.price,
-        variant?.old_price,
-        variant?.purchase_price,
-        variant?.wholesale_price,
-        variant?.wholesale_min_quantity,
-        variant?.effective_price,
-        variant?.effective_old_price,
-        variant?.effective_purchase_price,
-        variant?.effective_wholesale_price,
-
-        variant?.quantity,
-        variant?.weight,
-        variant?.length,
-        variant?.width,
-        variant?.height,
-        variant?.sort,
-
         variant?.status,
-        variant?.moderation_status,
         variant?.moderation_note,
 
-        getVariantTitle(variant),
-        getVariantSubtitle(variant),
-        getVariantShort(variant),
-        getVariantDescription(variant),
+        translation?.title,
+        translation?.subtitle,
+        translation?.short,
+        translation?.description,
 
-        getProductTitle(variant),
-        getCurrencyCode(variant),
-        getVariantValuesText(variant),
+        variant?.product?.translation?.title,
 
         variant?.moderator?.name,
         variant?.moderator?.email,
-
-        ...values.flatMap((item) => [
-            item?.display_value,
-            item?.attribute_title,
-            item?.value_title,
-            item?.attribute?.code,
-            item?.attribute?.translation?.title,
-            item?.attribute_value?.code,
-            item?.attribute_value?.translation?.title,
-        ]),
     ]
 
     return searchValues.some((value) => normalize(value).includes(query))
@@ -729,11 +660,15 @@ const sortedVariants = computed(() => {
 
     /** Фильтры активности */
     if (sortParam.value === 'activity') {
-        return list.filter((variant) => Boolean(variant.activity))
+        return list
+            .filter((variant) => Boolean(variant.activity))
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     if (sortParam.value === 'inactive') {
-        return list.filter((variant) => !variant.activity)
+        return list
+            .filter((variant) => !variant.activity)
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     /**
@@ -747,70 +682,90 @@ const sortedVariants = computed(() => {
      * и scopeOutOfStock() модели.
      */
     if (sortParam.value === 'inStock') {
-        return list.filter((variant) => {
-            return Boolean(variant.in_stock)
-                && safeNumber(variant.quantity) > 0
-        })
+        return list
+            .filter((variant) => {
+                return Boolean(variant.in_stock)
+                    && safeNumber(variant.quantity) > 0
+            })
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     if (sortParam.value === 'outOfStock') {
-        return list.filter((variant) => {
-            return !variant.in_stock
-                || safeNumber(variant.quantity) <= 0
-        })
+        return list
+            .filter((variant) => {
+                return !variant.in_stock
+                    || safeNumber(variant.quantity) <= 0
+            })
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     /** Основной вариант */
     if (sortParam.value === 'default') {
-        return list.filter((variant) => Boolean(variant.is_default))
+        return list
+            .filter((variant) => Boolean(variant.is_default))
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     if (sortParam.value === 'notDefault') {
-        return list.filter((variant) => !variant.is_default)
+        return list
+            .filter((variant) => !variant.is_default)
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     /** Фильтры статуса публикации */
     if (sortParam.value === 'statusDraft') {
-        return list.filter((variant) => {
-            return variant.status === 'draft'
-        })
+        return list
+            .filter((variant) => {
+                return variant.status === 'draft'
+            })
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     if (sortParam.value === 'statusPublished') {
-        return list.filter((variant) => {
-            return variant.status === 'published'
-        })
+        return list
+            .filter((variant) => {
+                return variant.status === 'published'
+            })
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     if (sortParam.value === 'statusArchived') {
-        return list.filter((variant) => {
-            return variant.status === 'archived'
-        })
+        return list
+            .filter((variant) => {
+                return variant.status === 'archived'
+            })
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     /** Фильтры модерации */
     if (sortParam.value === 'moderationPending') {
-        return list.filter((variant) => {
-            return moderationNum(variant.moderation_status) === 0
-        })
+        return list
+            .filter((variant) => {
+                return moderationNum(variant.moderation_status) === 0
+            })
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     if (sortParam.value === 'moderationApproved') {
-        return list.filter((variant) => {
-            return moderationNum(variant.moderation_status) === 1
-        })
+        return list
+            .filter((variant) => {
+                return moderationNum(variant.moderation_status) === 1
+            })
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     if (sortParam.value === 'moderationRejected') {
-        return list.filter((variant) => {
-            return moderationNum(variant.moderation_status) === 2
-        })
+        return list
+            .filter((variant) => {
+                return moderationNum(variant.moderation_status) === 2
+            })
+            .sort((a, b) => safeNumber(b?.id) - safeNumber(a?.id))
     }
 
     const sortMap = {
         /** ID и ручная сортировка */
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
+        idAsc: (a, b) => safeNumber(a?.id) - safeNumber(b?.id),
+        idDesc: (a, b) => safeNumber(b?.id) - safeNumber(a?.id),
 
         sortAsc: byNumberAsc('sort'),
         sortDesc: byNumberDesc('sort'),

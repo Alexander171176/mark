@@ -1,6 +1,7 @@
 export default {
     name: 'Name',
     nameModule: 'Module name',
+    newImages: 'New images',
     newPassword: 'New Password',
     next: 'Next',
     nickname: 'Nickname',

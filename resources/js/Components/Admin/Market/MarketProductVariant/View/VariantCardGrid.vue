@@ -80,7 +80,7 @@ const allSelected = () => {
 /* ======================== Translations ======================== */
 
 const variantTranslation = (variant) => {
-    return variant?.translation || variant?.translations?.[0] || {}
+    return variant?.translation || {}
 }
 
 const variantTitle = (variant) => {
@@ -96,14 +96,8 @@ const variantShort = (variant) => {
     return variantTranslation(variant)?.short || ''
 }
 
-const relationTitle = (relation) => {
-    return relation?.title ||
-        relation?.display_title ||
-        relation?.translation?.title || relation?.translations?.[0]?.title || ''
-}
-
 const productTitle = (variant) => {
-    return relationTitle(variant?.product) || `ID: ${variant?.market_product_id}`
+    return variant?.product?.translation?.title || `ID: ${variant?.market_product_id}`
 }
 
 /* ======================== Details ======================== */
@@ -162,10 +156,10 @@ const variantValues = (variant) => {
 }
 
 const valueTitle = (item) => {
-    return item?.display_value ||
-        item?.value_title ||
-        item?.attribute_value?.title ||
-        item?.attribute_value?.translation?.title || item?.attribute_value?.code || ''
+    return item?.display_value
+        || item?.attribute_value?.translation?.title
+        || item?.attribute_value?.code
+        || ''
 }
 
 const attributeColor = (item) => {
@@ -348,7 +342,8 @@ const publicationTitle = (variant) => {
                                                hover:text-slate-700 dark:hover:text-slate-100"
                                         :title="t('dragDrop')">
                                     <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
+                                        <path
+                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
                                     </svg>
                                 </button>
 
@@ -368,7 +363,9 @@ const publicationTitle = (variant) => {
                                     <svg class="h-4 w-4 transition-transform duration-200"
                                          :class="{ 'rotate-180': isDetailsOpen(variant.id) }"
                                          fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                                        <path fill-rule="evenodd"
+                                              d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                                              clip-rule="evenodd" />
                                     </svg>
                                 </button>
                             </div>
@@ -426,7 +423,8 @@ const publicationTitle = (variant) => {
                                     :title="t('barcode')"
                                 >
                                     <svg class="h-5 w-5 shrink-0 fill-current" viewBox="0 0 512 512">
-                                        <path d="M0 448V64h18v384H0zm26.857-.273V64H36v383.727h-9.143zm27.143 0V64h8.857v383.727H54zm44.857 0V64h8.857v383.727h-8.857zm36 0V64h17.714v383.727h-17.714zm44.857 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm35.715 0V64h18v383.727h-18zm44.857 0V64h18v383.727h-18zm35.999 0V64h18.001v383.727h-18.001zm36.001 0V64h18.001v383.727h-18.001zm26.857 0V64h18v383.727h-18zm45.143 0V64h26.857v383.727h-26.857zm35.714 0V64h9.143v383.727H476zm18 .273V64h18v384h-18z" />
+                                        <path
+                                            d="M0 448V64h18v384H0zm26.857-.273V64H36v383.727h-9.143zm27.143 0V64h8.857v383.727H54zm44.857 0V64h8.857v383.727h-8.857zm36 0V64h17.714v383.727h-17.714zm44.857 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm35.715 0V64h18v383.727h-18zm44.857 0V64h18v383.727h-18zm35.999 0V64h18.001v383.727h-18.001zm36.001 0V64h18.001v383.727h-18.001zm26.857 0V64h18v383.727h-18zm45.143 0V64h26.857v383.727h-26.857zm35.714 0V64h9.143v383.727H476zm18 .273V64h18v384h-18z" />
                                     </svg>
 
                                     <span class="min-w-0">
@@ -619,7 +617,8 @@ const publicationTitle = (variant) => {
 
                                 <div v-if="variant.moderator" class="text-center">
                                     {{ t('moderator') }}:
-                                    {{ variant.moderator.name || variant.moderator.email || `ID: ${variant.moderated_by}` }}
+                                    {{ variant.moderator.name || variant.moderator.email || `ID: ${variant.moderated_by}`
+                                    }}
                                 </div>
 
                                 <div class="flex justify-center gap-3">
@@ -693,7 +692,8 @@ const publicationTitle = (variant) => {
                                     @click="emits('make-default', variant)"
                                 >
                                     <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24">
-                                        <path d="m12 2.5 2.93 5.94 6.56.95-4.75 4.63 1.12 6.54L12 17.48l-5.86 3.08 1.12-6.54-4.75-4.63 6.56-.95L12 2.5Z" />
+                                        <path
+                                            d="m12 2.5 2.93 5.94 6.56.95-4.75 4.63 1.12 6.54L12 17.48l-5.86 3.08 1.12-6.54-4.75-4.63 6.56-.95L12 2.5Z" />
                                     </svg>
                                 </button>
 

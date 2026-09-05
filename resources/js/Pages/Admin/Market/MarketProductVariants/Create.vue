@@ -104,15 +104,9 @@ function resourceList(value) {
 
 /** Получить отображаемое название сущности. */
 function translationTitle(item) {
-    return item?.translation?.title ||
-        item?.title ||
-        item?.display_title ||
-        item?.translations?.[0]?.title ||
-        item?.legal_name ||
-        item?.name ||
-        item?.code ||
-        item?.url ||
-        `ID: ${item?.id}`
+    return item?.translation?.title
+        || item?.code
+        || `ID: ${item?.id}`
 }
 
 /** Создать пустой объект перевода. */
@@ -204,12 +198,6 @@ const defaultLocale = props.currentLocale || 'ru'
 /** Активная вкладка переводов. */
 const activeLocale = ref(defaultLocale)
 
-/** Выбранный родительский товар. */
-const selectedProduct = ref(null)
-
-/** Выбранная собственная валюта варианта. */
-const selectedCurrency = ref(null)
-
 /** Выбранные значения характеристик по ID характеристик. */
 const selectedAttributeValues = ref({})
 
@@ -261,6 +249,52 @@ const form = useForm({
 
     translations: {
         [defaultLocale]: makeTranslation(),
+    },
+})
+
+/**
+ * Выбранный родительский товар.
+ *
+ * form.market_product_id — единственный источник истины.
+ */
+const selectedProduct = computed({
+    get() {
+        if (!form.market_product_id) {
+            return null
+        }
+
+        return productOptions.value.find(
+            (item) => Number(item.id) === Number(form.market_product_id)
+        ) || null
+    },
+
+    set(value) {
+        form.market_product_id = value?.id
+            ? Number(value.id)
+            : null
+    },
+})
+
+/**
+ * Выбранная собственная валюта варианта.
+ *
+ * form.currency_id — единственный источник истины.
+ */
+const selectedCurrency = computed({
+    get() {
+        if (!form.currency_id) {
+            return null
+        }
+
+        return currencyOptions.value.find(
+            (item) => Number(item.id) === Number(form.currency_id)
+        ) || null
+    },
+
+    set(value) {
+        form.currency_id = value?.id
+            ? Number(value.id)
+            : null
     },
 })
 
@@ -322,48 +356,7 @@ function clearVariantValues() {
     form.values = []
 }
 
-/* ======================== Initial selections ======================== */
-
-/** Инициализировать товар, переданный через query-параметр. */
-function initializeProductSelection() {
-    if (!productOptions.value.length) {
-        selectedProduct.value = null
-        return
-    }
-
-    const selectedId = Number(
-        form.market_product_id || props.selectedProductId
-    )
-
-    selectedProduct.value = selectedId
-        ? productOptions.value.find(
-        (item) => Number(item.id) === selectedId
-    ) || null
-        : null
-}
-
 /* ======================== Selection watchers ======================== */
-
-/** Инициализировать выбранный товар после загрузки списка. */
-watch(
-    productOptions,
-    () => {
-        initializeProductSelection()
-    },
-    {
-        immediate: true,
-    }
-)
-
-/** Синхронизировать выбранный товар с формой. */
-watch(selectedProduct, (value) => {
-    form.market_product_id = value?.id ?? null
-})
-
-/** Синхронизировать выбранную валюту с формой. */
-watch(selectedCurrency, (value) => {
-    form.currency_id = value?.id ?? null
-})
 
 /** Очистить характеристики после смены родительского товара. */
 watch(

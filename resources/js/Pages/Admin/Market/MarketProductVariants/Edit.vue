@@ -112,15 +112,9 @@ function resourceList(value) {
 
 /** Получить отображаемое название сущности. */
 function translationTitle(item) {
-    return item?.translation?.title ||
-        item?.title ||
-        item?.display_title ||
-        item?.translations?.[0]?.title ||
-        item?.legal_name ||
-        item?.name ||
-        item?.code ||
-        item?.url ||
-        `ID: ${item?.id}`
+    return item?.translation?.title
+        || item?.code
+        || `ID: ${item?.id}`
 }
 
 /** Создать пустой объект перевода. */
@@ -284,16 +278,11 @@ const initialValues = resourceList(
     id: item?.id ? Number(item.id) : null,
 
     market_attribute_id: Number(
-        item.market_attribute_id ||
-        item.attribute?.id ||
-        0
+        item.market_attribute_id || 0
     ),
 
     market_attribute_value_id: Number(
-        item.market_attribute_value_id ||
-        item.attribute_value?.id ||
-        item.attributeValue?.id ||
-        0
+        item.market_attribute_value_id || 0
     ),
 
     sort: Number(item.sort ?? index),
@@ -330,12 +319,6 @@ const initialImages = resourceList(
 /** Активная вкладка переводов. */
 const activeLocale = ref(defaultLocale)
 
-/** Выбранный родительский товар. */
-const selectedProduct = ref(null)
-
-/** Выбранная собственная валюта варианта. */
-const selectedCurrency = ref(null)
-
 /** Выбранные значения характеристик по ID характеристик. */
 const selectedAttributeValues = ref({})
 
@@ -348,16 +331,14 @@ const newImages = ref([])
 /** Форма редактирования варианта товара. */
 const form = useForm({
     market_product_id: Number(
-        variant.value.market_product_id ||
-        variant.value.product?.id ||
-        props.selectedProductId ||
-        0
+        variant.value.market_product_id
+        || props.selectedProductId
+        || 0
     ) || null,
 
-    currency_id:
-        variant.value.currency_id ||
-        variant.value.currency?.id ||
-        null,
+    currency_id: variant.value.currency_id
+        ? Number(variant.value.currency_id)
+        : null,
 
     code: variant.value.code || '',
     sku: variant.value.sku || '',
@@ -424,6 +405,52 @@ const form = useForm({
     deletedImages: [],
 
     translations: initialTranslations,
+})
+
+/**
+ * Выбранный родительский товар.
+ *
+ * form.market_product_id — единственный источник истины.
+ */
+const selectedProduct = computed({
+    get() {
+        if (!form.market_product_id) {
+            return null
+        }
+
+        return productOptions.value.find(
+            (item) => Number(item.id) === Number(form.market_product_id)
+        ) || null
+    },
+
+    set(value) {
+        form.market_product_id = value?.id
+            ? Number(value.id)
+            : null
+    },
+})
+
+/**
+ * Выбранная собственная валюта варианта.
+ *
+ * form.currency_id — единственный источник истины.
+ */
+const selectedCurrency = computed({
+    get() {
+        if (!form.currency_id) {
+            return null
+        }
+
+        return currencyOptions.value.find(
+            (item) => Number(item.id) === Number(form.currency_id)
+        ) || null
+    },
+
+    set(value) {
+        form.currency_id = value?.id
+            ? Number(value.id)
+            : null
+    },
 })
 
 /* ======================== Variant values ======================== */
@@ -496,38 +523,14 @@ function clearVariantValues() {
 
 /* ======================== Initial selections ======================== */
 
-/** Признак завершённой начальной инициализации. */
-let selectionsInitialized = false
+/** Признак завершённой инициализации выбранных характеристик. */
+let attributeSelectionsInitialized = false
 
-/** Исходный ID родительского товара. */
-let initialProductId = Number(
-    form.market_product_id || 0
-)
-
-/** Инициализировать товар, валюту и значения характеристик. */
-function initializeSelections() {
-    if (selectionsInitialized) {
+/** Инициализировать выбранные значения характеристик из variant.values. */
+function initializeAttributeSelections() {
+    if (attributeSelectionsInitialized || !attributeOptions.value.length) {
         return
     }
-
-    if (
-        !productOptions.value.length ||
-        !attributeOptions.value.length
-    ) {
-        return
-    }
-
-    selectedProduct.value = productOptions.value.find(
-        (item) =>
-            Number(item.id) ===
-            Number(form.market_product_id)
-    ) || null
-
-    selectedCurrency.value = currencyOptions.value.find(
-        (item) =>
-            Number(item.id) ===
-            Number(form.currency_id)
-    ) || null
 
     const selectedValues = {}
 
@@ -555,53 +558,31 @@ function initializeSelections() {
 
     selectedAttributeValues.value = selectedValues
     syncVariantValues()
-    selectionsInitialized = true
+    attributeSelectionsInitialized = true
 }
 
 /* ======================== Selection watchers ======================== */
 
-/** Запустить инициализацию после загрузки справочников. */
+/** Инициализировать выбранные характеристики после загрузки справочника. */
 watch(
-    [
-        productOptions,
-        currencyOptions,
-        attributeOptions,
-    ],
+    attributeOptions,
     () => {
-        initializeSelections()
+        initializeAttributeSelections()
     },
     {
         immediate: true,
     }
 )
 
-/** Синхронизировать выбранный товар с формой. */
-watch(selectedProduct, (value) => {
-    form.market_product_id = value?.id ?? null
-})
-
-/** Синхронизировать выбранную валюту с формой. */
-watch(selectedCurrency, (value) => {
-    form.currency_id = value?.id ?? null
-})
-
 /** Очистить характеристики после смены родительского товара. */
 watch(
     () => form.market_product_id,
     (newValue, oldValue) => {
-        if (!selectionsInitialized) {
-            return
-        }
-
         if (
-            !oldValue ||
-            Number(newValue) === Number(oldValue)
+            !oldValue
+            || Number(newValue) === Number(oldValue)
         ) {
             return
-        }
-
-        if (Number(oldValue) === initialProductId) {
-            initialProductId = 0
         }
 
         clearVariantValues()

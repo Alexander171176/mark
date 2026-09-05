@@ -798,6 +798,8 @@ class MarketProductVariant extends Model
 
     /**
      * Поиск вариантов.
+     *
+     * Контракт должен совпадать с frontend-поиском Index.vue.
      */
     public function scopeSearch(
         Builder $query,
@@ -812,118 +814,42 @@ class MarketProductVariant extends Model
 
         $locale = $locale ?: app()->getLocale();
 
-        return $query->where(function (Builder $searchQuery) use (
-            $term,
-            $locale
-        ) {
+        return $query->where(function (Builder $searchQuery) use ($term, $locale) {
             $searchQuery
-                ->where(
-                    'market_product_variants.code',
-                    'like',
-                    "%{$term}%"
-                )
-                ->orWhere(
-                    'market_product_variants.sku',
-                    'like',
-                    "%{$term}%"
-                )
-                ->orWhere(
-                    'market_product_variants.vendor_code',
-                    'like',
-                    "%{$term}%"
-                )
-                ->orWhere(
-                    'market_product_variants.barcode',
-                    'like',
-                    "%{$term}%"
-                )
-                ->orWhere(
-                    'market_product_variants.status',
-                    'like',
-                    "%{$term}%"
-                )
-                ->orWhere(
-                    'market_product_variants.moderation_note',
-                    'like',
-                    "%{$term}%"
-                )
+                ->where('market_product_variants.code', 'like', "%{$term}%")
+                ->orWhere('market_product_variants.sku', 'like', "%{$term}%")
+                ->orWhere('market_product_variants.vendor_code', 'like', "%{$term}%")
+                ->orWhere('market_product_variants.barcode', 'like', "%{$term}%")
+                ->orWhere('market_product_variants.status', 'like', "%{$term}%")
+                ->orWhere('market_product_variants.moderation_note', 'like', "%{$term}%")
                 ->orWhereHas(
                     'translations',
-                    function (Builder $translationQuery) use (
-                        $term,
-                        $locale
-                    ) {
+                    function (Builder $translationQuery) use ($term, $locale) {
                         $translationQuery
                             ->where('locale', $locale)
                             ->where(function (Builder $textQuery) use ($term) {
                                 $textQuery
-                                    ->where(
-                                        'title',
-                                        'like',
-                                        "%{$term}%"
-                                    )
-                                    ->orWhere(
-                                        'subtitle',
-                                        'like',
-                                        "%{$term}%"
-                                    )
-                                    ->orWhere(
-                                        'short',
-                                        'like',
-                                        "%{$term}%"
-                                    )
-                                    ->orWhere(
-                                        'description',
-                                        'like',
-                                        "%{$term}%"
-                                    )
-                                    ->orWhere(
-                                        'meta_title',
-                                        'like',
-                                        "%{$term}%"
-                                    )
-                                    ->orWhere(
-                                        'meta_keywords',
-                                        'like',
-                                        "%{$term}%"
-                                    )
-                                    ->orWhere(
-                                        'meta_desc',
-                                        'like',
-                                        "%{$term}%"
-                                    );
+                                    ->where('title', 'like', "%{$term}%")
+                                    ->orWhere('subtitle', 'like', "%{$term}%")
+                                    ->orWhere('short', 'like', "%{$term}%")
+                                    ->orWhere('description', 'like', "%{$term}%");
                             });
                     }
                 )
                 ->orWhereHas(
                     'product.translations',
-                    function (Builder $productTranslationQuery) use (
-                        $term,
-                        $locale
-                    ) {
+                    function (Builder $productTranslationQuery) use ($term, $locale) {
                         $productTranslationQuery
                             ->where('locale', $locale)
-                            ->where(
-                                'title',
-                                'like',
-                                "%{$term}%"
-                            );
+                            ->where('title', 'like', "%{$term}%");
                     }
                 )
                 ->orWhereHas(
-                    'product.owner',
-                    function (Builder $ownerQuery) use ($term) {
-                        $ownerQuery
-                            ->where(
-                                'name',
-                                'like',
-                                "%{$term}%"
-                            )
-                            ->orWhere(
-                                'email',
-                                'like',
-                                "%{$term}%"
-                            );
+                    'moderator',
+                    function (Builder $moderatorQuery) use ($term) {
+                        $moderatorQuery
+                            ->where('name', 'like', "%{$term}%")
+                            ->orWhere('email', 'like', "%{$term}%");
                     }
                 );
         });
@@ -932,9 +858,8 @@ class MarketProductVariant extends Model
     /**
      * Сортировка и фильтрация вариантов товаров.
      *
-     * Все ключи этого scope должны полностью совпадать с:
-     * - SortSelect.vue;
-     * - sortedVariants в Index.vue.
+     * Все ключи должны совпадать с SortSelect.vue и sortedVariants в Index.vue.
+     * Алиасы images_count и values_count должны добавляться Index query заранее.
      */
     public function scopeSortByParam(
         Builder $query,
@@ -943,25 +868,15 @@ class MarketProductVariant extends Model
     ): Builder {
         $locale = $locale ?: app()->getLocale();
 
-        /**
-         * Обычная сортировка по полю варианта.
-         */
         $orderByVariantField = function (
             string $field,
             string $direction
         ) use ($query): Builder {
             return $query
-                ->orderBy(
-                    "market_product_variants.{$field}",
-                    $direction
-                )
+                ->orderBy("market_product_variants.{$field}", $direction)
                 ->orderByDesc('market_product_variants.id');
         };
 
-        /**
-         * Добавить родительский товар для сортировки
-         * по эффективным наследуемым значениям.
-         */
         $joinProduct = function () use ($query): Builder {
             return $query
                 ->leftJoin(
@@ -970,31 +885,24 @@ class MarketProductVariant extends Model
                     '=',
                     'market_product_variants.market_product_id'
                 )
-                ->select('market_product_variants.*');
+                ->addSelect('market_product_variants.*');
         };
 
-        /**
-         * Сортировка по эффективному значению:
-         * собственное поле варианта либо поле товара.
-         */
         $orderByEffectiveField = function (
             string $field,
             string $direction
         ) use ($joinProduct): Builder {
             return $joinProduct()
                 ->orderByRaw(
-                    "COALESCE(
-                    market_product_variants.{$field},
-                    mpv_product_sort.{$field}
-                ) {$direction}"
+                    "COALESCE(market_product_variants.{$field}, mpv_product_sort.{$field}) {$direction}"
                 )
                 ->orderByDesc('market_product_variants.id');
         };
 
         return match ($sort) {
-            /** ID */
-            'idAsc' => $orderByVariantField('id', 'asc'),
-            'idDesc' => $orderByVariantField('id', 'desc'),
+            /** ID — без дополнительного tie-break по тому же полю. */
+            'idAsc' => $query->orderBy('market_product_variants.id', 'asc'),
+            'idDesc' => $query->orderBy('market_product_variants.id', 'desc'),
 
             /** Ручная сортировка */
             'sortAsc' => $orderByVariantField('sort', 'asc'),
@@ -1011,11 +919,7 @@ class MarketProductVariant extends Model
                                 '=',
                                 'market_product_variants.id'
                             )
-                            ->where(
-                                'mpvt_sort.locale',
-                                '=',
-                                $locale
-                            );
+                            ->where('mpvt_sort.locale', '=', $locale);
                     }
                 )
                 ->orderBy(
@@ -1023,7 +927,7 @@ class MarketProductVariant extends Model
                     $sort === 'titleAsc' ? 'asc' : 'desc'
                 )
                 ->orderByDesc('market_product_variants.id')
-                ->select('market_product_variants.*'),
+                ->addSelect('market_product_variants.*'),
 
             /** Название родительского товара */
             'productTitleAsc', 'productTitleDesc' => $query
@@ -1042,11 +946,7 @@ class MarketProductVariant extends Model
                                 '=',
                                 'mpv_product_title_sort.id'
                             )
-                            ->where(
-                                'mpt_variant_sort.locale',
-                                '=',
-                                $locale
-                            );
+                            ->where('mpt_variant_sort.locale', '=', $locale);
                     }
                 )
                 ->orderBy(
@@ -1054,69 +954,38 @@ class MarketProductVariant extends Model
                     $sort === 'productTitleAsc' ? 'asc' : 'desc'
                 )
                 ->orderByDesc('market_product_variants.id')
-                ->select('market_product_variants.*'),
+                ->addSelect('market_product_variants.*'),
 
             /** Торговые коды */
             'codeAsc' => $orderByVariantField('code', 'asc'),
             'codeDesc' => $orderByVariantField('code', 'desc'),
-
             'skuAsc' => $orderByVariantField('sku', 'asc'),
             'skuDesc' => $orderByVariantField('sku', 'desc'),
-
             'vendorCodeAsc' => $orderByVariantField('vendor_code', 'asc'),
             'vendorCodeDesc' => $orderByVariantField('vendor_code', 'desc'),
-
             'barcodeAsc' => $orderByVariantField('barcode', 'asc'),
             'barcodeDesc' => $orderByVariantField('barcode', 'desc'),
 
             /** Эффективные цены */
             'priceAsc' => $orderByEffectiveField('price', 'asc'),
             'priceDesc' => $orderByEffectiveField('price', 'desc'),
-
             'oldPriceAsc' => $orderByEffectiveField('old_price', 'asc'),
             'oldPriceDesc' => $orderByEffectiveField('old_price', 'desc'),
-
-            'purchasePriceAsc' => $orderByEffectiveField(
-                'purchase_price',
-                'asc'
-            ),
-
-            'purchasePriceDesc' => $orderByEffectiveField(
-                'purchase_price',
-                'desc'
-            ),
-
-            'wholesalePriceAsc' => $orderByEffectiveField(
-                'wholesale_price',
-                'asc'
-            ),
-
-            'wholesalePriceDesc' => $orderByEffectiveField(
-                'wholesale_price',
-                'desc'
-            ),
-
-            'wholesaleMinQuantityAsc' => $orderByEffectiveField(
-                'wholesale_min_quantity',
-                'asc'
-            ),
-
-            'wholesaleMinQuantityDesc' => $orderByEffectiveField(
-                'wholesale_min_quantity',
-                'desc'
-            ),
+            'purchasePriceAsc' => $orderByEffectiveField('purchase_price', 'asc'),
+            'purchasePriceDesc' => $orderByEffectiveField('purchase_price', 'desc'),
+            'wholesalePriceAsc' => $orderByEffectiveField('wholesale_price', 'asc'),
+            'wholesalePriceDesc' => $orderByEffectiveField('wholesale_price', 'desc'),
+            'wholesaleMinQuantityAsc' => $orderByEffectiveField('wholesale_min_quantity', 'asc'),
+            'wholesaleMinQuantityDesc' => $orderByEffectiveField('wholesale_min_quantity', 'desc'),
 
             /** Остаток и наличие */
             'quantityAsc' => $orderByVariantField('quantity', 'asc'),
             'quantityDesc' => $orderByVariantField('quantity', 'desc'),
-
             'inStockAsc' => $orderByVariantField('in_stock', 'asc'),
             'inStockDesc' => $orderByVariantField('in_stock', 'desc'),
-
             'inStock' => $query
                 ->inStock()
                 ->orderByDesc('market_product_variants.id'),
-
             'outOfStock' => $query
                 ->outOfStock()
                 ->orderByDesc('market_product_variants.id'),
@@ -1124,64 +993,43 @@ class MarketProductVariant extends Model
             /** Эффективные физические параметры */
             'weightAsc' => $orderByEffectiveField('weight', 'asc'),
             'weightDesc' => $orderByEffectiveField('weight', 'desc'),
-
             'lengthAsc' => $orderByEffectiveField('length', 'asc'),
             'lengthDesc' => $orderByEffectiveField('length', 'desc'),
-
             'widthAsc' => $orderByEffectiveField('width', 'asc'),
             'widthDesc' => $orderByEffectiveField('width', 'desc'),
-
             'heightAsc' => $orderByEffectiveField('height', 'asc'),
             'heightDesc' => $orderByEffectiveField('height', 'desc'),
 
             /** Основной вариант */
             'defaultAsc' => $orderByVariantField('is_default', 'asc'),
             'defaultDesc' => $orderByVariantField('is_default', 'desc'),
-
             'default' => $query
-                ->where(
-                    'market_product_variants.is_default',
-                    true
-                )
+                ->where('market_product_variants.is_default', true)
                 ->orderByDesc('market_product_variants.id'),
-
             'notDefault' => $query
-                ->where(
-                    'market_product_variants.is_default',
-                    false
-                )
+                ->where('market_product_variants.is_default', false)
                 ->orderByDesc('market_product_variants.id'),
 
-            /** Количество значений характеристик */
+            /** Количество значений и изображений */
             'valuesAsc' => $query
-                ->withCount('values')
                 ->orderBy('values_count', 'asc')
                 ->orderByDesc('market_product_variants.id'),
-
             'valuesDesc' => $query
-                ->withCount('values')
                 ->orderBy('values_count', 'desc')
                 ->orderByDesc('market_product_variants.id'),
-
-            /** Количество изображений */
             'imagesAsc' => $query
-                ->withCount('images')
                 ->orderBy('images_count', 'asc')
                 ->orderByDesc('market_product_variants.id'),
-
             'imagesDesc' => $query
-                ->withCount('images')
                 ->orderBy('images_count', 'desc')
                 ->orderByDesc('market_product_variants.id'),
 
             /** Активность */
             'activityAsc' => $orderByVariantField('activity', 'asc'),
             'activityDesc' => $orderByVariantField('activity', 'desc'),
-
             'activity' => $query
                 ->active()
                 ->orderByDesc('market_product_variants.id'),
-
             'inactive' => $query
                 ->inactive()
                 ->orderByDesc('market_product_variants.id'),
@@ -1189,110 +1037,40 @@ class MarketProductVariant extends Model
             /** Статус публикации */
             'statusAsc' => $orderByVariantField('status', 'asc'),
             'statusDesc' => $orderByVariantField('status', 'desc'),
-
             'statusDraft' => $query
-                ->where(
-                    'market_product_variants.status',
-                    'draft'
-                )
+                ->where('market_product_variants.status', 'draft')
                 ->orderByDesc('market_product_variants.id'),
-
             'statusPublished' => $query
-                ->where(
-                    'market_product_variants.status',
-                    'published'
-                )
+                ->where('market_product_variants.status', 'published')
                 ->orderByDesc('market_product_variants.id'),
-
             'statusArchived' => $query
-                ->where(
-                    'market_product_variants.status',
-                    'archived'
-                )
+                ->where('market_product_variants.status', 'archived')
                 ->orderByDesc('market_product_variants.id'),
 
             /** Статус модерации */
-            'moderationStatusAsc' => $orderByVariantField(
-                'moderation_status',
-                'asc'
-            ),
-
-            'moderationStatusDesc' => $orderByVariantField(
-                'moderation_status',
-                'desc'
-            ),
-
+            'moderationStatusAsc' => $orderByVariantField('moderation_status', 'asc'),
+            'moderationStatusDesc' => $orderByVariantField('moderation_status', 'desc'),
             'moderationPending' => $query
-                ->where(
-                    'market_product_variants.moderation_status',
-                    0
-                )
+                ->where('market_product_variants.moderation_status', 0)
                 ->orderByDesc('market_product_variants.id'),
-
             'moderationApproved' => $query
-                ->where(
-                    'market_product_variants.moderation_status',
-                    1
-                )
+                ->where('market_product_variants.moderation_status', 1)
                 ->orderByDesc('market_product_variants.id'),
-
             'moderationRejected' => $query
-                ->where(
-                    'market_product_variants.moderation_status',
-                    2
-                )
+                ->where('market_product_variants.moderation_status', 2)
                 ->orderByDesc('market_product_variants.id'),
 
             /** Даты */
-            'publishedAtAsc' => $orderByVariantField(
-                'published_at',
-                'asc'
-            ),
-
-            'publishedAtDesc' => $orderByVariantField(
-                'published_at',
-                'desc'
-            ),
-
-            'showFromAtAsc' => $orderByVariantField(
-                'show_from_at',
-                'asc'
-            ),
-
-            'showFromAtDesc' => $orderByVariantField(
-                'show_from_at',
-                'desc'
-            ),
-
-            'showToAtAsc' => $orderByVariantField(
-                'show_to_at',
-                'asc'
-            ),
-
-            'showToAtDesc' => $orderByVariantField(
-                'show_to_at',
-                'desc'
-            ),
-
-            'createdAtAsc' => $orderByVariantField(
-                'created_at',
-                'asc'
-            ),
-
-            'createdAtDesc' => $orderByVariantField(
-                'created_at',
-                'desc'
-            ),
-
-            'updatedAtAsc' => $orderByVariantField(
-                'updated_at',
-                'asc'
-            ),
-
-            'updatedAtDesc' => $orderByVariantField(
-                'updated_at',
-                'desc'
-            ),
+            'publishedAtAsc' => $orderByVariantField('published_at', 'asc'),
+            'publishedAtDesc' => $orderByVariantField('published_at', 'desc'),
+            'showFromAtAsc' => $orderByVariantField('show_from_at', 'asc'),
+            'showFromAtDesc' => $orderByVariantField('show_from_at', 'desc'),
+            'showToAtAsc' => $orderByVariantField('show_to_at', 'asc'),
+            'showToAtDesc' => $orderByVariantField('show_to_at', 'desc'),
+            'createdAtAsc' => $orderByVariantField('created_at', 'asc'),
+            'createdAtDesc' => $orderByVariantField('created_at', 'desc'),
+            'updatedAtAsc' => $orderByVariantField('updated_at', 'asc'),
+            'updatedAtDesc' => $orderByVariantField('updated_at', 'desc'),
 
             /** Сортировка по умолчанию */
             default => $query

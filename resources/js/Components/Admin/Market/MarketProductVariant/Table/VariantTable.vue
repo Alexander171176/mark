@@ -95,7 +95,7 @@ const allVariantsSelected = () => {
 /* ======================== Translations ======================== */
 
 const variantTranslation = (variant) => {
-    return variant?.translation || variant?.translations?.[0] || {}
+    return variant?.translation || {}
 }
 
 const variantTitle = (variant) => {
@@ -110,12 +110,8 @@ const variantShort = (variant) => {
     return variantTranslation(variant)?.short || ''
 }
 
-const relationTitle = (relation) => {
-    return relation?.title || relation?.display_title || relation?.translation?.title || relation?.translations?.[0]?.title || ''
-}
-
 const productTitle = (variant) => {
-    return relationTitle(variant?.product) || `ID: ${variant?.market_product_id}`
+    return variant?.product?.translation?.title || `ID: ${variant?.market_product_id}`
 }
 
 /* ======================== Images ======================== */
@@ -154,7 +150,10 @@ const variantValues = (variant) => {
 }
 
 const valueTitle = (item) => {
-    return item?.display_value || item?.value_title || item?.attribute_value?.title || item?.attribute_value?.translation?.title || item?.attribute_value?.code || ''
+    return item?.display_value
+        || item?.attribute_value?.translation?.title
+        || item?.attribute_value?.code
+        || ''
 }
 
 const attributeColor = (item) => {
@@ -359,7 +358,8 @@ const dimensionsTitle = (variant) => {
                         <div class="flex justify-center" title="Изображение">
                             <svg class="h-6 w-6 shrink-0 fill-current"
                                  viewBox="0 0 512 512">
-                                <path d="M0 96C0 60.7 28.7 32 64 32h384c35.3 0 64 28.7 64 64v320c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zm323.8 106.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S78.8 416 88 416h336c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z" ></path>
+                                <path
+                                    d="M0 96C0 60.7 28.7 32 64 32h384c35.3 0 64 28.7 64 64v320c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zm323.8 106.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S78.8 416 88 416h336c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"></path>
                             </svg>
                         </div>
                     </th>
@@ -444,7 +444,7 @@ const dimensionsTitle = (variant) => {
 
                                     <div class="mt-0.5 text-xs font-semibold
                                                 text-sky-700 dark:text-sky-300"
-                 :title="variantShort(variant) || variantSubtitle(variant) || variantTitle(variant)">
+                                         :title="variantShort(variant) || variantSubtitle(variant) || variantTitle(variant)">
                                         {{ truncateText(variantTitle(variant), 85) }}
                                     </div>
 
@@ -458,9 +458,9 @@ const dimensionsTitle = (variant) => {
 
                                         <!-- Код -->
                                         <div v-if="variant.code"
-                                              class="rounded-sm border border-slate-400
+                                             class="rounded-sm border border-slate-400
                                                      bg-slate-100 px-1 py-0.5 dark:bg-slate-800"
-                                              :title="t('code')">
+                                             :title="t('code')">
                                             {{ truncateText(variant.code, 25) }}
                                         </div>
 
@@ -471,7 +471,8 @@ const dimensionsTitle = (variant) => {
                                         >
                                             <svg class="h-5 w-5 shrink-0 fill-current"
                                                  viewBox="0 0 512 512">
-                                                <path d="M0 448V64h18v384H0zm26.857-.273V64H36v383.727h-9.143zm27.143 0V64h8.857v383.727H54zm44.857 0V64h8.857v383.727h-8.857zm36 0V64h17.714v383.727h-17.714zm44.857 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm35.715 0V64h18v383.727h-18zm44.857 0V64h18v383.727h-18zm35.999 0V64h18.001v383.727h-18.001zm36.001 0V64h18.001v383.727h-18.001zm26.857 0V64h18v383.727h-18zm45.143 0V64h26.857v383.727h-26.857zm35.714 0V64h9.143v383.727H476zm18 .273V64h18v384h-18z" />
+                                                <path
+                                                    d="M0 448V64h18v384H0zm26.857-.273V64H36v383.727h-9.143zm27.143 0V64h8.857v383.727H54zm44.857 0V64h8.857v383.727h-8.857zm36 0V64h17.714v383.727h-17.714zm44.857 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm18 0V64h8.857v383.727h-8.857zm35.715 0V64h18v383.727h-18zm44.857 0V64h18v383.727h-18zm35.999 0V64h18.001v383.727h-18.001zm36.001 0V64h18.001v383.727h-18.001zm26.857 0V64h18v383.727h-18zm45.143 0V64h26.857v383.727h-26.857zm35.714 0V64h9.143v383.727H476zm18 .273V64h18v384h-18z" />
                                             </svg>
                                             <span
                                                 v-if="variant.barcode"
@@ -488,18 +489,18 @@ const dimensionsTitle = (variant) => {
                                         </div>
 
                                         <div v-if="variant.sku"
-                                              class="rounded-sm border border-blue-400 bg-blue-100
+                                             class="rounded-sm border border-blue-400 bg-blue-100
                                                      px-1 py-0.5 text-blue-700 dark:bg-blue-900/40
                                                      dark:text-blue-300"
-                                              :title="t('sku')">
+                                             :title="t('sku')">
                                             SKU: {{ truncateText(variant.sku, 50) }}
                                         </div>
 
                                         <div v-if="variant.vendor_code"
-                                              class="rounded-sm border border-violet-400
+                                             class="rounded-sm border border-violet-400
                                                      bg-violet-100 px-1 py-0.5 text-violet-700
                                                      dark:bg-violet-900/40 dark:text-violet-300"
-                                              :title="t('vendorCode')">
+                                             :title="t('vendorCode')">
                                             {{ truncateText(variant.vendor_code, 25) }}
                                         </div>
                                     </div>
@@ -567,19 +568,19 @@ const dimensionsTitle = (variant) => {
                                 <div class="text-right">
                                     <div class="text-sm font-bold
                                                 text-teal-700 dark:text-teal-300">
-                            {{ formatMoney(variant.effective_price, effectiveCurrency(variant)) }}
+                                        {{ formatMoney(variant.effective_price, effectiveCurrency(variant)) }}
                                     </div>
 
                                     <div v-if="variant.effective_old_price"
                                          class="text-sm text-slate-400 line-through">
-                        {{ formatMoney(variant.effective_old_price, effectiveCurrency(variant)) }}
+                                        {{ formatMoney(variant.effective_old_price, effectiveCurrency(variant)) }}
                                     </div>
 
                                     <div v-if="variant.effective_wholesale_price"
                                          class="mt-0.5 text-[10px]
                                                 text-blue-700 dark:text-blue-300"
                                          :title="t('wholesalePrice')">
-                    {{ formatMoney(variant.effective_wholesale_price, effectiveCurrency(variant)) }}
+                                        {{ formatMoney(variant.effective_wholesale_price, effectiveCurrency(variant)) }}
                                         <span v-if="variant.effective_wholesale_min_quantity">
                                             × {{ variant.effective_wholesale_min_quantity }}
                                         </span>
@@ -600,7 +601,7 @@ const dimensionsTitle = (variant) => {
                                      :class="variant.in_stock && variant.has_stock ?
                                      'text-amber-600 dark:text-amber-300' :
                                      'text-rose-600 dark:text-rose-300'">
-                        {{ variant.in_stock && variant.has_stock ? t('inStock') : t('outOfStock') }}
+                                    {{ variant.in_stock && variant.has_stock ? t('inStock') : t('outOfStock') }}
                                 </div>
                             </td>
 
@@ -624,10 +625,11 @@ const dimensionsTitle = (variant) => {
                                         @click="emit('make-default', variant)"
                                     >
                                         <svg class="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
-                                            <path d="m12 2.5 2.93 5.94 6.56.95-4.75 4.63 1.12 6.54L12 17.48l-5.86 3.08 1.12-6.54-4.75-4.63 6.56-.95L12 2.5Z" />
+                                            <path
+                                                d="m12 2.5 2.93 5.94 6.56.95-4.75 4.63 1.12 6.54L12 17.48l-5.86 3.08 1.12-6.54-4.75-4.63 6.56-.95L12 2.5Z" />
                                         </svg>
 
-                                {{ variant.is_default ? t('defaultVariant') : t('makePrimary') }}
+                                        {{ variant.is_default ? t('defaultVariant') : t('makePrimary') }}
                                     </button>
 
                                     <div class="flex flex-col items-center justify-center gap-1">
@@ -641,7 +643,7 @@ const dimensionsTitle = (variant) => {
                                             class="rounded-sm border px-2 py-1 text-[9px]
                                                    font-semibold"
                                             :class="moderationBadge(variant.moderation_status).class"
-:title="variant.moderation_note && variant.moderated_at ? `${variant.moderation_note} [${formatDate(variant.moderated_at)}]` : variant.moderation_note || null"
+                                            :title="variant.moderation_note && variant.moderated_at ? `${variant.moderation_note} [${formatDate(variant.moderated_at)}]` : variant.moderation_note || null"
                                         >
                                             {{ moderationBadge(variant.moderation_status).text }}
                                         </span>

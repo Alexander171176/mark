@@ -8,6 +8,7 @@ use App\Http\Resources\Admin\Finance\Currency\CurrencyResource;
 use App\Http\Resources\Admin\Market\MarketAttribute\MarketAttributeResource;
 use App\Http\Resources\Admin\Market\MarketProduct\MarketProductSharedResource;
 use App\Http\Resources\Admin\Market\MarketProductVariant\MarketProductVariantResource;
+use App\Http\Resources\Admin\Market\MarketProductVariant\MarketProductVariantSharedResource;
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\Market\MarketAttribute\MarketAttribute;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
@@ -93,7 +94,15 @@ class MarketProductVariantController extends BaseMarketAdminController
             $this->productQuery()->findOrFail($productId);
         }
 
-        $variantsCount = $this->indexQuery($productId)->count();
+        $variantsCount = $this->baseQuery()
+            ->when(
+                $productId !== null,
+                fn(Builder $query) => $query->where(
+                    'market_product_variants.market_product_id',
+                    $productId
+                )
+            )
+            ->count();
 
         $useServerProcessing = app(ProcessingModeService::class)->shouldUseServer(
             $processingMode,
@@ -120,7 +129,7 @@ class MarketProductVariantController extends BaseMarketAdminController
                 'adminMarketProductVariantsDefaultSort' => $defaultSort,
                 'adminMarketProductVariantsProcessingMode' => $processingMode,
 
-                'variants' => MarketProductVariantResource::collection($variants),
+                'variants' => MarketProductVariantSharedResource::collection($variants),
                 'variantsCount' => $variantsCount,
 
                 'sortParam' => $sortParam,
@@ -130,7 +139,7 @@ class MarketProductVariantController extends BaseMarketAdminController
                     'market_product_id' => $productId,
                 ],
 
-                'products' => $this->productsForFilter(),
+                'products' => $this->productsForFilter($currentLocale),
                 'currentProductId' => $productId,
             ]);
         } catch (Throwable $e) {
@@ -283,18 +292,28 @@ class MarketProductVariantController extends BaseMarketAdminController
 
         $variant = $this->baseQuery()
             ->with([
-                'moderator',
+                /** Все собственные переводы нужны TranslationTabs. */
                 'translations',
-                'images',
+
+                /** Изображения варианта используют Spatie MediaLibrary. */
+                'images.media',
+
+                /** Собственная валюта варианта. */
                 'currency',
 
-                'product.translations',
+                /**
+                 * Родительский товар нужен для эффективных наследуемых
+                 * значений полного Resource. Его перевод — только current locale.
+                 */
+                'product.translations' => fn($query) =>
+                $query->where('locale', $currentLocale),
                 'product.currency',
-                'product.images',
 
-                'values.attribute.translations',
-                'values.attribute.group.translations',
-                'values.attributeValue.translations',
+                /**
+                 * Для инициализации формы достаточно ID строк значений.
+                 * Подписи характеристик приходят из sharedSelects().
+                 */
+                'values',
             ])
             ->withCount([
                 'images',
@@ -575,27 +594,23 @@ class MarketProductVariantController extends BaseMarketAdminController
     /**
      * Общие справочники для создания и редактирования.
      *
-     * @return array<string, mixed>
-     */
-    /**
-     * Общие справочники для создания и редактирования.
+     * Все переводимые справочники загружаются только для текущей локали.
      *
      * @return array<string, mixed>
      */
     private function sharedSelects(?int $selectedProductId = null): array
     {
+        $locale = app()->getLocale();
+
         $products = $this->productQuery()
             ->with([
-                'translations',
+                'translations' => fn($query) =>
+                $query->where('locale', $locale),
                 'currency',
-                'images',
             ])
-            ->withCount([
-                'variants',
-                'images',
-            ])
-            ->orderBy('sort')
-            ->orderByDesc('id')
+            ->withCount('variants')
+            ->orderBy('market_products.sort')
+            ->orderByDesc('market_products.id')
             ->get();
 
         $currencies = Currency::query()
@@ -604,24 +619,30 @@ class MarketProductVariantController extends BaseMarketAdminController
             ->get();
 
         $attributes = MarketAttribute::query()
-            ->where('use_for_variants', true)
-            ->whereIn('type', [
+            ->where('market_attributes.use_for_variants', true)
+            ->whereIn('market_attributes.type', [
                 'select',
                 'multiselect',
             ])
             ->with([
-                'translations',
-                'group.translations',
+                'translations' => fn($query) =>
+                $query->where('locale', $locale),
 
-                'values' => function ($query): void {
+                'group.translations' => fn($query) =>
+                $query->where('locale', $locale),
+
+                'values' => function ($query) use ($locale): void {
                     $query
-                        ->with('translations')
-                        ->orderBy('sort')
-                        ->orderBy('id');
+                        ->with([
+                            'translations' => fn($translationQuery) =>
+                            $translationQuery->where('locale', $locale),
+                        ])
+                        ->orderBy('market_attribute_values.sort')
+                        ->orderBy('market_attribute_values.id');
                 },
             ])
-            ->orderBy('sort')
-            ->orderByDesc('id')
+            ->orderBy('market_attributes.sort')
+            ->orderByDesc('market_attributes.id')
             ->get();
 
         return [
@@ -632,9 +653,16 @@ class MarketProductVariantController extends BaseMarketAdminController
         ];
     }
 
-    /** Базовый запрос списка вариантов. */
-    private function indexQuery(?int $productId = null): Builder
-    {
+    /**
+     * Базовый запрос списка вариантов.
+     *
+     * Index получает только текущую локаль переводов и все media
+     * загружает пакетно, чтобы исключить N+1 Spatie MediaLibrary.
+     */
+    private function indexQuery(
+        string $locale,
+        ?int $productId = null
+    ): Builder {
         return $this->baseQuery()
             ->when(
                 $productId !== null,
@@ -644,17 +672,25 @@ class MarketProductVariantController extends BaseMarketAdminController
                 )
             )
             ->with([
-                'moderator',
-                'translations',
-                'images',
+                'moderator' => fn($query) =>
+                $query->select('id', 'name', 'email', 'profile_photo_path'),
+
+                'translations' => fn($query) =>
+                $query->where('locale', $locale),
+
+                'images.media',
+
                 'currency',
 
-                'product.translations',
+                'product.translations' => fn($query) =>
+                $query->where('locale', $locale),
                 'product.currency',
-                'product.images',
 
-                'values.attribute.translations',
-                'values.attributeValue.translations',
+                'values.attribute.translations' => fn($query) =>
+                $query->where('locale', $locale),
+
+                'values.attributeValue.translations' => fn($query) =>
+                $query->where('locale', $locale),
             ])
             ->withCount([
                 'images',
@@ -672,7 +708,7 @@ class MarketProductVariantController extends BaseMarketAdminController
         ?int $productId = null
     ): LengthAwarePaginator|Collection
     {
-        $query = $this->indexQuery($productId);
+        $query = $this->indexQuery($locale, $productId);
 
         if ($useServerProcessing) {
             return $query
@@ -692,21 +728,28 @@ class MarketProductVariantController extends BaseMarketAdminController
      *
      * @return array<int, array<string, mixed>>
      */
-    private function productsForFilter(): array
+    private function productsForFilter(string $locale): array
     {
         return $this->productQuery()
-            ->with('translations')
+            ->with([
+                'translations' => fn($query) =>
+                $query->where('locale', $locale),
+            ])
             ->withCount('variants')
-            ->orderBy('sort')
-            ->orderByDesc('id')
+            ->orderBy('market_products.sort')
+            ->orderByDesc('market_products.id')
             ->get()
             ->map(function (MarketProduct $product): array {
+                $translation = $product->relationLoaded('translations')
+                    ? $product->translations->first()
+                    : null;
+
                 return [
-                    'id' => (int)$product->id,
-                    'title' => $product->getTranslatedTitle(),
+                    'id' => (int) $product->id,
+                    'title' => $translation?->title,
                     'code' => $product->code,
                     'sku' => $product->sku,
-                    'variants_count' => (int)$product->variants_count,
+                    'variants_count' => (int) $product->variants_count,
                 ];
             })
             ->values()

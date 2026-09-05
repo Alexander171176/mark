@@ -143,10 +143,7 @@ class MarketProduct extends Model
     /** Валюта товара */
     public function currency(): BelongsTo
     {
-        return $this->belongsTo(
-            Currency::class,
-            'currency_id'
-        );
+        return $this->belongsTo(Currency::class, 'currency_id');
     }
 
     /** Создатель / владелец товара */
@@ -182,19 +179,19 @@ class MarketProduct extends Model
     /** Переводы товара */
     public function translations(): HasMany
     {
-        return $this->hasMany(
-            MarketProductTranslation::class,
-            'market_product_id'
-        );
+        return $this->hasMany(MarketProductTranslation::class, 'market_product_id');
     }
 
-    /** Текущий перевод товара */
+    /**
+     * Текущий перевод товара.
+     *
+     * Сохраняем relation для публичных и внешних сценариев.
+     * Admin Index использует translations, заранее отфильтрованные Controller по locale.
+     */
     public function translation(): HasOne
     {
-        return $this->hasOne(
-            MarketProductTranslation::class,
-            'market_product_id'
-        )->where('locale', app()->getLocale());
+        return $this->hasOne(MarketProductTranslation::class, 'market_product_id')
+            ->where('locale', app()->getLocale());
     }
 
     /** Перевод с fallback */
@@ -246,7 +243,7 @@ class MarketProduct extends Model
             ->orderByPivot('order');
     }
 
-    /** Основная категория товара */
+    /** Основные категории товара */
     public function mainCategories(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -255,10 +252,7 @@ class MarketProduct extends Model
             'market_product_id',
             'market_category_id'
         )
-            ->withPivot([
-                'main',
-                'order',
-            ])
+            ->withPivot(['main', 'order'])
             ->wherePivot('main', true)
             ->orderByPivot('order');
     }
@@ -295,42 +289,29 @@ class MarketProduct extends Model
      */
     public function variants(): HasMany
     {
-        return $this->hasMany(
-            MarketProductVariant::class,
-            'market_product_id'
-        )
-            ->orderBy('sort')
-            ->orderByDesc('id');
+        return $this->hasMany(MarketProductVariant::class, 'market_product_id')
+            ->orderBy('market_product_variants.sort')
+            ->orderByDesc('market_product_variants.id');
     }
 
-    /**
-     * Основной вариант товара.
-     */
+    /** Основной вариант товара */
     public function defaultVariant(): HasOne
     {
-        return $this->hasOne(
-            MarketProductVariant::class,
-            'market_product_id'
-        )
-            ->where('is_default', true)
-            ->orderBy('sort')
-            ->orderByDesc('id');
+        return $this->hasOne(MarketProductVariant::class, 'market_product_id')
+            ->where('market_product_variants.is_default', true)
+            ->orderBy('market_product_variants.sort')
+            ->orderByDesc('market_product_variants.id');
     }
 
-    /**
-     * Публично доступные варианты товара.
-     */
+    /** Публично доступные варианты товара */
     public function publicVariants(): HasMany
     {
-        return $this->hasMany(
-            MarketProductVariant::class,
-            'market_product_id'
-        )
+        return $this->hasMany(MarketProductVariant::class, 'market_product_id')
             ->approved()
             ->published()
             ->inShowWindow()
-            ->orderBy('sort')
-            ->orderByDesc('id');
+            ->orderBy('market_product_variants.sort')
+            ->orderByDesc('market_product_variants.id');
     }
 
     /**
@@ -342,27 +323,18 @@ class MarketProduct extends Model
      */
     public function bundleItems(): HasMany
     {
-        return $this->hasMany(
-            MarketProductBundleItem::class,
-            'market_product_id'
-        )
-            ->orderBy('sort')
-            ->orderBy('id');
+        return $this->hasMany(MarketProductBundleItem::class, 'market_product_id')
+            ->orderBy('market_product_bundle_items.sort')
+            ->orderBy('market_product_bundle_items.id');
     }
 
-    /**
-     * Активные позиции комплектов,
-     * в которых используется товар.
-     */
+    /** Активные позиции комплектов, в которых используется товар */
     public function activeBundleItems(): HasMany
     {
-        return $this->hasMany(
-            MarketProductBundleItem::class,
-            'market_product_id'
-        )
-            ->where('activity', true)
-            ->orderBy('sort')
-            ->orderBy('id');
+        return $this->hasMany(MarketProductBundleItem::class, 'market_product_id')
+            ->where('market_product_bundle_items.activity', true)
+            ->orderBy('market_product_bundle_items.sort')
+            ->orderBy('market_product_bundle_items.id');
     }
 
     /**
@@ -394,10 +366,7 @@ class MarketProduct extends Model
             ->orderByPivot('sort');
     }
 
-    /**
-     * Только активные комплекты,
-     * в состав которых входит товар.
-     */
+    /** Только активные комплекты, в состав которых входит товар */
     public function activeProductBundles(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -424,19 +393,13 @@ class MarketProduct extends Model
     /** Отзывы товара */
     public function reviews(): MorphMany
     {
-        return $this->morphMany(
-            Review::class,
-            'reviewable'
-        );
+        return $this->morphMany(Review::class, 'reviewable');
     }
 
     /** Лайки товара */
     public function likes(): HasMany
     {
-        return $this->hasMany(
-            MarketProductLike::class,
-            'market_product_id'
-        );
+        return $this->hasMany(MarketProductLike::class, 'market_product_id');
     }
 
     /** Пользователи, лайкнувшие товар */
@@ -450,9 +413,7 @@ class MarketProduct extends Model
         )->withTimestamps();
     }
 
-    /**
-     * История просмотров товара зарегистрированными пользователями.
-     */
+    /** История просмотров товара зарегистрированными пользователями */
     public function recentlyViewedByUsers(): HasMany
     {
         return $this->hasMany(
@@ -483,8 +444,7 @@ class MarketProduct extends Model
             'market_product_related',
             'related_product_id',
             'market_product_id'
-        )
-            ->withPivot(['type', 'order', 'activity']);
+        )->withPivot(['type', 'order', 'activity']);
     }
 
     /* ======================== Helpers ======================== */
@@ -546,9 +506,7 @@ class MarketProduct extends Model
             && ! is_null($this->wholesale_min_quantity);
     }
 
-    /**
-     * Есть ли у товара варианты.
-     */
+    /** Есть ли у товара варианты */
     public function hasVariants(): bool
     {
         return $this->relationLoaded('variants')
@@ -556,9 +514,7 @@ class MarketProduct extends Model
             : $this->variants()->exists();
     }
 
-    /**
-     * Количество вариантов товара.
-     */
+    /** Количество вариантов товара */
     public function variantsCount(): int
     {
         if (isset($this->variants_count)) {
@@ -570,9 +526,7 @@ class MarketProduct extends Model
             : $this->variants()->count();
     }
 
-    /**
-     * Получить основной вариант товара.
-     */
+    /** Получить основной вариант товара */
     public function getDefaultVariant(): ?MarketProductVariant
     {
         if ($this->relationLoaded('defaultVariant')) {
@@ -590,9 +544,7 @@ class MarketProduct extends Model
             : null;
     }
 
-    /**
-     * Есть ли у товара доступные варианты.
-     */
+    /** Есть ли у товара доступные варианты */
     public function hasAvailableVariants(): bool
     {
         return $this->variants()
@@ -601,9 +553,7 @@ class MarketProduct extends Model
             ->exists();
     }
 
-    /**
-     * Используется ли товар хотя бы в одном комплекте.
-     */
+    /** Используется ли товар хотя бы в одном комплекте */
     public function isUsedInBundles(): bool
     {
         if (isset($this->bundle_items_count)) {
@@ -615,9 +565,7 @@ class MarketProduct extends Model
             : $this->bundleItems()->exists();
     }
 
-    /**
-     * Количество позиций комплектов с этим товаром.
-     */
+    /** Количество позиций комплектов с этим товаром */
     public function bundleItemsCount(): int
     {
         if (isset($this->bundle_items_count)) {
@@ -631,141 +579,95 @@ class MarketProduct extends Model
 
     /* ======================== Scopes ======================== */
 
-    /**
-     * Только товары, имеющие варианты.
-     */
+    /** Только товары, имеющие варианты */
     public function scopeHasVariants(Builder $query): Builder
     {
         return $query->whereHas('variants');
     }
 
-    /**
-     * Только товары без вариантов.
-     */
+    /** Только товары без вариантов */
     public function scopeWithoutVariants(Builder $query): Builder
     {
         return $query->whereDoesntHave('variants');
     }
 
-    /**
-     * Только товары с доступными вариантами.
-     */
+    /** Только товары с доступными вариантами */
     public function scopeHasAvailableVariants(Builder $query): Builder
     {
-        return $query->whereHas(
-            'variants',
-            function (Builder $variantQuery) {
-                $variantQuery
-                    ->active()
-                    ->inStock();
-            }
-        );
+        return $query->whereHas('variants', function (Builder $variantQuery) {
+            $variantQuery->active()->inStock();
+        });
     }
 
     /** Сортировка по умолчанию */
     public function scopeOrdered(Builder $query): Builder
     {
         return $query
-            ->orderBy('market_products.sort')
+            ->orderBy('market_products.sort', 'asc')
             ->orderByDesc('market_products.id');
     }
 
     /** Только активные */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where(
-            'market_products.activity',
-            true
-        );
+        return $query->where('market_products.activity', true);
     }
 
     /** Только опубликованные */
     public function scopePublished(Builder $query): Builder
     {
         return $query
-            ->where(
-                'market_products.status',
-                'published'
-            )
-            ->where(
-                'market_products.activity',
-                true
-            )
-            ->whereNotNull(
-                'market_products.published_at'
-            );
+            ->where('market_products.status', 'published')
+            ->where('market_products.activity', true)
+            ->whereNotNull('market_products.published_at');
     }
 
     /** Только одобренные */
     public function scopeApproved(Builder $query): Builder
     {
-        return $query->where(
-            'market_products.moderation_status',
-            1
-        );
+        return $query->where('market_products.moderation_status', 1);
     }
 
     /** Только товары в наличии */
     public function scopeInStock(Builder $query): Builder
     {
-        return $query->where(
-            'market_products.in_stock',
-            true
-        );
+        return $query->where('market_products.in_stock', true);
     }
 
     /** Новинки */
     public function scopeNew(Builder $query): Builder
     {
-        return $query->where(
-            'market_products.is_new',
-            true
-        );
+        return $query->where('market_products.is_new', true);
     }
 
     /** Хиты продаж */
     public function scopeHit(Builder $query): Builder
     {
-        return $query->where(
-            'market_products.is_hit',
-            true
-        );
+        return $query->where('market_products.is_hit', true);
     }
 
     /** Распродажа */
     public function scopeSale(Builder $query): Builder
     {
-        return $query->where(
-            'market_products.is_sale',
-            true
-        );
+        return $query->where('market_products.is_sale', true);
     }
 
     /** Левая рекламная зона */
     public function scopeLeft(Builder $query): Builder
     {
-        return $query->where(
-            'market_products.left',
-            true
-        );
+        return $query->where('market_products.left', true);
     }
 
     /** Главная рекламная зона */
     public function scopeMain(Builder $query): Builder
     {
-        return $query->where(
-            'market_products.main',
-            true
-        );
+        return $query->where('market_products.main', true);
     }
 
     /** Правая рекламная зона */
     public function scopeRight(Builder $query): Builder
     {
-        return $query->where(
-            'market_products.right',
-            true
-        );
+        return $query->where('market_products.right', true);
     }
 
     /** Окно показа */
@@ -774,19 +676,11 @@ class MarketProduct extends Model
         return $query
             ->where(function (Builder $q) {
                 $q->whereNull('market_products.show_from_at')
-                    ->orWhere(
-                        'market_products.show_from_at',
-                        '<=',
-                        now()
-                    );
+                    ->orWhere('market_products.show_from_at', '<=', now());
             })
             ->where(function (Builder $q) {
                 $q->whereNull('market_products.show_to_at')
-                    ->orWhere(
-                        'market_products.show_to_at',
-                        '>=',
-                        now()
-                    );
+                    ->orWhere('market_products.show_to_at', '>=', now());
             });
     }
 
@@ -799,7 +693,12 @@ class MarketProduct extends Model
             ->inShowWindow();
     }
 
-    /** Поиск по товару */
+    /**
+     * Поиск товаров в Admin.
+     *
+     * Семантика должна полностью совпадать
+     * с frontend-поиском Index.vue.
+     */
     public function scopeSearch(
         Builder $query,
         ?string $term,
@@ -821,41 +720,54 @@ class MarketProduct extends Model
                 ->orWhere('market_products.status', 'like', "%{$term}%")
                 ->orWhere('market_products.moderation_note', 'like', "%{$term}%")
 
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
+                ->orWhereHas('translations', function (Builder $translationQuery) use ($term, $locale) {
+                    $translationQuery
+                        ->where('locale', $locale)
+                        ->where(function (Builder $translationSearch) use ($term) {
+                            $translationSearch
+                                ->where('title', 'like', "%{$term}%")
                                 ->orWhere('subtitle', 'like', "%{$term}%")
                                 ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%")
-                                ->orWhere('meta_title', 'like', "%{$term}%")
-                                ->orWhere('meta_keywords', 'like', "%{$term}%")
-                                ->orWhere('meta_desc', 'like', "%{$term}%");
+                                ->orWhere('description', 'like', "%{$term}%");
                         });
                 })
 
-                ->orWhereHas('company.translations', function (Builder $cq) use ($term, $locale) {
-                    $cq->where('locale', $locale)
+                ->orWhereHas('company.translations', function (Builder $companyQuery) use ($term, $locale) {
+                    $companyQuery
+                        ->where('locale', $locale)
                         ->where('title', 'like', "%{$term}%");
                 })
 
-                ->orWhereHas('shop.translations', function (Builder $sq) use ($term, $locale) {
-                    $sq->where('locale', $locale)
+                ->orWhereHas('shop.translations', function (Builder $shopQuery) use ($term, $locale) {
+                    $shopQuery
+                        ->where('locale', $locale)
                         ->where('title', 'like', "%{$term}%");
                 })
 
-                ->orWhereHas('brand.translations', function (Builder $bq) use ($term, $locale) {
-                    $bq->where('locale', $locale)
+                ->orWhereHas('brand.translations', function (Builder $brandQuery) use ($term, $locale) {
+                    $brandQuery
+                        ->where('locale', $locale)
                         ->where('title', 'like', "%{$term}%");
                 })
 
-                ->orWhereHas('owner', function (Builder $oq) use ($term) {
-                    $oq->where('name', 'like', "%{$term}%")
+                ->orWhereHas('owner', function (Builder $ownerQuery) use ($term) {
+                    $ownerQuery
+                        ->where('name', 'like', "%{$term}%")
                         ->orWhere('email', 'like', "%{$term}%");
                 });
         });
     }
 
+    /**
+     * Сортировка административного списка.
+     *
+     * Важно:
+     * - все собственные колонки квалифицированы;
+     * - все non-ID сортировки получают tie-break ID DESC;
+     * - JOIN-сортировки используют addSelect();
+     * - count-сортировки предполагают, что Index Controller
+     *   уже добавил соответствующие withCount().
+     */
     public function scopeSortByParam(
         Builder $query,
         ?string $sort,
@@ -867,366 +779,254 @@ class MarketProduct extends Model
             'idAsc' => $query->orderBy('market_products.id', 'asc'),
             'idDesc' => $query->orderBy('market_products.id', 'desc'),
 
-            'sortAsc' => $query
-                ->orderBy('market_products.sort', 'asc')
-                ->orderByDesc('market_products.id'),
-
-            'sortDesc' => $query
-                ->orderBy('market_products.sort', 'desc')
-                ->orderByDesc('market_products.id'),
+            'sortAsc' => $query->orderBy('market_products.sort', 'asc')->orderByDesc('market_products.id'),
+            'sortDesc' => $query->orderBy('market_products.sort', 'desc')->orderByDesc('market_products.id'),
 
             'titleAsc' => $query
                 ->leftJoin('market_product_translations as mpt_sort', function ($join) use ($locale) {
                     $join->on('mpt_sort.market_product_id', '=', 'market_products.id')
                         ->where('mpt_sort.locale', '=', $locale);
                 })
+                ->addSelect('market_products.*')
                 ->orderBy('mpt_sort.title', 'asc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             'titleDesc' => $query
                 ->leftJoin('market_product_translations as mpt_sort', function ($join) use ($locale) {
                     $join->on('mpt_sort.market_product_id', '=', 'market_products.id')
                         ->where('mpt_sort.locale', '=', $locale);
                 })
+                ->addSelect('market_products.*')
                 ->orderBy('mpt_sort.title', 'desc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
-
-            'urlAsc' => $query->orderBy('market_products.url', 'asc')
-                ->orderByDesc('market_products.id'),
-            'urlDesc' => $query->orderBy('market_products.url', 'desc')
                 ->orderByDesc('market_products.id'),
 
-            'skuAsc' => $query->orderBy('market_products.sku', 'asc')
-                ->orderByDesc('market_products.id'),
-            'skuDesc' => $query->orderBy('market_products.sku', 'desc')
-                ->orderByDesc('market_products.id'),
+            'urlAsc' => $query->orderBy('market_products.url', 'asc')->orderByDesc('market_products.id'),
+            'urlDesc' => $query->orderBy('market_products.url', 'desc')->orderByDesc('market_products.id'),
 
-            'vendorCodeAsc' => $query->orderBy('market_products.vendor_code', 'asc')
-                ->orderByDesc('market_products.id'),
-            'vendorCodeDesc' => $query->orderBy('market_products.vendor_code', 'desc')
-                ->orderByDesc('market_products.id'),
+            'skuAsc' => $query->orderBy('market_products.sku', 'asc')->orderByDesc('market_products.id'),
+            'skuDesc' => $query->orderBy('market_products.sku', 'desc')->orderByDesc('market_products.id'),
 
-            'barcodeAsc' => $query->orderBy('market_products.barcode', 'asc')
-                ->orderByDesc('market_products.id'),
-            'barcodeDesc' => $query->orderBy('market_products.barcode', 'desc')
-                ->orderByDesc('market_products.id'),
+            'vendorCodeAsc' => $query->orderBy('market_products.vendor_code', 'asc')->orderByDesc('market_products.id'),
+            'vendorCodeDesc' => $query->orderBy('market_products.vendor_code', 'desc')->orderByDesc('market_products.id'),
 
-            'priceAsc' => $query->orderBy('market_products.price', 'asc')
-                ->orderByDesc('market_products.id'),
-            'priceDesc' => $query->orderBy('market_products.price', 'desc')
-                ->orderByDesc('market_products.id'),
+            'barcodeAsc' => $query->orderBy('market_products.barcode', 'asc')->orderByDesc('market_products.id'),
+            'barcodeDesc' => $query->orderBy('market_products.barcode', 'desc')->orderByDesc('market_products.id'),
 
-            'oldPriceAsc' => $query->orderBy('market_products.old_price', 'asc')
-                ->orderByDesc('market_products.id'),
-            'oldPriceDesc' => $query->orderBy('market_products.old_price', 'desc')
-                ->orderByDesc('market_products.id'),
+            'priceAsc' => $query->orderBy('market_products.price', 'asc')->orderByDesc('market_products.id'),
+            'priceDesc' => $query->orderBy('market_products.price', 'desc')->orderByDesc('market_products.id'),
 
-            'purchasePriceAsc' => $query->orderBy('market_products.purchase_price', 'asc')
-                ->orderByDesc('market_products.id'),
-            'purchasePriceDesc' => $query->orderBy('market_products.purchase_price', 'desc')
-                ->orderByDesc('market_products.id'),
+            'oldPriceAsc' => $query->orderBy('market_products.old_price', 'asc')->orderByDesc('market_products.id'),
+            'oldPriceDesc' => $query->orderBy('market_products.old_price', 'desc')->orderByDesc('market_products.id'),
 
-            'wholesalePriceAsc' => $query->orderBy('market_products.wholesale_price', 'asc')
-                ->orderByDesc('market_products.id'),
-            'wholesalePriceDesc' => $query->orderBy('market_products.wholesale_price', 'desc')
-                ->orderByDesc('market_products.id'),
+            'purchasePriceAsc' => $query->orderBy('market_products.purchase_price', 'asc')->orderByDesc('market_products.id'),
+            'purchasePriceDesc' => $query->orderBy('market_products.purchase_price', 'desc')->orderByDesc('market_products.id'),
 
-            'quantityAsc' => $query->orderBy('market_products.quantity', 'asc')
-                ->orderByDesc('market_products.id'),
-            'quantityDesc' => $query->orderBy('market_products.quantity', 'desc')
-                ->orderByDesc('market_products.id'),
+            'wholesalePriceAsc' => $query->orderBy('market_products.wholesale_price', 'asc')->orderByDesc('market_products.id'),
+            'wholesalePriceDesc' => $query->orderBy('market_products.wholesale_price', 'desc')->orderByDesc('market_products.id'),
 
-            'inStockAsc' => $query->orderBy('market_products.in_stock', 'asc')
-                ->orderByDesc('market_products.id'),
-            'inStockDesc' => $query->orderBy('market_products.in_stock', 'desc')
-                ->orderByDesc('market_products.id'),
-            'inStock' => $query->where('market_products.in_stock', true)
-                ->orderByDesc('market_products.id'),
-            'outOfStock' => $query->where('market_products.in_stock', false)
-                ->orderByDesc('market_products.id'),
+            'quantityAsc' => $query->orderBy('market_products.quantity', 'asc')->orderByDesc('market_products.id'),
+            'quantityDesc' => $query->orderBy('market_products.quantity', 'desc')->orderByDesc('market_products.id'),
 
-            'weightAsc' => $query->orderBy('market_products.weight', 'asc')
-                ->orderByDesc('market_products.id'),
-            'weightDesc' => $query->orderBy('market_products.weight', 'desc')
-                ->orderByDesc('market_products.id'),
+            'inStockAsc' => $query->orderBy('market_products.in_stock', 'asc')->orderByDesc('market_products.id'),
+            'inStockDesc' => $query->orderBy('market_products.in_stock', 'desc')->orderByDesc('market_products.id'),
+            'inStock' => $query->where('market_products.in_stock', true)->orderByDesc('market_products.id'),
+            'outOfStock' => $query->where('market_products.in_stock', false)->orderByDesc('market_products.id'),
 
-            'lengthAsc' => $query->orderBy('market_products.length', 'asc')
-                ->orderByDesc('market_products.id'),
-            'lengthDesc' => $query->orderBy('market_products.length', 'desc')
-                ->orderByDesc('market_products.id'),
+            'weightAsc' => $query->orderBy('market_products.weight', 'asc')->orderByDesc('market_products.id'),
+            'weightDesc' => $query->orderBy('market_products.weight', 'desc')->orderByDesc('market_products.id'),
 
-            'widthAsc' => $query->orderBy('market_products.width', 'asc')
-                ->orderByDesc('market_products.id'),
-            'widthDesc' => $query->orderBy('market_products.width', 'desc')
-                ->orderByDesc('market_products.id'),
+            'lengthAsc' => $query->orderBy('market_products.length', 'asc')->orderByDesc('market_products.id'),
+            'lengthDesc' => $query->orderBy('market_products.length', 'desc')->orderByDesc('market_products.id'),
 
-            'heightAsc' => $query->orderBy('market_products.height', 'asc')
-                ->orderByDesc('market_products.id'),
-            'heightDesc' => $query->orderBy('market_products.height', 'desc')
-                ->orderByDesc('market_products.id'),
+            'widthAsc' => $query->orderBy('market_products.width', 'asc')->orderByDesc('market_products.id'),
+            'widthDesc' => $query->orderBy('market_products.width', 'desc')->orderByDesc('market_products.id'),
 
-            'viewsAsc' => $query->orderBy('market_products.views', 'asc')
-                ->orderByDesc('market_products.id'),
-            'viewsDesc' => $query->orderBy('market_products.views', 'desc')
-                ->orderByDesc('market_products.id'),
+            'heightAsc' => $query->orderBy('market_products.height', 'asc')->orderByDesc('market_products.id'),
+            'heightDesc' => $query->orderBy('market_products.height', 'desc')->orderByDesc('market_products.id'),
 
-            'likesAsc' => $query->orderBy('market_products.likes_count', 'asc')
-                ->orderByDesc('market_products.id'),
-            'likesDesc' => $query->orderBy('market_products.likes_count', 'desc')
-                ->orderByDesc('market_products.id'),
+            'viewsAsc' => $query->orderBy('market_products.views', 'asc')->orderByDesc('market_products.id'),
+            'viewsDesc' => $query->orderBy('market_products.views', 'desc')->orderByDesc('market_products.id'),
 
-            'ratingAsc' => $query->orderBy('market_products.rating_avg', 'asc')
-                ->orderByDesc('market_products.id'),
-            'ratingDesc' => $query->orderBy('market_products.rating_avg', 'desc')
-                ->orderByDesc('market_products.id'),
+            /**
+             * likes_count уже хранится в market_products.
+             * withCount('likes') здесь не нужен.
+             */
+            'likesAsc' => $query->orderBy('market_products.likes_count', 'asc')->orderByDesc('market_products.id'),
+            'likesDesc' => $query->orderBy('market_products.likes_count', 'desc')->orderByDesc('market_products.id'),
 
-            'ratingCountAsc' => $query->orderBy('market_products.rating_count', 'asc')
-                ->orderByDesc('market_products.id'),
-            'ratingCountDesc' => $query->orderBy('market_products.rating_count', 'desc')
-                ->orderByDesc('market_products.id'),
+            'ratingAsc' => $query->orderBy('market_products.rating_avg', 'asc')->orderByDesc('market_products.id'),
+            'ratingDesc' => $query->orderBy('market_products.rating_avg', 'desc')->orderByDesc('market_products.id'),
 
-            'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')
-                ->orderByDesc('market_products.id'),
-            'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')
-                ->orderByDesc('market_products.id'),
+            'ratingCountAsc' => $query->orderBy('market_products.rating_count', 'asc')->orderByDesc('market_products.id'),
+            'ratingCountDesc' => $query->orderBy('market_products.rating_count', 'desc')->orderByDesc('market_products.id'),
 
-            'categoriesAsc' => $query->withCount('categories')->orderBy('categories_count', 'asc')
-                ->orderByDesc('market_products.id'),
-            'categoriesDesc' => $query->withCount('categories')->orderBy('categories_count', 'desc')
-                ->orderByDesc('market_products.id'),
+            /**
+             * Counts добавляет Index Controller постоянно.
+             * Не вызываем withCount повторно внутри сортировки.
+             */
+            'imagesAsc' => $query->orderBy('images_count', 'asc')->orderByDesc('market_products.id'),
+            'imagesDesc' => $query->orderBy('images_count', 'desc')->orderByDesc('market_products.id'),
 
-            'tagsAsc' => $query->withCount('tags')->orderBy('tags_count', 'asc')
-                ->orderByDesc('market_products.id'),
-            'tagsDesc' => $query->withCount('tags')->orderBy('tags_count', 'desc')
-                ->orderByDesc('market_products.id'),
+            'categoriesAsc' => $query->orderBy('categories_count', 'asc')->orderByDesc('market_products.id'),
+            'categoriesDesc' => $query->orderBy('categories_count', 'desc')->orderByDesc('market_products.id'),
 
-            'attributesAsc' => $query
-                ->withCount('attributeValues')
-                ->orderBy('attribute_values_count', 'asc')
-                ->orderByDesc('market_products.id'),
+            'tagsAsc' => $query->orderBy('tags_count', 'asc')->orderByDesc('market_products.id'),
+            'tagsDesc' => $query->orderBy('tags_count', 'desc')->orderByDesc('market_products.id'),
 
-            'attributesDesc' => $query
-                ->withCount('attributeValues')
-                ->orderBy('attribute_values_count', 'desc')
-                ->orderByDesc('market_products.id'),
+            'attributesAsc' => $query->orderBy('attribute_values_count', 'asc')->orderByDesc('market_products.id'),
+            'attributesDesc' => $query->orderBy('attribute_values_count', 'desc')->orderByDesc('market_products.id'),
 
-            'variantsAsc' => $query
-                ->withCount('variants')
-                ->orderBy('variants_count', 'asc')
-                ->orderByDesc('market_products.id'),
+            'variantsAsc' => $query->orderBy('variants_count', 'asc')->orderByDesc('market_products.id'),
+            'variantsDesc' => $query->orderBy('variants_count', 'desc')->orderByDesc('market_products.id'),
 
-            'variantsDesc' => $query
-                ->withCount('variants')
-                ->orderBy('variants_count', 'desc')
-                ->orderByDesc('market_products.id'),
+            'hasVariants' => $query->whereHas('variants')->orderByDesc('market_products.id'),
+            'withoutVariants' => $query->whereDoesntHave('variants')->orderByDesc('market_products.id'),
 
-            'hasVariants' => $query
-                ->whereHas('variants')
-                ->orderByDesc('market_products.id'),
+            'reviewsAsc' => $query->orderBy('reviews_count', 'asc')->orderByDesc('market_products.id'),
+            'reviewsDesc' => $query->orderBy('reviews_count', 'desc')->orderByDesc('market_products.id'),
 
-            'withoutVariants' => $query
-                ->whereDoesntHave('variants')
-                ->orderByDesc('market_products.id'),
+            'relatedProductsAsc' => $query->orderBy('related_products_count', 'asc')->orderByDesc('market_products.id'),
+            'relatedProductsDesc' => $query->orderBy('related_products_count', 'desc')->orderByDesc('market_products.id'),
 
-            'reviewsAsc' => $query->withCount('reviews')->orderBy('reviews_count', 'asc')
-                ->orderByDesc('market_products.id'),
-            'reviewsDesc' => $query->withCount('reviews')->orderBy('reviews_count', 'desc')
-                ->orderByDesc('market_products.id'),
+            'activityAsc' => $query->orderBy('market_products.activity', 'asc')->orderByDesc('market_products.id'),
+            'activityDesc' => $query->orderBy('market_products.activity', 'desc')->orderByDesc('market_products.id'),
+            'activity' => $query->where('market_products.activity', true)->orderByDesc('market_products.id'),
+            'inactive' => $query->where('market_products.activity', false)->orderByDesc('market_products.id'),
 
-            'relatedProductsAsc' => $query->withCount('relatedProducts')
-                ->orderBy('related_products_count', 'asc')->orderByDesc('market_products.id'),
-            'relatedProductsDesc' => $query->withCount('relatedProducts')
-                ->orderBy('related_products_count', 'desc')->orderByDesc('market_products.id'),
+            'leftAsc' => $query->orderBy('market_products.left', 'asc')->orderByDesc('market_products.id'),
+            'leftDesc' => $query->orderBy('market_products.left', 'desc')->orderByDesc('market_products.id'),
+            'left' => $query->where('market_products.left', true)->orderByDesc('market_products.id'),
+            'noLeft' => $query->where('market_products.left', false)->orderByDesc('market_products.id'),
 
-            'activityAsc' => $query->orderBy('market_products.activity', 'asc')
-                ->orderByDesc('market_products.id'),
-            'activityDesc' => $query->orderBy('market_products.activity', 'desc')
-                ->orderByDesc('market_products.id'),
-            'activity' => $query->where('market_products.activity', true)
-                ->orderByDesc('market_products.id'),
-            'inactive' => $query->where('market_products.activity', false)
-                ->orderByDesc('market_products.id'),
+            'mainAsc' => $query->orderBy('market_products.main', 'asc')->orderByDesc('market_products.id'),
+            'mainDesc' => $query->orderBy('market_products.main', 'desc')->orderByDesc('market_products.id'),
+            'main' => $query->where('market_products.main', true)->orderByDesc('market_products.id'),
+            'noMain' => $query->where('market_products.main', false)->orderByDesc('market_products.id'),
 
-            'leftAsc' => $query->orderBy('market_products.left', 'asc')
-                ->orderByDesc('market_products.id'),
-            'leftDesc' => $query->orderBy('market_products.left', 'desc')
-                ->orderByDesc('market_products.id'),
-            'left' => $query->where('market_products.left', true)
-                ->orderByDesc('market_products.id'),
-            'noLeft' => $query->where('market_products.left', false)
-                ->orderByDesc('market_products.id'),
+            'rightAsc' => $query->orderBy('market_products.right', 'asc')->orderByDesc('market_products.id'),
+            'rightDesc' => $query->orderBy('market_products.right', 'desc')->orderByDesc('market_products.id'),
+            'right' => $query->where('market_products.right', true)->orderByDesc('market_products.id'),
+            'noRight' => $query->where('market_products.right', false)->orderByDesc('market_products.id'),
 
-            'mainAsc' => $query->orderBy('market_products.main', 'asc')
-                ->orderByDesc('market_products.id'),
-            'mainDesc' => $query->orderBy('market_products.main', 'desc')
-                ->orderByDesc('market_products.id'),
-            'main' => $query->where('market_products.main', true)
-                ->orderByDesc('market_products.id'),
-            'noMain' => $query->where('market_products.main', false)
-                ->orderByDesc('market_products.id'),
+            'newAsc' => $query->orderBy('market_products.is_new', 'asc')->orderByDesc('market_products.id'),
+            'newDesc' => $query->orderBy('market_products.is_new', 'desc')->orderByDesc('market_products.id'),
+            'new' => $query->where('market_products.is_new', true)->orderByDesc('market_products.id'),
+            'notNew' => $query->where('market_products.is_new', false)->orderByDesc('market_products.id'),
 
-            'rightAsc' => $query->orderBy('market_products.right', 'asc')
-                ->orderByDesc('market_products.id'),
-            'rightDesc' => $query->orderBy('market_products.right', 'desc')
-                ->orderByDesc('market_products.id'),
-            'right' => $query->where('market_products.right', true)
-                ->orderByDesc('market_products.id'),
-            'noRight' => $query->where('market_products.right', false)
-                ->orderByDesc('market_products.id'),
+            'hitAsc' => $query->orderBy('market_products.is_hit', 'asc')->orderByDesc('market_products.id'),
+            'hitDesc' => $query->orderBy('market_products.is_hit', 'desc')->orderByDesc('market_products.id'),
+            'hit' => $query->where('market_products.is_hit', true)->orderByDesc('market_products.id'),
+            'notHit' => $query->where('market_products.is_hit', false)->orderByDesc('market_products.id'),
 
-            'newAsc' => $query->orderBy('market_products.is_new', 'asc')
-                ->orderByDesc('market_products.id'),
-            'newDesc' => $query->orderBy('market_products.is_new', 'desc')
-                ->orderByDesc('market_products.id'),
-            'new' => $query->where('market_products.is_new', true)
-                ->orderByDesc('market_products.id'),
-            'notNew' => $query->where('market_products.is_new', false)
-                ->orderByDesc('market_products.id'),
+            'saleAsc' => $query->orderBy('market_products.is_sale', 'asc')->orderByDesc('market_products.id'),
+            'saleDesc' => $query->orderBy('market_products.is_sale', 'desc')->orderByDesc('market_products.id'),
+            'sale' => $query->where('market_products.is_sale', true)->orderByDesc('market_products.id'),
+            'notSale' => $query->where('market_products.is_sale', false)->orderByDesc('market_products.id'),
 
-            'hitAsc' => $query->orderBy('market_products.is_hit', 'asc')
-                ->orderByDesc('market_products.id'),
-            'hitDesc' => $query->orderBy('market_products.is_hit', 'desc')
-                ->orderByDesc('market_products.id'),
-            'hit' => $query->where('market_products.is_hit', true)
-                ->orderByDesc('market_products.id'),
-            'notHit' => $query->where('market_products.is_hit', false)
-                ->orderByDesc('market_products.id'),
+            'statusAsc' => $query->orderBy('market_products.status', 'asc')->orderByDesc('market_products.id'),
+            'statusDesc' => $query->orderBy('market_products.status', 'desc')->orderByDesc('market_products.id'),
+            'statusDraft' => $query->where('market_products.status', 'draft')->orderByDesc('market_products.id'),
+            'statusPublished' => $query->where('market_products.status', 'published')->orderByDesc('market_products.id'),
+            'statusArchived' => $query->where('market_products.status', 'archived')->orderByDesc('market_products.id'),
 
-            'saleAsc' => $query->orderBy('market_products.is_sale', 'asc')
-                ->orderByDesc('market_products.id'),
-            'saleDesc' => $query->orderBy('market_products.is_sale', 'desc')
-                ->orderByDesc('market_products.id'),
-            'sale' => $query->where('market_products.is_sale', true)
-                ->orderByDesc('market_products.id'),
-            'notSale' => $query->where('market_products.is_sale', false)
-                ->orderByDesc('market_products.id'),
+            'moderationStatusAsc' => $query->orderBy('market_products.moderation_status', 'asc')->orderByDesc('market_products.id'),
+            'moderationStatusDesc' => $query->orderBy('market_products.moderation_status', 'desc')->orderByDesc('market_products.id'),
+            'moderationPending' => $query->where('market_products.moderation_status', 0)->orderByDesc('market_products.id'),
+            'moderationApproved' => $query->where('market_products.moderation_status', 1)->orderByDesc('market_products.id'),
+            'moderationRejected' => $query->where('market_products.moderation_status', 2)->orderByDesc('market_products.id'),
 
-            'statusAsc' => $query->orderBy('market_products.status', 'asc')
-                ->orderByDesc('market_products.id'),
-            'statusDesc' => $query->orderBy('market_products.status', 'desc')
-                ->orderByDesc('market_products.id'),
-            'statusDraft' => $query->where('market_products.status', 'draft')
-                ->orderByDesc('market_products.id'),
-            'statusPublished' => $query->where('market_products.status', 'published')
-                ->orderByDesc('market_products.id'),
-            'statusArchived' => $query->where('market_products.status', 'archived')
-                ->orderByDesc('market_products.id'),
+            'publishedAtAsc' => $query->orderBy('market_products.published_at', 'asc')->orderByDesc('market_products.id'),
+            'publishedAtDesc' => $query->orderBy('market_products.published_at', 'desc')->orderByDesc('market_products.id'),
 
-            'moderationStatusAsc' => $query->orderBy('market_products.moderation_status', 'asc')
-                ->orderByDesc('market_products.id'),
-            'moderationStatusDesc' => $query->orderBy('market_products.moderation_status', 'desc')
-                ->orderByDesc('market_products.id'),
-            'moderationPending' => $query->where('market_products.moderation_status', 0)
-                ->orderByDesc('market_products.id'),
-            'moderationApproved' => $query->where('market_products.moderation_status', 1)
-                ->orderByDesc('market_products.id'),
-            'moderationRejected' => $query->where('market_products.moderation_status', 2)
-                ->orderByDesc('market_products.id'),
+            'showFromAtAsc' => $query->orderBy('market_products.show_from_at', 'asc')->orderByDesc('market_products.id'),
+            'showFromAtDesc' => $query->orderBy('market_products.show_from_at', 'desc')->orderByDesc('market_products.id'),
 
-            'publishedAtAsc' => $query->orderBy('market_products.published_at', 'asc')
-                ->orderByDesc('market_products.id'),
-            'publishedAtDesc' => $query->orderBy('market_products.published_at', 'desc')
-                ->orderByDesc('market_products.id'),
+            'showToAtAsc' => $query->orderBy('market_products.show_to_at', 'asc')->orderByDesc('market_products.id'),
+            'showToAtDesc' => $query->orderBy('market_products.show_to_at', 'desc')->orderByDesc('market_products.id'),
 
-            'showFromAtAsc' => $query->orderBy('market_products.show_from_at', 'asc')
-                ->orderByDesc('market_products.id'),
-            'showFromAtDesc' => $query->orderBy('market_products.show_from_at', 'desc')
-                ->orderByDesc('market_products.id'),
+            'createdAtAsc', 'dateAsc' => $query->orderBy('market_products.created_at', 'asc')->orderByDesc('market_products.id'),
+            'createdAtDesc', 'dateDesc' => $query->orderBy('market_products.created_at', 'desc')->orderByDesc('market_products.id'),
 
-            'showToAtAsc' => $query->orderBy('market_products.show_to_at', 'asc')
-                ->orderByDesc('market_products.id'),
-            'showToAtDesc' => $query->orderBy('market_products.show_to_at', 'desc')
-                ->orderByDesc('market_products.id'),
-
-            'createdAtAsc', 'dateAsc' => $query->orderBy('market_products.created_at', 'asc')
-                ->orderByDesc('market_products.id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('market_products.created_at', 'desc')
-                ->orderByDesc('market_products.id'),
-
-            'updatedAtAsc' => $query->orderBy('market_products.updated_at', 'asc')
-                ->orderByDesc('market_products.id'),
-            'updatedAtDesc' => $query->orderBy('market_products.updated_at', 'desc')
-                ->orderByDesc('market_products.id'),
+            'updatedAtAsc' => $query->orderBy('market_products.updated_at', 'asc')->orderByDesc('market_products.id'),
+            'updatedAtDesc' => $query->orderBy('market_products.updated_at', 'desc')->orderByDesc('market_products.id'),
 
             'companyAsc' => $query
                 ->leftJoin('market_company_translations as mct_sort', function ($join) use ($locale) {
                     $join->on('mct_sort.market_company_id', '=', 'market_products.market_company_id')
                         ->where('mct_sort.locale', '=', $locale);
                 })
+                ->addSelect('market_products.*')
                 ->orderBy('mct_sort.title', 'asc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             'companyDesc' => $query
                 ->leftJoin('market_company_translations as mct_sort', function ($join) use ($locale) {
                     $join->on('mct_sort.market_company_id', '=', 'market_products.market_company_id')
                         ->where('mct_sort.locale', '=', $locale);
                 })
+                ->addSelect('market_products.*')
                 ->orderBy('mct_sort.title', 'desc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             'shopAsc' => $query
                 ->leftJoin('market_shop_translations as mst_sort', function ($join) use ($locale) {
                     $join->on('mst_sort.market_shop_id', '=', 'market_products.market_shop_id')
                         ->where('mst_sort.locale', '=', $locale);
                 })
+                ->addSelect('market_products.*')
                 ->orderBy('mst_sort.title', 'asc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             'shopDesc' => $query
                 ->leftJoin('market_shop_translations as mst_sort', function ($join) use ($locale) {
                     $join->on('mst_sort.market_shop_id', '=', 'market_products.market_shop_id')
                         ->where('mst_sort.locale', '=', $locale);
                 })
+                ->addSelect('market_products.*')
                 ->orderBy('mst_sort.title', 'desc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             'brandAsc' => $query
                 ->leftJoin('market_brand_translations as mbt_sort', function ($join) use ($locale) {
                     $join->on('mbt_sort.market_brand_id', '=', 'market_products.market_brand_id')
                         ->where('mbt_sort.locale', '=', $locale);
                 })
+                ->addSelect('market_products.*')
                 ->orderBy('mbt_sort.title', 'asc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             'brandDesc' => $query
                 ->leftJoin('market_brand_translations as mbt_sort', function ($join) use ($locale) {
                     $join->on('mbt_sort.market_brand_id', '=', 'market_products.market_brand_id')
                         ->where('mbt_sort.locale', '=', $locale);
                 })
+                ->addSelect('market_products.*')
                 ->orderBy('mbt_sort.title', 'desc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             'ownerNameAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_products.user_id')
+                ->addSelect('market_products.*')
                 ->orderBy('owner_sort.name', 'asc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             'ownerNameDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_products.user_id')
+                ->addSelect('market_products.*')
                 ->orderBy('owner_sort.name', 'desc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             'ownerEmailAsc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_products.user_id')
+                ->addSelect('market_products.*')
                 ->orderBy('owner_sort.email', 'asc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             'ownerEmailDesc' => $query
                 ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'market_products.user_id')
+                ->addSelect('market_products.*')
                 ->orderBy('owner_sort.email', 'desc')
-                ->orderByDesc('market_products.id')
-                ->select('market_products.*'),
+                ->orderByDesc('market_products.id'),
 
             default => $query->ordered(),
         };

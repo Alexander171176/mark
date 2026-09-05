@@ -5,7 +5,8 @@
  *
  * Создание товара маркетплейса.
  */
-import { computed, ref, watch } from 'vue'
+
+import { computed, ref } from 'vue'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -24,10 +25,8 @@ import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vu
 import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
 import MarketProductPriceInput from '@/Components/Admin/UI/Input/MarketProductPriceInput.vue'
 import MarketProductMeasureInput from '@/Components/Admin/UI/Input/MarketProductMeasureInput.vue'
-import MarketProductAttributesField
-    from '@/Components/Admin/Market/MarketProduct/Attribute/MarketProductAttributesField.vue'
-import MarketProductRelatedProductsField
-    from '@/Components/Admin/Market/MarketProduct/Related/MarketProductRelatedProductsField.vue'
+import MarketProductAttributesField from '@/Components/Admin/Market/MarketProduct/Attribute/MarketProductAttributesField.vue'
+import MarketProductRelatedProductsField from '@/Components/Admin/Market/MarketProduct/Related/MarketProductRelatedProductsField.vue'
 import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
 import InputText from '@/Components/Admin/UI/Input/InputText.vue'
 import InputError from '@/Components/Admin/UI/Input/InputError.vue'
@@ -38,43 +37,58 @@ import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
 import MultiImageUpload from '@/Components/Admin/UI/Image/MultiImageUpload.vue'
 import MultiImagePresetUpload from '@/Components/Admin/UI/Image/MultiImagePresetUpload.vue'
 
-/** Локализация интерфейса */
 const { t } = useI18n()
-/** Уведомления */
 const toast = useToast()
-/** Данные текущей Inertia-страницы */
 const page = usePage()
 
-/** Входные данные страницы */
+/* ======================== Props ======================== */
+
 const props = defineProps({
     imageProcessorEnabled: { type: Boolean, default: true },
     imagePreset: { type: Object, default: null },
+
     currentLocale: { type: String, default: '' },
     availableLocales: { type: Array, default: () => [] },
-    companies: { type: Array, default: () => [] },
-    shops: { type: Array, default: () => [] },
-    brands: { type: Array, default: () => [] },
-    currencies: { type: Array, default: () => [] },
-    categories: { type: Array, default: () => [] },
-    tags: { type: Array, default: () => [] },
-    attributes: { type: Array, default: () => [] },
-    attributeValues: { type: Array, default: () => [] },
-    relatedProducts: { type: Array, default: () => [] },
-    related_products: { type: Array, default: () => [] },
+
+    companies: { type: [Array, Object], default: () => [] },
+    shops: { type: [Array, Object], default: () => [] },
+    brands: { type: [Array, Object], default: () => [] },
+    currencies: { type: [Array, Object], default: () => [] },
+    categories: { type: [Array, Object], default: () => [] },
+    tags: { type: [Array, Object], default: () => [] },
+    attributes: { type: [Array, Object], default: () => [] },
+    relatedProducts: { type: [Array, Object], default: () => [] },
+
     errors: { type: Object, default: () => ({}) },
 })
 
-/** Получить массив из обычного массива или Laravel Resource Collection */
+/* ======================== Resources ======================== */
+
+/** Обычный массив или Laravel ResourceCollection. */
 const resourceList = (value) => {
-    if (Array.isArray(value)) return value
-    if (Array.isArray(value?.data)) return value.data
+    if (Array.isArray(value)) {
+        return value
+    }
+
+    if (Array.isArray(value?.data)) {
+        return value.data
+    }
+
     return []
 }
 
-/** Валюты для начального выбора */
-const initialCurrencies = resourceList(props.currencies)
+const companyList = computed(() => resourceList(props.companies))
+const shopList = computed(() => resourceList(props.shops))
+const brandList = computed(() => resourceList(props.brands))
+const currencyList = computed(() => resourceList(props.currencies))
+const categoryList = computed(() => resourceList(props.categories))
+const tagList = computed(() => resourceList(props.tags))
+const attributeList = computed(() => resourceList(props.attributes))
 
-/** Создать пустой перевод товара */
+const relatedProductList = computed(() => resourceList(props.relatedProducts))
+
+/* ======================== Translations ======================== */
+
 const makeTranslation = () => ({
     title: '',
     subtitle: '',
@@ -85,19 +99,35 @@ const makeTranslation = () => ({
     meta_desc: '',
 })
 
-/** Активная локаль и новые изображения */
 const defaultLocale = props.currentLocale || 'ru'
 const activeLocale = ref(defaultLocale)
-const newImages = ref([])
 
-/** Форма создания товара */
+const currentTranslation = computed(() => {
+    if (!form.translations[activeLocale.value]) {
+        form.translations[activeLocale.value] = makeTranslation()
+    }
+
+    return form.translations[activeLocale.value]
+})
+
+const getError = (key) => {
+    return form.errors[`translations.${activeLocale.value}.${key}`]
+}
+
+/* ======================== Form ======================== */
+
+const initialCurrencies = resourceList(props.currencies)
+
 const form = useForm({
     user_id: page.props?.auth?.user?.id || null,
 
     market_company_id: null,
     market_shop_id: null,
     market_brand_id: null,
-    currency_id: initialCurrencies.find(item => item.is_default)?.id || initialCurrencies[0]?.id || null,
+    currency_id:
+        initialCurrencies.find((item) => item?.is_default)?.id
+        || initialCurrencies[0]?.id
+        || null,
 
     url: '',
     sku: '',
@@ -108,7 +138,7 @@ const form = useForm({
     old_price: null,
     purchase_price: null,
     wholesale_price: null,
-    wholesale_min_quantity: '',
+    wholesale_min_quantity: null,
 
     quantity: 0,
     in_stock: false,
@@ -151,93 +181,242 @@ const form = useForm({
     },
 })
 
-/** Выбранные значения связанных сущностей */
-const selectedCompany = ref(null)
-const selectedShop = ref(null)
-const selectedBrand = ref(null)
-const selectedCurrency = ref(null)
-const selectedCategories = ref([])
-const selectedMainCategory = ref(null)
-const selectedTags = ref([])
+/* ======================== Select labels ======================== */
 
-/** Текущий редактируемый перевод */
-const currentTranslation = computed(() => {
-    if (!form.translations[activeLocale.value]) {
-        form.translations[activeLocale.value] = makeTranslation()
-    }
-
-    return form.translations[activeLocale.value]
-})
-
-/** Ошибка поля текущего перевода */
-const getError = (key) => form.errors[`translations.${activeLocale.value}.${key}`]
-
-/** Нормализованные справочники */
-const companyList = computed(() => resourceList(props.companies))
-const shopList = computed(() => resourceList(props.shops))
-const brandList = computed(() => resourceList(props.brands))
-const currencyList = computed(() => resourceList(props.currencies))
-const categoryList = computed(() => resourceList(props.categories))
-const tagList = computed(() => resourceList(props.tags))
-
-/** Получить отображаемое название сущности */
+/**
+ * Для переводимых справочников используем только новый nested-контракт.
+ * Flat title / translations[0] больше не поддерживаем.
+ */
 const translationTitle = (item) => {
-    return item?.translation?.title || item?.title || item?.legal_name || item?.name || item?.url || `ID: ${item?.id}`
+    return item?.translation?.title
+        || item?.legal_name
+        || item?.name
+        || item?.url
+        || `ID: ${item?.id}`
 }
 
-/** Опции компаний */
-const companyOptions = computed(() => companyList.value.map(item => ({
-    ...item,
-    label: `[ID: ${item.id}] ${translationTitle(item)}`,
-})))
-
-/** Магазины выбранной компании */
-const filteredShopList = computed(() => {
-    if (!selectedCompany.value?.id) return shopList.value
-
-    return shopList.value.filter(item => Number(item.market_company_id) === Number(selectedCompany.value.id))
+const companyOptions = computed(() => {
+    return companyList.value.map((item) => ({
+        ...item,
+        label: `[ID: ${item.id}] ${translationTitle(item)}`,
+    }))
 })
 
-/** Опции магазинов */
-const shopOptions = computed(() => filteredShopList.value.map(item => ({
-    ...item,
-    label: `[ID: ${item.id}] ${translationTitle(item)}`,
-})))
-
-/** Опции брендов */
-const brandOptions = computed(() => brandList.value.map(item => ({
-    ...item,
-    label: `[ID: ${item.id}] ${translationTitle(item)}`,
-})))
-
-/** Опции валют */
-const currencyOptions = computed(() => currencyList.value.map(item => ({
-    ...item,
-    label: `[${item.code}] ${item.name}${item.symbol ? ` — ${item.symbol}` : ''}`,
-})))
-
-/** Опции категорий с учётом уровня вложенности */
-const categoryOptions = computed(() => categoryList.value.map(item => {
-    const prefix = item.level > 1 ? `${'— '.repeat(item.level - 1)}` : ''
-
-    return {
-        ...item,
-        label: `[ID: ${item.id}] ${prefix}${translationTitle(item)}`,
+const filteredShopList = computed(() => {
+    if (!form.market_company_id) {
+        return shopList.value
     }
-}))
 
-/** Опции тегов */
-const tagOptions = computed(() => tagList.value.map(item => ({
-    ...item,
-    label: `[ID: ${item.id}] ${translationTitle(item)}`,
-})))
+    return shopList.value.filter((item) => {
+        return Number(item?.market_company_id) === Number(form.market_company_id)
+    })
+})
 
-/** Динамический лимит элементов мультиселекта */
+const shopOptions = computed(() => {
+    return filteredShopList.value.map((item) => ({
+        ...item,
+        label: `[ID: ${item.id}] ${translationTitle(item)}`,
+    }))
+})
+
+const brandOptions = computed(() => {
+    return brandList.value.map((item) => ({
+        ...item,
+        label: `[ID: ${item.id}] ${translationTitle(item)}`,
+    }))
+})
+
+const currencyOptions = computed(() => {
+    return currencyList.value.map((item) => ({
+        ...item,
+        label: `[${item.code}] ${item.name}${item.symbol ? ` — ${item.symbol}` : ''}`,
+    }))
+})
+
+const categoryOptions = computed(() => {
+    return categoryList.value.map((item) => {
+        const level = Number(item?.level || 1)
+        const prefix = level > 1
+            ? '— '.repeat(level - 1)
+            : ''
+
+        return {
+            ...item,
+            label: `[ID: ${item.id}] ${prefix}${translationTitle(item)}`,
+        }
+    })
+})
+
+const tagOptions = computed(() => {
+    return tagList.value.map((item) => ({
+        ...item,
+        label: `[ID: ${item.id}] ${translationTitle(item)}`,
+    }))
+})
+
 const dynamicOptionsLimit = (items) => {
     return Array.isArray(items) ? items.length + 10 : 10
 }
 
-/** Пресет обработки изображений товара */
+/* ======================== Single selects ======================== */
+
+/** ID формы является единственным источником истины. */
+const selectedCompany = computed({
+    get: () => {
+        return companyOptions.value.find((item) => {
+            return Number(item.id) === Number(form.market_company_id)
+        }) || null
+    },
+
+    set: (value) => {
+        const nextCompanyId = value?.id ?? null
+
+        form.market_company_id = nextCompanyId
+
+        const currentShop = shopList.value.find((item) => {
+            return Number(item.id) === Number(form.market_shop_id)
+        })
+
+        if (
+            currentShop
+            && Number(currentShop.market_company_id) !== Number(nextCompanyId)
+        ) {
+            form.market_shop_id = null
+        }
+    },
+})
+
+const selectedShop = computed({
+    get: () => {
+        return shopOptions.value.find((item) => {
+            return Number(item.id) === Number(form.market_shop_id)
+        }) || null
+    },
+
+    set: (value) => {
+        form.market_shop_id = value?.id ?? null
+
+        if (value?.market_company_id) {
+            form.market_company_id = Number(value.market_company_id)
+        }
+    },
+})
+
+const selectedBrand = computed({
+    get: () => {
+        return brandOptions.value.find((item) => {
+            return Number(item.id) === Number(form.market_brand_id)
+        }) || null
+    },
+
+    set: (value) => {
+        form.market_brand_id = value?.id ?? null
+    },
+})
+
+const selectedCurrency = computed({
+    get: () => {
+        return currencyOptions.value.find((item) => {
+            return Number(item.id) === Number(form.currency_id)
+        }) || null
+    },
+
+    set: (value) => {
+        form.currency_id = value?.id ?? null
+    },
+})
+
+/* ======================== Categories ======================== */
+
+const selectedCategories = computed({
+    get: () => {
+        const selectedIds = new Set(
+            (form.categories || []).map((item) => Number(item?.id))
+        )
+
+        return categoryOptions.value.filter((item) => {
+            return selectedIds.has(Number(item.id))
+        })
+    },
+
+    set: (values) => {
+        const previousMainId = (form.categories || []).find(
+            (item) => Boolean(item?.main)
+        )?.id
+
+        const nextValues = Array.isArray(values) ? values : []
+
+        const mainId = nextValues.some((item) => {
+            return Number(item.id) === Number(previousMainId)
+        })
+            ? previousMainId
+            : nextValues[0]?.id ?? null
+
+        form.categories = nextValues.map((item, index) => ({
+            id: item.id,
+            main: Number(item.id) === Number(mainId),
+            order: index,
+        }))
+    },
+})
+
+const selectedMainCategory = computed({
+    get: () => {
+        const currentMainId = (form.categories || []).find(
+            (item) => Boolean(item?.main)
+        )?.id
+
+        return selectedCategories.value.find((item) => {
+            return Number(item.id) === Number(currentMainId)
+        }) || selectedCategories.value[0] || null
+    },
+
+    set: (value) => {
+        const mainId = value?.id ?? null
+
+        form.categories = (form.categories || []).map((item, index) => ({
+            ...item,
+            main: Number(item.id) === Number(mainId),
+            order: index,
+        }))
+    },
+})
+
+const syncCategories = () => {
+    const mainId = selectedMainCategory.value?.id ?? null
+
+    form.categories = selectedCategories.value.map((item, index) => ({
+        id: item.id,
+        main: Number(item.id) === Number(mainId),
+        order: index,
+    }))
+}
+
+/* ======================== Tags ======================== */
+
+const selectedTags = computed({
+    get: () => {
+        const selectedIds = new Set(
+            (form.tags || []).map((item) => Number(item?.id))
+        )
+
+        return tagOptions.value.filter((item) => {
+            return selectedIds.has(Number(item.id))
+        })
+    },
+
+    set: (values) => {
+        form.tags = (Array.isArray(values) ? values : []).map((item, index) => ({
+            id: item.id,
+            order: index,
+        }))
+    },
+})
+
+/* ======================== Images ======================== */
+
+const newImages = ref([])
+
 const galleryPreset = computed(() => {
     return props.imagePreset || {
         key: 'rectangle_large',
@@ -249,71 +428,6 @@ const galleryPreset = computed(() => {
     }
 })
 
-/** Синхронизировать категории и основную категорию с формой */
-const syncCategories = () => {
-    form.categories = selectedCategories.value.map((item, index) => ({
-        id: item.id,
-        main: Number(item.id) === Number(selectedMainCategory.value?.id),
-        order: index,
-    }))
-}
-
-/** Синхронизация выбранной компании */
-watch(selectedCompany, (value) => {
-    form.market_company_id = value?.id ?? null
-
-    if (selectedShop.value && Number(selectedShop.value.market_company_id) !== Number(value?.id)) {
-        selectedShop.value = null
-    }
-})
-
-/** Синхронизация выбранного магазина */
-watch(selectedShop, (value) => {
-    form.market_shop_id = value?.id ?? null
-
-    if (value?.market_company_id && Number(selectedCompany.value?.id) !== Number(value.market_company_id)) {
-        selectedCompany.value = companyOptions.value.find(item => Number(item.id) === Number(value.market_company_id)) || null
-    }
-})
-
-/** Синхронизация выбранного бренда */
-watch(selectedBrand, (value) => {
-    form.market_brand_id = value?.id ?? null
-})
-
-/** Синхронизация выбранной валюты */
-watch(selectedCurrency, (value) => {
-    form.currency_id = value?.id ?? null
-})
-
-/** Синхронизация категорий */
-watch(selectedCategories, (values) => {
-    if (!values.some(item => Number(item.id) === Number(selectedMainCategory.value?.id))) {
-        selectedMainCategory.value = values[0] || null
-    }
-
-    syncCategories()
-}, { deep: true })
-
-/** Синхронизация основной категории */
-watch(selectedMainCategory, syncCategories)
-
-/** Синхронизация тегов */
-watch(selectedTags, (values) => {
-    form.tags = values.map((item, index) => ({
-        id: item.id,
-        order: index,
-    }))
-}, { deep: true })
-
-/** Автоматический выбор валюты по умолчанию */
-watch(currencyOptions, (values) => {
-    if (!selectedCurrency.value && values.length) {
-        selectedCurrency.value = values.find(item => item.is_default) || values[0]
-    }
-}, { immediate: true })
-
-/** Обновить новые изображения и их порядок */
 const handleNewImagesUpdate = (images) => {
     const normalizedImages = (images || []).map((image, index) => ({
         ...image,
@@ -324,28 +438,38 @@ const handleNewImagesUpdate = (images) => {
     form.images = normalizedImages
 }
 
-/** Сформировать URL из названия товара */
+/* ======================== Helpers ======================== */
+
 const handleUrlInputFocus = () => {
     if (!form.url && currentTranslation.value.title) {
-        form.url = transliterate(currentTranslation.value.title.toLowerCase())
+        form.url = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
     }
 }
 
-/** Обрезать текст до указанной длины */
 const truncateText = (text, maxLength, addEllipsis = false) => {
-    if (!text) return ''
+    if (!text) {
+        return ''
+    }
 
     const value = String(text)
 
-    if (value.length <= maxLength) return value
+    if (value.length <= maxLength) {
+        return value
+    }
 
     const lastSpaceIndex = value.lastIndexOf(' ', maxLength)
-    const truncated = lastSpaceIndex === -1 ? value.substring(0, maxLength) : value.substring(0, lastSpaceIndex)
 
-    return addEllipsis ? `${truncated}...` : truncated
+    const truncated = lastSpaceIndex === -1
+        ? value.substring(0, maxLength)
+        : value.substring(0, lastSpaceIndex)
+
+    return addEllipsis
+        ? `${truncated}...`
+        : truncated
 }
 
-/** Сгенерировать SEO-поля текущего перевода */
 const generateMetaFields = () => {
     const translation = currentTranslation.value
 
@@ -355,33 +479,44 @@ const generateMetaFields = () => {
 
     if (!translation.meta_keywords && translation.short) {
         let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
+
         text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
 
         const words = text
             .split(/\s+/)
-            .filter(word => word && word.length >= 3)
-            .map(word => word.toLowerCase())
+            .filter((word) => word && word.length >= 3)
+            .map((word) => word.toLowerCase())
             .filter((value, index, self) => self.indexOf(value) === index)
 
         translation.meta_keywords = truncateText(words.join(', '), 255)
     }
 
     if (translation.short && !translation.meta_desc) {
-        const description = String(translation.short).replace(/(<([^>]+)>)/gi, '')
+        const description = String(translation.short)
+            .replace(/(<([^>]+)>)/gi, '')
+
         translation.meta_desc = truncateText(description, 255, true)
     }
 }
 
-/** Преобразовать необязательное значение в число */
 const nullableNumber = (value, digits = 2) => {
-    if (value === '' || value === null || typeof value === 'undefined') return null
+    if (
+        value === ''
+        || value === null
+        || typeof value === 'undefined'
+    ) {
+        return null
+    }
 
     const number = Number(value)
 
-    return Number.isFinite(number) ? Number(number.toFixed(digits)) : null
+    return Number.isFinite(number)
+        ? Number(number.toFixed(digits))
+        : null
 }
 
-/** Отправить форму создания товара */
+/* ======================== Submit ======================== */
+
 const submitForm = () => {
     syncCategories()
 
@@ -393,9 +528,15 @@ const submitForm = () => {
             old_price: nullableNumber(data.old_price, 2),
             purchase_price: nullableNumber(data.purchase_price, 2),
             wholesale_price: nullableNumber(data.wholesale_price, 2),
-            wholesale_min_quantity: data.wholesale_min_quantity === '' || data.wholesale_min_quantity === null ? null : Number(data.wholesale_min_quantity),
+
+            wholesale_min_quantity:
+                data.wholesale_min_quantity === ''
+                || data.wholesale_min_quantity === null
+                    ? null
+                    : Number(data.wholesale_min_quantity),
 
             quantity: Number(data.quantity || 0),
+
             weight: nullableNumber(data.weight, 3),
             length: nullableNumber(data.length, 2),
             width: nullableNumber(data.width, 2),
@@ -419,21 +560,40 @@ const submitForm = () => {
             categories: data.categories,
             tags: data.tags,
             related_products: data.related_products,
-            attribute_values: data.attribute_values.map((item, index) => ({
-                ...item,
-                value_string: item.value_string || null,
-                value_number: nullableNumber(item.value_number, 4),
-                value_date: item.value_date || null,
-                unit: item.unit || null,
-                order: index,
-                activity: item.activity ? 1 : 0,
-            })),
+
+            attribute_values: (data.attribute_values || []).map(
+                (item, index) => ({
+                    ...item,
+
+                    value_string:
+                        item.value_string === ''
+                            ? null
+                            : item.value_string ?? null,
+
+                    value_number: nullableNumber(item.value_number, 4),
+
+                    value_boolean:
+                        item.value_boolean === ''
+                        || typeof item.value_boolean === 'undefined'
+                            ? null
+                            : item.value_boolean,
+
+                    value_date: item.value_date || null,
+                    value_json: item.value_json ?? null,
+                    unit: item.unit || null,
+
+                    order: index,
+                    activity: item.activity ? 1 : 0,
+                })
+            ),
         }
 
         delete transformed.images
 
         newImages.value.forEach((image, index) => {
-            if (!image.file) return
+            if (!image.file) {
+                return
+            }
 
             transformed[`images[${index}][file]`] = image.file
             transformed[`images[${index}][order]`] = image.order ?? index
@@ -448,16 +608,22 @@ const submitForm = () => {
         forceFormData: true,
         errorBag: 'createMarketProduct',
         preserveScroll: true,
+
         onSuccess: () => {
             toast.success('Товар успешно создан!')
             newImages.value = []
             form.images = []
         },
+
         onError: (errors) => {
             console.error('Ошибка создания товара:', errors)
 
             const firstKey = Object.keys(errors || {})[0]
-            toast.error(errors?.[firstKey] || 'Проверьте правильность заполнения полей.')
+
+            toast.error(
+                errors?.[firstKey]
+                || 'Проверьте правильность заполнения полей.'
+            )
         },
     })
 }
@@ -609,9 +775,9 @@ const submitForm = () => {
                             <div class="flex justify-between w-full">
                                 <LabelInput
                                     :for="`short-${activeLocale}`"
-                            :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`" />
+                                    :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`" />
                                 <div class="text-md text-gray-900 dark:text-gray-400 mt-1">
-                        {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
+                                    {{ (currentTranslation.short || '').length }} / 255 {{ t('characters') }}
                                 </div>
                             </div>
 
@@ -655,7 +821,7 @@ const submitForm = () => {
                         <div class="mb-3 flex flex-col items-start">
                             <LabelInput
                                 :for="`meta-desc-${activeLocale}`"
-                            :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`" />
+                                :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`" />
                             <MetaDescTextarea
                                 :id="`meta-desc-${activeLocale}`"
                                 v-model="currentTranslation.meta_desc"
@@ -939,15 +1105,14 @@ const submitForm = () => {
                     <!-- Характеристики -->
                     <MarketProductAttributesField
                         v-model="form.attribute_values"
-                        :attributes="attributes"
-                        :attribute-values="attributeValues"
+                        :attributes="attributeList"
                         :errors="form.errors"
                     />
 
                     <!-- Рекомендуемые товары -->
                     <MarketProductRelatedProductsField
                         v-model="form.related_products"
-                        :products="relatedProducts.length ? relatedProducts : related_products"
+                        :products="relatedProductList"
                         :errors="form.errors"
                     />
 

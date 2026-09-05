@@ -6,17 +6,15 @@ use App\Http\Controllers\Admin\Market\BaseMarketAdminController;
 use App\Http\Requests\Admin\Market\MarketProduct\MarketProductRequest;
 use App\Http\Resources\Admin\Finance\Currency\CurrencyResource;
 use App\Http\Resources\Admin\Market\MarketAttribute\MarketAttributeResource;
-use App\Http\Resources\Admin\Market\MarketAttributeValue\MarketAttributeValueResource;
-use App\Http\Resources\Admin\Market\MarketBrand\MarketBrandResource;
+use App\Http\Resources\Admin\Market\MarketBrand\MarketBrandSharedResource;
 use App\Http\Resources\Admin\Market\MarketCategory\MarketCategorySharedResource;
-use App\Http\Resources\Admin\Market\MarketCompany\MarketCompanyResource;
+use App\Http\Resources\Admin\Market\MarketCompany\MarketCompanySharedResource;
 use App\Http\Resources\Admin\Market\MarketProduct\MarketProductResource;
 use App\Http\Resources\Admin\Market\MarketProduct\MarketProductSharedResource;
-use App\Http\Resources\Admin\Market\MarketShop\MarketShopResource;
+use App\Http\Resources\Admin\Market\MarketShop\MarketShopSharedResource;
 use App\Http\Resources\Admin\Market\MarketTag\MarketTagSharedResource;
 use App\Models\Admin\Finance\Currency\Currency;
 use App\Models\Admin\Market\MarketAttribute\MarketAttribute;
-use App\Models\Admin\Market\MarketAttributeValue\MarketAttributeValue;
 use App\Models\Admin\Market\MarketBrand\MarketBrand;
 use App\Models\Admin\Market\MarketCategory\MarketCategory;
 use App\Models\Admin\Market\MarketCompany\MarketCompany;
@@ -80,174 +78,29 @@ class MarketProductController extends BaseMarketAdminController
     protected string $imagePresetKey = 'rectangle_large';
 
     /** Директория обработанных изображений */
-    protected string $imagePresetDirectory =
-        'market/market_product_images/preset';
+    protected string $imagePresetDirectory = 'market/market_product_images/preset';
 
-    /** Общие справочники для страниц create/edit. */
-    private function sharedSelects(
-        string $locale,
-        ?int $excludeProductId = null
-    ): array {
-        $companies = MarketCompany::query()
-            ->with('translations')
-            ->orderBy('sort')
-            ->orderByDesc('id')
-            ->get();
+    /* ======================== Index ======================== */
 
-        $shops = MarketShop::query()
-            ->with([
-                'translations',
-                'company.translations',
-            ])
-            ->orderBy('sort')
-            ->orderByDesc('id')
-            ->get();
-
-        $brands = MarketBrand::query()
-            ->with('translations')
-            ->orderBy('sort')
-            ->orderByDesc('id')
-            ->get();
-
-        $currencies = Currency::query()
-            ->active()
-            ->ordered()
-            ->get();
-
-        $categories = MarketCategory::query()
-            ->with([
-                'translations',
-                'parent.translations',
-            ])
-            ->orderBy('sort')
-            ->orderByDesc('id')
-            ->get();
-
-        $tags = MarketTag::query()
-            ->with('translations')
-            ->orderBy('sort')
-            ->orderByDesc('id')
-            ->get();
-
-        $attributes = MarketAttribute::query()
-            ->with([
-                'translations',
-                'group.translations',
-                'values.translations',
-            ])
-            ->orderBy('sort')
-            ->orderByDesc('id')
-            ->get();
-
-        $attributeValues = MarketAttributeValue::query()
-            ->with([
-                'translations',
-                'attribute.translations',
-            ])
-            ->orderBy('sort')
-            ->orderByDesc('id')
-            ->get();
-
-        $relatedProducts = MarketProduct::query()
-            ->with([
-                'translations',
-                'images',
-                'currency',
-                'company.translations',
-                'shop.translations',
-                'brand.translations',
-            ])
-            ->withCount(
-                $this->productCountRelations()
-            )
-            ->when(
-                $excludeProductId,
-                fn (Builder $query) => $query->where(
-                    'market_products.id',
-                    '<>',
-                    $excludeProductId
-                )
-            )
-            ->whereHas(
-                'translations',
-                fn (Builder $query) => $query->where(
-                    'locale',
-                    $locale
-                )
-            )
-            ->orderBy('sort')
-            ->orderByDesc('id')
-            ->get();
-
-        return [
-            'companies' => MarketCompanyResource::collection($companies),
-            'shops' => MarketShopResource::collection($shops),
-            'brands' => MarketBrandResource::collection($brands),
-            'currencies' => CurrencyResource::collection($currencies),
-
-            'categories' => MarketCategorySharedResource::collection(
-                $categories
-            ),
-
-            'tags' => MarketTagSharedResource::collection($tags),
-
-            'attributes' => MarketAttributeResource::collection(
-                $attributes
-            ),
-
-            'attributeValues' =>
-                MarketAttributeValueResource::collection($attributeValues),
-
-            /*
-             * Оба имени можно временно передавать для удобства Vue.
-             */
-            'related_products' =>
-                MarketProductSharedResource::collection($relatedProducts),
-
-            'relatedProducts' =>
-                MarketProductSharedResource::collection($relatedProducts),
-        ];
-    }
-
-    /** Список товаров. */
+    /** Список товаров */
     public function index(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
-
         $settings = app(AdminSettingsService::class);
 
-        $perPage = $settings->int(
-            'adminMarketProductsPerPage',
-            6
-        );
-
-        $defaultSort = $settings->string(
-            'adminMarketProductsDefaultSort',
-            'idDesc'
-        );
-
-        $sortParam = (string) $request->query(
-            'sort',
-            $defaultSort
-        );
-
-        $search = trim(
-            (string) $request->query('search', '')
-        );
-
-        $processingMode = $settings->string(
-            'adminMarketProductsProcessingMode',
-            'frontend'
-        );
+        $perPage = $settings->int('adminMarketProductsPerPage', 6);
+        $defaultSort = $settings->string('adminMarketProductsDefaultSort', 'idDesc');
+        $sortParam = (string) $request->query('sort', $defaultSort);
+        $search = trim((string) $request->query('search', ''));
+        $processingMode = $settings->string('adminMarketProductsProcessingMode', 'frontend');
 
         $productsCount = $this->baseQuery()->count();
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
-                $processingMode,
-                $productsCount,
-                300
-            );
+        $useServerProcessing = app(ProcessingModeService::class)->shouldUseServer(
+            $processingMode,
+            $productsCount,
+            300
+        );
 
         try {
             $products = $this->getIndexProducts(
@@ -258,63 +111,296 @@ class MarketProductController extends BaseMarketAdminController
                 search: $search
             );
 
-            return Inertia::render(
-                'Admin/Market/MarketProducts/Index',
-                [
-                    'currentLocale' => $currentLocale,
-                    'availableLocales' => $this->availableLocales(),
+            return Inertia::render('Admin/Market/MarketProducts/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
 
-                    'useServerProcessing' => $useServerProcessing,
+                'useServerProcessing' => $useServerProcessing,
 
-                    'adminMarketProductsPerPage' => $perPage,
-                    'adminMarketProductsDefaultSort' => $defaultSort,
-                    'adminMarketProductsProcessingMode' =>
-                        $processingMode,
+                'adminMarketProductsPerPage' => $perPage,
+                'adminMarketProductsDefaultSort' => $defaultSort,
+                'adminMarketProductsProcessingMode' => $processingMode,
 
-                    'products' =>
-                        MarketProductResource::collection($products),
+                'products' => MarketProductSharedResource::collection($products),
+                'productsCount' => $productsCount,
 
-                    'productsCount' => $productsCount,
-
-                    'sortParam' => $sortParam,
-                    'search' => $search,
-                ]
-            );
+                'sortParam' => $sortParam,
+                'search' => $search,
+            ]);
         } catch (Throwable $e) {
             Log::error(
-                'Ошибка загрузки списка market products: '
-                . $e->getMessage(),
-                [
-                    'exception' => $e,
-                ]
+                'Ошибка загрузки списка market products: ' . $e->getMessage(),
+                ['exception' => $e]
             );
 
-            return Inertia::render(
-                'Admin/Market/MarketProducts/Index',
-                [
-                    'currentLocale' => $currentLocale,
-                    'availableLocales' => $this->availableLocales(),
+            return Inertia::render('Admin/Market/MarketProducts/Index', [
+                'currentLocale' => $currentLocale,
+                'availableLocales' => $this->availableLocales(),
 
-                    'useServerProcessing' => $useServerProcessing,
+                'useServerProcessing' => $useServerProcessing,
 
-                    'adminMarketProductsPerPage' => $perPage,
-                    'adminMarketProductsDefaultSort' => $defaultSort,
-                    'adminMarketProductsProcessingMode' =>
-                        $processingMode,
+                'adminMarketProductsPerPage' => $perPage,
+                'adminMarketProductsDefaultSort' => $defaultSort,
+                'adminMarketProductsProcessingMode' => $processingMode,
 
-                    'products' => [],
-                    'productsCount' => 0,
+                'products' => [],
+                'productsCount' => 0,
 
-                    'sortParam' => $sortParam,
-                    'search' => $search,
+                'sortParam' => $sortParam,
+                'search' => $search,
 
-                    'error' => 'Ошибка загрузки товаров.',
-                ]
-            );
+                'error' => 'Ошибка загрузки товаров.',
+            ]);
         }
     }
 
-    /** Страница создания товара. */
+    /**
+     * Счётчики административного списка.
+     *
+     * likes здесь намеренно отсутствует:
+     * likes_count уже хранится непосредственно в market_products.
+     *
+     * relatedProducts оставляем, потому что SortSelect
+     * поддерживает сортировку relatedProductsAsc/Desc.
+     *
+     * @return array<int|string, string|\Closure>
+     */
+    private function productCountRelations(): array
+    {
+        return [
+            'images',
+            'categories',
+            'tags',
+            'attributeValues',
+            'variants',
+
+            'variants as available_variants_count' => function (Builder $query): void {
+                $query->active()->inStock();
+            },
+
+            'reviews',
+            'relatedProducts',
+        ];
+    }
+
+    /**
+     * Базовый запрос Index.
+     *
+     * Принципы:
+     * - только current-locale translations;
+     * - без moderator;
+     * - owner одним batch;
+     * - изображения вместе с media;
+     * - связанные мультиязычные сущности только current locale;
+     * - actual tags не загружаем: Index использует только tags_count;
+     * - характеристики загружаем, потому что Table использует tooltip.
+     */
+    private function indexQuery(string $locale): Builder
+    {
+        return $this->baseQuery()
+            ->with([
+                'owner:id,name,email,profile_photo_path',
+
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'images.media',
+
+                'currency',
+
+                'company.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'shop.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'brand.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'categories.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'attributeValues.attribute.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'attributeValues.attributeValue.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+            ])
+            ->withCount($this->productCountRelations());
+    }
+
+    /** Получение списка по активному режиму обработки */
+    private function getIndexProducts(
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query = $this->indexQuery($locale);
+
+        if ($useServerProcessing) {
+            return $query
+                ->search($search, $locale)
+                ->sortByParam($sort, $locale)
+                ->paginate($perPage)
+                ->withQueryString();
+        }
+
+        return $query
+            ->ordered()
+            ->get();
+    }
+
+    /* ======================== Create / Edit selects ======================== */
+
+    /**
+     * Общие справочники Create/Edit.
+     *
+     * Для мультиязычных справочников загружается только текущая locale.
+     * Исключение — собственные translations редактируемого товара:
+     * они загружаются отдельно в edit() полностью.
+     */
+    private function sharedSelects(
+        string $locale,
+        ?int $excludeProductId = null
+    ): array {
+        $companies = MarketCompany::query()
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+            ])
+            ->orderBy('market_companies.sort')
+            ->orderByDesc('market_companies.id')
+            ->get();
+
+        $shops = MarketShop::query()
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+            ])
+            ->orderBy('market_shops.sort')
+            ->orderByDesc('market_shops.id')
+            ->get();
+
+        $brands = MarketBrand::query()
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+            ])
+            ->orderBy('market_brands.sort')
+            ->orderByDesc('market_brands.id')
+            ->get();
+
+        $currencies = Currency::query()
+            ->active()
+            ->ordered()
+            ->get();
+
+        $categories = MarketCategory::query()
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'parent.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+            ])
+            ->orderBy('market_categories.sort')
+            ->orderByDesc('market_categories.id')
+            ->get();
+
+        $tags = MarketTag::query()
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+            ])
+            ->orderBy('market_tags.sort')
+            ->orderByDesc('market_tags.id')
+            ->get();
+
+        /**
+         * Атрибуты оставляем через полный Resource:
+         * MarketProductAttributesField использует не только сам атрибут,
+         * но и его группу и доступные значения.
+         */
+        $attributes = MarketAttribute::query()
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'group.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'values.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+            ])
+            ->orderBy('market_attributes.sort')
+            ->orderByDesc('market_attributes.id')
+            ->get();
+
+        /**
+         * Справочник рекомендуемых товаров.
+         *
+         * Не загружаем:
+         * - все переводы;
+         * - categories/tags;
+         * - attribute values;
+         * - moderator;
+         * - тяжёлые relation counts.
+         *
+         * Для выбора достаточно названия, цены, изображения,
+         * валюты, компании, магазина и бренда.
+         */
+        $relatedProducts = MarketProduct::query()
+            ->with([
+                'translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'images.media',
+                'currency',
+
+                'company.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'shop.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+
+                'brand.translations' => fn ($query) =>
+                $query->where('locale', $locale),
+            ])
+            ->withCount([
+                'images',
+                'variants',
+            ])
+            ->when(
+                $excludeProductId,
+                fn (Builder $query) =>
+                $query->where('market_products.id', '<>', $excludeProductId)
+            )
+            ->whereHas(
+                'translations',
+                fn (Builder $query) =>
+                $query->where('locale', $locale)
+            )
+            ->orderBy('market_products.sort')
+            ->orderByDesc('market_products.id')
+            ->get();
+
+        return [
+            'companies' => MarketCompanySharedResource::collection($companies),
+            'shops' => MarketShopSharedResource::collection($shops),
+            'brands' => MarketBrandSharedResource::collection($brands),
+            'currencies' => CurrencyResource::collection($currencies),
+
+            'categories' => MarketCategorySharedResource::collection($categories),
+            'tags' => MarketTagSharedResource::collection($tags),
+
+            'attributes' => MarketAttributeResource::collection($attributes),
+            'relatedProducts' => MarketProductSharedResource::collection($relatedProducts),
+        ];
+    }
+
+    /** Страница создания товара */
     public function create(Request $request): Response
     {
         $currentLocale = $this->resolveLocale($request);
@@ -326,9 +412,7 @@ class MarketProductController extends BaseMarketAdminController
                     'currentLocale' => $currentLocale,
                     'availableLocales' => $this->availableLocales(),
 
-                    'imageProcessorEnabled' =>
-                        $this->imageProcessorEnabled(),
-
+                    'imageProcessorEnabled' => $this->imageProcessorEnabled(),
                     'imagePreset' => $this->imagePresetPayload(),
                 ],
                 $this->sharedSelects($currentLocale)
@@ -336,7 +420,54 @@ class MarketProductController extends BaseMarketAdminController
         );
     }
 
-    /** Создание товара. */
+    /** Страница редактирования товара */
+    public function edit(
+        int $marketProduct,
+        Request $request
+    ): Response {
+        $currentLocale = $this->resolveLocale($request);
+
+        /**
+         * Загружаем только данные, которые нужны самой Edit-форме.
+         *
+         * Собственные translations — ВСЕ locale для TranslationTabs.
+         * Связи товара здесь нужны только для инициализации формы.
+         * Отображаемые данные связанных сущностей приходят через sharedSelects().
+         */
+        $product = $this->baseQuery()
+            ->with([
+                'translations',
+                'images.media',
+                'categories',
+                'tags',
+                'attributeValues',
+                'relatedProducts',
+            ])
+            ->findOrFail($marketProduct);
+
+        return Inertia::render(
+            'Admin/Market/MarketProducts/Edit',
+            array_merge(
+                [
+                    'product' => new MarketProductResource($product),
+
+                    'currentLocale' => $currentLocale,
+                    'availableLocales' => $this->availableLocales(),
+
+                    'imageProcessorEnabled' => $this->imageProcessorEnabled(),
+                    'imagePreset' => $this->imagePresetPayload(),
+                ],
+                $this->sharedSelects(
+                    $currentLocale,
+                    $product->id
+                )
+            )
+        );
+    }
+
+    /* ======================== Store / Update ======================== */
+
+    /** Создание товара */
     public function store(
         MarketProductRequest $request
     ): RedirectResponse {
@@ -369,7 +500,7 @@ class MarketProductController extends BaseMarketAdminController
         ) {
             $data['user_id'] = $user->id;
 
-            /*
+            /**
              * Обычный пользователь не должен назначать себе
              * одобрение и модератора.
              */
@@ -380,9 +511,10 @@ class MarketProductController extends BaseMarketAdminController
                 $data['moderation_note']
             );
         } else {
-            $data['user_id'] = $data['user_id']
-                ?? $user?->id;
+            $data['user_id'] = $data['user_id'] ?? $user?->id;
         }
+
+        $product = null;
 
         try {
             DB::transaction(function () use (
@@ -400,7 +532,8 @@ class MarketProductController extends BaseMarketAdminController
                     ! isset($data['sort'])
                     || is_null($data['sort'])
                 ) {
-                    $maxSort = MarketProduct::query()->max('sort');
+                    $maxSort = MarketProduct::query()
+                        ->max('market_products.sort');
 
                     $data['sort'] = is_null($maxSort)
                         ? 0
@@ -409,36 +542,12 @@ class MarketProductController extends BaseMarketAdminController
 
                 $product = MarketProduct::query()->create($data);
 
-                $this->syncTranslations(
-                    $product,
-                    $translations
-                );
-
-                $this->syncCategories(
-                    $product,
-                    $categories
-                );
-
-                $this->syncTags(
-                    $product,
-                    $tags
-                );
-
-                $this->syncRelatedProducts(
-                    $product,
-                    $relatedProducts
-                );
-
-                $this->syncAttributeValues(
-                    $product,
-                    $attributeValues
-                );
-
-                $this->syncImages(
-                    $product,
-                    $request,
-                    $imagesData
-                );
+                $this->syncTranslations($product, $translations);
+                $this->syncCategories($product, $categories);
+                $this->syncTags($product, $tags);
+                $this->syncRelatedProducts($product, $relatedProducts);
+                $this->syncAttributeValues($product, $attributeValues);
+                $this->syncImages($product, $request, $imagesData);
             });
 
             return redirect()
@@ -446,11 +555,8 @@ class MarketProductController extends BaseMarketAdminController
                 ->with('success', 'Товар успешно создан.');
         } catch (Throwable $e) {
             Log::error(
-                'Ошибка при создании market product: '
-                . $e->getMessage(),
-                [
-                    'exception' => $e,
-                ]
+                'Ошибка при создании market product: ' . $e->getMessage(),
+                ['exception' => $e]
             );
 
             return back()
@@ -459,82 +565,18 @@ class MarketProductController extends BaseMarketAdminController
         }
     }
 
-    /** Просмотр перенаправляем на редактирование. */
+    /** Просмотр перенаправляем на редактирование */
     public function show(string $id): RedirectResponse
     {
-        return redirect()->route(
-            'admin.marketProducts.edit',
-            $id
-        );
+        return redirect()->route('admin.marketProducts.edit', $id);
     }
 
-    /** Страница редактирования товара. */
-    public function edit(
-        int $marketProduct,
-        Request $request
-    ): Response {
-        $product = $this->baseQuery()
-            ->with([
-                'owner',
-                'moderator',
-                'translations',
-                'images',
-                'currency',
-
-                'company.translations',
-                'shop.translations',
-                'brand.translations',
-
-                'categories.translations',
-                'mainCategories.translations',
-                'tags.translations',
-
-                'attributeValues.attribute.translations',
-                'attributeValues.attributeValue.translations',
-
-                'relatedProducts.translations',
-                'relatedProducts.images',
-                'relatedProducts.currency',
-                'relatedProducts.company.translations',
-                'relatedProducts.shop.translations',
-                'relatedProducts.brand.translations',
-            ])
-            ->withCount(
-                $this->productCountRelations()
-            )
-            ->findOrFail($marketProduct);
-
-        $currentLocale = $this->resolveLocale($request);
-
-        return Inertia::render(
-            'Admin/Market/MarketProducts/Edit',
-            array_merge(
-                [
-                    'product' => new MarketProductResource($product),
-
-                    'currentLocale' => $currentLocale,
-                    'availableLocales' => $this->availableLocales(),
-
-                    'imageProcessorEnabled' =>
-                        $this->imageProcessorEnabled(),
-
-                    'imagePreset' => $this->imagePresetPayload(),
-                ],
-                $this->sharedSelects(
-                    $currentLocale,
-                    $product->id
-                )
-            )
-        );
-    }
-
-    /** Обновление товара. */
+    /** Обновление товара */
     public function update(
         MarketProductRequest $request,
         int $marketProduct
     ): RedirectResponse {
-        $product = $this->baseQuery()
-            ->findOrFail($marketProduct);
+        $product = $this->baseQuery()->findOrFail($marketProduct);
 
         $data = $request->validated();
 
@@ -590,30 +632,11 @@ class MarketProductController extends BaseMarketAdminController
             ): void {
                 $product->update($data);
 
-                $this->syncTranslations(
-                    $product,
-                    $translations
-                );
-
-                $this->syncCategories(
-                    $product,
-                    $categories
-                );
-
-                $this->syncTags(
-                    $product,
-                    $tags
-                );
-
-                $this->syncRelatedProducts(
-                    $product,
-                    $relatedProducts
-                );
-
-                $this->syncAttributeValues(
-                    $product,
-                    $attributeValues
-                );
+                $this->syncTranslations($product, $translations);
+                $this->syncCategories($product, $categories);
+                $this->syncTags($product, $tags);
+                $this->syncRelatedProducts($product, $relatedProducts);
+                $this->syncAttributeValues($product, $attributeValues);
 
                 $this->syncImages(
                     $product,
@@ -632,9 +655,7 @@ class MarketProductController extends BaseMarketAdminController
                 . $product->id
                 . ': '
                 . $e->getMessage(),
-                [
-                    'exception' => $e,
-                ]
+                ['exception' => $e]
             );
 
             return back()
@@ -643,7 +664,9 @@ class MarketProductController extends BaseMarketAdminController
         }
     }
 
-    /** Удаление товара. */
+    /* ======================== Delete ======================== */
+
+    /** Удаление товара */
     public function destroy(
         int $marketProduct
     ): RedirectResponse {
@@ -672,10 +695,7 @@ class MarketProductController extends BaseMarketAdminController
                     ->map(fn ($id) => (int) $id)
                     ->all();
 
-                /**
-                 * Сначала удаляем связи,
-                 * затем сами изображения товара.
-                 */
+                /** Сначала pivot, затем сами изображения */
                 $product->images()->detach();
 
                 if ($imageIds !== []) {
@@ -691,8 +711,8 @@ class MarketProductController extends BaseMarketAdminController
                 $product->attributeValues()->delete();
 
                 /**
-                 * Отзывы и лайки имеют cascadeOnDelete,
-                 * но явное удаление делает жизненный цикл понятнее.
+                 * Reviews/likes могут иметь cascade,
+                 * но оставляем явный жизненный цикл.
                  */
                 $product->reviews()->delete();
                 $product->likes()->delete();
@@ -710,9 +730,7 @@ class MarketProductController extends BaseMarketAdminController
                 . $product->id
                 . ': '
                 . $e->getMessage(),
-                [
-                    'exception' => $e,
-                ]
+                ['exception' => $e]
             );
 
             return back()
@@ -720,18 +738,12 @@ class MarketProductController extends BaseMarketAdminController
         }
     }
 
-
-    /** Массовое удаление товаров. */
+    /** Массовое удаление товаров */
     public function bulkDestroy(
         Request $request
     ): RedirectResponse {
         $validated = $request->validate([
-            'ids' => [
-                'required',
-                'array',
-                'min:1',
-            ],
-
+            'ids' => ['required', 'array', 'min:1'],
             'ids.*' => [
                 'required',
                 'integer',
@@ -742,7 +754,7 @@ class MarketProductController extends BaseMarketAdminController
 
         $ids = $validated['ids'];
 
-        /*
+        /**
          * baseQuery ограничивает обычного пользователя
          * только принадлежащими ему товарами.
          */
@@ -761,10 +773,9 @@ class MarketProductController extends BaseMarketAdminController
         try {
             DB::transaction(function () use ($allowedIds): void {
                 $products = MarketProduct::query()
-                    ->whereIn('id', $allowedIds)
+                    ->whereIn('market_products.id', $allowedIds)
                     ->with([
                         'images',
-
                         'variants.images',
                         'variants.translations',
                         'variants.values',
@@ -772,10 +783,6 @@ class MarketProductController extends BaseMarketAdminController
                     ->get();
 
                 foreach ($products as $product) {
-                    /**
-                     * Удаляем варианты и их изображения
-                     * до удаления родительского товара.
-                     */
                     $this->deleteProductVariants($product);
 
                     $imageIds = $product->images()
@@ -810,11 +817,8 @@ class MarketProductController extends BaseMarketAdminController
             );
         } catch (Throwable $e) {
             Log::error(
-                'Ошибка bulkDestroy market products: '
-                . $e->getMessage(),
-                [
-                    'exception' => $e,
-                ]
+                'Ошибка bulkDestroy market products: ' . $e->getMessage(),
+                ['exception' => $e]
             );
 
             return back()->with(
@@ -824,45 +828,71 @@ class MarketProductController extends BaseMarketAdminController
         }
     }
 
-    /** Переключение флага "новый товар". */
-    public function updateIsNew(Request $request, int $marketProduct): RedirectResponse
-    {
-        return $this->updateBooleanFlag($request, $marketProduct, 'is_new');
+    /* ======================== Product flags ======================== */
+
+    /** Переключение флага "новый товар" */
+    public function updateIsNew(
+        Request $request,
+        int $marketProduct
+    ): RedirectResponse {
+        return $this->updateBooleanFlag(
+            $request,
+            $marketProduct,
+            'is_new'
+        );
     }
 
-    /** Переключение флага "рекомендуемый / хит продаж". */
-    public function updateIsHit(Request $request, int $marketProduct): RedirectResponse
-    {
-        return $this->updateBooleanFlag($request, $marketProduct, 'is_hit');
+    /** Переключение флага "рекомендуемый / хит продаж" */
+    public function updateIsHit(
+        Request $request,
+        int $marketProduct
+    ): RedirectResponse {
+        return $this->updateBooleanFlag(
+            $request,
+            $marketProduct,
+            'is_hit'
+        );
     }
 
-    /** Переключение флага "товар в распродаже". */
-    public function updateIsSale(Request $request, int $marketProduct): RedirectResponse
-    {
-        return $this->updateBooleanFlag($request, $marketProduct, 'is_sale');
+    /** Переключение флага "товар в распродаже" */
+    public function updateIsSale(
+        Request $request,
+        int $marketProduct
+    ): RedirectResponse {
+        return $this->updateBooleanFlag(
+            $request,
+            $marketProduct,
+            'is_sale'
+        );
     }
 
-    /** Массовое обновление флага "новый товар". */
-    public function bulkUpdateIsNew(Request $request): RedirectResponse|JsonResponse
-    {
+    /** Массовое обновление флага "новый товар" */
+    public function bulkUpdateIsNew(
+        Request $request
+    ): RedirectResponse|JsonResponse {
         return $this->bulkUpdateBooleanFlag($request, 'is_new');
     }
 
-    /** Массовое обновление флага "рекомендуемый / хит продаж". */
-    public function bulkUpdateIsHit(Request $request): RedirectResponse|JsonResponse
-    {
+    /** Массовое обновление флага "рекомендуемый / хит продаж" */
+    public function bulkUpdateIsHit(
+        Request $request
+    ): RedirectResponse|JsonResponse {
         return $this->bulkUpdateBooleanFlag($request, 'is_hit');
     }
 
-    /** Массовое обновление флага "товар в распродаже". */
-    public function bulkUpdateIsSale(Request $request): RedirectResponse|JsonResponse
-    {
+    /** Массовое обновление флага "товар в распродаже" */
+    public function bulkUpdateIsSale(
+        Request $request
+    ): RedirectResponse|JsonResponse {
         return $this->bulkUpdateBooleanFlag($request, 'is_sale');
     }
 
-    /** Обновление boolean-флага товара. */
-    private function updateBooleanFlag(Request $request, int $marketProduct, string $field): RedirectResponse
-    {
+    /** Обновление boolean-флага товара */
+    private function updateBooleanFlag(
+        Request $request,
+        int $marketProduct,
+        string $field
+    ): RedirectResponse {
         $this->validateBooleanField($field);
 
         $validated = $request->validate([
@@ -875,17 +905,27 @@ class MarketProductController extends BaseMarketAdminController
             $field => $validated[$field],
         ]);
 
-        return back()->with('success', "Поле {$field} товара обновлено.");
+        return back()->with(
+            'success',
+            "Поле {$field} товара обновлено."
+        );
     }
 
-    /** Массовое обновление boolean-флага товаров. */
-    private function bulkUpdateBooleanFlag(Request $request, string $field): RedirectResponse|JsonResponse
-    {
+    /** Массовое обновление boolean-флага товаров */
+    private function bulkUpdateBooleanFlag(
+        Request $request,
+        string $field
+    ): RedirectResponse|JsonResponse {
         $this->validateBooleanField($field);
 
         $validated = $request->validate([
             'ids' => ['required', 'array'],
-            'ids.*' => ['required', 'integer', 'distinct', 'exists:market_products,id'],
+            'ids.*' => [
+                'required',
+                'integer',
+                'distinct',
+                'exists:market_products,id',
+            ],
             $field => ['required', 'boolean'],
         ]);
 
@@ -898,109 +938,44 @@ class MarketProductController extends BaseMarketAdminController
             $message = 'Часть товаров недоступна для обновления.';
 
             return $request->expectsJson()
-                ? response()->json(['success' => false, 'message' => $message], 403)
+                ? response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], 403)
                 : back()->with('error', $message);
         }
 
-        MarketProduct::query()->whereIn('id', $allowedIds)->update([
-            $field => $validated[$field],
-        ]);
+        MarketProduct::query()
+            ->whereIn('market_products.id', $allowedIds)
+            ->update([
+                $field => $validated[$field],
+            ]);
 
         $message = "Поле {$field} выбранных товаров обновлено.";
 
         return $request->expectsJson()
-            ? response()->json(['success' => true, 'message' => $message])
+            ? response()->json([
+                'success' => true,
+                'message' => $message,
+            ])
             : back()->with('success', $message);
     }
 
-    /** Проверка разрешённого boolean-поля. */
+    /** Проверка разрешённого boolean-поля */
     private function validateBooleanField(string $field): void
     {
-        abort_unless(in_array($field, ['is_new', 'is_hit', 'is_sale'], true), 422, 'Недопустимое поле товара.');
+        abort_unless(
+            in_array(
+                $field,
+                ['is_new', 'is_hit', 'is_sale'],
+                true
+            ),
+            422,
+            'Недопустимое поле товара.'
+        );
     }
 
-    /**
-     * Счётчики связей товара.
-     *
-     * Используются:
-     * - в административном списке;
-     * - на странице редактирования;
-     * - в справочнике рекомендуемых товаров.
-     *
-     * @return array<int|string, string|\Closure>
-     */
-    private function productCountRelations(): array
-    {
-        return [
-            'images',
-            'categories',
-            'tags',
-            'attributeValues',
-            'variants',
-
-            /**
-             * Количество активных вариантов,
-             * доступных для продажи.
-             */
-            'variants as available_variants_count' => function (
-                Builder $query
-            ): void {
-                $query
-                    ->active()
-                    ->inStock();
-            },
-
-            'reviews',
-            'likes',
-            'relatedProducts',
-        ];
-    }
-
-    /** Базовый запрос списка товаров. */
-    private function indexQuery(): Builder
-    {
-        return $this->baseQuery()
-            ->with([
-                'owner',
-                'moderator',
-                'translations',
-                'images',
-                'currency',
-
-                'company.translations',
-                'shop.translations',
-                'brand.translations',
-
-                'categories.translations',
-                'tags.translations',
-            ])
-            ->withCount(
-                $this->productCountRelations()
-            );
-    }
-
-    /** Получение списка по активному режиму обработки. */
-    private function getIndexProducts(
-        string $locale,
-        bool $useServerProcessing,
-        int $perPage,
-        string $sort,
-        string $search = ''
-    ) {
-        $query = $this->indexQuery();
-
-        if ($useServerProcessing) {
-            return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
-                ->withQueryString();
-        }
-
-        return $query
-            ->ordered()
-            ->get();
-    }
+    /* ======================== Delete helpers ======================== */
 
     /**
      * Удалить все варианты товара
@@ -1015,9 +990,7 @@ class MarketProductController extends BaseMarketAdminController
                 ->map(fn ($id) => (int) $id)
                 ->all();
 
-            /**
-             * Сначала удаляем pivot-связи изображений.
-             */
+            /** Сначала удаляем pivot-связи изображений */
             $variant->images()->detach();
 
             /**
@@ -1045,7 +1018,9 @@ class MarketProductController extends BaseMarketAdminController
         }
     }
 
-    /** Синхронизация категорий товара. */
+    /* ======================== Sync helpers ======================== */
+
+    /** Синхронизация категорий товара */
     private function syncCategories(
         MarketProduct $product,
         array $categories
@@ -1072,7 +1047,7 @@ class MarketProductController extends BaseMarketAdminController
         $product->categories()->sync($syncData);
     }
 
-    /** Синхронизация тегов товара. */
+    /** Синхронизация тегов товара */
     private function syncTags(
         MarketProduct $product,
         array $tags
@@ -1098,14 +1073,14 @@ class MarketProductController extends BaseMarketAdminController
         $product->tags()->sync($syncData);
     }
 
-    /** Синхронизация рекомендуемых товаров. */
+    /** Синхронизация рекомендуемых товаров */
     private function syncRelatedProducts(
         MarketProduct $product,
         array $relatedProducts
     ): void {
-        /*
-         * Request запрещает повторы id, поэтому стандартного sync()
-         * достаточно: один рекомендуемый товар — одна связь.
+        /**
+         * Request запрещает повторы id:
+         * один рекомендуемый товар — одна pivot-связь.
          */
         $syncData = [];
 
@@ -1130,10 +1105,9 @@ class MarketProductController extends BaseMarketAdminController
             ];
         }
 
-        /*
-         * В relation есть wherePivot(activity = true).
-         * Для надёжного обновления также удаляем старые исходящие
-         * строки напрямую из pivot-таблицы.
+        /**
+         * relation содержит wherePivot(activity = true),
+         * поэтому старые исходящие строки удаляем напрямую.
          */
         DB::table('market_product_related')
             ->where('market_product_id', $product->id)
@@ -1168,7 +1142,6 @@ class MarketProductController extends BaseMarketAdminController
             }
 
             $attributeId = (int) $attributeId;
-
             $receivedAttributeIds[] = $attributeId;
 
             $product->attributeValues()->updateOrCreate(
@@ -1207,14 +1180,11 @@ class MarketProductController extends BaseMarketAdminController
             );
         }
 
-        /*
-         * Удаляем характеристики, которые пользователь убрал из формы.
-         */
+        /** Удаляем характеристики, которые пользователь убрал */
         $query = $product->attributeValues();
 
         if ($receivedAttributeIds === []) {
             $query->delete();
-
             return;
         }
 

@@ -3,58 +3,36 @@
 namespace App\Http\Resources\Admin\Market\MarketProduct;
 
 use App\Http\Resources\Admin\Finance\Currency\CurrencyResource;
-use App\Http\Resources\Admin\Market\MarketCategory\MarketCategoryResource;
 use App\Http\Resources\Admin\Market\MarketProductVariant\MarketProductVariantSharedResource;
-use App\Http\Resources\Admin\Market\MarketTag\MarketTagResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class MarketProductResource extends JsonResource
 {
     /**
-     * Преобразование товара в массив.
+     * Полное представление товара.
+     *
+     * Используется прежде всего на Edit/details.
+     *
+     * Важно:
+     * - собственные translations могут быть загружены полностью;
+     * - связанные мультиязычные сущности читают только уже загруженные translations;
+     * - Resource не выполняет SQL самостоятельно;
+     * - все тяжёлые связи появляются только через whenLoaded/whenCounted.
      *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        $currentLocale = app()->getLocale();
-        $fallbackLocale = config('app.fallback_locale', 'ru');
-
-        /**
-         * Определяем перевод текущей локали.
-         * Коллекция translations должна быть загружена в контроллере.
-         */
-        $currentTranslation = $this->whenLoaded(
-            'translations',
-            function () use ($currentLocale, $fallbackLocale) {
-                return $this->translations->firstWhere('locale', $currentLocale)
-                    ?: $this->translations->firstWhere('locale', $fallbackLocale)
-                        ?: $this->translations->first();
-            }
-        );
-
         return [
             'id' => (int) $this->id,
 
             /** Внешние ключи */
-            'user_id' => (int) $this->user_id,
-
-            'market_company_id' => $this->market_company_id
-                ? (int) $this->market_company_id
-                : null,
-
-            'market_shop_id' => $this->market_shop_id
-                ? (int) $this->market_shop_id
-                : null,
-
-            'market_brand_id' => $this->market_brand_id
-                ? (int) $this->market_brand_id
-                : null,
-
-            'currency_id' => $this->currency_id
-                ? (int) $this->currency_id
-                : null,
+            'user_id' => $this->user_id !== null ? (int) $this->user_id : null,
+            'market_company_id' => $this->market_company_id !== null ? (int) $this->market_company_id : null,
+            'market_shop_id' => $this->market_shop_id !== null ? (int) $this->market_shop_id : null,
+            'market_brand_id' => $this->market_brand_id !== null ? (int) $this->market_brand_id : null,
+            'currency_id' => $this->currency_id !== null ? (int) $this->currency_id : null,
 
             /** Основные данные */
             'url' => $this->url,
@@ -62,17 +40,11 @@ class MarketProductResource extends JsonResource
             'vendor_code' => $this->vendor_code,
             'barcode' => $this->barcode,
 
-            /**
-             * Цены
-             *
-             * decimal-cast в модели возвращает строку.
-             * Это сохраняет точность денежных значений.
-             */
+            /** Цены */
             'price' => $this->price,
             'old_price' => $this->old_price,
             'purchase_price' => $this->purchase_price,
             'wholesale_price' => $this->wholesale_price,
-
             'wholesale_min_quantity' => $this->wholesale_min_quantity !== null
                 ? (int) $this->wholesale_min_quantity
                 : null,
@@ -90,7 +62,6 @@ class MarketProductResource extends JsonResource
             /** Отображение */
             'sort' => (int) $this->sort,
             'activity' => (bool) $this->activity,
-
             'left' => (bool) $this->left,
             'main' => (bool) $this->main,
             'right' => (bool) $this->right,
@@ -105,9 +76,11 @@ class MarketProductResource extends JsonResource
 
             /** Модерация */
             'moderation_status' => (int) $this->moderation_status,
+            'is_pending' => (int) $this->moderation_status === 0,
             'is_approved' => (int) $this->moderation_status === 1,
+            'is_rejected' => (int) $this->moderation_status === 2,
 
-            'moderated_by' => $this->moderated_by
+            'moderated_by' => $this->moderated_by !== null
                 ? (int) $this->moderated_by
                 : null,
 
@@ -119,7 +92,7 @@ class MarketProductResource extends JsonResource
             'show_from_at' => $this->show_from_at?->format('Y-m-d\TH:i'),
             'show_to_at' => $this->show_to_at?->format('Y-m-d\TH:i'),
 
-            /** Счётчики и рейтинг */
+            /** Статистика */
             'views' => (int) $this->views,
             'likes_count' => (int) $this->likes_count,
             'rating_avg' => $this->rating_avg,
@@ -130,9 +103,6 @@ class MarketProductResource extends JsonResource
             'has_old_price' => $this->hasOldPrice(),
             'has_wholesale_price' => $this->hasWholesalePrice(),
 
-            /**
-             * Есть ли у товара варианты.
-             */
             'has_variants' => isset($this->variants_count)
                 ? (int) $this->variants_count > 0
                 : (
@@ -141,19 +111,12 @@ class MarketProductResource extends JsonResource
                     : false
                 ),
 
-            /**
-             * Есть ли активные варианты в наличии.
-             */
-            'has_available_variants' => isset(
-                $this->available_variants_count
-            )
+            'has_available_variants' => isset($this->available_variants_count)
                 ? (int) $this->available_variants_count > 0
                 : (
                 $this->relationLoaded('variants')
                     ? $this->variants->contains(
-                    fn ($variant) =>
-                        $variant->isActive()
-                        && $variant->hasStock()
+                    fn ($variant) => $variant->isActive() && $variant->hasStock()
                 )
                     : false
                 ),
@@ -162,17 +125,21 @@ class MarketProductResource extends JsonResource
             'is_published' => $this->isPublished(),
             'is_published_now' => $this->isPublishedNow(),
 
-            /** Текущий перевод */
-            'translation' => $currentTranslation
-                ? new MarketProductTranslationResource($currentTranslation)
+            /** Текущий перевод из уже загруженных translations */
+            'translation' => $this->currentTranslation()
+                ? new MarketProductTranslationResource($this->currentTranslation())
                 : null,
 
-            /** Все переводы */
+            /**
+             * Все собственные переводы.
+             *
+             * На Edit Controller загружает translations без locale-фильтра.
+             */
             'translations' => MarketProductTranslationResource::collection(
                 $this->whenLoaded('translations')
             ),
 
-            /** Владелец товара */
+            /** Владелец */
             'owner' => $this->whenLoaded('owner', function () {
                 if (! $this->owner) {
                     return null;
@@ -199,106 +166,60 @@ class MarketProductResource extends JsonResource
                 ];
             }),
 
-            /** Валюта товара */
-            'currency' => new CurrencyResource(
-                $this->whenLoaded('currency')
-            ),
+            /** Валюта */
+            'currency' => $this->whenLoaded('currency', function () {
+                return $this->currency
+                    ? new CurrencyResource($this->currency)
+                    : null;
+            }),
 
-            /** Компания-поставщик */
-            'company' => $this->whenLoaded('company', function () use (
-                $currentLocale,
-                $fallbackLocale
-            ) {
+            /** Компания */
+            'company' => $this->whenLoaded('company', function () {
                 if (! $this->company) {
                     return null;
                 }
-
-                $translation = $this->company->relationLoaded('translations')
-                    ? (
-                    $this->company->translations->firstWhere(
-                        'locale',
-                        $currentLocale
-                    )
-                        ?: $this->company->translations->firstWhere(
-                        'locale',
-                        $fallbackLocale
-                    )
-                        ?: $this->company->translations->first()
-                    )
-                    : null;
 
                 return [
                     'id' => (int) $this->company->id,
                     'url' => $this->company->url,
                     'legal_name' => $this->company->legal_name,
-                    'title' => $translation?->title,
                     'logo' => $this->company->logo,
                     'activity' => (bool) $this->company->activity,
+                    'translation' => $this->relatedTranslation($this->company),
                 ];
             }),
 
             /** Магазин */
-            'shop' => $this->whenLoaded('shop', function () use (
-                $currentLocale,
-                $fallbackLocale
-            ) {
+            'shop' => $this->whenLoaded('shop', function () {
                 if (! $this->shop) {
                     return null;
                 }
 
-                $translation = $this->shop->relationLoaded('translations')
-                    ? (
-                    $this->shop->translations->firstWhere(
-                        'locale',
-                        $currentLocale
-                    )
-                        ?: $this->shop->translations->firstWhere(
-                        'locale',
-                        $fallbackLocale
-                    )
-                        ?: $this->shop->translations->first()
-                    )
-                    : null;
-
                 return [
                     'id' => (int) $this->shop->id,
+                    'market_company_id' => $this->shop->market_company_id !== null
+                        ? (int) $this->shop->market_company_id
+                        : null,
                     'url' => $this->shop->url,
-                    'title' => $translation?->title,
                     'logo' => $this->shop->logo,
                     'activity' => (bool) $this->shop->activity,
+                    'translation' => $this->relatedTranslation($this->shop),
                 ];
             }),
 
             /** Бренд */
-            'brand' => $this->whenLoaded('brand', function () use (
-                $currentLocale,
-                $fallbackLocale
-            ) {
+            'brand' => $this->whenLoaded('brand', function () {
                 if (! $this->brand) {
                     return null;
                 }
 
-                $translation = $this->brand->relationLoaded('translations')
-                    ? (
-                    $this->brand->translations->firstWhere(
-                        'locale',
-                        $currentLocale
-                    )
-                        ?: $this->brand->translations->firstWhere(
-                        'locale',
-                        $fallbackLocale
-                    )
-                        ?: $this->brand->translations->first()
-                    )
-                    : null;
-
                 return [
                     'id' => (int) $this->brand->id,
                     'url' => $this->brand->url,
-                    'title' => $translation?->title,
-                    'logo' => $this->brand->logo,
                     'website' => $this->brand->website,
+                    'logo' => $this->brand->logo,
                     'activity' => (bool) $this->brand->activity,
+                    'translation' => $this->relatedTranslation($this->brand),
                 ];
             }),
 
@@ -308,162 +229,46 @@ class MarketProductResource extends JsonResource
             ),
 
             /** Категории */
-            'categories' => MarketCategoryResource::collection(
-                $this->whenLoaded('categories')
-            ),
+            'categories' => $this->whenLoaded('categories', function () {
+                return $this->categories
+                    ->map(fn ($category) => $this->compactCategory($category))
+                    ->values();
+            }),
 
             /** Основные категории */
-            'main_categories' => MarketCategoryResource::collection(
-                $this->whenLoaded('mainCategories')
-            ),
+            'main_categories' => $this->whenLoaded('mainCategories', function () {
+                return $this->mainCategories
+                    ->map(fn ($category) => $this->compactCategory($category))
+                    ->values();
+            }),
 
             /** Теги */
-            'tags' => MarketTagResource::collection(
-                $this->whenLoaded('tags')
-            ),
+            'tags' => $this->whenLoaded('tags', function () {
+                return $this->tags
+                    ->map(fn ($tag) => $this->compactTag($tag))
+                    ->values();
+            }),
 
-            /** Характеристики товара. */
-            'attribute_values' => $this->whenLoaded(
-                'attributeValues',
-                function () use ($currentLocale, $fallbackLocale) {
-                    return $this->attributeValues
-                        ->map(function ($item) use (
-                            $currentLocale,
-                            $fallbackLocale
-                        ) {
-                            /**
-                             * Перевод характеристики:
-                             * например «Цвет», «Мощность», «Материал».
-                             */
-                            $attributeTranslation = null;
+            /** Характеристики */
+            'attribute_values' => $this->whenLoaded('attributeValues', function () {
+                return $this->attributeValues
+                    ->map(fn ($item) => $this->compactAttributeValue($item))
+                    ->values();
+            }),
 
-                            if (
-                                $item->relationLoaded('attribute')
-                                && $item->attribute
-                                && $item->attribute->relationLoaded('translations')
-                            ) {
-                                $attributeTranslation =
-                                    $item->attribute->translations
-                                        ->firstWhere('locale', $currentLocale)
-                                        ?: $item->attribute->translations
-                                        ->firstWhere('locale', $fallbackLocale)
-                                        ?: $item->attribute->translations->first();
-                            }
-
-                            /**
-                             * Перевод справочного значения:
-                             * например «Красный», «Синий», «Металл».
-                             */
-                            $valueTranslation = null;
-
-                            if (
-                                $item->relationLoaded('attributeValue')
-                                && $item->attributeValue
-                                && $item->attributeValue
-                                    ->relationLoaded('translations')
-                            ) {
-                                $valueTranslation =
-                                    $item->attributeValue->translations
-                                        ->firstWhere('locale', $currentLocale)
-                                        ?: $item->attributeValue->translations
-                                        ->firstWhere('locale', $fallbackLocale)
-                                        ?: $item->attributeValue
-                                            ->translations
-                                            ->first();
-                            }
-
-                            return [
-                                'id' => (int) $item->id,
-
-                                'market_attribute_id' =>
-                                    (int) $item->market_attribute_id,
-
-                                'market_attribute_value_id' =>
-                                    $item->market_attribute_value_id !== null
-                                        ? (int) $item->market_attribute_value_id
-                                        : null,
-
-                                /**
-                                 * Фактические значения характеристики.
-                                 */
-                                'value_string' => $item->value_string,
-                                'value_number' => $item->value_number,
-                                'value_boolean' => $item->value_boolean,
-                                'value_date' => $item->value_date?->format('Y-m-d'),
-                                'value_json' => $item->value_json,
-
-                                'unit' => $item->unit,
-                                'order' => (int) $item->order,
-                                'activity' => (bool) $item->activity,
-
-                                /**
-                                 * Компактная характеристика.
-                                 */
-                                'attribute' => $item->relationLoaded('attribute')
-                                && $item->attribute
-                                    ? [
-                                        'id' => (int) $item->attribute->id,
-                                        'title' => $attributeTranslation?->title,
-                                        'subtitle' =>
-                                            $attributeTranslation?->subtitle,
-                                        'short' => $attributeTranslation?->short,
-                                    ]
-                                    : null,
-
-                                /**
-                                 * Компактное справочное значение.
-                                 */
-                                'attribute_value' =>
-                                    $item->relationLoaded('attributeValue')
-                                    && $item->attributeValue
-                                        ? [
-                                        'id' =>
-                                            (int) $item->attributeValue->id,
-
-                                        'market_attribute_id' =>
-                                            (int) $item->attributeValue
-                                                ->market_attribute_id,
-
-                                        'title' => $valueTranslation?->title,
-                                        'subtitle' =>
-                                            $valueTranslation?->subtitle,
-                                        'short' => $valueTranslation?->short,
-                                    ]
-                                        : null,
-                            ];
-                        })
-                        ->values();
-                }
-            ),
-
-            /**
-             * Все варианты товара.
-             *
-             * Используем компактный ресурс, чтобы основной ресурс товара
-             * не содержал чрезмерно тяжёлую вложенную структуру.
-             */
+            /** Все варианты товара */
             'variants' => MarketProductVariantSharedResource::collection(
                 $this->whenLoaded('variants')
             ),
 
-            /**
-             * Основной вариант товара.
-             */
-            'default_variant' => $this->whenLoaded(
-                'defaultVariant',
-                fn () => $this->defaultVariant
-                    ? new MarketProductVariantSharedResource(
-                        $this->defaultVariant
-                    )
-                    : null
-            ),
+            /** Основной вариант */
+            'default_variant' => $this->whenLoaded('defaultVariant', function () {
+                return $this->defaultVariant
+                    ? new MarketProductVariantSharedResource($this->defaultVariant)
+                    : null;
+            }),
 
-            /**
-             * Публично доступные варианты.
-             *
-             * Связь загружается только там, где действительно нужна:
-             * например, в публичной карточке товара.
-             */
+            /** Публичные варианты */
             'public_variants' => MarketProductVariantSharedResource::collection(
                 $this->whenLoaded('publicVariants')
             ),
@@ -473,14 +278,11 @@ class MarketProductResource extends JsonResource
                 $this->whenLoaded('relatedProducts')
             ),
 
-            /** Счётчики связей */
+            /** Счётчики */
             'images_count' => $this->whenCounted('images'),
             'categories_count' => $this->whenCounted('categories'),
             'tags_count' => $this->whenCounted('tags'),
-
-            'attribute_values_count' =>
-                $this->whenCounted('attributeValues'),
-
+            'attribute_values_count' => $this->whenCounted('attributeValues'),
             'variants_count' => $this->whenCounted('variants'),
 
             'available_variants_count' => $this->when(
@@ -490,23 +292,155 @@ class MarketProductResource extends JsonResource
 
             'reviews_count' => $this->whenCounted('reviews'),
 
-            'likes_relation_count' =>
-                $this->whenCounted('likes'),
-
-            'related_products_count' =>
-                $this->whenCounted('relatedProducts'),
-
             /**
-             * Данные текущего пользователя.
-             *
-             * Поле уже можно передавать из контроллера через setAttribute()
-             * либо через добавление вычисленного значения к Resource.
+             * Не смешиваем scalar market_products.likes_count
+             * с relation count.
              */
+            'likes_relation_count' => $this->whenCounted('likes'),
+
+            'related_products_count' => $this->whenCounted('relatedProducts'),
+
+            /** Состояние текущего пользователя */
             'already_liked' => (bool) ($this->already_liked ?? false),
 
             /** Timestamps */
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * Текущий перевод самого товара.
+     *
+     * Full Resource обычно получает все собственные translations,
+     * поэтому здесь разрешён fallback.
+     */
+    private function currentTranslation()
+    {
+        if (! $this->relationLoaded('translations')) {
+            return null;
+        }
+
+        $currentLocale = app()->getLocale();
+        $fallbackLocale = config('app.fallback_locale', 'ru');
+
+        return $this->translations->firstWhere('locale', $currentLocale)
+            ?: $this->translations->firstWhere('locale', $fallbackLocale)
+                ?: $this->translations->first();
+    }
+
+    /**
+     * Компактный nested-перевод связанной сущности.
+     *
+     * Никаких запросов к БД — только уже загруженная relation translations.
+     */
+    private function relatedTranslation($model): ?array
+    {
+        if (! $model || ! $model->relationLoaded('translations')) {
+            return null;
+        }
+
+        $currentLocale = app()->getLocale();
+        $fallbackLocale = config('app.fallback_locale', 'ru');
+
+        $translation = $model->translations->firstWhere('locale', $currentLocale)
+            ?: $model->translations->firstWhere('locale', $fallbackLocale)
+                ?: $model->translations->first();
+
+        if (! $translation) {
+            return null;
+        }
+
+        return [
+            'locale' => $translation->locale,
+            'title' => $translation->title,
+            'subtitle' => $translation->subtitle,
+            'short' => $translation->short,
+        ];
+    }
+
+    /** Компактная категория */
+    private function compactCategory($category): array
+    {
+        return [
+            'id' => (int) $category->id,
+            'parent_id' => $category->parent_id !== null ? (int) $category->parent_id : null,
+            'url' => $category->url,
+            'icon' => $category->icon,
+            'activity' => (bool) $category->activity,
+            'translation' => $this->relatedTranslation($category),
+            'pivot' => $this->compactPivot($category),
+        ];
+    }
+
+    /** Компактный тег */
+    private function compactTag($tag): array
+    {
+        return [
+            'id' => (int) $tag->id,
+            'url' => $tag->url,
+            'icon' => $tag->icon,
+            'color' => $tag->color,
+            'activity' => (bool) $tag->activity,
+            'translation' => $this->relatedTranslation($tag),
+            'pivot' => $this->compactPivot($tag),
+        ];
+    }
+
+    /** Компактная характеристика товара */
+    private function compactAttributeValue($item): array
+    {
+        return [
+            'id' => (int) $item->id,
+
+            'market_attribute_id' => (int) $item->market_attribute_id,
+
+            'market_attribute_value_id' => $item->market_attribute_value_id !== null
+                ? (int) $item->market_attribute_value_id
+                : null,
+
+            'value_string' => $item->value_string,
+            'value_number' => $item->value_number,
+            'value_boolean' => $item->value_boolean,
+            'value_date' => $item->value_date?->format('Y-m-d'),
+            'value_json' => $item->value_json,
+
+            'unit' => $item->unit,
+            'order' => (int) $item->order,
+            'activity' => (bool) $item->activity,
+
+            'attribute' => $item->relationLoaded('attribute') && $item->attribute
+                ? [
+                    'id' => (int) $item->attribute->id,
+                    'type' => $item->attribute->type,
+                    'code' => $item->attribute->code,
+                    'unit' => $item->attribute->unit,
+                    'translation' => $this->relatedTranslation($item->attribute),
+                ]
+                : null,
+
+            'attribute_value' => $item->relationLoaded('attributeValue') && $item->attributeValue
+                ? [
+                    'id' => (int) $item->attributeValue->id,
+                    'market_attribute_id' => (int) $item->attributeValue->market_attribute_id,
+                    'translation' => $this->relatedTranslation($item->attributeValue),
+                ]
+                : null,
+        ];
+    }
+
+    /** Pivot belongsToMany */
+    private function compactPivot($model): ?array
+    {
+        if (! $model->pivot) {
+            return null;
+        }
+
+        return [
+            'type' => $model->pivot->type ?? null,
+            'main' => isset($model->pivot->main) ? (bool) $model->pivot->main : null,
+            'order' => isset($model->pivot->order) ? (int) $model->pivot->order : null,
+            'activity' => isset($model->pivot->activity) ? (bool) $model->pivot->activity : null,
         ];
     }
 }

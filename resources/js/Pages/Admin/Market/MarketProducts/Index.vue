@@ -124,17 +124,16 @@ const isAdmin = computed(() => {
 /* ======================== Product helpers ======================== */
 
 /** Текущий перевод товара */
-const getProductTranslation = (product) => {
-    return product?.translation
-        || product?.translations?.[0]
-        || {}
-}
+const getProductTranslation = (product) => product?.translation || {}
 
 /** Название товара */
 const getProductTitle = (product) => {
     return getProductTranslation(product)?.title
         || `ID: ${product?.id}`
 }
+
+/** Название товара без UI fallback — для поиска/сортировки */
+const getProductSortTitle = (product) => getProductTranslation(product)?.title || ''
 
 /** Подзаголовок товара */
 const getProductSubtitle = (product) => {
@@ -152,20 +151,13 @@ const getProductDescription = (product) => {
 }
 
 /** Название компании */
-const getCompanyTitle = (product) => {
-    return product?.company?.title ||
-        product?.company?.translation?.title || product?.company?.legal_name || ''
-}
+const getCompanyTitle = (product) => product?.company?.translation?.title || ''
 
 /** Название магазина */
-const getShopTitle = (product) => {
-    return product?.shop?.title || product?.shop?.translation?.title || ''
-}
+const getShopTitle = (product) => product?.shop?.translation?.title || ''
 
 /** Название бренда */
-const getBrandTitle = (product) => {
-    return product?.brand?.title || product?.brand?.translation?.title || ''
-}
+const getBrandTitle = (product) => product?.brand?.translation?.title || ''
 
 /** Имя владельца */
 const getOwnerName = (product) => {
@@ -175,11 +167,6 @@ const getOwnerName = (product) => {
 /** Email владельца */
 const getOwnerEmail = (product) => {
     return product?.owner?.email || ''
-}
-
-/** Код валюты */
-const getCurrencyCode = (product) => {
-    return product?.currency?.code || ''
 }
 
 /* ======================== Normalization ======================== */
@@ -218,6 +205,9 @@ const moderationNum = (value) => {
         ? number
         : 0
 }
+
+/** Стабильная сортировка по ID DESC */
+const byIdDesc = (a, b) => safeNumber(b?.id) - safeNumber(a?.id)
 
 /* ======================== View mode ======================== */
 
@@ -669,7 +659,9 @@ const approveProduct = (
             onSuccess: () => {
                 patchLocalProduct(product.id, (item) => {
                     item.moderation_status = status
+                    item.is_pending = status === 0
                     item.is_approved = status === 1
+                    item.is_rejected = status === 2
                     item.moderation_note = note
                 })
 
@@ -696,84 +688,32 @@ const approveProduct = (
 const searchQuery = ref(props.search || '')
 const currentPage = ref(1)
 
-/** Проверка совпадения товара с поиском */
+/**
+ * Проверка совпадения товара с поиском.
+ * Полностью повторяет MarketProduct::scopeSearch().
+ */
 const productMatchesSearch = (product, query) => {
-    if (!query) {
-        return true
-    }
-
-    const categories = Array.isArray(product?.categories)
-        ? product.categories
-        : []
-
-    const tags = Array.isArray(product?.tags)
-        ? product.tags
-        : []
-
-    const attributes = Array.isArray(product?.attribute_values)
-        ? product.attribute_values
-        : []
+    if (!query) return true
 
     const searchValues = [
-        product?.id,
         product?.url,
         product?.sku,
         product?.vendor_code,
         product?.barcode,
-
-        product?.price,
-        product?.old_price,
-        product?.wholesale_price,
-        product?.quantity,
-
         product?.status,
         product?.moderation_note,
-
-        getProductTitle(product),
+        getProductTranslation(product)?.title,
         getProductSubtitle(product),
         getProductShort(product),
         getProductDescription(product),
-
         getCompanyTitle(product),
-        product?.company?.legal_name,
-        product?.company?.bin_iin,
-
         getShopTitle(product),
-        product?.shop?.email,
-        product?.shop?.phone,
-
         getBrandTitle(product),
-        product?.brand?.website,
-
         getOwnerName(product),
         getOwnerEmail(product),
-
-        getCurrencyCode(product),
-
-        ...categories.flatMap((category) => [
-            category?.translation?.title,
-            category?.title,
-            category?.url,
-        ]),
-
-        ...tags.flatMap((tag) => [
-            tag?.translation?.title,
-            tag?.title,
-            tag?.url,
-        ]),
-
-        ...attributes.flatMap((item) => [
-            item?.attribute?.title,
-            item?.attribute_value?.title,
-            item?.value_string,
-            item?.value_number,
-            item?.unit,
-        ]),
     ]
 
-    return searchValues.some((value) => {
-        return normalize(value).includes(query)
-    })
+    return searchValues.some((value) => normalize(value).includes(query))
 }
 
 /** Отфильтрованные товары */
@@ -828,241 +768,230 @@ const byDateDesc = (field) => (a, b) =>
 const sortedProducts = computed(() => {
     let list = [...filteredProducts.value]
 
-/** Фильтры активности */
-if (sortParam.value === 'activity') return list.filter((product) => Boolean(product.activity))
-if (sortParam.value === 'inactive') return list.filter((product) => !product.activity)
+    /** Фильтры должны повторять Model: после фильтрации всегда ID DESC */
+    const filteredByIdDesc = (predicate) => list.filter(predicate).sort(byIdDesc)
 
-/** Фильтры наличия */
-if (sortParam.value === 'inStock') return list.filter((product) => Boolean(product.in_stock))
-if (sortParam.value === 'outOfStock') return list.filter((product) => !product.in_stock)
+    if (sortParam.value === 'activity') return filteredByIdDesc((product) => Boolean(product.activity))
+    if (sortParam.value === 'inactive') return filteredByIdDesc((product) => !product.activity)
 
-/** Фильтры рекламных позиций */
-if (sortParam.value === 'left') return list.filter((product) => Boolean(product.left))
-if (sortParam.value === 'noLeft') return list.filter((product) => !product.left)
+    if (sortParam.value === 'inStock') return filteredByIdDesc((product) => Boolean(product.in_stock))
+    if (sortParam.value === 'outOfStock') return filteredByIdDesc((product) => !product.in_stock)
 
-if (sortParam.value === 'main') return list.filter((product) => Boolean(product.main))
-if (sortParam.value === 'noMain') return list.filter((product) => !product.main)
+    if (sortParam.value === 'left') return filteredByIdDesc((product) => Boolean(product.left))
+    if (sortParam.value === 'noLeft') return filteredByIdDesc((product) => !product.left)
+    if (sortParam.value === 'main') return filteredByIdDesc((product) => Boolean(product.main))
+    if (sortParam.value === 'noMain') return filteredByIdDesc((product) => !product.main)
+    if (sortParam.value === 'right') return filteredByIdDesc((product) => Boolean(product.right))
+    if (sortParam.value === 'noRight') return filteredByIdDesc((product) => !product.right)
 
-if (sortParam.value === 'right') return list.filter((product) => Boolean(product.right))
-if (sortParam.value === 'noRight') return list.filter((product) => !product.right)
+    if (sortParam.value === 'new') return filteredByIdDesc((product) => Boolean(product.is_new))
+    if (sortParam.value === 'notNew') return filteredByIdDesc((product) => !product.is_new)
+    if (sortParam.value === 'hit') return filteredByIdDesc((product) => Boolean(product.is_hit))
+    if (sortParam.value === 'notHit') return filteredByIdDesc((product) => !product.is_hit)
+    if (sortParam.value === 'sale') return filteredByIdDesc((product) => Boolean(product.is_sale))
+    if (sortParam.value === 'notSale') return filteredByIdDesc((product) => !product.is_sale)
 
-/** Фильтры маркетинговых флагов */
-if (sortParam.value === 'new') return list.filter((product) => Boolean(product.is_new))
-if (sortParam.value === 'notNew') return list.filter((product) => !product.is_new)
+    if (sortParam.value === 'hasVariants') {
+        return filteredByIdDesc((product) => safeNumber(product.variants_count) > 0)
+    }
 
-if (sortParam.value === 'hit') return list.filter((product) => Boolean(product.is_hit))
-if (sortParam.value === 'notHit') return list.filter((product) => !product.is_hit)
+    if (sortParam.value === 'withoutVariants') {
+        return filteredByIdDesc((product) => safeNumber(product.variants_count) === 0)
+    }
 
-if (sortParam.value === 'sale') return list.filter((product) => Boolean(product.is_sale))
-if (sortParam.value === 'notSale') return list.filter((product) => !product.is_sale)
+    if (sortParam.value === 'statusDraft') return filteredByIdDesc((product) => product.status === 'draft')
+    if (sortParam.value === 'statusPublished') return filteredByIdDesc((product) => product.status === 'published')
+    if (sortParam.value === 'statusArchived') return filteredByIdDesc((product) => product.status === 'archived')
 
-/** Фильтры вариантов */
-if (sortParam.value === 'hasVariants') {
-    return list.filter((product) => {
-        return safeNumber(product.variants_count) > 0
-    })
-}
+    if (sortParam.value === 'moderationPending') {
+        return filteredByIdDesc((product) => moderationNum(product.moderation_status) === 0)
+    }
 
-if (sortParam.value === 'withoutVariants') {
-    return list.filter((product) => {
-        return safeNumber(product.variants_count) === 0
-    })
-}
+    if (sortParam.value === 'moderationApproved') {
+        return filteredByIdDesc((product) => moderationNum(product.moderation_status) === 1)
+    }
 
-/** Фильтры статуса публикации */
-if (sortParam.value === 'statusDraft')
-    return list.filter((product) => product.status === 'draft')
-if (sortParam.value === 'statusPublished')
-    return list.filter((product) => product.status === 'published')
-if (sortParam.value === 'statusArchived')
-    return list.filter((product) => product.status === 'archived')
+    if (sortParam.value === 'moderationRejected') {
+        return filteredByIdDesc((product) => moderationNum(product.moderation_status) === 2)
+    }
 
-/** Фильтры модерации */
-if (sortParam.value === 'moderationPending')
-    return list.filter((product) => moderationNum(product.moderation_status) === 0)
-if (sortParam.value === 'moderationApproved')
-    return list.filter((product) => moderationNum(product.moderation_status) === 1)
-if (sortParam.value === 'moderationRejected')
-    return list.filter((product) => moderationNum(product.moderation_status) === 2)
+    const sortMap = {
+        idAsc: byNumberAsc('id'),
+        idDesc: byNumberDesc('id'),
 
-const sortMap = {
-    idAsc: byNumberAsc('id'),
-    idDesc: byNumberDesc('id'),
+        sortAsc: byNumberAsc('sort'),
+        sortDesc: byNumberDesc('sort'),
 
-    sortAsc: byNumberAsc('sort'),
-    sortDesc: byNumberDesc('sort'),
+        titleAsc: (a, b) =>
+            compareText(getProductSortTitle(a), getProductSortTitle(b)) ||
+            safeNumber(b?.id) - safeNumber(a?.id),
+        titleDesc: (a, b) =>
+            compareText(getProductSortTitle(b), getProductSortTitle(a)) ||
+            safeNumber(b?.id) - safeNumber(a?.id),
 
-    titleAsc: (a, b) =>
-        compareText(getProductTitle(a), getProductTitle(b)) ||
-        safeNumber(b?.id) - safeNumber(a?.id),
-    titleDesc: (a, b) =>
-        compareText(getProductTitle(b), getProductTitle(a)) ||
-        safeNumber(b?.id) - safeNumber(a?.id),
+        urlAsc: byStringAsc('url'),
+        urlDesc: byStringDesc('url'),
 
-    urlAsc: byStringAsc('url'),
-    urlDesc: byStringDesc('url'),
+        skuAsc: byStringAsc('sku'),
+        skuDesc: byStringDesc('sku'),
 
-    skuAsc: byStringAsc('sku'),
-    skuDesc: byStringDesc('sku'),
+        vendorCodeAsc: byStringAsc('vendor_code'),
+        vendorCodeDesc: byStringDesc('vendor_code'),
 
-    vendorCodeAsc: byStringAsc('vendor_code'),
-    vendorCodeDesc: byStringDesc('vendor_code'),
+        barcodeAsc: byStringAsc('barcode'),
+        barcodeDesc: byStringDesc('barcode'),
 
-    barcodeAsc: byStringAsc('barcode'),
-    barcodeDesc: byStringDesc('barcode'),
+        priceAsc: byNumberAsc('price'),
+        priceDesc: byNumberDesc('price'),
 
-    priceAsc: byNumberAsc('price'),
-    priceDesc: byNumberDesc('price'),
+        oldPriceAsc: byNumberAsc('old_price'),
+        oldPriceDesc: byNumberDesc('old_price'),
 
-    oldPriceAsc: byNumberAsc('old_price'),
-    oldPriceDesc: byNumberDesc('old_price'),
+        purchasePriceAsc: byNumberAsc('purchase_price'),
+        purchasePriceDesc: byNumberDesc('purchase_price'),
 
-    purchasePriceAsc: byNumberAsc('purchase_price'),
-    purchasePriceDesc: byNumberDesc('purchase_price'),
+        wholesalePriceAsc: byNumberAsc('wholesale_price'),
+        wholesalePriceDesc: byNumberDesc('wholesale_price'),
 
-    wholesalePriceAsc: byNumberAsc('wholesale_price'),
-    wholesalePriceDesc: byNumberDesc('wholesale_price'),
+        quantityAsc: byNumberAsc('quantity'),
+        quantityDesc: byNumberDesc('quantity'),
 
-    quantityAsc: byNumberAsc('quantity'),
-    quantityDesc: byNumberDesc('quantity'),
+        inStockAsc: byNumberAsc('in_stock'),
+        inStockDesc: byNumberDesc('in_stock'),
 
-    inStockAsc: byNumberAsc('in_stock'),
-    inStockDesc: byNumberDesc('in_stock'),
+        weightAsc: byNumberAsc('weight'),
+        weightDesc: byNumberDesc('weight'),
 
-    weightAsc: byNumberAsc('weight'),
-    weightDesc: byNumberDesc('weight'),
+        lengthAsc: byNumberAsc('length'),
+        lengthDesc: byNumberDesc('length'),
 
-    lengthAsc: byNumberAsc('length'),
-    lengthDesc: byNumberDesc('length'),
+        widthAsc: byNumberAsc('width'),
+        widthDesc: byNumberDesc('width'),
 
-    widthAsc: byNumberAsc('width'),
-    widthDesc: byNumberDesc('width'),
+        heightAsc: byNumberAsc('height'),
+        heightDesc: byNumberDesc('height'),
 
-    heightAsc: byNumberAsc('height'),
-    heightDesc: byNumberDesc('height'),
+        companyAsc: (a, b) =>
+            compareText(getCompanyTitle(a), getCompanyTitle(b)) ||
+            safeNumber(b?.id) - safeNumber(a?.id),
+        companyDesc: (a, b) =>
+            compareText(getCompanyTitle(b), getCompanyTitle(a)) ||
+            safeNumber(b?.id) - safeNumber(a?.id),
 
-    companyAsc: (a, b) =>
-        compareText(getCompanyTitle(a), getCompanyTitle(b)) ||
-        safeNumber(b?.id) - safeNumber(a?.id),
-    companyDesc: (a, b) =>
-        compareText(getCompanyTitle(b), getCompanyTitle(a)) ||
-        safeNumber(b?.id) - safeNumber(a?.id),
+        shopAsc: (a, b) =>
+            compareText(getShopTitle(a), getShopTitle(b)) || safeNumber(b?.id) - safeNumber(a?.id),
+        shopDesc: (a, b) =>
+            compareText(getShopTitle(b), getShopTitle(a)) || safeNumber(b?.id) - safeNumber(a?.id),
 
-    shopAsc: (a, b) =>
-        compareText(getShopTitle(a), getShopTitle(b)) || safeNumber(b?.id) - safeNumber(a?.id),
-    shopDesc: (a, b) =>
-        compareText(getShopTitle(b), getShopTitle(a)) || safeNumber(b?.id) - safeNumber(a?.id),
+        brandAsc: (a, b) =>
+            compareText(getBrandTitle(a), getBrandTitle(b)) || safeNumber(b?.id) - safeNumber(a?.id),
+        brandDesc: (a, b) =>
+            compareText(getBrandTitle(b), getBrandTitle(a)) || safeNumber(b?.id) - safeNumber(a?.id),
 
-    brandAsc: (a, b) =>
-        compareText(getBrandTitle(a), getBrandTitle(b)) || safeNumber(b?.id) - safeNumber(a?.id),
-    brandDesc: (a, b) =>
-        compareText(getBrandTitle(b), getBrandTitle(a)) || safeNumber(b?.id) - safeNumber(a?.id),
+        ownerNameAsc: (a, b) =>
+            compareText(getOwnerName(a), getOwnerName(b)) || safeNumber(b?.id) - safeNumber(a?.id),
+        ownerNameDesc: (a, b) =>
+            compareText(getOwnerName(b), getOwnerName(a)) || safeNumber(b?.id) - safeNumber(a?.id),
 
-    ownerNameAsc: (a, b) =>
-        compareText(getOwnerName(a), getOwnerName(b)) || safeNumber(b?.id) - safeNumber(a?.id),
-    ownerNameDesc: (a, b) =>
-        compareText(getOwnerName(b), getOwnerName(a)) || safeNumber(b?.id) - safeNumber(a?.id),
+        ownerEmailAsc: (a, b) =>
+            compareText(getOwnerEmail(a), getOwnerEmail(b)) || safeNumber(b?.id) - safeNumber(a?.id),
+        ownerEmailDesc: (a, b) =>
+            compareText(getOwnerEmail(b), getOwnerEmail(a)) || safeNumber(b?.id) - safeNumber(a?.id),
 
-    ownerEmailAsc: (a, b) =>
-        compareText(getOwnerEmail(a), getOwnerEmail(b)) || safeNumber(b?.id) - safeNumber(a?.id),
-    ownerEmailDesc: (a, b) =>
-        compareText(getOwnerEmail(b), getOwnerEmail(a)) || safeNumber(b?.id) - safeNumber(a?.id),
+        viewsAsc: byNumberAsc('views'),
+        viewsDesc: byNumberDesc('views'),
 
-    viewsAsc: byNumberAsc('views'),
-    viewsDesc: byNumberDesc('views'),
+        likesAsc: byNumberAsc('likes_count'),
+        likesDesc: byNumberDesc('likes_count'),
 
-    likesAsc: byNumberAsc('likes_count'),
-    likesDesc: byNumberDesc('likes_count'),
+        ratingAsc: byNumberAsc('rating_avg'),
+        ratingDesc: byNumberDesc('rating_avg'),
 
-    ratingAsc: byNumberAsc('rating_avg'),
-    ratingDesc: byNumberDesc('rating_avg'),
+        ratingCountAsc: byNumberAsc('rating_count'),
+        ratingCountDesc: byNumberDesc('rating_count'),
 
-    ratingCountAsc: byNumberAsc('rating_count'),
-    ratingCountDesc: byNumberDesc('rating_count'),
+        imagesAsc: byNumberAsc('images_count'),
+        imagesDesc: byNumberDesc('images_count'),
 
-    imagesAsc: byNumberAsc('images_count'),
-    imagesDesc: byNumberDesc('images_count'),
+        categoriesAsc: byNumberAsc('categories_count'),
+        categoriesDesc: byNumberDesc('categories_count'),
 
-    categoriesAsc: byNumberAsc('categories_count'),
-    categoriesDesc: byNumberDesc('categories_count'),
+        tagsAsc: byNumberAsc('tags_count'),
+        tagsDesc: byNumberDesc('tags_count'),
 
-    tagsAsc: byNumberAsc('tags_count'),
-    tagsDesc: byNumberDesc('tags_count'),
+        attributesAsc: byNumberAsc('attribute_values_count'),
+        attributesDesc: byNumberDesc('attribute_values_count'),
 
-    attributesAsc: byNumberAsc('attribute_values_count'),
-    attributesDesc: byNumberDesc('attribute_values_count'),
+        variantsAsc: byNumberAsc('variants_count'),
+        variantsDesc: byNumberDesc('variants_count'),
 
-    variantsAsc: byNumberAsc('variants_count'),
-    variantsDesc: byNumberDesc('variants_count'),
+        reviewsAsc: byNumberAsc('reviews_count'),
+        reviewsDesc: byNumberDesc('reviews_count'),
 
-    reviewsAsc: byNumberAsc('reviews_count'),
-    reviewsDesc: byNumberDesc('reviews_count'),
+        relatedProductsAsc: byNumberAsc('related_products_count'),
+        relatedProductsDesc: byNumberDesc('related_products_count'),
 
-    relatedProductsAsc: byNumberAsc('related_products_count'),
-    relatedProductsDesc: byNumberDesc('related_products_count'),
+        activityAsc: byNumberAsc('activity'),
+        activityDesc: byNumberDesc('activity'),
 
-    activityAsc: byNumberAsc('activity'),
-    activityDesc: byNumberDesc('activity'),
+        leftAsc: byNumberAsc('left'),
+        leftDesc: byNumberDesc('left'),
 
-    leftAsc: byNumberAsc('left'),
-    leftDesc: byNumberDesc('left'),
+        mainAsc: byNumberAsc('main'),
+        mainDesc: byNumberDesc('main'),
 
-    mainAsc: byNumberAsc('main'),
-    mainDesc: byNumberDesc('main'),
+        rightAsc: byNumberAsc('right'),
+        rightDesc: byNumberDesc('right'),
 
-    rightAsc: byNumberAsc('right'),
-    rightDesc: byNumberDesc('right'),
+        newAsc: (a, b) =>
+            Number(Boolean(a?.is_new)) - Number(Boolean(b?.is_new)) ||
+            safeNumber(b?.id) - safeNumber(a?.id),
+        newDesc: (a, b) =>
+            Number(Boolean(b?.is_new)) - Number(Boolean(a?.is_new)) ||
+            safeNumber(b?.id) - safeNumber(a?.id),
 
-    newAsc: (a, b) =>
-        Number(Boolean(a?.is_new)) - Number(Boolean(b?.is_new)) ||
-        safeNumber(b?.id) - safeNumber(a?.id),
-    newDesc: (a, b) =>
-        Number(Boolean(b?.is_new)) - Number(Boolean(a?.is_new)) ||
-        safeNumber(b?.id) - safeNumber(a?.id),
+        hitAsc: (a, b) =>
+            Number(Boolean(a?.is_hit)) - Number(Boolean(b?.is_hit)) ||
+            safeNumber(b?.id) - safeNumber(a?.id),
+        hitDesc: (a, b) =>
+            Number(Boolean(b?.is_hit)) - Number(Boolean(a?.is_hit)) ||
+            safeNumber(b?.id) - safeNumber(a?.id),
 
-    hitAsc: (a, b) =>
-        Number(Boolean(a?.is_hit)) - Number(Boolean(b?.is_hit)) ||
-        safeNumber(b?.id) - safeNumber(a?.id),
-    hitDesc: (a, b) =>
-        Number(Boolean(b?.is_hit)) - Number(Boolean(a?.is_hit)) ||
-        safeNumber(b?.id) - safeNumber(a?.id),
+        saleAsc: (a, b) =>
+            Number(Boolean(a?.is_sale)) - Number(Boolean(b?.is_sale)) ||
+            safeNumber(b?.id) - safeNumber(a?.id),
+        saleDesc: (a, b) =>
+            Number(Boolean(b?.is_sale)) - Number(Boolean(a?.is_sale)) ||
+            safeNumber(b?.id) - safeNumber(a?.id),
 
-    saleAsc: (a, b) =>
-        Number(Boolean(a?.is_sale)) - Number(Boolean(b?.is_sale)) ||
-        safeNumber(b?.id) - safeNumber(a?.id),
-    saleDesc: (a, b) =>
-        Number(Boolean(b?.is_sale)) - Number(Boolean(a?.is_sale)) ||
-        safeNumber(b?.id) - safeNumber(a?.id),
+        statusAsc: byStringAsc('status'),
+        statusDesc: byStringDesc('status'),
 
-    statusAsc: byStringAsc('status'),
-    statusDesc: byStringDesc('status'),
+        moderationStatusAsc: byNumberAsc('moderation_status'),
+        moderationStatusDesc: byNumberDesc('moderation_status'),
 
-    moderationStatusAsc: byNumberAsc('moderation_status'),
-    moderationStatusDesc: byNumberDesc('moderation_status'),
+        publishedAtAsc: byDateAsc('published_at'),
+        publishedAtDesc: byDateDesc('published_at'),
 
-    publishedAtAsc: byDateAsc('published_at'),
-    publishedAtDesc: byDateDesc('published_at'),
+        showFromAtAsc: byDateAsc('show_from_at'),
+        showFromAtDesc: byDateDesc('show_from_at'),
 
-    showFromAtAsc: byDateAsc('show_from_at'),
-    showFromAtDesc: byDateDesc('show_from_at'),
+        showToAtAsc: byDateAsc('show_to_at'),
+        showToAtDesc: byDateDesc('show_to_at'),
 
-    showToAtAsc: byDateAsc('show_to_at'),
-    showToAtDesc: byDateDesc('show_to_at'),
+        createdAtAsc: byDateAsc('created_at'),
+        createdAtDesc: byDateDesc('created_at'),
 
-    createdAtAsc: byDateAsc('created_at'),
-    createdAtDesc: byDateDesc('created_at'),
+        dateAsc: byDateAsc('created_at'),
+        dateDesc: byDateDesc('created_at'),
 
-    dateAsc: byDateAsc('created_at'),
-    dateDesc: byDateDesc('created_at'),
+        updatedAtAsc: byDateAsc('updated_at'),
+        updatedAtDesc: byDateDesc('updated_at'),
+    }
 
-    updatedAtAsc: byDateAsc('updated_at'),
-    updatedAtDesc: byDateDesc('updated_at'),
-}
+    const sorter = sortMap[sortParam.value] || sortMap.idDesc
 
-const sorter = sortMap[sortParam.value] || sortMap.idDesc
-
-return list.sort(sorter)
-
+    return list.sort(sorter)
 })
 
 
@@ -1668,7 +1597,7 @@ const toggleIsSale = (product) => {
                     class="py-10 text-center
                            text-slate-500 dark:text-slate-300"
                 >
-                    По вашему запросу товары не найдены.
+                    {{ t('noData') }}
                 </div>
 
                 <!-- Нижняя пагинация -->
@@ -1706,7 +1635,7 @@ const toggleIsSale = (product) => {
         >
             <template #default>
                 <p class="text-sm text-slate-700 dark:text-slate-200">
-                    Удалить товар
+                    {{ t('delete') }}
                     <strong>
                         {{ productToDeleteTitle }}
                     </strong>

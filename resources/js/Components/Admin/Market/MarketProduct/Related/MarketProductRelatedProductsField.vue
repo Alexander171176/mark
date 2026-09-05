@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import VueMultiselect from 'vue-multiselect'
 
@@ -18,69 +18,120 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const resourceList = (value) => {
-    if (Array.isArray(value)) return value
-    if (Array.isArray(value?.data)) return value.data
+    if (Array.isArray(value)) {
+        return value
+    }
+
+    if (Array.isArray(value?.data)) {
+        return value.data
+    }
+
     return []
 }
 
 const translationTitle = (item) => {
-    return item?.translation?.title || item?.title || item?.url || `ID: ${item?.id}`
+    return item?.translation?.title
+        || item?.url
+        || `ID: ${item?.id}`
 }
 
 const productOptions = computed(() => {
     return resourceList(props.products)
-        .filter(item => !props.excludeProductId ||
-            Number(item.id) !== Number(props.excludeProductId))
-        .map(item => ({
+        .filter((item) => {
+            return !props.excludeProductId
+                || Number(item.id) !== Number(props.excludeProductId)
+        })
+        .map((item) => ({
             ...item,
-            label: `[ID: ${item.id}] ${translationTitle(item)}${item.sku ? ` — SKU: ${item.sku}` : ''}`,
+
+            label:
+                `[ID: ${item.id}] ${translationTitle(item)}`
+                + (item.sku ? ` — SKU: ${item.sku}` : ''),
         }))
 })
 
-const normalizeItem = (item, index = 0) => {
-    const productId = item?.id || item?.related_product_id || item?.product?.id || null
-    const option = productOptions.value.find(product => Number(product.id) === Number(productId))
+const normalizeModelItem = (item, index = 0) => ({
+    id: Number(
+        item?.id
+        ?? item?.related_product_id
+        ?? item?.product?.id
+    ),
 
-    if (!option) return null
+    type:
+        item?.type
+        ?? item?.relation_type
+        ?? item?.pivot?.type
+        ?? 'related',
 
-    return {
-        ...option,
-        relation_type: item?.relation_type || item?.pivot?.type || item?.type || 'related',
-        relation_order: Number(item?.relation_order ?? item?.pivot?.order ?? item?.order ?? index),
-        relation_activity: item?.relation_activity ?? item?.pivot?.activity ?? item?.activity ?? true,
-    }
-}
+    order: Number(
+        item?.order
+        ?? item?.relation_order
+        ?? item?.pivot?.order
+        ?? index
+    ),
 
-const normalizeSelected = (items) => {
-    return resourceList(items)
-        .map((item, index) => normalizeItem(item, index))
-        .filter(Boolean)
-        .sort((a, b) => a.relation_order - b.relation_order)
-}
+    activity:
+        item?.activity
+        ?? item?.relation_activity
+        ?? item?.pivot?.activity
+        ?? true,
+})
 
-const selectedProducts = ref(normalizeSelected(props.modelValue))
-let syncingFromParent = false
+const normalizedModelValue = computed(() => {
+    return resourceList(props.modelValue)
+        .map((item, index) => normalizeModelItem(item, index))
+        .filter((item) => Number.isFinite(item.id) && item.id > 0)
+        .sort((a, b) => a.order - b.order)
+})
 
-watch([() => props.modelValue, productOptions], ([value]) => {
-    const normalized = normalizeSelected(value)
+const selectedProducts = computed({
+    get: () => {
+        return normalizedModelValue.value
+            .map((relation) => {
+                const option = productOptions.value.find((product) => {
+                    return Number(product.id) === Number(relation.id)
+                })
 
-    if (JSON.stringify(normalized) === JSON.stringify(selectedProducts.value)) return
+                if (!option) {
+                    return null
+                }
 
-    syncingFromParent = true
-    selectedProducts.value = normalized
-    syncingFromParent = false
-}, { deep: true })
+                return {
+                    ...option,
+                    relation_type: relation.type,
+                    relation_order: relation.order,
+                    relation_activity: Boolean(relation.activity),
+                }
+            })
+            .filter(Boolean)
+    },
 
-watch(selectedProducts, (items) => {
-    if (syncingFromParent) return
+    set: (items) => {
+        emit(
+            'update:modelValue',
+            resourceList(items).map((item, index) => {
+                const current = normalizedModelValue.value.find((relation) => {
+                    return Number(relation.id) === Number(item.id)
+                })
 
-    emit('update:modelValue', items.map((item, index) => ({
-        id: Number(item.id),
-        type: item.relation_type || 'related',
-        order: index,
-        activity: item.relation_activity === undefined ? true : Boolean(item.relation_activity),
-    })))
-}, { deep: true, immediate: true })
+                return {
+                    id: Number(item.id),
+                    type:
+                        item?.relation_type
+                        ?? current?.type
+                        ?? 'related',
+
+                    order: index,
+
+                    activity:
+                        typeof item?.relation_activity !== 'undefined'
+                            ? Boolean(item.relation_activity)
+                            : current?.activity ?? true,
+                }
+            })
+        )
+    },
+})
 
 const relationTypeOptions = computed(() => [
     { value: 'related', label: t('related') },
@@ -89,10 +140,28 @@ const relationTypeOptions = computed(() => [
     { value: 'analog', label: t('analog') },
 ])
 
-const dynamicOptionsLimit = computed(() => productOptions.value.length + 10)
+const dynamicOptionsLimit = computed(() => {
+    return productOptions.value.length + 10
+})
+
+const updateRelationType = (index, type) => {
+    const next = normalizedModelValue.value.map((item) => ({ ...item }))
+
+    if (!next[index]) {
+        return
+    }
+
+    next[index].type = type
+    next[index].order = index
+
+    emit('update:modelValue', next)
+}
 
 const itemError = (index, field = '') => {
-    const key = field ? `related_products.${index}.${field}` : `related_products.${index}`
+    const key = field
+        ? `related_products.${index}.${field}`
+        : `related_products.${index}`
+
     return props.errors?.[key] || null
 }
 </script>
@@ -127,25 +196,29 @@ const itemError = (index, field = '') => {
             <div
                 v-for="(product, index) in selectedProducts"
                 :key="product.id"
-                class="flex flex-col gap-3 rounded-sm bg-slate-100 px-3 py-2 dark:bg-slate-900
-                       lg:flex-row lg:items-center lg:justify-between"
+                class="flex flex-col gap-3 rounded-sm bg-slate-100 px-3 py-2
+                       dark:bg-slate-900 lg:flex-row lg:items-center lg:justify-between"
             >
                 <span
                     class="min-w-0 truncate text-sm font-semibold
                            text-slate-700 dark:text-slate-100"
-                      :title="product.label">
+                    :title="product.label"
+                >
                     {{ product.label }}
                 </span>
 
                 <select
-                    v-model="product.relation_type"
+                    :value="product.relation_type"
                     class="w-full rounded-sm border border-slate-400 bg-white px-2 py-1
-                           text-sm text-slate-700 dark:bg-slate-200 dark:text-slate-900 lg:w-44"
+                           text-sm text-slate-700 dark:bg-slate-200
+                           dark:text-slate-900 lg:w-44"
+                    @change="updateRelationType(index, $event.target.value)"
                 >
                     <option
                         v-for="option in relationTypeOptions"
                         :key="option.value"
-                        :value="option.value">
+                        :value="option.value"
+                    >
                         {{ option.label }}
                     </option>
                 </select>

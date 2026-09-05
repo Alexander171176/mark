@@ -141,6 +141,7 @@
 1) creating business logic app Role <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/Role/RoleController --resource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/Role/RoleResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/System/Role/RoleSharedResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/Role/RoleRequest` <br>
 `docker exec mark-php-app php artisan make:seeder RoleSeeder` <br>
 `docker exec mark-php-app php artisan db:seed --class=RoleSeeder` <br>
@@ -148,6 +149,7 @@
 2) creating business logic app Permission <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/Permission/PermissionController --resource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/Permission/PermissionResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/System/Permission/PermissionSharedResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/Permission/PermissionRequest` <br>
 
 3) creating business logic app User <br>

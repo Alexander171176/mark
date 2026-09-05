@@ -6,8 +6,8 @@ use App\Actions\Fortify\PasswordValidationRules;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\User\StoreUserRequest;
 use App\Http\Requests\Admin\System\User\UpdateUserRequest;
-use App\Http\Resources\Admin\System\Permission\PermissionResource;
-use App\Http\Resources\Admin\System\Role\RoleResource;
+use App\Http\Resources\Admin\System\Permission\PermissionSharedResource;
+use App\Http\Resources\Admin\System\Role\RoleSharedResource;
 use App\Http\Resources\Admin\System\User\UserResource;
 use App\Http\Resources\Admin\System\User\UserSharedResource;
 use App\Models\User;
@@ -22,6 +22,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Throwable;
 
 class UserController extends Controller
@@ -75,7 +76,7 @@ class UserController extends Controller
                 'adminSystemUsersPerPage' => $perPage,
                 'adminSystemUsersDefaultSort' => $defaultSort,
 
-                // Старые props оставляем для совместимости
+                // Старые props оставляем для совместимости.
                 'adminCountUsers' => $perPage,
                 'adminSortUsers' => $sortParam,
 
@@ -86,7 +87,8 @@ class UserController extends Controller
                 'search' => $search,
             ]);
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки пользователей: ' . $e->getMessage(), [
+            Log::error('Ошибка загрузки пользователей.', [
+                'message' => $e->getMessage(),
                 'exception' => $e,
             ]);
 
@@ -118,12 +120,12 @@ class UserController extends Controller
     {
         // TODO: Проверка прав доступа $this->authorize('create-users', User::class);
 
-        $roles = Role::all();
-        $permissions = Permission::all();
+        $roles = $this->rolesForSelect();
+        $permissions = $this->permissionsForSelect();
 
         return Inertia::render('Admin/System/Users/Create', [
-            'roles' => RoleResource::collection($roles),
-            'permissions' => PermissionResource::collection($permissions),
+            'roles' => RoleSharedResource::collection($roles),
+            'permissions' => PermissionSharedResource::collection($permissions),
         ]);
     }
 
@@ -135,28 +137,27 @@ class UserController extends Controller
         $data = $request->validated();
 
         try {
-            DB::beginTransaction();
+            DB::transaction(function () use ($data): void {
+                $user = User::create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'password' => $data['password'],
+                ]);
 
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => $data['password'],
-            ]);
+                $roleNames = collect($data['roles'] ?? [])->pluck('name')->toArray();
+                $permissionNames = collect($data['permissions'] ?? [])->pluck('name')->toArray();
 
-            $roleNames = collect($data['roles'] ?? [])->pluck('name')->toArray();
-            $permissionNames = collect($data['permissions'] ?? [])->pluck('name')->toArray();
+                $user->syncRoles($roleNames);
+                $user->syncPermissions($permissionNames);
+            });
 
-            $user->syncRoles($roleNames);
-            $user->syncPermissions($permissionNames);
-
-            DB::commit();
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
 
             return redirect()->route('admin.users.index')
                 ->with('success', __('admin/controllers.created_success'));
         } catch (Throwable $e) {
-            DB::rollBack();
-
-            Log::error('Ошибка при создании пользователя: ' . $e->getMessage(), [
+            Log::error('Ошибка при создании пользователя.', [
+                'message' => $e->getMessage(),
                 'exception' => $e,
             ]);
 
@@ -177,13 +178,13 @@ class UserController extends Controller
             'permissions',
         ]);
 
-        $roles = Role::all();
-        $permissions = Permission::all();
+        $roles = $this->rolesForSelect();
+        $permissions = $this->permissionsForSelect();
 
         return Inertia::render('Admin/System/Users/Edit', [
             'user' => new UserResource($user),
-            'roles' => RoleResource::collection($roles),
-            'permissions' => PermissionResource::collection($permissions),
+            'roles' => RoleSharedResource::collection($roles),
+            'permissions' => PermissionSharedResource::collection($permissions),
         ]);
     }
 
@@ -195,27 +196,26 @@ class UserController extends Controller
         $data = $request->validated();
 
         try {
-            DB::beginTransaction();
+            DB::transaction(function () use ($user, $data): void {
+                $roleNames = collect($data['roles'] ?? [])->pluck('name')->toArray();
+                $permissionNames = collect($data['permissions'] ?? [])->pluck('name')->toArray();
 
-            $roleNames = collect($data['roles'] ?? [])->pluck('name')->toArray();
-            $permissionNames = collect($data['permissions'] ?? [])->pluck('name')->toArray();
+                $user->syncRoles($roleNames);
+                $user->syncPermissions($permissionNames);
 
-            $user->syncRoles($roleNames);
-            $user->syncPermissions($permissionNames);
+                $user->update([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                ]);
+            });
 
-            $user->update([
-                'name' => $data['name'],
-                'email' => $data['email'],
-            ]);
-
-            DB::commit();
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
 
             return redirect()->route('admin.users.index')
                 ->with('success', __('admin/controllers.updated_success'));
         } catch (Throwable $e) {
-            DB::rollBack();
-
-            Log::error("Ошибка при обновлении пользователя ID {$user->id}: " . $e->getMessage(), [
+            Log::error("Ошибка при обновлении пользователя ID {$user->id}.", [
+                'message' => $e->getMessage(),
                 'exception' => $e,
             ]);
 
@@ -248,26 +248,26 @@ class UserController extends Controller
                 ->with('error', __('admin/controllers/users.cannot_delete_single_admin'));
         }
 
+        $userId = $user->id;
+
         try {
-            DB::beginTransaction();
+            DB::transaction(function () use ($user): void {
+                $user->syncRoles([]);
+                $user->syncPermissions([]);
+                $user->delete();
+            });
 
-            $user->syncRoles([]);
-            $user->syncPermissions([]);
-            $user->delete();
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-            DB::commit();
-
-            app()[\Spatie\Permission\PermissionRegistrar::class]
-                ->forgetCachedPermissions();
-
-            Log::info("Пользователь удалён: ID {$user->id}");
+            Log::info('Пользователь удалён.', [
+                'id' => $userId,
+            ]);
 
             return redirect()->route('admin.users.index')
                 ->with('success', __('admin/controllers.deleted_success'));
         } catch (Throwable $e) {
-            DB::rollBack();
-
-            Log::error("Ошибка при удалении пользователя ID {$user->id}: " . $e->getMessage(), [
+            Log::error("Ошибка при удалении пользователя ID {$userId}.", [
+                'message' => $e->getMessage(),
                 'exception' => $e,
             ]);
 
@@ -294,6 +294,34 @@ class UserController extends Controller
                 'roles',
                 'permissions',
             ]);
+    }
+
+    /** Компактный список ролей для Create/Edit. */
+    private function rolesForSelect()
+    {
+        return Role::query()
+            ->select([
+                'roles.id',
+                'roles.name',
+                'roles.guard_name',
+            ])
+            ->orderBy('roles.name')
+            ->orderByDesc('roles.id')
+            ->get();
+    }
+
+    /** Компактный список разрешений для Create/Edit. */
+    private function permissionsForSelect()
+    {
+        return Permission::query()
+            ->select([
+                'permissions.id',
+                'permissions.name',
+                'permissions.guard_name',
+            ])
+            ->orderBy('permissions.name')
+            ->orderByDesc('permissions.id')
+            ->get();
     }
 
     /** Получение пользователей по активному режиму обработки. */

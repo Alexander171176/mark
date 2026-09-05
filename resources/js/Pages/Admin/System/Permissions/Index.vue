@@ -3,7 +3,7 @@
  * @version PulsarCMS 1.0
  * @author Александр Косолапов <kosolapov1976@gmail.com>
  */
-import { computed, defineProps, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useI18n } from 'vue-i18n'
 import { router } from '@inertiajs/vue3'
@@ -48,8 +48,8 @@ const props = defineProps({
 
 const viewMode = ref(localStorage.getItem('admin_view_mode_permissions') || 'table')
 
-watch(viewMode, (val) => {
-    localStorage.setItem('admin_view_mode_permissions', val)
+watch(viewMode, (value) => {
+    localStorage.setItem('admin_view_mode_permissions', value)
 })
 
 const permissionsList = computed(() => {
@@ -62,37 +62,41 @@ const localPermissions = ref([])
 
 watch(
     permissionsList,
-    (newVal) => {
-        localPermissions.value = JSON.parse(JSON.stringify(newVal || []))
+    (permissions) => {
+        localPermissions.value = JSON.parse(JSON.stringify(permissions || []))
     },
     { immediate: true, deep: true }
 )
 
-const itemsPerPage = ref(props.adminSystemPermissionsPerPage || props.adminCountPermissions || 20)
+const itemsPerPage = ref(
+    props.adminSystemPermissionsPerPage
+    || props.adminCountPermissions
+    || 20
+)
 
-watch(itemsPerPage, (newVal) => {
-    router.put(route('admin.settings.updateAdminCountPermissions'), { value: newVal }, {
+watch(itemsPerPage, (newValue) => {
+    router.put(route('admin.settings.updateAdminCountPermissions'), { value: newValue }, {
         preserveScroll: true,
         preserveState: true,
-        onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
+        onSuccess: () => toast.info(`Показ ${newValue} элементов на странице.`),
         onError: (errors) => toast.error(errors.value || 'Ошибка обновления кол-ва элементов.'),
     })
 })
 
 const sortParam = ref(
-    props.sortParam ||
-    props.adminSystemPermissionsDefaultSort ||
-    props.adminSortPermissions ||
-    'nameAsc'
+    props.sortParam
+    || props.adminSystemPermissionsDefaultSort
+    || props.adminSortPermissions
+    || 'nameAsc'
 )
 
 const currentPage = ref(1)
 const searchQuery = ref(props.search || '')
 
-watch(sortParam, (newVal) => {
+watch(sortParam, (newValue) => {
     currentPage.value = 1
 
-    router.put(route('admin.settings.updateAdminSortPermissions'), { value: newVal }, {
+    router.put(route('admin.settings.updateAdminSortPermissions'), { value: newValue }, {
         preserveScroll: true,
         preserveState: true,
 
@@ -102,7 +106,7 @@ watch(sortParam, (newVal) => {
                     window.location.pathname,
                     {
                         ...Object.fromEntries(new URLSearchParams(window.location.search)),
-                        sort: newVal || undefined,
+                        sort: newValue || undefined,
                         page: undefined,
                     },
                     {
@@ -141,7 +145,7 @@ const getRolesText = (permission) => {
 
 const byNumberAsc = (field) => (a, b) =>
     safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    || safeNumber(b?.id) - safeNumber(a?.id)
 
 const byNumberDesc = (field) => (a, b) =>
     safeNumber(b?.[field]) - safeNumber(a?.[field])
@@ -149,7 +153,7 @@ const byNumberDesc = (field) => (a, b) =>
 
 const byStringAsc = (field) => (a, b) =>
     normalize(a?.[field]).localeCompare(normalize(b?.[field]))
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    || safeNumber(b?.id) - safeNumber(a?.id)
 
 const byStringDesc = (field) => (a, b) =>
     normalize(b?.[field]).localeCompare(normalize(a?.[field]))
@@ -157,7 +161,7 @@ const byStringDesc = (field) => (a, b) =>
 
 const byDateAsc = (field) => (a, b) =>
     safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    || safeNumber(b?.id) - safeNumber(a?.id)
 
 const byDateDesc = (field) => (a, b) =>
     safeDate(b?.[field]) - safeDate(a?.[field])
@@ -167,8 +171,8 @@ const sortPermissions = (items) => {
     const list = (items || []).slice()
 
     const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
+        idAsc: (a, b) => safeNumber(a?.id) - safeNumber(b?.id),
+        idDesc: (a, b) => safeNumber(b?.id) - safeNumber(a?.id),
 
         name: byStringAsc('name'),
         nameAsc: byStringAsc('name'),
@@ -192,33 +196,44 @@ const sortPermissions = (items) => {
         : list
 }
 
+const searchWords = computed(() =>
+    normalize(searchQuery.value)
+        .split(/[\s:#№,"'«»(){}\[\].!?/\\|;+=*&^%$@<>`~_-]+/u)
+        .map(word => word.trim())
+        .filter(Boolean)
+)
+
 const filteredPermissions = computed(() => {
     let filtered = localPermissions.value || []
-    const query = normalize(searchQuery.value)
 
-    if (!query) {
+    if (!searchWords.value.length) {
         return sortPermissions(filtered)
     }
 
     filtered = filtered.filter((permission) => {
-        const values = [
-            permission?.id,
-            permission?.name,
-            permission?.guard_name,
-            getRolesText(permission),
+        const searchableValues = [
+            normalize(permission?.name),
+            normalize(permission?.guard_name),
+            normalize(getRolesText(permission)),
         ]
 
-        return values.some(value => normalize(value).includes(query))
+        return searchWords.value.every((word) => {
+            if (/^\d+$/.test(word) && safeNumber(permission?.id) === Number(word)) {
+                return true
+            }
+
+            return searchableValues.some(value => value.includes(word))
+        })
     })
 
     return sortPermissions(filtered)
 })
 
 const paginatedPermissions = computed(() => {
-    const per = Number(itemsPerPage.value || 20)
-    const start = (currentPage.value - 1) * per
+    const perPage = Number(itemsPerPage.value || 20)
+    const start = (currentPage.value - 1) * perPage
 
-    return filteredPermissions.value.slice(start, start + per)
+    return filteredPermissions.value.slice(start, start + perPage)
 })
 
 const displayedPermissions = computed(() => {

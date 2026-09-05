@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Admin\System\Role;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\Role\RoleRequest;
+use App\Http\Resources\Admin\System\Permission\PermissionSharedResource;
 use App\Http\Resources\Admin\System\Role\RoleResource;
+use App\Http\Resources\Admin\System\Role\RoleSharedResource;
+use App\Models\Admin\System\Role\AdminRole as Role;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,12 +18,8 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Permission;
-use App\Models\Admin\System\Role\AdminRole as Role;
 use Spatie\Permission\PermissionRegistrar;
 use Throwable;
-
-// Используем
-// Для транзакций
 
 /**
  * Контроллер для управления Ролями в административной панели.
@@ -35,13 +34,7 @@ use Throwable;
 class RoleController extends Controller
 {
     /**
-     * Отображение списка всех Ролей.
-     * Загружает пагинированный список с сортировкой по настройкам.
-     * Передает данные для отображения и настройки пагинации/сортировки.
-     * Пагинация и сортировка выполняются на фронтенде.
-     *
-     * @param Request $request
-     * @return Response
+     * Отображение списка ролей.
      */
     public function index(Request $request): Response
     {
@@ -65,7 +58,7 @@ class RoleController extends Controller
             'frontend'
         );
 
-        $rolesCount = $this->indexQuery()->count();
+        $rolesCount = $this->baseQuery()->count();
 
         $useServerProcessing = app(ProcessingModeService::class)
             ->shouldUseServer(
@@ -89,18 +82,19 @@ class RoleController extends Controller
                 'adminSystemRolesPerPage' => $perPage,
                 'adminSystemRolesDefaultSort' => $defaultSort,
 
-                // старые props оставляем для совместимости
+                // Старые props оставляем для совместимости.
                 'adminCountRoles' => $perPage,
                 'adminSortRoles' => $sortParam,
 
-                'roles' => RoleResource::collection($roles),
+                'roles' => RoleSharedResource::collection($roles),
                 'rolesCount' => $rolesCount,
 
                 'sortParam' => $sortParam,
                 'search' => $search,
             ]);
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки ролей для Index: ' . $e->getMessage(), [
+            Log::error('Ошибка загрузки ролей для Index.', [
+                'message' => $e->getMessage(),
                 'exception' => $e,
             ]);
 
@@ -127,167 +121,200 @@ class RoleController extends Controller
 
     /**
      * Отображение формы создания новой роли.
-     *
-     * @return Response
      */
     public function create(): Response
     {
         // TODO: Проверка прав $this->authorize('create-roles', Role::class);
 
-        // Загружаем только ID и имя разрешений
-        $permissions = Permission::select('id', 'name')->orderBy('name')->get();
+        $permissions = Permission::query()
+            ->select(['id', 'name', 'guard_name'])
+            ->orderBy('name')
+            ->get();
 
         return Inertia::render('Admin/System/Roles/Create', [
-            'permissions' => $permissions,
+            'permissions' => PermissionSharedResource::collection($permissions),
         ]);
     }
 
     /**
-     * Сохранение новой роли в базе данных.
-     * Использует PermissionRequest для валидации и авторизации.
-     *
-     * @param RoleRequest $request
-     * @return RedirectResponse Редирект на список статей с сообщением.
+     * Сохранение новой роли.
      */
     public function store(RoleRequest $request): RedirectResponse
     {
-        // authorize() в RoleRequest
+        // authorize() выполняется в RoleRequest.
         $data = $request->validated();
 
-        // Получаем ID разрешений (реквест уже проверил их существование)
-        $permissionIds = collect($data['permissions'] ?? [])->pluck('id')->toArray();
+        $permissionIds = collect($data['permissions'] ?? [])
+            ->pluck('id')
+            ->filter()
+            ->values()
+            ->all();
 
         try {
-            DB::beginTransaction();
-            $role = Role::create([
-                'name' => $data['name'],
-                'guard_name' => 'sanctum',
-            ]);
-            $role->syncPermissions($permissionIds); // Синхронизируем по ID
-            DB::commit();
+            DB::transaction(function () use ($data, $permissionIds): void {
+                $role = Role::create([
+                    'name' => $data['name'],
+                    'guard_name' => 'sanctum',
+                ]);
 
-            Log::info('Роль успешно создана:', ['id' => $role->id, 'name' => $role->name]);
-            return redirect()->route('admin.roles.index')
+                $role->syncPermissions($permissionIds);
+
+                Log::info('Роль успешно создана.', [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                ]);
+            });
+
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+            return redirect()
+                ->route('admin.roles.index')
                 ->with('success', __('admin/controllers.created_success'));
-
         } catch (Throwable $e) {
-            DB::rollBack();
-            Log::error("Ошибка при создании роли: " . $e->getMessage());
-            return back()->withInput()
+            Log::error('Ошибка при создании роли.', [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return back()
+                ->withInput()
                 ->with('error', __('admin/controllers.created_error'));
         }
     }
 
     /**
      * Отображение формы редактирования существующей роли.
-     * Использует Route Model Binding для получения модели.
-     *
-     * @param Role $role Модель роли, найденная по ID из маршрута.
-     * @return Response
      */
-    public function edit(Role $role): Response // Используем RMB
+    public function edit(Role $role): Response
     {
         // TODO: Проверка прав $this->authorize('edit-roles', $role);
 
-        // Загружаем разрешения, назначенные этой роли
-        $role->load('permissions:id,name'); // Загружаем только id и name
+        $role->load('permissions:id,name');
 
-        // Загружаем все разрешения для списка выбора
-        $permissions = Permission::select('id', 'name')->orderBy('name')->get();
+        $permissions = Permission::query()
+            ->select(['id', 'name', 'guard_name'])
+            ->orderBy('name')
+            ->get();
 
         return Inertia::render('Admin/System/Roles/Edit', [
             'role' => new RoleResource($role),
-            'permissions' => $permissions, // Передаем коллекцию для выбора
+            'permissions' => PermissionSharedResource::collection($permissions),
         ]);
     }
 
     /**
-     * Обновление существующей роли в базе данных.
-     * Использует RoleRequest и Route Model Binding.
-     *
-     * @param RoleRequest $request Валидированный запрос.
-     * @param Role $role Модель разрешения для обновления.
-     * @return RedirectResponse Редирект на список разрешений с сообщением.
+     * Обновление существующей роли.
      */
-    public function update(RoleRequest $request, Role $role): RedirectResponse // Используем RMB
+    public function update(RoleRequest $request, Role $role): RedirectResponse
     {
-        // authorize() в RoleRequest
+        // authorize() выполняется в RoleRequest.
         $data = $request->validated();
-        $permissionIds = collect($data['permissions'] ?? null)->pluck('id')->toArray();
+
+        $permissionIds = collect($data['permissions'] ?? [])
+            ->pluck('id')
+            ->filter()
+            ->values()
+            ->all();
 
         try {
-            $role->update(['name' => $data['name']]); // Обновляем только имя (guard обычно не меняют)
+            DB::transaction(function () use ($request, $role, $data, $permissionIds): void {
+                $role->update([
+                    'name' => $data['name'],
+                ]);
 
-            // Синхронизируем разрешения, только если массив permissions передан
-            if ($request->has('permissions')) {
-                $role->syncPermissions($permissionIds);
-            }
+                if ($request->has('permissions')) {
+                    $role->syncPermissions($permissionIds);
+                }
+            });
 
-            Log::info('Роль обновлена:', ['id' => $role->id, 'name' => $role->name]);
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-            // Очищаем кэш разрешений Spatie
-            app()[PermissionRegistrar::class]->forgetCachedPermissions();
-            return redirect()->route('admin.roles.index')
+            Log::info('Роль успешно обновлена.', [
+                'id' => $role->id,
+                'name' => $role->name,
+            ]);
+
+            return redirect()
+                ->route('admin.roles.index')
                 ->with('success', __('admin/controllers.updated_success'));
-
         } catch (Throwable $e) {
-            Log::error("Ошибка при обновлении роли ID {$role->id}: " . $e->getMessage());
-            return back()->withInput()
+            Log::error("Ошибка при обновлении роли ID {$role->id}.", [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return back()
+                ->withInput()
                 ->with('error', __('admin/controllers.updated_error'));
         }
     }
 
     /**
      * Удаление указанной роли.
-     * Использует Route Model Binding.
-     *
-     * @param Role $role Модель роли для удаления.
-     * @return RedirectResponse Редирект на список ролей с сообщением.
      */
-    public function destroy(Role $role): RedirectResponse // Используем RMB
+    public function destroy(Role $role): RedirectResponse
     {
         // TODO: Проверка прав $this->authorize('delete-roles', $role);
-        // TODO: Добавить проверку, нельзя ли удалить базовые роли (super-admin)
 
         if ($role->id === 1) {
-            return redirect()->route('admin.roles.index')
+            return redirect()
+                ->route('admin.roles.index')
                 ->with('error', __('admin/controllers.delete_main_role_error'));
         }
-        if (in_array($role->name, ['super-admin', 'owner'])) {
-            return redirect()->route('admin.roles.index')
+
+        if (in_array($role->name, ['super-admin', 'owner'], true)) {
+            return redirect()
+                ->route('admin.roles.index')
                 ->with('error', __('admin/controllers.delete_base_role_error'));
         }
-        // TODO: Проверить, назначена ли роль пользователям? Запретить удаление или отсоединить?
-        // if ($role->users()->count() > 0) { ... }
 
         try {
-            DB::beginTransaction();
-            $role->delete(); // Spatie удалит связи в role_has_permissions и model_has_roles
-            DB::commit();
+            DB::transaction(function () use ($role): void {
+                $role->delete();
+            });
 
-            Log::info('Роль удалена:', ['id' => $role->id, 'name' => $role->name]);
-            // Очищаем кэш разрешений Spatie
-            app()[PermissionRegistrar::class]->forgetCachedPermissions();
-            return redirect()->route('admin.roles.index')
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+            Log::info('Роль удалена.', [
+                'id' => $role->id,
+                'name' => $role->name,
+            ]);
+
+            return redirect()
+                ->route('admin.roles.index')
                 ->with('success', __('admin/controllers.deleted_success'));
-
         } catch (Throwable $e) {
-            DB::rollBack();
-            Log::error("Ошибка при удалении роли ID {$role->id}: " . $e->getMessage());
+            Log::error("Ошибка при удалении роли ID {$role->id}.", [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
             return back()
                 ->with('error', __('admin/controllers.deleted_error'));
         }
     }
 
-    /** Базовый запрос для списка ролей. */
+    /**
+     * Лёгкий базовый запрос без relations/counts.
+     */
+    private function baseQuery(): Builder
+    {
+        return Role::query();
+    }
+
+    /**
+     * Запрос данных для Index.
+     */
     private function indexQuery(): Builder
     {
-        return Role::query()
+        return $this->baseQuery()
             ->with('permissions')
             ->withCount('permissions');
     }
 
-    /** Получение ролей по активному режиму обработки. */
+    /**
+     * Получение ролей по активному режиму обработки.
+     */
     private function getIndexRoles(
         bool $useServerProcessing,
         int $perPage,

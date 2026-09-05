@@ -2,35 +2,44 @@
 
 namespace App\Http\Resources\Admin\System\Permission;
 
+use App\Http\Resources\Admin\System\Role\RoleSharedResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-
-// Можно импортировать RoleResource или RoleSharedResource, если нужна обратная связь
-// use App\Http\Resources\Admin\Role\RoleSharedResource;
 
 class PermissionResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
+     * Полное представление разрешения.
      *
-     * @param Request $request
+     * Основное назначение:
+     * - Edit;
+     * - детальные страницы;
+     * - места, где нужны связанные роли.
+     *
+     * Resource читает только заранее загруженные relations/counts
+     * и не должен создавать дополнительные SQL-запросы.
+     *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            /** Основные данные */
+            'id' => (int) $this->id,
             'name' => $this->name,
-            'guard_name' => $this->guard_name, // <--- ДОБАВЛЕНО
-            'created_at' => $this->created_at?->toIso8601String(), // <--- ДОБАВЛЕНО
-            'updated_at' => $this->updated_at?->toIso8601String(), // <--- ДОБАВЛЕНО
+            'guard_name' => $this->guard_name,
 
-            // Счетчики (если нужны и используются обратные связи/withCount)
-            // 'roles_count' => $this->whenCounted('roles'),
-            // 'users_count' => $this->whenCounted('users'), // Для прямых назначений пользователям
+            /** Счётчики */
+            'roles_count' => $this->whenCounted('roles'),
 
-            // Связи (если нужны и загружены)
-            // 'roles' => RoleSharedResource::collection($this->whenLoaded('roles')),
+            /** Полные связанные данные */
+            'roles' => RoleSharedResource::collection(
+                $this->whenLoaded('roles')
+            ),
+
+            /** Даты */
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

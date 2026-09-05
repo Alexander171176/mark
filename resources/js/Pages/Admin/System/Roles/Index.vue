@@ -141,7 +141,7 @@ const getPermissionsText = (role) => {
 
 const byNumberAsc = (field) => (a, b) =>
     safeNumber(a?.[field]) - safeNumber(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    || safeNumber(b?.id) - safeNumber(a?.id)
 
 const byNumberDesc = (field) => (a, b) =>
     safeNumber(b?.[field]) - safeNumber(a?.[field])
@@ -149,7 +149,7 @@ const byNumberDesc = (field) => (a, b) =>
 
 const byStringAsc = (field) => (a, b) =>
     normalize(a?.[field]).localeCompare(normalize(b?.[field]))
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    || safeNumber(b?.id) - safeNumber(a?.id)
 
 const byStringDesc = (field) => (a, b) =>
     normalize(b?.[field]).localeCompare(normalize(a?.[field]))
@@ -157,7 +157,7 @@ const byStringDesc = (field) => (a, b) =>
 
 const byDateAsc = (field) => (a, b) =>
     safeDate(a?.[field]) - safeDate(b?.[field])
-    || safeNumber(a?.id) - safeNumber(b?.id)
+    || safeNumber(b?.id) - safeNumber(a?.id)
 
 const byDateDesc = (field) => (a, b) =>
     safeDate(b?.[field]) - safeDate(a?.[field])
@@ -167,8 +167,8 @@ const sortRoles = (items) => {
     const list = (items || []).slice()
 
     const sortMap = {
-        idAsc: byNumberAsc('id'),
-        idDesc: byNumberDesc('id'),
+        idAsc: (a, b) => safeNumber(a?.id) - safeNumber(b?.id),
+        idDesc: (a, b) => safeNumber(b?.id) - safeNumber(a?.id),
 
         name: byStringAsc('name'),
         nameAsc: byStringAsc('name'),
@@ -192,23 +192,34 @@ const sortRoles = (items) => {
         : list
 }
 
+const searchWords = computed(() =>
+    normalize(searchQuery.value)
+        .split(/[\s:#№,"'«»(){}\[\].!?/\\|;+=*&^%$@<>`~_-]+/u)
+        .map(word => word.trim())
+        .filter(Boolean)
+)
+
 const filteredRoles = computed(() => {
     let filtered = localRoles.value || []
-    const query = normalize(searchQuery.value)
 
-    if (!query) {
+    if (!searchWords.value.length) {
         return sortRoles(filtered)
     }
 
     filtered = filtered.filter((role) => {
-        const values = [
-            role?.id,
-            role?.name,
-            role?.guard_name,
-            getPermissionsText(role),
+        const searchableValues = [
+            normalize(role?.name),
+            normalize(role?.guard_name),
+            normalize(getPermissionsText(role)),
         ]
 
-        return values.some(value => normalize(value).includes(query))
+        return searchWords.value.every((word) => {
+            if (/^\d+$/.test(word) && safeNumber(role?.id) === Number(word)) {
+                return true
+            }
+
+            return searchableValues.some(value => value.includes(word))
+        })
     })
 
     return sortRoles(filtered)

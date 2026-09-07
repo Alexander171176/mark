@@ -16,7 +16,6 @@ trait UpdatesSettingsTrait
      *
      * @param FormRequest $request
      * @param string $optionKey
-     * @param string $configKey
      * @param string $settingType
      * @param string $settingCategory
      * @param string $successMessage
@@ -26,7 +25,6 @@ trait UpdatesSettingsTrait
     private function updateSettingAndRedirect(
         FormRequest $request,
         string $optionKey,
-        string $configKey,
         string $settingType,
         string $settingCategory,
         string $successMessage,
@@ -49,12 +47,6 @@ trait UpdatesSettingsTrait
                 ]
             );
 
-            config([$configKey => $newValue]);
-
-            // важно: этот метод должен быть доступен из контроллера через trait
-            $this->clearSettingsCache('setting_' . $optionKey);
-            $this->clearSettingsCache();
-
             DB::commit();
 
             Log::info("Настройка '{$optionKey}' обновлена", [
@@ -69,9 +61,11 @@ trait UpdatesSettingsTrait
 
             Log::error("Ошибка обновления настройки '{$optionKey}': {$e->getMessage()}");
 
-            return back()->withInput()->withErrors([
-                'value' => $errorMessage,
-            ]);
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'value' => $errorMessage,
+                ]);
         }
     }
 }

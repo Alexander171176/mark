@@ -92,25 +92,35 @@ watch(selectedLocale, (newLocale) => {
     })
 })
 
+/** создание снапшотов настроек */
+const buildingSnapshots = ref(false)
+
+const buildBothSnapshots = async () => {
+    if (buildingSnapshots.value) return
+    buildingSnapshots.value = true
+
+    try {
+        await axios.post('/admin/settings/snapshots/build-public')
+        await axios.post('/admin/settings/snapshots/build-admin')
+    } catch (error) {
+        console.error('Ошибка при создании снапшотов настроек:', error)
+    } finally {
+        buildingSnapshots.value = false
+    }
+}
+
 /** очистка кеша сайта */
 const clearing = ref(false)
 
-const buildBothSnapshots = async () => {
-    await axios.post('/admin/settings/snapshots/build-public')
-    await axios.post('/admin/settings/snapshots/build-admin')
-}
-
-/** комбинированная кнопка: снапшоты -> очистка кеша */
 const clearCache = async () => {
     if (clearing.value) return
     clearing.value = true
 
     try {
-        await buildBothSnapshots()
         await axios.post('/admin/cache/clear')
         window.location.reload()
     } catch (error) {
-        console.error('Ошибка при создании снапшотов/очистке кэша:', error)
+        console.error('Ошибка при очистке кэша:', error)
     } finally {
         clearing.value = false
     }
@@ -300,8 +310,32 @@ const clearCache = async () => {
                 </Link>
             </div>
 
-            <!-- Генерация снапшотов, очиска кэша, смена локали -->
+            <!-- Генерация снапшотов, очистка кэша, смена локали -->
             <div class="flex flex-row items-center justify-end gap-1">
+
+                <!-- Кнопка создания снапшотов настроек -->
+                <button
+                    type="button"
+                    @click="buildBothSnapshots"
+                    :disabled="buildingSnapshots"
+                    title="Создать снимок настроек"
+                    class="flex items-center btn px-1 py-0.5
+                           text-slate-900 dark:text-slate-100
+                           rounded-sm border-2 border-slate-400
+                           disabled:opacity-50"
+                >
+                    <svg class="shrink-0 h-4 w-4" viewBox="0 0 24 24">
+                        <path
+                            class="fill-current text-blue-400"
+                            d="M12,10C8.2,10,4.3,9.3,2,7.6V12c0,2.7,5.2,4,10,4s10-1.3,10-4V7.6C19.7,9.3,15.8,10,12,10z"></path>
+                        <path
+                            class="fill-current text-blue-400"
+                            d="M12,18c-3.8,0-7.7-0.7-10-2.4V20c0,2.7,5.2,4,10,4s10-1.3,10-4v-4.4C19.7,17.3,15.8,18,12,18z"></path>
+                        <path
+                            class="fill-current text-blue-600"
+                            d="M12,0C7.2,0,2,1.3,2,4s5.2,4,10,4s10-1.3,10-4S16.8,0,12,0z"></path>
+                    </svg>
+                </button>
 
                 <!-- Кнопка очистки кэша -->
                 <button

@@ -12,12 +12,13 @@ const { t } = useI18n()
 const props = defineProps({
     settings: {
         type: Array,
-        default: () => []
+        default: () => [],
     },
+
     selectedSettings: {
         type: Array,
-        default: () => []
-    }
+        default: () => [],
+    },
 })
 
 const emits = defineEmits([
@@ -25,31 +26,52 @@ const emits = defineEmits([
     'delete',
     'update-sort-order',
     'toggle-select',
-    'toggle-all'
+    'toggle-all',
 ])
 
-// Локальная копия для drag’n’drop
+// Локальная копия параметров для drag’n’drop
 const localSettings = ref([])
 
 watch(
     () => props.settings,
     (newVal) => {
-        localSettings.value = JSON.parse(JSON.stringify(newVal || []))
+        localSettings.value = JSON.parse(
+            JSON.stringify(newVal || [])
+        )
     },
-    { immediate: true, deep: true }
+    {
+        immediate: true,
+        deep: true,
+    }
 )
 
-// Drag end → отправляем порядок ID
+// Drag end → отправляем новый порядок ID
 const handleDragEnd = () => {
-    const newOrderIds = localSettings.value.map(s => s.id)
-    emits('update-sort-order', newOrderIds)
+    const newOrderIds = localSettings.value.map(
+        setting => setting.id
+    )
+
+    emits(
+        'update-sort-order',
+        newOrderIds
+    )
 }
 
-// Массовый выбор
+// Массовый выбор параметров
 const toggleAll = (event) => {
     const checked = event.target.checked
-    const ids = localSettings.value.map(p => p.id)
-    emits('toggle-all', { ids, checked })
+
+    const ids = localSettings.value.map(
+        setting => setting.id
+    )
+
+    emits(
+        'toggle-all',
+        {
+            ids,
+            checked,
+        }
+    )
 }
 </script>
 
@@ -58,34 +80,52 @@ const toggleAll = (event) => {
         class="bg-white dark:bg-slate-700 shadow-lg rounded-sm
                border border-slate-400 dark:border-slate-500 relative"
     >
-        <!-- Верхняя панель: инфо + чекбокс "выбрать всё" -->
+        <!-- Верхняя панель: информация + выбор всех параметров -->
         <div
             class="flex items-center justify-between px-3 py-2
                    border-b border-slate-400 dark:border-slate-500"
         >
-            <div class="text-xs text-slate-600 dark:text-slate-200">
-                {{ t('selected') }}: {{ selectedSettings.length }}
+            <div
+                class="text-xs text-slate-600
+                       dark:text-slate-200"
+            >
+                {{ t('selected') }}:
+                {{ selectedSettings.length }}
             </div>
 
             <label
                 v-if="localSettings.length"
-                class="flex items-center text-xs text-slate-600
-                       dark:text-slate-200 cursor-pointer"
+                class="flex items-center text-xs
+                       text-slate-600 dark:text-slate-200
+                       cursor-pointer"
             >
-                <span>{{ t('selectAll') }}</span>
-                <input type="checkbox" class="mx-2" @change="toggleAll" />
+                <span>
+                    {{ t('selectAll') }}
+                </span>
+
+                <input
+                    type="checkbox"
+                    class="mx-2"
+                    @change="toggleAll"
+                />
             </label>
         </div>
 
         <!-- Сетка карточек с drag’n’drop -->
-        <div v-if="localSettings.length" class="p-3">
+        <div
+            v-if="localSettings.length"
+            class="p-3"
+        >
             <draggable
                 tag="div"
                 v-model="localSettings"
                 item-key="id"
-                @end="handleDragEnd"
                 handle=".handle"
-                class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                @end="handleDragEnd"
+                class="grid gap-3 grid-cols-1
+                       sm:grid-cols-2
+                       lg:grid-cols-3
+                       xl:grid-cols-4"
             >
                 <template #item="{ element: setting }">
                     <article
@@ -94,37 +134,52 @@ const toggleAll = (event) => {
                                bg-slate-50/80 dark:bg-slate-800/90 shadow-sm
                                hover:shadow-md transition-shadow duration-150"
                     >
-                        <!-- Шапка карточки: drag, ID, категория -->
+                        <!-- Шапка карточки -->
                         <header
                             class="flex items-center justify-between px-2 py-1
-                                   border-b border-dashed border-slate-400 dark:border-slate-500"
+                                   border-b border-dashed
+                                   border-slate-400 dark:border-slate-500"
                         >
-                            <div class="flex items-center space-x-2">
-                                <!-- drag handle -->
+                            <div
+                                class="flex items-center space-x-2"
+                            >
+                                <!-- Drag handle -->
                                 <button
                                     type="button"
-                                    class="handle text-slate-400 hover:text-slate-700
-                                           dark:hover:text-slate-100 cursor-move"
+                                    class="handle text-slate-400
+                                           hover:text-slate-700
+                                           dark:hover:text-slate-100
+                                           cursor-move"
                                     :title="t('dragDrop')"
                                 >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
                                         <path
                                             d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z"
                                         />
                                     </svg>
                                 </button>
 
+                                <!-- ID -->
                                 <span
-                                    class="text-[11px] font-semibold px-1.5 py-0.5 rounded-sm
-                                           border border-gray-400 bg-slate-200 dark:bg-slate-700
+                                    class="text-[11px] font-semibold
+                                           px-1.5 py-0.5 rounded-sm
+                                           border border-gray-400
+                                           bg-slate-200 dark:bg-slate-700
                                            text-slate-800 dark:text-blue-100"
+                                    :title="setting.sort"
                                 >
                                     ID: {{ setting.id }}
                                 </span>
                             </div>
 
+                            <!-- Категория -->
                             <div
-                                class="text-[10px] px-2 py-0.5 rounded-sm bg-blue-500
+                                class="text-[10px] px-2 py-0.5
+                                       rounded-sm bg-blue-500
                                        text-slate-50 font-semibold"
                                 :title="setting.description"
                             >
@@ -132,12 +187,17 @@ const toggleAll = (event) => {
                             </div>
                         </header>
 
-                        <!-- Основное содержимое: параметр + значение -->
-                        <div class="flex-1 px-3 py-3 space-y-2 text-center">
-                            <!-- Название параметра -->
+                        <!-- Основное содержимое -->
+                        <div
+                            class="flex-1 px-3 py-3
+                                   space-y-2 text-center"
+                        >
+                            <!-- Параметр -->
                             <div
-                                class="text-[13px] font-semibold text-orange-500
-                                       dark:text-orange-200 line-clamp-2"
+                                class="text-[13px] font-semibold
+                                       text-orange-500
+                                       dark:text-orange-200
+                                       line-clamp-2"
                                 :title="setting.option"
                             >
                                 {{ setting.option }}
@@ -145,43 +205,89 @@ const toggleAll = (event) => {
 
                             <!-- Значение -->
                             <div
-                                class="text-[13px] font-semibold text-teal-600
-                                       dark:text-teal-200 break-all"
+                                class="text-[13px] font-semibold
+                                       text-teal-600
+                                       dark:text-teal-200
+                                       break-all"
                                 :title="setting.value"
                             >
                                 {{ setting.value }}
                             </div>
 
-                            <!-- Тип или доп. инфо при желании -->
+                            <!-- Тип -->
                             <div
                                 v-if="setting.type"
-                                class="text-[11px] text-slate-500 dark:text-slate-300"
+                                class="text-[11px]
+                                       text-slate-500
+                                       dark:text-slate-300"
                             >
-                                {{ t('type') }}: {{ setting.type }}
+                                {{ t('type') }}:
+                                {{ setting.type }}
                             </div>
                         </div>
 
-                        <!-- Подвал: активность + действия + чекбокс -->
+                        <!-- Подвал: активность + действия + выбор -->
                         <footer
                             class="px-3 py-2 border-t border-dashed
                                    border-slate-400 dark:border-slate-500"
                         >
-                            <div class="flex items-center justify-between space-x-2">
-                                <div class="flex items-center space-x-2">
+                            <div
+                                class="flex items-center
+                                       justify-between space-x-2"
+                            >
+                                <div
+                                    class="flex items-center space-x-2"
+                                >
                                     <ActivityToggle
                                         :isActive="setting.activity"
-                                        @toggle-activity="$emit('toggle-activity', setting)"
-                                        :title="setting.activity ? t('enabled') : t('disabled')"
+                                        :title="
+                                            setting.activity
+                                                ? t('enabled')
+                                                : t('disabled')
+                                        "
+                                        @toggle-activity="
+                                            emits(
+                                                'toggle-activity',
+                                                setting
+                                            )
+                                        "
                                     />
-                                    <IconEdit :href="route('admin.parameters.edit', setting.id)" />
-                                    <DeleteIconButton @delete="$emit('delete', setting.id)" />
+
+                                    <IconEdit
+                                        :href="
+                                            route(
+                                                'admin.parameters.edit',
+                                                {
+                                                    parameter: setting.id,
+                                                }
+                                            )
+                                        "
+                                    />
+
+                                    <DeleteIconButton
+                                        @delete="
+                                            emits(
+                                                'delete',
+                                                setting.id
+                                            )
+                                        "
+                                    />
                                 </div>
 
                                 <div>
                                     <input
                                         type="checkbox"
-                                        :checked="selectedSettings.includes(setting.id)"
-                                        @change="$emit('toggle-select', setting.id)"
+                                        :checked="
+                                            selectedSettings.includes(
+                                                setting.id
+                                            )
+                                        "
+                                        @change="
+                                            emits(
+                                                'toggle-select',
+                                                setting.id
+                                            )
+                                        "
                                     />
                                 </div>
                             </div>
@@ -191,7 +297,11 @@ const toggleAll = (event) => {
             </draggable>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center
+                   text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

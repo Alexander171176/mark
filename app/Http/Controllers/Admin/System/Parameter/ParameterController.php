@@ -11,20 +11,15 @@ use App\Models\Admin\System\Setting\Setting;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
-
-// Используем общий реквест для настроек
-// Реквесты для простых действий
-// Если параметры нужно сортировать
-// Используем общий ресурс
-// Для bulkDestroy
-// Для типизации $query
 
 /**
  * Контроллер для управления Параметрами системы в административной панели.
@@ -32,38 +27,44 @@ use Throwable;
  * Предоставляет CRUD операции, а также дополнительные действия:
  * - Обновление активности и сортировки (одиночное и массовое)
  *
- * @version 1.1 (Улучшен с RMB, транзакциями, Form Requests)
+ * @version 1.1
  * @author Александр Косолапов <kosolapov1976@gmail.com>
- * @see Setting Модель Статьи
- * @see \App\Http\Requests\Admin\System\Setting\SettingRequest Запрос для создания/обновления
+ * @see Setting
+ * @see ParameterRequest
  */
 class ParameterController extends Controller
 {
 
     /**
-     * Отображение списка всех Параметров.
-     * Загружает пагинированный список с сортировкой по настройкам.
-     * Передает данные для отображения и настройки пагинации/сортировки.
-     * Пагинация и сортировка выполняются на фронтенде.
-     *
-     * @param Request $request
-     * @return Response
+     * Отображение списка параметров.
      */
     public function index(Request $request): Response
     {
         $currentLocale = app()->getLocale();
-
         $settingsService = app(AdminSettingsService::class);
 
-        $perPage = $settingsService->int('adminSystemSettingsPerPage', 6);
-        $defaultSort = $settingsService->string('adminSystemSettingsDefaultSort', 'idDesc');
+        $perPage = $settingsService->int(
+            'adminSystemSettingsPerPage',
+            6
+        );
 
-        $sortParam = (string) $request->query('sort', $defaultSort);
-        $search = trim((string) $request->query('search', ''));
+        $defaultSort = $settingsService->string(
+            'adminSystemSettingsDefaultSort',
+            'idDesc'
+        );
 
         $processingMode = $settingsService->string(
             'adminSystemSettingsProcessingMode',
             'frontend'
+        );
+
+        $sortParam = (string) $request->query(
+            'sort',
+            $defaultSort
+        );
+
+        $search = trim(
+            (string) $request->query('search', '')
         );
 
         $settingsCount = $this->indexQuery()->count();
@@ -83,323 +84,493 @@ class ParameterController extends Controller
                 search: $search,
             );
 
-            return Inertia::render('Admin/System/Parameters/Index', [
-                'currentLocale' => $currentLocale,
+            return Inertia::render(
+                'Admin/System/Parameters/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'adminSystemSettingsPerPage' => $perPage,
-                'adminSystemSettingsDefaultSort' => $defaultSort,
-                'adminSystemSettingsProcessingMode' => $processingMode,
+                    'adminSystemSettingsPerPage' =>
+                        $perPage,
 
-                'settings' => SettingResource::collection($settings),
-                'settingsCount' => $settingsCount,
+                    'adminSystemSettingsDefaultSort' =>
+                        $defaultSort,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
-            ]);
+                    'adminSystemSettingsProcessingMode' =>
+                        $processingMode,
+
+                    'settings' =>
+                        SettingResource::collection($settings),
+
+                    'settingsCount' =>
+                        $settingsCount,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки параметров для Index: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            Log::error(
+                'Ошибка загрузки параметров для Index: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return Inertia::render('Admin/System/Parameters/Index', [
-                'currentLocale' => $currentLocale,
+            return Inertia::render(
+                'Admin/System/Parameters/Index',
+                [
+                    'currentLocale' =>
+                        $currentLocale,
 
-                'useServerProcessing' => $useServerProcessing,
+                    'useServerProcessing' =>
+                        $useServerProcessing,
 
-                'adminSystemSettingsPerPage' => $perPage,
-                'adminSystemSettingsDefaultSort' => $defaultSort,
-                'adminSystemSettingsProcessingMode' => $processingMode,
+                    'adminSystemSettingsPerPage' =>
+                        $perPage,
 
-                'settings' => [],
-                'settingsCount' => 0,
+                    'adminSystemSettingsDefaultSort' =>
+                        $defaultSort,
 
-                'sortParam' => $sortParam,
-                'search' => $search,
+                    'adminSystemSettingsProcessingMode' =>
+                        $processingMode,
 
-                'error' => 'Ошибка загрузки параметров.',
-            ]);
+                    'settings' => [],
+
+                    'settingsCount' => 0,
+
+                    'sortParam' =>
+                        $sortParam,
+
+                    'search' =>
+                        $search,
+
+                    'error' =>
+                        'Ошибка загрузки параметров.',
+                ]
+            );
         }
     }
 
     /**
-     * Отображение формы создания нового параметра.
-     *
-     * @return Response
+     * Отображение формы создания параметра.
      */
     public function create(): Response
     {
-        // TODO: Проверка прав $this->authorize('create-setting', Setting::class); // Или кастомное право
-        return Inertia::render('Admin/System/Parameters/Create', [
-            // Передаем дефолтное значение категории, если нужно
-            // 'defaultCategory' => self::PARAMETER_CATEGORY,
-        ]);
+        return Inertia::render(
+            'Admin/System/Parameters/Create'
+        );
     }
 
     /**
-     * Сохранение нового параметра в базе данных.
-     * Использует SectionRequest для валидации и авторизации.
-     *
-     * @param ParameterRequest $request
-     * @return RedirectResponse Редирект на список статей с сообщением.
+     * Сохранение нового параметра.
      */
-    public function store(ParameterRequest $request): RedirectResponse
-    {
-        // TODO: Проверка прав $this->authorize('create-setting', Setting::class);
-        $data = $request->validated();
-
-        // Принудительно устанавливаем категорию (или тип), если она не передается из формы
-        // TODO: Адаптировать под ваш способ идентификации
-        // $data['category'] = self::PARAMETER_CATEGORY;
-        $data['type'] = 'parameter'; // Пример
-
-        try {
-            Setting::create($data);
-            Log::info('Параметр системы успешно создан: ', ['option' => $data['option']]);
-
-            return redirect()->route('admin.parameters.index')
-                ->with('success', __('admin/controllers.created_success'));
-
-        } catch (Throwable $e) {
-            Log::error("Ошибка при создании параметра: " . $e->getMessage());
-            return back()->withInput()
-                ->with('error', __('admin/controllers.created_error'));
-        }
-    }
-
-    /**
-     * Отображение формы редактирования существующего параметра.
-     * Использует Route Model Binding для получения модели.
-     *
-     * @param string $id
-     * @return Response
-     */
-    public function edit(string $id): Response
-    {
-        $setting = Setting::findOrFail($id);
-
-        return Inertia::render('Admin/System/Parameters/Edit', [
-            'setting' => new SettingResource($setting),
-        ]);
-    }
-
-    /**
-     * Обновление существующего параметра в базе данных.
-     * Использует SettingRequest и Route Model Binding.
-     *
-     * @param ParameterRequest $request Валидированный запрос.
-     * @param string $id
-     * @return RedirectResponse Редирект на список параметров с сообщением.
-     */
-    public function update(ParameterRequest $request, string $id): RedirectResponse
-    {
-        // TODO: Проверка прав $this->authorize('update', $setting);
-
-        $setting = Setting::findOrFail($id);
+    public function store(
+        ParameterRequest $request
+    ): RedirectResponse {
         $data = $request->validated();
 
         try {
-            DB::beginTransaction();
-            $setting->update($data);
-            DB::commit();
+            $setting = Setting::create($data);
 
-            Log::info('Параметр системы обновлен: ', ['id' => $setting->id, 'option' => $setting->option]);
-            return redirect()->route('admin.parameters.index')
-                ->with('success', __('admin/controllers.updated_success'));
+            Log::info(
+                'Параметр системы успешно создан.',
+                [
+                    'id' =>
+                        $setting->id,
 
+                    'option' =>
+                        $setting->option,
+                ]
+            );
+
+            return redirect()
+                ->route('admin.parameters.index')
+                ->with(
+                    'success',
+                    __('admin/controllers.created_success')
+                );
         } catch (Throwable $e) {
-            DB::rollBack();
-            Log::error("Ошибка при обновлении параметра ID {$setting->id}: " . $e->getMessage());
-            return back()->withInput()
-                ->with('error', __('admin/controllers.updated_error'));
+            Log::error(
+                'Ошибка при создании параметра: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
+
+            return back()
+                ->withInput()
+                ->with(
+                    'error',
+                    __('admin/controllers.created_error')
+                );
         }
     }
 
     /**
-     * Удаление указанного параметра.
-     * Использует Route Model Binding.
-     *
-     * @param Setting $setting Модель настроек для удаления.
-     * @return RedirectResponse Редирект на список параметров с сообщением.
+     * Отображение формы редактирования параметра.
      */
-    public function destroy(Setting $setting): RedirectResponse
-    {
-        // TODO: Проверка прав $this->authorize('delete-setting', $setting);
+    public function edit(
+        Setting $parameter
+    ): Response {
+        return Inertia::render(
+            'Admin/System/Parameters/Edit',
+            [
+                'setting' =>
+                    new SettingResource($parameter),
+            ]
+        );
+    }
 
+    /**
+     * Обновление параметра.
+     */
+    public function update(
+        ParameterRequest $request,
+        Setting $parameter
+    ): RedirectResponse {
         try {
-            DB::beginTransaction();
-            $setting->delete();
-            DB::commit();
+            $parameter->update(
+                $request->validated()
+            );
 
-            Log::info('Параметр системы удален: ID ' . $setting->id);
-            return redirect()->route('admin.parameters.index')
-                ->with('success', __('admin/controllers.deleted_success'));
+            Log::info(
+                'Параметр системы обновлён.',
+                [
+                    'id' =>
+                        $parameter->id,
 
+                    'option' =>
+                        $parameter->option,
+                ]
+            );
+
+            return redirect()
+                ->route('admin.parameters.index')
+                ->with(
+                    'success',
+                    __('admin/controllers.updated_success')
+                );
         } catch (Throwable $e) {
-            DB::rollBack();
-            Log::error("Ошибка при удалении параметра ID {$setting->id}: " . $e->getMessage());
+            Log::error(
+                "Ошибка при обновлении параметра ID {$parameter->id}: "
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
+
             return back()
-                ->with('error', __('admin/controllers.deleted_error'));
+                ->withInput()
+                ->with(
+                    'error',
+                    __('admin/controllers.updated_error')
+                );
         }
     }
 
     /**
-     * Обновление статуса активности параметра.
-     *
-     * @param UpdateActivityRequest $request
-     * @param Setting $setting
-     * @return RedirectResponse
+     * Удаление параметра.
      */
-    public function updateActivity(UpdateActivityRequest $request, Setting $setting): RedirectResponse
-    {
-        $validated = $request->validated();
+    public function destroy(
+        Setting $parameter
+    ): RedirectResponse {
+        try {
+            $parameterId = $parameter->id;
 
-        if (in_array($setting->category, ['system', 'admin', 'public'], true)) {
-            Log::info("Попытка изменения активности параметра ID
-            {$setting->id} с категорией '{$setting->category}'.");
+            $parameter->delete();
+
+            Log::info(
+                "Параметр системы удалён: ID {$parameterId}"
+            );
+
+            return redirect()
+                ->route('admin.parameters.index')
+                ->with(
+                    'success',
+                    __('admin/controllers.deleted_success')
+                );
+        } catch (Throwable $e) {
+            Log::error(
+                "Ошибка при удалении параметра ID {$parameter->id}: "
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
-                ->with('warning', __('admin/controllers.activity_update_forbidden', [
-                    'category' => $setting->category,
-                ]));
+                ->with(
+                    'error',
+                    __('admin/controllers.deleted_error')
+                );
         }
+    }
 
+    /**
+     * Обновление активности одного параметра.
+     */
+    public function updateActivity(
+        UpdateActivityRequest $request,
+        Setting $setting
+    ): RedirectResponse {
         try {
-            $setting->activity = $validated['activity'];
+            $setting->activity =
+                $request->validated('activity');
+
             $setting->save();
 
-            $actionText = $setting->activity ? 'активирован' : 'деактивирован';
-            Log::info("Параметр ID {$setting->id} успешно {$actionText}");
+            $actionText = $setting->activity
+                ? 'активирован'
+                : 'деактивирован';
 
-            return back()->with('success', __('admin/controllers.activity_updated_success', [
-                'option' => $setting->option,
-                'action' => $actionText,
-            ]));
+            Log::info(
+                "Параметр ID {$setting->id} успешно {$actionText}."
+            );
+
+            return back()->with(
+                'success',
+                __(
+                    'admin/controllers.activity_updated_success',
+                    [
+                        'option' =>
+                            $setting->option,
+
+                        'action' =>
+                            $actionText,
+                    ]
+                )
+            );
         } catch (Throwable $e) {
-            Log::error("Ошибка обновления активности параметра ID {$setting->id}: " . $e->getMessage());
+            Log::error(
+                "Ошибка обновления активности параметра ID {$setting->id}: "
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-            return back()
-                ->with('error', __('admin/controllers.activity_updated_error'));
+            return back()->with(
+                'error',
+                __('admin/controllers.activity_updated_error')
+            );
         }
     }
 
     /**
-     * Обновление статуса активности массово
-     *
-     * @param Request $request
-     * @return RedirectResponse Json ответ
+     * Массовое обновление активности параметров.
      */
-    public function bulkUpdateActivity(Request $request): RedirectResponse
-    {
+    public function bulkUpdateActivity(
+        Request $request
+    ): RedirectResponse {
         $validated = $request->validate([
-            'ids'      => 'required|array',
-            'ids.*'    => 'required|integer|exists:settings,id', // Проверяем таблицу 'settings'
-            'activity' => 'required|boolean',
+            'ids' => [
+                'required',
+                'array',
+            ],
+
+            'ids.*' => [
+                'required',
+                'integer',
+                'exists:settings,id',
+            ],
+
+            'activity' => [
+                'required',
+                'boolean',
+            ],
         ]);
 
         try {
-            DB::beginTransaction();
+            Setting::query()
+                ->whereIn(
+                    'settings.id',
+                    $validated['ids']
+                )
+                ->update([
+                    'activity' =>
+                        $validated['activity'],
+                ]);
 
-            // Исправление: используем один запрос whereIn и правильный ключ 'ids'
-            // Модель Setting, так как таблица settings
-            Setting::whereIn('id', $validated['ids'])
-                ->update(['activity' => $validated['activity']]);
+            Log::info(
+                'Массово обновлена активность параметров.',
+                [
+                    'count' =>
+                        count($validated['ids']),
 
-            DB::commit();
+                    'activity' =>
+                        $validated['activity'],
+                ]
+            );
 
-            Log::info('Массово обновлена активность параметров (settings)', [
-                'count' => count($validated['ids']),
-                'activity' => $validated['activity'],
-            ]);
-
-            return back()->with('success', __('admin/controllers.bulk_activity_updated_success'));
-
+            return back()->with(
+                'success',
+                __(
+                    'admin/controllers.bulk_activity_updated_success'
+                )
+            );
         } catch (Throwable $e) {
-            DB::rollBack();
-            Log::error("Ошибка массового обновления активности параметров (settings): " . $e->getMessage());
-            return back()->with('error', __('admin/controllers.bulk_activity_updated_error'));
+            Log::error(
+                'Ошибка массового обновления активности параметров: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
+
+            return back()->with(
+                'error',
+                __(
+                    'admin/controllers.bulk_activity_updated_error'
+                )
+            );
         }
     }
 
     /**
-     * Обновление значения сортировки для одного параметра.
-     * Использует Route Model Binding и UpdateSortRequest.
-     * *
-     * @param UpdateSortEntityRequest $request Валидированный запрос с полем 'sort'.
-     * @param Setting $setting Модель параметра для обновления.
-     * @return RedirectResponse Редирект назад с сообщением..
+     * Обновление сортировки одного параметра.
      */
-    public function updateSort(UpdateSortEntityRequest $request, Setting $setting): RedirectResponse
-    {
-        // authorize() в UpdateSortEntityRequest
-        $validated = $request->validated();
+    public function updateSort(
+        UpdateSortEntityRequest $request,
+        Setting $setting
+    ): RedirectResponse {
         try {
-            $setting->sort = $validated['sort'];
-            $setting->save();
-            Log::info("Обновлено sort параметра ID {$setting->id} на {$setting->sort}");
-            return back()
-                ->with('success', __('admin/controllers.sort_updated_success'));
+            $setting->sort =
+                $request->validated('sort');
 
+            $setting->save();
+
+            Log::info(
+                "Обновлено sort параметра ID {$setting->id} "
+                . "на {$setting->sort}."
+            );
+
+            return back()->with(
+                'success',
+                __(
+                    'admin/controllers.sort_updated_success'
+                )
+            );
         } catch (Throwable $e) {
-            Log::error("Ошибка обновления сортировки параметра ID {$setting->id}: "
-                . $e->getMessage());
-            return back()
-                ->with('error', __('admin/controllers.sort_updated_error'));
+            Log::error(
+                "Ошибка обновления сортировки параметра ID {$setting->id}: "
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
+
+            return back()->with(
+                'error',
+                __(
+                    'admin/controllers.sort_updated_error'
+                )
+            );
         }
     }
 
     /**
-     * Массовое обновление сортировки на основе переданного порядка ID.
-     * Принимает массив объектов вида `[{id: 1, sort: 10}, {id: 5, sort: 20}]`.
-     *
-     * @param Request $request Запрос с массивом 'settings'.
-     * @return RedirectResponse Редирект назад с сообщением.
+     * Массовое обновление сортировки параметров.
      */
-    public function updateSortBulk(Request $request): RedirectResponse
-    {
-        // TODO: Проверка прав $this->authorize('update-settings');
-
-        // Валидируем входящий массив (Можно вынести в отдельный FormRequest: UpdateSortBulkRequest)
+    public function updateSortBulk(
+        Request $request
+    ): RedirectResponse {
         $validated = $request->validate([
-            'settings' => 'required|array',
-            'settings.*.id' => ['required', 'integer', 'exists:settings,id'],
-            'settings.*.sort' => ['required', 'integer', 'min:1'],
+            'settings' => [
+                'required',
+                'array',
+            ],
+
+            'settings.*.id' => [
+                'required',
+                'integer',
+                'exists:settings,id',
+            ],
+
+            'settings.*.sort' => [
+                'required',
+                'integer',
+                'min:1',
+            ],
         ]);
 
         try {
-            DB::beginTransaction();
-            foreach ($validated['settings'] as $settingData) {
-                // Используем update для массового обновления, если возможно, или where/update
-                Setting::where('id', $settingData['id'])->update(['sort' => $settingData['sort']]);
-            }
-            DB::commit();
+            DB::transaction(
+                function () use ($validated): void {
+                    foreach (
+                        $validated['settings']
+                        as $settingData
+                    ) {
+                        Setting::query()
+                            ->where(
+                                'settings.id',
+                                $settingData['id']
+                            )
+                            ->update([
+                                'sort' =>
+                                    $settingData['sort'],
+                            ]);
+                    }
+                }
+            );
 
-            Log::info('Массово обновлена сортировка параметров', ['count' => count($validated['settings'])]);
-            return back()
-                ->with('success', __('admin/controllers.bulk_sort_updated_success'));
+            Log::info(
+                'Массово обновлена сортировка параметров.',
+                [
+                    'count' =>
+                        count($validated['settings']),
+                ]
+            );
 
+            return back()->with(
+                'success',
+                __(
+                    'admin/controllers.bulk_sort_updated_success'
+                )
+            );
         } catch (Throwable $e) {
-            DB::rollBack();
-            Log::error("Ошибка массового обновления сортировки параметров: " . $e->getMessage());
-            return back()
-                ->with('error', __('admin/controllers.bulk_sort_updated_error'));
+            Log::error(
+                'Ошибка массового обновления сортировки параметров: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
+
+            return back()->with(
+                'error',
+                __(
+                    'admin/controllers.bulk_sort_updated_error'
+                )
+            );
         }
     }
 
-    /** Базовый запрос для списка параметров. */
+    /**
+     * Базовый запрос для списка параметров.
+     */
     private function indexQuery(): Builder
     {
         return Setting::query();
     }
 
-    /** Получение параметров по активному режиму обработки. */
+    /**
+     * Получение параметров по активному режиму обработки.
+     */
     private function getIndexSettings(
         bool $useServerProcessing,
         int $perPage,
         string $sort,
         string $search = '',
-    ) {
+    ): LengthAwarePaginator|EloquentCollection {
         $query = $this->indexQuery();
 
         if ($useServerProcessing) {
@@ -414,5 +585,4 @@ class ParameterController extends Controller
             ->sortByParam($sort)
             ->get();
     }
-
 }

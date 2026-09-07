@@ -232,18 +232,33 @@ const deleteSetting = () => {
 
     const idToDelete = settingToDeleteId.value
 
-    router.delete(route('admin.settings.destroy', { setting: idToDelete }), {
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => {
-            toast.success(`Параметр ID ${idToDelete} успешно удалён.`)
-        },
-        onError: (errors) => {
-            const errorMsg = errors.general || 'Ошибка удаления параметра.'
-            toast.error(`${errorMsg} (ID: ${idToDelete})`)
-        },
-        onFinish: () => closeModal(),
-    })
+    router.delete(
+        route('admin.parameters.destroy', {
+            parameter: idToDelete,
+        }),
+        {
+            preserveScroll: true,
+            preserveState: false,
+
+            onSuccess: () => {
+                toast.success(
+                    `Параметр ID ${idToDelete} успешно удалён.`
+                )
+            },
+
+            onError: (errors) => {
+                const errorMsg =
+                    errors.general
+                    || 'Ошибка удаления параметра.'
+
+                toast.error(
+                    `${errorMsg} (ID: ${idToDelete})`
+                )
+            },
+
+            onFinish: () => closeModal(),
+        }
+    )
 }
 
 const patchSetting = (settingId, payload) => {

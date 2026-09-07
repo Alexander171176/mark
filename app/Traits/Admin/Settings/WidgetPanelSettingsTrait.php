@@ -5,18 +5,12 @@ namespace App\Traits\Admin\Settings;
 use App\Http\Requests\Admin\System\Setting\UpdateWidgetPanelRequest;
 use App\Models\Admin\System\Setting\Setting;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 trait WidgetPanelSettingsTrait
 {
-    /**
-     * Ключ кэша настроек панели виджетов.
-     */
-    private string $widgetPanelCacheKey = 'widget_panel_settings';
-
     /**
      * Дефолтный цвет панели виджетов (hex без #).
      */
@@ -33,31 +27,34 @@ trait WidgetPanelSettingsTrait
     private string $widgetPanelCategory = 'widget_panel';
 
     /**
-     * Получает настройку цвета панели виджетов в админке
+     * Получает настройки панели виджетов в админке.
      *
      * @return JsonResponse
      */
     public function getWidgetPanelSettings(): JsonResponse
     {
         try {
-            $settings = Cache::remember(
-                $this->widgetPanelCacheKey,
-                self::SETTINGS_CACHE_TTL,
-                function () {
-                    $color = Setting::where('option', 'widgetHexColor')->value('value') ?? $this->widgetPanelDefaultColor;
-                    $opacity = Setting::where('option', 'widgetOpacity')->value('value') ?? $this->widgetPanelDefaultOpacity;
+            $color = Setting::query()
+                ->where('option', 'widgetHexColor')
+                ->value('value')
+                ?? $this->widgetPanelDefaultColor;
 
-                    $color = $this->normalizeWidgetColor($color);
-                    $opacity = $this->normalizeWidgetOpacity($opacity);
+            $opacity = Setting::query()
+                ->where('option', 'widgetOpacity')
+                ->value('value')
+                ?? $this->widgetPanelDefaultOpacity;
 
-                    return ['color' => $color, 'opacity' => $opacity];
-                }
-            );
-
-            return response()->json($settings);
+            return response()->json([
+                'color' => $this->normalizeWidgetColor($color),
+                'opacity' => $this->normalizeWidgetOpacity($opacity),
+            ]);
 
         } catch (Throwable $e) {
-            Log::error('Ошибка получения настроек панели виджетов: ' . $e->getMessage());
+            Log::error(
+                'Ошибка получения настроек панели виджетов: '
+                . $e->getMessage()
+            );
+
             return response()->json([
                 'color' => $this->widgetPanelDefaultColor,
                 'opacity' => $this->widgetPanelDefaultOpacity,
@@ -66,19 +63,19 @@ trait WidgetPanelSettingsTrait
     }
 
     /**
-     * Обновляет настройку цвета панели виджетов в админке
+     * Обновляет настройки панели виджетов в админке.
      *
      * @param UpdateWidgetPanelRequest $request
      * @return JsonResponse
      */
-    public function updateWidgetPanelSettings(UpdateWidgetPanelRequest $request): JsonResponse
-    {
-        $validated = $request->validated(); // 'color' (hex без #), 'opacity' (float 0-1)
+    public function updateWidgetPanelSettings(
+        UpdateWidgetPanelRequest $request
+    ): JsonResponse {
+        $validated = $request->validated();
 
         try {
             DB::beginTransaction();
 
-            // Важно: сохраняем оба значения консистентно
             $this->updateSettingPair(
                 'widgetHexColor',
                 $validated['color'],
@@ -95,9 +92,6 @@ trait WidgetPanelSettingsTrait
 
             DB::commit();
 
-            $this->clearSettingsCache($this->widgetPanelCacheKey);
-            $this->clearSettingsCache();
-
             return response()->json([
                 'success' => true,
                 'message' => 'Настройки панели виджетов обновлены.',
@@ -105,7 +99,11 @@ trait WidgetPanelSettingsTrait
 
         } catch (Throwable $e) {
             DB::rollBack();
-            Log::error('Ошибка обновления настроек панели виджетов: ' . $e->getMessage());
+
+            Log::error(
+                'Ошибка обновления настроек панели виджетов: '
+                . $e->getMessage()
+            );
 
             return response()->json([
                 'success' => false,
@@ -115,7 +113,8 @@ trait WidgetPanelSettingsTrait
     }
 
     /**
-     * Нормализует цвет (hex без #). Если невалидный — возвращает дефолт.
+     * Нормализует цвет (hex без #).
+     * Если значение невалидное — возвращает дефолт.
      *
      * @param mixed $color
      * @return string
@@ -123,13 +122,15 @@ trait WidgetPanelSettingsTrait
     private function normalizeWidgetColor($color): string
     {
         $color = (string) $color;
-        return preg_match('/^[0-9A-Fa-f]{6}$/i', $color)
+
+        return preg_match('/^[0-9A-Fa-f]{6}$/', $color)
             ? strtoupper($color)
             : $this->widgetPanelDefaultColor;
     }
 
     /**
-     * Нормализует прозрачность (0..1). Если невалидная — возвращает дефолт.
+     * Нормализует прозрачность (0..1).
+     * Если значение невалидное — возвращает дефолт.
      *
      * @param mixed $opacity
      * @return float
@@ -149,7 +150,6 @@ trait WidgetPanelSettingsTrait
 
     /**
      * Универсальный хелпер для сохранения одной настройки в settings.
-     * Используем updateOrCreate и общие поля (category/activity).
      *
      * @param string $option
      * @param string $value
@@ -157,9 +157,13 @@ trait WidgetPanelSettingsTrait
      * @param string $constant
      * @return void
      */
-    private function updateSettingPair(string $option, string $value, string $type, string $constant): void
-    {
-        Setting::updateOrCreate(
+    private function updateSettingPair(
+        string $option,
+        string $value,
+        string $type,
+        string $constant
+    ): void {
+        Setting::query()->updateOrCreate(
             ['option' => $option],
             [
                 'value' => $value,

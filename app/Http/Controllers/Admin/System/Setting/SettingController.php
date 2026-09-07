@@ -7,8 +7,6 @@ use App\Http\Requests\Admin\System\Setting\UpdateSettingValueRequest;
 use App\Http\Requests\Admin\System\UpdateActivityRequest;
 use App\Http\Resources\Admin\System\Setting\SettingResource;
 use App\Models\Admin\System\Setting\Setting;
-use App\Services\SiteSettings\AdminSettingsService;
-use App\Traits\Admin\Settings\ClearsSettingsCacheTrait;
 use App\Traits\Admin\Settings\CountSettingsTrait;
 use App\Traits\Admin\Settings\SortSettingsTrait;
 use App\Traits\Admin\Settings\UpdatesSettingsTrait;
@@ -24,199 +22,338 @@ use Throwable;
 
 class SettingController extends Controller
 {
-    // Время кэширования специфичных настроек
-    private const SETTINGS_CACHE_TTL = 3600; // 1 час
-
     use UpdatesSettingsTrait;
     use CountSettingsTrait;
     use SortSettingsTrait;
     use WidgetPanelSettingsTrait;
-    use ClearsSettingsCacheTrait;
-
-    // --- Стандартные CRUD методы ---
 
     /**
-     * Отображение списка всех настроек.
-     *
-     * @return InertiaResponse
+     * Админские настройки,
+     * разрешённые для интерфейса Settings.
+     */
+    private const ADMIN_EDITABLE_OPTIONS = [
+        'locale',
+        'widgetHexColor',
+        'widgetOpacity',
+    ];
+
+    /**
+     * Отображение настроек.
      */
     public function index(): InertiaResponse
     {
-        // TODO: Проверка прав $this->authorize('view-settings', Setting::class);
-
-        // Получаем настройки для фронтенда (дефолтные значения)
-        $settings = app(AdminSettingsService::class);
-        $adminSystemSettingsPerPage = $settings->int('site_settings.adminSystemSettingsPerPage', 6); // Для ItemsPerPageSelect
-        $adminSystemSettingsDefaultSort = $settings->string('site_settings.adminSystemSettingsDefaultSort', 'idDesc'); // Для SortSelect
+        // TODO: Проверка прав
+        // $this->authorize('view-settings', Setting::class);
 
         try {
-            // Загружаем ВСЕ рубрики с количеством секций (или без, если не нужно в таблице)
-            $settings = Setting::all(); // Загружаем ВСЕ
-            $settingsCount = $settings->count(); // Считаем из загруженной коллекции
+            $settings = Setting::query()
+                ->where(function ($query) {
+                    $query
+                        ->where(
+                            'settings.category',
+                            'public'
+                        )
+                        ->orWhere(function ($query) {
+                            $query
+                                ->where(
+                                    'settings.category',
+                                    'admin'
+                                )
+                                ->whereIn(
+                                    'settings.option',
+                                    self::ADMIN_EDITABLE_OPTIONS
+                                );
+                        });
+                })
+                ->ordered()
+                ->get();
 
+            return Inertia::render(
+                'Admin/System/Settings/Index',
+                [
+                    'settings' =>
+                        SettingResource::collection($settings),
+                ]
+            );
         } catch (Throwable $e) {
-            Log::error("Ошибка загрузки рубрик для Index: " . $e->getMessage());
-            $settings = collect();
-            $settingsCount = 0;
-            session()->flash('error', 'Не удалось загрузить список параметров.');
-        }
+            Log::error(
+                'Ошибка загрузки настроек для Settings Index: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
-        return Inertia::render('Admin/System/Settings/Index', [
-            // Передаем ПОЛНУЮ коллекцию ресурсов
-            'settings' => SettingResource::collection($settings),
-            'settingsCount' => $settingsCount,
-            // Передаем дефолтные/текущие настройки для инициализации фронтенда
-            'adminSystemSettingsPerPage' => (int)$adminSystemSettingsPerPage,
-            'adminSystemSettingsDefaultSort' => $adminSystemSettingsDefaultSort, // Это значение прочитает SortSelect при загрузке
-        ]);
+            return Inertia::render(
+                'Admin/System/Settings/Index',
+                [
+                    'settings' => [],
+
+                    'error' =>
+                        'Не удалось загрузить список настроек.',
+                ]
+            );
+        }
     }
 
     /**
      * Обновление значения конкретной настройки.
-     *
-     * @param UpdateSettingValueRequest $request
-     * @param Setting $setting
-     * @return RedirectResponse
      */
-    public function updateValue(UpdateSettingValueRequest $request, Setting $setting): RedirectResponse
-    {
+    public function updateValue(
+        UpdateSettingValueRequest $request,
+        Setting $setting
+    ): RedirectResponse {
         try {
             DB::beginTransaction();
 
             $setting->update([
-                'value' => $request->validated()['value'],
+                'value' =>
+                    $request->validated()['value'],
             ]);
 
             DB::commit();
 
-            Log::info('Значение настройки обновлено', [
-                'id' => $setting->id,
-                'option' => $setting->option,
-                'new_value' => $setting->value,
-            ]);
+            Log::info(
+                'Значение настройки обновлено.',
+                [
+                    'id' =>
+                        $setting->id,
+
+                    'option' =>
+                        $setting->option,
+
+                    'new_value' =>
+                        $setting->value,
+                ]
+            );
 
             return back()
-                ->with('success', __('admin/controllers.value_updated_success'));
-
-        } catch (\Throwable $e) {
+                ->with(
+                    'success',
+                    __('admin/controllers.value_updated_success')
+                );
+        } catch (Throwable $e) {
             DB::rollBack();
 
-            Log::error("Ошибка при обновлении значения настройки ID
-            {$setting->id}: {$e->getMessage()}");
+            Log::error(
+                "Ошибка при обновлении значения настройки ID {$setting->id}: "
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
 
             return back()
-                ->with('error', __('admin/controllers.value_updated_error'));
+                ->with(
+                    'error',
+                    __('admin/controllers.value_updated_error')
+                );
         }
     }
 
     /**
      * Универсальное обновление настройки по option.
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
-    public function updateSettingValue(Request $request): RedirectResponse
-    {
+    public function updateSettingValue(
+        Request $request
+    ): RedirectResponse {
         $validated = $request->validate([
-            'key' => ['required', 'string'],
-            'value' => ['nullable'],
+            'key' => [
+                'required',
+                'string',
+            ],
+
+            'value' => [
+                'nullable',
+            ],
         ]);
 
         try {
-
             DB::beginTransaction();
 
             $setting = Setting::query()
-                ->where('option', $validated['key'])
+                ->where(
+                    'option',
+                    $validated['key']
+                )
                 ->firstOrFail();
 
             $setting->update([
-                'value' => $validated['value'],
+                'value' =>
+                    $validated['value'],
             ]);
-
-            $this->clearSettingsCache();
 
             DB::commit();
 
-            return back()->with(
-                'success',
-                __('admin/controllers.value_updated_success')
+            Log::info(
+                'Значение настройки обновлено по option.',
+                [
+                    'id' =>
+                        $setting->id,
+
+                    'option' =>
+                        $setting->option,
+
+                    'new_value' =>
+                        $setting->value,
+                ]
             );
 
+            return back()
+                ->with(
+                    'success',
+                    __('admin/controllers.value_updated_success')
+                );
         } catch (Throwable $e) {
-
             DB::rollBack();
 
             Log::error(
-                'Ошибка обновления настройки: ' .
-                $e->getMessage()
+                'Ошибка обновления настройки по option: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
             );
 
-            return back()->with(
-                'error',
-                __('admin/controllers.value_updated_error')
-            );
+            return back()
+                ->with(
+                    'error',
+                    __('admin/controllers.value_updated_error')
+                );
         }
     }
 
     /**
-     * Обновление статуса активности параметра.
-     *
-     * @param UpdateActivityRequest $request
-     * @param Setting $setting
-     * @return RedirectResponse
+     * Обновление статуса активности настройки.
      */
-    public function updateActivity(UpdateActivityRequest $request, Setting $setting): RedirectResponse
-    {
+    public function updateActivity(
+        UpdateActivityRequest $request,
+        Setting $setting
+    ): RedirectResponse {
         $validated = $request->validated();
 
-        if (in_array($setting->category, ['system', 'admin', 'public'], true)) {
-            Log::info("Попытка изменения активности параметра ID {$setting->id} с категорией '{$setting->category}'.");
-
-            return back()
-                ->with('warning', __('admin/controllers.activity_update_forbidden_error', [
-                    'category' => $setting->category,
-                ]));
-        }
-
         try {
-            $setting->activity = $validated['activity'];
+            $setting->activity =
+                $validated['activity'];
+
             $setting->save();
 
-            $actionText = $setting->activity ? 'активирован' : 'деактивирован';
-            Log::info("Параметр ID {$setting->id} успешно {$actionText}");
+            $actionText = $setting->activity
+                ? 'активирован'
+                : 'деактивирован';
+
+            Log::info(
+                "Параметр ID {$setting->id} успешно {$actionText}.",
+                [
+                    'id' =>
+                        $setting->id,
+
+                    'option' =>
+                        $setting->option,
+
+                    'activity' =>
+                        $setting->activity,
+                ]
+            );
 
             return back()
-                ->with('success', __('admin/controllers.activity_updated_success', [
-                    'option' => $setting->option,
-                    'action' => $actionText,
-                ]));
-        } catch (Throwable $e) {
-            Log::error("Ошибка обновления активности параметра ID {$setting->id}: "
-                . $e->getMessage());
+                ->with(
+                    'success',
+                    __(
+                        'admin/controllers.activity_updated_success',
+                        [
+                            'option' =>
+                                $setting->option,
 
-            return back()->withErrors([
-                'general' => __('admin/controllers.activity_updated_error'),
-            ]);
+                            'action' =>
+                                $actionText,
+                        ]
+                    )
+                );
+        } catch (Throwable $e) {
+            Log::error(
+                "Ошибка обновления активности параметра ID {$setting->id}: "
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
+
+            return back()
+                ->withErrors([
+                    'general' =>
+                        __('admin/controllers.activity_updated_error'),
+                ]);
         }
     }
 
     /**
-     * Обновление статуса активности массово
-     *
-     * @param Request $request
-     * @return JsonResponse Json ответ
+     * Массовое обновление активности настроек.
      */
-    public function bulkUpdateActivity(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'ids' => 'required|array',
-            'ids.*' => 'required|integer|exists:settings,id',
-            'activity' => 'required|boolean',
+    public function bulkUpdateActivity(
+        Request $request
+    ): JsonResponse {
+        $validated = $request->validate([
+            'ids' => [
+                'required',
+                'array',
+            ],
+
+            'ids.*' => [
+                'required',
+                'integer',
+                'exists:settings,id',
+            ],
+
+            'activity' => [
+                'required',
+                'boolean',
+            ],
         ]);
 
-        Setting::whereIn('id', $data['ids'])->update(['activity' => $data['activity']]);
+        try {
+            Setting::query()
+                ->whereIn(
+                    'settings.id',
+                    $validated['ids']
+                )
+                ->update([
+                    'activity' =>
+                        $validated['activity'],
+                ]);
 
-        return response()->json(['success' => true]);
+            Log::info(
+                'Массово обновлена активность настроек.',
+                [
+                    'count' =>
+                        count($validated['ids']),
+
+                    'activity' =>
+                        $validated['activity'],
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+            ]);
+        } catch (Throwable $e) {
+            Log::error(
+                'Ошибка массового обновления активности настроек: '
+                . $e->getMessage(),
+                [
+                    'exception' => $e,
+                ]
+            );
+
+            return response()->json(
+                [
+                    'success' => false,
+
+                    'message' =>
+                        __('admin/controllers.bulk_activity_updated_error'),
+                ],
+                500
+            );
+        }
     }
 }

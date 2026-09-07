@@ -1,15 +1,15 @@
 <?php
 // Инструкторы школы
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicInstructorController =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolInstructor\\SchoolInstructorController";
-
-Route::get('/school/instructors', [$publicInstructorController, 'index'])
+Route::get('/school/instructors', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolInstructor\\SchoolInstructorController')
+    ->defaults('_templateAction', 'index')
     ->name('public.schoolInstructors.index');
 
-Route::get('/school/instructors/{slug}', [$publicInstructorController, 'show'])
+Route::get('/school/instructors/{slug}', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolInstructor\\SchoolInstructorController')
+    ->defaults('_templateAction', 'show')
     ->name('public.schoolInstructors.show');

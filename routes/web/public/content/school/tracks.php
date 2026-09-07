@@ -1,18 +1,20 @@
 <?php
 // Направления обучения школы
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicTrackController =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolTrack\\SchoolTrackController";
-
-Route::get('/school/tracks', [$publicTrackController, 'index'])
+Route::get('/school/tracks', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolTrack\\SchoolTrackController')
+    ->defaults('_templateAction', 'index')
     ->name('public.schoolTracks.index');
 
-Route::get('/school/menu/tracks', [$publicTrackController, 'menuTracks'])
+Route::get('/school/menu/tracks', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolTrack\\SchoolTrackController')
+    ->defaults('_templateAction', 'menuTracks')
     ->name('public.schoolTracks.menu');
 
-Route::get('/school/tracks/{slug}', [$publicTrackController, 'show'])
+Route::get('/school/tracks/{slug}', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolTrack\\SchoolTrackController')
+    ->defaults('_templateAction', 'show')
     ->name('public.schoolTracks.show');

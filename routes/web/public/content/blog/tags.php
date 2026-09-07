@@ -1,11 +1,10 @@
 <?php
-// Теги Блога из шаблона
+// Теги Блога
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicTagController = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\BlogTag\\BlogTagController";
-
-Route::get('/blog/tags/{url}', [$publicTagController, 'show'])
+Route::get('/blog/tags/{slug}', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'Blog\\BlogTag\\BlogTagController')
+    ->defaults('_templateAction', 'show')
     ->name('public.blogTags.show');

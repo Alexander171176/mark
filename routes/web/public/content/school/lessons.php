@@ -1,15 +1,15 @@
 <?php
 // Уроки школы
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicLessonController =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolLesson\\SchoolLessonController";
-
-Route::get('/school/lessons', [$publicLessonController, 'index'])
+Route::get('/school/lessons', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolLesson\\SchoolLessonController')
+    ->defaults('_templateAction', 'index')
     ->name('public.schoolLessons.index');
 
-Route::get('/school/lessons/{slug}', [$publicLessonController, 'show'])
+Route::get('/school/lessons/{slug}', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolLesson\\SchoolLessonController')
+    ->defaults('_templateAction', 'show')
     ->name('public.schoolLessons.show');

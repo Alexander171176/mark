@@ -2,42 +2,40 @@
 
 // Лайки пользователей
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicArticleController =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\BlogArticle\\BlogArticleController";
-$publicVideoController   =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\BlogVideo\\BlogVideoController";
-$publicTrackController   =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolTrack\\SchoolTrackController";
-$publicCourseController  =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolCourse\\SchoolCourseController";
-$publicModuleController  =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolModule\\SchoolModuleController";
-$publicLessonController  =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolLesson\\SchoolLessonController";
-$publicProductController =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\Market\\MarketProduct\\MarketProductController";
-
-Route::post('/blog-articles/{id}/like', [$publicArticleController, 'like'])
+Route::post('/blog-articles/{id}/like', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'Blog\\BlogArticle\\BlogArticleController')
+    ->defaults('_templateAction', 'like')
     ->name('public.blogArticles.like');
 
-Route::post('/blog-videos/{id}/like', [$publicVideoController, 'like'])
+Route::post('/blog-videos/{id}/like', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'Blog\\BlogVideo\\BlogVideoController')
+    ->defaults('_templateAction', 'like')
     ->name('public.blogVideos.like');
 
-Route::post('/school-tracks/{id}/like', [$publicTrackController, 'like'])
+Route::post('/school-tracks/{id}/like', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolTrack\\SchoolTrackController')
+    ->defaults('_templateAction', 'like')
     ->name('public.schoolTracks.like');
 
-Route::post('/school-courses/{id}/like', [$publicCourseController, 'like'])
+Route::post('/school-courses/{id}/like', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolCourse\\SchoolCourseController')
+    ->defaults('_templateAction', 'like')
     ->name('public.schoolCourses.like');
 
-Route::post('/school-modules/{id}/like', [$publicModuleController, 'like'])
+Route::post('/school-modules/{id}/like', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolModule\\SchoolModuleController')
+    ->defaults('_templateAction', 'like')
     ->name('public.schoolModules.like');
 
-Route::post('/school-lessons/{id}/like', [$publicLessonController, 'like'])
+Route::post('/school-lessons/{id}/like', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolLesson\\SchoolLessonController')
+    ->defaults('_templateAction', 'like')
     ->name('public.schoolLessons.like');
 
-Route::post('/catalog/products/{id}/like', [$publicProductController, 'like'])
+Route::post('/catalog/products/{id}/like', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'Market\\MarketProduct\\MarketProductController')
+    ->defaults('_templateAction', 'like')
     ->name('public.marketProducts.like');

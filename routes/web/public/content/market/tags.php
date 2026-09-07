@@ -2,12 +2,10 @@
 
 // Теги товаров маркетплейса
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicTagController =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\Market\\MarketTag\\MarketTagController";
-
-Route::get('/catalog/tags/{url}', [$publicTagController, 'show'])
+Route::get('/catalog/tags/{url}', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'Market\\MarketTag\\MarketTagController')
+    ->defaults('_templateAction', 'show')
     ->name('public.marketTags.show');

@@ -1,14 +1,15 @@
 <?php
-// Видео из шаблона
+// Видео Блога
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicVideoController = "App\\Http\\Controllers\\Public\\{$siteLayout}\\Blog\\BlogVideo\\BlogVideoController";
-
-Route::get('/videos', [$publicVideoController, 'index'])
+Route::get('/videos', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'Blog\\BlogVideo\\BlogVideoController')
+    ->defaults('_templateAction', 'index')
     ->name('public.blogVideos.index');
 
-Route::get('/videos/{url}', [$publicVideoController, 'show'])
+Route::get('/videos/{url}', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'Blog\\BlogVideo\\BlogVideoController')
+    ->defaults('_templateAction', 'show')
     ->name('public.blogVideos.show');

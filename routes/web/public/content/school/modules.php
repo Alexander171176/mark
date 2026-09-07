@@ -1,15 +1,15 @@
 <?php
 // Модули школы
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicModuleController =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolModule\\SchoolModuleController";
-
-Route::get('/school/modules', [$publicModuleController, 'index'])
+Route::get('/school/modules', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolModule\\SchoolModuleController')
+    ->defaults('_templateAction', 'index')
     ->name('public.schoolModules.index');
 
-Route::get('/school/modules/{slug}', [$publicModuleController, 'show'])
+Route::get('/school/modules/{slug}', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolModule\\SchoolModuleController')
+    ->defaults('_templateAction', 'show')
     ->name('public.schoolModules.show');

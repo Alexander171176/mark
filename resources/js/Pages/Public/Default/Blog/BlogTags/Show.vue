@@ -202,7 +202,7 @@ const canonicalUrl = computed(() => {
 
     return String(
         route('public.blogTags.show', {
-            url: tag.value.slug,
+            slug: tag.value.slug,
         })
     )
 })

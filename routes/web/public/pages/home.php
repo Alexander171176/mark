@@ -1,11 +1,10 @@
 <?php
-// Главная страница из шаблона
+// Главная страница публичной части
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicHomeController = "App\\Http\\Controllers\\Public\\{$siteLayout}\\HomeController";
-
-Route::get('/', [$publicHomeController, 'index'])
+Route::get('/', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'HomeController')
+    ->defaults('_templateAction', 'index')
     ->name('home');

@@ -874,7 +874,7 @@ const articleGridCols = computed(() => {
                                     >
                                         <Link
                                             :href="route('public.blogTags.show', {
-                                                url: tag.slug
+                                                slug: tag.slug
                                             })"
                                             class="text-sm text-blue-500
                                                    dark:text-violet-300

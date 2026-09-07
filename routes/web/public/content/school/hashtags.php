@@ -1,12 +1,10 @@
 <?php
 // Хештеги школы
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicHashtagController =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolHashtag\\SchoolHashtagController";
-
-Route::get('/school/hashtags/{slug}', [$publicHashtagController, 'show'])
+Route::get('/school/hashtags/{slug}', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolHashtag\\SchoolHashtagController')
+    ->defaults('_templateAction', 'show')
     ->name('public.schoolHashtags.show');

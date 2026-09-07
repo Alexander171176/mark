@@ -1,15 +1,15 @@
 <?php
 // Курсы обучения
 
+use App\Http\Controllers\Public\PublicTemplateDispatcherController;
 use Illuminate\Support\Facades\Route;
 
-$siteLayout = config('site_settings.siteLayout', 'Default');
-
-$publicCourseController =
-    "App\\Http\\Controllers\\Public\\{$siteLayout}\\School\\SchoolCourse\\SchoolCourseController";
-
-Route::get('/school/courses', [$publicCourseController, 'index'])
+Route::get('/school/courses', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolCourse\\SchoolCourseController')
+    ->defaults('_templateAction', 'index')
     ->name('public.schoolCourses.index');
 
-Route::get('/school/courses/{slug}', [$publicCourseController, 'show'])
+Route::get('/school/courses/{slug}', [PublicTemplateDispatcherController::class, 'dispatch'])
+    ->defaults('_templateController', 'School\\SchoolCourse\\SchoolCourseController')
+    ->defaults('_templateAction', 'show')
     ->name('public.schoolCourses.show');

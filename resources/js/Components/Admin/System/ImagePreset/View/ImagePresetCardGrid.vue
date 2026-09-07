@@ -8,35 +8,23 @@ import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
 const { t } = useI18n()
 
 const props = defineProps({
-    presets: {
-        type: Array,
-        default: () => [],
-    },
+    presets: { type: Array, default: () => [] },
 })
 
-const emits = defineEmits([
-    'update-sort-order',
-])
+const emits = defineEmits(['update-sort-order'])
 
-/** Локальная копия для drag&drop */
 const localPresets = ref([])
 
 watch(
     () => props.presets,
-    (newVal) => {
-        localPresets.value = JSON.parse(JSON.stringify(newVal || []))
-    },
+    newVal => localPresets.value = JSON.parse(JSON.stringify(newVal || [])),
     { immediate: true, deep: true }
 )
 
-/** После перетаскивания отдаём новый порядок ID наверх */
 const handleDragEnd = () => {
-    const newOrderIds = localPresets.value.map(preset => preset.id)
-
-    emits('update-sort-order', newOrderIds)
+    emits('update-sort-order', localPresets.value.map(preset => preset.id))
 }
 
-/** Название формы */
 const shapeLabel = (shape) => {
     const map = {
         rectangle: 'shapeRectangle',
@@ -47,7 +35,6 @@ const shapeLabel = (shape) => {
     return map[shape] ? t(map[shape]) : shape
 }
 
-/** Цветовая метка формы */
 const shapeBadgeClass = (shape) => {
     const classes = {
         rectangle: 'bg-blue-600 dark:bg-blue-700 text-white',
@@ -58,14 +45,18 @@ const shapeBadgeClass = (shape) => {
     return classes[shape] || 'bg-gray-500 text-white'
 }
 
-/** Да / Нет */
-const booleanLabel = (value) => {
-    return value ? t('yes') : t('no')
+const booleanLabel = value => value ? t('yes') : t('no')
+const originalBadgeClass = () => 'bg-slate-500 dark:bg-slate-900 text-white'
+
+const aspectRatio = preset => {
+    const width = Number(preset.width)
+    const height = Number(preset.height)
+
+    return width && height ? (width / height).toFixed(2) : null
 }
 
-/** Цветовая метка оригинала */
-const originalBadgeClass = () => {
-    return 'bg-slate-500 dark:bg-slate-900 text-white'
+const maxFileSizeMb = preset => {
+    return (Number(preset.max_file_size_kb || 0) / 1024).toFixed(2)
 }
 </script>
 
@@ -79,8 +70,8 @@ const originalBadgeClass = () => {
                 tag="div"
                 v-model="localPresets"
                 item-key="id"
-                @end="handleDragEnd"
                 handle=".drag-handle"
+                @end="handleDragEnd"
                 class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
                 <template #item="{ element: preset }">
@@ -90,12 +81,11 @@ const originalBadgeClass = () => {
                                bg-slate-50/70 dark:bg-slate-800/80 shadow-sm
                                hover:shadow-md transition-shadow duration-150"
                     >
-                        <!-- Шапка -->
                         <header
                             class="flex items-center justify-between px-2 py-1
                                    border-b border-dashed border-slate-400 dark:border-slate-500"
                         >
-                            <div class="flex items-center space-x-2">
+                            <div class="flex items-center gap-2">
                                 <button
                                     type="button"
                                     class="drag-handle text-slate-400 hover:text-slate-700
@@ -103,9 +93,7 @@ const originalBadgeClass = () => {
                                     :title="t('dragDrop')"
                                 >
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z"
-                                        />
+                                        <path d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
                                     </svg>
                                 </button>
 
@@ -127,65 +115,59 @@ const originalBadgeClass = () => {
                             </span>
                         </header>
 
-                        <!-- Контент -->
                         <div class="flex flex-col flex-1 px-3 py-3 space-y-3">
                             <div
-                                class="text-center font-semibold
-                                       text-amber-600 dark:text-amber-200"
+                                class="text-center font-semibold text-amber-600 dark:text-amber-200"
                                 :title="preset.description || '—'"
                             >
                                 {{ preset.key }}
                             </div>
 
                             <div
-                                class="text-xs text-center font-semibold
-                                       text-slate-600 dark:text-slate-300
-                                       line-clamp-2 min-h-[32px]"
+                                class="text-xs text-center font-semibold text-slate-600
+                                       dark:text-slate-300 line-clamp-2 min-h-[32px]"
                                 :title="preset.description"
                             >
                                 {{ preset.description || '—' }}
                             </div>
 
-                            <div
-                                class="grid grid-cols-2 gap-2 text-xs
-                                       text-slate-700 dark:text-slate-100"
-                            >
+                            <div class="grid grid-cols-2 gap-2 text-xs text-slate-700 dark:text-slate-100">
                                 <div
                                     class="rounded-sm p-2 text-center
-                                           border border-slate-300 dark:border-slate-600r"
+                                           border border-slate-300 dark:border-slate-600"
                                 >
                                     <div class="text-slate-700 dark:text-slate-300">
                                         {{ t('ratio') }}
                                     </div>
-                                    <div class="font-semibold text-sm
-                                                text-sky-700 dark:text-sky-300">
+                                    <div class="font-semibold text-sm text-sky-700 dark:text-sky-300">
                                         {{ preset.resolution }}
                                     </div>
                                     <div
-                                        v-if="preset.aspect_ratio"
-                                        class="text-center text-xs
-                                               text-slate-700 dark:text-slate-300"
+                                        v-if="aspectRatio(preset)"
+                                        class="text-xs text-slate-700 dark:text-slate-300"
                                     >
-                                        {{ preset.aspect_ratio }}
+                                        {{ aspectRatio(preset) }}
                                     </div>
                                 </div>
 
                                 <div
-                                    class="rounded-sm border border-slate-300 dark:border-slate-600
-                                           p-2 text-center"
+                                    class="rounded-sm border border-slate-300
+                                           dark:border-slate-600 p-2 text-center"
                                 >
                                     <div class="text-slate-700 dark:text-slate-300">
                                         {{ t('file') }}
                                     </div>
-                                    <div class="font-semibold text-sm
-                                                text-indigo-700 dark:text-indigo-300">
-                                        {{ preset.max_file_size_mb }} MB
+                                    <div class="font-semibold text-sm text-indigo-700 dark:text-indigo-300">
+                                        {{ maxFileSizeMb(preset) }} MB
+                                    </div>
+                                    <div class="text-[10px] text-slate-500 dark:text-slate-400">
+                                        {{ preset.max_file_size_kb }} KB
                                     </div>
                                 </div>
 
                                 <div
-                                    class="rounded-sm border border-slate-300 dark:border-slate-600
-                                           p-2 text-center"
+                                    class="rounded-sm border border-slate-300
+                                           dark:border-slate-600 p-2 text-center"
                                 >
                                     <div class="text-slate-700 dark:text-slate-300">
                                         {{ t('photo') }}
@@ -201,8 +183,8 @@ const originalBadgeClass = () => {
                                 </div>
 
                                 <div
-                                    class="rounded-sm border border-slate-300 dark:border-slate-600
-                                           p-2 text-center"
+                                    class="rounded-sm border border-slate-300
+                                           dark:border-slate-600 p-2 text-center"
                                 >
                                     <div class="text-slate-700 dark:text-slate-300">
                                         {{ t('photoFrames') }}
@@ -221,25 +203,22 @@ const originalBadgeClass = () => {
                             <div class="text-center text-xs">
                                 <span
                                     class="block w-full py-0.5 px-2 rounded-sm
-                                               text-[10px] font-semibold text-center"
+                                           text-[10px] font-semibold text-center"
                                     :class="originalBadgeClass()"
                                     :title="t('keepOriginal')"
                                 >
-                                {{ t('originalShort') }}: {{ booleanLabel(preset.keep_original) }}
+                                    {{ t('originalShort') }}:
+                                    {{ booleanLabel(preset.keep_original) }}
                                 </span>
                             </div>
                         </div>
 
-                        <!-- Действия -->
                         <footer
                             class="flex items-center justify-center px-3 py-2
                                    border-t border-dashed border-slate-400 dark:border-slate-500"
                         >
                             <IconEdit
-                                :href="route(
-                                    'admin.imagePresets.edit',
-                                    preset.id
-                                )"
+                                :href="route('admin.imagePresets.edit', preset.id)"
                             />
                         </footer>
                     </article>
@@ -247,7 +226,10 @@ const originalBadgeClass = () => {
             </draggable>
         </div>
 
-        <div v-else class="p-5 text-center text-slate-700 dark:text-slate-100">
+        <div
+            v-else
+            class="p-5 text-center text-slate-700 dark:text-slate-100"
+        >
             {{ t('noData') }}
         </div>
     </div>

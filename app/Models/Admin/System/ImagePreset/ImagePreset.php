@@ -84,16 +84,25 @@ class ImagePreset extends Model
             $search
         ) {
             $query
-                ->where('key', 'like', "%{$search}%")
+                ->where(
+                    'key',
+                    'like',
+                    "%{$search}%"
+                )
                 ->orWhere(
                     'description',
+                    'like',
+                    "%{$search}%"
+                )
+                ->orWhere(
+                    'shape',
                     'like',
                     "%{$search}%"
                 );
         });
     }
 
-    /** Универсальная сортировка. */
+    /** Универсальная сортировка и фильтрация. */
     public function scopeSortByParam(
         Builder $query,
         ?string $sort
@@ -106,6 +115,11 @@ class ImagePreset extends Model
 
             'idDesc'
             => $query
+                ->orderByDesc('id'),
+
+            'sortDesc'
+            => $query
+                ->orderByDesc('sort')
                 ->orderByDesc('id'),
 
             'keyAsc'
@@ -140,27 +154,55 @@ class ImagePreset extends Model
             => $query
                 ->orderByDesc('max_file_size_kb'),
 
-            'sortAsc'
+            'shapeAsc'
             => $query
-                ->orderBy('sort')
-                ->orderBy('id'),
+                ->orderBy('shape'),
 
-            'sortDesc'
+            'shapeDesc'
             => $query
-                ->orderByDesc('sort')
-                ->orderByDesc('id'),
+                ->orderByDesc('shape'),
 
-            'rectangle'
+            'allowRotate'
             => $query
-                ->where('shape', 'rectangle'),
+                ->where(
+                    'image_rotation_enabled',
+                    true
+                ),
 
-            'square'
+            'noAllowRotate'
             => $query
-                ->where('shape', 'square'),
+                ->where(
+                    'image_rotation_enabled',
+                    false
+                ),
 
-            'circle'
+            'allowCropRotate'
             => $query
-                ->where('shape', 'circle'),
+                ->where(
+                    'crop_rotation_enabled',
+                    true
+                ),
+
+            'noCropRotate'
+            => $query
+                ->where(
+                    'crop_rotation_enabled',
+                    false
+                ),
+
+            'keepOriginal'
+            => $query
+                ->where(
+                    'keep_original',
+                    true
+                ),
+
+            'noKeepOriginal'
+            => $query
+                ->where(
+                    'keep_original',
+                    false
+                ),
 
             'createdAtAsc'
             => $query

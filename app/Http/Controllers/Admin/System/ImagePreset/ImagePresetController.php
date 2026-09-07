@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\System\ImagePreset;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\System\ImagePreset\ImagePresetRequest;
 use App\Http\Resources\Admin\System\ImagePreset\ImagePresetResource;
+use App\Http\Resources\Admin\System\ImagePreset\ImagePresetSharedResource;
 use App\Models\Admin\System\ImagePreset\ImagePreset;
 use App\Services\SiteSettings\AdminSettingsService;
 use Illuminate\Http\RedirectResponse;
@@ -39,14 +40,19 @@ class ImagePresetController extends Controller
                 ->get();
 
             return Inertia::render('Admin/System/ImagePresets/Index', [
-                'presets' => ImagePresetResource::collection($presets),
+                'presets' => ImagePresetSharedResource::collection(
+                    $presets
+                ),
                 'presetsCount' => $presets->count(),
 
                 'adminImagePresetsPerPage' => $adminImagePresetsPerPage,
                 'adminImagePresetsDefaultSort' => $adminImagePresetsDefaultSort,
             ]);
         } catch (Throwable $e) {
-            Log::error('Ошибка загрузки пресетов изображений: ' . $e->getMessage());
+            Log::error(
+                'Ошибка загрузки пресетов изображений: '
+                . $e->getMessage()
+            );
 
             return Inertia::render('Admin/System/ImagePresets/Index', [
                 'presets' => [],
@@ -61,10 +67,13 @@ class ImagePresetController extends Controller
     }
 
     /** Форма редактирования пресета. */
-    public function edit(ImagePreset $imagePreset): Response
-    {
+    public function edit(
+        ImagePreset $imagePreset
+    ): Response {
         return Inertia::render('Admin/System/ImagePresets/Edit', [
-            'preset' => new ImagePresetResource($imagePreset),
+            'preset' => new ImagePresetResource(
+                $imagePreset
+            ),
         ]);
     }
 
@@ -74,18 +83,32 @@ class ImagePresetController extends Controller
         ImagePreset $imagePreset
     ): RedirectResponse {
         try {
-            DB::transaction(function () use ($request, $imagePreset) {
-                $imagePreset->update($request->validated());
+            DB::transaction(function () use (
+                $request,
+                $imagePreset
+            ) {
+                $imagePreset->update(
+                    $request->validated()
+                );
             });
 
             return redirect()
                 ->route('admin.imagePresets.index')
-                ->with('success', 'Пресет обработки изображений обновлён.');
+                ->with(
+                    'success',
+                    'Пресет обработки изображений обновлён.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка обновления пресета изображения: ' . $e->getMessage());
+            Log::error(
+                'Ошибка обновления пресета изображения: '
+                . $e->getMessage()
+            );
 
             return back()
-                ->withErrors(['general' => 'Ошибка обновления пресета обработки изображений.'])
+                ->withErrors([
+                    'general'
+                    => 'Ошибка обновления пресета обработки изображений.',
+                ])
                 ->withInput();
         }
     }
@@ -96,7 +119,11 @@ class ImagePresetController extends Controller
         ImagePreset $imagePreset
     ): RedirectResponse {
         $data = $request->validate([
-            'sort' => ['required', 'integer', 'min:0'],
+            'sort' => [
+                'required',
+                'integer',
+                'min:0',
+            ],
         ]);
 
         try {
@@ -104,41 +131,76 @@ class ImagePresetController extends Controller
                 'sort' => (int) $data['sort'],
             ]);
 
-            return back()->with('success', 'Сортировка пресета обновлена.');
+            return back()
+                ->with(
+                    'success',
+                    'Сортировка пресета обновлена.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка обновления сортировки пресета: ' . $e->getMessage());
+            Log::error(
+                'Ошибка обновления сортировки пресета: '
+                . $e->getMessage()
+            );
 
-            return back()->withErrors([
-                'sort' => 'Ошибка обновления сортировки пресета.',
-            ]);
+            return back()
+                ->withErrors([
+                    'sort'
+                    => 'Ошибка обновления сортировки пресета.',
+                ]);
         }
     }
 
     /** Массовое обновление сортировки пресетов. */
-    public function updateSortBulk(Request $request): RedirectResponse
-    {
+    public function updateSortBulk(
+        Request $request
+    ): RedirectResponse {
         $data = $request->validate([
-            'presets' => ['required', 'array', 'min:1'],
-            'presets.*.id' => ['required', 'integer', 'exists:image_presets,id'],
-            'presets.*.sort' => ['required', 'integer', 'min:0'],
+            'presets' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'presets.*.id' => [
+                'required',
+                'integer',
+                'exists:image_presets,id',
+            ],
+            'presets.*.sort' => [
+                'required',
+                'integer',
+                'min:0',
+            ],
         ]);
 
         try {
-            DB::transaction(function () use ($data) {
+            DB::transaction(function () use (
+                $data
+            ) {
                 foreach ($data['presets'] as $preset) {
-                    ImagePreset::whereKey($preset['id'])->update([
+                    ImagePreset::whereKey(
+                        $preset['id']
+                    )->update([
                         'sort' => (int) $preset['sort'],
                     ]);
                 }
             });
 
-            return back()->with('success', 'Сортировка пресетов обновлена.');
+            return back()
+                ->with(
+                    'success',
+                    'Сортировка пресетов обновлена.'
+                );
         } catch (Throwable $e) {
-            Log::error('Ошибка массовой сортировки пресетов: ' . $e->getMessage());
+            Log::error(
+                'Ошибка массовой сортировки пресетов: '
+                . $e->getMessage()
+            );
 
-            return back()->withErrors([
-                'presets' => 'Ошибка обновления сортировки пресетов.',
-            ]);
+            return back()
+                ->withErrors([
+                    'presets'
+                    => 'Ошибка обновления сортировки пресетов.',
+                ]);
         }
     }
 }

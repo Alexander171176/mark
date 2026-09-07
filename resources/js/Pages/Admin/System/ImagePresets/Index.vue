@@ -5,6 +5,7 @@
  *
  * Список пресетов обработки изображений
  */
+
 import { defineProps, ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
@@ -26,55 +27,37 @@ const { t } = useI18n()
 const toast = useToast()
 
 const props = defineProps({
-    presets: {
-        type: [Array, Object],
-        default: () => [],
-    },
-    presetsCount: {
-        type: Number,
-        default: 0,
-    },
-    adminImagePresetsPerPage: {
-        type: Number,
-        default: 6,
-    },
-    adminImagePresetsDefaultSort: {
-        type: String,
-        default: 'idDesc',
-    },
-    error: {
-        type: String,
-        default: '',
-    },
+    presets: { type: [Array, Object], default: () => [] },
+    presetsCount: { type: Number, default: 0 },
+    adminImagePresetsPerPage: { type: Number, default: 6 },
+    adminImagePresetsDefaultSort: { type: String, default: 'idDesc' },
+    error: { type: String, default: '' },
 })
 
-/** Нормализация данных из ResourceCollection */
+/** Нормализация ResourceCollection */
 const allPresets = computed(() => {
-    if (Array.isArray(props.presets)) {
-        return props.presets
-    }
-
+    if (Array.isArray(props.presets)) return props.presets
     return props.presets?.data || []
 })
 
-/** Вид отображения: таблица или карточки */
+/** Вид отображения */
 const viewMode = ref(localStorage.getItem('admin_image_presets_view_mode') || 'table')
 
-watch(viewMode, (value) => {
+watch(viewMode, value => {
     localStorage.setItem('admin_image_presets_view_mode', value)
 })
 
-/** Количество элементов на странице */
+/** Количество элементов */
 const itemsPerPage = ref(props.adminImagePresetsPerPage || 6)
 
 watch(
     () => props.adminImagePresetsPerPage,
-    (value) => {
-        itemsPerPage.value = value || 6
-    }
+    value => itemsPerPage.value = value || 6
 )
 
-watch(itemsPerPage, (newVal) => {
+watch(itemsPerPage, newVal => {
+    currentPage.value = 1
+
     router.put(
         route('admin.settings.updateAdminCountImagePresets'),
         { value: newVal },
@@ -82,12 +65,9 @@ watch(itemsPerPage, (newVal) => {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => toast.info(`Показ ${newVal} элементов на странице.`),
-            onError: (errors) => {
-                toast.error(
-                    errors?.value ||
-                    'Ошибка обновления количества элементов.'
-                )
-            },
+            onError: errors => toast.error(
+                errors?.value || 'Ошибка обновления количества элементов.'
+            ),
         }
     )
 })
@@ -97,12 +77,12 @@ const sortParam = ref(props.adminImagePresetsDefaultSort || 'idDesc')
 
 watch(
     () => props.adminImagePresetsDefaultSort,
-    (value) => {
-        sortParam.value = value || 'idDesc'
-    }
+    value => sortParam.value = value || 'idDesc'
 )
 
-watch(sortParam, (newVal) => {
+watch(sortParam, newVal => {
+    currentPage.value = 1
+
     router.put(
         route('admin.settings.updateAdminSortImagePresets'),
         { value: newVal },
@@ -110,12 +90,9 @@ watch(sortParam, (newVal) => {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => toast.info('Сортировка успешно изменена'),
-            onError: (errors) => {
-                toast.error(
-                    errors?.value ||
-                    'Ошибка обновления сортировки.'
-                )
-            },
+            onError: errors => toast.error(
+                errors?.value || 'Ошибка обновления сортировки.'
+            ),
         }
     )
 })
@@ -124,11 +101,9 @@ watch(sortParam, (newVal) => {
 const searchQuery = ref('')
 const currentPage = ref(1)
 
-watch(searchQuery, () => {
-    currentPage.value = 1
-})
+watch(searchQuery, () => currentPage.value = 1)
 
-/** Сортировка на фронте */
+/** Сортировка и фильтрация */
 const sortPresets = (presets) => {
     const value = sortParam.value
     const list = presets.slice()
@@ -137,17 +112,19 @@ const sortPresets = (presets) => {
     if (value === 'idDesc') return list.sort((a, b) => b.id - a.id)
 
     if (value === 'sortAsc') {
-        return list.sort((a, b) => {
-            if (a.sort !== b.sort) return a.sort - b.sort
-            return a.id - b.id
-        })
+        return list.sort((a, b) => a.sort !== b.sort ? a.sort - b.sort : a.id - b.id)
     }
 
     if (value === 'sortDesc') {
-        return list.sort((a, b) => {
-            if (a.sort !== b.sort) return b.sort - a.sort
-            return b.id - a.id
-        })
+        return list.sort((a, b) => a.sort !== b.sort ? b.sort - a.sort : b.id - a.id)
+    }
+
+    if (value === 'keyAsc') {
+        return list.sort((a, b) => (a.key || '').localeCompare(b.key || ''))
+    }
+
+    if (value === 'keyDesc') {
+        return list.sort((a, b) => (b.key || '').localeCompare(a.key || ''))
     }
 
     if (value === 'widthAsc') return list.sort((a, b) => a.width - b.width)
@@ -164,10 +141,6 @@ const sortPresets = (presets) => {
         return list.sort((a, b) => b.max_file_size_kb - a.max_file_size_kb)
     }
 
-    if (value === 'rectangle') return list.filter(p => p.shape === 'rectangle')
-    if (value === 'square') return list.filter(p => p.shape === 'square')
-    if (value === 'circle') return list.filter(p => p.shape === 'circle')
-
     if (value === 'shapeAsc') {
         return list.sort((a, b) => (a.shape || '').localeCompare(b.shape || ''))
     }
@@ -176,29 +149,14 @@ const sortPresets = (presets) => {
         return list.sort((a, b) => (b.shape || '').localeCompare(a.shape || ''))
     }
 
-    if (value === 'allowRotate') {
-        return list.filter(p => p.image_rotation_enabled)
-    }
+    if (value === 'allowRotate') return list.filter(p => p.image_rotation_enabled)
+    if (value === 'noAllowRotate') return list.filter(p => !p.image_rotation_enabled)
 
-    if (value === 'noAllowRotate') {
-        return list.filter(p => !p.image_rotation_enabled)
-    }
+    if (value === 'allowCropRotate') return list.filter(p => p.crop_rotation_enabled)
+    if (value === 'noCropRotate') return list.filter(p => !p.crop_rotation_enabled)
 
-    if (value === 'allowCropRotate') {
-        return list.filter(p => p.crop_rotation_enabled)
-    }
-
-    if (value === 'noCropRotate') {
-        return list.filter(p => !p.crop_rotation_enabled)
-    }
-
-    if (value === 'keepOriginal') {
-        return list.filter(p => p.keep_original)
-    }
-
-    if (value === 'noKeepOriginal') {
-        return list.filter(p => !p.keep_original)
-    }
+    if (value === 'keepOriginal') return list.filter(p => p.keep_original)
+    if (value === 'noKeepOriginal') return list.filter(p => !p.keep_original)
 
     if (value === 'createdAtAsc') {
         return list.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
@@ -216,25 +174,17 @@ const sortPresets = (presets) => {
         return list.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
     }
 
-    return list.sort((a, b) => {
-        const av = a?.[value] ?? ''
-        const bv = b?.[value] ?? ''
-
-        if (av < bv) return -1
-        if (av > bv) return 1
-
-        return 0
-    })
+    return list
 }
 
 /** Поиск + сортировка */
 const filteredPresets = computed(() => {
-    let filtered = allPresets.value || []
+    let filtered = allPresets.value
 
     if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase()
+        const query = searchQuery.value.trim().toLowerCase()
 
-        filtered = filtered.filter((preset) =>
+        filtered = filtered.filter(preset =>
             (preset.key || '').toLowerCase().includes(query) ||
             (preset.description || '').toLowerCase().includes(query) ||
             (preset.shape || '').toLowerCase().includes(query) ||
@@ -245,17 +195,13 @@ const filteredPresets = computed(() => {
     return sortPresets(filtered)
 })
 
-/** Текущая страница */
+/** Пагинация */
 const paginatedPresets = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value
-
-    return filteredPresets.value.slice(
-        start,
-        start + itemsPerPage.value
-    )
+    return filteredPresets.value.slice(start, start + itemsPerPage.value)
 })
 
-/** Drag&Drop сортировка */
+/** Drag&Drop */
 const handleSortOrderUpdate = (orderedIds) => {
     const startSort = (currentPage.value - 1) * itemsPerPage.value
 
@@ -266,16 +212,12 @@ const handleSortOrderUpdate = (orderedIds) => {
 
     router.put(
         route('admin.actions.imagePresets.updateSortBulk'),
-        {
-            presets: sortData,
-        },
+        { presets: sortData },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                toast.success('Порядок пресетов успешно обновлён.')
-            },
-            onError: (errors) => {
+            onSuccess: () => toast.success('Порядок пресетов успешно обновлён.'),
+            onError: errors => {
                 console.error('Ошибка обновления сортировки пресетов:', errors)
 
                 toast.error(
@@ -297,22 +239,18 @@ const handleSortOrderUpdate = (orderedIds) => {
 <template>
     <AdminLayout :title="t('imagePresets')">
         <template #header>
-            <TitlePage>
-                {{ t('imagePresets') }}
-            </TitlePage>
+            <TitlePage>{{ t('imagePresets') }}</TitlePage>
         </template>
 
         <div class="px-2 py-2 w-full max-w-12xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700
-                       border border-blue-400 dark:border-blue-200
-                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
-                       bg-opacity-95 dark:bg-opacity-95"
+                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400
+                       dark:border-blue-200 overflow-hidden shadow-md shadow-gray-500
+                       dark:shadow-slate-400 bg-opacity-95 dark:bg-opacity-95"
             >
                 <div
                     v-if="error"
-                    class="mb-3 p-3 text-sm text-red-700 bg-red-100
-                           border border-red-300 rounded-sm"
+                    class="mb-3 p-3 text-sm text-red-700 bg-red-100 border border-red-300 rounded-sm"
                 >
                     {{ error }}
                 </div>
@@ -334,7 +272,7 @@ const handleSortOrderUpdate = (orderedIds) => {
 
                     <SortSelect
                         :sortParam="sortParam"
-                        @update:sortParam="value => (sortParam = value)"
+                        @update:sortParam="sortParam = $event"
                     />
                 </div>
 
@@ -342,10 +280,7 @@ const handleSortOrderUpdate = (orderedIds) => {
                     v-if="presetsCount"
                     class="flex flex-col lg:flex-row items-center justify-between gap-3"
                 >
-                    <CountTable>
-                        {{ presetsCount }}
-                    </CountTable>
-
+                    <CountTable>{{ presetsCount }}</CountTable>
                     <ToggleViewButton v-model:viewMode="viewMode" />
                 </div>
 

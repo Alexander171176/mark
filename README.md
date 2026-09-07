@@ -217,6 +217,7 @@
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=ImagePresetSeeder` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/ImagePreset/ImagePresetResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/System/ImagePreset/ImagePresetSharedResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/ImagePreset/ImagePresetRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/ImagePreset/ImagePresetController` <br>
 -------------------------------------------------------------------------------------

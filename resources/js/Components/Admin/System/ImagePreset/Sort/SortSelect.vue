@@ -36,34 +36,71 @@ const updateSort = (event) => {
         >
             <option value="idDesc">ID ↓</option>
             <option value="idAsc">ID ↑</option>
+
             <option disabled>────────────────────</option>
 
-            <option value="sortAsc">{{ t('sortNumber') }} 0→9</option>
-            <option value="sortDesc">{{ t('sortNumber') }} 9→0</option>
+            <option value="sortAsc">
+                {{ t('sortNumber') }} 0→9
+            </option>
+
+            <option value="sortDesc">
+                {{ t('sortNumber') }} 9→0
+            </option>
+
             <option disabled>────────────────────</option>
 
-            <option value="keyAsc">{{ t('key') }} A→Z</option>
-            <option value="keyDesc">{{ t('key') }} Z→A</option>
+            <option value="keyAsc">
+                {{ t('key') }} A→Z
+            </option>
+
+            <option value="keyDesc">
+                {{ t('key') }} Z→A
+            </option>
+
             <option disabled>────────────────────</option>
 
-            <option value="widthAsc">{{ t('width') }} 0→9</option>
-            <option value="widthDesc">{{ t('width') }} 9→0</option>
+            <option value="widthAsc">
+                {{ t('width') }} 0→9
+            </option>
 
-            <option value="heightAsc">{{ t('height') }} 0→9</option>
-            <option value="heightDesc">{{ t('height') }} 9→0</option>
+            <option value="widthDesc">
+                {{ t('width') }} 9→0
+            </option>
+
+            <option value="heightAsc">
+                {{ t('height') }} 0→9
+            </option>
+
+            <option value="heightDesc">
+                {{ t('height') }} 9→0
+            </option>
+
             <option disabled>────────────────────</option>
 
-            <option value="sizeAsc">{{ t('fileSize') }} 0→9</option>
-            <option value="sizeDesc">{{ t('fileSize') }} 9→0</option>
+            <option value="sizeAsc">
+                {{ t('fileSize') }} 0→9
+            </option>
+
+            <option value="sizeDesc">
+                {{ t('fileSize') }} 9→0
+            </option>
+
             <option disabled>────────────────────</option>
 
-            <option value="shapeAsc">{{ t('shape') }} A→Z</option>
-            <option value="shapeDesc">{{ t('shape') }} Z→A</option>
+            <option value="shapeAsc">
+                {{ t('shape') }} A→Z
+            </option>
+
+            <option value="shapeDesc">
+                {{ t('shape') }} Z→A
+            </option>
+
             <option disabled>────────────────────</option>
 
             <option value="allowRotate">
                 {{ t('allowRotateShort') }} {{ t('image') }} ON
             </option>
+
             <option value="noAllowRotate">
                 {{ t('allowRotateShort') }} {{ t('image') }} OFF
             </option>
@@ -71,39 +108,39 @@ const updateSort = (event) => {
             <option value="allowCropRotate">
                 {{ t('allowRotateShort') }} {{ t('photoFrames') }} ON
             </option>
+
             <option value="noCropRotate">
                 {{ t('allowRotateShort') }} {{ t('photoFrames') }} OFF
             </option>
+
             <option disabled>────────────────────</option>
 
             <option value="keepOriginal">
                 {{ t('keepOriginal') }} - {{ t('yes') }}
             </option>
+
             <option value="noKeepOriginal">
                 {{ t('keepOriginal') }} - {{ t('no') }}
             </option>
+
             <option disabled>────────────────────</option>
 
-            <option value="allowRotate">
-                {{ t('allowRotate') }} - {{ t('yes') }}
-            </option>
-            <option value="noAllowRotate">
-                {{ t('allowRotate') }} - {{ t('no') }}
+            <option value="createdAtDesc">
+                {{ t('createdAt') }} ↓
             </option>
 
-            <option value="keepOriginal">
-                {{ t('keepOriginal') }} - {{ t('yes') }}
+            <option value="createdAtAsc">
+                {{ t('createdAt') }} ↑
             </option>
-            <option value="noKeepOriginal">
-                {{ t('keepOriginal') }} - {{ t('no') }}
+
+            <option value="updatedAtDesc">
+                {{ t('updatedAt') }} ↓
             </option>
-            <option disabled>────────────────────</option>
 
-            <option value="createdAtDesc">{{ t('createdAt') }} ↓</option>
-            <option value="createdAtAsc">{{ t('createdAt') }} ↑</option>
+            <option value="updatedAtAsc">
+                {{ t('updatedAt') }} ↑
+            </option>
 
-            <option value="updatedAtDesc">{{ t('updatedAt') }} ↓</option>
-            <option value="updatedAtAsc">{{ t('updatedAt') }} ↑</option>
             <option disabled>────────────────────</option>
         </select>
     </div>

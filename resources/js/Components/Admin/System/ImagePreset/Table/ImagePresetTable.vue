@@ -8,35 +8,23 @@ import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
 const { t } = useI18n()
 
 const props = defineProps({
-    presets: {
-        type: Array,
-        default: () => [],
-    },
+    presets: { type: Array, default: () => [] },
 })
 
-const emits = defineEmits([
-    'update-sort-order',
-])
+const emits = defineEmits(['update-sort-order'])
 
-/** Локальная копия для drag&drop */
 const localPresets = ref([])
 
 watch(
     () => props.presets,
-    (newVal) => {
-        localPresets.value = JSON.parse(JSON.stringify(newVal || []))
-    },
+    newVal => localPresets.value = JSON.parse(JSON.stringify(newVal || [])),
     { immediate: true, deep: true }
 )
 
-/** После перетаскивания отдаём новый порядок ID наверх */
 const handleDragEnd = () => {
-    const newOrderIds = localPresets.value.map(preset => preset.id)
-
-    emits('update-sort-order', newOrderIds)
+    emits('update-sort-order', localPresets.value.map(preset => preset.id))
 }
 
-/** Перевод формы */
 const shapeLabel = (shape) => {
     const map = {
         rectangle: 'shapeRectangle',
@@ -47,7 +35,6 @@ const shapeLabel = (shape) => {
     return map[shape] ? t(map[shape]) : shape
 }
 
-/** Цветовая метка формы */
 const shapeBadgeClass = (shape) => {
     const classes = {
         rectangle: 'bg-blue-600 dark:bg-blue-700 text-white',
@@ -58,7 +45,6 @@ const shapeBadgeClass = (shape) => {
     return classes[shape] || 'bg-gray-500 text-white'
 }
 
-/** Цветовая метка типа поворота */
 const rotationBadgeClass = (type) => {
     const classes = {
         image: 'bg-sky-600 dark:bg-sky-700 text-white',
@@ -68,14 +54,18 @@ const rotationBadgeClass = (type) => {
     return classes[type] || 'bg-gray-500 text-white'
 }
 
-/** Цветовая метка оригинала */
-const originalBadgeClass = () => {
-    return 'bg-slate-500 dark:bg-slate-900 text-white'
+const originalBadgeClass = () => 'bg-slate-500 dark:bg-slate-900 text-white'
+const booleanLabel = value => value ? t('yes') : t('no')
+
+const aspectRatio = preset => {
+    const width = Number(preset.width)
+    const height = Number(preset.height)
+
+    return width && height ? (width / height).toFixed(2) : null
 }
 
-/** Да / Нет */
-const booleanLabel = (value) => {
-    return value ? t('yes') : t('no')
+const maxFileSizeMb = preset => {
+    return (Number(preset.max_file_size_kb || 0) / 1024).toFixed(2)
 }
 </script>
 
@@ -86,7 +76,7 @@ const booleanLabel = (value) => {
     >
         <div class="overflow-x-auto">
             <table
-                v-if="localPresets.length > 0"
+                v-if="localPresets.length"
                 class="table-auto w-full text-slate-700 dark:text-slate-100"
             >
                 <thead
@@ -98,160 +88,131 @@ const booleanLabel = (value) => {
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             class="w-4 h-4 fill-current text-slate-800 dark:text-slate-200"
-                            height="24"
-                            width="24"
                             viewBox="0 0 24 24"
                         >
-                            <path
-                                d="M12.707,2.293a1,1,0,0,0-1.414,0l-5,5A1,1,0,0,0,7.707,8.707L12,4.414l4.293,4.293a1,1,0,0,0,1.414-1.414Z" />
-                            <path
-                                d="M16.293,15.293,12,19.586,7.707,15.293a1,1,0,0,0-1.414,1.414l5,5a1,1,0,0,0,1.414,0l5-5a1,1,0,0,0-1.414-1.414Z" />
+                            <path d="M12.707,2.293a1,1,0,0,0-1.414,0l-5,5A1,1,0,0,0,7.707,8.707L12,4.414l4.293,4.293a1,1,0,0,0,1.414-1.414Z" />
+                            <path d="M16.293,15.293,12,19.586,7.707,15.293a1,1,0,0,0-1.414,1.414l5,5a1,1,0,0,0,1.414,0l5-5a1,1,0,0,0-1.414-1.414Z" />
                         </svg>
                     </th>
-                    <th class="px-2 py-3 w-px">
-                        <div class="font-medium text-center">{{ t('id') }}</div>
-                    </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-left">{{ t('key') }}</div>
-                    </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-center">{{ t('shape') }}</div>
-                    </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-center">{{ t('typeSize') }}</div>
-                    </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-center">{{ t('file') }}</div>
-                    </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-center">{{ t('turn') }}</div>
-                    </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-center">{{ t('originalShort') }}</div>
-                    </th>
-                    <th class="px-2 py-3 whitespace-nowrap">
-                        <div class="font-semibold text-end">{{ t('actions') }}</div>
-                    </th>
+
+                    <th class="px-2 py-3 w-px text-center">{{ t('id') }}</th>
+                    <th class="px-2 py-3 whitespace-nowrap text-left">{{ t('key') }}</th>
+                    <th class="px-2 py-3 whitespace-nowrap text-center">{{ t('shape') }}</th>
+                    <th class="px-2 py-3 whitespace-nowrap text-center">{{ t('typeSize') }}</th>
+                    <th class="px-2 py-3 whitespace-nowrap text-center">{{ t('file') }}</th>
+                    <th class="px-2 py-3 whitespace-nowrap text-center">{{ t('turn') }}</th>
+                    <th class="px-2 py-3 whitespace-nowrap text-center">{{ t('originalShort') }}</th>
+                    <th class="px-2 py-3 whitespace-nowrap text-end">{{ t('actions') }}</th>
                 </tr>
                 </thead>
 
                 <draggable
                     tag="tbody"
                     v-model="localPresets"
-                    @end="handleDragEnd"
                     item-key="id"
                     handle=".handle"
+                    @end="handleDragEnd"
                 >
                     <template #item="{ element: preset }">
                         <tr
                             class="text-sm font-semibold border-b-2
                                    hover:bg-slate-100 dark:hover:bg-cyan-800"
                         >
-                            <!-- drag handle -->
                             <td class="px-2 py-1 text-center cursor-move handle">
                                 <svg
                                     class="w-4 h-4 text-gray-500 dark:text-gray-300"
                                     fill="currentColor"
                                     viewBox="0 0 20 20"
                                 >
-                                    <path
-                                        d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
+                                    <path d="M7 4h2v2H7V4zm4 0h2v2h-2V4zM7 8h2v2H7V8zm4 0h2v2h-2V8zM7 12h2v2H7v-2zm4 0h2v2h-2v-2z" />
                                 </svg>
                             </td>
-                            <!-- id -->
-                            <td class="px-2 py-3 whitespace-nowrap">
-                                <div
-                                    class="font-semibold text-center text-xs
-                                           text-slate-900 dark:text-slate-100"
+
+                            <td class="px-2 py-3 whitespace-nowrap text-center">
+                                <span
+                                    class="text-xs text-slate-900 dark:text-slate-100"
                                     :title="`sort: ${preset.sort ?? '—'}`"
                                 >
                                     {{ preset.id }}
-                                </div>
+                                </span>
                             </td>
-                            <!-- key -->
+
                             <td class="px-2 py-3 whitespace-nowrap">
-                                <div
-                                    class="font-semibold text-amber-600 dark:text-amber-200"
+                                <span
+                                    class="text-amber-600 dark:text-amber-200"
                                     :title="preset.description || '—'"
                                 >
                                     {{ preset.key }}
-                                </div>
+                                </span>
                             </td>
-                            <!-- shape -->
-                            <td class="px-2 py-3 whitespace-nowrap">
-                                <div class="text-center">
-                                    <span
-                                        class="block w-full py-0.5 px-2 rounded-sm text-xs font-semibold"
-                                        :class="shapeBadgeClass(preset.shape)"
-                                    >
-                                        {{ shapeLabel(preset.shape) }}
-                                    </span>
-                                </div>
+
+                            <td class="px-2 py-3 whitespace-nowrap text-center">
+                                <span
+                                    class="block w-full py-0.5 px-2 rounded-sm text-xs font-semibold"
+                                    :class="shapeBadgeClass(preset.shape)"
+                                >
+                                    {{ shapeLabel(preset.shape) }}
+                                </span>
                             </td>
-                            <!-- resolution -->
-                            <td class="px-2 py-3 whitespace-nowrap">
-                                <div class="text-center text-sky-700 dark:text-sky-300">
+
+                            <td class="px-2 py-3 whitespace-nowrap text-center">
+                                <div class="text-sky-700 dark:text-sky-300">
                                     {{ preset.resolution }}
                                 </div>
-
                                 <div
-                                    v-if="preset.aspect_ratio"
-                                    class="text-center text-xs text-slate-500 dark:text-slate-300"
+                                    v-if="aspectRatio(preset)"
+                                    class="text-xs text-slate-500 dark:text-slate-300"
                                 >
-                                    {{ preset.aspect_ratio }}
+                                    {{ aspectRatio(preset) }}
                                 </div>
                             </td>
-                            <!-- max file size -->
-                            <td class="px-2 py-3 whitespace-nowrap">
-                                <div class="text-center text-indigo-700 dark:text-indigo-300">
-                                    {{ preset.max_file_size_mb }} MB
-                                </div>
 
-                                <div class="text-center text-xs text-slate-500 dark:text-slate-300">
+                            <td class="px-2 py-3 whitespace-nowrap text-center">
+                                <div class="text-indigo-700 dark:text-indigo-300">
+                                    {{ maxFileSizeMb(preset) }} MB
+                                </div>
+                                <div class="text-xs text-slate-500 dark:text-slate-300">
                                     {{ preset.max_file_size_kb }} KB
                                 </div>
                             </td>
-                            <!-- rotations -->
+
                             <td class="px-2 py-3 whitespace-nowrap">
-                                <div class="flex flex-col justify-center items-stretch gap-1">
-        <span
-            class="block w-full py-0.5 px-2 rounded-sm text-[10px] font-semibold text-center"
-            :class="rotationBadgeClass('image')"
-            :title="t('photo')"
-        >
-            {{ t('photo') }}: {{ booleanLabel(preset.image_rotation_enabled) }}
-        </span>
+                                <div class="flex flex-col items-stretch gap-1">
+                                    <span
+                                        class="block w-full py-0.5 px-2 rounded-sm text-[10px]
+                                               font-semibold text-center"
+                                        :class="rotationBadgeClass('image')"
+                                    >
+                                        {{ t('photo') }}:
+                                        {{ booleanLabel(preset.image_rotation_enabled) }}
+                                    </span>
 
                                     <span
-                                        class="block w-full py-0.5 px-2 rounded-sm text-[10px] font-semibold text-center"
+                                        class="block w-full py-0.5 px-2 rounded-sm text-[10px]
+                                               font-semibold text-center"
                                         :class="rotationBadgeClass('crop')"
-                                        :title="t('photoFrames')"
                                     >
-            {{ t('photoFrames') }}: {{ booleanLabel(preset.crop_rotation_enabled) }}
-        </span>
-                                </div>
-                            </td>
-                            <!-- keep original -->
-                            <td class="px-2 py-3 whitespace-nowrap">
-                                <div class="text-center">
-                                    <span
-                                        class="block w-full py-0.5 px-2 rounded-sm
-                                               text-[10px] font-semibold text-center"
-                                        :class="originalBadgeClass()"
-                                        :title="t('keepOriginal')"
-                                    >
-                                {{ t('originalShort') }}: {{ booleanLabel(preset.keep_original) }}
+                                        {{ t('photoFrames') }}:
+                                        {{ booleanLabel(preset.crop_rotation_enabled) }}
                                     </span>
                                 </div>
                             </td>
-                            <!-- actions -->
+
+                            <td class="px-2 py-3 whitespace-nowrap text-center">
+                                <span
+                                    class="block w-full py-0.5 px-2 rounded-sm text-[10px]
+                                           font-semibold text-center"
+                                    :class="originalBadgeClass()"
+                                >
+                                    {{ t('originalShort') }}:
+                                    {{ booleanLabel(preset.keep_original) }}
+                                </span>
+                            </td>
+
                             <td class="px-2 py-3 whitespace-nowrap">
                                 <div class="flex justify-end">
                                     <IconEdit
-                                        :href="route(
-                                            'admin.imagePresets.edit',
-                                            preset.id
-                                        )"
+                                        :href="route('admin.imagePresets.edit', preset.id)"
                                     />
                                 </div>
                             </td>

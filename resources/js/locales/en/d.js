@@ -59,6 +59,7 @@ export default {
     done: 'Done.',
     download: 'Download',
     downloadImages: 'Download the add-on.images',
+    downloadStatus: 'Loading...',
     dragDrop: 'dragging',
     dragOrClickToUpload: 'Drag file here or click to upload',
     dueAt: 'Deadline',

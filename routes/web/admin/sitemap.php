@@ -9,7 +9,19 @@ Route::prefix('sitemap')
     ->name('sitemap.')
     ->controller(SitemapController::class)
     ->group(function () {
-        Route::get('/', 'index')->name('index'); // Генерация и просмотр sitemap.xml
-        Route::post('/', 'generate')->name('generate');// кнопка «Сгенерировать»
-        Route::get('/file', 'download')->name('download');// скачать
+        // Генерация и просмотр sitemap.xml
+        Route::get('/', 'index')
+            ->name('index');
+
+        // Кнопка «Сгенерировать»
+        Route::post('/', 'generate')
+            ->name('generate');
+
+        // Получить содержимое выбранного sitemap-файла
+        Route::get('/content', 'content')
+            ->name('content');
+
+        // Скачать выбранный sitemap-файл
+        Route::get('/file', 'download')
+            ->name('download');
     });

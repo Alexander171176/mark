@@ -59,6 +59,7 @@ export default {
     done: 'Аяқталды.',
     download: 'Жүктеу',
     downloadImages: 'Қосымша суреттерді жүктеу',
+    downloadStatus: 'Жүктелуде...',
     dragDrop: 'сүйреп апарыңыз',
     dragOrClickToUpload: 'Файлды мұнда сүйреп апарыңыз немесе жүктеу үшін басыңыз',
     dueAt: 'Мерзімі',

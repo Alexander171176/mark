@@ -59,6 +59,7 @@ export default {
     done: 'Сделано.',
     download: 'Скачать',
     downloadImages: 'Загрузка доп.изображений',
+    downloadStatus: 'Загрузка...',
     dragDrop: 'перетаскивание',
     dragOrClickToUpload: 'Перетащите файл сюда или нажмите для загрузки',
     dueAt: 'Дедлайн',

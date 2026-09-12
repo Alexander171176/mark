@@ -207,6 +207,28 @@ const togglePanel = () => {
                     </svg>
                 </Link>
                 <Link
+                    :href="route('admin.imagePresets.index')"
+                    :title="t('imagePresets')"
+                    :class="{ 'active-link': route().current('admin.imagePresets.index'),
+                    'base-link': true }"
+                >
+                    <svg class="shrink-0 h-4 w-4" viewBox="0 0 512 512">
+                        <path class="fill-current text-cyan-400"
+                              d="M480 128V96h20c6.627 0 12-5.373 12-12V44c0-6.627-5.373-12-12-12h-40c-6.627 0-12 5.373-12 12v20H64V44c0-6.627-5.373-12-12-12H12C5.373 32 0 37.373 0 44v40c0 6.627 5.373 12 12 12h20v320H12c-6.627 0-12 5.373-12 12v40c0 6.627 5.373 12 12 12h40c6.627 0 12-5.373 12-12v-20h384v20c0 6.627 5.373 12 12 12h40c6.627 0 12-5.373 12-12v-40c0-6.627-5.373-12-12-12h-20V128zM96 276V140c0-6.627 5.373-12 12-12h168c6.627 0 12 5.373 12 12v136c0 6.627-5.373 12-12 12H108c-6.627 0-12-5.373-12-12zm320 96c0 6.627-5.373 12-12 12H236c-6.627 0-12-5.373-12-12v-52h72c13.255 0 24-10.745 24-24v-72h84c6.627 0 12 5.373 12 12v136z"></path>
+                    </svg>
+                </Link>
+                <Link
+                    :href="route('admin.locations.index')"
+                    :title="t('locations')"
+                    :class="{ 'active-link': route().current('admin.locations.index'),
+                    'base-link': true }"
+                >
+                    <svg class="shrink-0 h-4 w-4" viewBox="0 0 576 512">
+                        <path class="fill-current text-cyan-400"
+                              d="M288 0c-69.59 0-126 56.41-126 126 0 56.26 82.35 158.8 113.9 196.02 6.39 7.54 17.82 7.54 24.2 0C331.65 284.8 414 182.26 414 126 414 56.41 357.59 0 288 0zm0 168c-23.2 0-42-18.8-42-42s18.8-42 42-42 42 18.8 42 42-18.8 42-42 42zM20.12 215.95A32.006 32.006 0 0 0 0 245.66v250.32c0 11.32 11.43 19.06 21.94 14.86L160 448V214.92c-8.84-15.98-16.07-31.54-21.25-46.42L20.12 215.95zM288 359.67c-14.07 0-27.38-6.18-36.51-16.96-19.66-23.2-40.57-49.62-59.49-76.72v182l192 64V266c-18.92 27.09-39.82 53.52-59.49 76.72-9.13 10.77-22.44 16.95-36.51 16.95zm266.06-198.51L416 224v288l139.88-55.95A31.996 31.996 0 0 0 576 426.34V176.02c0-11.32-11.43-19.06-21.94-14.86z"></path>
+                    </svg>
+                </Link>
+                <Link
                     :href="route('admin.localization.index')"
                     :title="t('localization')"
                     :class="{ 'active-link': route().current('admin.localization.index'),

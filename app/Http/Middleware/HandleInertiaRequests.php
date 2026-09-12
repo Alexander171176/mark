@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Context\Location\LocationContext;
 use App\Http\Resources\Admin\System\User\UserSharedResource;
 use App\Services\Public\Cms\CmsNavigationService;
 use App\Services\Public\Market\MarketCatalogNavigationService;
@@ -80,10 +81,44 @@ class HandleInertiaRequests extends Middleware
         }
 
         // Публичка
-        $shared['publicSettings'] = fn () => app(PublicSettingsService::class)->all(); // настройки
-        $shared['marketCatalog'] = fn () => app(MarketCatalogNavigationService::class)->catalog(); // категории
-        $shared['cmsMenu'] = fn () => app(CmsNavigationService::class)->menu(); // меню в Header
-        $shared['cmsFooter'] = fn () => app(CmsNavigationService::class)->footer(); // меню в Footer
+        $shared['publicSettings'] = fn () =>
+        app(PublicSettingsService::class)->all();
+
+        $shared['marketCatalog'] = fn () =>
+        app(MarketCatalogNavigationService::class)->catalog();
+
+        $shared['cmsMenu'] = fn () =>
+        app(CmsNavigationService::class)->menu();
+
+        $shared['cmsFooter'] = fn () =>
+        app(CmsNavigationService::class)->footer();
+
+        /**
+         * Текущая локация публичной части.
+         *
+         * Location уже определена middleware ResolveLocation
+         * и хранится в LocationContext.
+         */
+        $shared['currentLocation'] = function () {
+            $location =
+                app(LocationContext::class)->current();
+
+            if (!$location) {
+                return null;
+            }
+
+            return [
+                'id' => $location->id,
+                'parent_id' => $location->parent_id,
+                'type' => $location->type,
+                'slug' => $location->slug,
+                'code' => $location->code,
+                'latitude' => $location->latitude,
+                'longitude' => $location->longitude,
+                'timezone' => $location->timezone,
+                'is_default' => (bool) $location->is_default,
+            ];
+        };
 
         return $shared;
     }

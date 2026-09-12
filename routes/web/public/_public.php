@@ -1,11 +1,13 @@
 <?php
 
-use App\Http\Middleware\CheckDowntime;
+use App\Http\Middleware\Public\ResolveLocation;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware([CheckDowntime::class])->group(function () {
+Route::middleware([
+    ResolveLocation::class,
+])->group(function () {
 
-    // --- System: cache / maintenance / fallback ---
+    // --- System: cache / maintenance / location / fallback ---
     require __DIR__ . '/system/_system.php';
 
     // --- Public pages (home, etc.) ---

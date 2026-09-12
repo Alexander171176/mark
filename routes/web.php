@@ -11,9 +11,9 @@ use UniSharp\LaravelFilemanager\Lfm;
 */
 
 Route::group([
-    'prefix' => LaravelLocalization::setLocale(),        // /ru или /en
+    'prefix' => LaravelLocalization::setLocale(),        // /ru или /en ...
     'middleware' => [
-        'localeSessionRedirect',     // перенаправляет из / на /ru или /en
+        'localeSessionRedirect',     // перенаправляет из / на /ru или /en ...
         'localizationRedirect',      // сохраняет префикс в URL при смене языка
         'localeViewPath',            // подтягивает view из ресурсов по языку
         'web',                       // (необязательно, т.к. web.php уже под web-middleware)

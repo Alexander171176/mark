@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Context\Location\LocationContext;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
 use App\Models\Admin\Blog\BlogVideo\BlogVideo;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
@@ -23,7 +24,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->scoped(
+            LocationContext::class,
+            fn () => new LocationContext()
+        );
     }
 
     public function boot(): void

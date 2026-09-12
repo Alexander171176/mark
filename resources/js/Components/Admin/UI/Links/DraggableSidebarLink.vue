@@ -122,6 +122,8 @@ const linkInfo = {
     sitemap: {label: 'sitemap.xml', route: 'admin.sitemap.index'},
     reports: {label: t('reports'), route: 'admin.reports.index'},
     imagePresets: {label: t('imagePresets'), route: 'admin.imagePresets.index'},
+    locations: {label: t('locations'), route: 'admin.locations.index'},
+    localization: {label: t('localization'), route: 'admin.localization.index'},
 };
 
 const link = computed(() => linkInfo[props.id]);

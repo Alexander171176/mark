@@ -321,5 +321,15 @@ const { t } = useI18n();
             :active="route().current('admin.imagePresets.index')">
             {{ t('imagePresets') }}
         </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.locations.index')"
+            :active="route().current('admin.locations.index')">
+            {{ t('locations') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.localization.index')"
+            :active="route().current('admin.localization.index')">
+            {{ t('localization') }}
+        </ResponsiveNavLink>
     </div>
 </template>

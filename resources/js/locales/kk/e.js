@@ -69,6 +69,7 @@ export default {
     enrollmentUpdatedSuccessfully: 'Тіркеу сәтті жаңартылды.',
     enterText: 'Жауабыңызды енгізіңіз...',
     enterTextToTranslate: 'Аударылатын мәтінді енгізіңіз...',
+    entities: 'Ұйымдар',
     expand: 'развернуть',
     experienceAsc: 'Тәжірибе ↑',
     experienceDesc: 'Тәжірибе ↓',

@@ -69,6 +69,7 @@ export default {
     enrollmentUpdatedSuccessfully: 'Зачисление успешно обновлено.',
     enterText: 'Введите ответ...',
     enterTextToTranslate: 'Введите текст для перевода...',
+    entities: 'Сущности',
     expand: 'развернуть',
     experienceAsc: 'Опыт ↑',
     experienceDesc: 'Опыт ↓',

@@ -69,6 +69,7 @@ export default {
     enrollmentUpdatedSuccessfully: 'The enrollment has been updated successfully.',
     enterText: 'Enter your answer...',
     enterTextToTranslate: 'Enter text to translate...',
+    entities: 'Entities',
     expand: 'expand',
     experienceAsc: 'Experience ↑',
     experienceDesc: 'Experience ↓',

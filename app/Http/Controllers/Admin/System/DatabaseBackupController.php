@@ -37,14 +37,20 @@ class DatabaseBackupController extends Controller
     {
         $this->ensureBackupDir();
 
-        $filename = 'backup_' . now()->format('Y-m-d_H-i-s') . '.sql';
+        $filename =
+            'backup_' .
+            now()->format('Y-m-d_H-i-s') .
+            '.sql';
+
         $path = $this->backupPath($filename);
 
         try {
             $this->makeDump($path);
         } catch (Throwable $e) {
             return response()->json([
-                'message' => 'Ошибка при создании бэкапа: ' . $e->getMessage(),
+                'message' =>
+                    'Ошибка при создании бэкапа: ' .
+                    $e->getMessage(),
             ], 500);
         }
 
@@ -55,34 +61,56 @@ class DatabaseBackupController extends Controller
     }
 
     /** Запустить восстановление в фоне */
-    public function restoreStart(Request $request): JsonResponse
-    {
+    public function restoreStart(
+        Request $request
+    ): JsonResponse {
         $request->validate([
-            'file' => ['required', 'string'],
+            'file' => [
+                'required',
+                'string',
+            ],
         ]);
 
         $this->ensureBackupDir();
         $this->ensureJobDir();
 
-        $filename = basename($request->file);
-        $backupToRestore = $this->backupPath($filename);
+        $filename = basename(
+            $request->file
+        );
+
+        $backupToRestore =
+            $this->backupPath(
+                $filename
+            );
 
         if (!File::exists($backupToRestore)) {
             return response()->json([
                 'status' => 'error',
-                'message' => "Файл '{$filename}' не найден",
+                'message' =>
+                    "Файл '{$filename}' не найден",
             ], 404);
         }
 
-        if (File::size($backupToRestore) === 0) {
+        if (
+            File::size($backupToRestore) === 0
+        ) {
             return response()->json([
                 'status' => 'error',
-                'message' => "Файл '{$filename}' пустой. Восстановление отменено.",
+                'message' =>
+                    "Файл '{$filename}' пустой. " .
+                    'Восстановление отменено.',
             ], 422);
         }
 
-        $job = Str::uuid()->toString();
-        $rollback = 'safety_' . now()->format('Y-m-d_H-i-s') . '_' . Str::random(4) . '.sql';
+        $job =
+            Str::uuid()->toString();
+
+        $rollback =
+            'safety_' .
+            now()->format('Y-m-d_H-i-s') .
+            '_' .
+            Str::random(4) .
+            '.sql';
 
         $state = [
             'job' => $job,
@@ -91,60 +119,123 @@ class DatabaseBackupController extends Controller
             'status' => 'processing',
             'step' => 1,
             'progress' => 5,
-            'message' => 'Задача восстановления подготовлена',
+            'message' =>
+                'Задача восстановления подготовлена',
+            'error' => null,
         ];
 
-        $this->saveJobState($job, $state);
+        $this->saveJobState(
+            $job,
+            $state
+        );
 
         try {
-            $this->createRestoreScript($job, $filename, $rollback);
-            $this->runRestoreScript($job);
+            $this->createRestoreScript(
+                $job,
+                $filename,
+                $rollback
+            );
+
+            $this->runRestoreScript(
+                $job
+            );
         } catch (Throwable $e) {
             $state['status'] = 'error';
-            $state['message'] = 'Не удалось запустить восстановление: ' . $e->getMessage();
-            $this->saveJobState($job, $state);
+            $state['progress'] = 100;
 
-            return response()->json($state, 500);
+            $state['message'] =
+                'Не удалось запустить восстановление';
+
+            $state['error'] =
+                $e->getMessage();
+
+            $this->saveJobState(
+                $job,
+                $state
+            );
+
+            return response()->json(
+                $state,
+                500
+            );
         }
 
-        return response()->json($state);
+        return response()->json(
+            $state
+        );
     }
 
     /** Получить статус восстановления */
-    public function restoreStatus(string $job): JsonResponse
-    {
-        $state = $this->getJobState(basename($job));
+    public function restoreStatus(
+        string $job
+    ): JsonResponse {
+        $job = basename($job);
+
+        $state =
+            $this->getJobState($job);
 
         if (!$state) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Задача восстановления не найдена',
+                'message' =>
+                    'Задача восстановления не найдена',
             ], 404);
         }
 
-        return response()->json($state);
+        /*
+        |--------------------------------------------------------------------------
+        | Добавляем реальную ошибку MySQL
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            ($state['status'] ?? null) ===
+            'error'
+        ) {
+            $log =
+                $this->getJobLog($job);
+
+            if ($log !== '') {
+                $state['error'] = $log;
+            }
+        }
+
+        return response()->json(
+            $state
+        );
     }
 
     /** Удалить бэкап */
-    public function delete(Request $request): RedirectResponse|JsonResponse
-    {
+    public function delete(
+        Request $request
+    ): RedirectResponse|JsonResponse {
         $request->validate([
-            'file' => ['required', 'string'],
+            'file' => [
+                'required',
+                'string',
+            ],
         ]);
 
-        $filename = basename($request->file);
-        $path = $this->backupPath($filename);
+        $filename =
+            basename($request->file);
+
+        $path =
+            $this->backupPath(
+                $filename
+            );
 
         if (!File::exists($path)) {
             return response()->json([
-                'message' => 'Файл не найден',
+                'message' =>
+                    'Файл не найден',
             ], 404);
         }
 
         File::delete($path);
 
         return response()->json([
-            'message' => 'Бэкап успешно удалён',
+            'message' =>
+                'Бэкап успешно удалён',
         ]);
     }
 
@@ -154,43 +245,89 @@ class DatabaseBackupController extends Controller
         $this->ensureBackupDir();
 
         return response()->json([
-            'backups' => $this->getBackups(),
+            'backups' =>
+                $this->getBackups(),
         ]);
     }
 
     /** Скачать дамп */
-    public function download(string $filename): StreamedResponse|RedirectResponse
-    {
-        $filename = basename($filename);
-        $path = self::BACKUP_DIR . '/' . $filename;
+    public function download(
+        string $filename
+    ): StreamedResponse|RedirectResponse {
+        $filename =
+            basename($filename);
 
-        if (!Storage::disk('local')->exists($path)) {
-            return back()->with('error', 'Файл не найден для загрузки.');
+        $path =
+            self::BACKUP_DIR .
+            '/' .
+            $filename;
+
+        if (
+            !Storage::disk('local')
+                ->exists($path)
+        ) {
+            return back()->with(
+                'error',
+                'Файл не найден для загрузки.'
+            );
         }
 
-        return Storage::disk('local')->download($path);
+        return Storage::disk('local')
+            ->download($path);
     }
 
     /** Получить список файлов бэкапов */
     private function getBackups(): array
     {
-        return collect(Storage::disk('local')->files(self::BACKUP_DIR))
-            ->filter(fn ($file) => str_ends_with($file, '.sql'))
-            ->filter(fn ($file) => str_starts_with(basename($file), 'backup_') || str_starts_with(basename($file), 'safety_'))
-            ->map(fn ($file) => [
-                'name' => basename($file),
-                'size' => Storage::disk('local')->size($file),
-                'created' => Storage::disk('local')->lastModified($file),
-            ])
+        return collect(
+            Storage::disk('local')
+                ->files(self::BACKUP_DIR)
+        )
+            ->filter(
+                fn ($file) =>
+                str_ends_with(
+                    $file,
+                    '.sql'
+                )
+            )
+            ->filter(
+                fn ($file) =>
+                    str_starts_with(
+                        basename($file),
+                        'backup_'
+                    ) ||
+                    str_starts_with(
+                        basename($file),
+                        'safety_'
+                    )
+            )
+            ->map(
+                fn ($file) => [
+                    'name' =>
+                        basename($file),
+
+                    'size' =>
+                        Storage::disk('local')
+                            ->size($file),
+
+                    'created' =>
+                        Storage::disk('local')
+                            ->lastModified($file),
+                ]
+            )
             ->sortByDesc('created')
             ->values()
             ->all();
     }
 
     /** Создать SQL-дамп БД */
-    private function makeDump(string $path): void
-    {
-        $db = config('database.connections.mysql');
+    private function makeDump(
+        string $path
+    ): void {
+        $db =
+            config(
+                'database.connections.mysql'
+            );
 
         $command = [
             'mysqldump',
@@ -207,39 +344,93 @@ class DatabaseBackupController extends Controller
             $db['database'],
         ];
 
-        $process = new Process($command);
+        $process =
+            new Process($command);
+
         $process->setTimeout(300);
 
         if (!empty($db['password'])) {
-            $process->setEnv(['MYSQL_PWD' => $db['password']]);
+            $process->setEnv([
+                'MYSQL_PWD' =>
+                    $db['password'],
+            ]);
         }
 
         try {
             $process->mustRun();
-        } catch (ProcessFailedException $e) {
-            throw new RuntimeException($e->getMessage());
+        } catch (
+        ProcessFailedException $e
+        ) {
+            throw new RuntimeException(
+                $e->getMessage()
+            );
         }
 
-        if (!File::exists($path) || File::size($path) === 0) {
-            throw new RuntimeException('mysqldump выполнился, но файл бэкапа пустой.');
+        if (
+            !File::exists($path) ||
+            File::size($path) === 0
+        ) {
+            throw new RuntimeException(
+                'mysqldump выполнился, ' .
+                'но файл бэкапа пустой.'
+            );
         }
     }
 
     /** Создать shell-скрипт восстановления */
-    private function createRestoreScript(string $job, string $filename, string $rollback): void
-    {
-        $db = config('database.connections.mysql');
+    private function createRestoreScript(
+        string $job,
+        string $filename,
+        string $rollback
+    ): void {
+        $db =
+            config(
+                'database.connections.mysql'
+            );
 
-        $jobPath = $this->jobPath($job);
-        $logPath = $this->jobLogPath($job);
-        $backupPath = $this->backupPath($filename);
-        $rollbackPath = $this->backupPath($rollback);
+        $jobPath =
+            $this->jobPath($job);
 
-        $host = escapeshellarg($db['host']);
-        $port = escapeshellarg((string) $db['port']);
-        $user = escapeshellarg($db['username']);
-        $database = escapeshellarg($db['database']);
-        $password = escapeshellarg((string) ($db['password'] ?? ''));
+        $logPath =
+            $this->jobLogPath($job);
+
+        $backupPath =
+            $this->backupPath(
+                $filename
+            );
+
+        $rollbackPath =
+            $this->backupPath(
+                $rollback
+            );
+
+        $host =
+            escapeshellarg(
+                $db['host']
+            );
+
+        $port =
+            escapeshellarg(
+                (string) $db['port']
+            );
+
+        $user =
+            escapeshellarg(
+                $db['username']
+            );
+
+        $database =
+            escapeshellarg(
+                $db['database']
+            );
+
+        $password =
+            escapeshellarg(
+                (string) (
+                    $db['password'] ??
+                    ''
+                )
+            );
 
         $script = <<<'SH'
 #!/bin/sh
@@ -257,36 +448,112 @@ JSON
 
 export MYSQL_PWD=__PASSWORD__
 
-write_state "processing" 1 15 "Создаётся страховочный дамп текущей базы"
-mysqldump -h__HOST__ -P__PORT__ -u__USER__ --single-transaction --quick --routines --triggers --events --default-character-set=utf8mb4 --result-file=__ROLLBACK_PATH__ __DATABASE__ >> __LOG_PATH__ 2>&1
+echo "=== START RESTORE $(date) ===" > __LOG_PATH__
 
-if [ $? -ne 0 ]; then
-    write_state "error" 1 100 "Ошибка создания страховочного дампа"
-    exit 1
+write_state "processing" 1 15 "Создаётся страховочный дамп текущей базы"
+
+mysqldump \
+    -h__HOST__ \
+    -P__PORT__ \
+    -u__USER__ \
+    --single-transaction \
+    --quick \
+    --routines \
+    --triggers \
+    --events \
+    --default-character-set=utf8mb4 \
+    --result-file=__ROLLBACK_PATH__ \
+    __DATABASE__ \
+    >> __LOG_PATH__ 2>&1
+
+DUMP_EXIT=$?
+
+if [ "$DUMP_EXIT" -ne 0 ]; then
+    echo "mysqldump exit code: $DUMP_EXIT" >> __LOG_PATH__
+
+    write_state \
+        "error" \
+        1 \
+        100 \
+        "Ошибка создания страховочного дампа"
+
+    exit "$DUMP_EXIT"
 fi
 
 if [ ! -s __ROLLBACK_PATH__ ]; then
-    write_state "error" 1 100 "Страховочный дамп пустой. Восстановление отменено"
+    echo "Страховочный дамп пустой" >> __LOG_PATH__
+
+    write_state \
+        "error" \
+        1 \
+        100 \
+        "Страховочный дамп пустой. Восстановление отменено"
+
     exit 1
 fi
 
 write_state "processing" 2 55 "Восстанавливается выбранный дамп"
-mysql -h__HOST__ -P__PORT__ -u__USER__ __DATABASE__ < __BACKUP_PATH__ >> __LOG_PATH__ 2>&1
 
-if [ $? -ne 0 ]; then
-    write_state "processing" 3 80 "Ошибка восстановления. Выполняется откат"
-    mysql -h__HOST__ -P__PORT__ -u__USER__ __DATABASE__ < __ROLLBACK_PATH__ >> __LOG_PATH__ 2>&1
+mysql \
+    -h__HOST__ \
+    -P__PORT__ \
+    -u__USER__ \
+    --default-character-set=utf8mb4 \
+    __DATABASE__ \
+    < __BACKUP_PATH__ \
+    >> __LOG_PATH__ 2>&1
 
-    if [ $? -ne 0 ]; then
-        write_state "error" 3 100 "Ошибка восстановления. Дополнительно не удалось выполнить откат"
-        exit 1
+RESTORE_EXIT=$?
+
+if [ "$RESTORE_EXIT" -ne 0 ]; then
+    echo "mysql restore exit code: $RESTORE_EXIT" >> __LOG_PATH__
+
+    write_state \
+        "processing" \
+        3 \
+        80 \
+        "Ошибка восстановления. Выполняется откат"
+
+    mysql \
+        -h__HOST__ \
+        -P__PORT__ \
+        -u__USER__ \
+        --default-character-set=utf8mb4 \
+        __DATABASE__ \
+        < __ROLLBACK_PATH__ \
+        >> __LOG_PATH__ 2>&1
+
+    ROLLBACK_EXIT=$?
+
+    if [ "$ROLLBACK_EXIT" -ne 0 ]; then
+        echo "mysql rollback exit code: $ROLLBACK_EXIT" >> __LOG_PATH__
+
+        write_state \
+            "error" \
+            3 \
+            100 \
+            "Ошибка восстановления. Дополнительно не удалось выполнить откат"
+
+        exit "$ROLLBACK_EXIT"
     fi
 
-    write_state "error" 3 100 "Ошибка восстановления. База откатена до состояния перед восстановлением"
-    exit 1
+    write_state \
+        "error" \
+        3 \
+        100 \
+        "Ошибка восстановления. База откатена до состояния перед восстановлением"
+
+    exit "$RESTORE_EXIT"
 fi
 
-write_state "done" 4 100 "База данных успешно восстановлена"
+write_state \
+    "done" \
+    4 \
+    100 \
+    "База данных успешно восстановлена"
+
+echo "=== RESTORE DONE $(date) ===" >> __LOG_PATH__
+
 exit 0
 SH;
 
@@ -322,72 +589,243 @@ SH;
             $script
         );
 
-        File::put($this->jobScriptPath($job), $script);
-        chmod($this->jobScriptPath($job), 0755);
+        $scriptPath =
+            $this->jobScriptPath(
+                $job
+            );
+
+        File::put(
+            $scriptPath,
+            $script
+        );
+
+        if (
+            !File::exists($scriptPath)
+        ) {
+            throw new RuntimeException(
+                'Не удалось создать ' .
+                'скрипт восстановления.'
+            );
+        }
+
+        if (
+            !chmod(
+                $scriptPath,
+                0755
+            )
+        ) {
+            throw new RuntimeException(
+                'Не удалось установить права ' .
+                'на скрипт восстановления.'
+            );
+        }
     }
 
     /** Запустить shell-скрипт восстановления в фоне */
-    private function runRestoreScript(string $job): void
-    {
-        $script = escapeshellarg($this->jobScriptPath($job));
-        $command = "nohup /bin/sh {$script} > /dev/null 2>&1 &";
+    private function runRestoreScript(
+        string $job
+    ): void {
+        $scriptPath =
+            $this->jobScriptPath(
+                $job
+            );
 
-        $process = new Process(['/bin/sh', '-c', $command]);
+        if (
+            !File::exists($scriptPath)
+        ) {
+            throw new RuntimeException(
+                'Скрипт восстановления не найден.'
+            );
+        }
+
+        $script =
+            escapeshellarg(
+                $scriptPath
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Запускаем процесс в фоне
+        |--------------------------------------------------------------------------
+        */
+
+        $command =
+            "/bin/sh {$script} " .
+            '> /dev/null 2>&1 &';
+
+        $process =
+            new Process([
+                '/bin/sh',
+                '-c',
+                $command,
+            ]);
+
         $process->setTimeout(10);
+
         $process->run();
+
+        if (!$process->isSuccessful()) {
+            throw new RuntimeException(
+                'Ошибка запуска процесса восстановления: ' .
+                trim(
+                    $process->getErrorOutput() .
+                    "\n" .
+                    $process->getOutput()
+                )
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Проверяем, что shell действительно начал выполнение
+        |--------------------------------------------------------------------------
+        */
+
+        usleep(200000);
+
+        if (
+            !File::exists(
+                $this->jobLogPath($job)
+            )
+        ) {
+            throw new RuntimeException(
+                'Процесс восстановления не запустился: ' .
+                'лог задачи не создан.'
+            );
+        }
     }
 
     /** Создать папку для бэкапов */
     private function ensureBackupDir(): void
     {
-        Storage::disk('local')->makeDirectory(self::BACKUP_DIR);
+        Storage::disk('local')
+            ->makeDirectory(
+                self::BACKUP_DIR
+            );
     }
 
     /** Создать папку задач */
     private function ensureJobDir(): void
     {
-        Storage::disk('local')->makeDirectory(self::JOB_DIR);
+        Storage::disk('local')
+            ->makeDirectory(
+                self::JOB_DIR
+            );
     }
 
     /** Получить абсолютный путь к файлу бэкапа */
-    private function backupPath(string $filename): string
-    {
-        return storage_path('app/' . self::BACKUP_DIR . '/' . basename($filename));
+    private function backupPath(
+        string $filename
+    ): string {
+        return storage_path(
+            'app/' .
+            self::BACKUP_DIR .
+            '/' .
+            basename($filename)
+        );
     }
 
     /** Путь к JSON-файлу задачи */
-    private function jobPath(string $job): string
-    {
-        return storage_path('app/' . self::JOB_DIR . '/' . basename($job) . '.json');
+    private function jobPath(
+        string $job
+    ): string {
+        return storage_path(
+            'app/' .
+            self::JOB_DIR .
+            '/' .
+            basename($job) .
+            '.json'
+        );
     }
 
     /** Путь к лог-файлу задачи */
-    private function jobLogPath(string $job): string
-    {
-        return storage_path('app/' . self::JOB_DIR . '/' . basename($job) . '.log');
+    private function jobLogPath(
+        string $job
+    ): string {
+        return storage_path(
+            'app/' .
+            self::JOB_DIR .
+            '/' .
+            basename($job) .
+            '.log'
+        );
     }
 
     /** Путь к shell-скрипту задачи */
-    private function jobScriptPath(string $job): string
-    {
-        return storage_path('app/' . self::JOB_DIR . '/' . basename($job) . '.sh');
+    private function jobScriptPath(
+        string $job
+    ): string {
+        return storage_path(
+            'app/' .
+            self::JOB_DIR .
+            '/' .
+            basename($job) .
+            '.sh'
+        );
     }
 
     /** Сохранить состояние задачи */
-    private function saveJobState(string $job, array $state): void
-    {
-        File::put($this->jobPath($job), json_encode($state, JSON_UNESCAPED_UNICODE));
+    private function saveJobState(
+        string $job,
+        array $state
+    ): void {
+        File::put(
+            $this->jobPath($job),
+            json_encode(
+                $state,
+                JSON_UNESCAPED_UNICODE
+            )
+        );
     }
 
     /** Получить состояние задачи */
-    private function getJobState(string $job): ?array
-    {
-        $path = $this->jobPath($job);
+    private function getJobState(
+        string $job
+    ): ?array {
+        $path =
+            $this->jobPath($job);
 
         if (!File::exists($path)) {
             return null;
         }
 
-        return json_decode(File::get($path), true);
+        return json_decode(
+            File::get($path),
+            true
+        );
+    }
+
+    /** Получить лог задачи восстановления */
+    private function getJobLog(
+        string $job
+    ): string {
+        $path =
+            $this->jobLogPath(
+                $job
+            );
+
+        if (!File::exists($path)) {
+            return '';
+        }
+
+        $log = trim(
+            File::get($path)
+        );
+
+        if ($log === '') {
+            return '';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ограничиваем размер ответа
+        |--------------------------------------------------------------------------
+        */
+
+        return Str::limit(
+            $log,
+            5000,
+            "\n..."
+        );
     }
 }

@@ -1,21 +1,13 @@
 <?php
 
-use App\Http\Middleware\Public\ResolveLocation;
-use Illuminate\Support\Facades\Route;
+// --- System: cache / maintenance / fallback ---
+require __DIR__ . '/system/_system.php';
 
-Route::middleware([
-    ResolveLocation::class,
-])->group(function () {
+// --- Public pages (home, etc.) ---
+require __DIR__ . '/pages/_pages.php';
 
-    // --- System: cache / maintenance / location / fallback ---
-    require __DIR__ . '/system/_system.php';
+// --- Content entities (rubrics/articles/tags/videos) ---
+require __DIR__ . '/content/_content.php';
 
-    // --- Public pages (home, etc.) ---
-    require __DIR__ . '/pages/_pages.php';
-
-    // --- Content entities (rubrics/articles/tags/videos) ---
-    require __DIR__ . '/content/_content.php';
-
-    // --- Interactions (likes etc.) ---
-    require __DIR__ . '/interactions/_interactions.php';
-});
+// --- Interactions (likes etc.) ---
+require __DIR__ . '/interactions/_interactions.php';

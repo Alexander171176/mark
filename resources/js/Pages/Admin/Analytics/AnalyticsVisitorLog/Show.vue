@@ -16,6 +16,12 @@ const props = defineProps({
 
 const log = props.visitorLog.data ?? props.visitorLog
 
+/*
+|--------------------------------------------------------------------------
+| Форматирование
+|--------------------------------------------------------------------------
+*/
+
 const formatDate = (value) => {
     if (!value) {
         return '—'
@@ -25,10 +31,44 @@ const formatDate = (value) => {
 }
 
 const valueOrDash = (value) => {
-    return value === null || value === undefined || value === ''
+    return value === null ||
+    value === undefined ||
+    value === ''
         ? '—'
         : value
 }
+
+const valueWithUnit = (
+    value,
+    unit
+) => {
+    if (
+        value === null ||
+        value === undefined ||
+        value === ''
+    ) {
+        return '—'
+    }
+
+    return `${value}${unit}`
+}
+
+/*
+|--------------------------------------------------------------------------
+| Общие классы
+|--------------------------------------------------------------------------
+*/
+
+const cardClass =
+    'p-3 bg-white dark:bg-slate-800 ' +
+    'border border-slate-400 rounded'
+
+const titleClass =
+    'mb-2 font-semibold text-gray-800 ' +
+    'dark:text-gray-100'
+
+const labelClass =
+    'text-indigo-700 dark:text-indigo-300'
 </script>
 
 <template>
@@ -41,235 +81,441 @@ const valueOrDash = (value) => {
 
         <div class="px-2 py-2 w-full max-w-7xl mx-auto">
             <div
-                class="p-4 bg-slate-50 dark:bg-slate-700 border border-blue-400 dark:border-blue-200
-                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       overflow-hidden shadow-md shadow-gray-500
+                       dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"
             >
-                <div class="mb-4">
+                <!-- Назад -->
+                <div class="mb-3">
                     <Link
                         :href="route('admin.analyticsVisitorLogs.index')"
                         class="inline-block px-2 py-0.5 text-sm
-                               font-semibold text-white bg-blue-600 rounded hover:bg-blue-700"
+                               font-semibold text-white
+                               bg-blue-600 rounded hover:bg-blue-700"
                     >
                         ← {{ t('back') }}
                     </Link>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div class="p-4 bg-white dark:bg-slate-800 border border-slate-400
-                                rounded">
-                        <h2 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">
+                <div
+                    class="grid grid-cols-1 lg:grid-cols-2
+                           gap-2 text-sm"
+                >
+                    <!-- Пользователь -->
+                    <div :class="cardClass">
+                        <h2 :class="titleClass">
                             {{ t('user') }}
                         </h2>
 
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('user') }} ID:</b>
+                            <b :class="labelClass">
+                                {{ t('user') }} ID:
+                            </b>
+
                             {{ valueOrDash(log.user_id) }}
                         </p>
-                        <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('session')}} ID:</b>
+
+                        <p class="break-all">
+                            <b :class="labelClass">
+                                {{ t('session') }} ID:
+                            </b>
+
                             {{ valueOrDash(log.session_id) }}
                         </p>
-                        <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Visitor UUID:</b>
+
+                        <p class="break-all">
+                            <b :class="labelClass">
+                                Visitor UUID:
+                            </b>
+
                             {{ valueOrDash(log.visitor_uuid) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('gender') }}:</b>
+                            <b :class="labelClass">
+                                {{ t('gender') }}:
+                            </b>
+
                             {{ valueOrDash(log.user_gender) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('age') }}:</b>
+                            <b :class="labelClass">
+                                {{ t('age') }}:
+                            </b>
+
                             {{ valueOrDash(log.user_age) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('ageGroup') }}:</b>
+                            <b :class="labelClass">
+                                {{ t('ageGroup') }}:
+                            </b>
+
                             {{ valueOrDash(log.user_age_group) }}
                         </p>
                     </div>
 
-                    <div class="p-4 bg-white dark:bg-slate-800 border border-slate-400
-                                rounded">
-                        <h2 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">
+                    <!-- Страница -->
+                    <div :class="cardClass">
+                        <h2 :class="titleClass">
                             {{ t('page') }}
                         </h2>
 
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('date') }}:</b>
+                            <b :class="labelClass">
+                                {{ t('date') }}:
+                            </b>
+
                             {{ formatDate(log.visited_at) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('method') }}:</b>
+                            <b :class="labelClass">
+                                {{ t('method') }}:
+                            </b>
+
                             {{ valueOrDash(log.method) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('status') }}:</b>
+                            <b :class="labelClass">
+                                {{ t('status') }}:
+                            </b>
+
                             {{ valueOrDash(log.status_code) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('title') }}:</b>
+                            <b :class="labelClass">
+                                {{ t('title') }}:
+                            </b>
+
                             {{ valueOrDash(log.page_title) }}
                         </p>
+
                         <p class="break-all">
-                            <b class="text-indigo-700 dark:text-indigo-300">URL:</b>
+                            <b :class="labelClass">
+                                URL:
+                            </b>
+
                             {{ valueOrDash(log.url) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Route:</b>
+                            <b :class="labelClass">
+                                Route:
+                            </b>
+
                             {{ valueOrDash(log.route_name) }}
                         </p>
                     </div>
 
-                    <div class="p-4 bg-white dark:bg-slate-800 border border-slate-400
-                                rounded">
-                        <h2 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">
+                    <!-- Контекст -->
+                    <div :class="cardClass">
+                        <h2 :class="titleClass">
                             {{ t('context') }}
                         </h2>
 
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Module:</b>
+                            <b :class="labelClass">
+                                Module:
+                            </b>
+
                             {{ valueOrDash(log.module) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Entity type:</b>
+                            <b :class="labelClass">
+                                Entity type:
+                            </b>
+
                             {{ valueOrDash(log.entity_type) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Entity ID:</b>
+                            <b :class="labelClass">
+                                Entity ID:
+                            </b>
+
                             {{ valueOrDash(log.entity_id) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Event type:</b>
+                            <b :class="labelClass">
+                                Event type:
+                            </b>
+
                             {{ valueOrDash(log.event_type) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Request type:</b>
+                            <b :class="labelClass">
+                                Request type:
+                            </b>
+
                             {{ valueOrDash(log.request_type) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Response time:</b>
-                            {{ valueOrDash(log.response_time) }}
+                            <b :class="labelClass">
+                                Response time:
+                            </b>
+
+                            {{ valueWithUnit(log.response_time, ' ms') }}
                         </p>
                     </div>
 
-                    <div class="p-4 bg-white dark:bg-slate-800 border border-slate-400
-                                rounded">
-                        <h2 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">
+                    <!-- География -->
+                    <div :class="cardClass">
+                        <h2 :class="titleClass">
                             {{ t('geography') }}
                         </h2>
 
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">IP:</b>
+                            <b :class="labelClass">
+                                IP:
+                            </b>
+
                             {{ valueOrDash(log.ip_address) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('country') }}:</b>
+                            <b :class="labelClass">
+                                {{ t('country') }}:
+                            </b>
+
                             {{ valueOrDash(log.country) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('region') }}:</b>
+                            <b :class="labelClass">
+                                {{ t('region') }}:
+                            </b>
+
                             {{ valueOrDash(log.region) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">{{ t('city') }}:</b>
+                            <b :class="labelClass">
+                                {{ t('city') }}:
+                            </b>
+
                             {{ valueOrDash(log.city) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Locale:</b>
+                            <b :class="labelClass">
+                                Locale:
+                            </b>
+
                             {{ valueOrDash(log.locale) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Timezone:</b>
+                            <b :class="labelClass">
+                                Timezone:
+                            </b>
+
                             {{ valueOrDash(log.timezone) }}
                         </p>
                     </div>
 
-                    <div class="p-4 bg-white dark:bg-slate-800 border border-slate-400
-                                rounded">
-                        <h2 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">
+                    <!-- Устройство -->
+                    <div :class="cardClass">
+                        <h2 :class="titleClass">
                             {{ t('device') }}
                         </h2>
 
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Device type:</b>
+                            <b :class="labelClass">
+                                Device type:
+                            </b>
+
                             {{ valueOrDash(log.device_type) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Device name:</b>
+                            <b :class="labelClass">
+                                Device name:
+                            </b>
+
                             {{ valueOrDash(log.device_name) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Browser:</b>
+                            <b :class="labelClass">
+                                Browser:
+                            </b>
+
                             {{ valueOrDash(log.browser) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Browser version:</b>
+                            <b :class="labelClass">
+                                Browser version:
+                            </b>
+
                             {{ valueOrDash(log.browser_version) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">OS:</b>
+                            <b :class="labelClass">
+                                OS:
+                            </b>
+
                             {{ valueOrDash(log.os) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">OS version:</b>
+                            <b :class="labelClass">
+                                OS version:
+                            </b>
+
                             {{ valueOrDash(log.os_version) }}
                         </p>
                     </div>
 
-                    <div class="p-4 bg-white dark:bg-slate-800 border border-slate-400
-                                rounded">
-                        <h2 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">
+                    <!-- Frontend -->
+                    <div :class="cardClass">
+                        <h2 :class="titleClass">
                             Frontend {{ t('data') }}
                         </h2>
 
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Screen {{ t('width') }}:</b>
-                            {{ valueOrDash(log.screen_width) }}
+                            <b :class="labelClass">
+                                Screen {{ t('width') }}:
+                            </b>
+
+                            {{ valueWithUnit(log.screen_width, ' px') }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Screen {{ t('height') }}:</b>
-                            {{ valueOrDash(log.screen_height) }}
+                            <b :class="labelClass">
+                                Screen {{ t('height') }}:
+                            </b>
+
+                            {{ valueWithUnit(log.screen_height, ' px') }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Browser language:</b>
+                            <b :class="labelClass">
+                                Browser language:
+                            </b>
+
                             {{ valueOrDash(log.browser_language) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Time on page:</b>
-                            {{ valueOrDash(log.time_on_page) }} сек.
+                            <b :class="labelClass">
+                                Time on page:
+                            </b>
+
+                            {{ valueWithUnit(log.time_on_page, ' сек.') }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Scroll depth:</b>
-                            {{ valueOrDash(log.scroll_depth) }}%
+                            <b :class="labelClass">
+                                Scroll depth:
+                            </b>
+
+                            {{ valueWithUnit(log.scroll_depth, '%') }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Clicks:</b>
+                            <b :class="labelClass">
+                                Clicks:
+                            </b>
+
                             {{ valueOrDash(log.clicks_count) }}
                         </p>
                     </div>
 
-                    <div class="p-4 bg-white dark:bg-slate-800 border border-slate-400
-                                rounded md:col-span-2">
-                        <h2 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">
-                            {{ t('source') }} User-Agent
+                    <!-- Источник -->
+                    <div
+                        :class="[
+                            cardClass,
+                            'lg:col-span-2',
+                        ]"
+                    >
+                        <h2 :class="titleClass">
+                            {{ t('source') }}
                         </h2>
 
                         <p class="break-all">
-                            <b class="text-indigo-700 dark:text-indigo-300">Referer:</b>
+                            <b :class="labelClass">
+                                Referer:
+                            </b>
+
                             {{ valueOrDash(log.referer) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Source type:</b>
+                            <b :class="labelClass">
+                                Source type:
+                            </b>
+
                             {{ valueOrDash(log.source_type) }}
                         </p>
+
                         <p>
-                            <b class="text-indigo-700 dark:text-indigo-300">Search engine:</b>
+                            <b :class="labelClass">
+                                Search engine:
+                            </b>
+
                             {{ valueOrDash(log.search_engine) }}
                         </p>
+
                         <p class="break-all">
-                            <b class="text-indigo-700 dark:text-indigo-300">User-Agent:</b>
+                            <b :class="labelClass">
+                                User-Agent:
+                            </b>
+
                             {{ valueOrDash(log.user_agent) }}
                         </p>
+                    </div>
+
+                    <!-- Системные данные -->
+                    <div
+                        :class="[
+                            cardClass,
+                            'lg:col-span-2',
+                        ]"
+                    >
+                        <h2 :class="titleClass">
+                            {{ t('data') }}
+                        </h2>
+
+                        <div
+                            class="grid grid-cols-1
+                                   md:grid-cols-3 gap-1"
+                        >
+                            <p>
+                                <b :class="labelClass">
+                                    ID:
+                                </b>
+
+                                {{ valueOrDash(log.id) }}
+                            </p>
+
+                            <p>
+                                <b :class="labelClass">
+                                    Created:
+                                </b>
+
+                                {{ formatDate(log.created_at) }}
+                            </p>
+
+                            <p>
+                                <b :class="labelClass">
+                                    Updated:
+                                </b>
+
+                                {{ formatDate(log.updated_at) }}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

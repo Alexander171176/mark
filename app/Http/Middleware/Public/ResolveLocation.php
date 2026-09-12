@@ -18,16 +18,30 @@ readonly class ResolveLocation
     }
 
     /**
-     * Определить Location текущего публичного запроса,
+     * Определить Location текущего запроса,
      * сохранить её в LocationContext,
      * установить как параметр маршрутов по умолчанию
-     * и при необходимости привести URL
+     * и при необходимости привести публичный URL
      * к каноническому виду с Location.
      */
     public function handle(
         Request $request,
         Closure $next
     ): Response {
+
+        /**
+         * Административные маршруты используют LocationContext
+         * и URL::defaults для генерации публичных ссылок,
+         * но сами не должны содержать Location в URL.
+         *
+         * Пример:
+         * /ru/admin
+         * /ru/admin/...
+         */
+        $isAdmin =
+            $request->routeIs('admin.*') ||
+            $request->segment(2) === 'admin';
+
         $result = $this->resolver->resolve(
             $request
         );
@@ -43,21 +57,37 @@ readonly class ResolveLocation
             $result['source']
         );
 
+        /**
+         * Location необходима также в админке,
+         * чтобы Ziggy мог генерировать публичные маршруты,
+         * содержащие обязательный параметр {location}.
+         */
         URL::defaults([
             'location' => $location->slug,
         ]);
 
         /**
-         * Если Laravel воспринял первый сегмент старого URL
-         * как {location}, но такой Location не существует,
-         * вставляем текущую Location после locale.
+         * Если Laravel воспринял первый сегмент старого
+         * публичного URL как {location}, но такой Location
+         * не существует, вставляем текущую Location
+         * после locale.
+         *
+         * Административные маршруты сюда не допускаем.
          *
          * Пример:
          * /ru/about
          * ↓
          * /ru/astana/about
+         *
+         * Но:
+         * /ru/admin
+         * остаётся:
+         * /ru/admin
          */
-        if ($result['invalid_route_location']) {
+        if (
+            !$isAdmin &&
+            $result['invalid_route_location']
+        ) {
             $segments = $request->segments();
 
             /**

@@ -234,6 +234,7 @@
 2) Analytics — журнал посещений, отчёты, графики, очистка
 `docker exec mark-php-app php artisan make:model Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLog -mf` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogSharedResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogController` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsVisitorLog/AdminAnalyticsVisitorLogController` <br>

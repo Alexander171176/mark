@@ -36,12 +36,17 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
+use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
 Route::put('/settings/bulk-activity',
     [ParameterController::class, 'bulkUpdateActivity'])
     ->name('settings.bulkUpdateActivity');
+
+Route::put('/locations/bulk-activity',
+    [LocationController::class, 'bulkUpdateActivity'])
+    ->name('locations.bulkUpdateActivity');
 
 Route::put('/currencies/bulk-activity',
     [CurrencyController::class, 'bulkUpdateActivity'])

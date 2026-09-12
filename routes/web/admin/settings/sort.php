@@ -13,6 +13,10 @@ Route::put('/update-sort/image-presets',
     [SettingController::class, 'updateAdminSortImagePresets'])
     ->name('updateAdminSortImagePresets');
 
+Route::put('/update-sort/locations',
+    [SettingController::class, 'updateAdminSortLocations'])
+    ->name('updateAdminSortLocations');
+
 Route::put('/update-sort/users',
     [SettingController::class, 'updateAdminSortUsers'])
     ->name('updateAdminSortUsers');

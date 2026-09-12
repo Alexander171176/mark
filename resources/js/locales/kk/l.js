@@ -31,6 +31,7 @@ export default {
     limitMinutes: 'Минутпен шектеу',
     localeAdded: 'Тіл қосылды',
     location: 'Орналасқан жері',
+    locations: 'Орналасқан жерлер',
     login: 'Кіру',
     loginTitle: 'Жүйеге кіру',
     loginUser: 'Пайдаланушы кіруі',

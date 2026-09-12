@@ -15,6 +15,7 @@ export default {
     parameterValue: 'Значение Параметра',
     parameters: 'Параметры системы',
     parametersHeader: 'Параметры',
+    parent: 'Родитель',
     parentCategory: 'Родительская категория',
     parentPage: 'Родительская страница',
     parentRubric: 'Родительская рубрика',

@@ -10,9 +10,12 @@ Route::put('/update-count/settings',
     ->name('updateAdminCountSettings');
 
 Route::put('/update-count/image-presets',
-
     [SettingController::class, 'updateAdminCountImagePresets'])
     ->name('updateAdminCountImagePresets');
+
+Route::put('/update-count/locations',
+    [SettingController::class, 'updateAdminCountLocations'])
+    ->name('updateAdminCountLocations');
 
 Route::put('/update-count/users',
     [SettingController::class, 'updateAdminCountUsers'])

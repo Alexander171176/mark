@@ -17,6 +17,7 @@ export default {
     editLearningCategory: 'Редактировать Категорию обучения',
     editLearningTag: 'Редактировать Тег обучения',
     editLesson: 'Редактировать Урок обучения',
+    editLocation: 'Редактировать Локацию',
     editMarketAttribute: 'Редактировать Характеристику',
     editMarketAttributeGroup: 'Редактировать Группу характеристик',
     editMarketAttributeValue: 'Редактировать Значение характеристики',

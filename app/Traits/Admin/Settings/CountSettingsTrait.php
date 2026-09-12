@@ -62,6 +62,13 @@ trait CountSettingsTrait
             'adminImagePresetsPerPage');
     }
 
+    /** Обновление количества элементов в локациях */
+    public function updateAdminCountLocations(UpdateCountSettingRequest $request): RedirectResponse
+    {
+        return $this->countSetting($request,
+            'adminSystemLocationsPerPage');
+    }
+
     /** Обновление количества элементов в пользователях */
     public function updateAdminCountUsers(UpdateCountSettingRequest $request): RedirectResponse
     {

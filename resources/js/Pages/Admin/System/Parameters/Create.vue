@@ -55,15 +55,20 @@ const handleOptionInput = (event) => {
     )
 
     form.option =
-        cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+        cleaned.charAt(0).toLowerCase() + cleaned.slice(1)
 }
 
 /**
- * Преобразование camelCase в UPPER_CASE.
+ * camelCase / PascalCase / acronym / kebab-case
+ * → UPPER_SNAKE_CASE.
  */
 const toUpperCaseWithUnderscore = (str) => {
     return str
+        .trim()
+        .replace(/[-\s]+/g, '_')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
         .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+        .replace(/_+/g, '_')
         .toUpperCase()
 }
 

@@ -21,6 +21,9 @@ class DatabaseSeeder extends Seeder
             // Обработка изображений
             ImagePresetSeeder::class,
 
+            // Локации
+            LocationSeeder::class,
+
             // Блог
             BlogRubricSeeder::class,
             BlogTagSeeder::class,

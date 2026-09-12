@@ -50,17 +50,13 @@ const existingFiles = computed(() =>
     props.files.filter(file => file.exists)
 )
 
-const lineCount = computed(() => {
-    if (!activeContent.value) return 0
-
-    return activeContent.value.split(/\r\n|\r|\n/).length
-})
-
 const contentLines = computed(() => {
     if (!activeContent.value) return []
 
     return activeContent.value.split(/\r\n|\r|\n/)
 })
+
+const lineCount = computed(() => contentLines.value.length)
 
 const generate = () => {
     form.post(route('admin.sitemap.generate'), {
@@ -342,11 +338,9 @@ watch(
                         </div>
 
                         <pre
-                            class="px-3 m-0 whitespace-pre font-semibold
+                            class="px-3 m-0 font-semibold whitespace-pre
                                    text-blue-800 dark:text-blue-200"
-                        >
-                            {{ line }}
-                        </pre>
+                        >{{ line }}</pre>
                     </div>
                 </div>
             </div>

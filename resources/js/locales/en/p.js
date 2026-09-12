@@ -15,6 +15,7 @@ export default {
     parameterValue: 'Parameter Value',
     parameters: 'System Parameters',
     parametersHeader: 'Parameters',
+    parent: 'Parent',
     parentCategory: 'Parent category',
     parentPage: 'Parent page',
     parentRubric: 'Parent Rubric',

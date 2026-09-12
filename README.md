@@ -262,6 +262,19 @@ Analytics
 `docker exec mark-php-app php artisan analytics:import-visitor-logs` <br>
 -------------------------------------------------------------------------------------
 
+1) Location <br>
+`docker exec mark-php-app php artisan make:model Admin/System/Location/Location -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/System/Location/LocationTranslation -m` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan db:seed --class=LocationSeeder` <br>
+`docker exec mark-php-app php artisan make:resource Admin/System/Location/LocationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/System/Location/LocationSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/System/Location/LocationTranslationResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/System/Location/LocationRequest` <br>
+`docker exec mark-php-app php artisan make:controller Admin/System/Location/LocationController --resource` <br>
+-------------------------------------------------------------------------------------
+
 1) CMS страницы <br>
 `docker exec mark-php-app php artisan make:model Admin/Cms/CmsPage/CmsPage -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Cms/CmsPage/CmsPageTranslation -m` <br>

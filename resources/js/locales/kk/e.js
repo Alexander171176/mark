@@ -17,6 +17,7 @@ export default {
     editLearningCategory: 'Оқыту санатын өңдеу',
     editLearningTag: 'Оқу тегін өңдеу',
     editLesson: 'Сабақты өңдеу',
+    editLocation: 'Орналасқан жерді өзгерту',
     editMarketAttribute: 'Сипаттамаларды өңдеу',
     editMarketAttributeGroup: 'Функциялар тобын өңдеу',
     editMarketAttributeValue: 'Сипаттаманың мәнін өңдеу',

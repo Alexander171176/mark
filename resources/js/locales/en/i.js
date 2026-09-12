@@ -1,6 +1,7 @@
 export default {
     icon: 'Icon',
     id: 'ID',
+    in: 'in',
     inStock: 'In stock',
     image: 'Image',
     imageEditor: 'Image editor',

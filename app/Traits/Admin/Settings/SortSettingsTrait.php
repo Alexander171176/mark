@@ -64,6 +64,13 @@ trait SortSettingsTrait
             'adminImagePresetsDefaultSort');
     }
 
+    /** Обновляет сортировку элементов в локациях */
+    public function updateAdminSortLocations(UpdateSortRequest $request): RedirectResponse
+    {
+        return $this->sortSetting($request,
+            'adminSystemLocationsDefaultSort');
+    }
+
     /** Обновляет сортировку элементов в пользователях */
     public function updateAdminSortUsers(UpdateSortRequest $request): RedirectResponse
     {

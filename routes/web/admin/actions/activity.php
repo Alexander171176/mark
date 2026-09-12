@@ -37,12 +37,18 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
+use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
 Route::put('/settings/{setting}/activity',
     [ParameterController::class, 'updateActivity'])
     ->name('settings.updateActivity');
+
+Route::put('/locations/{location}/activity',
+    [LocationController::class, 'updateActivity'])
+    ->whereNumber('location')
+    ->name('locations.updateActivity');
 
 Route::put('/currencies/{currency}/activity',
     [CurrencyController::class, 'updateActivity'])

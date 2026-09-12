@@ -9,25 +9,30 @@ const { t } = useI18n()
 
 const props = defineProps({
     latitude: {
-        type: [String, Number, null],
+        type: [String, Number],
         default: '',
     },
+
     longitude: {
-        type: [String, Number, null],
+        type: [String, Number],
         default: '',
     },
+
     latitudeError: {
         type: String,
         default: '',
     },
+
     longitudeError: {
         type: String,
         default: '',
     },
+
     wrapperClass: {
         type: String,
         default: 'lg:col-span-3 flex justify-center',
     },
+
     innerClass: {
         type: String,
         default: 'w-full max-w-2xl',
@@ -67,7 +72,7 @@ const longitudeValue = computed({
                         min="-90"
                         max="90"
                         v-model="latitudeValue"
-                        class="w-full px-2 py-0.5
+                        class="w-full px-2 py-0.5 font-semibold
                                border border-slate-400
                                dark:border-slate-600
                                rounded-sm shadow-sm
@@ -94,7 +99,7 @@ const longitudeValue = computed({
                         min="-180"
                         max="180"
                         v-model="longitudeValue"
-                        class="w-full px-2 py-0.5
+                        class="w-full px-2 py-0.5 font-semibold
                                border border-slate-400
                                dark:border-slate-600
                                rounded-sm shadow-sm

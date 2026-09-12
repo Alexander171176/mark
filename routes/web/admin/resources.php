@@ -45,6 +45,7 @@ use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionP
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
 use App\Http\Controllers\Admin\Statistics\Chart\ChartController;
 use App\Http\Controllers\Admin\System\Component\ComponentController;
+use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use App\Http\Controllers\Admin\System\Permission\PermissionController;
 use App\Http\Controllers\Admin\System\Report\ReportController;
@@ -59,6 +60,10 @@ Route::resource('/parameters', ParameterController::class);
 Route::resource('/users', UserController::class);
 Route::resource('/roles', RoleController::class);
 Route::resource('/permissions', PermissionController::class);
+
+Route::resource('/locations', LocationController::class)
+    ->parameters(['locations' => 'location'])
+    ->names('locations');
 
 // редактор компонентов в админке
 Route::resource('/components', ComponentController::class);

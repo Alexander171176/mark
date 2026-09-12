@@ -25,6 +25,8 @@ export default {
     timeFinish: 'Time in the match completion round',
     timezone: 'Time zone',
     title: 'Title',
+    titleFrom: 'Title «from»',
+    titleIn: 'Title «in»',
     titleItemsPerPage: 'Number of items per page',
     titleProperty: 'Property Name',
     to: 'to',

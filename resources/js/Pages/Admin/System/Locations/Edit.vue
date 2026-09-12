@@ -1,0 +1,701 @@
+<script setup>
+/**
+ * @version PulsarCMS 1.0
+ * @author Александр Косолапов
+ *
+ * Редактирование локации
+ */
+import { computed, ref, watch } from 'vue'
+import { useForm } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
+import { transliterate } from '@/utils/transliteration'
+
+import AdminLayout from '@/Layouts/AdminLayout.vue'
+import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
+import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
+import PrimaryButton from '@/Components/Admin/UI/Buttons/PrimaryButton.vue'
+import MetatagsButton from '@/Components/Admin/UI/Buttons/MetatagsButton.vue'
+import ClearMetaButton from '@/Components/Admin/UI/Buttons/ClearMetaButton.vue'
+import LabelCheckbox from '@/Components/Admin/UI/Checkbox/LabelCheckbox.vue'
+import ActivityCheckbox from '@/Components/Admin/UI/Checkbox/ActivityCheckbox.vue'
+import LabelInput from '@/Components/Admin/UI/Input/LabelInput.vue'
+import InputText from '@/Components/Admin/UI/Input/InputText.vue'
+import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
+import InputError from '@/Components/Admin/UI/Input/InputError.vue'
+import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
+import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
+import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
+import GeoCoordinatesInput from '@/Components/Admin/UI/Geo/GeoCoordinatesInput.vue'
+
+const { t } = useI18n()
+const toast = useToast()
+
+const props = defineProps({
+    location: { type: Object, required: true },
+    parents: { type: Array, default: () => [] },
+    currentLocale: { type: String, default: '' },
+    availableLocales: { type: Array, default: () => [] },
+    locationTypes: { type: Array, default: () => [] },
+    errors: { type: Object, default: () => ({}) },
+})
+
+/* ==========================================================
+ * TRANSLATIONS
+ * ========================================================== */
+
+const makeTranslation = () => ({
+    title: '',
+    title_in: '',
+    title_from: '',
+    short: '',
+    description: '',
+    meta_title: '',
+    meta_keywords: '',
+    meta_desc: '',
+})
+
+const defaultLocale =
+    props.currentLocale
+    || props.availableLocales[0]
+    || props.location.translations?.[0]?.locale
+    || 'ru'
+
+const buildTranslations = () => {
+    const result = {}
+
+    ;(props.location.translations || []).forEach((translation) => {
+        result[translation.locale] = {
+            title: translation.title || '',
+            title_in: translation.title_in || '',
+            title_from: translation.title_from || '',
+            short: translation.short || '',
+            description: translation.description || '',
+            meta_title: translation.meta_title || '',
+            meta_keywords: translation.meta_keywords || '',
+            meta_desc: translation.meta_desc || '',
+        }
+    })
+
+    if (!Object.keys(result).length) {
+        result[defaultLocale] = makeTranslation()
+    }
+
+    if (!result[defaultLocale]) {
+        result[defaultLocale] = makeTranslation()
+    }
+
+    return result
+}
+
+const activeLocale = ref(defaultLocale)
+
+const form = useForm({
+    parent_id: props.location.parent_id ?? null,
+    type: props.location.type ?? 'city',
+    slug: props.location.slug ?? '',
+    code: props.location.code ?? '',
+    latitude: props.location.latitude ?? '',
+    longitude: props.location.longitude ?? '',
+    timezone: props.location.timezone ?? '',
+    activity: Boolean(props.location.activity ?? false),
+    is_default: Boolean(props.location.is_default ?? false),
+    sort: props.location.sort ?? 0,
+    translations: buildTranslations(),
+})
+
+const currentTranslation = computed(() => {
+    if (!form.translations[activeLocale.value]) {
+        form.translations[activeLocale.value] = makeTranslation()
+    }
+
+    return form.translations[activeLocale.value]
+})
+
+const pageTitle = computed(() => {
+    return currentTranslation.value.title
+        || props.location.translations?.[0]?.title
+        || `ID: ${props.location.id}`
+})
+
+const getError = (key) => {
+    return form.errors[`translations.${activeLocale.value}.${key}`]
+}
+
+/* ==========================================================
+ * DEFAULT LOCATION
+ * ========================================================== */
+
+watch(
+    () => form.is_default,
+    (isDefault) => {
+        if (isDefault) {
+            form.activity = true
+            return
+        }
+
+        if (props.location.is_default) {
+            form.is_default = true
+            toast.warning(
+                'Нельзя снять статус локации по умолчанию. Сначала назначьте другую локацию.'
+            )
+        }
+    }
+)
+
+watch(
+    () => form.activity,
+    (activity) => {
+        if (!activity && form.is_default) {
+            form.activity = true
+            toast.warning('Локация по умолчанию должна быть активна.')
+        }
+    }
+)
+
+/* ==========================================================
+ * LOCATION TYPES
+ * ========================================================== */
+
+const locationTypeTitle = (type) => {
+    const types = {
+        country: 'country',
+        region: 'region',
+        city: 'city',
+        district: 'district',
+    }
+
+    return types[type] ? t(types[type]) : type || '—'
+}
+
+/* ==========================================================
+ * PARENTS
+ * ========================================================== */
+
+const parentTranslation = (location) => {
+    const translations = location?.translations || []
+
+    return translations.find((item) => item.locale === activeLocale.value)
+        || translations.find((item) => item.locale === 'ru')
+        || translations[0]
+        || null
+}
+
+const parentTitle = (location) => {
+    return parentTranslation(location)?.title || `ID: ${location.id}`
+}
+
+function buildParentOptions(locations, parentId = null, level = 0) {
+    let result = []
+
+    ;(locations || [])
+        .filter((location) => location.parent_id === parentId)
+        .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+        .forEach((location) => {
+            result.push({
+                id: location.id,
+                title: `${'— '.repeat(level)}${parentTitle(location)}`,
+            })
+
+            result = result.concat(
+                buildParentOptions(locations, location.id, level + 1)
+            )
+        })
+
+    return result
+}
+
+const parentOptions = computed(() => {
+    return buildParentOptions(props.parents || [])
+})
+
+/* ==========================================================
+ * SLUG
+ * ========================================================== */
+
+const handleSlugInputFocus = () => {
+    if (!form.slug && currentTranslation.value.title) {
+        form.slug = transliterate(
+            currentTranslation.value.title.toLowerCase()
+        )
+    }
+}
+
+/* ==========================================================
+ * SEO
+ * ========================================================== */
+
+const truncateText = (text, maxLength, addEllipsis = false) => {
+    if (!text) return ''
+
+    const str = String(text)
+    if (str.length <= maxLength) return str
+
+    const lastSpaceIndex = str.lastIndexOf(' ', maxLength)
+    const truncated = lastSpaceIndex === -1
+        ? str.substring(0, maxLength)
+        : str.substring(0, lastSpaceIndex)
+
+    return addEllipsis ? `${truncated}...` : truncated
+}
+
+const clearMetaFields = () => {
+    const translation = currentTranslation.value
+
+    translation.meta_title = ''
+    translation.meta_keywords = ''
+    translation.meta_desc = ''
+}
+
+const generateMetaFields = () => {
+    const translation = currentTranslation.value
+
+    if (translation.title && !translation.meta_title) {
+        translation.meta_title = truncateText(translation.title, 255)
+    }
+
+    if (!translation.meta_keywords && translation.short) {
+        let text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
+        text = text.replace(/[.,!?;:()[\]{}"'«»]/g, '')
+
+        const words = text
+            .split(/\s+/)
+            .filter((word) => word && word.length >= 3)
+            .map((word) => word.toLowerCase())
+            .filter((value, index, self) => self.indexOf(value) === index)
+
+        translation.meta_keywords = truncateText(words.join(', '), 255)
+    }
+
+    if (translation.short && !translation.meta_desc) {
+        const text = String(translation.short).replace(/(<([^>]+)>)/gi, '')
+        translation.meta_desc = truncateText(text, 200, true)
+    }
+}
+
+/* ==========================================================
+ * SUBMIT
+ * ========================================================== */
+
+const submitForm = () => {
+    form.transform((data) => ({
+        ...data,
+        parent_id: data.parent_id || null,
+        activity: data.activity ? 1 : 0,
+        is_default: data.is_default ? 1 : 0,
+    }))
+
+    form.put(
+        route('admin.locations.update', {
+            location: props.location.id,
+        }),
+        {
+            errorBag: 'editLocation',
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success('Локация успешно обновлена!')
+            },
+
+            onError: (errors) => {
+                console.error('Не удалось обновить локацию:', errors)
+
+                const firstError = errors?.[Object.keys(errors)[0]]
+
+                toast.error(
+                    firstError
+                    || 'Пожалуйста, проверьте правильность заполнения полей.'
+                )
+            },
+        }
+    )
+}
+</script>
+
+<template>
+    <AdminLayout :title="t('editLocation')">
+        <template #header>
+            <TitlePage>
+                {{ t('editLocation') }}: {{ pageTitle }} [ID: {{ location.id }}]
+            </TitlePage>
+        </template>
+
+        <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-12xl mx-auto">
+            <div
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       shadow-lg shadow-gray-500 dark:shadow-slate-400
+                       bg-opacity-95 dark:bg-opacity-95"
+            >
+                <div class="sm:flex sm:justify-between sm:items-center mb-2">
+                    <DefaultButton :href="route('admin.locations.index')">
+                        <template #icon>
+                            <svg
+                                class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                viewBox="0 0 16 16"
+                            >
+                                <path
+                                    d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
+                                />
+                            </svg>
+                        </template>
+
+                        {{ t('back') }}
+                    </DefaultButton>
+                </div>
+
+                <form @submit.prevent="submitForm" class="p-3 w-full">
+                    <!-- Activity / Default / Sort -->
+                    <div class="mb-4 flex justify-between flex-col lg:flex-row items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <ActivityCheckbox v-model="form.activity" />
+                            <LabelCheckbox
+                                for="activity"
+                                :text="t('activity')"
+                                class="text-sm h-8 flex items-center"
+                            />
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <ActivityCheckbox v-model="form.is_default" />
+                            <LabelCheckbox
+                                for="is_default"
+                                :text="t('default')"
+                                class="text-sm h-8 flex items-center"
+                            />
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <LabelInput for="sort" :value="t('sort')" class="text-sm" />
+
+                            <InputNumber
+                                id="sort"
+                                type="number"
+                                min="0"
+                                v-model="form.sort"
+                                class="w-full lg:w-28"
+                            />
+
+                            <InputError :message="form.errors.sort" />
+                        </div>
+                    </div>
+
+                    <!-- Parent / Type -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                        <div class="flex flex-col items-start">
+                            <LabelInput for="type">
+                                <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                                {{ t('type') }}
+                            </LabelInput>
+
+                            <select
+                                id="type"
+                                v-model="form.type"
+                                required
+                                class="block w-full py-0.5 border-slate-500
+                                       font-semibold text-sm focus:border-indigo-500
+                                       focus:ring-indigo-300 rounded-sm shadow-sm
+                                       dark:bg-cyan-800 dark:text-slate-100"
+                            >
+                                <option
+                                    v-for="type in locationTypes"
+                                    :key="type"
+                                    :value="type"
+                                >
+                                    {{ locationTypeTitle(type) }}
+                                </option>
+                            </select>
+
+                            <InputError class="mt-2" :message="form.errors.type" />
+                        </div>
+                        <div class="flex flex-col items-start">
+                            <LabelInput for="parent_id" :value="t('parent')" />
+
+                            <select
+                                id="parent_id"
+                                v-model="form.parent_id"
+                                class="block w-full py-0.5 border-slate-500
+                                       font-semibold text-sm focus:border-indigo-500
+                                       focus:ring-indigo-300 rounded-sm shadow-sm
+                                       dark:bg-cyan-800 dark:text-slate-100"
+                            >
+                                <option :value="null">—</option>
+
+                                <option
+                                    v-for="parent in parentOptions"
+                                    :key="parent.id"
+                                    :value="parent.id"
+                                >
+                                    {{ parent.title }}
+                                </option>
+                            </select>
+
+                            <InputError class="mt-2" :message="form.errors.parent_id" />
+                        </div>
+                    </div>
+
+                    <!-- Translations -->
+                    <div
+                        class="my-5 p-3 border border-slate-300 dark:border-slate-500
+                               bg-white dark:bg-slate-800 rounded-sm"
+                    >
+                        <TranslationTabs
+                            v-model="activeLocale"
+                            :translations="form.translations"
+                            :available-locales="availableLocales"
+                            :make-translation="makeTranslation"
+                            @update:translations="form.translations = $event"
+                            @removed="toast.warning('Перевод удалён.')"
+                            @added="toast.success('Локаль добавлена.')"
+                        />
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <LabelInput for="title">
+                                <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                                {{ t('title') }} [{{ activeLocale.toUpperCase() }}]
+                            </LabelInput>
+
+                            <InputText
+                                id="title"
+                                type="text"
+                                v-model="currentTranslation.title"
+                                required
+                                autocomplete="title"
+                            />
+
+                            <InputError class="mt-2" :message="getError('title')" />
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-3">
+                            <div class="flex flex-col items-start">
+                                <LabelInput
+                                    for="title_in"
+                                    :value="`${t('titleIn')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <InputText
+                                    id="title_in"
+                                    type="text"
+                                    v-model="currentTranslation.title_in"
+                                />
+
+                                <InputError class="mt-2" :message="getError('title_in')" />
+                            </div>
+
+                            <div class="flex flex-col items-start">
+                                <LabelInput
+                                    for="title_from"
+                                    :value="`${t('titleFrom')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <InputText
+                                    id="title_from"
+                                    type="text"
+                                    v-model="currentTranslation.title_from"
+                                />
+
+                                <InputError class="mt-2" :message="getError('title_from')" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <div class="flex justify-between w-full">
+                                <LabelInput
+                                    for="short"
+                                    :value="`${t('shortDescription')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <div class="text-xs text-gray-900 dark:text-gray-400 mt-1">
+                                    {{ (currentTranslation.short || '').length }} / 255
+                                    {{ t('characters') }}
+                                </div>
+                            </div>
+
+                            <MetaDescTextarea
+                                v-model="currentTranslation.short"
+                                class="w-full"
+                            />
+
+                            <InputError class="mt-2" :message="getError('short')" />
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <LabelInput
+                                for="description"
+                                :value="`${t('description')} [${activeLocale.toUpperCase()}]`"
+                            />
+
+                            <TinyEditor
+                                v-model="currentTranslation.description"
+                                :height="500"
+                            />
+
+                            <InputError class="mt-2" :message="getError('description')" />
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <div class="flex justify-between w-full">
+                                <LabelInput
+                                    for="meta_title"
+                                    :value="`${t('metaTitle')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <div class="text-xs text-gray-900 dark:text-gray-400 mt-1">
+                                    {{ (currentTranslation.meta_title || '').length }} / 255
+                                    {{ t('characters') }}
+                                </div>
+                            </div>
+
+                            <InputText
+                                id="meta_title"
+                                type="text"
+                                v-model="currentTranslation.meta_title"
+                                maxlength="255"
+                            />
+
+                            <InputError class="mt-2" :message="getError('meta_title')" />
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <div class="flex justify-between w-full">
+                                <LabelInput
+                                    for="meta_keywords"
+                                    :value="`${t('metaKeywords')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <div class="text-xs text-gray-900 dark:text-gray-400 mt-1">
+                                    {{ (currentTranslation.meta_keywords || '').length }} / 255
+                                    {{ t('characters') }}
+                                </div>
+                            </div>
+
+                            <InputText
+                                id="meta_keywords"
+                                type="text"
+                                v-model="currentTranslation.meta_keywords"
+                                maxlength="255"
+                            />
+
+                            <InputError class="mt-2" :message="getError('meta_keywords')" />
+                        </div>
+
+                        <div class="mb-3 flex flex-col items-start">
+                            <div class="flex justify-between w-full">
+                                <LabelInput
+                                    for="meta_desc"
+                                    :value="`${t('metaDescription')} [${activeLocale.toUpperCase()}]`"
+                                />
+
+                                <div class="text-xs text-gray-900 dark:text-gray-400 mt-1">
+                                    {{ (currentTranslation.meta_desc || '').length }} / 255
+                                    {{ t('characters') }}
+                                </div>
+                            </div>
+
+                            <MetaDescTextarea
+                                v-model="currentTranslation.meta_desc"
+                                class="w-full"
+                            />
+
+                            <InputError class="mt-2" :message="getError('meta_desc')" />
+                        </div>
+
+                        <div class="flex justify-end gap-2 mt-4">
+                            <ClearMetaButton @click.prevent="clearMetaFields">
+                                {{ t('clearMetaFields') }}
+                            </ClearMetaButton>
+
+                            <MetatagsButton @click.prevent="generateMetaFields">
+                                {{ t('generateMetaTags') }}
+                            </MetatagsButton>
+                        </div>
+                    </div>
+
+                    <!-- Slug / Code -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                        <div class="flex flex-col items-start">
+                            <LabelInput for="slug">
+                                <span class="text-red-500 dark:text-red-300 font-semibold">*</span>
+                                {{ t('slug') }}
+                            </LabelInput>
+
+                            <InputText
+                                id="slug"
+                                type="text"
+                                v-model="form.slug"
+                                required
+                                autocomplete="slug"
+                                @focus="handleSlugInputFocus"
+                            />
+
+                            <InputError class="mt-2" :message="form.errors.slug" />
+                        </div>
+
+                        <div class="flex flex-col items-start">
+                            <LabelInput for="code" :value="t('code')" />
+
+                            <InputText
+                                id="code"
+                                type="text"
+                                v-model="form.code"
+                                autocomplete="code"
+                            />
+
+                            <InputError class="mt-2" :message="form.errors.code" />
+                        </div>
+                    </div>
+
+                    <!-- Timezone -->
+                    <div class="mb-4 flex flex-col items-start">
+                        <LabelInput for="timezone" :value="t('timezone')" />
+
+                        <InputText
+                            id="timezone"
+                            type="text"
+                            v-model="form.timezone"
+                            placeholder="Asia/Almaty"
+                            autocomplete="timezone"
+                        />
+
+                        <InputError class="mt-2" :message="form.errors.timezone" />
+                    </div>
+
+                    <!-- Coordinates -->
+                    <GeoCoordinatesInput
+                        v-model:latitude="form.latitude"
+                        v-model:longitude="form.longitude"
+                        :latitude-error="form.errors.latitude"
+                        :longitude-error="form.errors.longitude"
+                        wrapper-class="mb-4 flex justify-center"
+                    />
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-center mt-6">
+                        <DefaultButton :href="route('admin.locations.index')">
+                            <template #icon>
+                                <svg
+                                    class="w-4 h-4 fill-current text-slate-100 shrink-0 mr-2"
+                                    viewBox="0 0 16 16"
+                                >
+                                    <path
+                                        d="M4.3 4.5c1.9-1.9 5.1-1.9 7 0 .7.7 1.2 1.7 1.4 2.7l2-.3c-.2-1.5-.9-2.8-1.9-3.8C10.1.4 5.7.4 2.9 3.1L.7.9 0 7.3l6.4-.7-2.1-2.1zM15.6 8.7l-6.4.7 2.1 2.1c-1.9 1.9-5.1 1.9-7 0-.7-.7-1.2-1.7-1.4-2.7l-2 .3c.2 1.5.9 2.8 1.9 3.8 1.4 1.4 3.1 2 4.9 2 1.8 0 3.6-.7 4.9-2l2.2 2.2.8-6.4z"
+                                    />
+                                </svg>
+                            </template>
+
+                            {{ t('back') }}
+                        </DefaultButton>
+
+                        <PrimaryButton
+                            class="ms-4 mb-0"
+                            :class="{ 'opacity-25': form.processing }"
+                            :disabled="form.processing"
+                        >
+                            {{ t('save') }}
+                        </PrimaryButton>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </AdminLayout>
+</template>

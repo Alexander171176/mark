@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionContr
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
 use App\Http\Controllers\Admin\System\ImagePreset\ImagePresetController;
+use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,11 @@ Route::put(
     '/image-presets/update-sort-bulk',
     [ImagePresetController::class, 'updateSortBulk']
 )->name('imagePresets.updateSortBulk');
+
+Route::put(
+    '/locations/update-sort-bulk',
+    [LocationController::class, 'updateSortBulk']
+)->name('locations.updateSortBulk');
 
 Route::put('/currencies/update-sort-bulk',
     [CurrencyController::class, 'updateSortBulk'])

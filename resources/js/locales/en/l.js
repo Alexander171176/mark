@@ -31,6 +31,7 @@ export default {
     limitMinutes: 'Limit in minutes',
     localeAdded: 'Locale added',
     location: 'Location',
+    locations: 'Locations',
     login: 'Login',
     loginTitle: 'Login',
     loginUser: 'User Login',

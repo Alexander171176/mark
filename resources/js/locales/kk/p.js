@@ -15,6 +15,7 @@ export default {
     parameterValue: 'Параметр мәні',
     parameters: 'Жүйе параметрлері',
     parametersHeader: 'Параметрлер',
+    parent: 'Ата-ана',
     parentCategory: 'Ата-ана санаты',
     parentPage: 'Ата-аналық бет',
     parentRubric: 'Ата-аналарға арналған бағана',

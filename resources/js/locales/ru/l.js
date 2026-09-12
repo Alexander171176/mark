@@ -31,6 +31,7 @@ export default {
     limitMinutes: 'Лимит в минутах',
     localeAdded: 'Локаль добавлена',
     location: 'Локация',
+    locations: 'Локации',
     login: 'Вход',
     loginTitle: 'Вход в систему',
     loginUser: 'Вход пользователя',

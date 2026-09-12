@@ -25,6 +25,8 @@ export default {
     timeFinish: 'Жекпе-жекті аяқтау раундындағы уақыт',
     timezone: 'Уақыт белдеуі',
     title: 'Атауы',
+    titleFrom: '«с» атауы',
+    titleIn: '«Ішінде» атауы',
     titleItemsPerPage: 'Беттегі элементтер саны',
     titleProperty: 'Қасиеттің атауы',
     to: 'ға',

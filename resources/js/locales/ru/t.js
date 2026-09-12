@@ -25,6 +25,8 @@ export default {
     timeFinish: 'Время в раунде завершения поединка',
     timezone: 'Часовой пояс',
     title: 'Название',
+    titleFrom: 'Название «с»',
+    titleIn: 'Название «в»',
     titleItemsPerPage: 'Количество элементов на странице',
     titleProperty: 'Имя Свойства',
     to: 'по',

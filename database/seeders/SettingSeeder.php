@@ -244,6 +244,46 @@ class SettingSeeder extends Seeder
                 'sort' => 0,
             ], // ADMIN SYSTEM SETTINGS DEFAULT VIEW
             [
+                'type' => 'string',
+                'option' => 'adminSystemLocationsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_SYSTEM_LOCATIONS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных локаций в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN SYSTEM LOCATIONS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminSystemLocationsPerPage',
+                'value' => '12',
+                'constant' => 'ADMIN_SYSTEM_LOCATIONS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество локаций в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN SYSTEM LOCATIONS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminSystemLocationsDefaultSort',
+                'value' => 'idDesc',
+                'constant' => 'ADMIN_SYSTEM_LOCATIONS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка локаций по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN SYSTEM LOCATIONS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminSystemLocationsDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_SYSTEM_LOCATIONS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка локаций в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN SYSTEM LOCATIONS DEFAULT VIEW
+            [
                 'type' => 'checkbox',
                 'option' => 'imageProcessorEnabled',
                 'value' => '1',

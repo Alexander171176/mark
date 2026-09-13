@@ -921,6 +921,18 @@ const rubricGridCols = computed(() => {
             :content="seoImage"
         >
 
+        <meta
+            v-if="seoImage"
+            property="og:image:alt"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoImage"
+            name="twitter:image:alt"
+            :content="seoTitle"
+        >
+
         <!-- Twitter / X -->
         <meta
             name="twitter:card"
@@ -1041,6 +1053,23 @@ const rubricGridCols = computed(() => {
                         itemprop="inLanguage"
                         :content="rubricLocale"
                     >
+
+                    <div
+                        itemprop="interactionStatistic"
+                        itemscope
+                        itemtype="https://schema.org/InteractionCounter"
+                        class="contents"
+                    >
+                        <link
+                            itemprop="interactionType"
+                            href="https://schema.org/ViewAction"
+                        >
+
+                        <meta
+                            itemprop="userInteractionCount"
+                            :content="rubric.views || 0"
+                        >
+                    </div>
 
                     <div class="mx-auto max-w-6xl">
 

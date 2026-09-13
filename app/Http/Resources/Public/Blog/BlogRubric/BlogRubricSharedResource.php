@@ -22,19 +22,14 @@ class BlogRubricSharedResource extends JsonResource
          * содержит максимум:
          *
          * - текущую локаль;
-         * - fallback ru.
+         * - fallback locale.
+         *
+         * Resource сам запросы в БД не выполняет.
          */
         $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
+            ? $this->translationOrFallback(
+                $locale,
                 $fallbackLocale
-            )
-                ?: $this->translations->first()
             )
             : null;
 
@@ -56,8 +51,8 @@ class BlogRubricSharedResource extends JsonResource
             'views' => (int) $this->views,
 
             /**
-             * Перевод текущей локали
-             * или fallback ru.
+             * Лёгкий перевод текущей локали
+             * или fallback.
              */
             'translation' => $translation
                 ? [
@@ -71,7 +66,8 @@ class BlogRubricSharedResource extends JsonResource
             /**
              * Автор.
              *
-             * Email нужен frontend-поиску.
+             * Только поля, реально используемые
+             * публичным интерфейсом.
              */
             'owner' => $this->whenLoaded(
                 'owner',
@@ -79,7 +75,6 @@ class BlogRubricSharedResource extends JsonResource
                     return [
                         'id' => $this->owner?->id,
                         'name' => $this->owner?->name,
-                        'email' => $this->owner?->email,
                         'profile_photo_url' =>
                             $this->owner?->profile_photo_url,
                     ];
@@ -97,7 +92,7 @@ class BlogRubricSharedResource extends JsonResource
             ),
 
             /**
-             * Количество статей.
+             * Количество только Public-статей.
              */
             'articles_count' => $this->when(
                 isset($this->articles_count),
@@ -105,7 +100,8 @@ class BlogRubricSharedResource extends JsonResource
             ),
 
             /**
-             * Дети, если relation загружена.
+             * Дочерние рубрики,
+             * если relation загружена.
              */
             'children' => self::collection(
                 $this->whenLoaded('children')

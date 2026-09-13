@@ -17,17 +17,17 @@ class BlogRubricResource extends JsonResource
             'ru'
         );
 
+        /**
+         * Контроллер заранее загружает:
+         *
+         * current locale + fallback locale.
+         *
+         * Resource сам запросы в БД не выполняет.
+         */
         $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
+            ? $this->translationOrFallback(
+                $locale,
                 $fallbackLocale
-            )
-                ?: $this->translations->first()
             )
             : null;
 
@@ -49,7 +49,8 @@ class BlogRubricResource extends JsonResource
             'views' => (int) $this->views,
 
             /**
-             * Полный перевод текущей локали.
+             * Полный перевод текущей локали
+             * или fallback.
              */
             'translation' => $translation
                 ? [
@@ -69,13 +70,17 @@ class BlogRubricResource extends JsonResource
             /**
              * Автор.
              */
-            'owner' => $this->whenLoaded('owner', function () {
-                return [
-                    'id' => $this->owner?->id,
-                    'name' => $this->owner?->name,
-                    'profile_photo_url' => $this->owner?->profile_photo_url,
-                ];
-            }),
+            'owner' => $this->whenLoaded(
+                'owner',
+                function () {
+                    return [
+                        'id' => $this->owner?->id,
+                        'name' => $this->owner?->name,
+                        'profile_photo_url' =>
+                            $this->owner?->profile_photo_url,
+                    ];
+                }
+            ),
 
             /**
              * Изображения.
@@ -85,21 +90,30 @@ class BlogRubricResource extends JsonResource
             ),
 
             /**
-             * Дочерние рубрики уже в лёгком формате.
+             * Дочерние рубрики уже
+             * в лёгком публичном формате.
              */
             'children' => BlogRubricSharedResource::collection(
                 $this->whenLoaded('children')
             ),
 
             /**
-             * Количество статей.
+             * Количество только Public-статей.
+             *
+             * Контроллер должен предварительно
+             * рассчитать articles_count.
              */
             'articles_count' => $this->when(
                 isset($this->articles_count),
                 fn () => (int) $this->articles_count
             ),
 
-            'created_at' => $this->created_at?->toISOString(),
+            /**
+             * Нужен frontend-сортировке
+             * и отображению даты.
+             */
+            'created_at' =>
+                $this->created_at?->toISOString(),
         ];
     }
 }

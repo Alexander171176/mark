@@ -41,9 +41,14 @@ class BlogRubricController extends Controller
 
         $seo = $cmsSeoTranslation
             ? [
-                'title' => $cmsSeoTranslation->meta_title ?: $cmsSeoTranslation->title,
-                'keywords' => $cmsSeoTranslation->meta_keywords,
-                'description' => $cmsSeoTranslation->meta_desc ?: $cmsSeoTranslation->short,
+                'title' => $cmsSeoTranslation->meta_title
+                    ?: $cmsSeoTranslation->title,
+
+                'keywords' =>
+                    $cmsSeoTranslation->meta_keywords,
+
+                'description' => $cmsSeoTranslation->meta_desc
+                    ?: $cmsSeoTranslation->short,
             ]
             : [
                 'title' => __('Рубрики'),
@@ -66,7 +71,9 @@ class BlogRubricController extends Controller
             12
         );
 
-        $search = $this->resolveSearch($request);
+        $search = $this->resolveSearch(
+            $request
+        );
 
         $sort = $this->resolveSort(
             $request,
@@ -109,12 +116,13 @@ class BlogRubricController extends Controller
                 ->forPublic()
                 ->count();
 
-            $useServerProcessing = app(ProcessingModeService::class)
-                ->shouldUseServer(
-                    $processingMode,
-                    $rubricsCount,
-                    300
-                );
+            $useServerProcessing = app(
+                ProcessingModeService::class
+            )->shouldUseServer(
+                $processingMode,
+                $rubricsCount,
+                300
+            );
         } else {
             $useServerProcessing =
                 $processingMode === 'server';
@@ -175,8 +183,13 @@ class BlogRubricController extends Controller
 
         /* ======================== Sidebars ======================== */
 
-        $rubricTree = $this->getRubricTree($locale);
-        $sidebarData = $this->getSidebarData($locale);
+        $rubricTree = $this->getRubricTree(
+            $locale
+        );
+
+        $sidebarData = $this->getSidebarData(
+            $locale
+        );
 
         /* ======================== Response ======================== */
 
@@ -220,8 +233,10 @@ class BlogRubricController extends Controller
     }
 
     /** Страница конкретной рубрики блога. */
-    public function show(Request $request, string $url): Response
-    {
+    public function show(
+        Request $request,
+        string $url
+    ): Response {
         $locale = app()->getLocale();
 
         $fallbackLocale = config(
@@ -229,37 +244,77 @@ class BlogRubricController extends Controller
             'ru'
         );
 
-        $locales = array_values(array_unique([
-            $locale,
-            $fallbackLocale,
-        ]));
+        /**
+         * Для Public загружаем только:
+         *
+         * - текущую локаль;
+         * - fallback locale.
+         */
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
 
-        $settings = app(PublicSettingsService::class);
+        $settings = app(
+            PublicSettingsService::class
+        );
 
         /* ======================== Rubric ======================== */
 
         $rubric = BlogRubric::query()
             ->forPublic()
-            ->where('url', $url)
+            ->where(
+                'url',
+                $url
+            )
             ->with([
+                /**
+                 * Current locale + fallback.
+                 */
                 'translations' => fn ($query) =>
-                $query->whereIn('locale', $locales),
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
 
+                /**
+                 * Автор нужен Public Resource.
+                 */
                 'owner',
 
+                /**
+                 * Изображения + Spatie Media.
+                 */
                 'images.media',
 
                 /**
-                 * Только публичные дочерние рубрики.
+                 * Только публичные
+                 * дочерние рубрики.
                  */
                 'children' => fn ($query) => $query
                     ->forPublic()
                     ->with([
-                        'translations' => fn ($translationQuery) =>
-                        $translationQuery->whereIn('locale', $locales),
+                        /**
+                         * Current locale + fallback.
+                         */
+                        'translations' =>
+                            fn ($translationQuery) =>
+                            $translationQuery->whereIn(
+                                'locale',
+                                $locales
+                            ),
 
+                        /**
+                         * Автор нужен
+                         * SharedResource.
+                         */
                         'owner',
 
+                        /**
+                         * Изображения + Spatie Media.
+                         */
                         'images.media',
                     ])
                     ->withCount([
@@ -267,8 +322,9 @@ class BlogRubricController extends Controller
                          * Только Public-статьи
                          * дочерней рубрики.
                          */
-                        'articles as articles_count' => fn ($articleQuery) =>
-                        $articleQuery->forPublic(),
+                        'articles as articles_count' =>
+                            fn ($articleQuery) =>
+                            $articleQuery->forPublic(),
                     ]),
             ])
             ->withCount([
@@ -276,12 +332,18 @@ class BlogRubricController extends Controller
                  * Только Public-статьи
                  * текущей рубрики.
                  */
-                'articles as articles_count' => fn ($query) =>
-                $query->forPublic(),
+                'articles as articles_count' =>
+                    fn ($query) =>
+                    $query->forPublic(),
             ])
             ->firstOrFail();
 
-        $rubric->increment('views');
+        /**
+         * Увеличиваем количество просмотров.
+         */
+        $rubric->increment(
+            'views'
+        );
 
         /* ======================== Article settings ======================== */
 
@@ -301,6 +363,14 @@ class BlogRubricController extends Controller
             'q_articles'
         );
 
+        /**
+         * Статьи пока используют существующий
+         * контракт BlogArticle.
+         *
+         * На publicSearch/publicSortByParam
+         * переведём их при рефакторинге
+         * модели BlogArticle.
+         */
         $articlesSort = (string) $request->query(
             'sort_articles',
             $settings->string(
@@ -337,12 +407,13 @@ class BlogRubricController extends Controller
                 )
                 ->count();
 
-            $useServerProcessing = app(ProcessingModeService::class)
-                ->shouldUseServer(
-                    $processingMode,
-                    $articlesCount,
-                    300
-                );
+            $useServerProcessing = app(
+                ProcessingModeService::class
+            )->shouldUseServer(
+                $processingMode,
+                $articlesCount,
+                300
+            );
         } else {
             $useServerProcessing =
                 $processingMode === 'server';
@@ -426,9 +497,10 @@ class BlogRubricController extends Controller
         return Inertia::render(
             'Public/Default/Blog/BlogRubrics/Show',
             [
-                'rubric' => new BlogRubricResource(
-                    $rubric
-                ),
+                'rubric' =>
+                    new BlogRubricResource(
+                        $rubric
+                    ),
 
                 'publicBlogArticlesProcessingMode' =>
                     $processingMode,
@@ -470,6 +542,9 @@ class BlogRubricController extends Controller
     /**
      * Базовый запрос Public-статей
      * конкретной рубрики.
+     *
+     * Временно использует существующий
+     * контракт модели BlogArticle.
      */
     private function rubricArticlesQuery(
         BlogRubric $rubric,
@@ -532,6 +607,10 @@ class BlogRubricController extends Controller
     /**
      * Получение статей рубрики
      * по активному режиму обработки.
+     *
+     * BlogArticle publicSearch/publicSortByParam
+     * подключим отдельно после рефакторинга
+     * модели BlogArticle.
      */
     private function getRubricArticles(
         BlogRubric $rubric,
@@ -583,18 +662,31 @@ class BlogRubricController extends Controller
             ->get();
     }
 
-    /** Базовый запрос для списка публичных рубрик. */
-    private function indexQuery(string $locale): Builder
-    {
+    /**
+     * Базовый запрос для списка
+     * публичных рубрик.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
         $fallbackLocale = config(
             'app.fallback_locale',
             'ru'
         );
 
-        $locales = array_values(array_unique([
-            $locale,
-            $fallbackLocale,
-        ]));
+        /**
+         * Загружаем только переводы,
+         * которые способен выбрать
+         * Public Resource:
+         *
+         * current locale + fallback.
+         */
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
 
         return BlogRubric::query()
             ->forPublic()
@@ -622,13 +714,22 @@ class BlogRubricController extends Controller
             ->withCount([
                 /**
                  * Только Public-статьи.
+                 *
+                 * publicSortByParam()
+                 * сортирует уже готовый
+                 * articles_count и повторный
+                 * withCount() не выполняет.
                  */
-                'articles as articles_count' => fn ($query) =>
-                $query->forPublic(),
+                'articles as articles_count' =>
+                    fn ($query) =>
+                    $query->forPublic(),
             ]);
     }
 
-    /** Получение списка публичных рубрик по активному режиму обработки. */
+    /**
+     * Получение списка публичных рубрик
+     * по активному режиму обработки.
+     */
     private function getIndexRubrics(
         string $locale,
         bool $useServerProcessing,
@@ -636,20 +737,55 @@ class BlogRubricController extends Controller
         string $sort,
         string $search = ''
     ) {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
         $query = $this->indexQuery(
             $locale
         );
 
+        /**
+         * Server:
+         *
+         * Public-поиск,
+         * Public-сортировка,
+         * pagination выполняются backend.
+         */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->publicSearch(
+                    $search,
+                    $locale,
+                    $fallbackLocale
+                )
+                ->publicSortByParam(
+                    $sort,
+                    $locale,
+                    $fallbackLocale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend:
+         *
+         * Поиск выполняет Vue.
+         *
+         * Backend отдаёт весь Public-набор,
+         * предварительно отсортированный
+         * тем же публичным алгоритмом.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->publicSortByParam(
+                $sort,
+                $locale,
+                $fallbackLocale
+            )
             ->get();
     }
 }

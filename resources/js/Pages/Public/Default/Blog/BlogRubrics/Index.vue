@@ -812,6 +812,18 @@ const rubricGridCols = computed(() => {
             :content="seoImage"
         >
 
+        <meta
+            v-if="seoImage"
+            property="og:image:alt"
+            :content="seoTitle"
+        >
+
+        <meta
+            v-if="seoImage"
+            name="twitter:image:alt"
+            :content="seoTitle"
+        >
+
         <!-- Twitter / X -->
         <meta
             name="twitter:card"

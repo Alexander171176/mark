@@ -233,6 +233,216 @@ class BlogRubric extends Model
             ->ordered();
     }
 
+    /* ======================== Public Scopes ======================== */
+
+    /**
+     * Публичный поиск.
+     *
+     * Ищет только по данным, доступным в Public Index:
+     * - id
+     * - url
+     * - title текущего перевода / fallback
+     * - short текущего перевода / fallback
+     * - имя владельца
+     *
+     * Переводы:
+     * current locale -> fallback ru.
+     */
+    public function scopePublicSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null,
+        string $fallback = 'ru'
+    ): Builder {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $locale = $locale ?: app()->getLocale();
+
+        return $query->where(function (Builder $query) use ($term, $locale, $fallback) {
+            $query
+                ->where('blog_rubrics.id', 'like', "%{$term}%")
+                ->orWhere('blog_rubrics.url', 'like', "%{$term}%")
+
+                // Текущий перевод.
+                ->orWhereHas('translations', function (Builder $translationQuery) use ($term, $locale) {
+                    $translationQuery
+                        ->where('locale', $locale)
+                        ->where(function (Builder $translationQuery) use ($term) {
+                            $translationQuery
+                                ->where('title', 'like', "%{$term}%")
+                                ->orWhere('short', 'like', "%{$term}%");
+                        });
+                })
+
+                // Fallback используется только при отсутствии текущего перевода.
+                ->orWhere(function (Builder $fallbackQuery) use ($term, $locale, $fallback) {
+                    $fallbackQuery
+                        ->whereDoesntHave('translations', function (Builder $translationQuery) use ($locale) {
+                            $translationQuery->where('locale', $locale);
+                        })
+                        ->whereHas('translations', function (Builder $translationQuery) use ($term, $fallback) {
+                            $translationQuery
+                                ->where('locale', $fallback)
+                                ->where(function (Builder $translationQuery) use ($term) {
+                                    $translationQuery
+                                        ->where('title', 'like', "%{$term}%")
+                                        ->orWhere('short', 'like', "%{$term}%");
+                                });
+                        });
+                })
+
+                ->orWhereHas('owner', function (Builder $ownerQuery) use ($term) {
+                    $ownerQuery->where('name', 'like', "%{$term}%");
+                });
+        });
+    }
+
+    /**
+     * Публичная сортировка.
+     *
+     * Поддерживает только варианты,
+     * используемые Public Index.
+     *
+     * articles_count должен быть предварительно рассчитан
+     * публичным запросом через articles->forPublic().
+     */
+    public function scopePublicSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null,
+        string $fallback = 'ru'
+    ): Builder {
+        $locale = $locale ?: app()->getLocale();
+
+        return match ($sort) {
+            'idAsc' => $query
+                ->orderBy('blog_rubrics.id', 'asc'),
+
+            'idDesc' => $query
+                ->orderBy('blog_rubrics.id', 'desc'),
+
+            'sortAsc' => $query
+                ->orderBy('blog_rubrics.sort', 'asc')
+                ->orderByDesc('blog_rubrics.id'),
+
+            'sortDesc' => $query
+                ->orderBy('blog_rubrics.sort', 'desc')
+                ->orderByDesc('blog_rubrics.id'),
+
+            'viewsAsc' => $query
+                ->orderBy('blog_rubrics.views', 'asc')
+                ->orderByDesc('blog_rubrics.id'),
+
+            'viewsDesc' => $query
+                ->orderBy('blog_rubrics.views', 'desc')
+                ->orderByDesc('blog_rubrics.id'),
+
+            'articlesAsc' => $query
+                ->orderBy('articles_count', 'asc')
+                ->orderByDesc('blog_rubrics.id'),
+
+            'articlesDesc' => $query
+                ->orderBy('articles_count', 'desc')
+                ->orderByDesc('blog_rubrics.id'),
+
+            'dateAsc' => $query
+                ->orderBy('blog_rubrics.created_at', 'asc')
+                ->orderByDesc('blog_rubrics.id'),
+
+            'dateDesc' => $query
+                ->orderBy('blog_rubrics.created_at', 'desc')
+                ->orderByDesc('blog_rubrics.id'),
+
+            'titleAsc' => $this->applyPublicTitleSort(
+                $query,
+                $locale,
+                $fallback,
+                'asc'
+            ),
+
+            'titleDesc' => $this->applyPublicTitleSort(
+                $query,
+                $locale,
+                $fallback,
+                'desc'
+            ),
+
+            default => $query->ordered(),
+        };
+    }
+
+    /**
+     * Публичная сортировка по title:
+     * current locale -> fallback.
+     */
+    protected function applyPublicTitleSort(
+        Builder $query,
+        string $locale,
+        string $fallback,
+        string $direction
+    ): Builder {
+        $query->leftJoin(
+            'blog_rubric_translations as brt_public_sort_current',
+            function ($join) use ($locale) {
+                $join
+                    ->on(
+                        'brt_public_sort_current.rubric_id',
+                        '=',
+                        'blog_rubrics.id'
+                    )
+                    ->where(
+                        'brt_public_sort_current.locale',
+                        '=',
+                        $locale
+                    );
+            }
+        );
+
+        // Если текущая локаль совпадает с fallback, второй JOIN не нужен.
+        if ($locale === $fallback) {
+            return $query
+                ->orderBy(
+                    'brt_public_sort_current.title',
+                    $direction
+                )
+                ->orderByDesc('blog_rubrics.id')
+                ->addSelect('blog_rubrics.*');
+        }
+
+        $query->leftJoin(
+            'blog_rubric_translations as brt_public_sort_fallback',
+            function ($join) use ($fallback) {
+                $join
+                    ->on(
+                        'brt_public_sort_fallback.rubric_id',
+                        '=',
+                        'blog_rubrics.id'
+                    )
+                    ->where(
+                        'brt_public_sort_fallback.locale',
+                        '=',
+                        $fallback
+                    );
+            }
+        );
+
+        return $query
+            ->orderByRaw(
+                'COALESCE(
+                    brt_public_sort_current.title,
+                    brt_public_sort_fallback.title
+                ) ' . $direction
+            )
+            ->orderByDesc('blog_rubrics.id')
+            ->addSelect('blog_rubrics.*');
+    }
+
+    /* ======================== Admin / Common Scopes ======================== */
+
     /** Поиск по словам */
     public function scopeSearch(Builder $query, ?string $term, ?string $locale = null): Builder
     {

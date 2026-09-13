@@ -1,6 +1,63 @@
+# robots.txt
+# robots.txt
+# agrovent.kz
+
 User-agent: *
+
+# ------------------------------------------------------------
+# Административная часть
+# ------------------------------------------------------------
+
+Disallow: /admin/
+
+# ------------------------------------------------------------
+# Авторизация и служебные страницы пользователя
+# ------------------------------------------------------------
+
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password/
+Disallow: /password/
+Disallow: /email/
+Disallow: /profile
+Disallow: /user/
+Disallow: /two-factor-challenge
+Disallow: /sanctum/
+
+# ------------------------------------------------------------
+# Внутренний поиск
+# ------------------------------------------------------------
+
+Disallow: /search
+
+# ------------------------------------------------------------
+# Sitemap
+# ------------------------------------------------------------
+
+Sitemap: https://agrovent.kz/sitemap.xml
+
+
+# ------------------------------------------------------------
+# Yandex
+# ------------------------------------------------------------
+
+User-agent: Yandex
+
 Disallow: /admin/
 Disallow: /login
 Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password/
+Disallow: /password/
+Disallow: /email/
+Disallow: /profile
+Disallow: /user/
+Disallow: /two-factor-challenge
+Disallow: /sanctum/
 
-Sitemap: https://example.com/sitemap.xml
+Disallow: /search
+
+Clean-param: gclid&fbclid
+
+Sitemap: https://agrovent.kz/sitemap.xml

@@ -10,29 +10,78 @@ use Inertia\Response;
 
 class EnvController extends Controller
 {
+    /**
+     * Просмотр конфигурации .env.
+     *
+     * Доступ разрешён только суперпользователю с ID = 1.
+     */
     public function index(Request $request): Response
     {
-        // abort_unless($request->user()?->hasRole('super-admin'), 403);
-        // TODO: Проверка прав $this->authorize('show-systems');
+        abort_unless(
+            (int) $request->user()?->id === 1,
+            403
+        );
 
         $path = base_path('.env');
 
         if (!File::exists($path)) {
-            abort(404, '.env file not found');
+            abort(
+                404,
+                '.env file not found'
+            );
         }
 
-        $lines = collect(explode("\n", File::get($path)))
-            ->filter(fn($line) => trim($line) !== '' && !str_starts_with(trim($line), '#'))
-            ->map(function ($line) {
-                $parts = explode('=', $line, 2);
-                return [
-                    'key' => trim($parts[0]),
-                    'value' => trim($parts[1] ?? '')
-                ];
-            })->values();
+        $content = File::get($path);
 
-        return Inertia::render('Admin/System/EnvInfoPage', [
-            'env' => $lines
-        ]);
+        $env = collect(
+            preg_split(
+                '/\r\n|\r|\n/',
+                $content
+            )
+        )
+            ->map(
+                fn ($line) => trim($line)
+            )
+            ->filter(
+                fn ($line) =>
+                    $line !== '' &&
+                    !str_starts_with(
+                        $line,
+                        '#'
+                    )
+            )
+            ->map(function ($line) {
+                $parts = explode(
+                    '=',
+                    $line,
+                    2
+                );
+
+                return [
+                    'key' => trim(
+                        $parts[0]
+                    ),
+
+                    'value' => isset(
+                        $parts[1]
+                    )
+                        ? trim(
+                            $parts[1]
+                        )
+                        : '',
+                ];
+            })
+            ->filter(
+                fn ($item) =>
+                    $item['key'] !== ''
+            )
+            ->values();
+
+        return Inertia::render(
+            'Admin/System/EnvInfoPage',
+            [
+                'env' => $env,
+            ]
+        );
     }
 }

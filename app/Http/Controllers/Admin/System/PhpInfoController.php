@@ -9,20 +9,46 @@ use Inertia\Response;
 
 class PhpInfoController extends Controller
 {
+    /**
+     * Просмотр информации о конфигурации PHP.
+     *
+     * Доступ разрешён только суперпользователю с ID = 1.
+     */
     public function index(Request $request): Response
     {
-        // abort_unless($request->user()?->hasRole('super-admin'), 403);
-        // TODO: Проверка прав $this->authorize('show-systems');
+        abort_unless(
+            (int) $request->user()?->id === 1,
+            403
+        );
 
         ob_start();
+
         phpinfo();
+
         $phpinfo = ob_get_clean();
 
-        // Удалим <html>, <body> и прочее — оставим только содержимое
-        $phpinfo = preg_replace('%^.*<body>(.*)</body>.*$%s', '$1', $phpinfo);
+        if ($phpinfo === false) {
+            abort(
+                500,
+                'Unable to retrieve PHP information'
+            );
+        }
 
-        return Inertia::render('Admin/System/PhpInfoPage', [
-            'phpinfo' => $phpinfo
-        ]);
+        if (
+            preg_match(
+                '/<body[^>]*>(.*?)<\/body>/is',
+                $phpinfo,
+                $matches
+            )
+        ) {
+            $phpinfo = $matches[1];
+        }
+
+        return Inertia::render(
+            'Admin/System/PhpInfoPage',
+            [
+                'phpinfo' => $phpinfo,
+            ]
+        );
     }
 }

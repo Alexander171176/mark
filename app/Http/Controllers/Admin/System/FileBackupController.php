@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use RecursiveCallbackFilterIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 use ZipArchive;
 
 class FileBackupController extends Controller
@@ -22,20 +25,26 @@ class FileBackupController extends Controller
     private const JOB_DIR = 'file_backups/jobs';
     private const BATCH_SIZE = 300;
 
-    /** Страница резервных копий */
+    /**
+     * Страница резервных копий файлов сайта.
+     */
     public function index(): Response
     {
+        $this->ensureDirectories();
+
         return Inertia::render('Admin/System/FileBackup');
     }
 
-    /** Список архивов */
+    /**
+     * Список созданных архивов.
+     */
     public function list(): JsonResponse
     {
         $this->ensureDirectories();
 
         $archives = collect(Storage::files(self::BACKUP_DIR))
-            ->filter(fn ($file) => str_ends_with($file, '.zip'))
-            ->map(fn ($file) => [
+            ->filter(fn (string $file) => str_ends_with(strtolower($file), '.zip'))
+            ->map(fn (string $file) => [
                 'name' => basename($file),
                 'size' => Storage::size($file),
                 'created' => Storage::lastModified($file),
@@ -48,37 +57,58 @@ class FileBackupController extends Controller
         ]);
     }
 
-    /** Запуск архивации */
+    /**
+     * Подготовить задачу архивации.
+     */
     public function start(): JsonResponse
     {
         try {
             $this->ensureDirectories();
 
             $job = Str::uuid()->toString();
+
             $filename = 'site_backup_' . now()->format('Y-m-d_H-i-s') . '.zip';
-            $archive = storage_path('app/' . self::BACKUP_DIR . '/' . $filename);
+
+            $archive = storage_path(
+                'app/' . self::BACKUP_DIR . '/' . $filename
+            );
+
             $files = $this->collectProjectFiles();
 
             if (empty($files)) {
-                throw new \RuntimeException('Нет файлов для архивации.');
+                throw new RuntimeException(
+                    'Нет файлов для архивации.'
+                );
             }
 
             $state = [
                 'job' => $job,
                 'filename' => $filename,
                 'archive' => $archive,
+
                 'processed' => 0,
+                'added' => 0,
+                'skipped' => 0,
+
                 'total' => count($files),
                 'progress' => 0,
+
                 'status' => 'processing',
                 'message' => 'Подготовлен список файлов',
+
+                'errors' => [],
                 'files' => $files,
             ];
 
-            $this->saveState($job, $state);
+            $this->saveState(
+                $job,
+                $state
+            );
 
-            return response()->json($this->publicState($state));
-        } catch (\Throwable $e) {
+            return response()->json(
+                $this->publicState($state)
+            );
+        } catch (Throwable $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Ошибка подготовки архива: ' . $e->getMessage(),
@@ -86,15 +116,25 @@ class FileBackupController extends Controller
         }
     }
 
-    /** Добавить очередную порцию файлов в архив */
+    /**
+     * Добавить очередную порцию файлов в архив.
+     */
     public function process(Request $request): JsonResponse
     {
         $request->validate([
-            'job' => ['required', 'string'],
+            'job' => [
+                'required',
+                'string',
+            ],
         ]);
 
-        $job = basename($request->job);
-        $state = $this->loadState($job);
+        $job = basename(
+            $request->job
+        );
+
+        $state = $this->loadState(
+            $job
+        );
 
         if (!$state) {
             return response()->json([
@@ -103,79 +143,206 @@ class FileBackupController extends Controller
             ], 404);
         }
 
-        if (($state['status'] ?? null) !== 'processing') {
-            return response()->json($this->publicState($state));
+        if (
+            ($state['status'] ?? null) !==
+            'processing'
+        ) {
+            return response()->json(
+                $this->publicState($state)
+            );
         }
 
         $zip = new ZipArchive();
 
         try {
-            $mode = (int) $state['processed'] === 0
-                ? ZipArchive::CREATE | ZipArchive::OVERWRITE
-                : ZipArchive::CREATE;
+            $archive =
+                $state['archive'] ?? null;
 
-            if ($zip->open($state['archive'], $mode) !== true) {
-                throw new \RuntimeException('Не удалось открыть архив');
+            if (!$archive) {
+                throw new RuntimeException(
+                    'Не определён путь к архиву.'
+                );
             }
 
-            $start = (int) $state['processed'];
-            $end = min($start + self::BATCH_SIZE, (int) $state['total']);
+            $processed =
+                (int) ($state['processed'] ?? 0);
 
-            for ($i = $start; $i < $end; $i++) {
-                $file = $state['files'][$i] ?? null;
+            $total =
+                (int) ($state['total'] ?? 0);
 
-                if (!$file || empty($file['absolute']) || empty($file['relative'])) {
+            $mode =
+                $processed === 0
+                    ? ZipArchive::CREATE | ZipArchive::OVERWRITE
+                    : ZipArchive::CREATE;
+
+            $result = $zip->open(
+                $archive,
+                $mode
+            );
+
+            if ($result !== true) {
+                throw new RuntimeException(
+                    'Не удалось открыть ZIP-архив. Код ошибки: ' . $result
+                );
+            }
+
+            $start = $processed;
+
+            $end = min(
+                $start + self::BATCH_SIZE,
+                $total
+            );
+
+            for (
+                $i = $start;
+                $i < $end;
+                $i++
+            ) {
+                $file =
+                    $state['files'][$i] ??
+                    null;
+
+                if (
+                    !$file ||
+                    empty($file['absolute']) ||
+                    empty($file['relative'])
+                ) {
+                    $state['skipped']++;
+
+                    $this->addStateError(
+                        $state,
+                        'Пропущен некорректный элемент списка файлов.'
+                    );
+
                     continue;
                 }
 
-                if (!File::exists($file['absolute']) || !File::isReadable($file['absolute'])) {
+                $absolute =
+                    $file['absolute'];
+
+                $relative =
+                    $file['relative'];
+
+                if (
+                    !File::exists($absolute) ||
+                    !File::isFile($absolute)
+                ) {
+                    $state['skipped']++;
+
+                    $this->addStateError(
+                        $state,
+                        "Файл не найден: {$relative}"
+                    );
+
                     continue;
                 }
 
-                $zip->addFile($file['absolute'], $file['relative']);
-            }
+                if (!File::isReadable($absolute)) {
+                    $state['skipped']++;
 
-            $zip->close();
+                    $this->addStateError(
+                        $state,
+                        "Файл недоступен для чтения: {$relative}"
+                    );
 
-            $state['processed'] = $end;
-            $state['progress'] = (int) floor(($end / max(1, (int) $state['total'])) * 100);
-            $state['message'] = "Добавлено {$end} из {$state['total']} файлов";
-
-            if ($end >= (int) $state['total']) {
-                clearstatcache();
-
-                if (!File::exists($state['archive']) || File::size($state['archive']) === 0) {
-                    throw new \RuntimeException('Архив создан пустым.');
+                    continue;
                 }
 
-                $state['status'] = 'done';
-                $state['progress'] = 100;
-                $state['message'] = 'Архив полностью создан';
+                $added = $zip->addFile(
+                    $absolute,
+                    $relative
+                );
+
+                if (!$added) {
+                    $state['skipped']++;
+
+                    $this->addStateError(
+                        $state,
+                        "Не удалось добавить файл в архив: {$relative}"
+                    );
+
+                    continue;
+                }
+
+                $state['added']++;
             }
 
-            $this->saveState($job, $state);
+            if (!$zip->close()) {
+                throw new RuntimeException(
+                    'Не удалось корректно завершить запись ZIP-архива.'
+                );
+            }
 
-            return response()->json($this->publicState($state));
-        } catch (\Throwable $e) {
+            $state['processed'] =
+                $end;
+
+            $state['progress'] =
+                (int) floor(
+                    (
+                        $end /
+                        max(1, $total)
+                    ) * 100
+                );
+
+            $state['message'] =
+                "Обработано {$end} из {$total} файлов";
+
+            if ($end >= $total) {
+                $this->finalizeArchive(
+                    $state
+                );
+            }
+
+            $this->saveState(
+                $job,
+                $state
+            );
+
+            return response()->json(
+                $this->publicState($state)
+            );
+        } catch (Throwable $e) {
             try {
                 $zip->close();
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 //
             }
 
-            $state['status'] = 'error';
-            $state['message'] = 'Ошибка создания архива: ' . $e->getMessage();
+            $state['status'] =
+                'error';
 
-            $this->saveState($job, $state);
+            $state['progress'] =
+                (int) ($state['progress'] ?? 0);
 
-            return response()->json($this->publicState($state), 500);
+            $state['message'] =
+                'Ошибка создания архива: ' .
+                $e->getMessage();
+
+            $this->addStateError(
+                $state,
+                $e->getMessage()
+            );
+
+            $this->saveState(
+                $job,
+                $state
+            );
+
+            return response()->json(
+                $this->publicState($state),
+                500
+            );
         }
     }
 
-    /** Получить статус */
+    /**
+     * Получить состояние задачи.
+     */
     public function status(string $job): JsonResponse
     {
-        $state = $this->loadState(basename($job));
+        $state = $this->loadState(
+            basename($job)
+        );
 
         if (!$state) {
             return response()->json([
@@ -184,33 +351,91 @@ class FileBackupController extends Controller
             ], 404);
         }
 
-        return response()->json($this->publicState($state));
+        return response()->json(
+            $this->publicState($state)
+        );
     }
 
-    /** Скачать архив */
+    /**
+     * Скачать архив.
+     */
     public function download(string $file): StreamedResponse
     {
-        return Storage::download(self::BACKUP_DIR . '/' . basename($file));
+        $filename =
+            basename($file);
+
+        $path =
+            self::BACKUP_DIR .
+            '/' .
+            $filename;
+
+        if (!Storage::exists($path)) {
+            abort(404);
+        }
+
+        return Storage::download(
+            $path,
+            $filename
+        );
     }
 
-    /** Удалить архив */
+    /**
+     * Удалить архив.
+     */
     public function delete(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => ['required', 'string'],
+            'file' => [
+                'required',
+                'string',
+            ],
         ]);
 
-        Storage::delete(self::BACKUP_DIR . '/' . basename($request->file));
+        $filename =
+            basename(
+                $request->file
+            );
+
+        $path =
+            self::BACKUP_DIR .
+            '/' .
+            $filename;
+
+        if (!Storage::exists($path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Архив не найден',
+            ], 404);
+        }
+
+        if (!Storage::delete($path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Не удалось удалить архив',
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
         ]);
     }
 
-    /** Собрать файлы проекта */
+    /**
+     * Собрать файлы проекта.
+     */
     private function collectProjectFiles(): array
     {
-        $exclude = [
+        $basePath = str_replace(
+            '\\',
+            '/',
+            base_path()
+        );
+
+        /**
+         * Каталоги, которые не должны попадать
+         * в резервную копию файлов проекта.
+         */
+        $excludeDirectories = [
             '/storage/app/file_backups/',
             '/storage/app/backups/',
             '/storage/docker/',
@@ -227,103 +452,334 @@ class FileBackupController extends Controller
             '/bootstrap/cache/',
         ];
 
+        /**
+         * Отдельные файлы проекта,
+         * содержащие секреты или локальные данные.
+         */
+        $excludeFiles = [
+            '.env',
+        ];
+
         $files = [];
 
-        $iterator = new RecursiveIteratorIterator(
-            new \RecursiveCallbackFilterIterator(
-                new RecursiveDirectoryIterator(
-                    base_path(),
-                    FilesystemIterator::SKIP_DOTS
-                ),
+        $directoryIterator =
+            new RecursiveDirectoryIterator(
+                base_path(),
+                FilesystemIterator::SKIP_DOTS
+            );
 
-                function ($current) use ($exclude) {
-
+        $filterIterator =
+            new RecursiveCallbackFilterIterator(
+                $directoryIterator,
+                function ($current) use (
+                    $excludeDirectories,
+                    $excludeFiles
+                ) {
                     $path = str_replace(
                         '\\',
                         '/',
                         $current->getPathname()
                     );
 
-                    foreach ($exclude as $dir) {
-                        if (str_contains($path, $dir)) {
+                    if ($current->isFile()) {
+                        if (
+                            in_array(
+                                $current->getFilename(),
+                                $excludeFiles,
+                                true
+                            )
+                        ) {
                             return false;
                         }
                     }
 
-                    if ($current->isDir() && !is_readable($path)) {
+                    foreach (
+                        $excludeDirectories
+                        as $directory
+                    ) {
+                        if (
+                            str_contains(
+                                $path . (
+                                $current->isDir()
+                                    ? '/'
+                                    : ''
+                                ),
+                                $directory
+                            )
+                        ) {
+                            return false;
+                        }
+                    }
+
+                    if (
+                        $current->isDir() &&
+                        !is_readable($path)
+                    ) {
                         return false;
                     }
 
                     return true;
                 }
-            )
-        );
+            );
+
+        $iterator =
+            new RecursiveIteratorIterator(
+                $filterIterator
+            );
 
         foreach ($iterator as $file) {
-
             if (!$file->isFile()) {
                 continue;
             }
 
-            $path = str_replace(
+            $absolute = str_replace(
                 '\\',
                 '/',
                 $file->getPathname()
             );
 
-            if (!is_readable($path)) {
+            if (!is_readable($absolute)) {
+                continue;
+            }
+
+            $relative = ltrim(
+                str_replace(
+                    $basePath,
+                    '',
+                    $absolute
+                ),
+                '/'
+            );
+
+            if ($relative === '') {
                 continue;
             }
 
             $files[] = [
-                'absolute' => $path,
-
-                'relative' => ltrim(
-                    str_replace(
-                        str_replace('\\', '/', base_path()),
-                        '',
-                        $path
-                    ),
-                    '/'
-                ),
+                'absolute' => $absolute,
+                'relative' => $relative,
             ];
         }
 
         return $files;
     }
 
-    /** Создать служебные папки */
-    private function ensureDirectories(): void
+    /**
+     * Проверить итоговый ZIP-архив.
+     */
+    private function finalizeArchive(array &$state): void
     {
-        Storage::makeDirectory(self::BACKUP_DIR);
-        Storage::makeDirectory(self::JOB_DIR);
+        clearstatcache(
+            true,
+            $state['archive']
+        );
+
+        if (!File::exists($state['archive'])) {
+            throw new RuntimeException(
+                'Созданный архив не найден.'
+            );
+        }
+
+        $size =
+            File::size(
+                $state['archive']
+            );
+
+        if ($size <= 0) {
+            throw new RuntimeException(
+                'Архив создан пустым.'
+            );
+        }
+
+        $zip =
+            new ZipArchive();
+
+        $result =
+            $zip->open(
+                $state['archive']
+            );
+
+        if ($result !== true) {
+            throw new RuntimeException(
+                'Созданный ZIP-архив повреждён. Код ошибки: ' .
+                $result
+            );
+        }
+
+        try {
+            $archiveFiles =
+                $zip->numFiles;
+        } finally {
+            $zip->close();
+        }
+
+        if ($archiveFiles <= 0) {
+            throw new RuntimeException(
+                'ZIP-архив не содержит файлов.'
+            );
+        }
+
+        $expectedAdded =
+            (int) ($state['added'] ?? 0);
+
+        if ($archiveFiles !== $expectedAdded) {
+            throw new RuntimeException(
+                "Проверка архива не пройдена. " .
+                "Добавлено файлов: {$expectedAdded}, " .
+                "найдено в ZIP: {$archiveFiles}."
+            );
+        }
+
+        $state['archive_files'] =
+            $archiveFiles;
+
+        $state['archive_size'] =
+            $size;
+
+        $state['status'] =
+            'done';
+
+        $state['progress'] =
+            100;
+
+        $state['message'] =
+            $this->buildCompletionMessage(
+                $state
+            );
     }
 
-    /** Сохранить состояние */
-    private function saveState(string $job, array $state): void
+    /**
+     * Сообщение после успешного завершения.
+     */
+    private function buildCompletionMessage(array $state): string
     {
-        File::put(
-            storage_path('app/' . self::JOB_DIR . '/' . $job . '.json'),
-            json_encode($state, JSON_UNESCAPED_UNICODE)
+        $added =
+            (int) ($state['added'] ?? 0);
+
+        $skipped =
+            (int) ($state['skipped'] ?? 0);
+
+        if ($skipped > 0) {
+            return "Архив создан. Добавлено файлов: {$added}, пропущено: {$skipped}.";
+        }
+
+        return "Архив полностью создан. Добавлено файлов: {$added}.";
+    }
+
+    /**
+     * Добавить ошибку или предупреждение в состояние задачи.
+     */
+    private function addStateError(
+        array &$state,
+        string $message
+    ): void {
+        if (!isset($state['errors'])) {
+            $state['errors'] = [];
+        }
+
+        /**
+         * Ограничиваем журнал, чтобы state-файл
+         * не разрастался при большом количестве ошибок.
+         */
+        if (count($state['errors']) >= 50) {
+            return;
+        }
+
+        $state['errors'][] =
+            $message;
+    }
+
+    /**
+     * Создать служебные каталоги.
+     */
+    private function ensureDirectories(): void
+    {
+        Storage::makeDirectory(
+            self::BACKUP_DIR
+        );
+
+        Storage::makeDirectory(
+            self::JOB_DIR
         );
     }
 
-    /** Загрузить состояние */
+    /**
+     * Сохранить состояние задачи.
+     */
+    private function saveState(
+        string $job,
+        array $state
+    ): void {
+        $path = storage_path(
+            'app/' .
+            self::JOB_DIR .
+            '/' .
+            basename($job) .
+            '.json'
+        );
+
+        $json = json_encode(
+            $state,
+            JSON_UNESCAPED_UNICODE |
+            JSON_UNESCAPED_SLASHES
+        );
+
+        if ($json === false) {
+            throw new RuntimeException(
+                'Не удалось подготовить состояние задачи архивации.'
+            );
+        }
+
+        if (File::put($path, $json) === false) {
+            throw new RuntimeException(
+                'Не удалось сохранить состояние задачи архивации.'
+            );
+        }
+    }
+
+    /**
+     * Загрузить состояние задачи.
+     */
     private function loadState(string $job): ?array
     {
-        $path = storage_path('app/' . self::JOB_DIR . '/' . $job . '.json');
+        $path = storage_path(
+            'app/' .
+            self::JOB_DIR .
+            '/' .
+            basename($job) .
+            '.json'
+        );
 
         if (!File::exists($path)) {
             return null;
         }
 
-        return json_decode(File::get($path), true);
+        $content =
+            File::get($path);
+
+        $state =
+            json_decode(
+                $content,
+                true
+            );
+
+        if (!is_array($state)) {
+            return null;
+        }
+
+        return $state;
     }
 
-    /** Состояние для фронта без тяжёлых данных */
+    /**
+     * Состояние для frontend без тяжёлых
+     * и внутренних данных.
+     */
     private function publicState(array $state): array
     {
-        unset($state['files'], $state['archive']);
+        unset(
+            $state['files'],
+            $state['archive']
+        );
 
         return $state;
     }

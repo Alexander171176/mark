@@ -18,82 +18,153 @@ class BlogArticleResource extends JsonResource
             'ru'
         );
 
-        $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
+        /**
+         * Public Controller заранее загружает
+         * только текущую локаль + fallback.
+         *
+         * Сам fallback централизован
+         * в модели BlogArticle.
+         */
+        $translation = $this->relationLoaded(
+            'translations'
+        )
+            ? $this->translationOrFallback(
+                $locale,
                 $fallbackLocale
-            )
-                ?: $this->translations->first()
             )
             : null;
 
         return [
             'id' => $this->id,
 
-            'sort' => (int) $this->sort,
+            /**
+             * Основные публичные поля.
+             */
             'url' => $this->url,
             'views' => (int) $this->views,
 
-            'published_at' =>
-                $this->published_at?->format('Y-m-d'),
-
             /**
-             * Полный публичный перевод.
+             * Даты нужны:
+             *
+             * - SEO;
+             * - BlogPosting;
+             * - article:published_time;
+             * - article:modified_time.
              */
-            'translation' => $translation
-                ? [
-                    'locale' => $translation->locale,
-
-                    'title' => $translation->title,
-                    'subtitle' => $translation->subtitle,
-                    'short' => $translation->short,
-                    'description' => $translation->description,
-                    'pseudonym' => $translation->pseudonym,
-
-                    'meta_title' => $translation->meta_title,
-                    'meta_keywords' => $translation->meta_keywords,
-                    'meta_desc' => $translation->meta_desc,
-                ]
-                : null,
-
-            'owner' => $this->whenLoaded(
-                'owner',
-                function () {
-                    return [
-                        'id' => $this->owner?->id,
-                        'name' => $this->owner?->name,
-                        'profile_photo_url' =>
-                            $this->owner?->profile_photo_url,
-                    ];
-                }
-            ),
-
-            'images' => BlogArticleImageResource::collection(
-                $this->whenLoaded('images')
-            ),
-
-            'tags' => BlogTagSharedResource::collection(
-                $this->whenLoaded('tags')
-            ),
-
-            'likes_count' => $this->when(
-                isset($this->likes_count),
-                fn () => (int) $this->likes_count
-            ),
-
-            'already_liked' =>
-                (bool) ($this->already_liked ?? false),
+            'published_at' =>
+                $this->published_at?->format(
+                    'Y-m-d'
+                ),
 
             'created_at' =>
                 $this->created_at?->toISOString(),
 
             'updated_at' =>
                 $this->updated_at?->toISOString(),
+
+            /**
+             * Полный Public-перевод
+             * для страницы Show + SEO.
+             */
+            'translation' => $translation
+                ? [
+                    'locale' =>
+                        $translation->locale,
+
+                    'title' =>
+                        $translation->title,
+
+                    'subtitle' =>
+                        $translation->subtitle,
+
+                    'short' =>
+                        $translation->short,
+
+                    'description' =>
+                        $translation->description,
+
+                    'pseudonym' =>
+                        $translation->pseudonym,
+
+                    'meta_title' =>
+                        $translation->meta_title,
+
+                    'meta_keywords' =>
+                        $translation->meta_keywords,
+
+                    'meta_desc' =>
+                        $translation->meta_desc,
+                ]
+                : null,
+
+            /**
+             * Публичные данные автора.
+             *
+             * Email наружу не отдаём.
+             */
+            'owner' => $this->whenLoaded(
+                'owner',
+                function () {
+                    return [
+                        'id' =>
+                            $this->owner?->id,
+
+                        'name' =>
+                            $this->owner?->name,
+
+                        'profile_photo_url' =>
+                            $this->owner
+                                ?->profile_photo_url,
+                    ];
+                }
+            ),
+
+            /**
+             * Изображения.
+             *
+             * Controller заранее загружает
+             * images.media.
+             */
+            'images' =>
+                BlogArticleImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
+
+            /**
+             * Только публичные теги.
+             *
+             * Public Controller обязан
+             * применить к relation forPublic().
+             */
+            'tags' =>
+                BlogTagSharedResource::collection(
+                    $this->whenLoaded(
+                        'tags'
+                    )
+                ),
+
+            /**
+             * Лайки.
+             */
+            'likes_count' => $this->when(
+                isset($this->likes_count),
+                fn () =>
+                (int) $this->likes_count
+            ),
+
+            /**
+             * Лайк текущего пользователя.
+             *
+             * Добавляется Controller
+             * через WithUserLikesTrait.
+             */
+            'already_liked' =>
+                (bool) (
+                    $this->already_liked
+                    ?? false
+                ),
         ];
     }
 }

@@ -23,8 +23,8 @@ import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPag
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
 import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 
-import RubricArticleGrid from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleGrid.vue'
-import RubricArticleRows from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleRows.vue'
+import ArticleGrid from '@/Components/Public/Default/Blog/BlogArticle/ArticleGrid.vue'
+import ArticleRows from '@/Components/Public/Default/Blog/BlogArticle/ArticleRows.vue'
 import RubricGrid from '@/Components/Public/Default/Blog/BlogRubric/RubricGrid.vue'
 import RubricRows from '@/Components/Public/Default/Blog/BlogRubric/RubricRows.vue'
 
@@ -1259,13 +1259,13 @@ const rubricGridCols = computed(() => {
 
                         <!-- Articles -->
                         <div v-if="displayedArticles.length">
-                            <RubricArticleGrid
+                            <ArticleGrid
                                 v-if="viewMode === 'grid'"
                                 :articles="displayedArticles"
                                 :cols="rubricGridCols"
                             />
 
-                            <RubricArticleRows
+                            <ArticleRows
                                 v-else
                                 :articles="displayedArticles"
                             />

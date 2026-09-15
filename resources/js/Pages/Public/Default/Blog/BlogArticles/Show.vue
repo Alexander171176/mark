@@ -25,7 +25,7 @@ import CommentThread from '@/Components/Public/Default/Blog/Comment/CommentThrea
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
 
-import RubricArticleGrid from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleGrid.vue'
+import ArticleGrid from '@/Components/Public/Default/Blog/BlogArticle/ArticleGrid.vue'
 import RecommendedVideos from '@/Components/Public/Default/Blog/BlogVideo/RecommendedVideos.vue'
 
 const { t } = useI18n()
@@ -266,6 +266,32 @@ const firstImageUrl = computed(() =>
     || ''
 )
 
+const firstImageAlt = computed(() =>
+    firstImage.value?.alt
+    || articleTitle.value
+    || ''
+)
+
+const articleSection = computed(() =>
+    breadcrumbRubricTitle.value
+    || ''
+)
+
+const articleTagNames = computed(() =>
+    activeTags.value
+        .map(
+            (tag) =>
+                tag?.translation?.name
+                || tag?.name
+                || ''
+        )
+        .filter(Boolean)
+)
+
+const articleTagsText = computed(() =>
+    articleTagNames.value.join(', ')
+)
+
 const publishedAt = computed(() =>
     articleData.value?.published_at
     || articleData.value?.created_at
@@ -278,7 +304,8 @@ const modifiedAt = computed(() =>
 )
 
 const dcSubject = computed(() =>
-    seoKeywords.value
+    articleTagsText.value
+    || seoKeywords.value
     || articleTitle.value
 )
 
@@ -427,9 +454,21 @@ const articleGridCols = computed(() => {
         >
 
         <meta
-            v-if="seoKeywords"
-            name="keywords"
-            :content="seoKeywords"
+            v-if="articleTagsText || seoKeywords"
+            itemprop="keywords"
+            :content="articleTagsText || seoKeywords"
+        >
+
+        <meta
+            v-if="articleSection"
+            itemprop="articleSection"
+            :content="articleSection"
+        >
+
+        <meta
+            v-if="articleTagsText"
+            itemprop="keywords"
+            :content="articleTagsText"
         >
 
         <meta
@@ -485,6 +524,12 @@ const articleGridCols = computed(() => {
         >
 
         <meta
+            v-if="firstImageUrl && firstImageAlt"
+            property="og:image:alt"
+            :content="firstImageAlt"
+        >
+
+        <meta
             v-if="publishedAt"
             property="article:published_time"
             :content="publishedAt"
@@ -502,14 +547,30 @@ const articleGridCols = computed(() => {
             :content="articleAuthor"
         >
 
+        <meta
+            v-if="articleSection"
+            property="article:section"
+            :content="articleSection"
+        >
+
+        <meta
+            v-for="tagName in articleTagNames"
+            :key="`og-tag-${tagName}`"
+            property="article:tag"
+            :content="tagName"
+        >
+
         <!-- Twitter / X -->
         <meta
             name="twitter:card"
             :content="
-                firstImageUrl
-                    ? 'summary_large_image'
-                    : 'summary'
-            "
+                firstImageUrl ? 'summary_large_image' : 'summary'"
+        >
+
+        <meta
+            v-if="firstImageUrl && firstImageAlt"
+            name="twitter:image:alt"
+            :content="firstImageAlt"
         >
 
         <meta
@@ -621,9 +682,10 @@ const articleGridCols = computed(() => {
                             class="selection:bg-red-400 selection:text-white"
                         >
                             <!-- BlogPosting metadata -->
-                            <meta
+                            <link
+                                v-if="canonicalUrl"
                                 itemprop="mainEntityOfPage"
-                                :content="canonicalUrl"
+                                :href="canonicalUrl"
                             >
 
                             <meta
@@ -693,7 +755,7 @@ const articleGridCols = computed(() => {
                                         >
                                     </li>
 
-                                    <!-- Rubrics -->
+                                    <!-- Articles -->
                                     <li
                                         itemprop="itemListElement"
                                         itemscope
@@ -706,11 +768,11 @@ const articleGridCols = computed(() => {
 
                                         <Link
                                             itemprop="item"
-                                            :href="route('public.blogRubrics.index')"
+                                            :href="route('public.blogArticles.index')"
                                             class="breadcrumb-link hover:underline"
                                         >
                                             <span itemprop="name">
-                                                {{ t('rubrics') }}
+                                                {{ t('articles') }}
                                             </span>
                                         </Link>
 
@@ -777,13 +839,10 @@ const articleGridCols = computed(() => {
 
                                         <meta
                                             itemprop="position"
-                                            :content="
-                                                hasBreadcrumbRubric
-                                                    ? '4'
-                                                    : '3'
-                                            "
+                                            :content="hasBreadcrumbRubric ? '4' : '3'"
                                         >
                                     </li>
+
                                 </ol>
                             </nav>
 
@@ -905,7 +964,7 @@ const articleGridCols = computed(() => {
 
                             <!-- Author -->
                             <div
-                                v-if="articleData.owner"
+                                v-if="articleAuthor"
                                 itemprop="author"
                                 itemscope
                                 itemtype="https://schema.org/Person"
@@ -945,7 +1004,7 @@ const articleGridCols = computed(() => {
                                     {{ t('relatedArticles') }}
                                 </h2>
 
-                                <RubricArticleGrid
+                                <ArticleGrid
                                     :articles="recommendedArticlesList"
                                     :cols="articleGridCols"
                                 />

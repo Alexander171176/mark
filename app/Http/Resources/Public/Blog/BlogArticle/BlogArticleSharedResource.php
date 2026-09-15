@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Public\Blog\BlogArticle;
 
 use App\Http\Resources\Admin\Blog\BlogArticle\BlogArticleImageResource;
+use App\Http\Resources\Public\Blog\BlogRubric\BlogRubricSharedResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,23 +19,18 @@ class BlogArticleSharedResource extends JsonResource
         );
 
         /**
-         * В публичных запросах translations
-         * содержит максимум:
+         * Public Controller заранее загружает
+         * только текущую локаль + fallback.
          *
-         * - текущую локаль;
-         * - fallback ru.
+         * Сам fallback централизован
+         * в модели BlogArticle.
          */
-        $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
+        $translation = $this->relationLoaded(
+            'translations'
+        )
+            ? $this->translationOrFallback(
+                $locale,
                 $fallbackLocale
-            )
-                ?: $this->translations->first()
             )
             : null;
 
@@ -43,51 +39,85 @@ class BlogArticleSharedResource extends JsonResource
 
             /**
              * Основные публичные поля.
+             *
+             * sort нужен frontend-сортировке.
              */
-            'sort' => (int) $this->sort,
-            'url' => $this->url,
-            'views' => (int) $this->views,
+            'sort' =>
+                (int) $this->sort,
+
+            'url' =>
+                $this->url,
+
+            'views' =>
+                (int) $this->views,
 
             /**
              * Даты.
              *
-             * published_at / created_at нужны
-             * frontend-сортировке.
+             * published_at / created_at
+             * нужны frontend-сортировке
+             * dateAsc / dateDesc.
              */
             'published_at' =>
-                $this->published_at?->format('Y-m-d'),
+                $this->published_at?->format(
+                    'Y-m-d'
+                ),
 
             'created_at' =>
                 $this->created_at?->toISOString(),
 
             /**
-             * Перевод текущей локали
-             * или fallback ru.
+             * Компактный Public-перевод.
+             *
+             * description нужен
+             * frontend-поиску.
+             *
+             * pseudonym нужен карточкам
+             * как публичное имя автора.
              */
             'translation' => $translation
                 ? [
-                    'locale' => $translation->locale,
-                    'title' => $translation->title,
-                    'subtitle' => $translation->subtitle,
-                    'short' => $translation->short,
-                    'pseudonym' => $translation->pseudonym,
+                    'locale' =>
+                        $translation->locale,
+
+                    'title' =>
+                        $translation->title,
+
+                    'subtitle' =>
+                        $translation->subtitle,
+
+                    'short' =>
+                        $translation->short,
+
+                    'description' =>
+                        $translation->description,
+
+                    'pseudonym' =>
+                        $translation->pseudonym,
                 ]
                 : null,
 
             /**
              * Автор.
              *
-             * Email нужен frontend-поиску.
+             * Только данные,
+             * реально используемые Public UI.
+             *
+             * Email не публикуем.
              */
             'owner' => $this->whenLoaded(
                 'owner',
                 function () {
                     return [
-                        'id' => $this->owner?->id,
-                        'name' => $this->owner?->name,
-                        'email' => $this->owner?->email,
+                        'id' =>
+                            $this->owner?->id,
+
+                        'name' =>
+                            $this->owner?->name,
+
                         'profile_photo_url' =>
-                            $this->owner?->profile_photo_url,
+                            $this->owner
+                                ?->profile_photo_url,
                     ];
                 }
             ),
@@ -95,29 +125,54 @@ class BlogArticleSharedResource extends JsonResource
             /**
              * Изображения.
              *
-             * Контроллер должен заранее
+             * Controller должен заранее
              * загрузить images.media.
              */
-            'images' => BlogArticleImageResource::collection(
-                $this->whenLoaded('images')
-            ),
+            'images' =>
+                BlogArticleImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
+
+            /**
+             * Публичные рубрики.
+             *
+             * Они нужны frontend-поиску:
+             *
+             * rubrics[].translation.title
+             *
+             * Resource не загружает relation
+             * самостоятельно и поэтому
+             * не создаёт N+1.
+             */
+            'rubrics' =>
+                BlogRubricSharedResource::collection(
+                    $this->whenLoaded(
+                        'rubrics'
+                    )
+                ),
 
             /**
              * Лайки.
              */
             'likes_count' => $this->when(
                 isset($this->likes_count),
-                fn () => (int) $this->likes_count
+                fn () =>
+                (int) $this->likes_count
             ),
 
             /**
              * Лайк текущего пользователя.
              *
-             * Добавляется через WithUserLikesTrait
-             * с помощью withExists().
+             * Добавляется Controller
+             * через WithUserLikesTrait.
              */
             'already_liked' =>
-                (bool) ($this->already_liked ?? false),
+                (bool) (
+                    $this->already_liked
+                    ?? false
+                ),
         ];
     }
 }

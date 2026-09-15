@@ -23,8 +23,8 @@ import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPag
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
 import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 
-import RubricArticleGrid from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleGrid.vue'
-import RubricArticleRows from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleRows.vue'
+import ArticleGrid from '@/Components/Public/Default/Blog/BlogArticle/ArticleGrid.vue'
+import ArticleRows from '@/Components/Public/Default/Blog/BlogArticle/ArticleRows.vue'
 
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
@@ -342,20 +342,8 @@ const articleSortOptions = [
     { value: 'likesDesc', label: `${t('likes')} 9→0` },
     { value: 'likesAsc', label: `${t('likes')} 0→9` },
 
-    { value: 'commentsDesc', label: `${t('comments')} 9→0` },
-    { value: 'commentsAsc', label: `${t('comments')} 0→9` },
-
-    { value: 'rubricsDesc', label: `${t('rubrics')} 9→0` },
-    { value: 'rubricsAsc', label: `${t('rubrics')} 0→9` },
-
-    { value: 'imagesDesc', label: `${t('images')} 9→0` },
-    { value: 'imagesAsc', label: `${t('images')} 0→9` },
-
     { value: 'dateDesc', label: `${t('publishedAt')} ↓` },
     { value: 'dateAsc', label: `${t('publishedAt')} ↑` },
-
-    { value: 'createdAtDesc', label: `${t('createdAt')} ↓` },
-    { value: 'createdAtAsc', label: `${t('createdAt')} ↑` },
 ]
 
 /* ======================== View mode ======================== */
@@ -1196,33 +1184,6 @@ const articleGridCols = computed(() => {
                                     >
                                 </li>
 
-                                <!-- Rubrics -->
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <span class="mx-2 breadcrumbs">
-                                        /
-                                    </span>
-
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('public.blogRubrics.index')"
-                                        class="breadcrumb-link hover:underline"
-                                    >
-                                        <span itemprop="name">
-                                            {{ t('rubrics') }}
-                                        </span>
-                                    </Link>
-
-                                    <meta
-                                        itemprop="position"
-                                        content="2"
-                                    >
-                                </li>
-
                                 <!-- Articles -->
                                 <li
                                     itemprop="itemListElement"
@@ -1246,34 +1207,7 @@ const articleGridCols = computed(() => {
 
                                     <meta
                                         itemprop="position"
-                                        content="3"
-                                    >
-                                </li>
-
-                                <!-- Videos -->
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <span class="mx-2 breadcrumbs">
-                                        /
-                                    </span>
-
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('public.blogVideos.index')"
-                                        class="breadcrumb-link hover:underline"
-                                    >
-                                        <span itemprop="name">
-                                            {{ t('videos') }}
-                                        </span>
-                                    </Link>
-
-                                    <meta
-                                        itemprop="position"
-                                        content="4"
+                                        content="2"
                                     >
                                 </li>
 
@@ -1304,7 +1238,7 @@ const articleGridCols = computed(() => {
 
                                     <meta
                                         itemprop="position"
-                                        content="5"
+                                        content="3"
                                     >
                                 </li>
 
@@ -1343,7 +1277,7 @@ const articleGridCols = computed(() => {
                                 />
 
                                 <h1
-                                    itemprop="headline"
+                                    itemprop="name"
                                     class="text-2xl font-bold"
                                 >
                                     #{{ tagName }}
@@ -1355,6 +1289,23 @@ const articleGridCols = computed(() => {
                                 :title="t('views')"
                                 class="flex items-center justify-center gap-1"
                             >
+                                <div
+                                    itemprop="interactionStatistic"
+                                    itemscope
+                                    itemtype="https://schema.org/InteractionCounter"
+                                    class="contents"
+                                >
+                                    <link
+                                        itemprop="interactionType"
+                                        href="https://schema.org/ViewAction"
+                                    >
+
+                                    <meta
+                                        itemprop="userInteractionCount"
+                                        :content="tag.views || 0"
+                                    >
+                                </div>
+
                                 <svg
                                     class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
                                     xmlns="http://www.w3.org/2000/svg"
@@ -1383,7 +1334,7 @@ const articleGridCols = computed(() => {
                         <!-- Description -->
                         <div
                             v-if="tagDescription"
-                            itemprop="abstract"
+                            itemprop="description"
                             class="mt-1 mb-3 text-sm subtitle text-center"
                         >
                             {{ tagDescription }}
@@ -1416,13 +1367,13 @@ const articleGridCols = computed(() => {
 
                         <!-- Articles -->
                         <div v-if="displayedArticles.length">
-                            <RubricArticleGrid
+                            <ArticleGrid
                                 v-if="viewMode === 'grid'"
                                 :articles="displayedArticles"
                                 :cols="articleGridCols"
                             />
 
-                            <RubricArticleRows
+                            <ArticleRows
                                 v-else
                                 :articles="displayedArticles"
                             />

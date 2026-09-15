@@ -6,8 +6,20 @@
  * @author Александр
  */
 
-import { computed, onMounted, ref, watch } from 'vue'
-import { Head, Link, router, usePage } from '@inertiajs/vue3'
+import {
+    computed,
+    onMounted,
+    ref,
+    watch,
+} from 'vue'
+
+import {
+    Head,
+    Link,
+    router,
+    usePage,
+} from '@inertiajs/vue3'
+
 import { useI18n } from 'vue-i18n'
 import { useSmoothScrollTo } from '@/composables/useSmoothScrollTo'
 
@@ -32,11 +44,18 @@ import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionB
 import PublicAdminBottomPanel
     from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
-const { t } = useI18n()
+const {
+    t,
+    locale: i18nLocale,
+} = useI18n()
+
 const page = usePage()
 
 const props = defineProps({
-    locale: { type: String, default: 'ru' },
+    locale: {
+        type: String,
+        default: '',
+    },
 
     seo: {
         type: Object,
@@ -52,14 +71,35 @@ const props = defineProps({
         default: 'server',
     },
 
+    /**
+     * Единственный default сортировки
+     * приходит из PublicSettingsService
+     * через backend-контроллер.
+     */
+    publicBlogVideosDefaultSort: {
+        type: String,
+        default: 'sortAsc',
+    },
+
     useServerProcessing: {
         type: Boolean,
         default: false,
     },
 
-    title: { type: String, default: '' },
-    canLogin: { type: Boolean, default: false },
-    canRegister: { type: Boolean, default: false },
+    title: {
+        type: String,
+        default: '',
+    },
+
+    canLogin: {
+        type: Boolean,
+        default: false,
+    },
+
+    canRegister: {
+        type: Boolean,
+        default: false,
+    },
 
     rubricTree: {
         type: Array,
@@ -100,17 +140,25 @@ const props = defineProps({
 /* ======================== Helpers ======================== */
 
 const normalizeList = (value) => {
-    if (Array.isArray(value)) return value
-    if (Array.isArray(value?.data)) return value.data
+    if (Array.isArray(value)) {
+        return value
+    }
+
+    if (Array.isArray(value?.data)) {
+        return value.data
+    }
 
     return []
 }
 
 const normalizeText = (value) =>
-    String(value ?? '').trim().toLocaleLowerCase()
+    String(value ?? '')
+        .trim()
+        .toLocaleLowerCase()
 
 const safeNumber = (value) => {
-    const number = Number(value)
+    const number =
+        Number(value)
 
     return Number.isFinite(number)
         ? number
@@ -118,19 +166,108 @@ const safeNumber = (value) => {
 }
 
 const safeDate = (value) => {
-    const time = value
-        ? Date.parse(value)
-        : 0
+    const time =
+        value
+            ? Date.parse(value)
+            : 0
 
     return Number.isFinite(time)
         ? time
         : 0
 }
 
+/**
+ * Нормализация locale
+ * без жёсткого списка языков.
+ *
+ * Приоритет:
+ *
+ * 1. locale от backend;
+ * 2. текущая locale vue-i18n;
+ * 3. lang HTML-документа;
+ * 4. und — неопределённый язык.
+ */
+const resolveContentLocale = () => {
+    const backendLocale =
+        String(
+            props.locale || ''
+        ).trim()
+
+    if (backendLocale) {
+        return backendLocale
+    }
+
+    const vueLocale =
+        String(
+            i18nLocale.value || ''
+        ).trim()
+
+    if (vueLocale) {
+        return vueLocale
+    }
+
+    if (
+        typeof document !== 'undefined'
+        && document.documentElement?.lang
+    ) {
+        return String(
+            document.documentElement.lang
+        ).trim()
+    }
+
+    return 'und'
+}
+
+/**
+ * Open Graph использует формат:
+ *
+ * language_TERRITORY
+ *
+ * Intl.Locale позволяет не хранить
+ * на frontend список ru_RU, en_US,
+ * kk_KZ и будущих языков вручную.
+ */
+const normalizeOgLocale = (locale) => {
+    const value =
+        String(locale || '')
+            .trim()
+            .replace('_', '-')
+
+    if (!value) {
+        return 'und'
+    }
+
+    try {
+        const normalized =
+            new Intl.Locale(value)
+                .maximize()
+
+        const language =
+            normalized.language
+
+        const region =
+            normalized.region
+
+        if (
+            language
+            && region
+        ) {
+            return `${language}_${region}`
+        }
+
+        return normalized
+            .toString()
+            .replace('-', '_')
+    } catch {
+        return value.replace('-', '_')
+    }
+}
+
 /* ======================== Shared data ======================== */
 
 const siteSettings = computed(() =>
-    page.props?.siteSettings ?? {}
+    page.props?.siteSettings
+    ?? {}
 )
 
 const isAdmin = computed(() =>
@@ -144,38 +281,60 @@ const rubricTree = computed(() =>
 )
 
 const videosData = computed(() =>
-    normalizeList(props.videos)
+    normalizeList(
+        props.videos
+    )
 )
 
 const mainVideos = computed(() =>
-    normalizeList(props.mainVideos)
+    normalizeList(
+        props.mainVideos
+    )
 )
 
 const mainBanners = computed(() =>
-    normalizeList(props.mainBanners)
+    normalizeList(
+        props.mainBanners
+    )
 )
 
 /* ======================== Video helpers ======================== */
 
+/**
+ * Все frontend-компоненты работают
+ * только с новым Public-контрактом:
+ *
+ * translation уже содержит
+ * current locale -> fallback.
+ */
 const getVideoTitle = (video) =>
-    video?.translation?.title || ''
+    video?.translation?.title
+    || ''
 
 const getVideoShort = (video) =>
-    video?.translation?.short || ''
+    video?.translation?.short
+    || ''
 
 const getVideoPseudonym = (video) =>
-    video?.translation?.pseudonym || ''
-
-const getVideoAuthor = (video) =>
-    getVideoPseudonym(video)
-    || video?.owner?.name
+    video?.translation?.pseudonym
     || ''
 
 const getVideoDuration = (video) =>
     safeNumber(
         video?.duration
-        ?? video?.duration_seconds
     )
+
+const getVideoImages = (video) =>
+    normalizeList(
+        video?.images
+    )
+
+const getImageUrl = (image) =>
+    image?.webp_url
+    || image?.image_url
+    || image?.thumb_url
+    || image?.url
+    || ''
 
 /* ======================== SEO ======================== */
 
@@ -195,18 +354,20 @@ const seoKeywords = computed(() =>
 )
 
 const contentLocale = computed(() =>
-    props.locale || 'ru'
+    resolveContentLocale()
 )
 
 const ogLocale = computed(() =>
-    contentLocale.value === 'ru'
-        ? 'ru_RU'
-        : contentLocale.value
+    normalizeOgLocale(
+        contentLocale.value
+    )
 )
 
 const canonicalUrl = computed(() =>
     String(
-        route('public.blogVideos.index')
+        route(
+            'public.blogVideos.index'
+        )
     )
 )
 
@@ -217,30 +378,45 @@ const dcSubject = computed(() =>
 
 /**
  * Первое доступное изображение
- * видео используем как social preview.
+ * основного списка видео
+ * используем как social preview.
  */
-const seoImage = computed(() => {
-    for (const video of videosData.value) {
-        const images =
-            normalizeList(video?.images)
-
+const seoPreview = computed(() => {
+    for (
+        const video
+        of videosData.value
+        ) {
         const image =
-            images[0]
+            getVideoImages(video)[0]
 
         const url =
-            image?.webp_url
-            || image?.image_url
-            || image?.thumb_url
-            || image?.url
-            || ''
+            getImageUrl(image)
 
         if (url) {
-            return url
+            return {
+                url,
+
+                alt:
+                    image?.alt
+                    || getVideoTitle(video)
+                    || seoTitle.value,
+            }
         }
     }
 
-    return ''
+    return {
+        url: '',
+        alt: '',
+    }
 })
+
+const seoImage = computed(() =>
+    seoPreview.value.url
+)
+
+const seoImageAlt = computed(() =>
+    seoPreview.value.alt
+)
 
 /* ======================== Filters ======================== */
 
@@ -251,13 +427,24 @@ const q = ref(
     )
 )
 
-const DEFAULT_SORT =
-    'sortAsc'
+/**
+ * Никакого собственного default
+ * на frontend больше нет.
+ *
+ * Значение приходит из settings
+ * через BlogVideoController.
+ */
+const DEFAULT_SORT = computed(() =>
+    String(
+        props.publicBlogVideosDefaultSort
+        || 'sortAsc'
+    )
+)
 
 const sort = ref(
     String(
         props.filters?.sort
-        ?? DEFAULT_SORT
+        ?? DEFAULT_SORT.value
     )
 )
 
@@ -266,9 +453,10 @@ const sort = ref(
  * PublicSettingsService backend.
  */
 const perPage = computed(() => {
-    const value = Number(
-        props.filters?.per_page
-    )
+    const value =
+        Number(
+            props.filters?.per_page
+        )
 
     return Number.isFinite(value)
     && value > 0
@@ -277,26 +465,82 @@ const perPage = computed(() => {
 })
 
 const videoSortOptions = [
-    { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
-    { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+    {
+        value: 'sortAsc',
+        label:
+            `${t('sortNumber')} 0→9`,
+    },
+    {
+        value: 'sortDesc',
+        label:
+            `${t('sortNumber')} 9→0`,
+    },
 
-    { value: 'titleAsc', label: `${t('title')} A→Z` },
-    { value: 'titleDesc', label: `${t('title')} Z→A` },
+    {
+        value: 'titleAsc',
+        label:
+            `${t('title')} A→Z`,
+    },
+    {
+        value: 'titleDesc',
+        label:
+            `${t('title')} Z→A`,
+    },
 
-    { value: 'viewsDesc', label: `${t('views')} 9→0` },
-    { value: 'viewsAsc', label: `${t('views')} 0→9` },
+    {
+        value: 'viewsDesc',
+        label:
+            `${t('views')} 9→0`,
+    },
+    {
+        value: 'viewsAsc',
+        label:
+            `${t('views')} 0→9`,
+    },
 
-    { value: 'likesDesc', label: `${t('likes')} 9→0` },
-    { value: 'likesAsc', label: `${t('likes')} 0→9` },
+    {
+        value: 'likesDesc',
+        label:
+            `${t('likes')} 9→0`,
+    },
+    {
+        value: 'likesAsc',
+        label:
+            `${t('likes')} 0→9`,
+    },
 
-    { value: 'commentsDesc', label: `${t('comments')} 9→0` },
-    { value: 'commentsAsc', label: `${t('comments')} 0→9` },
+    {
+        value: 'commentsDesc',
+        label:
+            `${t('comments')} 9→0`,
+    },
+    {
+        value: 'commentsAsc',
+        label:
+            `${t('comments')} 0→9`,
+    },
 
-    { value: 'durationDesc', label: `${t('duration')} 9→0` },
-    { value: 'durationAsc', label: `${t('duration')} 0→9` },
+    {
+        value: 'durationDesc',
+        label:
+            `${t('duration')} 9→0`,
+    },
+    {
+        value: 'durationAsc',
+        label:
+            `${t('duration')} 0→9`,
+    },
 
-    { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
-    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
+    {
+        value: 'publishedAtDesc',
+        label:
+            `${t('publishedAt')} ↓`,
+    },
+    {
+        value: 'publishedAtAsc',
+        label:
+            `${t('publishedAt')} ↑`,
+    },
 ]
 
 /* ======================== View mode ======================== */
@@ -312,12 +556,15 @@ const viewMode = ref(
 )
 
 /**
- * localStorage читаем только после mount.
+ * localStorage читаем
+ * только после mount.
  */
 onMounted(() => {
     try {
         const storedView =
-            localStorage.getItem(VIEW_KEY)
+            localStorage.getItem(
+                VIEW_KEY
+            )
 
         if (
             storedView === 'grid'
@@ -347,13 +594,26 @@ watch(
 
 /* ======================== Frontend search ======================== */
 
+/**
+ * Frontend search полностью
+ * соответствует BlogVideo::publicSearch().
+ *
+ * Не используем:
+ *
+ * - owner.email;
+ * - description;
+ * - meta_*;
+ * - Admin/private поля.
+ */
 const filteredVideos = computed(() => {
     if (props.useServerProcessing) {
         return videosData.value
     }
 
     const query =
-        normalizeText(q.value)
+        normalizeText(
+            q.value
+        )
 
     if (!query) {
         return videosData.value
@@ -368,27 +628,47 @@ const filteredVideos = computed(() => {
             video?.url,
             video?.source_type,
             video?.external_video_id,
-            getVideoAuthor(video),
             video?.owner?.name,
-            video?.owner?.email,
-        ].some((value) =>
-            normalizeText(value)
-                .includes(query)
+        ].some(
+            (value) =>
+                normalizeText(value)
+                    .includes(query)
         )
     )
 })
 
 /* ======================== Frontend sort ======================== */
 
+/**
+ * localeCompare получает активную
+ * locale динамически.
+ *
+ * Новые языки не требуют
+ * изменений этого компонента.
+ */
 const compareText = (a, b) =>
-    String(a ?? '').localeCompare(
-        String(b ?? ''),
-        props.locale,
-        { sensitivity: 'base' }
-    )
+    String(a ?? '')
+        .localeCompare(
+            String(b ?? ''),
+            contentLocale.value,
+            {
+                sensitivity: 'base',
+            }
+        )
 
 const compareNumber = (a, b) =>
-    safeNumber(a) - safeNumber(b)
+    safeNumber(a)
+    - safeNumber(b)
+
+/**
+ * Общий deterministic tie-breaker
+ * для большинства Public-сортировок.
+ */
+const compareIdDesc = (a, b) =>
+    compareNumber(
+        b?.id,
+        a?.id
+    )
 
 const sortedVideos = computed(() => {
     if (props.useServerProcessing) {
@@ -400,145 +680,254 @@ const sortedVideos = computed(() => {
     ]
 
     switch (sort.value) {
+        /**
+         * Backend:
+         *
+         * sort ASC,
+         * id ASC.
+         */
         case 'sortAsc':
-            list.sort((a, b) =>
-                compareNumber(
-                    a?.sort,
-                    b?.sort
-                )
-                ||
-                compareNumber(
-                    b?.id,
-                    a?.id
-                )
+            list.sort(
+                (a, b) =>
+                    compareNumber(
+                        a?.sort,
+                        b?.sort
+                    )
+                    ||
+                    compareNumber(
+                        a?.id,
+                        b?.id
+                    )
             )
             break
 
+        /**
+         * Backend:
+         *
+         * sort DESC,
+         * id DESC.
+         */
         case 'sortDesc':
-            list.sort((a, b) =>
-                compareNumber(
-                    b?.sort,
-                    a?.sort
-                )
-                ||
-                compareNumber(
-                    b?.id,
-                    a?.id
-                )
+            list.sort(
+                (a, b) =>
+                    compareNumber(
+                        b?.sort,
+                        a?.sort
+                    )
+                    ||
+                    compareNumber(
+                        b?.id,
+                        a?.id
+                    )
             )
             break
 
         case 'titleAsc':
-            list.sort((a, b) =>
-                compareText(
-                    getVideoTitle(a),
-                    getVideoTitle(b)
-                )
+            list.sort(
+                (a, b) =>
+                    compareText(
+                        getVideoTitle(a),
+                        getVideoTitle(b)
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'titleDesc':
-            list.sort((a, b) =>
-                compareText(
-                    getVideoTitle(b),
-                    getVideoTitle(a)
-                )
+            list.sort(
+                (a, b) =>
+                    compareText(
+                        getVideoTitle(b),
+                        getVideoTitle(a)
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'viewsAsc':
-            list.sort((a, b) =>
-                compareNumber(
-                    a?.views,
-                    b?.views
-                )
+            list.sort(
+                (a, b) =>
+                    compareNumber(
+                        a?.views,
+                        b?.views
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'viewsDesc':
-            list.sort((a, b) =>
-                compareNumber(
-                    b?.views,
-                    a?.views
-                )
+            list.sort(
+                (a, b) =>
+                    compareNumber(
+                        b?.views,
+                        a?.views
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'likesAsc':
-            list.sort((a, b) =>
-                compareNumber(
-                    a?.likes_count,
-                    b?.likes_count
-                )
+            list.sort(
+                (a, b) =>
+                    compareNumber(
+                        a?.likes_count,
+                        b?.likes_count
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'likesDesc':
-            list.sort((a, b) =>
-                compareNumber(
-                    b?.likes_count,
-                    a?.likes_count
-                )
+            list.sort(
+                (a, b) =>
+                    compareNumber(
+                        b?.likes_count,
+                        a?.likes_count
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'commentsAsc':
-            list.sort((a, b) =>
-                compareNumber(
-                    a?.comments_count,
-                    b?.comments_count
-                )
+            list.sort(
+                (a, b) =>
+                    compareNumber(
+                        a?.comments_count,
+                        b?.comments_count
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'commentsDesc':
-            list.sort((a, b) =>
-                compareNumber(
-                    b?.comments_count,
-                    a?.comments_count
-                )
+            list.sort(
+                (a, b) =>
+                    compareNumber(
+                        b?.comments_count,
+                        a?.comments_count
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'durationAsc':
-            list.sort((a, b) =>
-                getVideoDuration(a)
-                - getVideoDuration(b)
+            list.sort(
+                (a, b) =>
+                    (
+                        getVideoDuration(a)
+                        - getVideoDuration(b)
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'durationDesc':
-            list.sort((a, b) =>
-                getVideoDuration(b)
-                - getVideoDuration(a)
+            list.sort(
+                (a, b) =>
+                    (
+                        getVideoDuration(b)
+                        - getVideoDuration(a)
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'publishedAtAsc':
-            list.sort((a, b) =>
-                safeDate(
-                    a?.published_at
-                    || a?.created_at
-                )
-                -
-                safeDate(
-                    b?.published_at
-                    || b?.created_at
-                )
+            list.sort(
+                (a, b) =>
+                    (
+                        safeDate(
+                            a?.published_at
+                            || a?.created_at
+                        )
+                        -
+                        safeDate(
+                            b?.published_at
+                            || b?.created_at
+                        )
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
             )
             break
 
         case 'publishedAtDesc':
-            list.sort((a, b) =>
-                safeDate(
-                    b?.published_at
-                    || b?.created_at
-                )
-                -
-                safeDate(
-                    a?.published_at
-                    || a?.created_at
-                )
+            list.sort(
+                (a, b) =>
+                    (
+                        safeDate(
+                            b?.published_at
+                            || b?.created_at
+                        )
+                        -
+                        safeDate(
+                            a?.published_at
+                            || a?.created_at
+                        )
+                    )
+                    ||
+                    compareIdDesc(
+                        a,
+                        b
+                    )
+            )
+            break
+
+        default:
+            list.sort(
+                (a, b) =>
+                    compareNumber(
+                        a?.sort,
+                        b?.sort
+                    )
+                    ||
+                    compareNumber(
+                        a?.id,
+                        b?.id
+                    )
             )
             break
     }
@@ -560,10 +949,16 @@ const {
 })
 
 watch(
-    [q, sort],
+    [
+        q,
+        sort,
+    ],
     () => {
-        if (!props.useServerProcessing) {
-            frontendCurrentPage.value = 1
+        if (
+            !props.useServerProcessing
+        ) {
+            frontendCurrentPage.value =
+                1
         }
     }
 )
@@ -571,7 +966,9 @@ watch(
 watch(
     frontendCurrentPage,
     () => {
-        if (!props.useServerProcessing) {
+        if (
+            !props.useServerProcessing
+        ) {
             scrollToTarget()
         }
     }
@@ -587,14 +984,18 @@ const effectiveVideosFound = computed(() =>
 
 const frontendPaginatedVideos =
     computed(() => {
-        if (props.useServerProcessing) {
+        if (
+            props.useServerProcessing
+        ) {
             return videosData.value
         }
 
         const start =
             (
-                frontendCurrentPage.value - 1
-            ) * perPage.value
+                frontendCurrentPage.value
+                - 1
+            )
+            * perPage.value
 
         return sortedVideos.value.slice(
             start,
@@ -612,16 +1013,20 @@ const displayedVideos = computed(() =>
 
 const currentPage = computed(() =>
     Number(
-        props.videos?.meta?.current_page
-        ?? props.videos?.current_page
+        props.videos?.meta
+            ?.current_page
+        ?? props.videos
+            ?.current_page
         ?? 1
     ) || 1
 )
 
 const lastPage = computed(() =>
     Number(
-        props.videos?.meta?.last_page
-        ?? props.videos?.last_page
+        props.videos?.meta
+            ?.last_page
+        ?? props.videos
+            ?.last_page
         ?? 1
     ) || 1
 )
@@ -629,7 +1034,9 @@ const lastPage = computed(() =>
 const reloadVideos = (
     pageNumber = 1
 ) => {
-    if (!props.useServerProcessing) {
+    if (
+        !props.useServerProcessing
+    ) {
         return
     }
 
@@ -655,20 +1062,28 @@ const reloadVideos = (
     )
 }
 
-const goToPage = (pageNumber) => {
-    const target = Math.min(
-        Math.max(
-            1,
-            Number(pageNumber) || 1
-        ),
-        lastPage.value
-    )
+const goToPage = (
+    pageNumber
+) => {
+    const target =
+        Math.min(
+            Math.max(
+                1,
+                Number(pageNumber)
+                || 1
+            ),
+            lastPage.value
+        )
 
-    reloadVideos(target)
+    reloadVideos(
+        target
+    )
 }
 
 const goPrev = () => {
-    if (currentPage.value > 1) {
+    if (
+        currentPage.value > 1
+    ) {
         goToPage(
             currentPage.value - 1
         )
@@ -689,18 +1104,33 @@ const goNext = () => {
 /* ======================== Toolbar ======================== */
 
 const applyFilters = () => {
-    if (props.useServerProcessing) {
+    if (
+        props.useServerProcessing
+    ) {
         reloadVideos(1)
     } else {
-        frontendCurrentPage.value = 1
+        frontendCurrentPage.value =
+            1
     }
 }
 
 const resetFilters = () => {
-    if (props.useServerProcessing) {
+    /**
+     * Reset всегда возвращает
+     * системную сортировку из settings.
+     */
+    q.value = ''
+
+    sort.value =
+        DEFAULT_SORT.value
+
+    if (
+        props.useServerProcessing
+    ) {
         reloadVideos(1)
     } else {
-        frontendCurrentPage.value = 1
+        frontendCurrentPage.value =
+            1
     }
 }
 
@@ -718,7 +1148,9 @@ const settingEnabled = (
         return defaultValue
     }
 
-    if (typeof value === 'boolean') {
+    if (
+        typeof value === 'boolean'
+    ) {
         return value
     }
 
@@ -727,14 +1159,16 @@ const settingEnabled = (
 
 const showLeft = computed(() =>
     settingEnabled(
-        siteSettings.value?.ViewLeftColumn,
+        siteSettings.value
+            ?.ViewLeftColumn,
         true
     )
 )
 
 const showRight = computed(() =>
     settingEnabled(
-        siteSettings.value?.ViewRightColumn,
+        siteSettings.value
+            ?.ViewRightColumn,
         true
     )
 )
@@ -746,7 +1180,8 @@ const RIGHT_SIDEBAR_KEY =
     'public_right_sidebar_collapsed'
 
 /**
- * Первый render — sidebar свёрнуты.
+ * Первый render —
+ * sidebar свёрнуты.
  *
  * После mounted восстанавливаем
  * сохранённое состояние.
@@ -763,7 +1198,9 @@ const readStoredBoolean = (
 ) => {
     try {
         const value =
-            localStorage.getItem(key)
+            localStorage.getItem(
+                key
+            )
 
         return value === null
             ? fallback
@@ -780,7 +1217,9 @@ const writeStoredBoolean = (
     try {
         localStorage.setItem(
             key,
-            String(Boolean(value))
+            String(
+                Boolean(value)
+            )
         )
     } catch {
         //
@@ -801,7 +1240,9 @@ onMounted(() => {
         )
 })
 
-const setLeftCollapsed = (value) => {
+const setLeftCollapsed = (
+    value
+) => {
     leftCollapsed.value =
         Boolean(value)
 
@@ -811,7 +1252,9 @@ const setLeftCollapsed = (value) => {
     )
 }
 
-const setRightCollapsed = (value) => {
+const setRightCollapsed = (
+    value
+) => {
     rightCollapsed.value =
         Boolean(value)
 
@@ -822,7 +1265,7 @@ const setRightCollapsed = (value) => {
 }
 
 /**
- * Оба открыты → 2.
+ * Оба sidebar открыты → 2.
  * Один открыт → 3.
  * Оба закрыты → 4.
  */
@@ -855,8 +1298,11 @@ const videoGridCols = computed(() => {
 
 <template>
     <Head>
-        <!-- Basic SEO -->
-        <title>{{ seoTitle }}</title>
+        <!-- ======================== Basic SEO ======================== -->
+
+        <title>
+            {{ seoTitle }}
+        </title>
 
         <meta
             name="title"
@@ -880,13 +1326,15 @@ const videoGridCols = computed(() => {
             content="index, follow, max-image-preview:large"
         >
 
-        <!-- Canonical -->
+        <!-- ======================== Canonical ======================== -->
+
         <link
             rel="canonical"
             :href="canonicalUrl"
         >
 
-        <!-- Open Graph -->
+        <!-- ======================== Open Graph ======================== -->
+
         <meta
             property="og:type"
             content="website"
@@ -919,7 +1367,14 @@ const videoGridCols = computed(() => {
             :content="seoImage"
         >
 
-        <!-- Twitter / X -->
+        <meta
+            v-if="seoImage"
+            property="og:image:alt"
+            :content="seoImageAlt"
+        >
+
+        <!-- ======================== Twitter / X ======================== -->
+
         <meta
             name="twitter:card"
             :content="
@@ -946,7 +1401,14 @@ const videoGridCols = computed(() => {
             :content="seoImage"
         >
 
-        <!-- Dublin Core -->
+        <meta
+            v-if="seoImage"
+            name="twitter:image:alt"
+            :content="seoImageAlt"
+        >
+
+        <!-- ======================== Dublin Core ======================== -->
+
         <meta
             name="DC.title"
             :content="seoTitle"
@@ -993,13 +1455,22 @@ const videoGridCols = computed(() => {
         <Navbar />
 
         <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
+            <main
+                class="mx-auto flex flex-col lg:flex-row
+                       gap-4 tracking-wider"
+            >
+                <!-- ======================== Left sidebar ======================== -->
 
-                <!-- Left sidebar -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+                    class="shrink-0 mt-12 lg:mt-28
+                           transition-all duration-300
+                           overflow-hidden"
+                    :class="
+                        leftCollapsed
+                            ? 'lg:w-10'
+                            : 'lg:w-64'
+                    "
                 >
                     <LeftSidebar
                         :rubric-tree="rubricTree"
@@ -1008,12 +1479,14 @@ const videoGridCols = computed(() => {
                     />
                 </aside>
 
-                <!-- Content -->
+                <!-- ======================== Content ======================== -->
+
                 <article
                     itemscope
                     itemtype="https://schema.org/CollectionPage"
                     :itemid="canonicalUrl"
-                    class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
+                    class="w-full lg:mt-28 pb-6
+                           slate-1 min-w-0"
                 >
                     <meta
                         itemprop="name"
@@ -1043,16 +1516,18 @@ const videoGridCols = computed(() => {
                     >
 
                     <div class="mx-auto max-w-6xl">
+                        <!-- ======================== Breadcrumbs ======================== -->
 
-                        <!-- Breadcrumbs -->
                         <nav
                             class="text-sm"
                             aria-label="Breadcrumb"
                             itemscope
                             itemtype="https://schema.org/BreadcrumbList"
                         >
-                            <ol class="flex flex-wrap items-center font-semibold">
-
+                            <ol
+                                class="flex flex-wrap
+                                       items-center font-semibold"
+                            >
                                 <li
                                     itemprop="itemListElement"
                                     itemscope
@@ -1062,7 +1537,8 @@ const videoGridCols = computed(() => {
                                     <Link
                                         itemprop="item"
                                         :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
+                                        class="breadcrumb-link
+                                               hover:underline"
                                     >
                                         <span itemprop="name">
                                             {{ t('home') }}
@@ -1082,7 +1558,9 @@ const videoGridCols = computed(() => {
                                     class="flex items-center"
                                     aria-current="page"
                                 >
-                                    <span class="mx-2 breadcrumbs">
+                                    <span
+                                        class="mx-2 breadcrumbs"
+                                    >
                                         /
                                     </span>
 
@@ -1106,15 +1584,18 @@ const videoGridCols = computed(() => {
                             </ol>
                         </nav>
 
-                        <!-- Header -->
+                        <!-- ======================== Header ======================== -->
+
                         <div
-                            class="my-3 flex flex-wrap items-center
-                                   justify-center gap-2 title"
+                            class="my-3 flex flex-wrap
+                                   items-center justify-center
+                                   gap-2 title"
                         >
                             <svg
                                 class="h-5 w-5"
                                 fill="currentColor"
                                 viewBox="0 0 576 512"
+                                aria-hidden="true"
                             >
                                 <path
                                     d="M336.2 64H47.8C21.4 64 0 85.4 0 111.8v288.4C0 426.6 21.4 448 47.8 448h288.4c26.4 0 47.8-21.4 47.8-47.8V111.8c0-26.4-21.4-47.8-47.8-47.8zm189.4 37.7L416 177.3v157.4l109.6 75.5c21.2 14.6 50.4-.3 50.4-25.8V127.5c0-25.4-29.1-40.4-50.4-25.8z"
@@ -1122,7 +1603,7 @@ const videoGridCols = computed(() => {
                             </svg>
 
                             <h1
-                                itemprop="headline"
+                                itemprop="name"
                                 class="text-2xl font-bold"
                             >
                                 {{ t('videos') }}
@@ -1131,13 +1612,15 @@ const videoGridCols = computed(() => {
 
                         <div
                             v-if="seoDescription"
-                            itemprop="abstract"
-                            class="my-1 text-sm subtitle text-center"
+                            itemprop="description"
+                            class="my-1 text-sm
+                                   subtitle text-center"
                         >
                             {{ seoDescription }}
                         </div>
 
-                        <!-- One toolbar -->
+                        <!-- ======================== Toolbar ======================== -->
+
                         <EntityPageToolbar
                             v-model="q"
                             v-model:view-mode="viewMode"
@@ -1151,33 +1634,51 @@ const videoGridCols = computed(() => {
                             @reset="resetFilters"
                         />
 
-                        <div ref="scrollTarget"></div>
-
-                        <!-- Empty -->
                         <div
-                            v-if="displayedVideos.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            ref="scrollTarget"
+                        ></div>
+
+                        <!-- ======================== Empty ======================== -->
+
+                        <div
+                            v-if="
+                                displayedVideos.length
+                                === 0
+                            "
+                            class="mt-6 text-center
+                                   text-slate-700
+                                   dark:text-slate-300"
                         >
                             {{ t('noData') }}
                         </div>
 
-                        <!-- Videos -->
+                        <!-- ======================== Videos ======================== -->
+
                         <div v-else>
                             <VideoGrid
-                                v-if="viewMode === 'grid'"
+                                v-if="
+                                    viewMode
+                                    === 'grid'
+                                "
+                                itemprop="mainEntity"
                                 :videos="displayedVideos"
                                 :cols="videoGridCols"
                             />
 
                             <VideoRows
                                 v-else
+                                itemprop="mainEntity"
                                 :videos="displayedVideos"
                             />
                         </div>
 
-                        <!-- Server pagination -->
+                        <!-- ======================== Server pagination ======================== -->
+
                         <Pagination
-                            v-if="useServerProcessing && lastPage > 1"
+                            v-if="
+                                useServerProcessing
+                                && lastPage > 1
+                            "
                             :current-page="currentPage"
                             :last-page="lastPage"
                             :found="videosFound"
@@ -1186,17 +1687,30 @@ const videoGridCols = computed(() => {
                             @go="goToPage"
                         />
 
-                        <!-- Frontend pagination -->
+                        <!-- ======================== Frontend pagination ======================== -->
+
                         <FrontendPagination
-                            v-if="!useServerProcessing && effectiveVideosFound > perPage"
-                            v-model:currentPage="frontendCurrentPage"
+                            v-if="
+                                !useServerProcessing
+                                && effectiveVideosFound
+                                    > perPage
+                            "
+                            v-model:currentPage="
+                                frontendCurrentPage
+                            "
                             :items-per-page="perPage"
-                            :total-items="effectiveVideosFound"
+                            :total-items="
+                                effectiveVideosFound
+                            "
                         />
+
+                        <!-- ======================== Main videos ======================== -->
 
                         <SectionVideoList
                             :videos="mainVideos"
                         />
+
+                        <!-- ======================== Main banners ======================== -->
 
                         <SectionBanners
                             :banners="mainBanners"
@@ -1204,11 +1718,18 @@ const videoGridCols = computed(() => {
                     </div>
                 </article>
 
-                <!-- Right sidebar -->
+                <!-- ======================== Right sidebar ======================== -->
+
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
+                    class="shrink-0 lg:mt-28
+                           transition-all duration-300
+                           overflow-hidden"
+                    :class="
+                        rightCollapsed
+                            ? 'lg:w-10'
+                            : 'lg:w-64'
+                    "
                 >
                     <RightSidebar
                         :collapsed="rightCollapsed"

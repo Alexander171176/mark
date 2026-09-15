@@ -26,8 +26,10 @@ class BlogTagController extends Controller
     use BuildsRubricTreeTrait;
 
     /** Страница конкретного тега блога. */
-    public function show(Request $request, string $slug): Response
-    {
+    public function show(
+        Request $request,
+        string $slug
+    ): Response {
         $locale = app()->getLocale();
 
         $fallbackLocale = config(
@@ -35,29 +37,42 @@ class BlogTagController extends Controller
             'ru'
         );
 
-        $locales = array_values(array_unique([
-            $locale,
-            $fallbackLocale,
-        ]));
+        /**
+         * Public загружает только:
+         *
+         * - текущую локаль;
+         * - fallback locale.
+         */
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
 
-        $settings = app(PublicSettingsService::class);
+        $settings = app(
+            PublicSettingsService::class
+        );
 
         /* ======================== Tag ======================== */
 
         $tag = BlogTag::query()
             ->forPublic()
-            ->whereSlug($slug)
+            ->whereSlug(
+                $slug
+            )
             ->with([
                 'translations' => fn ($query) =>
-                $query->whereIn('locale', $locales),
-            ])
-            ->withCount([
-                'articles as articles_count' => fn ($query) =>
-                $query->forPublic(),
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
             ])
             ->firstOrFail();
 
-        $tag->increment('views');
+        $tag->increment(
+            'views'
+        );
 
         /* ======================== Article settings ======================== */
 
@@ -65,7 +80,7 @@ class BlogTagController extends Controller
          * Единственный источник истины.
          *
          * Public-пользователь количество
-         * статей не регулирует.
+         * статей на страницу не регулирует.
          */
         $perPageArticles = $settings->int(
             'publicBlogArticlesPerPage',
@@ -94,7 +109,9 @@ class BlogTagController extends Controller
 
         /* ======================== Processing mode ======================== */
 
-        $processingModeService = app(ProcessingModeService::class);
+        $processingModeService = app(
+            ProcessingModeService::class
+        );
 
         $articlesCount = null;
 
@@ -115,20 +132,22 @@ class BlogTagController extends Controller
                 )
                 ->count();
 
-            $useServerProcessing = $processingModeService->shouldUseServer(
-                $processingMode,
-                $articlesCount,
-                300
-            );
+            $useServerProcessing =
+                $processingModeService
+                    ->shouldUseServer(
+                        $processingMode,
+                        $articlesCount,
+                        300
+                    );
         } else {
-            $useServerProcessing = $processingMode === 'server';
+            $useServerProcessing =
+                $processingMode === 'server';
         }
 
         /* ======================== Articles ======================== */
 
         $articles = $this->getTagArticles(
             tag: $tag,
-            locale: $locale,
             locales: $locales,
             useServerProcessing: $useServerProcessing,
             perPage: $perPageArticles,
@@ -140,7 +159,8 @@ class BlogTagController extends Controller
             /**
              * paginate() уже выполнил COUNT.
              */
-            $articlesFound = $articles->total();
+            $articlesFound =
+                $articles->total();
 
             /**
              * Без поиска paginator total
@@ -151,15 +171,17 @@ class BlogTagController extends Controller
                 $articlesCount === null
                 && $articlesSearch === ''
             ) {
-                $articlesCount = $articlesFound;
+                $articlesCount =
+                    $articlesFound;
             }
 
             /**
              * При поиске paginator total
              * содержит только найденные записи.
              *
-             * Общий count нужен нижней
-             * административной панели.
+             * Поэтому отдельно получаем
+             * общее количество Public-статей
+             * данного тега.
              */
             if ($articlesCount === null) {
                 $articlesCount = BlogArticle::query()
@@ -179,36 +201,43 @@ class BlogTagController extends Controller
              * Frontend уже получил
              * весь Public-набор.
              */
-            $articlesFound = $articles->count();
-            $articlesCount ??= $articlesFound;
+            $articlesFound =
+                $articles->count();
+
+            $articlesCount ??=
+                $articlesFound;
         }
 
         /**
          * Для карточек достаточно
          * краткого Public Resource.
          */
-        $articles = BlogArticleSharedResource::collection(
-            $articles
-        );
+        $articles =
+            BlogArticleSharedResource::collection(
+                $articles
+            );
 
         /* ======================== Sidebars ======================== */
 
-        $rubricTree = $this->getRubricTree(
-            $locale
-        );
+        $rubricTree =
+            $this->getRubricTree(
+                $locale
+            );
 
-        $sidebarData = $this->getSidebarData(
-            $locale
-        );
+        $sidebarData =
+            $this->getSidebarData(
+                $locale
+            );
 
         /* ======================== Response ======================== */
 
         return Inertia::render(
             'Public/Default/Blog/BlogTags/Show',
             [
-                'tag' => new BlogTagResource(
-                    $tag
-                ),
+                'tag' =>
+                    new BlogTagResource(
+                        $tag
+                    ),
 
                 'publicBlogArticlesProcessingMode' =>
                     $processingMode,
@@ -253,7 +282,6 @@ class BlogTagController extends Controller
      */
     private function tagArticlesQuery(
         BlogTag $tag,
-        string $locale,
         array $locales
     ): Builder {
         $query = BlogArticle::query()
@@ -315,23 +343,33 @@ class BlogTagController extends Controller
      */
     private function getTagArticles(
         BlogTag $tag,
-        string $locale,
         array $locales,
         bool $useServerProcessing,
         int $perPage,
         string $sort,
         string $search = ''
     ) {
-        $query = $this->tagArticlesQuery(
-            tag: $tag,
-            locale: $locale,
-            locales: $locales,
-        );
+        $locale =
+            app()->getLocale();
+
+        $query =
+            $this->tagArticlesQuery(
+                tag: $tag,
+                locales: $locales,
+            );
 
         /**
          * Server:
+         *
          * поиск, сортировка и пагинация
          * выполняются backend.
+         *
+         * Временно используем существующие
+         * BlogArticle search()/sortByParam().
+         *
+         * Public-версию этих scopes
+         * приведём в порядок при отдельном
+         * рефакторинге BlogArticle.
          */
         if ($useServerProcessing) {
             return $query
@@ -353,9 +391,10 @@ class BlogTagController extends Controller
 
         /**
          * Frontend:
+         *
          * backend отдаёт весь Public-набор.
          *
-         * Поиск и пагинация уже выполняются
+         * Поиск и пагинация выполняются
          * внутри Show.vue.
          */
         return $query

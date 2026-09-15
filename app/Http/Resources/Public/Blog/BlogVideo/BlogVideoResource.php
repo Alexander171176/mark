@@ -17,24 +17,29 @@ class BlogVideoResource extends JsonResource
             'ru'
         );
 
-        $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
+        /**
+         * Контроллер заранее загружает:
+         *
+         * current locale + fallback locale.
+         *
+         * Логику выбора эффективного перевода
+         * держим в модели BlogVideo.
+         */
+        $translation = $this->relationLoaded(
+            'translations'
+        )
+            ? $this->translationOrFallback(
+                $locale,
                 $fallbackLocale
-            )
-                ?: $this->translations->first()
             )
             : null;
 
         return [
             'id' => $this->id,
 
-            'sort' => (int) $this->sort,
+            /**
+             * Основные публичные поля.
+             */
             'url' => $this->url,
 
             'duration' => $this->duration !== null
@@ -44,10 +49,15 @@ class BlogVideoResource extends JsonResource
             'views' => (int) $this->views,
 
             'published_at' =>
-                $this->published_at?->format('Y-m-d'),
+                $this->published_at?->format(
+                    'Y-m-d'
+                ),
 
             /**
              * Источник видео.
+             *
+             * VideoPlayer получает уже
+             * подготовленный Public-объект.
              */
             'source_type' =>
                 $this->source_type,
@@ -65,7 +75,10 @@ class BlogVideoResource extends JsonResource
                 $this->external_video_id,
 
             /**
-             * Полный Public-перевод.
+             * Полный эффективный
+             * Public-перевод:
+             *
+             * current locale -> fallback.
              */
             'translation' => $translation
                 ? [
@@ -97,6 +110,8 @@ class BlogVideoResource extends JsonResource
 
             /**
              * Автор.
+             *
+             * Только публичные данные.
              */
             'owner' => $this->whenLoaded(
                 'owner',
@@ -108,19 +123,27 @@ class BlogVideoResource extends JsonResource
                         $this->owner?->name,
 
                     'profile_photo_url' =>
-                        $this->owner?->profile_photo_url,
+                        $this->owner
+                            ?->profile_photo_url,
                 ]
             ),
 
             /**
              * Изображения.
+             *
+             * Общий ImageResource сохраняем:
+             * изображения работают через
+             * общую Spatie Media архитектуру.
              */
-            'images' => BlogVideoImageResource::collection(
-                $this->whenLoaded('images')
-            ),
+            'images' =>
+                BlogVideoImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
 
             /**
-             * Связанные видео уже
+             * Рекомендованные видео
              * в кратком Public-формате.
              */
             'related_videos' =>
@@ -131,28 +154,45 @@ class BlogVideoResource extends JsonResource
                 ),
 
             /**
-             * Counts.
+             * Public statistics.
              */
             'likes_count' => $this->when(
                 isset($this->likes_count),
-                fn () => (int) $this->likes_count
+                fn () =>
+                (int) $this->likes_count
             ),
 
             'comments_count' => $this->when(
                 isset($this->comments_count),
-                fn () => (int) $this->comments_count
+                fn () =>
+                (int) $this->comments_count
             ),
 
-            'images_count' => $this->when(
-                isset($this->images_count),
-                fn () => (int) $this->images_count
-            ),
-
+            /**
+             * Лайк текущего пользователя.
+             */
             'already_liked' =>
-                (bool) ($this->already_liked ?? false),
+                (bool) (
+                    $this->already_liked
+                    ?? false
+                ),
 
+            /**
+             * Даты нужны Show / SEO:
+             *
+             * created_at используется
+             * как fallback для published_at;
+             *
+             * updated_at используется
+             * для VideoObject.dateModified.
+             */
             'created_at' =>
-                $this->created_at?->toISOString(),
+                $this->created_at
+                    ?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at
+                    ?->toISOString(),
         ];
     }
 }

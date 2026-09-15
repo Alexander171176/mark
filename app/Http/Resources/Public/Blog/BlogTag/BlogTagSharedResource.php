@@ -16,17 +16,17 @@ class BlogTagSharedResource extends JsonResource
             'ru'
         );
 
-        $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
+        /**
+         * Public Controller / sidebar query
+         * должны заранее загрузить
+         * current locale + fallback.
+         */
+        $translation = $this->relationLoaded(
+            'translations'
+        )
+            ? $this->translationOrFallback(
+                $locale,
                 $fallbackLocale
-            )
-                ?: $this->translations->first()
             )
             : null;
 
@@ -37,16 +37,26 @@ class BlogTagSharedResource extends JsonResource
             'icon' => $this->icon,
 
             /**
-             * Activity оставляем:
-             * Public BlogArticle Show сейчас
-             * фильтрует tag.activity.
+             * Пока оставляем.
+             *
+             * Public BlogArticle Show
+             * использует activity
+             * при работе со связанными тегами.
              */
-            'activity' => (bool) $this->activity,
+            'activity' =>
+                (bool) $this->activity,
 
+            /**
+             * SharedResource нужен
+             * только компактный перевод.
+             */
             'translation' => $translation
                 ? [
-                    'locale' => $translation->locale,
-                    'name' => $translation->name,
+                    'locale' =>
+                        $translation->locale,
+
+                    'name' =>
+                        $translation->name,
                 ]
                 : null,
         ];

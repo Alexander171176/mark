@@ -17,22 +17,18 @@ class BlogTagResource extends JsonResource
         );
 
         /**
-         * Public получает только:
+         * Public Controller заранее загружает
+         * только текущую локаль + fallback.
          *
-         * - текущую локаль;
-         * - fallback ru.
+         * Сам fallback централизован
+         * в модели BlogTag.
          */
-        $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
+        $translation = $this->relationLoaded(
+            'translations'
+        )
+            ? $this->translationOrFallback(
+                $locale,
                 $fallbackLocale
-            )
-                ?: $this->translations->first()
             )
             : null;
 
@@ -42,45 +38,41 @@ class BlogTagResource extends JsonResource
             /**
              * Основные публичные поля.
              */
-            'sort' => (int) $this->sort,
             'slug' => $this->slug,
             'icon' => $this->icon,
             'views' => (int) $this->views,
 
             /**
-             * Полный публичный перевод.
+             * Полный Public-перевод
+             * для страницы Show + SEO.
              */
             'translation' => $translation
                 ? [
-                    'locale' => $translation->locale,
+                    'locale' =>
+                        $translation->locale,
 
-                    'name' => $translation->name,
-                    'subtitle' => $translation->subtitle,
-                    'short' => $translation->short,
-                    'description' => $translation->description,
+                    'name' =>
+                        $translation->name,
 
-                    'meta_title' => $translation->meta_title,
-                    'meta_keywords' => $translation->meta_keywords,
-                    'meta_desc' => $translation->meta_desc,
+                    'subtitle' =>
+                        $translation->subtitle,
+
+                    'short' =>
+                        $translation->short,
+
+                    'description' =>
+                        $translation->description,
+
+                    'meta_title' =>
+                        $translation->meta_title,
+
+                    'meta_keywords' =>
+                        $translation->meta_keywords,
+
+                    'meta_desc' =>
+                        $translation->meta_desc,
                 ]
                 : null,
-
-            /**
-             * Количество связанных статей.
-             */
-            'articles_count' => $this->when(
-                isset($this->articles_count),
-                fn () => (int) $this->articles_count
-            ),
-
-            /**
-             * Даты.
-             */
-            'created_at' =>
-                $this->created_at?->toISOString(),
-
-            'updated_at' =>
-                $this->updated_at?->toISOString(),
         ];
     }
 }

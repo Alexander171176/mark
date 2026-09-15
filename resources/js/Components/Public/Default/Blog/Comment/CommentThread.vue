@@ -595,11 +595,26 @@ watch(
                 <div
                     v-for="comment in comments"
                     :key="comment.id"
+                    itemprop="comment"
+                    itemscope
+                    itemtype="https://schema.org/Comment"
                     class="mb-3 rounded
                            border p-3
                            bg-gray-50
                            dark:bg-slate-800"
                 >
+                    <meta
+                        v-if="comment.created_at"
+                        itemprop="dateCreated"
+                        :content="comment.created_at"
+                    >
+
+                    <meta
+                        v-if="comment.updated_at"
+                        itemprop="dateModified"
+                        :content="comment.updated_at"
+                    >
+
                     <!-- Header -->
                     <div
                         class="flex items-center
@@ -607,37 +622,28 @@ watch(
                                gap-3 text-sm"
                     >
                         <div
-                            class="flex min-w-0
-                                   items-center gap-2"
+                            itemprop="author"
+                            itemscope
+                            itemtype="https://schema.org/Person"
+                            class="flex min-w-0 items-center gap-2"
                         >
-                            <img
-                                v-if="
-                                    comment.user
-                                        ?.profile_photo_url
-                                "
-                                :src="
-                                    comment.user
-                                        .profile_photo_url
-                                "
-                                :alt="
-                                    comment.user?.name
-                                    || t('unknownAuthor')
-                                "
-                                loading="lazy"
-                                class="h-6 w-6
+                            <img v-if="comment.user?.profile_photo_url"
+                                 :src="comment.user.profile_photo_url"
+                                 :alt="comment.user?.name || t('unknownAuthor')"
+                                 itemprop="image"
+                                 loading="lazy"
+                                 class="h-6 w-6
                                        rounded-full
                                        object-cover"
                             />
 
                             <span
+                                itemprop="name"
                                 class="truncate font-semibold
                                        text-blue-600
                                        dark:text-blue-300"
                             >
-                                {{
-                                    comment.user?.name
-                                    || t('unknownAuthor')
-                                }}
+                                {{ comment.user?.name || t('unknownAuthor') }}
                             </span>
                         </div>
 
@@ -765,6 +771,7 @@ watch(
                     <!-- Content -->
                     <div
                         v-else
+                        itemprop="text"
                         class="mt-2 text-sm
                                text-gray-800
                                dark:text-gray-200"
@@ -847,7 +854,21 @@ watch(
                                 in comment.replies
                             "
                             :key="reply.id"
+                            itemprop="comment"
+                            itemscope
+                            itemtype="https://schema.org/Comment"
                         >
+                            <meta
+                                v-if="reply.created_at"
+                                itemprop="dateCreated"
+                                :content="reply.created_at"
+                            >
+
+                            <meta
+                                v-if="reply.updated_at"
+                                itemprop="dateModified"
+                                :content="reply.updated_at"
+                            >
                             <div
                                 class="flex
                                        items-center
@@ -855,15 +876,22 @@ watch(
                                        gap-2"
                             >
                                 <span
-                                    class="text-xs
-                                           font-semibold
-                                           text-purple-600
-                                           dark:text-purple-300"
+                                    itemprop="author"
+                                    itemscope
+                                    itemtype="https://schema.org/Person"
                                 >
-                                    {{
-                                        reply.user?.name
-                                        || t('unknownAuthor')
-                                    }}
+                                    <span
+                                        itemprop="name"
+                                        class="text-xs
+                                               font-semibold
+                                               text-purple-600
+                                               dark:text-purple-300"
+                                    >
+                                        {{
+                                            reply.user?.name
+                                            || t('unknownAuthor')
+                                        }}
+                                    </span>
                                 </span>
 
                                 <div
@@ -961,6 +989,7 @@ watch(
 
                             <div
                                 v-else
+                                itemprop="text"
                                 class="mt-1 text-sm
                                        text-gray-700
                                        dark:text-gray-200"

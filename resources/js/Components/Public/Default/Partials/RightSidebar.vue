@@ -3,31 +3,50 @@ import { computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
-import TagsSidebar from '@/Components/Public/Default/Blog/BlogRubric/TagsSidebar.vue'
-import RecentArticlesSidebar from '@/Components/Public/Default/Blog/BlogRubric/RecentArticlesSidebar.vue'
-import RightBannersSidebar from '@/Components/Public/Default/Blog/BlogBanner/RightBannersSidebar.vue'
-import RightVideosSidebar from '@/Components/Public/Default/Blog/BlogVideo/RightVideosSidebar.vue'
+import TagsSidebar from '@/Components/Public/Default/Blog/BlogTag/TagsSidebar.vue'
+import ArticlesSidebar from '@/Components/Public/Default/Blog/BlogArticle/ArticlesSidebar.vue'
+import BannersSidebar from '@/Components/Public/Default/Blog/BlogBanner/BannersSidebar.vue'
+import VideosSidebar from '@/Components/Public/Default/Blog/BlogVideo/VideosSidebar.vue'
 
-const emit = defineEmits(['collapsed'])
+const props = defineProps({
+    collapsed: {
+        type: Boolean,
+        default: false,
+    },
+})
+
+const emit = defineEmits([
+    'collapsed',
+])
 
 const { t } = useI18n()
 const page = usePage()
 
-const props = defineProps({
-    collapsed: { type: Boolean, default: false },
-})
+const tags = computed(() =>
+    page.props.tags ?? []
+)
 
-/** данные страницы */
-const tags = computed(() => page.props.tags ?? [])
-const rightArticles = computed(() => page.props.rightArticles ?? [])
-const rightBanners = computed(() => page.props.rightBanners ?? [])
-const rightVideos = computed(() => page.props.rightVideos ?? [])
+const rightArticles = computed(() =>
+    page.props.rightArticles ?? []
+)
 
-/** collapse */
-const isCollapsed = computed(() => props.collapsed)
+const rightBanners = computed(() =>
+    page.props.rightBanners ?? []
+)
+
+const rightVideos = computed(() =>
+    page.props.rightVideos ?? []
+)
+
+const isCollapsed = computed(() =>
+    props.collapsed
+)
 
 const toggleSidebar = () => {
-    emit('collapsed', !props.collapsed)
+    emit(
+        'collapsed',
+        !props.collapsed
+    )
 }
 </script>
 
@@ -36,34 +55,51 @@ const toggleSidebar = () => {
         <div class="flex items-center justify-center">
             <button
                 type="button"
-                @click="toggleSidebar"
                 class="focus:outline-none"
                 :title="t('toggleSidebar')"
+                @click="toggleSidebar"
             >
-                <!-- right: как было -->
                 <svg
                     v-if="isCollapsed"
                     class="w-6 h-6 text-indigo-500 dark:text-indigo-400"
                     fill="currentColor"
-                    viewBox="0 0 448 512">
-                    <path d="M134.059 296H436c6.627 0 12-5.373 12-12v-56c0-6.627-5.373-12-12-12H134.059v-46.059c0-21.382-25.851-32.09-40.971-16.971L7.029 239.029c-9.373 9.373-9.373 24.569 0 33.941l86.059 86.059c15.119 15.119 40.971 4.411 40.971-16.971V296z"/>
+                    viewBox="0 0 448 512"
+                >
+                    <path
+                        d="M134.059 296H436c6.627 0 12-5.373 12-12v-56c0-6.627-5.373-12-12-12H134.059v-46.059c0-21.382-25.851-32.09-40.971-16.971L7.029 239.029c-9.373 9.373-9.373 24.569 0 33.941l86.059 86.059c15.119 15.119 40.971 4.411 40.971-16.971V296z" />
                 </svg>
+
                 <svg
                     v-else
                     class="w-6 h-6 text-indigo-500 dark:text-indigo-400"
                     fill="currentColor"
-                    viewBox="0 0 448 512">
-                    <path d="M313.941 216H12c-6.627 0-12 5.373-12 12v56c0 6.627 5.373 12 12 12h301.941v46.059c0 21.382 25.851 32.09 40.971 16.971l86.059-86.059c9.373-9.373 9.373-24.569 0-33.941l-86.059-86.059c-15.119-15.119-40.971-4.411-40.971 16.971V216z"/>
+                    viewBox="0 0 448 512"
+                >
+                    <path
+                        d="M313.941 216H12c-6.627 0-12 5.373-12 12v56c0 6.627 5.373 12 12 12h301.941v46.059c0 21.382 25.851 32.09 40.971 16.971l86.059-86.059c9.373-9.373 9.373-24.569 0-33.941l-86.059-86.059c-15.119-15.119-40.971-4.411-40.971 16.971V216z" />
                 </svg>
             </button>
         </div>
 
-        <!-- содержимое только когда развернуто -->
-        <div v-show="!isCollapsed" class="flex flex-col gap-4">
-            <TagsSidebar :tags="tags" />
-            <RecentArticlesSidebar :articles="rightArticles" />
-            <RightBannersSidebar :right-banners="rightBanners" />
-            <RightVideosSidebar :videos="rightVideos" />
+        <div
+            v-show="!isCollapsed"
+            class="flex flex-col gap-4"
+        >
+            <TagsSidebar
+                :tags="tags"
+            />
+
+            <ArticlesSidebar
+                :articles="rightArticles"
+            />
+
+            <BannersSidebar
+                :banners="rightBanners"
+            />
+
+            <VideosSidebar
+                :videos="rightVideos"
+            />
         </div>
     </div>
 </template>

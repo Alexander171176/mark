@@ -72,51 +72,87 @@ class BlogArticle extends Model
     /** Владелец/автор статьи */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
 
     /** Модератор статьи */
     public function moderator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'moderated_by');
+        return $this->belongsTo(
+            User::class,
+            'moderated_by'
+        );
     }
 
     /** Переводы статьи */
     public function translations(): HasMany
     {
-        return $this->hasMany(BlogArticleTranslation::class, 'article_id');
+        return $this->hasMany(
+            BlogArticleTranslation::class,
+            'article_id'
+        );
     }
 
     /** Текущий перевод по locale */
-    public function translation(?string $locale = null): ?BlogArticleTranslation
-    {
-        $locale = $locale ?: app()->getLocale();
+    public function translation(
+        ?string $locale = null
+    ): ?BlogArticleTranslation {
+        $locale =
+            $locale ?: app()->getLocale();
 
         return $this->translations
-            ->where('locale', $locale)
+            ->where(
+                'locale',
+                $locale
+            )
             ->first();
     }
 
     /** Перевод с fallback */
-    public function translationOrFallback(?string $locale = null, string $fallback = 'ru'): ?BlogArticleTranslation
-    {
-        $locale = $locale ?: app()->getLocale();
+    public function translationOrFallback(
+        ?string $locale = null,
+        ?string $fallback = null
+    ): ?BlogArticleTranslation {
+        $locale =
+            $locale ?: app()->getLocale();
 
-        return $this->translations->firstWhere('locale', $locale)
-            ?: $this->translations->firstWhere('locale', $fallback)
+        $fallback ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return $this->translations
+            ->firstWhere(
+                'locale',
+                $locale
+            )
+            ?: $this->translations
+                ->firstWhere(
+                    'locale',
+                    $fallback
+                )
                 ?: $this->translations->first();
     }
 
     /** Комментарии (полиморфные) */
     public function comments(): MorphMany
     {
-        return $this->morphMany(Comment::class, 'commentable');
+        return $this->morphMany(
+            Comment::class,
+            'commentable'
+        );
     }
 
     /** Лайки статьи */
     public function likes(): HasMany
     {
-        return $this->hasMany(BlogArticleLike::class, 'article_id');
+        return $this->hasMany(
+            BlogArticleLike::class,
+            'article_id'
+        );
     }
 
     /** Пользователи, лайкнувшие статью */
@@ -207,13 +243,27 @@ class BlogArticle extends Model
 
     protected static function booted(): void
     {
-        static::saved(function (BlogArticle $article) {
-            Log::info('Статья блога сохранена: ' . $article->id . ' / ' . $article->url);
-        });
+        static::saved(
+            function (BlogArticle $article) {
+                Log::info(
+                    'Статья блога сохранена: '
+                    . $article->id
+                    . ' / '
+                    . $article->url
+                );
+            }
+        );
 
-        static::deleted(function (BlogArticle $article) {
-            Log::info('Статья блога удалена: ' . $article->id . ' / ' . $article->url);
-        });
+        static::deleted(
+            function (BlogArticle $article) {
+                Log::info(
+                    'Статья блога удалена: '
+                    . $article->id
+                    . ' / '
+                    . $article->url
+                );
+            }
+        );
     }
 
     /* ======================== HELPERS ======================== */
@@ -235,11 +285,17 @@ class BlogArticle extends Model
     {
         $now = now();
 
-        if ($this->show_from_at && $now->lt($this->show_from_at)) {
+        if (
+            $this->show_from_at
+            && $now->lt($this->show_from_at)
+        ) {
             return false;
         }
 
-        if ($this->show_to_at && $now->gt($this->show_to_at)) {
+        if (
+            $this->show_to_at
+            && $now->gt($this->show_to_at)
+        ) {
             return false;
         }
 
@@ -247,52 +303,90 @@ class BlogArticle extends Model
     }
 
     /** Получить title из текущего перевода */
-    public function getTranslatedTitle(?string $locale = null, string $fallback = 'ru'): ?string
-    {
-        return $this->translationOrFallback($locale, $fallback)?->title;
+    public function getTranslatedTitle(
+        ?string $locale = null,
+        ?string $fallback = null
+    ): ?string {
+        return $this->translationOrFallback(
+            $locale,
+            $fallback
+        )?->title;
     }
 
     /* ======================== Scopes ======================== */
 
     /** Сортировка по умолчанию */
-    public function scopeOrdered(Builder $query): Builder
-    {
-        return $query->orderBy('sort')->orderByDesc('id');
+    public function scopeOrdered(
+        Builder $query
+    ): Builder {
+        return $query
+            ->orderBy('sort')
+            ->orderByDesc('id');
     }
 
     /** Только активные */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('activity', true);
+    public function scopeActive(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'activity',
+            true
+        );
     }
 
     /** Только одобренные */
-    public function scopeApproved(Builder $query): Builder
-    {
-        return $query->where('moderation_status', 1);
+    public function scopeApproved(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'moderation_status',
+            1
+        );
     }
 
     /**
      * Окно показа:
-     *  - show_from_at IS NULL OR show_from_at <= now()
-     *  - show_to_at   IS NULL OR show_to_at   >= now()
+     *
+     * show_from_at IS NULL
+     * OR show_from_at <= now()
+     *
+     * show_to_at IS NULL
+     * OR show_to_at >= now()
      */
-    public function scopeInShowWindow(Builder $query): Builder
-    {
+    public function scopeInShowWindow(
+        Builder $query
+    ): Builder {
         return $query
-            ->where(function (Builder $q) {
-                $q->whereNull('show_from_at')
-                    ->orWhere('show_from_at', '<=', now());
-            })
-            ->where(function (Builder $q) {
-                $q->whereNull('show_to_at')
-                    ->orWhere('show_to_at', '>=', now());
-            });
+            ->where(
+                function (Builder $q) {
+                    $q->whereNull(
+                        'show_from_at'
+                    )
+                        ->orWhere(
+                            'show_from_at',
+                            '<=',
+                            now()
+                        );
+                }
+            )
+            ->where(
+                function (Builder $q) {
+                    $q->whereNull(
+                        'show_to_at'
+                    )
+                        ->orWhere(
+                            'show_to_at',
+                            '>=',
+                            now()
+                        );
+                }
+            );
     }
 
     /** Публичные статьи */
-    public function scopeForPublic(Builder $query): Builder
-    {
+    public function scopeForPublic(
+        Builder $query
+    ): Builder {
         return $query
             ->approved()
             ->active()
@@ -300,177 +394,1260 @@ class BlogArticle extends Model
     }
 
     /** Левый блок */
-    public function scopeInLeft(Builder $query): Builder
-    {
-        return $query->where('left', true);
+    public function scopeInLeft(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'left',
+            true
+        );
     }
 
     /** Главный блок */
-    public function scopeInMain(Builder $query): Builder
-    {
-        return $query->where('main', true);
+    public function scopeInMain(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'main',
+            true
+        );
     }
 
     /** Правый блок */
-    public function scopeInRight(Builder $query): Builder
-    {
-        return $query->where('right', true);
+    public function scopeInRight(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'right',
+            true
+        );
     }
 
+    /* ======================== Admin search ======================== */
+
     /** Поиск по переводимым полям и url */
-    public function scopeSearch(Builder $query, ?string $term, ?string $locale = null): Builder
-    {
+    public function scopeSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
         if (!$term) {
             return $query;
         }
 
-        $locale = $locale ?: app()->getLocale();
+        $locale =
+            $locale ?: app()->getLocale();
 
-        return $query->where(function (Builder $q) use ($term, $locale) {
-            $q->where('url', 'like', "%{$term}%")
-                ->orWhereHas('translations', function (Builder $tq) use ($term, $locale) {
-                    $tq->where('locale', $locale)
-                        ->where(function (Builder $sq) use ($term) {
-                            $sq->where('title', 'like', "%{$term}%")
-                                ->orWhere('subtitle', 'like', "%{$term}%")
-                                ->orWhere('short', 'like', "%{$term}%")
-                                ->orWhere('description', 'like', "%{$term}%")
-                                ->orWhere('pseudonym', 'like', "%{$term}%");
-                        });
-                });
-        });
+        return $query->where(
+            function (Builder $q) use (
+                $term,
+                $locale
+            ) {
+                $q->where(
+                    'url',
+                    'like',
+                    "%{$term}%"
+                )
+                    ->orWhereHas(
+                        'translations',
+                        function (Builder $tq) use (
+                            $term,
+                            $locale
+                        ) {
+                            $tq->where(
+                                'locale',
+                                $locale
+                            )
+                                ->where(
+                                    function (Builder $sq) use ($term) {
+                                        $sq->where(
+                                            'title',
+                                            'like',
+                                            "%{$term}%"
+                                        )
+                                            ->orWhere(
+                                                'subtitle',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'short',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'description',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'pseudonym',
+                                                'like',
+                                                "%{$term}%"
+                                            );
+                                    }
+                                );
+                        }
+                    );
+            }
+        );
     }
 
+    /* ======================== Public search ======================== */
+
+    /**
+     * Public-поиск статей.
+     *
+     * Поля полностью соответствуют
+     * Public frontend:
+     *
+     * - id;
+     * - title;
+     * - subtitle;
+     * - short;
+     * - description;
+     * - pseudonym;
+     * - url;
+     * - owner.name;
+     * - rubric title.
+     *
+     * Для переводов применяется
+     * тот же контракт:
+     *
+     * current locale → fallback.
+     */
+    public function scopePublicSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        $term = trim(
+            (string) $term
+        );
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $locale =
+            $locale ?: app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return $query->where(
+            function (Builder $searchQuery) use (
+                $term,
+                $locale,
+                $fallbackLocale
+            ) {
+                /**
+                 * ID.
+                 */
+                $searchQuery->where(
+                    'blog_articles.id',
+                    'like',
+                    "%{$term}%"
+                );
+
+                /**
+                 * URL.
+                 */
+                $searchQuery->orWhere(
+                    'blog_articles.url',
+                    'like',
+                    "%{$term}%"
+                );
+
+                /**
+                 * Автор.
+                 */
+                $searchQuery->orWhereHas(
+                    'owner',
+                    fn (Builder $ownerQuery) =>
+                    $ownerQuery->where(
+                        'name',
+                        'like',
+                        "%{$term}%"
+                    )
+                );
+
+                /**
+                 * Эффективный перевод статьи:
+                 *
+                 * current locale,
+                 * либо fallback только если
+                 * current translation отсутствует.
+                 */
+                $searchQuery->orWhere(
+                    function (Builder $translationQuery) use (
+                        $term,
+                        $locale,
+                        $fallbackLocale
+                    ) {
+                        $this->applyPublicTranslationSearch(
+                            $translationQuery,
+                            $term,
+                            $locale,
+                            $fallbackLocale
+                        );
+                    }
+                );
+
+                /**
+                 * Название публичной рубрики.
+                 */
+                $searchQuery->orWhereHas(
+                    'rubrics',
+                    function (Builder $rubricQuery) use (
+                        $term,
+                        $locale,
+                        $fallbackLocale
+                    ) {
+                        $rubricQuery
+                            ->forPublic()
+                            ->where(
+                                function (Builder $query) use (
+                                    $term,
+                                    $locale,
+                                    $fallbackLocale
+                                ) {
+                                    $this->applyPublicRubricTranslationSearch(
+                                        $query,
+                                        $term,
+                                        $locale,
+                                        $fallbackLocale
+                                    );
+                                }
+                            );
+                    }
+                );
+            }
+        );
+    }
+
+    /* ======================== Admin sort ======================== */
+
     /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $query, ?string $sort, ?string $locale = null): Builder
-    {
-        $locale = $locale ?: app()->getLocale();
+    public function scopeSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale =
+            $locale ?: app()->getLocale();
 
         return match ($sort) {
-            'idAsc' => $query->orderBy('id', 'asc'),
-            'idDesc' => $query->orderBy('id', 'desc'),
+            'idAsc' =>
+            $query->orderBy(
+                'id',
+                'asc'
+            ),
 
-            'sortAsc' => $query->orderBy('sort', 'asc')->orderBy('id', 'asc'),
-            'sortDesc' => $query->orderBy('sort', 'desc')->orderBy('id', 'desc'),
+            'idDesc' =>
+            $query->orderBy(
+                'id',
+                'desc'
+            ),
+
+            'sortAsc' =>
+            $query
+                ->orderBy(
+                    'sort',
+                    'asc'
+                )
+                ->orderBy(
+                    'id',
+                    'asc'
+                ),
+
+            'sortDesc' =>
+            $query
+                ->orderBy(
+                    'sort',
+                    'desc'
+                )
+                ->orderBy(
+                    'id',
+                    'desc'
+                ),
 
             'titleAsc' => $query
-                ->leftJoin('blog_article_translations as bat_sort', function ($join) use ($locale) {
-                    $join->on('bat_sort.article_id', '=', 'blog_articles.id')
-                        ->where('bat_sort.locale', '=', $locale);
-                })
-                ->orderBy('bat_sort.title', 'asc')
-                ->orderByDesc('blog_articles.id')
-                ->addSelect('blog_articles.*'),
+                ->leftJoin(
+                    'blog_article_translations as bat_sort',
+                    function ($join) use ($locale) {
+                        $join->on(
+                            'bat_sort.article_id',
+                            '=',
+                            'blog_articles.id'
+                        )
+                            ->where(
+                                'bat_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->orderBy(
+                    'bat_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                )
+                ->addSelect(
+                    'blog_articles.*'
+                ),
 
             'titleDesc' => $query
-                ->leftJoin('blog_article_translations as bat_sort', function ($join) use ($locale) {
-                    $join->on('bat_sort.article_id', '=', 'blog_articles.id')
-                        ->where('bat_sort.locale', '=', $locale);
-                })
-                ->orderBy('bat_sort.title', 'desc')
-                ->orderByDesc('blog_articles.id')
-                ->addSelect('blog_articles.*'),
+                ->leftJoin(
+                    'blog_article_translations as bat_sort',
+                    function ($join) use ($locale) {
+                        $join->on(
+                            'bat_sort.article_id',
+                            '=',
+                            'blog_articles.id'
+                        )
+                            ->where(
+                                'bat_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->orderBy(
+                    'bat_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                )
+                ->addSelect(
+                    'blog_articles.*'
+                ),
 
-            'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
-            'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
+            'urlAsc' =>
+            $query
+                ->orderBy(
+                    'url',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+            'urlDesc' =>
+            $query
+                ->orderBy(
+                    'url',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
+
+            'viewsAsc' =>
+            $query
+                ->orderBy(
+                    'views',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
+
+            'viewsDesc' =>
+            $query
+                ->orderBy(
+                    'views',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
             'likesAsc' => $query
                 ->withCount('likes')
-                ->orderBy('likes_count', 'asc')
+                ->orderBy(
+                    'likes_count',
+                    'asc'
+                )
                 ->orderByDesc('id'),
 
             'likesDesc' => $query
                 ->withCount('likes')
-                ->orderBy('likes_count', 'desc')
+                ->orderBy(
+                    'likes_count',
+                    'desc'
+                )
                 ->orderByDesc('id'),
 
-            'commentsAsc' => $query->withCount('comments')->orderBy('comments_count', 'asc')->orderByDesc('id'),
-            'commentsDesc' => $query->withCount('comments')->orderBy('comments_count', 'desc')->orderByDesc('id'),
+            'commentsAsc' =>
+            $query
+                ->withCount('comments')
+                ->orderBy(
+                    'comments_count',
+                    'asc'
+                )
+                ->orderByDesc('id'),
 
-            'rubricsAsc' => $query->withCount('rubrics')->orderBy('rubrics_count', 'asc')->orderByDesc('id'),
-            'rubricsDesc' => $query->withCount('rubrics')->orderBy('rubrics_count', 'desc')->orderByDesc('id'),
+            'commentsDesc' =>
+            $query
+                ->withCount('comments')
+                ->orderBy(
+                    'comments_count',
+                    'desc'
+                )
+                ->orderByDesc('id'),
 
-            'tagsAsc' => $query->withCount('tags')->orderBy('tags_count', 'asc')->orderByDesc('id'),
-            'tagsDesc' => $query->withCount('tags')->orderBy('tags_count', 'desc')->orderByDesc('id'),
+            'rubricsAsc' =>
+            $query
+                ->withCount('rubrics')
+                ->orderBy(
+                    'rubrics_count',
+                    'asc'
+                )
+                ->orderByDesc('id'),
 
-            'videosAsc' => $query->withCount('videos')->orderBy('videos_count', 'asc')->orderByDesc('id'),
-            'videosDesc' => $query->withCount('videos')->orderBy('videos_count', 'desc')->orderByDesc('id'),
+            'rubricsDesc' =>
+            $query
+                ->withCount('rubrics')
+                ->orderBy(
+                    'rubrics_count',
+                    'desc'
+                )
+                ->orderByDesc('id'),
 
-            'relatedArticlesAsc' => $query->withCount('relatedArticles')->orderBy('related_articles_count', 'asc')->orderByDesc('id'),
-            'relatedArticlesDesc' => $query->withCount('relatedArticles')->orderBy('related_articles_count', 'desc')->orderByDesc('id'),
+            'tagsAsc' =>
+            $query
+                ->withCount('tags')
+                ->orderBy(
+                    'tags_count',
+                    'asc'
+                )
+                ->orderByDesc('id'),
 
-            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
-            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
+            'tagsDesc' =>
+            $query
+                ->withCount('tags')
+                ->orderBy(
+                    'tags_count',
+                    'desc'
+                )
+                ->orderByDesc('id'),
 
-            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
-            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
+            'videosAsc' =>
+            $query
+                ->withCount('videos')
+                ->orderBy(
+                    'videos_count',
+                    'asc'
+                )
+                ->orderByDesc('id'),
 
-            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
-            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
+            'videosDesc' =>
+            $query
+                ->withCount('videos')
+                ->orderBy(
+                    'videos_count',
+                    'desc'
+                )
+                ->orderByDesc('id'),
 
-            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'relatedArticlesAsc' =>
+            $query
+                ->withCount(
+                    'relatedArticles'
+                )
+                ->orderBy(
+                    'related_articles_count',
+                    'asc'
+                )
+                ->orderByDesc('id'),
 
-            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+            'relatedArticlesDesc' =>
+            $query
+                ->withCount(
+                    'relatedArticles'
+                )
+                ->orderBy(
+                    'related_articles_count',
+                    'desc'
+                )
+                ->orderByDesc('id'),
 
-            'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
-            'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+            'publishedAtAsc' =>
+            $query
+                ->orderBy(
+                    'published_at',
+                    'asc'
+                )
+                ->orderByDesc('id'),
 
-            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
-            'activity' => $query->where('activity', true)->orderByDesc('id'),
-            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+            'publishedAtDesc' =>
+            $query
+                ->orderBy(
+                    'published_at',
+                    'desc'
+                )
+                ->orderByDesc('id'),
 
-            'leftAsc' => $query->orderBy('left', 'asc')->orderByDesc('id'),
-            'leftDesc' => $query->orderBy('left', 'desc')->orderByDesc('id'),
-            'left' => $query->where('left', true)->orderByDesc('id'),
-            'noLeft' => $query->where('left', false)->orderByDesc('id'),
+            'showFromAtAsc' =>
+            $query
+                ->orderBy(
+                    'show_from_at',
+                    'asc'
+                )
+                ->orderByDesc('id'),
 
-            'mainAsc' => $query->orderBy('main', 'asc')->orderByDesc('id'),
-            'mainDesc' => $query->orderBy('main', 'desc')->orderByDesc('id'),
-            'main' => $query->where('main', true)->orderByDesc('id'),
-            'noMain' => $query->where('main', false)->orderByDesc('id'),
+            'showFromAtDesc' =>
+            $query
+                ->orderBy(
+                    'show_from_at',
+                    'desc'
+                )
+                ->orderByDesc('id'),
 
-            'rightAsc' => $query->orderBy('right', 'asc')->orderByDesc('id'),
-            'rightDesc' => $query->orderBy('right', 'desc')->orderByDesc('id'),
-            'right' => $query->where('right', true)->orderByDesc('id'),
-            'noRight' => $query->where('right', false)->orderByDesc('id'),
+            'showToAtAsc' =>
+            $query
+                ->orderBy(
+                    'show_to_at',
+                    'asc'
+                )
+                ->orderByDesc('id'),
 
-            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
-            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
-            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
-            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
-            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+            'showToAtDesc' =>
+            $query
+                ->orderBy(
+                    'show_to_at',
+                    'desc'
+                )
+                ->orderByDesc('id'),
+
+            'createdAtAsc',
+            'dateAsc' =>
+            $query
+                ->orderBy(
+                    'created_at',
+                    'asc'
+                )
+                ->orderByDesc('id'),
+
+            'createdAtDesc',
+            'dateDesc' =>
+            $query
+                ->orderBy(
+                    'created_at',
+                    'desc'
+                )
+                ->orderByDesc('id'),
+
+            'updatedAtAsc' =>
+            $query
+                ->orderBy(
+                    'updated_at',
+                    'asc'
+                )
+                ->orderByDesc('id'),
+
+            'updatedAtDesc' =>
+            $query
+                ->orderBy(
+                    'updated_at',
+                    'desc'
+                )
+                ->orderByDesc('id'),
+
+            'imagesAsc' =>
+            $query
+                ->withCount('images')
+                ->orderBy(
+                    'images_count',
+                    'asc'
+                )
+                ->orderByDesc('id'),
+
+            'imagesDesc' =>
+            $query
+                ->withCount('images')
+                ->orderBy(
+                    'images_count',
+                    'desc'
+                )
+                ->orderByDesc('id'),
+
+            'activityAsc' =>
+            $query
+                ->orderBy(
+                    'activity',
+                    'asc'
+                )
+                ->orderByDesc('id'),
+
+            'activityDesc' =>
+            $query
+                ->orderBy(
+                    'activity',
+                    'desc'
+                )
+                ->orderByDesc('id'),
+
+            'activity' =>
+            $query
+                ->where(
+                    'activity',
+                    true
+                )
+                ->orderByDesc('id'),
+
+            'inactive' =>
+            $query
+                ->where(
+                    'activity',
+                    false
+                )
+                ->orderByDesc('id'),
+
+            'leftAsc' =>
+            $query
+                ->orderBy(
+                    'left',
+                    'asc'
+                )
+                ->orderByDesc('id'),
+
+            'leftDesc' =>
+            $query
+                ->orderBy(
+                    'left',
+                    'desc'
+                )
+                ->orderByDesc('id'),
+
+            'left' =>
+            $query
+                ->where(
+                    'left',
+                    true
+                )
+                ->orderByDesc('id'),
+
+            'noLeft' =>
+            $query
+                ->where(
+                    'left',
+                    false
+                )
+                ->orderByDesc('id'),
+
+            'mainAsc' =>
+            $query
+                ->orderBy(
+                    'main',
+                    'asc'
+                )
+                ->orderByDesc('id'),
+
+            'mainDesc' =>
+            $query
+                ->orderBy(
+                    'main',
+                    'desc'
+                )
+                ->orderByDesc('id'),
+
+            'main' =>
+            $query
+                ->where(
+                    'main',
+                    true
+                )
+                ->orderByDesc('id'),
+
+            'noMain' =>
+            $query
+                ->where(
+                    'main',
+                    false
+                )
+                ->orderByDesc('id'),
+
+            'rightAsc' =>
+            $query
+                ->orderBy(
+                    'right',
+                    'asc'
+                )
+                ->orderByDesc('id'),
+
+            'rightDesc' =>
+            $query
+                ->orderBy(
+                    'right',
+                    'desc'
+                )
+                ->orderByDesc('id'),
+
+            'right' =>
+            $query
+                ->where(
+                    'right',
+                    true
+                )
+                ->orderByDesc('id'),
+
+            'noRight' =>
+            $query
+                ->where(
+                    'right',
+                    false
+                )
+                ->orderByDesc('id'),
+
+            'moderationStatusAsc' =>
+            $query
+                ->orderBy(
+                    'moderation_status',
+                    'asc'
+                )
+                ->orderByDesc('id'),
+
+            'moderationStatusDesc' =>
+            $query
+                ->orderBy(
+                    'moderation_status',
+                    'desc'
+                )
+                ->orderByDesc('id'),
+
+            'moderationPending' =>
+            $query
+                ->where(
+                    'moderation_status',
+                    0
+                )
+                ->orderByDesc('id'),
+
+            'moderationApproved' =>
+            $query
+                ->where(
+                    'moderation_status',
+                    1
+                )
+                ->orderByDesc('id'),
+
+            'moderationRejected' =>
+            $query
+                ->where(
+                    'moderation_status',
+                    2
+                )
+                ->orderByDesc('id'),
 
             'ownerNameAsc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
-                ->orderBy('owner_sort.name', 'asc')
-                ->orderByDesc('blog_articles.id')
-                ->addSelect('blog_articles.*'),
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'blog_articles.user_id'
+                )
+                ->orderBy(
+                    'owner_sort.name',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                )
+                ->addSelect(
+                    'blog_articles.*'
+                ),
 
             'ownerNameDesc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
-                ->orderBy('owner_sort.name', 'desc')
-                ->orderByDesc('blog_articles.id')
-                ->addSelect('blog_articles.*'),
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'blog_articles.user_id'
+                )
+                ->orderBy(
+                    'owner_sort.name',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                )
+                ->addSelect(
+                    'blog_articles.*'
+                ),
 
             'ownerEmailAsc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
-                ->orderBy('owner_sort.email', 'asc')
-                ->orderByDesc('blog_articles.id')
-                ->addSelect('blog_articles.*'),
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'blog_articles.user_id'
+                )
+                ->orderBy(
+                    'owner_sort.email',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                )
+                ->addSelect(
+                    'blog_articles.*'
+                ),
 
             'ownerEmailDesc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_articles.user_id')
-                ->orderBy('owner_sort.email', 'desc')
-                ->orderByDesc('blog_articles.id')
-                ->addSelect('blog_articles.*'),
+                ->leftJoin(
+                    'users as owner_sort',
+                    'owner_sort.id',
+                    '=',
+                    'blog_articles.user_id'
+                )
+                ->orderBy(
+                    'owner_sort.email',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                )
+                ->addSelect(
+                    'blog_articles.*'
+                ),
 
-            default => $query->ordered(),
+            default =>
+            $query->ordered(),
         };
+    }
+
+    /* ======================== Public sort ======================== */
+
+    /**
+     * Сортировка Public-статей.
+     *
+     * Поддерживаются только варианты,
+     * реально доступные Public UI.
+     *
+     * likes_count должен быть добавлен
+     * Public Controller через withCount('likes').
+     */
+    public function scopePublicSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale =
+            $locale ?: app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return match ($sort) {
+            'sortAsc' =>
+            $query
+                ->orderBy(
+                    'blog_articles.sort',
+                    'asc'
+                )
+                ->orderBy(
+                    'blog_articles.id',
+                    'asc'
+                ),
+
+            'sortDesc' =>
+            $query
+                ->orderBy(
+                    'blog_articles.sort',
+                    'desc'
+                )
+                ->orderBy(
+                    'blog_articles.id',
+                    'desc'
+                ),
+
+            'idAsc' =>
+            $query->orderBy(
+                'blog_articles.id',
+                'asc'
+            ),
+
+            'idDesc' =>
+            $query->orderBy(
+                'blog_articles.id',
+                'desc'
+            ),
+
+            'titleAsc' =>
+            $this->applyPublicTitleSort(
+                $query,
+                $locale,
+                $fallbackLocale,
+                'asc'
+            ),
+
+            'titleDesc' =>
+            $this->applyPublicTitleSort(
+                $query,
+                $locale,
+                $fallbackLocale,
+                'desc'
+            ),
+
+            'viewsAsc' =>
+            $query
+                ->orderBy(
+                    'blog_articles.views',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                ),
+
+            'viewsDesc' =>
+            $query
+                ->orderBy(
+                    'blog_articles.views',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                ),
+
+            'likesAsc' =>
+            $query
+                ->orderBy(
+                    'likes_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                ),
+
+            'likesDesc' =>
+            $query
+                ->orderBy(
+                    'likes_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                ),
+
+            /**
+             * Vue использует:
+             *
+             * published_at || created_at.
+             *
+             * COALESCE воспроизводит
+             * ту же логику на SQL.
+             */
+            'dateAsc' =>
+            $query
+                ->orderByRaw(
+                    'COALESCE(
+                            blog_articles.published_at,
+                            blog_articles.created_at
+                        ) ASC'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                ),
+
+            'dateDesc' =>
+            $query
+                ->orderByRaw(
+                    'COALESCE(
+                            blog_articles.published_at,
+                            blog_articles.created_at
+                        ) DESC'
+                )
+                ->orderByDesc(
+                    'blog_articles.id'
+                ),
+
+            default =>
+            $query
+                ->orderBy(
+                    'blog_articles.sort',
+                    'asc'
+                )
+                ->orderBy(
+                    'blog_articles.id',
+                    'asc'
+                ),
+        };
+    }
+
+    /* ======================== Public helpers ======================== */
+
+    /**
+     * Поиск по эффективному переводу статьи.
+     *
+     * Если current translation существует,
+     * fallback translation не участвует
+     * в поиске.
+     */
+    protected function applyPublicTranslationSearch(
+        Builder $query,
+        string $term,
+        string $locale,
+        string $fallbackLocale
+    ): void {
+        $query->whereHas(
+            'translations',
+            function (Builder $translationQuery) use (
+                $term,
+                $locale
+            ) {
+                $translationQuery
+                    ->where(
+                        'locale',
+                        $locale
+                    )
+                    ->where(
+                        function (Builder $fieldQuery) use ($term) {
+                            $this->applyPublicArticleTranslationFields(
+                                $fieldQuery,
+                                $term
+                            );
+                        }
+                    );
+            }
+        );
+
+        if ($fallbackLocale === $locale) {
+            return;
+        }
+
+        $query->orWhere(
+            function (Builder $fallbackQuery) use (
+                $term,
+                $locale,
+                $fallbackLocale
+            ) {
+                $fallbackQuery
+                    ->whereDoesntHave(
+                        'translations',
+                        fn (Builder $currentQuery) =>
+                        $currentQuery->where(
+                            'locale',
+                            $locale
+                        )
+                    )
+                    ->whereHas(
+                        'translations',
+                        function (Builder $translationQuery) use (
+                            $term,
+                            $fallbackLocale
+                        ) {
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $fallbackLocale
+                                )
+                                ->where(
+                                    function (Builder $fieldQuery) use ($term) {
+                                        $this->applyPublicArticleTranslationFields(
+                                            $fieldQuery,
+                                            $term
+                                        );
+                                    }
+                                );
+                        }
+                    );
+            }
+        );
+    }
+
+    /**
+     * Переводимые поля,
+     * доступные Public-поиску.
+     */
+    protected function applyPublicArticleTranslationFields(
+        Builder $query,
+        string $term
+    ): void {
+        $query->where(
+            'title',
+            'like',
+            "%{$term}%"
+        )
+            ->orWhere(
+                'subtitle',
+                'like',
+                "%{$term}%"
+            )
+            ->orWhere(
+                'short',
+                'like',
+                "%{$term}%"
+            )
+            ->orWhere(
+                'description',
+                'like',
+                "%{$term}%"
+            )
+            ->orWhere(
+                'pseudonym',
+                'like',
+                "%{$term}%"
+            );
+    }
+
+    /**
+     * Public-поиск по названию рубрики
+     * с current locale → fallback.
+     */
+    protected function applyPublicRubricTranslationSearch(
+        Builder $query,
+        string $term,
+        string $locale,
+        string $fallbackLocale
+    ): void {
+        $query->whereHas(
+            'translations',
+            function (Builder $translationQuery) use (
+                $term,
+                $locale
+            ) {
+                $translationQuery
+                    ->where(
+                        'locale',
+                        $locale
+                    )
+                    ->where(
+                        'title',
+                        'like',
+                        "%{$term}%"
+                    );
+            }
+        );
+
+        if ($fallbackLocale === $locale) {
+            return;
+        }
+
+        $query->orWhere(
+            function (Builder $fallbackQuery) use (
+                $term,
+                $locale,
+                $fallbackLocale
+            ) {
+                $fallbackQuery
+                    ->whereDoesntHave(
+                        'translations',
+                        fn (Builder $currentQuery) =>
+                        $currentQuery->where(
+                            'locale',
+                            $locale
+                        )
+                    )
+                    ->whereHas(
+                        'translations',
+                        function (Builder $translationQuery) use (
+                            $term,
+                            $fallbackLocale
+                        ) {
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $fallbackLocale
+                                )
+                                ->where(
+                                    'title',
+                                    'like',
+                                    "%{$term}%"
+                                );
+                        }
+                    );
+            }
+        );
+    }
+
+    /**
+     * Public-сортировка по title
+     * с current locale → fallback.
+     *
+     * Важно:
+     * fallback используется только если
+     * current translation отсутствует.
+     *
+     * Это соответствует
+     * translationOrFallback().
+     */
+    protected function applyPublicTitleSort(
+        Builder $query,
+        string $locale,
+        string $fallbackLocale,
+        string $direction
+    ): Builder {
+        $direction =
+            strtolower($direction) === 'desc'
+                ? 'DESC'
+                : 'ASC';
+
+        $query->leftJoin(
+            'blog_article_translations as bat_public_current',
+            function ($join) use ($locale) {
+                $join
+                    ->on(
+                        'bat_public_current.article_id',
+                        '=',
+                        'blog_articles.id'
+                    )
+                    ->where(
+                        'bat_public_current.locale',
+                        '=',
+                        $locale
+                    );
+            }
+        );
+
+        if ($fallbackLocale !== $locale) {
+            $query->leftJoin(
+                'blog_article_translations as bat_public_fallback',
+                function ($join) use ($fallbackLocale) {
+                    $join
+                        ->on(
+                            'bat_public_fallback.article_id',
+                            '=',
+                            'blog_articles.id'
+                        )
+                        ->where(
+                            'bat_public_fallback.locale',
+                            '=',
+                            $fallbackLocale
+                        );
+                }
+            );
+
+            $query->orderByRaw(
+                "
+                    CASE
+                        WHEN bat_public_current.id IS NOT NULL
+                            THEN bat_public_current.title
+                        ELSE bat_public_fallback.title
+                    END {$direction}
+                "
+            );
+        } else {
+            $query->orderBy(
+                'bat_public_current.title',
+                strtolower($direction)
+            );
+        }
+
+        return $query
+            ->orderByDesc(
+                'blog_articles.id'
+            )
+            ->addSelect(
+                'blog_articles.*'
+            );
     }
 }

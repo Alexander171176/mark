@@ -23,8 +23,8 @@ import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPag
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
 import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 
-import RubricArticleGrid from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleGrid.vue'
-import RubricArticleRows from '@/Components/Public/Default/Blog/BlogRubric/RubricArticleRows.vue'
+import ArticleGrid from '@/Components/Public/Default/Blog/BlogArticle/ArticleGrid.vue'
+import ArticleRows from '@/Components/Public/Default/Blog/BlogArticle/ArticleRows.vue'
 
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
@@ -216,7 +216,7 @@ const dcSubject = computed(() =>
  * Для Index используем первое доступное
  * изображение статьи как social preview.
  */
-const seoImage = computed(() => {
+const seoPreview = computed(() => {
     for (const article of articlesData.value) {
         const images = normalizeList(
             article?.images
@@ -232,12 +232,28 @@ const seoImage = computed(() => {
             || ''
 
         if (url) {
-            return url
+            return {
+                url,
+                alt:
+                    getArticleTitle(article)
+                    || seoTitle.value,
+            }
         }
     }
 
-    return ''
+    return {
+        url: '',
+        alt: '',
+    }
 })
+
+const seoImage = computed(() =>
+    seoPreview.value.url
+)
+
+const seoImageAlt = computed(() =>
+    seoPreview.value.alt
+)
 
 /* ======================== Filters ======================== */
 
@@ -356,6 +372,16 @@ const filteredArticles = computed(() => {
 
     return articlesData.value.filter(
         (article) => {
+            const rubricTitles = normalizeList(
+                article?.rubrics
+            )
+                .map(
+                    (rubric) =>
+                        rubric?.translation?.title
+                        || ''
+                )
+                .join(' ')
+
             return [
                 article?.id,
                 getArticleTitle(article),
@@ -365,6 +391,7 @@ const filteredArticles = computed(() => {
                 article?.url,
                 getArticleAuthor(article),
                 article?.owner?.name,
+                rubricTitles,
             ].some((value) =>
                 normalizeText(value).includes(query)
             )
@@ -422,83 +449,119 @@ const sortedArticles = computed(() => {
 
         case 'titleAsc':
             list.sort((a, b) =>
-                compareText(
-                    getArticleTitle(a),
-                    getArticleTitle(b)
-                )
+                    compareText(
+                        getArticleTitle(a),
+                        getArticleTitle(b)
+                    )
+                    || compareNumber(
+                        b?.id,
+                        a?.id
+                    )
             )
             break
 
         case 'titleDesc':
             list.sort((a, b) =>
-                compareText(
-                    getArticleTitle(b),
-                    getArticleTitle(a)
-                )
+                    compareText(
+                        getArticleTitle(b),
+                        getArticleTitle(a)
+                    )
+                    || compareNumber(
+                        b?.id,
+                        a?.id
+                    )
             )
             break
 
         case 'viewsAsc':
             list.sort((a, b) =>
-                compareNumber(
-                    a?.views,
-                    b?.views
-                )
+                    compareNumber(
+                        a?.views,
+                        b?.views
+                    )
+                    || compareNumber(
+                        b?.id,
+                        a?.id
+                    )
             )
             break
 
         case 'viewsDesc':
             list.sort((a, b) =>
-                compareNumber(
-                    b?.views,
-                    a?.views
-                )
+                    compareNumber(
+                        b?.views,
+                        a?.views
+                    )
+                    || compareNumber(
+                        b?.id,
+                        a?.id
+                    )
             )
             break
 
         case 'likesAsc':
             list.sort((a, b) =>
-                compareNumber(
-                    a?.likes_count,
-                    b?.likes_count
-                )
+                    compareNumber(
+                        a?.likes_count,
+                        b?.likes_count
+                    )
+                    || compareNumber(
+                        b?.id,
+                        a?.id
+                    )
             )
             break
 
         case 'likesDesc':
             list.sort((a, b) =>
-                compareNumber(
-                    b?.likes_count,
-                    a?.likes_count
-                )
+                    compareNumber(
+                        b?.likes_count,
+                        a?.likes_count
+                    )
+                    || compareNumber(
+                        b?.id,
+                        a?.id
+                    )
             )
             break
 
         case 'dateAsc':
             list.sort((a, b) =>
-                safeDate(
-                    a?.published_at
-                    || a?.created_at
-                )
-                -
-                safeDate(
-                    b?.published_at
-                    || b?.created_at
-                )
+                    (
+                        safeDate(
+                            a?.published_at
+                            || a?.created_at
+                        )
+                        -
+                        safeDate(
+                            b?.published_at
+                            || b?.created_at
+                        )
+                    )
+                    || compareNumber(
+                        b?.id,
+                        a?.id
+                    )
             )
             break
 
         case 'dateDesc':
             list.sort((a, b) =>
-                safeDate(
-                    b?.published_at
-                    || b?.created_at
-                )
-                -
-                safeDate(
-                    a?.published_at
-                    || a?.created_at
-                )
+                    (
+                        safeDate(
+                            b?.published_at
+                            || b?.created_at
+                        )
+                        -
+                        safeDate(
+                            a?.published_at
+                            || a?.created_at
+                        )
+                    )
+                    || compareNumber(
+                        b?.id,
+                        a?.id
+                    )
             )
             break
     }
@@ -820,12 +883,6 @@ const articleGridCols = computed(() => {
         >
 
         <meta
-            v-if="seoDescription"
-            name="description"
-            :content="seoDescription"
-        >
-
-        <meta
             v-if="seoKeywords"
             name="keywords"
             :content="seoKeywords"
@@ -875,6 +932,12 @@ const articleGridCols = computed(() => {
             :content="seoImage"
         >
 
+        <meta
+            v-if="seoImage && seoImageAlt"
+            property="og:image:alt"
+            :content="seoImageAlt"
+        >
+
         <!-- Twitter / X -->
         <meta
             name="twitter:card"
@@ -900,6 +963,12 @@ const articleGridCols = computed(() => {
             v-if="seoImage"
             name="twitter:image"
             :content="seoImage"
+        >
+
+        <meta
+            v-if="seoImage && seoImageAlt"
+            name="twitter:image:alt"
+            :content="seoImageAlt"
         >
 
         <!-- Dublin Core -->
@@ -1009,6 +1078,7 @@ const articleGridCols = computed(() => {
                         >
                             <ol class="flex flex-wrap items-center font-semibold">
 
+                                <!-- Home -->
                                 <li
                                     itemprop="itemListElement"
                                     itemscope
@@ -1031,32 +1101,7 @@ const articleGridCols = computed(() => {
                                     >
                                 </li>
 
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <span class="mx-2 breadcrumbs">
-                                        /
-                                    </span>
-
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('public.blogRubrics.index')"
-                                        class="breadcrumb-link hover:underline"
-                                    >
-                                        <span itemprop="name">
-                                            {{ t('rubrics') }}
-                                        </span>
-                                    </Link>
-
-                                    <meta
-                                        itemprop="position"
-                                        content="2"
-                                    >
-                                </li>
-
+                                <!-- Articles -->
                                 <li
                                     itemprop="itemListElement"
                                     itemscope
@@ -1082,9 +1127,10 @@ const articleGridCols = computed(() => {
 
                                     <meta
                                         itemprop="position"
-                                        content="3"
+                                        content="2"
                                     >
                                 </li>
+
                             </ol>
                         </nav>
 
@@ -1104,7 +1150,7 @@ const articleGridCols = computed(() => {
                             </svg>
 
                             <h1
-                                itemprop="headline"
+                                itemprop="name"
                                 class="text-2xl font-bold"
                             >
                                 {{ t('articles') }}
@@ -1113,7 +1159,7 @@ const articleGridCols = computed(() => {
 
                         <div
                             v-if="seoDescription"
-                            itemprop="abstract"
+                            itemprop="description"
                             class="my-1 text-sm subtitle text-center"
                         >
                             {{ seoDescription }}
@@ -1145,14 +1191,16 @@ const articleGridCols = computed(() => {
 
                         <!-- Articles -->
                         <div v-else>
-                            <RubricArticleGrid
+                            <ArticleGrid
                                 v-if="viewMode === 'grid'"
+                                itemprop="mainEntity"
                                 :articles="displayedArticles"
                                 :cols="articleGridCols"
                             />
 
-                            <RubricArticleRows
+                            <ArticleRows
                                 v-else
+                                itemprop="mainEntity"
                                 :articles="displayedArticles"
                             />
                         </div>

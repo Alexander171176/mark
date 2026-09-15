@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 
 import HashtagsSidebar from '@/Components/Public/Default/School/SchoolHashtag/HashtagsSidebar.vue'
 import RecentCoursesSidebar from '@/Components/Public/Default/School/SchoolCourse/RecentCoursesSidebar.vue'
-import RightBannersSidebar from '@/Components/Public/Default/Blog/BlogBanner/RightBannersSidebar.vue'
-import RightVideosSidebar from '@/Components/Public/Default/Blog/BlogVideo/RightVideosSidebar.vue'
+import BannersSidebar from '@/Components/Public/Default/Blog/BlogBanner/BannersSidebar.vue'
+import VideosSidebar from '@/Components/Public/Default/Blog/BlogVideo/VideosSidebar.vue'
 
 const emit = defineEmits(['collapsed'])
 
@@ -60,8 +60,8 @@ const toggleSidebar = () => {
         <div v-show="!isCollapsed" class="flex flex-col gap-4">
             <HashtagsSidebar :hashtags="hashtags" />
             <RecentCoursesSidebar :courses="rightCourses" />
-            <RightBannersSidebar :right-banners="rightBanners" />
-            <RightVideosSidebar :videos="rightVideos" />
+            <BannersSidebar :right-banners="rightBanners" />
+            <VideosSidebar :videos="rightVideos" />
         </div>
     </div>
 </template>

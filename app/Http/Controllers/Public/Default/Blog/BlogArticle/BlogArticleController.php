@@ -220,7 +220,10 @@ class BlogArticleController extends Controller
                  * Current locale + fallback.
                  */
                 'translations' => fn ($query) =>
-                $query->whereIn('locale', $locales),
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
 
                 /**
                  * Автор.
@@ -234,37 +237,58 @@ class BlogArticleController extends Controller
 
                 /**
                  * Только публичные теги.
+                 *
+                 * Public-сортировка:
+                 * current locale -> fallback.
                  */
-                'tags' => fn ($query) => $query
+                'tags' => fn ($query) =>
+                $query
                     ->forPublic()
                     ->with([
                         'translations' => fn ($translationQuery) =>
-                        $translationQuery->whereIn('locale', $locales),
+                        $translationQuery->whereIn(
+                            'locale',
+                            $locales
+                        ),
                     ])
-                    ->ordered($locale),
+                    ->publicOrdered(
+                        $locale,
+                        $fallbackLocale
+                    ),
 
                 /**
                  * Только публичные рубрики.
                  */
-                'rubrics' => fn ($query) => $query
+                'rubrics' => fn ($query) =>
+                $query
                     ->forPublic()
                     ->with([
                         'translations' => fn ($translationQuery) =>
-                        $translationQuery->whereIn('locale', $locales),
+                        $translationQuery->whereIn(
+                            'locale',
+                            $locales
+                        ),
                     ]),
 
                 /**
                  * Публичные видео статьи.
                  *
-                 * Для блока RecommendedVideos
-                 * достаточно SharedResource.
+                 * Public-специфичную сортировку
+                 * BlogVideo добавим на этапе
+                 * рефакторинга сущности Video.
                  */
-                'videos' => function ($query) use ($locale, $locales) {
+                'videos' => function ($query) use (
+                    $locale,
+                    $locales
+                ) {
                     $query
                         ->forPublic()
                         ->with([
                             'translations' => fn ($translationQuery) =>
-                            $translationQuery->whereIn('locale', $locales),
+                            $translationQuery->whereIn(
+                                'locale',
+                                $locales
+                            ),
 
                             'owner',
 
@@ -284,23 +308,36 @@ class BlogArticleController extends Controller
 
                 /**
                  * Рекомендованные статьи.
+                 *
+                 * Это BlogArticle, поэтому
+                 * используем Public-контракт.
                  */
-                'relatedArticles' => function ($query) use ($locale, $locales) {
+                'relatedArticles' => function ($query) use (
+                    $locale,
+                    $locales
+                ) {
                     $query
                         ->forPublic()
                         ->with([
                             'translations' => fn ($translationQuery) =>
-                            $translationQuery->whereIn('locale', $locales),
+                            $translationQuery->whereIn(
+                                'locale',
+                                $locales
+                            ),
 
                             'owner',
 
                             'images.media',
 
-                            'rubrics' => fn ($rubricQuery) => $rubricQuery
+                            'rubrics' => fn ($rubricQuery) =>
+                            $rubricQuery
                                 ->forPublic()
                                 ->with([
                                     'translations' => fn ($translationQuery) =>
-                                    $translationQuery->whereIn('locale', $locales),
+                                    $translationQuery->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
                                 ]),
                         ])
                         ->withCount([
@@ -309,7 +346,7 @@ class BlogArticleController extends Controller
 
                     $this->withUserLike($query);
 
-                    $query->sortByParam(
+                    $query->publicSortByParam(
                         'sortAsc',
                         $locale
                     );
@@ -330,7 +367,17 @@ class BlogArticleController extends Controller
         $article = $articleQuery
             ->firstOrFail();
 
-        $article->increment('views');
+        /**
+         * Просмотр статьи не является
+         * изменением её содержимого.
+         *
+         * updated_at не обновляем,
+         * потому что он используется
+         * как SEO dateModified.
+         */
+        BlogArticle::withoutTimestamps(
+            fn () => $article->increment('views')
+        );
 
         /* ======================== Breadcrumb ======================== */
 

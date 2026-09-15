@@ -87,7 +87,9 @@ class BlogVideo extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('videos')->singleFile();
+        $this
+            ->addMediaCollection('videos')
+            ->singleFile();
     }
 
     /* ======================== Relations ======================== */
@@ -95,39 +97,71 @@ class BlogVideo extends Model implements HasMedia
     /** Владелец видео */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
 
     /** Модератор видео */
     public function moderator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'moderated_by');
+        return $this->belongsTo(
+            User::class,
+            'moderated_by'
+        );
     }
 
     /** Переводы видео */
     public function translations(): HasMany
     {
-        return $this->hasMany(BlogVideoTranslation::class, 'video_id');
+        return $this->hasMany(
+            BlogVideoTranslation::class,
+            'video_id'
+        );
     }
 
     /** Текущий перевод по locale */
-    public function translation(?string $locale = null): ?BlogVideoTranslation
-    {
-        $locale = $locale ?: app()->getLocale();
+    public function translation(
+        ?string $locale = null
+    ): ?BlogVideoTranslation {
+        $locale = $locale
+            ?: app()->getLocale();
 
         return $this->translations
-            ->where('locale', $locale)
+            ->where(
+                'locale',
+                $locale
+            )
             ->first();
     }
 
     /** Перевод с fallback */
-    public function translationOrFallback(?string $locale = null, string $fallback = 'ru'): ?BlogVideoTranslation
-    {
-        $locale = $locale ?: app()->getLocale();
+    public function translationOrFallback(
+        ?string $locale = null,
+        ?string $fallback = null
+    ): ?BlogVideoTranslation {
+        $locale = $locale
+            ?: app()->getLocale();
 
-        return $this->translations->firstWhere('locale', $locale)
-            ?: $this->translations->firstWhere('locale', $fallback)
-                ?: $this->translations->first();
+        $fallback = $fallback
+            ?: config(
+                'app.fallback_locale',
+                'ru'
+            );
+
+        return $this->translations
+            ->firstWhere(
+                'locale',
+                $locale
+            )
+            ?: $this->translations
+                ->firstWhere(
+                    'locale',
+                    $fallback
+                )
+                ?: $this->translations
+                    ->first();
     }
 
     /** Видео используется в статьях */
@@ -184,13 +218,19 @@ class BlogVideo extends Model implements HasMedia
     /** Комментарии */
     public function comments(): MorphMany
     {
-        return $this->morphMany(Comment::class, 'commentable');
+        return $this->morphMany(
+            Comment::class,
+            'commentable'
+        );
     }
 
     /** Лайки */
     public function likes(): HasMany
     {
-        return $this->hasMany(BlogVideoLike::class, 'video_id');
+        return $this->hasMany(
+            BlogVideoLike::class,
+            'video_id'
+        );
     }
 
     /** Пользователи, лайкнувшие видео */
@@ -222,49 +262,94 @@ class BlogVideo extends Model implements HasMedia
 
     public function getEmbedUrlAttribute(): ?string
     {
-        // youtube
-        if ($this->source_type === 'youtube' && $this->external_video_id) {
-            if (preg_match('/(?:v=|youtu\.be\/)([^&\s]+)/', $this->external_video_id, $m)) {
-                return "https://www.youtube.com/embed/{$m[1]}";
+        /**
+         * YouTube.
+         */
+        if (
+            $this->source_type === 'youtube'
+            && $this->external_video_id
+        ) {
+            if (
+                preg_match(
+                    '/(?:v=|youtu\.be\/)([^&\s]+)/',
+                    $this->external_video_id,
+                    $matches
+                )
+            ) {
+                return 'https://www.youtube.com/embed/'
+                    . $matches[1];
             }
         }
 
-        // vimeo
-        if ($this->source_type === 'vimeo' && $this->external_video_id) {
-            if (preg_match('/vimeo\.com\/(?:video\/)?(\d+)/', $this->external_video_id, $m)) {
-                return "https://player.vimeo.com/video/{$m[1]}";
+        /**
+         * Vimeo.
+         */
+        if (
+            $this->source_type === 'vimeo'
+            && $this->external_video_id
+        ) {
+            if (
+                preg_match(
+                    '/vimeo\.com\/(?:video\/)?(\d+)/',
+                    $this->external_video_id,
+                    $matches
+                )
+            ) {
+                return 'https://player.vimeo.com/video/'
+                    . $matches[1];
             }
         }
 
         return null;
     }
 
-    public function getTranslatedTitle(?string $locale = null, string $fallback = 'ru'): ?string
-    {
-        return $this->translationOrFallback($locale, $fallback)?->title;
+    /** Получить title из текущего перевода / fallback */
+    public function getTranslatedTitle(
+        ?string $locale = null,
+        ?string $fallback = null
+    ): ?string {
+        return $this
+            ->translationOrFallback(
+                $locale,
+                $fallback
+            )
+            ?->title;
     }
 
     /* ======================== Helpers ======================== */
 
+    /** Активно ли видео */
     public function isActive(): bool
     {
         return (bool) $this->activity;
     }
 
+    /** Прошло ли видео модерацию */
     public function isApproved(): bool
     {
         return (int) $this->moderation_status === 1;
     }
 
+    /** Находится ли видео в окне показа */
     public function isPublishedNow(): bool
     {
         $now = now();
 
-        if ($this->show_from_at && $now->lt($this->show_from_at)) {
+        if (
+            $this->show_from_at
+            && $now->lt(
+                $this->show_from_at
+            )
+        ) {
             return false;
         }
 
-        if ($this->show_to_at && $now->gt($this->show_to_at)) {
+        if (
+            $this->show_to_at
+            && $now->gt(
+                $this->show_to_at
+            )
+        ) {
             return false;
         }
 
@@ -274,50 +359,90 @@ class BlogVideo extends Model implements HasMedia
     /* ======================== Scopes ======================== */
 
     /** Только активные */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('activity', true);
+    public function scopeActive(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'blog_videos.activity',
+            true
+        );
     }
 
     /** Только одобренные */
-    public function scopeApproved(Builder $query): Builder
-    {
-        return $query->where('moderation_status', 1);
+    public function scopeApproved(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'blog_videos.moderation_status',
+            1
+        );
     }
 
     /**
      * Видимые по окну показа:
-     * - show_from_at NULL или <= now
-     * - show_to_at NULL или >= now
+     *
+     * show_from_at IS NULL
+     * OR show_from_at <= now()
+     *
+     * show_to_at IS NULL
+     * OR show_to_at >= now()
      */
-    public function scopeInShowWindow(Builder $query): Builder
-    {
+    public function scopeInShowWindow(
+        Builder $query
+    ): Builder {
         return $query
-            ->where(function (Builder $q) {
-                $q->whereNull('show_from_at')
-                    ->orWhere('show_from_at', '<=', now());
-            })
-            ->where(function (Builder $q) {
-                $q->whereNull('show_to_at')
-                    ->orWhere('show_to_at', '>=', now());
-            });
+            ->where(
+                function (Builder $query) {
+                    $query
+                        ->whereNull(
+                            'blog_videos.show_from_at'
+                        )
+                        ->orWhere(
+                            'blog_videos.show_from_at',
+                            '<=',
+                            now()
+                        );
+                }
+            )
+            ->where(
+                function (Builder $query) {
+                    $query
+                        ->whereNull(
+                            'blog_videos.show_to_at'
+                        )
+                        ->orWhere(
+                            'blog_videos.show_to_at',
+                            '>=',
+                            now()
+                        );
+                }
+            );
     }
 
     /** Только публичные */
-    public function scopePublicOnly(Builder $query): Builder
-    {
-        return $query->where('is_private', false);
+    public function scopePublicOnly(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'blog_videos.is_private',
+            false
+        );
     }
 
     /** Только приватные */
-    public function scopePrivateOnly(Builder $query): Builder
-    {
-        return $query->where('is_private', true);
+    public function scopePrivateOnly(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'blog_videos.is_private',
+            true
+        );
     }
 
     /** Видимые */
-    public function scopeVisible(Builder $query): Builder
-    {
+    public function scopeVisible(
+        Builder $query
+    ): Builder {
         return $query
             ->publicOnly()
             ->approved()
@@ -326,8 +451,9 @@ class BlogVideo extends Model implements HasMedia
     }
 
     /** Публичный набор */
-    public function scopeForPublic(Builder $query): Builder
-    {
+    public function scopeForPublic(
+        Builder $query
+    ): Builder {
         return $query
             ->publicOnly()
             ->approved()
@@ -336,221 +462,1057 @@ class BlogVideo extends Model implements HasMedia
     }
 
     /** Левый блок */
-    public function scopeInLeft(Builder $query): Builder
-    {
-        return $query->where('left', true);
+    public function scopeInLeft(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'blog_videos.left',
+            true
+        );
     }
 
     /** Главный блок */
-    public function scopeInMain(Builder $query): Builder
-    {
-        return $query->where('main', true);
+    public function scopeInMain(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'blog_videos.main',
+            true
+        );
     }
 
     /** Правый блок */
-    public function scopeInRight(Builder $query): Builder
-    {
-        return $query->where('right', true);
+    public function scopeInRight(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'blog_videos.right',
+            true
+        );
     }
 
+    /* ======================== Admin search ======================== */
+
     /** Поиск по словам */
-    public function scopeSearch(Builder $query, ?string $term, ?string $locale = null): Builder
-    {
-        $term = trim((string) $term);
+    public function scopeSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        $term = trim(
+            (string) $term
+        );
 
         if ($term === '') {
             return $query;
         }
 
-        $locale = $locale ?: app()->getLocale();
+        $locale = $locale
+            ?: app()->getLocale();
 
-        $words = collect(preg_split('/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u', $term))
-            ->map(fn ($word) => trim($word))
-            ->filter(fn ($word) => mb_strlen($word) >= 2)
+        $words = collect(
+            preg_split(
+                '/[\s:#№,"\'«»(){}\[\].!?\/\\\\|;+=*&^%$@<>`~_-]+/u',
+                $term
+            )
+        )
+            ->map(
+                fn ($word) => trim($word)
+            )
+            ->filter(
+                fn ($word) =>
+                    mb_strlen($word) >= 2
+            )
             ->values();
 
         if ($words->isEmpty()) {
             return $query;
         }
 
-        return $query->where(function (Builder $query) use ($words, $locale) {
-            foreach ($words as $word) {
-                $query->where(function (Builder $query) use ($word, $locale) {
-                    $query
-                        ->where('blog_videos.url', 'like', "%{$word}%")
-                        ->orWhere('blog_videos.external_video_id', 'like', "%{$word}%")
-                        ->orWhere('blog_videos.source_type', 'like', "%{$word}%")
-                        ->orWhere('blog_videos.embed_code', 'like', "%{$word}%")
-                        ->orWhere('blog_videos.moderation_note', 'like', "%{$word}%")
-
-                        ->orWhereHas('translations', function (Builder $qq) use ($word, $locale) {
-                            $qq->where('locale', $locale)
-                                ->where(function (Builder $sub) use ($word) {
-                                    $sub->where('title', 'like', "%{$word}%")
-                                        ->orWhere('short', 'like', "%{$word}%")
-                                        ->orWhere('description', 'like', "%{$word}%")
-                                        ->orWhere('pseudonym', 'like', "%{$word}%")
-                                        ->orWhere('meta_title', 'like', "%{$word}%")
-                                        ->orWhere('meta_keywords', 'like', "%{$word}%")
-                                        ->orWhere('meta_desc', 'like', "%{$word}%");
-                                });
-                        })
-
-                        ->orWhereHas('owner', function (Builder $qq) use ($word) {
-                            $qq->where('name', 'like', "%{$word}%")
-                                ->orWhere('email', 'like', "%{$word}%");
-                        })
-
-                        ->orWhereHas('moderator', function (Builder $qq) use ($word) {
-                            $qq->where('name', 'like', "%{$word}%")
-                                ->orWhere('email', 'like', "%{$word}%");
-                        });
-                });
+        return $query->where(
+            function (Builder $query) use (
+                $words,
+                $locale
+            ) {
+                foreach ($words as $word) {
+                    $query->where(
+                        function (Builder $query) use (
+                            $word,
+                            $locale
+                        ) {
+                            $query
+                                ->where(
+                                    'blog_videos.url',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'blog_videos.external_video_id',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'blog_videos.source_type',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'blog_videos.embed_code',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'blog_videos.moderation_note',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhereHas(
+                                    'translations',
+                                    function (Builder $query) use (
+                                        $word,
+                                        $locale
+                                    ) {
+                                        $query
+                                            ->where(
+                                                'locale',
+                                                $locale
+                                            )
+                                            ->where(
+                                                function (Builder $subQuery) use ($word) {
+                                                    $subQuery
+                                                        ->where(
+                                                            'title',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'short',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'description',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'pseudonym',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'meta_title',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'meta_keywords',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'meta_desc',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        );
+                                                }
+                                            );
+                                    }
+                                )
+                                ->orWhereHas(
+                                    'owner',
+                                    function (Builder $query) use ($word) {
+                                        $query
+                                            ->where(
+                                                'name',
+                                                'like',
+                                                "%{$word}%"
+                                            )
+                                            ->orWhere(
+                                                'email',
+                                                'like',
+                                                "%{$word}%"
+                                            );
+                                    }
+                                )
+                                ->orWhereHas(
+                                    'moderator',
+                                    function (Builder $query) use ($word) {
+                                        $query
+                                            ->where(
+                                                'name',
+                                                'like',
+                                                "%{$word}%"
+                                            )
+                                            ->orWhere(
+                                                'email',
+                                                'like',
+                                                "%{$word}%"
+                                            );
+                                    }
+                                );
+                        }
+                    );
+                }
             }
-        });
+        );
     }
 
+    /* ======================== Public search ======================== */
+
+    /**
+     * Public-поиск видео.
+     *
+     * Поля соответствуют Public Index:
+     *
+     * - id;
+     * - title;
+     * - short;
+     * - pseudonym;
+     * - url;
+     * - source_type;
+     * - external_video_id;
+     * - owner.name.
+     *
+     * Переводы:
+     *
+     * current locale -> fallback.
+     */
+    public function scopePublicSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        $term = trim(
+            (string) $term
+        );
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $locale = $locale
+            ?: app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return $query->where(
+            function (Builder $searchQuery) use (
+                $term,
+                $locale,
+                $fallbackLocale
+            ) {
+                /**
+                 * ID.
+                 */
+                $searchQuery->where(
+                    'blog_videos.id',
+                    'like',
+                    "%{$term}%"
+                );
+
+                /**
+                 * URL.
+                 */
+                $searchQuery->orWhere(
+                    'blog_videos.url',
+                    'like',
+                    "%{$term}%"
+                );
+
+                /**
+                 * Тип источника.
+                 */
+                $searchQuery->orWhere(
+                    'blog_videos.source_type',
+                    'like',
+                    "%{$term}%"
+                );
+
+                /**
+                 * Внешний ID / URL видео.
+                 */
+                $searchQuery->orWhere(
+                    'blog_videos.external_video_id',
+                    'like',
+                    "%{$term}%"
+                );
+
+                /**
+                 * Автор.
+                 */
+                $searchQuery->orWhereHas(
+                    'owner',
+                    fn (Builder $ownerQuery) =>
+                    $ownerQuery->where(
+                        'name',
+                        'like',
+                        "%{$term}%"
+                    )
+                );
+
+                /**
+                 * Эффективный перевод:
+                 *
+                 * current locale,
+                 * либо fallback только если
+                 * current translation отсутствует.
+                 */
+                $searchQuery->orWhere(
+                    function (Builder $translationQuery) use (
+                        $term,
+                        $locale,
+                        $fallbackLocale
+                    ) {
+                        $this->applyPublicTranslationSearch(
+                            $translationQuery,
+                            $term,
+                            $locale,
+                            $fallbackLocale
+                        );
+                    }
+                );
+            }
+        );
+    }
+
+    /**
+     * Поиск по эффективному переводу.
+     */
+    protected function applyPublicTranslationSearch(
+        Builder $query,
+        string $term,
+        string $locale,
+        string $fallbackLocale
+    ): void {
+        $query->whereHas(
+            'translations',
+            function (Builder $translationQuery) use (
+                $term,
+                $locale
+            ) {
+                $translationQuery
+                    ->where(
+                        'locale',
+                        $locale
+                    )
+                    ->where(
+                        function (Builder $fieldQuery) use ($term) {
+                            $this->applyPublicTranslationFields(
+                                $fieldQuery,
+                                $term
+                            );
+                        }
+                    );
+            }
+        );
+
+        if ($locale === $fallbackLocale) {
+            return;
+        }
+
+        $query->orWhere(
+            function (Builder $fallbackQuery) use (
+                $term,
+                $locale,
+                $fallbackLocale
+            ) {
+                $fallbackQuery
+                    ->whereDoesntHave(
+                        'translations',
+                        function (Builder $currentTranslationQuery) use ($locale) {
+                            $currentTranslationQuery->where(
+                                'locale',
+                                $locale
+                            );
+                        }
+                    )
+                    ->whereHas(
+                        'translations',
+                        function (Builder $translationQuery) use (
+                            $term,
+                            $fallbackLocale
+                        ) {
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $fallbackLocale
+                                )
+                                ->where(
+                                    function (Builder $fieldQuery) use ($term) {
+                                        $this->applyPublicTranslationFields(
+                                            $fieldQuery,
+                                            $term
+                                        );
+                                    }
+                                );
+                        }
+                    );
+            }
+        );
+    }
+
+    /**
+     * Поля перевода для Public-поиска.
+     */
+    protected function applyPublicTranslationFields(
+        Builder $query,
+        string $term
+    ): void {
+        $query
+            ->where(
+                'title',
+                'like',
+                "%{$term}%"
+            )
+            ->orWhere(
+                'short',
+                'like',
+                "%{$term}%"
+            )
+            ->orWhere(
+                'pseudonym',
+                'like',
+                "%{$term}%"
+            );
+    }
+
+    /* ======================== Admin / Common sort ======================== */
+
     /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $query, ?string $sort, ?string $locale = null): Builder
-    {
-        $locale = $locale ?: app()->getLocale();
+    public function scopeSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale = $locale
+            ?: app()->getLocale();
 
         return match ($sort) {
-            'idAsc' => $query->orderBy('id', 'asc'),
-            'idDesc' => $query->orderBy('id', 'desc'),
+            'idAsc' =>
+            $query->orderBy(
+                'id',
+                'asc'
+            ),
 
-            'sortAsc' => $query->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sortDesc' => $query->orderBy('sort', 'desc')->orderByDesc('id'),
+            'idDesc' =>
+            $query->orderBy(
+                'id',
+                'desc'
+            ),
 
-            'urlAsc' => $query->orderBy('url', 'asc')->orderByDesc('id'),
-            'urlDesc' => $query->orderBy('url', 'desc')->orderByDesc('id'),
+            'sortAsc' =>
+            $query
+                ->orderBy(
+                    'sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'sourceTypeAsc' => $query->orderBy('source_type', 'asc')->orderByDesc('id'),
-            'sourceTypeDesc' => $query->orderBy('source_type', 'desc')->orderByDesc('id'),
+            'sortDesc' =>
+            $query
+                ->orderBy(
+                    'sort',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'publishedAtAsc' => $query->orderBy('published_at', 'asc')->orderByDesc('id'),
-            'publishedAtDesc' => $query->orderBy('published_at', 'desc')->orderByDesc('id'),
+            'urlAsc' =>
+            $query
+                ->orderBy(
+                    'url',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'showFromAtAsc' => $query->orderBy('show_from_at', 'asc')->orderByDesc('id'),
-            'showFromAtDesc' => $query->orderBy('show_from_at', 'desc')->orderByDesc('id'),
+            'urlDesc' =>
+            $query
+                ->orderBy(
+                    'url',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'showToAtAsc' => $query->orderBy('show_to_at', 'asc')->orderByDesc('id'),
-            'showToAtDesc' => $query->orderBy('show_to_at', 'desc')->orderByDesc('id'),
+            'sourceTypeAsc' =>
+            $query
+                ->orderBy(
+                    'source_type',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'createdAtAsc', 'dateAsc' => $query->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc', 'dateDesc' => $query->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'sourceTypeDesc' =>
+            $query
+                ->orderBy(
+                    'source_type',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'updatedAtAsc' => $query->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $query->orderBy('updated_at', 'desc')->orderByDesc('id'),
+            'publishedAtAsc' =>
+            $query
+                ->orderBy(
+                    'published_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'viewsAsc' => $query->orderBy('views', 'asc')->orderByDesc('id'),
-            'viewsDesc' => $query->orderBy('views', 'desc')->orderByDesc('id'),
+            'publishedAtDesc' =>
+            $query
+                ->orderBy(
+                    'published_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'likesAsc' => $query->withCount('likes')->orderBy('likes_count', 'asc')->orderByDesc('id'),
-            'likesDesc' => $query->withCount('likes')->orderBy('likes_count', 'desc')->orderByDesc('id'),
+            'showFromAtAsc' =>
+            $query
+                ->orderBy(
+                    'show_from_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'commentsAsc' => $query->withCount('comments')->orderBy('comments_count', 'asc')->orderByDesc('id'),
-            'commentsDesc' => $query->withCount('comments')->orderBy('comments_count', 'desc')->orderByDesc('id'),
+            'showFromAtDesc' =>
+            $query
+                ->orderBy(
+                    'show_from_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'imagesAsc' => $query->withCount('images')->orderBy('images_count', 'asc')->orderByDesc('id'),
-            'imagesDesc' => $query->withCount('images')->orderBy('images_count', 'desc')->orderByDesc('id'),
+            'showToAtAsc' =>
+            $query
+                ->orderBy(
+                    'show_to_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'articlesAsc' => $query->withCount('articles')->orderBy('articles_count', 'asc')->orderByDesc('id'),
-            'articlesDesc' => $query->withCount('articles')->orderBy('articles_count', 'desc')->orderByDesc('id'),
+            'showToAtDesc' =>
+            $query
+                ->orderBy(
+                    'show_to_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'relatedVideosAsc' => $query->withCount('relatedVideos')->orderBy('related_videos_count', 'asc')->orderByDesc('id'),
-            'relatedVideosDesc' => $query->withCount('relatedVideos')->orderBy('related_videos_count', 'desc')->orderByDesc('id'),
+            'createdAtAsc',
+            'dateAsc' =>
+            $query
+                ->orderBy(
+                    'created_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'durationAsc' => $query->orderBy('duration', 'asc')->orderByDesc('id'),
-            'durationDesc' => $query->orderBy('duration', 'desc')->orderByDesc('id'),
+            'createdAtDesc',
+            'dateDesc' =>
+            $query
+                ->orderBy(
+                    'created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'privateAsc' => $query->orderBy('is_private', 'asc')->orderByDesc('id'),
-            'privateDesc' => $query->orderBy('is_private', 'desc')->orderByDesc('id'),
-            'public' => $query->where('is_private', false)->orderByDesc('id'),
-            'private' => $query->where('is_private', true)->orderByDesc('id'),
+            'updatedAtAsc' =>
+            $query
+                ->orderBy(
+                    'updated_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'activityAsc' => $query->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $query->orderBy('activity', 'desc')->orderByDesc('id'),
-            'activity' => $query->where('activity', true)->orderByDesc('id'),
-            'inactive' => $query->where('activity', false)->orderByDesc('id'),
+            'updatedAtDesc' =>
+            $query
+                ->orderBy(
+                    'updated_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'leftAsc' => $query->orderBy('left', 'asc')->orderByDesc('id'),
-            'leftDesc' => $query->orderBy('left', 'desc')->orderByDesc('id'),
-            'left' => $query->where('left', true)->orderByDesc('id'),
-            'noLeft' => $query->where('left', false)->orderByDesc('id'),
+            'viewsAsc' =>
+            $query
+                ->orderBy(
+                    'views',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'mainAsc' => $query->orderBy('main', 'asc')->orderByDesc('id'),
-            'mainDesc' => $query->orderBy('main', 'desc')->orderByDesc('id'),
-            'main' => $query->where('main', true)->orderByDesc('id'),
-            'noMain' => $query->where('main', false)->orderByDesc('id'),
+            'viewsDesc' =>
+            $query
+                ->orderBy(
+                    'views',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'rightAsc' => $query->orderBy('right', 'asc')->orderByDesc('id'),
-            'rightDesc' => $query->orderBy('right', 'desc')->orderByDesc('id'),
-            'right' => $query->where('right', true)->orderByDesc('id'),
-            'noRight' => $query->where('right', false)->orderByDesc('id'),
+            'likesAsc' =>
+            $query
+                ->withCount(
+                    'likes'
+                )
+                ->orderBy(
+                    'likes_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'moderationStatusAsc' => $query->orderBy('moderation_status', 'asc')->orderByDesc('id'),
-            'moderationStatusDesc' => $query->orderBy('moderation_status', 'desc')->orderByDesc('id'),
-            'moderationPending' => $query->where('moderation_status', 0)->orderByDesc('id'),
-            'moderationApproved' => $query->where('moderation_status', 1)->orderByDesc('id'),
-            'moderationRejected' => $query->where('moderation_status', 2)->orderByDesc('id'),
+            'likesDesc' =>
+            $query
+                ->withCount(
+                    'likes'
+                )
+                ->orderBy(
+                    'likes_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'titleAsc' => $query
-                ->leftJoin('blog_video_translations as bvt_sort', function ($join) use ($locale) {
-                    $join->on('bvt_sort.video_id', '=', 'blog_videos.id')
-                        ->where('bvt_sort.locale', '=', $locale);
-                })
-                ->orderBy('bvt_sort.title', 'asc')
-                ->orderByDesc('blog_videos.id')
-                ->addSelect('blog_videos.*'),
+            'commentsAsc' =>
+            $query
+                ->withCount(
+                    'comments'
+                )
+                ->orderBy(
+                    'comments_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'titleDesc' => $query
-                ->leftJoin('blog_video_translations as bvt_sort', function ($join) use ($locale) {
-                    $join->on('bvt_sort.video_id', '=', 'blog_videos.id')
-                        ->where('bvt_sort.locale', '=', $locale);
-                })
-                ->orderBy('bvt_sort.title', 'desc')
-                ->orderByDesc('blog_videos.id')
-                ->addSelect('blog_videos.*'),
+            'commentsDesc' =>
+            $query
+                ->withCount(
+                    'comments'
+                )
+                ->orderBy(
+                    'comments_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'ownerNameAsc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
-                ->orderBy('owner_sort.name', 'asc')
-                ->orderByDesc('blog_videos.id')
-                ->addSelect('blog_videos.*'),
+            'durationAsc' =>
+            $query
+                ->orderBy(
+                    'duration',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'ownerNameDesc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
-                ->orderBy('owner_sort.name', 'desc')
-                ->orderByDesc('blog_videos.id')
-                ->addSelect('blog_videos.*'),
+            'durationDesc' =>
+            $query
+                ->orderBy(
+                    'duration',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
 
-            'ownerEmailAsc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
-                ->orderBy('owner_sort.email', 'asc')
-                ->orderByDesc('blog_videos.id')
-                ->addSelect('blog_videos.*'),
+            'titleAsc' =>
+            $query
+                ->leftJoin(
+                    'blog_video_translations as bvt_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'bvt_sort.video_id',
+                                '=',
+                                'blog_videos.id'
+                            )
+                            ->where(
+                                'bvt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->orderBy(
+                    'bvt_sort.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                )
+                ->addSelect(
+                    'blog_videos.*'
+                ),
 
-            'ownerEmailDesc' => $query
-                ->leftJoin('users as owner_sort', 'owner_sort.id', '=', 'blog_videos.user_id')
-                ->orderBy('owner_sort.email', 'desc')
-                ->orderByDesc('blog_videos.id')
-                ->addSelect('blog_videos.*'),
+            'titleDesc' =>
+            $query
+                ->leftJoin(
+                    'blog_video_translations as bvt_sort',
+                    function ($join) use ($locale) {
+                        $join
+                            ->on(
+                                'bvt_sort.video_id',
+                                '=',
+                                'blog_videos.id'
+                            )
+                            ->where(
+                                'bvt_sort.locale',
+                                '=',
+                                $locale
+                            );
+                    }
+                )
+                ->orderBy(
+                    'bvt_sort.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                )
+                ->addSelect(
+                    'blog_videos.*'
+                ),
 
-            default => $query->orderBy('sort', 'asc')->orderByDesc('id'),
+            default =>
+            $query
+                ->orderBy(
+                    'sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'id'
+                ),
         };
+    }
+
+    /* ======================== Public sort ======================== */
+
+    /**
+     * Public-сортировка.
+     *
+     * Только параметры,
+     * используемые Public Index.
+     *
+     * likes_count / comments_count
+     * должны быть добавлены контроллером.
+     */
+    public function scopePublicSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale = $locale
+            ?: app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return match ($sort) {
+            'sortAsc' =>
+            $query
+                ->orderBy(
+                    'blog_videos.sort',
+                    'asc'
+                )
+                ->orderBy(
+                    'blog_videos.id',
+                    'asc'
+                ),
+
+            'sortDesc' =>
+            $query
+                ->orderBy(
+                    'blog_videos.sort',
+                    'desc'
+                )
+                ->orderBy(
+                    'blog_videos.id',
+                    'desc'
+                ),
+
+            'titleAsc' =>
+            $this->applyPublicTitleSort(
+                $query,
+                $locale,
+                $fallbackLocale,
+                'asc'
+            ),
+
+            'titleDesc' =>
+            $this->applyPublicTitleSort(
+                $query,
+                $locale,
+                $fallbackLocale,
+                'desc'
+            ),
+
+            'viewsAsc' =>
+            $query
+                ->orderBy(
+                    'blog_videos.views',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                ),
+
+            'viewsDesc' =>
+            $query
+                ->orderBy(
+                    'blog_videos.views',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                ),
+
+            'likesAsc' =>
+            $query
+                ->orderBy(
+                    'likes_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                ),
+
+            'likesDesc' =>
+            $query
+                ->orderBy(
+                    'likes_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                ),
+
+            'commentsAsc' =>
+            $query
+                ->orderBy(
+                    'comments_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                ),
+
+            'commentsDesc' =>
+            $query
+                ->orderBy(
+                    'comments_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                ),
+
+            'durationAsc' =>
+            $query
+                ->orderBy(
+                    'blog_videos.duration',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                ),
+
+            'durationDesc' =>
+            $query
+                ->orderBy(
+                    'blog_videos.duration',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                ),
+
+            'publishedAtAsc' =>
+            $query
+                ->orderByRaw(
+                    'COALESCE(
+                        blog_videos.published_at,
+                        blog_videos.created_at
+                    ) ASC'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                ),
+
+            'publishedAtDesc' =>
+            $query
+                ->orderByRaw(
+                    'COALESCE(
+                        blog_videos.published_at,
+                        blog_videos.created_at
+                    ) DESC'
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                ),
+
+            default =>
+            $query
+                ->orderBy(
+                    'blog_videos.sort',
+                    'asc'
+                )
+                ->orderBy(
+                    'blog_videos.id',
+                    'asc'
+                ),
+        };
+    }
+
+    /**
+     * Public-сортировка по title:
+     *
+     * current locale -> fallback.
+     */
+    protected function applyPublicTitleSort(
+        Builder $query,
+        string $locale,
+        string $fallbackLocale,
+        string $direction
+    ): Builder {
+        $direction = strtolower($direction) === 'desc'
+            ? 'desc'
+            : 'asc';
+
+        $query->leftJoin(
+            'blog_video_translations as bvt_public_current',
+            function ($join) use ($locale) {
+                $join
+                    ->on(
+                        'bvt_public_current.video_id',
+                        '=',
+                        'blog_videos.id'
+                    )
+                    ->where(
+                        'bvt_public_current.locale',
+                        '=',
+                        $locale
+                    );
+            }
+        );
+
+        if ($locale === $fallbackLocale) {
+            return $query
+                ->orderBy(
+                    'bvt_public_current.title',
+                    $direction
+                )
+                ->orderByDesc(
+                    'blog_videos.id'
+                )
+                ->addSelect(
+                    'blog_videos.*'
+                );
+        }
+
+        $query->leftJoin(
+            'blog_video_translations as bvt_public_fallback',
+            function ($join) use ($fallbackLocale) {
+                $join
+                    ->on(
+                        'bvt_public_fallback.video_id',
+                        '=',
+                        'blog_videos.id'
+                    )
+                    ->where(
+                        'bvt_public_fallback.locale',
+                        '=',
+                        $fallbackLocale
+                    );
+            }
+        );
+
+        return $query
+            ->orderByRaw(
+                '
+                    CASE
+                        WHEN bvt_public_current.id IS NOT NULL
+                            THEN bvt_public_current.title
+                        ELSE bvt_public_fallback.title
+                    END '
+                . strtoupper($direction)
+            )
+            ->orderByDesc(
+                'blog_videos.id'
+            )
+            ->addSelect(
+                'blog_videos.*'
+            );
     }
 
     /* ======================== MODEL EVENTS ======================== */
 
     protected static function booted(): void
     {
-        static::saved(function (BlogVideo $video) {
-            Log::info('Video saved: ' . $video->id);
-        });
+        static::saved(
+            function (BlogVideo $video) {
+                Log::info(
+                    'Видео блога сохранено: '
+                    . $video->id
+                    . ' / '
+                    . $video->url
+                );
+            }
+        );
 
-        static::deleted(function (BlogVideo $video) {
-            Log::info('Video deleted: ' . $video->id);
-        });
+        static::deleted(
+            function (BlogVideo $video) {
+                Log::info(
+                    'Видео блога удалено: '
+                    . $video->id
+                    . ' / '
+                    . $video->url
+                );
+            }
+        );
     }
 }

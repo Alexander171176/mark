@@ -108,10 +108,17 @@ const likeEntity = async () => {
     <div
         itemprop="interactionStatistic"
         itemscope
-        itemtype="http://schema.org/InteractionCounter"
+        itemtype="https://schema.org/InteractionCounter"
     >
-        <meta itemprop="interactionType" content="http://schema.org/LikeAction">
-        <meta itemprop="userInteractionCount" :content="likes">
+        <link
+            itemprop="interactionType"
+            href="https://schema.org/LikeAction"
+        >
+
+        <meta
+            itemprop="userInteractionCount"
+            :content="likes"
+        >
 
         <div
             :title="title || t('like')"

@@ -22,19 +22,17 @@ class BlogVideoSharedResource extends JsonResource
          * максимум две локали:
          *
          * - current locale;
-         * - fallback ru.
+         * - fallback locale.
+         *
+         * Эффективный перевод выбирает
+         * сама модель BlogVideo.
          */
-        $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
+        $translation = $this->relationLoaded(
+            'translations'
+        )
+            ? $this->translationOrFallback(
+                $locale,
                 $fallbackLocale
-            )
-                ?: $this->translations->first()
             )
             : null;
 
@@ -43,24 +41,38 @@ class BlogVideoSharedResource extends JsonResource
 
             /**
              * Основные публичные поля.
+             *
+             * sort нужен frontend-режиму
+             * для локальной сортировки.
              */
-            'sort' => (int) $this->sort,
-            'url' => $this->url,
+            'sort' =>
+                (int) $this->sort,
 
-            'duration' => $this->duration !== null
-                ? (int) $this->duration
-                : null,
+            'url' =>
+                $this->url,
 
-            'views' => (int) $this->views,
+            'duration' =>
+                $this->duration !== null
+                    ? (int) $this->duration
+                    : null,
+
+            'views' =>
+                (int) $this->views,
 
             'published_at' =>
-                $this->published_at?->format('Y-m-d'),
+                $this->published_at?->format(
+                    'Y-m-d'
+                ),
 
             /**
              * Источник видео.
              *
-             * VideoPlayer работает уже
-             * с готовым публичным объектом.
+             * VideoPlayer может использовать
+             * SharedResource напрямую:
+             *
+             * Index;
+             * related videos;
+             * SectionVideoList.
              */
             'source_type' =>
                 $this->source_type,
@@ -78,8 +90,9 @@ class BlogVideoSharedResource extends JsonResource
                 $this->external_video_id,
 
             /**
-             * Текущий перевод
-             * или fallback ru.
+             * Эффективный перевод:
+             *
+             * current locale -> fallback.
              */
             'translation' => $translation
                 ? [
@@ -100,9 +113,7 @@ class BlogVideoSharedResource extends JsonResource
             /**
              * Автор.
              *
-             * Email оставляем,
-             * потому что Public Index
-             * использует его в frontend-поиске.
+             * Email в Public не передаём.
              */
             'owner' => $this->whenLoaded(
                 'owner',
@@ -113,49 +124,56 @@ class BlogVideoSharedResource extends JsonResource
                     'name' =>
                         $this->owner?->name,
 
-                    'email' =>
-                        $this->owner?->email,
-
                     'profile_photo_url' =>
-                        $this->owner?->profile_photo_url,
+                        $this->owner
+                            ?->profile_photo_url,
                 ]
             ),
 
             /**
              * Изображения.
              *
-             * Контроллер обязан заранее
-             * загрузить images.media.
+             * Контроллер заранее
+             * загружает images.media.
              */
-            'images' => BlogVideoImageResource::collection(
-                $this->whenLoaded('images')
-            ),
+            'images' =>
+                BlogVideoImageResource::collection(
+                    $this->whenLoaded(
+                        'images'
+                    )
+                ),
 
             /**
              * Статистика.
              */
             'likes_count' => $this->when(
                 isset($this->likes_count),
-                fn () => (int) $this->likes_count
+                fn () =>
+                (int) $this->likes_count
             ),
 
             'comments_count' => $this->when(
                 isset($this->comments_count),
-                fn () => (int) $this->comments_count
+                fn () =>
+                (int) $this->comments_count
             ),
 
             /**
-             * Признак лайка текущего пользователя.
+             * Лайк текущего пользователя.
              */
             'already_liked' =>
-                (bool) ($this->already_liked ?? false),
+                (bool) (
+                    $this->already_liked
+                    ?? false
+                ),
 
             /**
              * Нужен frontend-сортировке
              * как fallback для published_at.
              */
             'created_at' =>
-                $this->created_at?->toISOString(),
+                $this->created_at
+                    ?->toISOString(),
         ];
     }
 }

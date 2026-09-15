@@ -21,8 +21,8 @@ import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionB
 
 import LikeButtonEntity from '@/Components/Public/Like/LikeButtonEntity.vue'
 
-import InstructorCourseGrid from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseGrid.vue'
-import InstructorCourseRows from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseRows.vue'
+import CourseGrid from '@/Components/Public/Default/School/SchoolCourse/CourseGrid.vue'
+import CourseRows from '@/Components/Public/Default/School/SchoolCourse/CourseRows.vue'
 
 import TrackGrid from '@/Components/Public/Default/School/SchoolTrack/TrackGrid.vue'
 import TrackRows from '@/Components/Public/Default/School/SchoolTrack/TrackRows.vue'
@@ -962,13 +962,13 @@ const isAdmin = computed(() =>
 
                         <!-- Courses -->
                         <div v-if="displayedCourses.length">
-                            <InstructorCourseGrid
+                            <CourseGrid
                                 v-if="viewMode === 'grid'"
                                 :courses="displayedCourses"
                                 :cols="gridCols"
                             />
 
-                            <InstructorCourseRows
+                            <CourseRows
                                 v-else
                                 :courses="displayedCourses"
                             />

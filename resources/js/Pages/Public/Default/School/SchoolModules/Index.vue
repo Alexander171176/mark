@@ -33,8 +33,8 @@ import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
 import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
-import CourseModuleGrid from '@/Components/Public/Default/School/SchoolModule/CourseModuleGrid.vue'
-import CourseModuleRows from '@/Components/Public/Default/School/SchoolModule/CourseModuleRows.vue'
+import ModuleGrid from '@/Components/Public/Default/School/SchoolModule/ModuleGrid.vue'
+import ModuleRows from '@/Components/Public/Default/School/SchoolModule/ModuleRows.vue'
 import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
@@ -885,13 +885,13 @@ const mainBannersList = computed(() => {
 
                         <!-- Показ grid/rows -->
                         <div v-else>
-                            <CourseModuleGrid
+                            <ModuleGrid
                                 v-if="viewMode === 'grid'"
                                 :modules="displayedModules"
                                 :cols="gridCols"
                             />
 
-                            <CourseModuleRows
+                            <ModuleRows
                                 v-else
                                 :modules="displayedModules"
                             />

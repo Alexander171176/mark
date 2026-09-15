@@ -17,10 +17,10 @@ import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
 import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
-import InstructorCourseGrid
-    from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseGrid.vue'
-import InstructorCourseRows
-    from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseRows.vue'
+import CourseGrid
+    from '@/Components/Public/Default/School/SchoolCourse/CourseGrid.vue'
+import CourseRows
+    from '@/Components/Public/Default/School/SchoolCourse/CourseRows.vue'
 
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
@@ -782,13 +782,13 @@ const mainBanners = computed(() => normalizeList(props.mainBanners))
 
                         <!-- Courses -->
                         <template v-else>
-                            <InstructorCourseGrid
+                            <CourseGrid
                                 v-if="viewMode === 'grid'"
                                 :courses="displayedCourses"
                                 :cols="courseGridCols"
                             />
 
-                            <InstructorCourseRows
+                            <CourseRows
                                 v-else
                                 :courses="displayedCourses"
                             />

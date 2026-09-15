@@ -2,8 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CourseModuleGrid from '@/Components/Public/Default/School/SchoolModule/CourseModuleGrid.vue'
-import CourseModuleRows from '@/Components/Public/Default/School/SchoolModule/CourseModuleRows.vue'
+import ModuleGrid from '@/Components/Public/Default/School/SchoolModule/ModuleGrid.vue'
+import ModuleRows from '@/Components/Public/Default/School/SchoolModule/ModuleRows.vue'
 import ViewModeToggle from '@/Components/Public/Default/Buttons/ViewModeToggle.vue'
 
 const { t } = useI18n()
@@ -61,13 +61,13 @@ const modulesCount = computed(() => modulesList.value.length)
             <ViewModeToggle v-model="viewMode" />
         </div>
 
-        <CourseModuleGrid
+        <ModuleGrid
             v-if="viewMode === 'grid'"
             :modules="modulesList"
             :cols="cols"
         />
 
-        <CourseModuleRows
+        <ModuleRows
             v-else
             :modules="modulesList"
         />

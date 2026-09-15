@@ -20,8 +20,8 @@ import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/Section
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
 import ImageGalleryMain from '@/Components/Public/Default/Media/ImageGalleryMain.vue'
 
-import InstructorCourseGrid from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseGrid.vue'
-import InstructorCourseRows from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseRows.vue'
+import CourseGrid from '@/Components/Public/Default/School/SchoolCourse/CourseGrid.vue'
+import CourseRows from '@/Components/Public/Default/School/SchoolCourse/CourseRows.vue'
 
 import PublicAdminBottomPanel
     from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
@@ -1631,13 +1631,13 @@ const mainBannersList = computed(() =>
 
                         <!-- Courses -->
                         <div v-if="displayedCourses.length">
-                            <InstructorCourseGrid
+                            <CourseGrid
                                 v-if="viewMode === 'grid'"
                                 :courses="displayedCourses"
                                 :cols="gridCols"
                             />
 
-                            <InstructorCourseRows
+                            <CourseRows
                                 v-else
                                 :courses="displayedCourses"
                             />

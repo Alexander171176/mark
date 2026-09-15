@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Public\Default\School\SchoolCourse;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
 use App\Http\Resources\Public\School\SchoolCourse\SchoolCourseResource;
 use App\Http\Resources\Public\School\SchoolCourse\SchoolCourseSharedResource;
-use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
 use App\Services\SiteSettings\PublicSettingsService;
+use App\Traits\Public\Blog\HasSidebarDataTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
-use App\Traits\Public\HasSidebarDataTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
 use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Database\Eloquent\Builder;

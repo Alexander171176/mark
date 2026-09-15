@@ -4,7 +4,7 @@ import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
 import HashtagsSidebar from '@/Components/Public/Default/School/SchoolHashtag/HashtagsSidebar.vue'
-import RecentCoursesSidebar from '@/Components/Public/Default/School/SchoolCourse/RecentCoursesSidebar.vue'
+import CoursesSidebar from '@/Components/Public/Default/School/SchoolCourse/CoursesSidebar.vue'
 import BannersSidebar from '@/Components/Public/Default/Blog/BlogBanner/BannersSidebar.vue'
 import VideosSidebar from '@/Components/Public/Default/Blog/BlogVideo/VideosSidebar.vue'
 
@@ -59,8 +59,8 @@ const toggleSidebar = () => {
 
         <div v-show="!isCollapsed" class="flex flex-col gap-4">
             <HashtagsSidebar :hashtags="hashtags" />
-            <RecentCoursesSidebar :courses="rightCourses" />
-            <BannersSidebar :right-banners="rightBanners" />
+            <CoursesSidebar :courses="rightCourses" />
+            <BannersSidebar :banners="rightBanners" />
             <VideosSidebar :videos="rightVideos" />
         </div>
     </div>

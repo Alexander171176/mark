@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
-import ModuleLessonsAccordion from '@/Components/Public/Default/School/SchoolModule/ModuleLessonsAccordion.vue'
+import LessonsAccordion from '@/Components/Public/Default/School/SchoolLesson/LessonsAccordion.vue'
 import UniversalImageSlider from '@/Components/Public/Default/Images/UniversalImageSlider.vue'
 import EntityStats from '@/Components/Public/Default/Stats/EntityStats.vue'
 
@@ -247,7 +247,7 @@ const courseLink = (module) => {
                             leave-from-class="opacity-100 translate-y-0"
                             leave-to-class="opacity-0 -translate-y-1"
                         >
-                            <ModuleLessonsAccordion
+                            <LessonsAccordion
                                 v-if="isOpen(module.id)"
                                 :lessons="moduleLessons(module)"
                             />

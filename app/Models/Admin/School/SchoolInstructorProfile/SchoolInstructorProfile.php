@@ -2,8 +2,8 @@
 
 namespace App\Models\Admin\School\SchoolInstructorProfile;
 
-use App\Models\Admin\School\SchoolPayout\SchoolPayout;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
+use App\Models\Admin\School\SchoolPayout\SchoolPayout;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -45,40 +45,132 @@ class SchoolInstructorProfile extends Model
 
     /* ======================== Translations ======================== */
 
-    /** Все переводы */
+    /**
+     * Все переводы инструктора.
+     */
     public function translations(): HasMany
     {
-        return $this->hasMany(SchoolInstructorProfileTranslation::class, 'school_instructor_profile_id');
+        return $this->hasMany(
+            SchoolInstructorProfileTranslation::class,
+            'school_instructor_profile_id'
+        );
     }
 
-    /** Перевод по текущей локали */
+    /**
+     * Перевод текущей локали.
+     *
+     * Сохраняем существующую relation
+     * для совместимости с Admin.
+     */
     public function translation(): HasOne
     {
-        return $this->hasOne(SchoolInstructorProfileTranslation::class, 'school_instructor_profile_id')
-            ->where('locale', app()->getLocale());
+        return $this->hasOne(
+            SchoolInstructorProfileTranslation::class,
+            'school_instructor_profile_id'
+        )
+            ->where(
+                'locale',
+                app()->getLocale()
+            );
+    }
+
+    /**
+     * Получить перевод:
+     *
+     * current locale
+     * → fallback locale
+     * → первый доступный.
+     *
+     * Helper не выполняет отдельный SQL-запрос,
+     * если translations уже загружены.
+     */
+    public function translationOrFallback(
+        ?string $locale = null,
+        ?string $fallbackLocale = null
+    ): ?SchoolInstructorProfileTranslation {
+        $locale ??= app()->getLocale();
+
+        $fallbackLocale ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        if ($this->relationLoaded('translations')) {
+            return $this->translations
+                ->firstWhere(
+                    'locale',
+                    $locale
+                )
+                ?: $this->translations
+                    ->firstWhere(
+                        'locale',
+                        $fallbackLocale
+                    )
+                    ?: $this->translations->first();
+        }
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        $translations = $this->translations()
+            ->whereIn(
+                'locale',
+                $locales
+            )
+            ->get();
+
+        return $translations
+            ->firstWhere(
+                'locale',
+                $locale
+            )
+            ?: $translations
+                ->firstWhere(
+                    'locale',
+                    $fallbackLocale
+                )
+                ?: $translations->first();
     }
 
     /* ======================== Relations ======================== */
 
-    /** Пользователь-инструктор */
+    /**
+     * Пользователь-инструктор.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /** Курсы инструктора */
+    /**
+     * Курсы инструктора.
+     */
     public function courses(): HasMany
     {
-        return $this->hasMany(SchoolCourse::class, 'school_instructor_profile_id');
+        return $this->hasMany(
+            SchoolCourse::class,
+            'school_instructor_profile_id'
+        );
     }
 
-    /** Выплаты инструктору */
+    /**
+     * Выплаты инструктору.
+     */
     public function payouts(): HasMany
     {
-        return $this->hasMany(SchoolPayout::class, 'school_instructor_profile_id');
+        return $this->hasMany(
+            SchoolPayout::class,
+            'school_instructor_profile_id'
+        );
     }
 
-    /** Изображения инструктора */
+    /**
+     * Изображения инструктора.
+     */
     public function images(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -88,34 +180,103 @@ class SchoolInstructorProfile extends Model
             'image_id'
         )
             ->withPivot('order')
-            ->orderBy('school_instructor_profile_has_images.order', 'asc');
+            ->orderBy(
+                'school_instructor_profile_has_images.order',
+                'asc'
+            );
     }
 
-    /* ======================== Scopes ======================== */
+    /* ======================== Common Scopes ======================== */
 
-    /** Только активные */
-    public function scopeActive(Builder $q): Builder
-    {
-        return $q->where('activity', true);
+    /**
+     * Только активные.
+     */
+    public function scopeActive(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'activity',
+            true
+        );
     }
 
-    /** Сортировка */
-    public function scopeSorted(Builder $q): Builder
-    {
-        return $q->orderBy('sort')->orderByDesc('id');
+    /**
+     * Базовая сортировка.
+     *
+     * sort ↑
+     * id ↓
+     */
+    public function scopeSorted(
+        Builder $query
+    ): Builder {
+        return $query
+            ->orderBy(
+                'sort',
+                'asc'
+            )
+            ->orderByDesc('id');
     }
 
-    /** Подгрузка перевода */
-    public function scopeWithLocale(Builder $q, ?string $locale = null): Builder
-    {
-        $locale = $locale ?: app()->getLocale();
+    /**
+     * Подгрузка перевода
+     * конкретной локали.
+     *
+     * Сохраняем для существующей
+     * Admin-логики.
+     */
+    public function scopeWithLocale(
+        Builder $query,
+        ?string $locale = null
+    ): Builder {
+        $locale ??= app()->getLocale();
 
-        return $q->with([
-            'translations' => fn ($query) => $query->where('locale', $locale),
+        return $query->with([
+            'translations' => fn ($translationQuery) =>
+            $translationQuery->where(
+                'locale',
+                $locale
+            ),
         ]);
     }
 
-    /** Публичный набор */
+    /**
+     * Инструкторы с хорошим рейтингом.
+     *
+     * Общий scope:
+     * корректен и для Admin,
+     * и для Public.
+     */
+    public function scopeWithGoodRating(
+        Builder $query,
+        float $min = 4.5,
+        int $minCount = 10
+    ): Builder {
+        return $query
+            ->where(
+                'rating_avg',
+                '>=',
+                $min
+            )
+            ->where(
+                'rating_count',
+                '>=',
+                $minCount
+            );
+    }
+
+    /* ======================== Public Scopes ======================== */
+
+    /**
+     * Публичный набор инструкторов.
+     *
+     * Условия:
+     * - профиль активен;
+     * - существует перевод текущей
+     *   или fallback локали.
+     *
+     * Переводы здесь НЕ eager-load.
+     * Это ответственность Public Controller.
+     */
     public function scopeForPublic(
         Builder $query,
         ?string $locale = null,
@@ -136,10 +297,7 @@ class SchoolInstructorProfile extends Model
         );
 
         return $query
-            ->where(
-                'activity',
-                true
-            )
+            ->active()
             ->whereHas(
                 'translations',
                 fn (Builder $translationQuery) =>
@@ -150,15 +308,469 @@ class SchoolInstructorProfile extends Model
             );
     }
 
-    /** По рейтингу */
-    public function scopeWithGoodRating(Builder $q, float $min = 4.5, int $minCount = 10): Builder
-    {
-        return $q
-            ->where('rating_avg', '>=', $min)
-            ->where('rating_count', '>=', $minCount);
+    /**
+     * Публичный поиск.
+     *
+     * Полностью соответствует данным,
+     * по которым выполняется поиск
+     * в Public Index.vue:
+     *
+     * - id;
+     * - slug;
+     * - title;
+     * - short;
+     * - user.name.
+     *
+     * Не ищем по:
+     * - bio;
+     * - email;
+     * - payouts;
+     * - другим внутренним данным.
+     *
+     * Переводы:
+     * current locale → fallback locale.
+     */
+    public function scopePublicSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null,
+        ?string $fallbackLocale = null
+    ): Builder {
+        $term = trim(
+            (string) $term
+        );
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $locale ??= app()->getLocale();
+
+        $fallbackLocale ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return $query->where(
+            function (Builder $publicQuery) use (
+                $term,
+                $locale,
+                $fallbackLocale
+            ) {
+                $publicQuery
+                    /**
+                     * Основная таблица.
+                     */
+                    ->where(
+                        'school_instructor_profiles.id',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'school_instructor_profiles.slug',
+                        'like',
+                        "%{$term}%"
+                    )
+
+                    /**
+                     * Текущая локаль.
+                     */
+                    ->orWhereHas(
+                        'translations',
+                        function (
+                            Builder $translationQuery
+                        ) use (
+                            $term,
+                            $locale
+                        ) {
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                )
+                                ->where(
+                                    function (
+                                        Builder $textQuery
+                                    ) use ($term) {
+                                        $textQuery
+                                            ->where(
+                                                'title',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'short',
+                                                'like',
+                                                "%{$term}%"
+                                            );
+                                    }
+                                );
+                        }
+                    )
+
+                    /**
+                     * Fallback используется
+                     * только при отсутствии
+                     * перевода текущей локали.
+                     */
+                    ->orWhere(
+                        function (
+                            Builder $fallbackQuery
+                        ) use (
+                            $term,
+                            $locale,
+                            $fallbackLocale
+                        ) {
+                            if (
+                                $locale === $fallbackLocale
+                            ) {
+                                return;
+                            }
+
+                            $fallbackQuery
+                                ->whereDoesntHave(
+                                    'translations',
+                                    fn (
+                                        Builder $translationQuery
+                                    ) =>
+                                    $translationQuery->where(
+                                        'locale',
+                                        $locale
+                                    )
+                                )
+                                ->whereHas(
+                                    'translations',
+                                    function (
+                                        Builder $translationQuery
+                                    ) use (
+                                        $term,
+                                        $fallbackLocale
+                                    ) {
+                                        $translationQuery
+                                            ->where(
+                                                'locale',
+                                                $fallbackLocale
+                                            )
+                                            ->where(
+                                                function (
+                                                    Builder $textQuery
+                                                ) use ($term) {
+                                                    $textQuery
+                                                        ->where(
+                                                            'title',
+                                                            'like',
+                                                            "%{$term}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'short',
+                                                            'like',
+                                                            "%{$term}%"
+                                                        );
+                                                }
+                                            );
+                                    }
+                                );
+                        }
+                    )
+
+                    /**
+                     * Публичное имя пользователя.
+                     */
+                    ->orWhereHas(
+                        'user',
+                        fn (Builder $userQuery) =>
+                        $userQuery->where(
+                            'name',
+                            'like',
+                            "%{$term}%"
+                        )
+                    );
+            }
+        );
     }
 
-    /** Поиск */
+    /**
+     * Публичная сортировка.
+     *
+     * Поддерживаются только варианты,
+     * реально существующие в Public Index.vue.
+     *
+     * courses_count должен быть заранее
+     * рассчитан Public Controller только
+     * по публичным курсам.
+     */
+    public function scopePublicSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null,
+        ?string $fallbackLocale = null
+    ): Builder {
+        $locale ??= app()->getLocale();
+
+        $fallbackLocale ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return match ($sort) {
+            'idAsc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.id',
+                    'asc'
+                ),
+
+            'idDesc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.id',
+                    'desc'
+                ),
+
+            'sortAsc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'sortDesc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.sort',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'titleAsc' =>
+            $this->applyPublicTitleSort(
+                $query,
+                $locale,
+                $fallbackLocale,
+                'asc'
+            ),
+
+            'titleDesc' =>
+            $this->applyPublicTitleSort(
+                $query,
+                $locale,
+                $fallbackLocale,
+                'desc'
+            ),
+
+            'viewsAsc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.views',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'viewsDesc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.views',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'ratingCountAsc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.rating_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'ratingCountDesc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.rating_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'ratingAvgAsc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.rating_avg',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'ratingAvgDesc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.rating_avg',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'experienceAsc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.experience_years',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'experienceDesc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.experience_years',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            /**
+             * courses_count уже рассчитан
+             * Public Controller через:
+             *
+             * courses as courses_count
+             *     ->forPublic(...)
+             *
+             * Поэтому повторный withCount()
+             * здесь не нужен.
+             */
+            'coursesAsc' => $query
+                ->orderBy(
+                    'courses_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'coursesDesc' => $query
+                ->orderBy(
+                    'courses_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'dateAsc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.created_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            'dateDesc' => $query
+                ->orderBy(
+                    'school_instructor_profiles.created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                ),
+
+            default => $query->sorted(),
+        };
+    }
+
+    /**
+     * Публичная сортировка по title.
+     *
+     * Приоритет:
+     *
+     * current locale
+     * → fallback locale.
+     */
+    protected function applyPublicTitleSort(
+        Builder $query,
+        string $locale,
+        string $fallbackLocale,
+        string $direction
+    ): Builder {
+        $query->leftJoin(
+            'school_instructor_profile_translations as sipt_public_current',
+            function ($join) use ($locale) {
+                $join
+                    ->on(
+                        'sipt_public_current.school_instructor_profile_id',
+                        '=',
+                        'school_instructor_profiles.id'
+                    )
+                    ->where(
+                        'sipt_public_current.locale',
+                        '=',
+                        $locale
+                    );
+            }
+        );
+
+        /**
+         * Если current locale совпадает
+         * с fallback locale,
+         * второй JOIN не нужен.
+         */
+        if ($locale === $fallbackLocale) {
+            return $query
+                ->orderBy(
+                    'sipt_public_current.title',
+                    $direction
+                )
+                ->orderByDesc(
+                    'school_instructor_profiles.id'
+                )
+                ->addSelect(
+                    'school_instructor_profiles.*'
+                );
+        }
+
+        $query->leftJoin(
+            'school_instructor_profile_translations as sipt_public_fallback',
+            function ($join) use ($fallbackLocale) {
+                $join
+                    ->on(
+                        'sipt_public_fallback.school_instructor_profile_id',
+                        '=',
+                        'school_instructor_profiles.id'
+                    )
+                    ->where(
+                        'sipt_public_fallback.locale',
+                        '=',
+                        $fallbackLocale
+                    );
+            }
+        );
+
+        return $query
+            ->orderByRaw(
+                'COALESCE(
+                    sipt_public_current.title,
+                    sipt_public_fallback.title
+                ) ' . $direction
+            )
+            ->orderByDesc(
+                'school_instructor_profiles.id'
+            )
+            ->addSelect(
+                'school_instructor_profiles.*'
+            );
+    }
+
+    /* ======================== Admin / Common Scopes ======================== */
+
+    /**
+     * Поиск.
+     *
+     * Существующий scope сохраняем,
+     * потому что он используется Admin Controller.
+     */
     public function scopeSearch(
         Builder $q,
         ?string $term,
@@ -255,7 +867,12 @@ class SchoolInstructorProfile extends Model
         );
     }
 
-    /** Сортировка по параметру */
+    /**
+     * Сортировка по параметру.
+     *
+     * Существующий scope сохраняем,
+     * потому что он используется Admin Controller.
+     */
     public function scopeSortByParam(
         Builder $q,
         ?string $sort,
@@ -272,16 +889,23 @@ class SchoolInstructorProfile extends Model
             'idAsc' => $q->orderBy('id', 'asc'),
             'idDesc' => $q->orderBy('id', 'desc'),
 
-            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
-            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+            'sortAsc' => $q
+                ->orderBy('sort', 'asc')
+                ->orderByDesc('id'),
 
-            'slugAsc' => $q->orderBy('slug', 'asc')->orderByDesc('id'),
-            'slugDesc' => $q->orderBy('slug', 'desc')->orderByDesc('id'),
+            'sortDesc' => $q
+                ->orderBy('sort', 'desc')
+                ->orderByDesc('id'),
+
+            'slugAsc' => $q
+                ->orderBy('slug', 'asc')
+                ->orderByDesc('id'),
+
+            'slugDesc' => $q
+                ->orderBy('slug', 'desc')
+                ->orderByDesc('id'),
 
             'titleAsc' => $q
-                /**
-                 * Перевод текущей локали.
-                 */
                 ->leftJoin(
                     'school_instructor_profile_translations as sipt_current',
                     function ($join) use ($locale) {
@@ -298,10 +922,6 @@ class SchoolInstructorProfile extends Model
                             );
                     }
                 )
-
-                /**
-                 * Fallback-перевод.
-                 */
                 ->leftJoin(
                     'school_instructor_profile_translations as sipt_fallback',
                     function ($join) use ($fallbackLocale) {
@@ -318,13 +938,6 @@ class SchoolInstructorProfile extends Model
                             );
                     }
                 )
-
-                /**
-                 * Приоритет:
-                 *
-                 * current locale
-                 * → fallback locale.
-                 */
                 ->orderByRaw(
                     'COALESCE(sipt_current.title, sipt_fallback.title) ASC'
                 )
@@ -335,11 +948,7 @@ class SchoolInstructorProfile extends Model
                     'school_instructor_profiles.*'
                 ),
 
-
             'titleDesc' => $q
-                /**
-                 * Перевод текущей локали.
-                 */
                 ->leftJoin(
                     'school_instructor_profile_translations as sipt_current',
                     function ($join) use ($locale) {
@@ -356,10 +965,6 @@ class SchoolInstructorProfile extends Model
                             );
                     }
                 )
-
-                /**
-                 * Fallback-перевод.
-                 */
                 ->leftJoin(
                     'school_instructor_profile_translations as sipt_fallback',
                     function ($join) use ($fallbackLocale) {
@@ -376,13 +981,6 @@ class SchoolInstructorProfile extends Model
                             );
                     }
                 )
-
-                /**
-                 * Приоритет:
-                 *
-                 * current locale
-                 * → fallback locale.
-                 */
                 ->orderByRaw(
                     'COALESCE(sipt_current.title, sipt_fallback.title) DESC'
                 )
@@ -393,46 +991,109 @@ class SchoolInstructorProfile extends Model
                     'school_instructor_profiles.*'
                 ),
 
-            'viewsAsc' => $q->orderBy('views', 'asc')->orderByDesc('id'),
-            'viewsDesc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
+            'viewsAsc' => $q
+                ->orderBy('views', 'asc')
+                ->orderByDesc('id'),
 
-            'ratingAvgAsc' => $q->orderBy('rating_avg', 'asc')->orderByDesc('id'),
-            'ratingAvgDesc' => $q->orderBy('rating_avg', 'desc')->orderByDesc('id'),
+            'viewsDesc' => $q
+                ->orderBy('views', 'desc')
+                ->orderByDesc('id'),
 
-            'ratingCountAsc' => $q->orderBy('rating_count', 'asc')->orderByDesc('id'),
-            'ratingCountDesc' => $q->orderBy('rating_count', 'desc')->orderByDesc('id'),
+            'ratingAvgAsc' => $q
+                ->orderBy('rating_avg', 'asc')
+                ->orderByDesc('id'),
 
-            'hourlyRateAsc' => $q->orderBy('hourly_rate', 'asc')->orderByDesc('id'),
-            'hourlyRateDesc' => $q->orderBy('hourly_rate', 'desc')->orderByDesc('id'),
+            'ratingAvgDesc' => $q
+                ->orderBy('rating_avg', 'desc')
+                ->orderByDesc('id'),
 
-            'experienceAsc' => $q->orderBy('experience_years', 'asc')->orderByDesc('id'),
-            'experienceDesc' => $q->orderBy('experience_years', 'desc')->orderByDesc('id'),
+            'ratingCountAsc' => $q
+                ->orderBy('rating_count', 'asc')
+                ->orderByDesc('id'),
 
-            'coursesAsc' => $q->withCount('courses')
-                ->orderBy('courses_count', 'asc')->orderByDesc('id'),
-            'coursesDesc' => $q->withCount('courses')
-                ->orderBy('courses_count', 'desc')->orderByDesc('id'),
+            'ratingCountDesc' => $q
+                ->orderBy('rating_count', 'desc')
+                ->orderByDesc('id'),
 
-            'payoutsAsc' => $q->withCount('payouts')
-                ->orderBy('payouts_count', 'asc')->orderByDesc('id'),
-            'payoutsDesc' => $q->withCount('payouts')
-                ->orderBy('payouts_count', 'desc')->orderByDesc('id'),
+            'hourlyRateAsc' => $q
+                ->orderBy('hourly_rate', 'asc')
+                ->orderByDesc('id'),
 
-            'imagesAsc' => $q->withCount('images')
-                ->orderBy('images_count', 'asc')->orderByDesc('id'),
-            'imagesDesc' => $q->withCount('images')
-                ->orderBy('images_count', 'desc')->orderByDesc('id'),
+            'hourlyRateDesc' => $q
+                ->orderBy('hourly_rate', 'desc')
+                ->orderByDesc('id'),
 
-            'createdAtAsc', 'dateAsc' => $q->orderBy('created_at', 'asc')->orderByDesc('id'),
-            'createdAtDesc', 'dateDesc' => $q->orderBy('created_at', 'desc')->orderByDesc('id'),
+            'experienceAsc' => $q
+                ->orderBy('experience_years', 'asc')
+                ->orderByDesc('id'),
 
-            'updatedAtAsc' => $q->orderBy('updated_at', 'asc')->orderByDesc('id'),
-            'updatedAtDesc' => $q->orderBy('updated_at', 'desc')->orderByDesc('id'),
+            'experienceDesc' => $q
+                ->orderBy('experience_years', 'desc')
+                ->orderByDesc('id'),
 
-            'activityAsc' => $q->orderBy('activity', 'asc')->orderByDesc('id'),
-            'activityDesc' => $q->orderBy('activity', 'desc')->orderByDesc('id'),
-            'activity' => $q->where('activity', true)->orderByDesc('id'),
-            'inactive' => $q->where('activity', false)->orderByDesc('id'),
+            'coursesAsc' => $q
+                ->withCount('courses')
+                ->orderBy('courses_count', 'asc')
+                ->orderByDesc('id'),
+
+            'coursesDesc' => $q
+                ->withCount('courses')
+                ->orderBy('courses_count', 'desc')
+                ->orderByDesc('id'),
+
+            'payoutsAsc' => $q
+                ->withCount('payouts')
+                ->orderBy('payouts_count', 'asc')
+                ->orderByDesc('id'),
+
+            'payoutsDesc' => $q
+                ->withCount('payouts')
+                ->orderBy('payouts_count', 'desc')
+                ->orderByDesc('id'),
+
+            'imagesAsc' => $q
+                ->withCount('images')
+                ->orderBy('images_count', 'asc')
+                ->orderByDesc('id'),
+
+            'imagesDesc' => $q
+                ->withCount('images')
+                ->orderBy('images_count', 'desc')
+                ->orderByDesc('id'),
+
+            'createdAtAsc',
+            'dateAsc' => $q
+                ->orderBy('created_at', 'asc')
+                ->orderByDesc('id'),
+
+            'createdAtDesc',
+            'dateDesc' => $q
+                ->orderBy('created_at', 'desc')
+                ->orderByDesc('id'),
+
+            'updatedAtAsc' => $q
+                ->orderBy('updated_at', 'asc')
+                ->orderByDesc('id'),
+
+            'updatedAtDesc' => $q
+                ->orderBy('updated_at', 'desc')
+                ->orderByDesc('id'),
+
+            'activityAsc' => $q
+                ->orderBy('activity', 'asc')
+                ->orderByDesc('id'),
+
+            'activityDesc' => $q
+                ->orderBy('activity', 'desc')
+                ->orderByDesc('id'),
+
+            'activity' => $q
+                ->where('activity', true)
+                ->orderByDesc('id'),
+
+            'inactive' => $q
+                ->where('activity', false)
+                ->orderByDesc('id'),
 
             default => $q->sorted(),
         };
@@ -440,33 +1101,51 @@ class SchoolInstructorProfile extends Model
 
     /* ======================== Accessors ======================== */
 
-    /** Публичное имя */
+    /**
+     * Публичное имя инструктора.
+     *
+     * Если translations уже eager-loaded,
+     * дополнительный запрос не выполняется.
+     */
     public function getPublicNameAttribute(): string
     {
-        $title = null;
+        $translation =
+            $this->translationOrFallback();
 
-        if ($this->relationLoaded('translations')) {
-            $title = $this->translations->first()?->title;
-        } elseif ($this->relationLoaded('translation')) {
-            $title = $this->translation?->title;
-        } else {
-            $title = $this->translation()->value('title');
+        if ($translation?->title) {
+            return $translation->title;
         }
 
-        return $title ?: ($this->user->name ?? 'Инструктор');
+        if ($this->relationLoaded('user')) {
+            return $this->user?->name
+                ?: 'Инструктор';
+        }
+
+        return $this->user()
+            ->value('name')
+            ?: 'Инструктор';
     }
 
-    /** Главное изображение */
+    /**
+     * Главное изображение инструктора.
+     */
     public function getPrimaryImageAttribute(): ?SchoolInstructorProfileImage
     {
         if ($this->relationLoaded('images')) {
             return $this->images
-                ->sortBy(fn ($image) => $image->pivot->order ?? PHP_INT_MAX)
+                ->sortBy(
+                    fn ($image) =>
+                        $image->pivot->order
+                        ?? PHP_INT_MAX
+                )
                 ->first();
         }
 
         return $this->images()
-            ->orderBy('school_instructor_profile_has_images.order', 'asc')
+            ->orderBy(
+                'school_instructor_profile_has_images.order',
+                'asc'
+            )
             ->first();
     }
 }

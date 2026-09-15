@@ -68,15 +68,14 @@ const getCourse = (course) => {
 /**
  * Заголовок курса.
  *
- * Новый Public-контракт:
+ * Public-контракт:
  *
  * course.translation.title
  *
- * Backend уже выполняет:
+ * Backend выполняет:
  *
  * current locale
- * → fallback locale
- * → первый доступный.
+ * → fallback locale.
  */
 const getCourseTitle = (course) => {
     const item =

@@ -10,53 +10,38 @@ class SchoolInstructorProfileResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $locale = app()->getLocale();
-
-        $fallbackLocale = config(
-            'app.fallback_locale',
-            'ru'
-        );
-
         /**
          * Controller заранее загружает:
          *
          * current locale
          * + fallback locale.
          *
-         * Приоритет:
+         * Resource не выполняет
+         * самостоятельные запросы переводов.
+         *
+         * Model выбирает:
          *
          * current
-         * → fallback
-         * → первый фактически загруженный.
+         * → fallback.
          */
         $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
-                $fallbackLocale
-            )
-                ?: $this->translations->first()
-            )
+            ? $this->translationOrFallback()
             : null;
 
         /**
-         * Публичное имя.
+         * Публичное имя инструктора.
          *
-         * Не используем здесь accessor public_name,
-         * потому что Resource уже точно определил
-         * правильный current/fallback перевод.
+         * В первую очередь используем
+         * локализованный title.
          */
-        $publicName = $translation?->title
-            ?: $this->user?->name
+        $publicName =
+            $translation?->title
+                ?: $this->user?->name
                 ?: 'Инструктор';
 
         return [
             'id' =>
-                $this->id,
+                (int) $this->id,
 
             /**
              * Основные публичные поля.
@@ -68,7 +53,14 @@ class SchoolInstructorProfileResource extends JsonResource
                 (int) $this->sort,
 
             /**
-             * Полный Public-перевод.
+             * Публичный перевод:
+             *
+             * current locale
+             * → fallback locale.
+             *
+             * Show Resource содержит
+             * полный набор данных,
+             * необходимый странице инструктора.
              */
             'translation' => $translation
                 ? [
@@ -98,9 +90,11 @@ class SchoolInstructorProfileResource extends JsonResource
             /**
              * Готовое публичное имя.
              *
-             * Удобно для breadcrumb,
-             * alt изображения и других мест,
-             * где не нужен доступ к translation.
+             * Может использоваться:
+             * - breadcrumb;
+             * - alt;
+             * - title;
+             * - других компактных местах.
              */
             'public_name' =>
                 $publicName,
@@ -120,9 +114,6 @@ class SchoolInstructorProfileResource extends JsonResource
 
             /**
              * Рейтинг.
-             *
-             * Полный Resource сохраняет
-             * удобный вложенный контракт.
              */
             'rating' => [
                 'avg' =>
@@ -146,14 +137,16 @@ class SchoolInstructorProfileResource extends JsonResource
             /**
              * Пользователь.
              *
-             * Email в Public не отдаём.
+             * Только публично необходимые поля.
+             * Email и другие внутренние данные
+             * не передаём.
              */
             'user' => $this->whenLoaded(
                 'user',
                 fn () => $this->user
                     ? [
                         'id' =>
-                            $this->user->id,
+                            (int) $this->user->id,
 
                         'name' =>
                             $this->user->name,
@@ -164,7 +157,11 @@ class SchoolInstructorProfileResource extends JsonResource
             /**
              * Изображения.
              *
-             * Controller обязан загрузить
+             * Используем общий Resource изображения,
+             * так как обработка media централизована
+             * через Spatie Media Library.
+             *
+             * Controller должен заранее загрузить:
              * images.media.
              */
             'images' =>
@@ -175,11 +172,15 @@ class SchoolInstructorProfileResource extends JsonResource
                 ),
 
             /**
-             * Counts.
+             * Количество публичных курсов.
+             *
+             * Сам Resource ничего не считает.
+             * Значение заранее формирует Controller.
              */
             'courses_count' => $this->when(
                 isset($this->courses_count),
-                fn () => (int) $this->courses_count
+                fn () =>
+                (int) $this->courses_count
             ),
 
             /**

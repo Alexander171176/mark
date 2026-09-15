@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Traits\Public;
+namespace App\Traits\Public\Blog;
 
 use App\Services\Public\Blog\BlogSidebarService;
 

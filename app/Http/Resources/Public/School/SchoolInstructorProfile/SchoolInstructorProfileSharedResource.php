@@ -10,39 +10,27 @@ class SchoolInstructorProfileSharedResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $locale = app()->getLocale();
-
-        $fallbackLocale = config(
-            'app.fallback_locale',
-            'ru'
-        );
-
         /**
-         * Публичный перевод:
+         * Controller заранее загружает:
          *
-         * 1. current locale;
-         * 2. fallback locale;
-         * 3. иначе null.
+         * current locale
+         * + fallback locale.
          *
-         * Controller заранее загружает
-         * только current + fallback.
+         * Resource не выполняет
+         * самостоятельные запросы переводов.
+         *
+         * Model выбирает:
+         *
+         * current
+         * → fallback.
          */
         $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
-                $fallbackLocale
-            )
-            )
+            ? $this->translationOrFallback()
             : null;
 
         return [
             'id' =>
-                $this->id,
+                (int) $this->id,
 
             /**
              * Основные публичные поля.
@@ -54,8 +42,8 @@ class SchoolInstructorProfileSharedResource extends JsonResource
                 (int) $this->sort,
 
             /**
-             * Текущий перевод
-             * или fallback locale.
+             * Минимальный перевод,
+             * необходимый списку/карточке.
              */
             'translation' => $translation
                 ? [
@@ -71,7 +59,9 @@ class SchoolInstructorProfileSharedResource extends JsonResource
                 : null,
 
             /**
-             * Данные инструктора.
+             * Данные инструктора,
+             * используемые карточкой
+             * и frontend-сортировкой.
              */
             'experience_years' =>
                 $this->experience_years !== null
@@ -97,14 +87,14 @@ class SchoolInstructorProfileSharedResource extends JsonResource
             /**
              * Пользователь.
              *
-             * Email публично не отдаём.
+             * Только публичное имя.
              */
             'user' => $this->whenLoaded(
                 'user',
                 fn () => $this->user
                     ? [
                         'id' =>
-                            $this->user->id,
+                            (int) $this->user->id,
 
                         'name' =>
                             $this->user->name,
@@ -115,7 +105,12 @@ class SchoolInstructorProfileSharedResource extends JsonResource
             /**
              * Изображения.
              *
-             * Controller загружает images.media.
+             * Используем общий Resource изображения,
+             * так как обработка media централизована
+             * через Spatie Media Library.
+             *
+             * Controller должен заранее загрузить:
+             * images.media.
              */
             'images' =>
                 SchoolInstructorProfileImageResource::collection(
@@ -125,15 +120,22 @@ class SchoolInstructorProfileSharedResource extends JsonResource
                 ),
 
             /**
-             * Counts.
+             * Количество только
+             * публичных курсов.
+             *
+             * Рассчитывается Controller.
              */
             'courses_count' => $this->when(
                 isset($this->courses_count),
-                fn () => (int) $this->courses_count
+                fn () =>
+                (int) $this->courses_count
             ),
 
             /**
-             * Нужен frontend-сортировке dateAsc/dateDesc.
+             * Нужен frontend-сортировке:
+             *
+             * dateAsc
+             * dateDesc.
              */
             'created_at' =>
                 $this->created_at?->toISOString(),

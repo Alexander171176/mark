@@ -48,8 +48,8 @@ import ImageGalleryMain from '@/Components/Public/Default/Media/ImageGalleryMain
 import SectionVideoList from '@/Components/Public/Default/Blog/BlogVideo/SectionVideoList.vue'
 import SectionBanners from '@/Components/Public/Default/Blog/BlogBanner/SectionBanners.vue'
 
-import CourseModulesSection from '@/Components/Public/Default/School/SchoolModule/CourseModulesSection.vue'
-import InstructorCourseGrid from '@/Components/Public/Default/School/SchoolInstructor/InstructorCourseGrid.vue'
+import ModulesSection from '@/Components/Public/Default/School/SchoolModule/ModulesSection.vue'
+import CourseGrid from '@/Components/Public/Default/School/SchoolCourse/CourseGrid.vue'
 
 const { t } = useI18n()
 
@@ -1072,7 +1072,7 @@ const gridCols = computed(() => {
                                 SchoolModule / SchoolLesson
                                 будем рефакторить отдельно.
                             -->
-                            <CourseModulesSection
+                            <ModulesSection
                                 :modules="modulesList"
                                 :cols="gridCols"
                             />
@@ -1091,7 +1091,7 @@ const gridCols = computed(() => {
                                     {{ t('relatedCourses') }}
                                 </h2>
 
-                                <InstructorCourseGrid
+                                <CourseGrid
                                     :courses="relatedCourses"
                                     :cols="gridCols"
                                 />

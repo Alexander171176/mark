@@ -60,14 +60,10 @@ class SchoolHashtagController extends Controller
                 'modules' => fn ($query) => $query->forPublic($locale),
 
                 /**
-                 * TODO:
-                 * После рефакторинга SchoolLesson
-                 * заменить на public-only count.
-                 *
-                 * Пока сохраняем существующий контракт,
-                 * не вмешиваясь в старую Public-логику уроков.
+                 * Только публичные уроки.
                  */
-                'lessons',
+                'lessons as lessons_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
             ])
             ->firstOrFail();
 
@@ -234,10 +230,10 @@ class SchoolHashtagController extends Controller
                 $query->forPublic($locale),
 
                 /**
-                 * SchoolLesson пока не прошёл
-                 * собственный Public refactoring.
+                 * Только публичные уроки.
                  */
-                'lessons',
+                'lessons as lessons_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
 
                 /**
                  * Только публичные направления.

@@ -429,10 +429,10 @@ class SchoolTrackController extends Controller
                 $query->forPublic($locale),
 
                 /**
-                 * SchoolLesson ещё не переводим здесь
-                 * на Public-count до его отдельного рефакторинга.
+                 * Только публичные уроки.
                  */
-                'lessons',
+                'lessons as lessons_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
 
                 'images',
                 'prices',

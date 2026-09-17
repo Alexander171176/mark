@@ -659,10 +659,10 @@ class SchoolInstructorController extends Controller
                 $query->forPublic($locale),
 
                 /**
-                 * SchoolLesson пока не прошёл
-                 * собственный Public refactoring.
+                 * Только публичные уроки.
                  */
-                'lessons',
+                'lessons as lessons_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
 
                 'tracks as tracks_count' => fn (Builder $query) =>
                 $query->forPublic($locale),

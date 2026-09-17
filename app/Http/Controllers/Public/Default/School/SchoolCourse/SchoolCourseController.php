@@ -335,7 +335,13 @@ class SchoolCourseController extends Controller
                                 'images.media',
                             ])
                             ->withCount([
-                                'lessons',
+                                /**
+                                 * Только публичные уроки модуля.
+                                 */
+                                'lessons as lessons_count' =>
+                                    fn (Builder $query) =>
+                                    $query->forPublic($locale),
+
                                 'likes',
                             ])
                             ->ordered();
@@ -351,10 +357,10 @@ class SchoolCourseController extends Controller
                     $query->forPublic($locale),
 
                     /**
-                     * SchoolLesson пока не прошёл
-                     * собственный Public refactoring.
+                     * Только публичные уроки.
                      */
-                    'lessons',
+                    'lessons as lessons_count' => fn (Builder $query) =>
+                    $query->forPublic($locale),
 
                     /**
                      * Только публичные направления.
@@ -581,10 +587,10 @@ class SchoolCourseController extends Controller
                     $query->forPublic($locale),
 
                     /**
-                     * SchoolLesson пока не прошёл
-                     * собственный Public refactoring.
+                     * Только публичные уроки.
                      */
-                    'lessons',
+                    'lessons as lessons_count' => fn (Builder $query) =>
+                    $query->forPublic($locale),
 
                     /**
                      * Только публичные направления.

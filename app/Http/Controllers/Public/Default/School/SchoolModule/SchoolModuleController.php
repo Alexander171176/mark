@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Public\Default\School\SchoolModule;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonResource;
+use App\Http\Resources\Public\School\SchoolLesson\SchoolLessonSharedResource;
 use App\Http\Resources\Public\School\SchoolModule\SchoolModuleResource;
 use App\Http\Resources\Public\School\SchoolModule\SchoolModuleSharedResource;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
@@ -267,28 +267,28 @@ class SchoolModuleController extends Controller
                 },
 
                 /**
-                 * SchoolLesson пока ещё не прошёл
-                 * Public Resource refactoring.
+                 * Только публичные уроки модуля.
                  *
-                 * Поэтому временно сохраняем
-                 * его старый Resource-контракт.
-                 *
-                 * already_liked для всех уроков
-                 * добавляется через withExists()
-                 * непосредственно в eager loading,
-                 * без отдельного exists() на каждый урок.
+                 * SchoolLesson::forPublic()
+                 * уже загружает translations
+                 * current + fallback.
                  */
                 'lessons' => function ($query) use ($locale) {
                     $query
                         ->forPublic($locale)
                         ->with([
-                            'translation',
-                            'translations',
                             'images.media',
                         ])
                         ->withCount([
                             'likes',
                             'images',
+
+                            /**
+                             * Только публичные хештеги.
+                             */
+                            'hashtags as hashtags_count' =>
+                                fn (Builder $hashtagQuery) =>
+                                $hashtagQuery->forPublic($locale),
                         ])
                         ->ordered();
 
@@ -297,12 +297,11 @@ class SchoolModuleController extends Controller
             ])
             ->withCount([
                 /**
-                 * Пока SchoolLesson не прошёл
-                 * собственный Public refactoring,
-                 * public-only lessons_count
-                 * отдельно не меняем.
+                 * Только публичные уроки модуля.
                  */
-                'lessons',
+                'lessons as lessons_count' =>
+                    fn (Builder $query) =>
+                    $query->forPublic($locale),
 
                 'likes',
             ]);
@@ -326,14 +325,12 @@ class SchoolModuleController extends Controller
         );
 
         /**
-         * Уроки пока остаются
-         * на старом Resource-контракте
-         * до рефакторинга SchoolLesson.
+         * Дочерние публичные уроки модуля.
          *
-         * Никаких дополнительных SQL exists()
-         * здесь больше нет.
+         * Для списка используется
+         * краткий Public SharedResource.
          */
-        $lessons = SchoolLessonResource::collection(
+        $lessons = SchoolLessonSharedResource::collection(
             $module->lessons
         );
 
@@ -452,7 +449,12 @@ class SchoolModuleController extends Controller
                 },
             ])
             ->withCount([
-                'lessons',
+                /**
+                 * Только публичные уроки модуля.
+                 */
+                'lessons as lessons_count' =>
+                    fn (Builder $query) =>
+                    $query->forPublic($locale),
                 'likes',
             ]);
 

@@ -546,6 +546,8 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolLesson/SchoolLessonTranslationResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolLesson/SchoolLessonImageResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolLesson/SchoolLessonController --resource` <br>
+`docker exec mark-php-app php artisan make:resource Public/School/SchoolLesson/SchoolLessonResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/School/SchoolLesson/SchoolLessonSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolLesson/SchoolLessonController` <br>
 
 7) creating business logic SchoolAssignment - домашние задания/практика

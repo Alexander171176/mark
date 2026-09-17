@@ -47,8 +47,13 @@ const getCourse = (lesson) => {
 
 const moduleLink = (lesson) => {
     const module = getModule(lesson)
-    return module?.slug
-        ? route('public.schoolModules.show', { slug: module.slug })
+    const course = getCourse(lesson)
+
+    return module?.slug && course?.slug
+        ? route('public.schoolModules.show', {
+            courseSlug: course.slug,
+            slug: module.slug,
+        })
         : '#'
 }
 

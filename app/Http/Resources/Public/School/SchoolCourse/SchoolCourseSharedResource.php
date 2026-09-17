@@ -11,32 +11,17 @@ class SchoolCourseSharedResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $locale = app()->getLocale();
-
-        $fallbackLocale = config(
-            'app.fallback_locale',
-            'ru'
-        );
-
         /**
-         * Controller / scopeForPublic()
-         * заранее загружает максимум:
+         * Model работает только
+         * с уже загруженными translations.
          *
-         * current locale + fallback locale.
+         * Public-контракт:
+         *
+         * current locale
+         * → fallback locale.
          */
-        $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
-                $fallbackLocale
-            )
-                ?: $this->translations->first()
-            )
-            : null;
+        $translation =
+            $this->translationOrFallback();
 
         return [
             'id' =>
@@ -49,7 +34,7 @@ class SchoolCourseSharedResource extends JsonResource
                 (int) $this->sort,
 
             /**
-             * Основной публичный перевод.
+             * Основной Public-перевод.
              */
             'translation' => $translation
                 ? [
@@ -68,7 +53,7 @@ class SchoolCourseSharedResource extends JsonResource
                 : null,
 
             /**
-             * Флаги.
+             * Публичные флаги.
              */
             'is_new' =>
                 (bool) $this->is_new,
@@ -80,7 +65,7 @@ class SchoolCourseSharedResource extends JsonResource
                 (bool) $this->is_sale,
 
             /**
-             * Характеристики.
+             * Характеристики курса.
              */
             'level' =>
                 $this->level,
@@ -116,9 +101,34 @@ class SchoolCourseSharedResource extends JsonResource
                 (int) $this->views,
 
             /**
+             * Лайки.
+             *
+             * likes_count приходит
+             * из withCount().
+             */
+            'likes_count' => $this->when(
+                isset($this->likes_count),
+                fn () =>
+                (int) $this->likes_count
+            ),
+
+            /**
+             * Лайк текущего пользователя.
+             *
+             * Приходит из withUserLike().
+             */
+            'already_liked' =>
+                (bool) (
+                    $this->already_liked
+                    ?? false
+                ),
+
+            /**
              * Изображения курса.
              *
-             * Controller загружает images.media.
+             * Ресурс изображения общий,
+             * так как изображения управляются
+             * через Spatie Media Library.
              */
             'images' =>
                 SchoolCourseImageResource::collection(
@@ -129,9 +139,6 @@ class SchoolCourseSharedResource extends JsonResource
 
             /**
              * Инструктор.
-             *
-             * Используем уже существующий
-             * Public Shared Resource.
              */
             'instructorProfile' =>
                 new SchoolInstructorProfileSharedResource(
@@ -141,51 +148,48 @@ class SchoolCourseSharedResource extends JsonResource
                 ),
 
             /**
-             * Counts.
+             * Counts для карточек
+             * и Public-сортировки.
              */
             'modules_count' => $this->when(
                 isset($this->modules_count),
-                fn () => (int) $this->modules_count
+                fn () =>
+                (int) $this->modules_count
             ),
 
             'lessons_count' => $this->when(
                 isset($this->lessons_count),
-                fn () => (int) $this->lessons_count
+                fn () =>
+                (int) $this->lessons_count
             ),
 
             'tracks_count' => $this->when(
                 isset($this->tracks_count),
-                fn () => (int) $this->tracks_count
+                fn () =>
+                (int) $this->tracks_count
             ),
 
             'hashtags_count' => $this->when(
                 isset($this->hashtags_count),
-                fn () => (int) $this->hashtags_count
+                fn () =>
+                (int) $this->hashtags_count
             ),
 
             'reviews_count' => $this->when(
                 isset($this->reviews_count),
-                fn () => (int) $this->reviews_count
-            ),
-
-            'likes_count' => $this->when(
-                isset($this->likes_count),
-                fn () => (int) $this->likes_count
+                fn () =>
+                (int) $this->reviews_count
             ),
 
             /**
-             * Лайк текущего пользователя.
+             * Публичная дата публикации.
              *
-             * Приходит из withUserLike().
+             * Нужна frontend-сортировке.
              */
-            'already_liked' =>
-                (bool) ($this->already_liked ?? false),
-
             'published_at' =>
-                $this->published_at?->format('Y-m-d'),
-
-            'created_at' =>
-                $this->created_at?->toISOString(),
+                $this->published_at?->format(
+                    'Y-m-d'
+                ),
         ];
     }
 }

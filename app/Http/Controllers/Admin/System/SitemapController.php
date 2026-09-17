@@ -121,9 +121,11 @@ class SitemapController extends Controller
     private function buildLocaleSitemap(
         string $locale
     ): void {
-        $this->setLocale(
-            $locale
-        );
+        $this->setLocale($locale);
+
+        Log::info('SITEMAP START LOCALE', [
+            'locale' => $locale,
+        ]);
 
         $sitemap = Sitemap::create();
 
@@ -132,8 +134,17 @@ class SitemapController extends Controller
             $locale
         );
 
-        foreach ($this->resources() as $group) {
-            foreach ($group as $resource) {
+        foreach ($this->resources() as $groupName => $group) {
+            foreach ($group as $resourceName => $resource) {
+                Log::info('SITEMAP RESOURCE START', [
+                    'locale' => $locale,
+                    'group' => $groupName,
+                    'resource' => $resourceName,
+                    'model' => $resource['model'] ?? null,
+                ]);
+
+                $startedAt = microtime(true);
+
                 $this->addIndexUrl(
                     $sitemap,
                     $resource,
@@ -145,16 +156,28 @@ class SitemapController extends Controller
                     $resource,
                     $locale
                 );
+
+                Log::info('SITEMAP RESOURCE END', [
+                    'locale' => $locale,
+                    'group' => $groupName,
+                    'resource' => $resourceName,
+                    'seconds' => round(
+                        microtime(true) - $startedAt,
+                        3
+                    ),
+                ]);
             }
         }
 
         $sitemap->writeToFile(
             public_path(
-                $this->localeFile(
-                    $locale
-                )
+                $this->localeFile($locale)
             )
         );
+
+        Log::info('SITEMAP END LOCALE', [
+            'locale' => $locale,
+        ]);
     }
 
     /** Сборка главного sitemap index. */
@@ -294,9 +317,7 @@ class SitemapController extends Controller
         array $resource,
         string $locale
     ): void {
-        $showRoute =
-            $resource['showRoute']
-            ?? null;
+        $showRoute = $resource['showRoute'] ?? null;
 
         if (
             !$showRoute
@@ -305,52 +326,59 @@ class SitemapController extends Controller
             return;
         }
 
-        $urlField =
-            $resource['urlField']
-            ?? 'url';
+        $urlField = $resource['urlField'] ?? 'url';
+        $routeParameter = $resource['routeParameter'] ?? $urlField;
 
-        $routeParameter =
-            $resource['routeParameter']
-            ?? $urlField;
+        $translationRelation = $resource['translationRelation'] ?? 'translations';
+        $translationLocaleField = $resource['translationLocaleField'] ?? 'locale';
 
-        $translationRelation =
-            $resource['translationRelation']
-            ?? 'translations';
+        $trimRouteParameterSlashes = (bool) (
+            $resource['trimRouteParameterSlashes'] ?? false
+        );
 
-        $translationLocaleField =
-            $resource['translationLocaleField']
-            ?? 'locale';
-
-        $trimRouteParameterSlashes =
-            (bool) (
-                $resource['trimRouteParameterSlashes']
-                ?? false
-            );
+        /**
+         * Формируем список связей для eager loading.
+         *
+         * translations нужны для определения hreflang.
+         *
+         * Дополнительные связи могут быть указаны
+         * в sitemap.php через параметр "with".
+         *
+         * Например для SchoolModule:
+         * course:id,slug
+         */
+        $relations = array_values(
+            array_unique(
+                array_merge(
+                    [$translationRelation],
+                    $this->sitemapRouteRelations($resource)
+                )
+            )
+        );
 
         $this->queryForSitemap(
             $resource['model'],
             $resource,
             $locale
         )
-            ->select([
-                'id',
-                $urlField,
-                'updated_at',
-            ])
-            ->with(
-                $translationRelation
+            ->select(
+                array_values(
+                    array_unique(
+                        array_merge(
+                            [
+                                'id',
+                                $urlField,
+                                'updated_at',
+                            ],
+                            $resource['selectFields'] ?? []
+                        )
+                    )
+                )
             )
-            ->whereNotNull(
-                $urlField
-            )
-            ->where(
-                $urlField,
-                '!=',
-                ''
-            )
-            ->orderBy(
-                'id'
-            )
+            ->with($relations)
+            ->whereNotNull($urlField)
+            ->where($urlField, '!=', '')
+            ->orderBy('id')
             ->chunkById(
                 500,
                 function ($items) use (
@@ -365,39 +393,55 @@ class SitemapController extends Controller
                     $trimRouteParameterSlashes
                 ) {
                     foreach ($items as $item) {
+                        /**
+                         * Локали, для которых у сущности
+                         * действительно существует перевод.
+                         */
                         $translatedLocales = $item
                             ->{$translationRelation}
-                            ->pluck(
-                                $translationLocaleField
-                            )
+                            ->pluck($translationLocaleField)
                             ->filter()
                             ->unique()
                             ->values()
                             ->all();
 
-                        $routeParameterValue =
-                            $item->{$urlField};
+                        /**
+                         * Параметры Show-маршрута.
+                         *
+                         * Поддерживаются:
+                         *
+                         * 1. Старый одиночный параметр:
+                         *    slug => slug
+                         *
+                         * 2. Составные параметры:
+                         *    courseSlug => course.slug
+                         *    slug       => slug
+                         */
+                        $routeParameters = $this->showRouteParameters(
+                            $item,
+                            $resource,
+                            $routeParameter,
+                            $urlField,
+                            $trimRouteParameterSlashes
+                        );
 
-                        if ($trimRouteParameterSlashes) {
-                            $routeParameterValue = trim(
-                                (string) $routeParameterValue,
-                                '/'
-                            );
+                        /**
+                         * Если составной маршрут не удалось
+                         * полностью сформировать, URL не добавляем.
+                         */
+                        if ($routeParameters === null) {
+                            continue;
                         }
 
                         $url = Url::create(
                             $this->localizedRoute(
                                 $showRoute,
                                 $locale,
-                                [
-                                    $routeParameter
-                                    => $routeParameterValue,
-                                ]
+                                $routeParameters
                             )
                         )
                             ->setPriority(
-                                $resource['priority']
-                                ?? 0.8
+                                $resource['priority'] ?? 0.8
                             )
                             ->setChangeFrequency(
                                 $resource['changeFrequency']
@@ -410,10 +454,10 @@ class SitemapController extends Controller
                             );
                         }
 
-                        foreach (
-                            $translatedLocales
-                            as $alternateLocale
-                        ) {
+                        /**
+                         * hreflang alternate.
+                         */
+                        foreach ($translatedLocales as $alternateLocale) {
                             if (!in_array(
                                 $alternateLocale,
                                 $this->locales(),
@@ -426,18 +470,13 @@ class SitemapController extends Controller
                                 $this->localizedRoute(
                                     $showRoute,
                                     $alternateLocale,
-                                    [
-                                        $routeParameter
-                                        => $routeParameterValue,
-                                    ]
+                                    $routeParameters
                                 ),
                                 $alternateLocale
                             );
                         }
 
-                        $sitemap->add(
-                            $url
-                        );
+                        $sitemap->add($url);
                     }
                 }
             );
@@ -702,5 +741,90 @@ class SitemapController extends Controller
                 $file
             ),
         ]);
+    }
+
+    /** Связи, необходимые для построения составного Show-маршрута. */
+    private function sitemapRouteRelations(array $resource): array
+    {
+        return $resource['with'] ?? [];
+    }
+
+    /** Параметры Show-маршрута конкретной сущности. */
+    private function showRouteParameters(
+        object $item,
+        array $resource,
+        string $routeParameter,
+        string $urlField,
+        bool $trimRouteParameterSlashes
+    ): ?array {
+        $configuredParameters = $resource['routeParameters'] ?? null;
+
+        /**
+         * Новый составной контракт.
+         *
+         * Например:
+         * courseSlug => course.slug
+         * slug       => slug
+         */
+        if (
+            is_array($configuredParameters)
+            && $configuredParameters !== []
+        ) {
+            $parameters = [];
+
+            foreach ($configuredParameters as $parameter => $field) {
+                $value = data_get($item, $field);
+
+                /**
+                 * Обязательный параметр маршрута
+                 * не должен быть пустым.
+                 */
+                if ($value === null || $value === '') {
+                    return null;
+                }
+
+                if ($trimRouteParameterSlashes) {
+                    $value = trim(
+                        (string) $value,
+                        '/'
+                    );
+
+                    if ($value === '') {
+                        return null;
+                    }
+                }
+
+                $parameters[$parameter] = $value;
+            }
+
+            return $parameters;
+        }
+
+        /**
+         * Старый одиночный контракт.
+         *
+         * Полностью сохраняет совместимость
+         * с существующими ресурсами sitemap.
+         */
+        $value = $item->{$urlField};
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($trimRouteParameterSlashes) {
+            $value = trim(
+                (string) $value,
+                '/'
+            );
+
+            if ($value === '') {
+                return null;
+            }
+        }
+
+        return [
+            $routeParameter => $value,
+        ];
     }
 }

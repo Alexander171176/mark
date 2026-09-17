@@ -67,6 +67,40 @@ class SchoolModule extends Model
             ->where('locale', app()->getLocale());
     }
 
+    /**
+     * Перевод текущей локали с fallback.
+     *
+     * ВАЖНО:
+     * метод работает только с уже загруженной relation translations.
+     *
+     * Порядок:
+     * current locale → fallback locale.
+     *
+     * Произвольный первый перевод не используется.
+     */
+    public function translationOrFallback(
+        ?string $locale = null,
+        string $fallbackLocale = 'ru'
+    ): ?SchoolModuleTranslation {
+        $locale = $locale ?: app()->getLocale();
+
+        if (!$this->relationLoaded('translations')) {
+            return null;
+        }
+
+        $translation = $this->translations->firstWhere('locale', $locale);
+
+        if ($translation) {
+            return $translation;
+        }
+
+        if ($fallbackLocale !== $locale) {
+            return $this->translations->firstWhere('locale', $fallbackLocale);
+        }
+
+        return null;
+    }
+
     /* ======================== Relations ======================== */
 
     /** Родительский курс */
@@ -101,7 +135,7 @@ class SchoolModule extends Model
         return $this->hasMany(SchoolModuleLike::class, 'school_module_id');
     }
 
-    /* ======================== Scopes ======================== */
+    /* ======================== Common Scopes ======================== */
 
     /** Сортировка */
     public function scopeSorted(Builder $q): Builder
@@ -130,7 +164,12 @@ class SchoolModule extends Model
             ->whereNotNull('published_at');
     }
 
-    /** Подгрузка перевода */
+    /**
+     * Подгрузка перевода.
+     *
+     * Существующий общий/Admin scope сохраняем без изменения
+     * его контракта.
+     */
     public function scopeWithLocale(Builder $q, ?string $locale = null): Builder
     {
         $locale = $locale ?: app()->getLocale();
@@ -140,19 +179,231 @@ class SchoolModule extends Model
         ]);
     }
 
-    /** Публичный набор */
-    public function scopeForPublic(Builder $q, ?string $locale = null): Builder
-    {
+    /* ======================== Public Scopes ======================== */
+
+    /**
+     * Публичный набор модулей.
+     *
+     * Используем строгую схему:
+     * current locale → fallback locale.
+     */
+    public function scopeForPublic(
+        Builder $q,
+        ?string $locale = null,
+        string $fallbackLocale = 'ru'
+    ): Builder {
         $locale = $locale ?: app()->getLocale();
+
+        $locales = $locale === $fallbackLocale
+            ? [$locale]
+            : [$locale, $fallbackLocale];
 
         return $q
             ->active()
             ->published()
-            ->whereHas('translations', fn ($qq) => $qq->where('locale', $locale))
-            ->withLocale($locale);
+            ->whereHas('translations', function (Builder $query) use ($locales) {
+                $query->whereIn('locale', $locales);
+            })
+            ->with([
+                'translations' => function ($query) use ($locales) {
+                    $query->whereIn('locale', $locales);
+                },
+            ]);
     }
 
-    /** Поиск */
+    /**
+     * Public-поиск.
+     *
+     * Ищем только по данным, которые должны быть доступны
+     * в публичном интерфейсе:
+     *
+     * - slug;
+     * - title;
+     * - subtitle;
+     * - short.
+     *
+     * Fallback перевод участвует в поиске только тогда,
+     * когда перевод текущей локали отсутствует.
+     */
+    public function scopePublicSearch(
+        Builder $q,
+        ?string $term,
+        ?string $locale = null,
+        string $fallbackLocale = 'ru'
+    ): Builder {
+        if (!$term) {
+            return $q;
+        }
+
+        $locale = $locale ?: app()->getLocale();
+
+        return $q->where(function (Builder $query) use (
+            $term,
+            $locale,
+            $fallbackLocale
+        ) {
+            $query->where('slug', 'like', "%{$term}%")
+                ->orWhereHas('translations', function (Builder $translationQuery) use (
+                    $term,
+                    $locale
+                ) {
+                    $translationQuery
+                        ->where('locale', $locale)
+                        ->where(function (Builder $searchQuery) use ($term) {
+                            $searchQuery
+                                ->where('title', 'like', "%{$term}%")
+                                ->orWhere('subtitle', 'like', "%{$term}%")
+                                ->orWhere('short', 'like', "%{$term}%");
+                        });
+                });
+
+            if ($fallbackLocale !== $locale) {
+                $query->orWhere(function (Builder $fallbackQuery) use (
+                    $term,
+                    $locale,
+                    $fallbackLocale
+                ) {
+                    $fallbackQuery
+                        ->whereDoesntHave('translations', function (Builder $currentQuery) use ($locale) {
+                            $currentQuery->where('locale', $locale);
+                        })
+                        ->whereHas('translations', function (Builder $translationQuery) use (
+                            $term,
+                            $fallbackLocale
+                        ) {
+                            $translationQuery
+                                ->where('locale', $fallbackLocale)
+                                ->where(function (Builder $searchQuery) use ($term) {
+                                    $searchQuery
+                                        ->where('title', 'like', "%{$term}%")
+                                        ->orWhere('subtitle', 'like', "%{$term}%")
+                                        ->orWhere('short', 'like', "%{$term}%");
+                                });
+                        });
+                });
+            }
+        });
+    }
+
+    /**
+     * Public-сортировка.
+     *
+     * Здесь оставляем только публичные варианты.
+     * Admin scopeSortByParam() не изменяем.
+     */
+    public function scopePublicSortByParam(
+        Builder $q,
+        ?string $sort,
+        ?string $locale = null,
+        string $fallbackLocale = 'ru'
+    ): Builder {
+        $locale = $locale ?: app()->getLocale();
+
+        return match ($sort) {
+            'idAsc' => $q->orderBy('id', 'asc'),
+            'idDesc' => $q->orderBy('id', 'desc'),
+
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'titleAsc' => $this->applyPublicTitleSort(
+                $q,
+                'asc',
+                $locale,
+                $fallbackLocale
+            ),
+
+            'titleDesc' => $this->applyPublicTitleSort(
+                $q,
+                'desc',
+                $locale,
+                $fallbackLocale
+            ),
+
+            'difficultyAsc' => $q->orderBy('difficulty', 'asc')->orderByDesc('id'),
+            'difficultyDesc' => $q->orderBy('difficulty', 'desc')->orderByDesc('id'),
+
+            'durationAsc' => $q->orderBy('duration', 'asc')->orderByDesc('id'),
+            'durationDesc' => $q->orderBy('duration', 'desc')->orderByDesc('id'),
+
+            'lessonsAsc' => $q->orderBy('lessons_count', 'asc')->orderByDesc('id'),
+            'lessonsDesc' => $q->orderBy('lessons_count', 'desc')->orderByDesc('id'),
+
+            'likesAsc' => $q->orderBy('likes_count', 'asc')->orderByDesc('id'),
+            'likesDesc' => $q->orderBy('likes_count', 'desc')->orderByDesc('id'),
+
+            'viewsAsc' => $q->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
+
+            'popularityAsc' => $q->orderBy('popularity', 'asc')->orderByDesc('id'),
+            'popularityDesc' => $q->orderBy('popularity', 'desc')->orderByDesc('id'),
+
+            'ratingCountAsc' => $q->orderBy('rating_count', 'asc')->orderByDesc('id'),
+            'ratingCountDesc' => $q->orderBy('rating_count', 'desc')->orderByDesc('id'),
+
+            'ratingAvgAsc' => $q->orderBy('rating_avg', 'asc')->orderByDesc('id'),
+            'ratingAvgDesc' => $q->orderBy('rating_avg', 'desc')->orderByDesc('id'),
+
+            'publishedAtAsc' => $q->orderBy('published_at', 'asc')->orderByDesc('id'),
+            'publishedAtDesc' => $q->orderBy('published_at', 'desc')->orderByDesc('id'),
+
+            default => $q->ordered(),
+        };
+    }
+
+    /**
+     * Public-сортировка по resolved title:
+     *
+     * current locale → fallback locale.
+     *
+     * COALESCE выбирает fallback только при отсутствии
+     * перевода текущей локали.
+     */
+    protected function applyPublicTitleSort(
+        Builder $q,
+        string $direction,
+        string $locale,
+        string $fallbackLocale = 'ru'
+    ): Builder {
+        $direction = strtolower($direction) === 'desc'
+            ? 'desc'
+            : 'asc';
+
+        if ($locale === $fallbackLocale) {
+            return $q
+                ->leftJoin('school_module_translations as smt_current', function ($join) use ($locale) {
+                    $join->on('smt_current.school_module_id', '=', 'school_modules.id')
+                        ->where('smt_current.locale', '=', $locale);
+                })
+                ->orderBy('smt_current.title', $direction)
+                ->orderByDesc('school_modules.id')
+                ->addSelect('school_modules.*');
+        }
+
+        return $q
+            ->leftJoin('school_module_translations as smt_current', function ($join) use ($locale) {
+                $join->on('smt_current.school_module_id', '=', 'school_modules.id')
+                    ->where('smt_current.locale', '=', $locale);
+            })
+            ->leftJoin('school_module_translations as smt_fallback', function ($join) use ($fallbackLocale) {
+                $join->on('smt_fallback.school_module_id', '=', 'school_modules.id')
+                    ->where('smt_fallback.locale', '=', $fallbackLocale);
+            })
+            ->orderByRaw(
+                'COALESCE(smt_current.title, smt_fallback.title) ' . $direction
+            )
+            ->orderByDesc('school_modules.id')
+            ->addSelect('school_modules.*');
+    }
+
+    /* ======================== Admin/Common Scopes ======================== */
+
+    /**
+     * Поиск.
+     *
+     * ВАЖНО:
+     * существующий Admin/common контракт не изменяем.
+     */
     public function scopeSearch(Builder $q, ?string $term, ?string $locale = null): Builder
     {
         if (!$term) {
@@ -175,7 +426,12 @@ class SchoolModule extends Model
         });
     }
 
-    /** Сортировка по параметру */
+    /**
+     * Сортировка по параметру.
+     *
+     * ВАЖНО:
+     * существующий Admin/common контракт не изменяем.
+     */
     public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
     {
         $locale = $locale ?: app()->getLocale();

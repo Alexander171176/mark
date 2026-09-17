@@ -58,8 +58,15 @@ const courseLink = (assignment) => {
 
 /** Нормализация ссылки модуля */
 const moduleLink = (assignment) => {
+    const course = getCourse(assignment)
     const module = getModule(assignment)
-    return module?.slug ? route('public.schoolModules.show', { slug: module.slug }) : '#'
+
+    return course?.slug && module?.slug
+        ? route('public.schoolModules.show', {
+            courseSlug: course.slug,
+            slug: module.slug,
+        })
+        : '#'
 }
 
 /** Нормализация ссылки урока */

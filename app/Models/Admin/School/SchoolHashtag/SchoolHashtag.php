@@ -49,6 +49,36 @@ class SchoolHashtag extends Model
             ->where('locale', app()->getLocale());
     }
 
+    /**
+     * Перевод по текущей локали с fallback.
+     *
+     * Важно:
+     * метод работает только с уже загруженной коллекцией translations
+     * и не выполняет дополнительных SQL-запросов.
+     *
+     * Public-контракт:
+     * current locale -> fallback locale.
+     */
+    public function translationOrFallback(
+        ?string $locale = null,
+        ?string $fallbackLocale = null
+    ): ?SchoolHashtagTranslation {
+        $locale ??= app()->getLocale();
+        $fallbackLocale ??= config('app.fallback_locale', 'ru');
+
+        $translation = $this->translations->firstWhere('locale', $locale);
+
+        if ($translation) {
+            return $translation;
+        }
+
+        if ($fallbackLocale !== $locale) {
+            return $this->translations->firstWhere('locale', $fallbackLocale);
+        }
+
+        return null;
+    }
+
     /* ======================== Relations ======================== */
 
     /** Курсы с этим хештегом */
@@ -109,7 +139,12 @@ class SchoolHashtag extends Model
             ->orderByDesc('views');
     }
 
-    /** Подгрузка перевода */
+    /**
+     * Подгрузка перевода конкретной локали.
+     *
+     * Общий scope сохраняем без изменения поведения,
+     * так как он может использоваться Admin и другими частями приложения.
+     */
     public function scopeWithLocale(Builder $q, ?string $locale = null): Builder
     {
         $locale = $locale ?: app()->getLocale();
@@ -119,47 +154,55 @@ class SchoolHashtag extends Model
         ]);
     }
 
-    /** Публичный набор */
+    /**
+     * Публичный набор.
+     *
+     * Условия:
+     * - хештег активен;
+     * - существует перевод текущей или fallback-локали;
+     * - загружаются только current + fallback переводы.
+     */
     public function scopeForPublic(
         Builder $q,
         ?string $locale = null
     ): Builder {
         $locale ??= app()->getLocale();
+        $fallbackLocale = config('app.fallback_locale', 'ru');
 
-        $fallbackLocale = config(
-            'app.fallback_locale',
-            'ru'
-        );
-
-        $locales = array_values(
-            array_unique([
-                $locale,
-                $fallbackLocale,
-            ])
-        );
+        $locales = array_values(array_unique([
+            $locale,
+            $fallbackLocale,
+        ]));
 
         return $q
             ->active()
             ->whereHas(
                 'translations',
-                fn ($query) =>
-                $query->whereIn(
-                    'locale',
-                    $locales
-                )
-            );
+                fn ($query) => $query->whereIn('locale', $locales)
+            )
+            ->with([
+                'translations' => fn ($query) => $query->whereIn('locale', $locales),
+            ]);
     }
 
-    /** Облако тегов */
-    public function scopeForTagCloud(Builder $q, ?string $locale = null, int $minViews = 0): Builder
-    {
+    /** Облако публичных хештегов */
+    public function scopeForTagCloud(
+        Builder $q,
+        ?string $locale = null,
+        int $minViews = 0
+    ): Builder {
         return $q
             ->forPublic($locale)
             ->popular($minViews)
             ->ordered();
     }
 
-    /** Поиск */
+    /**
+     * Поиск.
+     *
+     * Общий/Admin scope.
+     * Не изменяем в рамках Public-рефакторинга.
+     */
     public function scopeSearch(
         Builder $q,
         ?string $term,
@@ -200,9 +243,17 @@ class SchoolHashtag extends Model
         });
     }
 
-    /** Сортировка по параметру */
-    public function scopeSortByParam(Builder $q, ?string $sort, ?string $locale = null): Builder
-    {
+    /**
+     * Сортировка по параметру.
+     *
+     * Общий/Admin scope.
+     * Не изменяем в рамках Public-рефакторинга.
+     */
+    public function scopeSortByParam(
+        Builder $q,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
         $locale = $locale ?: app()->getLocale();
 
         return match ($sort) {

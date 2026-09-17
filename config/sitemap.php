@@ -172,8 +172,37 @@ return [
                 'indexRoute' => 'public.schoolModules.index',
                 'showRoute' => 'public.schoolModules.show',
 
+                /*
+                 * Основное URL-поле сущности.
+                 */
                 'urlField' => 'slug',
                 'routeParameter' => 'slug',
+
+                /*
+                 * Составной Public Show-маршрут:
+                 *
+                 * /school/modules/{courseSlug}/{slug}
+                 */
+                'routeParameters' => [
+                    'courseSlug' => 'course.slug',
+                    'slug' => 'slug',
+                ],
+
+                /*
+                 * Внешний ключ необходим Eloquent
+                 * для eager loading relation course.
+                 */
+                'selectFields' => [
+                    'school_course_id',
+                ],
+
+                /*
+                 * Родительский курс необходим
+                 * для получения course.slug.
+                 */
+                'with' => [
+                    'course:id,slug',
+                ],
 
                 'indexPriority' => 0.7,
                 'priority' => 0.7,

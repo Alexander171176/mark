@@ -4,14 +4,15 @@ namespace App\Http\Controllers\Public\Default\School\SchoolModule;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\School\SchoolLesson\SchoolLessonResource;
-use App\Http\Resources\Admin\School\SchoolModule\SchoolModuleResource;
+use App\Http\Resources\Public\School\SchoolModule\SchoolModuleResource;
+use App\Http\Resources\Public\School\SchoolModule\SchoolModuleSharedResource;
 use App\Models\Admin\School\SchoolModule\SchoolModule;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
 use App\Services\SiteSettings\PublicSettingsService;
-use App\Traits\Public\Blog\HasSidebarDataTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
+use App\Traits\Public\School\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -71,16 +72,36 @@ class SchoolModuleController extends Controller
             $settings->string('publicSchoolModulesProcessingMode', 'server')
         );
 
-        $modulesCount = SchoolModule::query()
-            ->forPublic($locale)
-            ->count();
+        /**
+         * Decision COUNT нужен только режиму auto.
+         *
+         * server:
+         * режим уже известен, а total получим из paginator.
+         *
+         * frontend:
+         * режим уже известен, а количество получим
+         * из загруженной Collection.
+         *
+         * auto:
+         * предварительный COUNT необходим только
+         * для выбора между server и frontend.
+         */
+        $decisionCount = null;
 
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
-                $processingMode,
-                $modulesCount,
-                300
-            );
+        if ($processingMode === 'auto') {
+            $decisionCount = SchoolModule::query()
+                ->forPublic($locale)
+                ->count();
+
+            $useServerProcessing = app(ProcessingModeService::class)
+                ->shouldUseServer(
+                    $processingMode,
+                    $decisionCount,
+                    300
+                );
+        } else {
+            $useServerProcessing = $processingMode === 'server';
+        }
 
         $modules = $this->getIndexModules(
             locale: $locale,
@@ -90,121 +111,247 @@ class SchoolModuleController extends Controller
             search: $search,
         );
 
-        $modulesFound = $useServerProcessing
-            ? $modules->total()
-            : $modules->count();
+        /**
+         * Фактическое количество найденных модулей.
+         *
+         * server:
+         * total() уже вычислен Laravel paginator.
+         *
+         * frontend:
+         * вся Public Collection уже загружена.
+         */
+        if ($useServerProcessing) {
+            $modulesFound = $modules->total();
 
-        $modules = $useServerProcessing
-            ? $this->appendUserLikes($modules, SchoolModuleResource::class)
-            : SchoolModuleResource::collection($modules);
+            /**
+             * Без поиска paginator total одновременно
+             * является общим количеством Public-модулей.
+             */
+            if ($decisionCount === null && $search === '') {
+                $modulesCount = $modulesFound;
+            } else {
+                /**
+                 * auto уже выполнил decision COUNT.
+                 *
+                 * Для server + search нужен отдельный
+                 * unfiltered Public COUNT.
+                 */
+                $modulesCount = $decisionCount
+                    ?? SchoolModule::query()
+                        ->forPublic($locale)
+                        ->count();
+            }
+        } else {
+            /**
+             * Frontend получил весь Public-набор.
+             *
+             * В auto используем decision COUNT,
+             * в frontend — размер Collection.
+             */
+            $modulesFound = $modules->count();
+            $modulesCount = $decisionCount ?? $modulesFound;
+        }
+
+        $modules = SchoolModuleSharedResource::collection($modules);
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/SchoolModules/Index', [
+        return Inertia::render(
+            'Public/Default/School/SchoolModules/Index',
+            [
+                'seo' => $seo,
 
-            'seo' => $seo,
+                'publicSchoolModulesProcessingMode' => $processingMode,
+                'useServerProcessing' => $useServerProcessing,
 
-            'publicSchoolModulesProcessingMode' => $processingMode,
-            'useServerProcessing' => $useServerProcessing,
+                'modules' => $modules,
 
-            'modules' => $modules,
+                'modulesCount' => $modulesCount,
+                'modulesFound' => $modulesFound,
 
-            'modulesCount' => $modulesCount,
-            'modulesFound' => $modulesFound,
+                'filters' => $this->buildIndexFilters(
+                    $search,
+                    $perPage,
+                    $sort,
+                    $view,
+                    $processingMode
+                ),
 
-            'filters' => $this->buildIndexFilters(
-                $search,
-                $perPage,
-                $sort,
-                $view,
-                $processingMode
-            ),
+                'trackTree' => $trackTree,
+                'locale' => $locale,
 
-            'trackTree' => $trackTree,
-            'locale' => $locale,
-
-            ...$sidebarData,
-        ]);
+                ...$sidebarData,
+            ]
+        );
     }
 
     /** Страница конкретного модуля. */
-    public function show(string $slug): Response
+    public function show(string $courseSlug, string $slug): Response
     {
         $locale = app()->getLocale();
 
-        $module = SchoolModule::query()
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        $moduleQuery = SchoolModule::query()
             ->forPublic($locale)
             ->where('slug', $slug)
-            ->with([
-                'translation',
-                'translations',
-                'images',
 
-                'course.translation',
-                'course.translations',
-                'course.images',
-                'course.instructorProfile.translation',
-                'course.instructorProfile.translations',
-                'course.instructorProfile.images',
-                'course.tracks.translation',
-                'course.tracks.translations',
-                'course.hashtags.translation',
-                'course.hashtags.translations',
-
-                'lessons' => fn ($query) => $query
+            /**
+             * Slug модуля уникален только в рамках курса.
+             *
+             * Поэтому Public Show идентифицирует модуль
+             * по связке:
+             *
+             * course.slug + module.slug
+             *
+             * Дополнительно родительский курс должен
+             * соответствовать Public-условиям.
+             */
+            ->whereHas('course', function ($courseQuery) use ($courseSlug, $locale) {
+                $courseQuery
                     ->forPublic($locale)
-                    ->with([
-                        'translation',
-                        'translations',
-                        'images',
-                    ])
-                    ->withCount([
-                        'likes',
-                        'images',
-                    ])
-                    ->ordered(),
+                    ->where('slug', $courseSlug);
+            })
+
+            ->with([
+                /**
+                 * Сам SchoolModule::forPublic()
+                 * уже загружает translations
+                 * current + fallback.
+                 *
+                 * Повторно translation/translations
+                 * здесь не загружаем.
+                 */
+                'images.media',
+
+                /**
+                 * Родительский курс.
+                 *
+                 * SchoolCourseSharedResource ожидает:
+                 * - translations;
+                 * - images;
+                 * - instructorProfile.
+                 */
+                'course' => function ($query) use ($locales) {
+                    $query
+                        ->with([
+                            'translations' => fn($translationQuery) => $translationQuery->whereIn(
+                                'locale',
+                                $locales
+                            ),
+
+                            'images.media',
+
+                            'instructorProfile' => function ($instructorQuery) use ($locales) {
+                                $instructorQuery->with([
+                                    'translations' => fn($translationQuery) => $translationQuery->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+
+                                    'images.media',
+                                ]);
+                            },
+                        ]);
+                },
+
+                /**
+                 * SchoolLesson пока ещё не прошёл
+                 * Public Resource refactoring.
+                 *
+                 * Поэтому временно сохраняем
+                 * его старый Resource-контракт.
+                 *
+                 * already_liked для всех уроков
+                 * добавляется через withExists()
+                 * непосредственно в eager loading,
+                 * без отдельного exists() на каждый урок.
+                 */
+                'lessons' => function ($query) use ($locale) {
+                    $query
+                        ->forPublic($locale)
+                        ->with([
+                            'translation',
+                            'translations',
+                            'images.media',
+                        ])
+                        ->withCount([
+                            'likes',
+                            'images',
+                        ])
+                        ->ordered();
+
+                    $this->withUserLike($query);
+                },
             ])
             ->withCount([
+                /**
+                 * Пока SchoolLesson не прошёл
+                 * собственный Public refactoring,
+                 * public-only lessons_count
+                 * отдельно не меняем.
+                 */
                 'lessons',
-                'likes',
-                'images',
-            ])
-            ->firstOrFail();
 
+                'likes',
+            ]);
+
+        /**
+         * already_liked самого модуля
+         * добавляется в основной SQL.
+         */
+        $this->withUserLike($moduleQuery);
+
+        $module = $moduleQuery->firstOrFail();
+
+        /** Просмотр модуля. */
         $module->increment('views');
 
-        $moduleData = (new SchoolModuleResource($module))->resolve();
+        /**
+         * Полный новый Public Resource.
+         */
+        $moduleData = new SchoolModuleResource(
+            $module
+        );
 
-        $moduleData['already_liked'] = auth()->check()
-            ? $module->likes()->where('user_id', auth()->id())->exists()
-            : false;
-
-        $lessons = $module->lessons
-            ->map(function ($lesson) {
-                $resolved = (new SchoolLessonResource($lesson))->resolve();
-
-                $resolved['already_liked'] = auth()->check()
-                    ? $lesson->likes()->where('user_id', auth()->id())->exists()
-                    : false;
-
-                return $resolved;
-            })
-            ->values()
-            ->all();
+        /**
+         * Уроки пока остаются
+         * на старом Resource-контракте
+         * до рефакторинга SchoolLesson.
+         *
+         * Никаких дополнительных SQL exists()
+         * здесь больше нет.
+         */
+        $lessons = SchoolLessonResource::collection(
+            $module->lessons
+        );
 
         $trackTree = $this->buildTrackTree($locale);
         $sidebarData = $this->getSidebarData($locale);
 
-        return Inertia::render('Public/Default/School/SchoolModules/Show', [
-            'module' => $moduleData,
-            'lessons' => $lessons,
+        return Inertia::render(
+            'Public/Default/School/SchoolModules/Show',
+            [
+                'module' => $moduleData,
+                'lessons' => $lessons,
 
-            'trackTree' => $trackTree,
-            'locale' => $locale,
+                'trackTree' => $trackTree,
+                'locale' => $locale,
 
-            ...$sidebarData,
-        ]);
+                ...$sidebarData,
+            ]
+        );
     }
 
     /** Лайк модуля. */
@@ -217,13 +364,22 @@ class SchoolModuleController extends Controller
             ], 401);
         }
 
+        $locale = app()->getLocale();
+
         $module = SchoolModule::query()
-            ->forPublic()
+            ->forPublic($locale)
             ->findOrFail($id);
 
         $userId = auth()->id();
 
-        if ($module->likes()->where('user_id', $userId)->exists()) {
+        /**
+         * Повторный лайк запрещаем.
+         */
+        if (
+            $module->likes()
+                ->where('user_id', $userId)
+                ->exists()
+        ) {
             return response()->json([
                 'success' => false,
                 'message' => 'Вы уже поставили лайк.',
@@ -241,50 +397,105 @@ class SchoolModuleController extends Controller
         ]);
     }
 
-    /** Базовый запрос для списка публичных модулей. */
+    /** Базовый запрос Public Index модулей. */
     private function indexQuery(string $locale): Builder
     {
-        return SchoolModule::query()
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        $query = SchoolModule::query()
             ->forPublic($locale)
             ->with([
-                'translation',
-                'translations',
-                'images',
+                /**
+                 * Сам forPublic() уже загружает
+                 * translations current + fallback.
+                 *
+                 * Здесь повторно translations
+                 * указывать не нужно.
+                 */
+                'images.media',
 
-                'course.translation',
-                'course.translations',
-                'course.images',
-                'course.instructorProfile.translation',
-                'course.instructorProfile.translations',
-                'course.instructorProfile.images',
+                /**
+                 * Родительский курс нужен
+                 * SchoolModuleSharedResource.
+                 */
+                'course' => function ($courseQuery) use ($locales) {
+                    $courseQuery
+                        ->with([
+                            'translations' => fn($translationQuery) => $translationQuery->whereIn(
+                                'locale',
+                                $locales
+                            ),
+
+                            'images.media',
+
+                            'instructorProfile' => function ($instructorQuery) use ($locales) {
+                                $instructorQuery->with([
+                                    'translations' => fn($translationQuery) => $translationQuery->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+
+                                    'images.media',
+                                ]);
+                            },
+                        ]);
+                },
             ])
             ->withCount([
                 'lessons',
                 'likes',
-                'images',
             ]);
+
+        /**
+         * already_liked добавляем одним EXISTS
+         * в основной SQL.
+         *
+         * Для гостя WithUserLikesTrait
+         * ничего дополнительного не добавляет.
+         */
+        return $this->withUserLike($query);
     }
 
-    /** Получение списка публичных модулей по активному режиму обработки. */
+    /** Получение списка Public модулей по активному режиму обработки. */
     private function getIndexModules(
         string $locale,
-        bool $useServerProcessing,
-        int $perPage,
+        bool   $useServerProcessing,
+        int    $perPage,
         string $sort,
         string $search = ''
-    ) {
+    )
+    {
         $query = $this->indexQuery($locale);
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
+                ->publicSearch(
+                    $search,
+                    $locale
+                )
+                ->publicSortByParam(
+                    $sort,
+                    $locale
+                )
                 ->paginate($perPage)
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->publicSortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

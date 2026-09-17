@@ -9,7 +9,7 @@ Route::get('/school/modules', [PublicTemplateDispatcherController::class, 'dispa
     ->defaults('_templateAction', 'index')
     ->name('public.schoolModules.index');
 
-Route::get('/school/modules/{slug}', [PublicTemplateDispatcherController::class, 'dispatch'])
+Route::get('/school/modules/{courseSlug}/{slug}', [PublicTemplateDispatcherController::class, 'dispatch'])
     ->defaults('_templateController', 'School\\SchoolModule\\SchoolModuleController')
     ->defaults('_templateAction', 'show')
     ->name('public.schoolModules.show');

@@ -177,63 +177,126 @@ const getInstructorSlug = (instructor) =>
 
 /* ======================== SEO ======================== */
 
-const seoTitle = computed(() =>
-    props.seo?.title || t('instructors')
-)
-
-const seoDescription = computed(() =>
-    props.seo?.description || t('instructors')
-)
-
-const seoKeywords = computed(() =>
-    props.seo?.keywords || ''
-)
-
-const contentLocale = computed(() =>
-    props.locale || 'ru'
-)
-
-const ogLocale = computed(() =>
-    contentLocale.value === 'ru'
-        ? 'ru_RU'
-        : contentLocale.value
-)
-
-const canonicalUrl = computed(() =>
-    String(
-        route('public.schoolInstructors.index')
-    )
-)
-
-const getImageUrl = (image) =>
-    image?.webp_url
-    || image?.image_url
-    || image?.thumb_url
-    || image?.url
-    || image?.preview
-    || ''
+const seoTitle = computed(() => String(props.seo?.title || t('instructors')).trim())
+const seoDescription = computed(() => String(props.seo?.description || t('instructors')).trim())
+const seoKeywords = computed(() => String(props.seo?.keywords || '').trim())
+const contentLocale = computed(() => String(props.locale || '').trim())
 
 /**
- * Для CollectionPage берём первое
- * доступное изображение инструктора.
+ * Open Graph locale без жёсткого списка языков.
+ * Новые локали не требуют изменения компонента.
  */
+const ogLocale = computed(() => {
+    const locale = contentLocale.value.replace('_', '-')
+    if (!locale) return undefined
+
+    try {
+        const normalized = new Intl.Locale(locale).maximize()
+        return normalized.region ? `${normalized.language}_${normalized.region}` : normalized.language
+    } catch {
+        return locale.replace('-', '_')
+    }
+})
+
+/** Текущая страница списка независимо от server/frontend режима. */
+const seoCurrentPage = computed(() => props.useServerProcessing ? currentPage.value : frontendCurrentPage.value)
+
+/** q/sort/view не входят в canonical. */
+const canonicalPath = computed(() => {
+    const base = `/${props.locale}/school/instructors`
+    return seoCurrentPage.value > 1 ? `${base}?page=${seoCurrentPage.value}` : base
+})
+
+const canonicalUrl = computed(() => {
+    if (typeof window === 'undefined') return canonicalPath.value
+    return new URL(canonicalPath.value, window.location.origin).toString()
+})
+
+const homeUrl = computed(() => {
+    if (typeof window === 'undefined') return '/'
+    return new URL(route('home'), window.location.origin).toString()
+})
+
+const getAbsoluteInstructorUrl = (instructor) => {
+    const url = route('public.schoolInstructors.show', { slug: instructor.slug })
+    if (typeof window === 'undefined') return url
+    return new URL(url, window.location.origin).toString()
+}
+
+const getImageUrl = (image) => image?.webp_url || image?.image_url || image?.thumb_url || image?.url || image?.preview || ''
+
+/** Первое доступное изображение инструктора для Open Graph/Twitter. */
 const seoImage = computed(() => {
     for (const instructor of instructorsData.value) {
-        const images = Array.isArray(instructor?.images)
-            ? instructor.images
-            : []
-
+        const images = Array.isArray(instructor?.images) ? instructor.images : []
         const url = getImageUrl(images[0])
-
         if (url) return url
     }
-
     return ''
 })
 
-const dcSubject = computed(() =>
-    seoKeywords.value || seoTitle.value
-)
+const siteName = computed(() => String(siteSettings.value?.siteName || siteSettings.value?.SiteName || '').trim())
+
+/** Поисковые результаты не индексируем; обычный каталог и пагинацию индексируем. */
+const robotsContent = computed(() => q.value.trim() ? 'noindex, follow' : 'index, follow')
+
+const collectionPageSchema = computed(() => ({
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': `${canonicalUrl.value}#webpage`,
+    url: canonicalUrl.value,
+    name: seoTitle.value,
+    description: seoDescription.value,
+    inLanguage: contentLocale.value,
+    isPartOf: {
+        '@type': 'WebSite',
+        url: homeUrl.value,
+        ...(siteName.value ? { name: siteName.value } : {}),
+    },
+}))
+
+const breadcrumbSchema = computed(() => ({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+        { '@type': 'ListItem', position: 1, name: t('home'), item: homeUrl.value },
+        { '@type': 'ListItem', position: 2, name: seoTitle.value, item: canonicalUrl.value },
+    ],
+}))
+
+/** ItemList содержит только инструкторов, реально отображаемых на текущей странице. */
+const instructorItemListSchema = computed(() => ({
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: seoTitle.value,
+    numberOfItems: displayedInstructors.value.length,
+    itemListElement: displayedInstructors.value.map((instructor, index) => {
+        const instructorUrl = getAbsoluteInstructorUrl(instructor)
+        const images = Array.isArray(instructor?.images) ? instructor.images : []
+        const image = getImageUrl(images[0])
+        const item = {
+            '@type': 'Person',
+            '@id': `${instructorUrl}#person`,
+            url: instructorUrl,
+            name: getInstructorTitle(instructor),
+        }
+
+        if (contentLocale.value) item.inLanguage = contentLocale.value
+        if (getInstructorShort(instructor)) item.description = getInstructorShort(instructor)
+        if (image) item.image = image
+
+        return {
+            '@type': 'ListItem',
+            position: ((seoCurrentPage.value - 1) * perPage.value) + index + 1,
+            url: instructorUrl,
+            item,
+        }
+    }),
+}))
+
+const collectionPageJsonLd = computed(() => JSON.stringify(collectionPageSchema.value))
+const breadcrumbJsonLd = computed(() => JSON.stringify(breadcrumbSchema.value))
+const instructorItemListJsonLd = computed(() => JSON.stringify(instructorItemListSchema.value))
 
 /* ======================== Filters ======================== */
 
@@ -864,134 +927,44 @@ const instructorGridCols = computed(() => {
 
 <template>
     <Head>
-        <!-- Основные SEO -->
+        <!-- Основные -->
         <title>{{ seoTitle }}</title>
-
-        <meta
-            name="title"
-            :content="seoTitle"
-        >
-
-        <meta
-            v-if="seoDescription"
-            name="description"
-            :content="seoDescription"
-        >
-
-        <meta
-            v-if="seoKeywords"
-            name="keywords"
-            :content="seoKeywords"
-        >
-
-        <meta
-            name="robots"
-            content="index, follow, max-image-preview:large"
-        >
-
-        <!-- Canonical -->
-        <link
-            rel="canonical"
-            :href="canonicalUrl"
-        >
+        <meta name="title" :content="seoTitle" />
+        <meta name="description" :content="seoDescription" />
+        <meta v-if="seoKeywords" name="keywords" :content="seoKeywords" />
+        <meta name="robots" :content="robotsContent" />
+        <meta name="googlebot" :content="robotsContent" />
+        <link rel="canonical" :href="canonicalUrl" />
 
         <!-- Open Graph -->
-        <meta
-            property="og:type"
-            content="website"
-        >
-
-        <meta
-            property="og:title"
-            :content="seoTitle"
-        >
-
-        <meta
-            v-if="seoDescription"
-            property="og:description"
-            :content="seoDescription"
-        >
-
-        <meta
-            property="og:url"
-            :content="canonicalUrl"
-        >
-
-        <meta
-            property="og:locale"
-            :content="ogLocale"
-        >
-
-        <meta
-            v-if="seoImage"
-            property="og:image"
-            :content="seoImage"
-        >
+        <meta property="og:title" :content="seoTitle" />
+        <meta property="og:description" :content="seoDescription" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" :content="canonicalUrl" />
+        <meta v-if="ogLocale" property="og:locale" :content="ogLocale" />
+        <meta v-if="siteName" property="og:site_name" :content="siteName" />
+        <meta v-if="seoImage" property="og:image" :content="seoImage" />
 
         <!-- Twitter / X -->
-        <meta
-            name="twitter:card"
-            :content="
-                seoImage
-                    ? 'summary_large_image'
-                    : 'summary'
-            "
-        >
-
-        <meta
-            name="twitter:title"
-            :content="seoTitle"
-        >
-
-        <meta
-            v-if="seoDescription"
-            name="twitter:description"
-            :content="seoDescription"
-        >
-
-        <meta
-            v-if="seoImage"
-            name="twitter:image"
-            :content="seoImage"
-        >
+        <meta name="twitter:card" :content="seoImage ? 'summary_large_image' : 'summary'" />
+        <meta name="twitter:title" :content="seoTitle" />
+        <meta name="twitter:description" :content="seoDescription" />
+        <meta v-if="seoImage" name="twitter:image" :content="seoImage" />
 
         <!-- Dublin Core -->
-        <meta
-            name="DC.title"
-            :content="seoTitle"
-        >
+        <meta name="DC.title" :content="seoTitle" />
+        <meta name="DC.description" :content="seoDescription" />
+        <meta v-if="seoKeywords" name="DC.subject" :content="seoKeywords" />
+        <meta name="DC.identifier" :content="canonicalUrl" />
+        <meta name="DC.language" :content="contentLocale" />
+        <meta name="DC.type" content="Collection" />
+        <meta name="DC.format" content="text/html" />
+        <meta v-if="siteName" name="DC.publisher" :content="siteName" />
 
-        <meta
-            v-if="seoDescription"
-            name="DC.description"
-            :content="seoDescription"
-        >
-
-        <meta
-            v-if="dcSubject"
-            name="DC.subject"
-            :content="dcSubject"
-        >
-
-        <meta
-            name="DC.language"
-            :content="contentLocale"
-        >
-
-        <meta
-            name="DC.identifier"
-            :content="canonicalUrl"
-        >
-
-        <meta
-            name="DC.type"
-            content="Collection"
-        >
-
-        <meta
-            name="DC.format"
-            content="text/html"
-        >
+        <!-- JSON-LD -->
+        <component :is="'script'" type="application/ld+json" v-html="collectionPageJsonLd" />
+        <component :is="'script'" type="application/ld+json" v-html="breadcrumbJsonLd" />
+        <component :is="'script'" type="application/ld+json" v-html="instructorItemListJsonLd" />
     </Head>
 
     <DefaultLayout
@@ -1138,7 +1111,7 @@ const instructorGridCols = computed(() => {
                             </svg>
 
                             <h1
-                                itemprop="headline"
+                                itemprop="name"
                                 class="text-2xl font-bold"
                             >
                                 {{ t('instructors') }}
@@ -1148,7 +1121,7 @@ const instructorGridCols = computed(() => {
                         <!-- SEO description -->
                         <div
                             v-if="seoDescription"
-                            itemprop="abstract"
+                            itemprop="description"
                             class="my-1 text-sm subtitle text-center"
                         >
                             {{ seoDescription }}
@@ -1258,3 +1231,4 @@ const instructorGridCols = computed(() => {
         />
     </DefaultLayout>
 </template>
+

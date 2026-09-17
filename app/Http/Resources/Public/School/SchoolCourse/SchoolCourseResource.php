@@ -13,33 +13,17 @@ class SchoolCourseResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $locale = app()->getLocale();
-
-        $fallbackLocale = config(
-            'app.fallback_locale',
-            'ru'
-        );
-
         /**
-         * Public Show заранее загружает максимум:
+         * Model работает только
+         * с уже загруженными translations.
          *
-         * current locale + fallback locale.
+         * Public-контракт:
          *
-         * Resource ничего не запрашивает из БД.
+         * current locale
+         * → fallback locale.
          */
-        $translation = $this->relationLoaded('translations')
-            ? (
-            $this->translations->firstWhere(
-                'locale',
-                $locale
-            )
-                ?: $this->translations->firstWhere(
-                'locale',
-                $fallbackLocale
-            )
-                ?: $this->translations->first()
-            )
-            : null;
+        $translation =
+            $this->translationOrFallback();
 
         return [
             'id' =>
@@ -83,7 +67,7 @@ class SchoolCourseResource extends JsonResource
                 : null,
 
             /**
-             * Флаги.
+             * Публичные флаги.
              */
             'is_new' =>
                 (bool) $this->is_new,
@@ -95,7 +79,7 @@ class SchoolCourseResource extends JsonResource
                 (bool) $this->is_sale,
 
             /**
-             * Состояние курса.
+             * Состояние и характеристики.
              */
             'level' =>
                 $this->level,
@@ -114,7 +98,9 @@ class SchoolCourseResource extends JsonResource
                     : null,
 
             'published_at' =>
-                $this->published_at?->format('Y-m-d'),
+                $this->published_at?->format(
+                    'Y-m-d'
+                ),
 
             /**
              * Статистика.
@@ -141,16 +127,21 @@ class SchoolCourseResource extends JsonResource
              */
             'likes_count' => $this->when(
                 isset($this->likes_count),
-                fn () => (int) $this->likes_count
+                fn () =>
+                (int) $this->likes_count
             ),
 
             'already_liked' =>
-                (bool) ($this->already_liked ?? false),
+                (bool) (
+                    $this->already_liked
+                    ?? false
+                ),
 
             /**
              * Изображения.
              *
-             * Controller загружает images.media.
+             * Controller должен
+             * загрузить images.media.
              */
             'images' =>
                 SchoolCourseImageResource::collection(
@@ -217,22 +208,30 @@ class SchoolCourseResource extends JsonResource
                                 : null,
 
                         'effective_price' =>
-                            $price->effective_price ?? null,
+                            $price->effective_price
+                            ?? null,
 
                         'has_discount' =>
-                            (bool) ($price->has_discount ?? false),
+                            (bool) (
+                                $price->has_discount
+                                ?? false
+                            ),
 
                         'discount_amount' =>
-                            $price->discount_amount ?? null,
+                            $price->discount_amount
+                            ?? null,
 
                         'discount_percent' =>
-                            $price->discount_percent ?? null,
+                            $price->discount_percent
+                            ?? null,
 
                         'starts_at' =>
-                            $price->starts_at?->toISOString(),
+                            $price->starts_at
+                                ?->toISOString(),
 
                         'ends_at' =>
-                            $price->ends_at?->toISOString(),
+                            $price->ends_at
+                                ?->toISOString(),
                     ]
                 )
             ),
@@ -260,19 +259,26 @@ class SchoolCourseResource extends JsonResource
                             $review->body,
 
                         'user' =>
-                            $review->relationLoaded('user')
+                            $review->relationLoaded(
+                                'user'
+                            )
                             && $review->user
                                 ? [
                                 'id' =>
-                                    (int) $review->user->id,
+                                    (int) $review
+                                        ->user
+                                        ->id,
 
                                 'name' =>
-                                    $review->user->name,
+                                    $review
+                                        ->user
+                                        ->name,
                             ]
                                 : null,
 
                         'created_at' =>
-                            $review->created_at?->toISOString(),
+                            $review->created_at
+                                ?->toISOString(),
                     ]
                 )
             ),
@@ -280,8 +286,8 @@ class SchoolCourseResource extends JsonResource
             /**
              * Рекомендованные курсы.
              *
-             * Для карточек нужен краткий
-             * Public Resource.
+             * Используем краткий
+             * Public Resource карточки.
              */
             'related_courses' =>
                 SchoolCourseSharedResource::collection(
@@ -295,41 +301,51 @@ class SchoolCourseResource extends JsonResource
              */
             'modules_count' => $this->when(
                 isset($this->modules_count),
-                fn () => (int) $this->modules_count
+                fn () =>
+                (int) $this->modules_count
             ),
 
             'lessons_count' => $this->when(
                 isset($this->lessons_count),
-                fn () => (int) $this->lessons_count
+                fn () =>
+                (int) $this->lessons_count
             ),
 
             'tracks_count' => $this->when(
                 isset($this->tracks_count),
-                fn () => (int) $this->tracks_count
+                fn () =>
+                (int) $this->tracks_count
             ),
 
             'hashtags_count' => $this->when(
                 isset($this->hashtags_count),
-                fn () => (int) $this->hashtags_count
+                fn () =>
+                (int) $this->hashtags_count
             ),
 
             'images_count' => $this->when(
                 isset($this->images_count),
-                fn () => (int) $this->images_count
+                fn () =>
+                (int) $this->images_count
             ),
 
             'prices_count' => $this->when(
                 isset($this->prices_count),
-                fn () => (int) $this->prices_count
+                fn () =>
+                (int) $this->prices_count
             ),
 
             'reviews_count' => $this->when(
                 isset($this->reviews_count),
-                fn () => (int) $this->reviews_count
+                fn () =>
+                (int) $this->reviews_count
             ),
 
             'created_at' =>
                 $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

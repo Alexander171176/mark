@@ -8,9 +8,9 @@ use App\Http\Resources\Public\School\SchoolHashtag\SchoolHashtagResource;
 use App\Models\Admin\School\SchoolHashtag\SchoolHashtag;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\PublicSettingsService;
-use App\Traits\Public\Blog\HasSidebarDataTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
+use App\Traits\Public\School\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -48,12 +48,25 @@ class SchoolHashtagController extends Controller
         $hashtag = SchoolHashtag::query()
             ->forPublic($locale)
             ->where('slug', $slug)
-            ->with([
-                'translations' => fn ($query) => $query->whereIn('locale', $locales),
-            ])
             ->withCount([
-                'courses',
-                'modules',
+                /**
+                 * Только публичные курсы.
+                 */
+                'courses' => fn ($query) => $query->forPublic($locale),
+
+                /**
+                 * Только публичные модули.
+                 */
+                'modules' => fn ($query) => $query->forPublic($locale),
+
+                /**
+                 * TODO:
+                 * После рефакторинга SchoolLesson
+                 * заменить на public-only count.
+                 *
+                 * Пока сохраняем существующий контракт,
+                 * не вмешиваясь в старую Public-логику уроков.
+                 */
                 'lessons',
             ])
             ->firstOrFail();
@@ -78,23 +91,27 @@ class SchoolHashtagController extends Controller
 
         $coursesSort = (string) $request->query(
             'sort_courses',
-            $settings->string('publicSchoolCoursesDefaultSort', 'idDesc')
+            $settings->string(
+                'publicSchoolCoursesDefaultSort',
+                'idDesc'
+            )
         );
 
         $processingMode = $this->resolveProcessingMode(
-            $settings->string('publicSchoolCoursesProcessingMode', 'server')
+            $settings->string(
+                'publicSchoolCoursesProcessingMode',
+                'server'
+            )
         );
 
         /* ======================== Processing mode ======================== */
-
-        $processingModeService = app(ProcessingModeService::class);
 
         $coursesCount = null;
 
         /**
          * Предварительный COUNT нужен только auto,
          * потому что режим должен принять решение
-         * исходя из общего количества курсов.
+         * исходя из общего количества публичных курсов.
          */
         if ($processingMode === 'auto') {
             $coursesCount = $hashtag
@@ -102,11 +119,12 @@ class SchoolHashtagController extends Controller
                 ->forPublic($locale)
                 ->count();
 
-            $useServerProcessing = $processingModeService->shouldUseServer(
-                $processingMode,
-                $coursesCount,
-                300
-            );
+            $useServerProcessing = app(ProcessingModeService::class)
+                ->shouldUseServer(
+                    $processingMode,
+                    $coursesCount,
+                    300
+                );
         } else {
             $useServerProcessing = $processingMode === 'server';
         }
@@ -123,6 +141,14 @@ class SchoolHashtagController extends Controller
             search: $coursesSearch,
         );
 
+        /**
+         * coursesFound:
+         * количество элементов после поиска.
+         *
+         * coursesCount:
+         * общее количество публичных курсов хештега
+         * независимо от поискового запроса.
+         */
         if ($useServerProcessing) {
             $coursesFound = $courses->total();
 
@@ -150,27 +176,30 @@ class SchoolHashtagController extends Controller
 
         /* ======================== Response ======================== */
 
-        return Inertia::render('Public/Default/School/SchoolHashtags/Show', [
-            'hashtag' => new SchoolHashtagResource($hashtag),
+        return Inertia::render(
+            'Public/Default/School/SchoolHashtags/Show',
+            [
+                'hashtag' => new SchoolHashtagResource($hashtag),
 
-            'publicSchoolCoursesProcessingMode' => $processingMode,
-            'useServerProcessing' => $useServerProcessing,
+                'publicSchoolCoursesProcessingMode' => $processingMode,
+                'useServerProcessing' => $useServerProcessing,
 
-            'courses' => $courses,
-            'coursesCount' => $coursesCount,
-            'coursesFound' => $coursesFound,
+                'courses' => $courses,
+                'coursesCount' => $coursesCount,
+                'coursesFound' => $coursesFound,
 
-            'filters' => [
-                'q_courses' => $coursesSearch,
-                'per_page_courses' => $perPageCourses,
-                'sort_courses' => $coursesSort,
-            ],
+                'filters' => [
+                    'q_courses' => $coursesSearch,
+                    'per_page_courses' => $perPageCourses,
+                    'sort_courses' => $coursesSort,
+                ],
 
-            'trackTree' => $trackTree,
-            'locale' => $locale,
+                'trackTree' => $trackTree,
+                'locale' => $locale,
 
-            ...$sidebarData,
-        ]);
+                ...$sidebarData,
+            ]
+        );
     }
 
     /**
@@ -186,22 +215,22 @@ class SchoolHashtagController extends Controller
             ->courses()
             ->forPublic($locale)
             ->with([
-                'translations' => fn ($query) => $query->whereIn('locale', $locales),
-
                 'images.media',
 
-                'instructorProfile.translations' =>
-                    fn ($query) => $query->whereIn('locale', $locales),
+                'instructorProfile' => function ($query) use ($locales) {
+                    $query->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->whereIn('locale', $locales),
 
-                'instructorProfile.images.media',
+                        'images.media',
+                    ]);
+                },
             ])
             ->withCount([
                 'modules',
                 'lessons',
                 'tracks',
                 'hashtags',
-                'images',
-                'prices',
                 'reviews',
                 'likes',
             ]);
@@ -238,8 +267,8 @@ class SchoolHashtagController extends Controller
          */
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
+                ->publicSearch($search, $locale)
+                ->publicSortByParam($sort, $locale)
                 ->paginate(
                     $perPage,
                     ['*'],
@@ -250,11 +279,13 @@ class SchoolHashtagController extends Controller
 
         /**
          * Frontend:
-         * backend отдаёт полный набор,
-         * поиск и пагинация выполняются во Vue.
+         * backend отдаёт полный публичный набор.
+         *
+         * Поиск и пагинация выполняются во Vue,
+         * сортировка остаётся идентичной server-режиму.
          */
         return $query
-            ->sortByParam($sort, $locale)
+            ->publicSortByParam($sort, $locale)
             ->get();
     }
 }

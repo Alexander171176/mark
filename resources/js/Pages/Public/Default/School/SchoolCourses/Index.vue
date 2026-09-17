@@ -1,16 +1,23 @@
 <script setup>
 /**
- * Страница списка курсов
- * - шапка, центральная часть, подвал
- * - светлый, тёмный режим
- * - серверный и frontend поиск
- * - серверная и frontend пагинация
- * - серверная и frontend сортировка
- * - показ карточками, в строку
- * - показ главных видео, баннеров внизу страницы
- * - показ, скрытие колонок
- * - показ дерева треков в левой колонке
- * - показ облака хештегов в правой колонке
+ * Публичная страница списка курсов.
+ *
+ * Возможности:
+ * - server / frontend / auto обработка;
+ * - поиск;
+ * - сортировка;
+ * - пагинация;
+ * - grid / rows отображение;
+ * - боковые колонки;
+ * - дерево треков;
+ * - хештеги;
+ * - видео;
+ * - баннеры;
+ * - расширенное SEO;
+ * - Open Graph;
+ * - Twitter Cards;
+ * - Dublin Core;
+ * - Schema.org JSON-LD.
  *
  * @version PulsarCMS 1.0
  * @author Александр
@@ -45,9 +52,11 @@ const { t } = useI18n()
 
 /* ===================== PROPS ===================== */
 
-/** Props страницы */
 const props = defineProps({
-    locale: { type: String, default: 'ru' },
+    locale: {
+        type: String,
+        default: 'ru',
+    },
 
     seo: {
         type: Object,
@@ -58,38 +67,82 @@ const props = defineProps({
         }),
     },
 
-    useServerProcessing: { type: Boolean, default: false },
-    publicSchoolCoursesProcessingMode: { type: String, default: 'server' },
+    useServerProcessing: {
+        type: Boolean,
+        default: false,
+    },
 
-    title: { type: String, default: '' },
-    canLogin: { type: Boolean, default: false },
-    canRegister: { type: Boolean, default: false },
+    publicSchoolCoursesProcessingMode: {
+        type: String,
+        default: 'server',
+    },
 
-    trackTree: { type: Array, default: () => [] },
+    title: {
+        type: String,
+        default: '',
+    },
 
-    courses: { type: [Array, Object], default: () => [] },
-    coursesCount: { type: Number, default: 0 },
-    coursesFound: { type: Number, default: 0 },
+    canLogin: {
+        type: Boolean,
+        default: false,
+    },
 
-    filters: { type: Object, default: () => ({}) },
+    canRegister: {
+        type: Boolean,
+        default: false,
+    },
 
-    hashtags: { type: Array, default: () => [] },
-    mainVideos: { type: [Array, Object], default: () => [] },
-    mainBanners: { type: [Array, Object], default: () => [] },
+    trackTree: {
+        type: Array,
+        default: () => [],
+    },
+
+    courses: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    coursesCount: {
+        type: Number,
+        default: 0,
+    },
+
+    coursesFound: {
+        type: Number,
+        default: 0,
+    },
+
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+
+    hashtags: {
+        type: Array,
+        default: () => [],
+    },
+
+    mainVideos: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    mainBanners: {
+        type: [Array, Object],
+        default: () => [],
+    },
 })
 
 /* ===================== PAGE ===================== */
 
-/** Глобальные данные страницы */
 const page = usePage()
 
-/** Глобальные настройки сайта */
 const siteSettings = page.props?.siteSettings || {}
 
-/** Роль администратора */
-const isAdmin = computed(() => page.props?.isAdmin === true)
+const isAdmin = computed(() => {
+    return page.props?.isAdmin === true
+})
 
-/** Дерево треков */
 const trackTree = computed(() => {
     return Array.isArray(props.trackTree)
         ? props.trackTree
@@ -98,7 +151,6 @@ const trackTree = computed(() => {
 
 /* ===================== COURSES DATA ===================== */
 
-/** Универсальный список курсов */
 const coursesData = computed(() => {
     if (Array.isArray(props.courses)) {
         return props.courses
@@ -113,25 +165,19 @@ const coursesData = computed(() => {
 
 /* ===================== SIDEBARS ===================== */
 
-/** Показ левой колонки */
 const showLeft = computed(() => {
     return !siteSettings?.ViewLeftColumn
         || siteSettings.ViewLeftColumn === 'true'
 })
 
-/** Показ правой колонки */
 const showRight = computed(() => {
     return !siteSettings?.ViewRightColumn
         || siteSettings.ViewRightColumn === 'true'
 })
 
-/** Ключ левого сайдбара */
 const LEFT_SIDEBAR_KEY = 'public_left_sidebar_collapsed'
-
-/** Ключ правого сайдбара */
 const RIGHT_SIDEBAR_KEY = 'public_right_sidebar_collapsed'
 
-/** Получение boolean из localStorage */
 const getStoredBoolean = (key, defaultValue = true) => {
     const value = localStorage.getItem(key)
 
@@ -142,28 +188,27 @@ const getStoredBoolean = (key, defaultValue = true) => {
     return value === 'true'
 }
 
-/** Левый сайдбар по умолчанию свернут */
 const leftCollapsed = ref(
     getStoredBoolean(LEFT_SIDEBAR_KEY, true)
 )
 
-/** Правый сайдбар по умолчанию свернут */
 const rightCollapsed = ref(
     getStoredBoolean(RIGHT_SIDEBAR_KEY, true)
 )
 
 /**
- * Количество колонок сетки.
+ * Количество колонок карточек.
  *
- * Оба открыты  → 2.
- * Один свернут → 3.
- * Оба свернуты → 4.
- *
- * Количество курсов при этом не меняется.
+ * 2 — оба сайдбара открыты.
+ * 3 — открыт один.
+ * 4 — оба свернуты.
  */
 const gridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
+    const leftExpanded =
+        showLeft.value && !leftCollapsed.value
+
+    const rightExpanded =
+        showRight.value && !rightCollapsed.value
 
     if (leftExpanded && rightExpanded) {
         return 2
@@ -176,7 +221,6 @@ const gridCols = computed(() => {
     return 4
 })
 
-/** Сохраняем состояние сайдбаров */
 watch([leftCollapsed, rightCollapsed], () => {
     localStorage.setItem(
         LEFT_SIDEBAR_KEY,
@@ -191,28 +235,18 @@ watch([leftCollapsed, rightCollapsed], () => {
 
 /* ===================== FILTERS ===================== */
 
-/** Поисковая строка */
 const q = ref(
     String(props.filters?.q ?? '')
 )
 
-/**
- * Сортировка по умолчанию.
- *
- * Совпадает с fallback контроллера:
- * publicSchoolCoursesDefaultSort → idDesc.
- */
 const DEFAULT_SORT = 'idDesc'
 
-/** Текущая сортировка */
 const sort = ref(
     String(props.filters?.sort ?? DEFAULT_SORT)
 )
 
-/** Ключ режима отображения */
 const VIEW_KEY = 'public_school_courses_view'
 
-/** Режим отображения */
 const viewMode = ref(
     String(
         props.filters?.view
@@ -221,19 +255,10 @@ const viewMode = ref(
     )
 )
 
-/** Сохраняем режим отображения */
 watch(viewMode, (value) => {
     localStorage.setItem(VIEW_KEY, value)
 })
 
-/**
- * Количество курсов на странице.
- *
- * Источник значения — backend:
- * PublicSettingsService → resolvePerPage() → filters.per_page.
- *
- * 12 используется только как аварийный fallback.
- */
 const perPage = computed(() => {
     const value = Number(props.filters?.per_page)
 
@@ -242,7 +267,14 @@ const perPage = computed(() => {
         : 12
 })
 
-/** Опции сортировки */
+/**
+ * Public-сортировки.
+ *
+ * Полностью соответствуют:
+ * - SchoolCourse::publicSortByParam();
+ * - SchoolCourseSharedResource;
+ * - frontend sortedCourses.
+ */
 const courseSortOptions = [
     { value: 'idDesc', label: t('idDesc') },
     { value: 'idAsc', label: t('idAsc') },
@@ -280,12 +312,6 @@ const courseSortOptions = [
     { value: 'levelAsc', label: `${t('level')} A→Z` },
     { value: 'levelDesc', label: `${t('level')} Z→A` },
 
-    { value: 'statusAsc', label: `${t('status')} A→Z` },
-    { value: 'statusDesc', label: `${t('status')} Z→A` },
-
-    { value: 'availabilityAsc', label: `${t('availability')} A→Z` },
-    { value: 'availabilityDesc', label: `${t('availability')} Z→A` },
-
     { value: 'modulesDesc', label: `${t('modules')} 9→0` },
     { value: 'modulesAsc', label: `${t('modules')} 0→9` },
 
@@ -298,31 +324,17 @@ const courseSortOptions = [
     { value: 'hashtagsDesc', label: `${t('hashtags')} 9→0` },
     { value: 'hashtagsAsc', label: `${t('hashtags')} 0→9` },
 
-    { value: 'imagesDesc', label: `${t('images')} 9→0` },
-    { value: 'imagesAsc', label: `${t('images')} 0→9` },
-
-    { value: 'pricesDesc', label: `${t('prices')} 9→0` },
-    { value: 'pricesAsc', label: `${t('prices')} 0→9` },
-
     { value: 'reviewsDesc', label: `${t('reviews')} 9→0` },
     { value: 'reviewsAsc', label: `${t('reviews')} 0→9` },
 
     { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
     { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
-
-    { value: 'createdAtDesc', label: `${t('createdAt')} ↓` },
-    { value: 'createdAtAsc', label: `${t('createdAt')} ↑` },
-
-    { value: 'updatedAtDesc', label: `${t('updatedAt')} ↓` },
-    { value: 'updatedAtAsc', label: `${t('updatedAt')} ↑` },
 ]
 
 /* ===================== FRONTEND MODE ===================== */
 
-/** Текущая frontend-страница */
 const frontendCurrentPage = ref(1)
 
-/** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
     scrollToTarget,
@@ -331,30 +343,32 @@ const {
     duration: 1200,
 })
 
-/** Нормализация текста */
 const normalizeText = (value) => {
     return String(value ?? '').toLowerCase()
 }
 
-/** Название курса */
 const getCourseTitle = (course) => {
-    return course?.translation?.title
-        || ''
+    return course?.translation?.title || ''
 }
 
-/** Краткий текст курса */
 const getCourseShort = (course) => {
-    return course?.translation?.short
-        || ''
+    return course?.translation?.short || ''
 }
 
-/** Slug курса */
 const getCourseSlug = (course) => {
-    return course?.slug
-        || ''
+    return course?.slug || ''
 }
 
-/** Локальный поиск */
+/**
+ * Локальный Public-поиск.
+ *
+ * Полностью соответствует SchoolCourse::publicSearch():
+ * - translation.title;
+ * - translation.short;
+ * - slug;
+ * - instructorProfile.translation.title;
+ * - instructorProfile.user.name.
+ */
 const filteredCourses = computed(() => {
     const query = normalizeText(q.value).trim()
 
@@ -376,13 +390,14 @@ const filteredCourses = computed(() => {
                 ?.user
                 ?.name,
         ].some((value) =>
-            normalizeText(value)
-                .includes(query)
+            normalizeText(value).includes(query)
         )
     })
 })
 
-/** Локальная сортировка */
+/**
+ * Локальная Public-сортировка.
+ */
 const sortedCourses = computed(() => {
     const list = [...filteredCourses.value]
 
@@ -402,11 +417,15 @@ const sortedCourses = computed(() => {
 
             case 'titleAsc':
                 return normalizeText(getCourseTitle(a))
-                    .localeCompare(normalizeText(getCourseTitle(b)))
+                    .localeCompare(
+                        normalizeText(getCourseTitle(b))
+                    )
 
             case 'titleDesc':
                 return normalizeText(getCourseTitle(b))
-                    .localeCompare(normalizeText(getCourseTitle(a)))
+                    .localeCompare(
+                        normalizeText(getCourseTitle(a))
+                    )
 
             case 'studentsCountAsc':
                 return (a.students_count ?? 0)
@@ -474,27 +493,15 @@ const sortedCourses = computed(() => {
 
             case 'levelAsc':
                 return normalizeText(a.level)
-                    .localeCompare(normalizeText(b.level))
+                    .localeCompare(
+                        normalizeText(b.level)
+                    )
 
             case 'levelDesc':
                 return normalizeText(b.level)
-                    .localeCompare(normalizeText(a.level))
-
-            case 'statusAsc':
-                return normalizeText(a.status)
-                    .localeCompare(normalizeText(b.status))
-
-            case 'statusDesc':
-                return normalizeText(b.status)
-                    .localeCompare(normalizeText(a.status))
-
-            case 'availabilityAsc':
-                return normalizeText(a.availability)
-                    .localeCompare(normalizeText(b.availability))
-
-            case 'availabilityDesc':
-                return normalizeText(b.availability)
-                    .localeCompare(normalizeText(a.availability))
+                    .localeCompare(
+                        normalizeText(a.level)
+                    )
 
             case 'modulesAsc':
                 return (a.modules_count ?? 0)
@@ -528,22 +535,6 @@ const sortedCourses = computed(() => {
                 return (b.hashtags_count ?? 0)
                     - (a.hashtags_count ?? 0)
 
-            case 'imagesAsc':
-                return (a.images_count ?? 0)
-                    - (b.images_count ?? 0)
-
-            case 'imagesDesc':
-                return (b.images_count ?? 0)
-                    - (a.images_count ?? 0)
-
-            case 'pricesAsc':
-                return (a.prices_count ?? 0)
-                    - (b.prices_count ?? 0)
-
-            case 'pricesDesc':
-                return (b.prices_count ?? 0)
-                    - (a.prices_count ?? 0)
-
             case 'reviewsAsc':
                 return (a.reviews_count ?? 0)
                     - (b.reviews_count ?? 0)
@@ -560,34 +551,12 @@ const sortedCourses = computed(() => {
                 return new Date(b.published_at ?? 0)
                     - new Date(a.published_at ?? 0)
 
-            case 'createdAtAsc':
-                return new Date(a.created_at ?? 0)
-                    - new Date(b.created_at ?? 0)
-
-            case 'createdAtDesc':
-                return new Date(b.created_at ?? 0)
-                    - new Date(a.created_at ?? 0)
-
-            case 'updatedAtAsc':
-                return new Date(a.updated_at ?? 0)
-                    - new Date(b.updated_at ?? 0)
-
-            case 'updatedAtDesc':
-                return new Date(b.updated_at ?? 0)
-                    - new Date(a.updated_at ?? 0)
-
             default:
                 return 0
         }
     })
 })
 
-/**
- * Frontend-пагинация.
- *
- * Использует то же per_page,
- * которое определил backend.
- */
 const frontendPaginatedCourses = computed(() => {
     const start = (
         frontendCurrentPage.value - 1
@@ -599,12 +568,10 @@ const frontendPaginatedCourses = computed(() => {
     )
 })
 
-/** Сбрасываем frontend-пагинацию */
 watch([q, sort, viewMode], () => {
     frontendCurrentPage.value = 1
 })
 
-/** Скролл при frontend-пагинации */
 watch(frontendCurrentPage, () => {
     if (!props.useServerProcessing) {
         scrollToTarget()
@@ -613,7 +580,6 @@ watch(frontendCurrentPage, () => {
 
 /* ===================== SERVER MODE ===================== */
 
-/** Текущая server-страница */
 const currentPage = computed(() => {
     return Number(
         props.courses?.meta?.current_page
@@ -622,7 +588,6 @@ const currentPage = computed(() => {
     ) || 1
 })
 
-/** Последняя server-страница */
 const lastPage = computed(() => {
     return Number(
         props.courses?.meta?.last_page
@@ -631,17 +596,10 @@ const lastPage = computed(() => {
     ) || 1
 })
 
-/** Маршрут списка курсов */
 const indexRoute = () => {
     return route('public.schoolCourses.index')
 }
 
-/**
- * Server-загрузка курсов.
- *
- * per_page намеренно не отправляем.
- * Его всегда определяет backend через PublicSettingsService.
- */
 const reloadCourses = (page = 1) => {
     router.get(
         indexRoute(),
@@ -659,12 +617,10 @@ const reloadCourses = (page = 1) => {
     )
 }
 
-/** Server-поиск */
 const submitSearch = () => {
     reloadCourses(1)
 }
 
-/** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
     sort.value = DEFAULT_SORT
@@ -675,7 +631,6 @@ const resetSearch = () => {
     }
 }
 
-/** Server-изменение сортировки */
 const updateSort = (value) => {
     sort.value = value || DEFAULT_SORT
 
@@ -684,7 +639,6 @@ const updateSort = (value) => {
     }
 }
 
-/** Изменение режима отображения */
 const updateViewMode = (value) => {
     viewMode.value = value || 'grid'
     frontendCurrentPage.value = 1
@@ -694,9 +648,8 @@ const updateViewMode = (value) => {
     }
 }
 
-/** Server-переход на страницу */
-const goToPage = (page) => {
-    const value = Number(page)
+const goToPage = (pageNumber) => {
+    const value = Number(pageNumber)
 
     if (!Number.isFinite(value)) {
         return
@@ -710,7 +663,6 @@ const goToPage = (page) => {
     reloadCourses(safePage)
 }
 
-/** Предыдущая server-страница */
 const goPrev = () => {
     if (currentPage.value <= 1) {
         return
@@ -719,7 +671,6 @@ const goPrev = () => {
     goToPage(currentPage.value - 1)
 }
 
-/** Следующая server-страница */
 const goNext = () => {
     if (currentPage.value >= lastPage.value) {
         return
@@ -730,42 +681,429 @@ const goNext = () => {
 
 /* ===================== COMMON VIEW ===================== */
 
-/** Итоговый список курсов */
 const displayedCourses = computed(() => {
     return props.useServerProcessing
         ? coursesData.value
         : frontendPaginatedCourses.value
 })
+
+/* ===================== SEO ===================== */
+
+/**
+ * SEO-заголовок.
+ */
+const seoTitle = computed(() => {
+    return String(
+        props.seo?.title
+        || t('courses')
+    ).trim()
+})
+
+/**
+ * SEO-описание.
+ */
+const seoDescription = computed(() => {
+    return String(
+        props.seo?.description
+        || t('courses')
+    ).trim()
+})
+
+/**
+ * SEO keywords.
+ */
+const seoKeywords = computed(() => {
+    return String(
+        props.seo?.keywords
+        || ''
+    ).trim()
+})
+
+/**
+ * Open Graph locale без жёсткого списка языков.
+ *
+ * Intl.Locale динамически определяет регион для любой
+ * добавленной локали: ru -> ru_RU, en -> en_US,
+ * de -> de_DE и т.д. Если окружение не поддерживает
+ * maximize(), используем переданную приложением локаль.
+ */
+const ogLocale = computed(() => {
+    const locale = String(props.locale || '').trim().replace('_', '-')
+
+    if (!locale) {
+        return undefined
+    }
+
+    try {
+        const normalized = new Intl.Locale(locale).maximize()
+
+        return normalized.region
+            ? `${normalized.language}_${normalized.region}`
+            : normalized.language
+    } catch {
+        return locale.replace('-', '_')
+    }
+})
+
+/**
+ * Текущая страница списка независимо
+ * от server/frontend режима.
+ */
+const seoCurrentPage = computed(() => {
+    return props.useServerProcessing
+        ? currentPage.value
+        : frontendCurrentPage.value
+})
+
+/**
+ * Базовый путь каталога.
+ *
+ * Фильтры q/sort/view не являются частью canonical.
+ */
+const canonicalPath = computed(() => {
+    const base = `/${props.locale}/school/courses`
+
+    return seoCurrentPage.value > 1
+        ? `${base}?page=${seoCurrentPage.value}`
+        : base
+})
+
+/**
+ * Абсолютный canonical URL.
+ */
+const canonicalUrl = computed(() => {
+    if (typeof window === 'undefined') {
+        return canonicalPath.value
+    }
+
+    return new URL(
+        canonicalPath.value,
+        window.location.origin
+    ).toString()
+})
+
+/**
+ * Абсолютный URL главной страницы.
+ */
+const homeUrl = computed(() => {
+    if (typeof window === 'undefined') {
+        return '/'
+    }
+
+    return new URL(
+        route('home'),
+        window.location.origin
+    ).toString()
+})
+
+/**
+ * Абсолютный URL конкретного курса.
+ */
+const getAbsoluteCourseUrl = (course) => {
+    const url = route(
+        'public.schoolCourses.show',
+        {
+            slug: course.slug,
+        }
+    )
+
+    if (typeof window === 'undefined') {
+        return url
+    }
+
+    return new URL(
+        url,
+        window.location.origin
+    ).toString()
+}
+
+/**
+ * Имя сайта.
+ *
+ * Используем существующую глобальную настройку,
+ * если она определена. Иначе SEO остаётся
+ * корректным без og:site_name.
+ */
+const siteName = computed(() => {
+    return String(
+        siteSettings?.siteName
+        || siteSettings?.SiteName
+        || ''
+    ).trim()
+})
+
+/**
+ * robots.
+ *
+ * Поиск является пользовательским состоянием,
+ * поэтому результаты поиска не индексируем.
+ * Обычный каталог и пагинация индексируются.
+ */
+const robotsContent = computed(() => {
+    return q.value.trim()
+        ? 'noindex, follow'
+        : 'index, follow'
+})
+
+/**
+ * JSON-LD: CollectionPage.
+ */
+const collectionPageSchema = computed(() => ({
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': `${canonicalUrl.value}#webpage`,
+    url: canonicalUrl.value,
+    name: seoTitle.value,
+    description: seoDescription.value,
+    inLanguage: props.locale,
+    isPartOf: {
+        '@type': 'WebSite',
+        url: homeUrl.value,
+        ...(siteName.value
+            ? { name: siteName.value }
+            : {}),
+    },
+}))
+
+/**
+ * JSON-LD: BreadcrumbList.
+ */
+const breadcrumbSchema = computed(() => ({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+        {
+            '@type': 'ListItem',
+            position: 1,
+            name: t('home'),
+            item: homeUrl.value,
+        },
+        {
+            '@type': 'ListItem',
+            position: 2,
+            name: seoTitle.value,
+            item: canonicalUrl.value,
+        },
+    ],
+}))
+
+/**
+ * JSON-LD: ItemList курсов,
+ * реально отображаемых на текущей странице.
+ */
+const courseItemListSchema = computed(() => ({
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: seoTitle.value,
+    numberOfItems: displayedCourses.value.length,
+    itemListElement: displayedCourses.value.map(
+        (course, index) => {
+            const courseUrl =
+                getAbsoluteCourseUrl(course)
+
+            const item = {
+                '@type': 'Course',
+                '@id': `${courseUrl}#course`,
+                url: courseUrl,
+                name: getCourseTitle(course),
+                inLanguage: props.locale,
+            }
+
+            if (getCourseShort(course)) {
+                item.description =
+                    getCourseShort(course)
+            }
+
+            return {
+                '@type': 'ListItem',
+                position:
+                    (
+                        (
+                            seoCurrentPage.value - 1
+                        ) * perPage.value
+                    )
+                    + index
+                    + 1,
+                url: courseUrl,
+                item,
+            }
+        }
+    ),
+}))
+
+const collectionPageJsonLd = computed(() => {
+    return JSON.stringify(
+        collectionPageSchema.value
+    )
+})
+
+const breadcrumbJsonLd = computed(() => {
+    return JSON.stringify(
+        breadcrumbSchema.value
+    )
+})
+
+const courseItemListJsonLd = computed(() => {
+    return JSON.stringify(
+        courseItemListSchema.value
+    )
+})
 </script>
 
 <template>
-    <!-- SEO -->
+    <!-- ===================== SEO ===================== -->
+
     <Head>
-        <title>{{ seo?.title || t('courses') }}</title>
+        <!-- Основные -->
+        <title>{{ seoTitle }}</title>
 
-        <meta name="title" :content="seo?.title || t('courses')" />
-        <meta name="keywords" :content="seo?.keywords || ''" />
-        <meta name="description" :content="seo?.description || t('courses')" />
+        <meta
+            name="title"
+            :content="seoTitle"
+        />
 
-        <meta property="og:title" :content="seo?.title || t('courses')" />
-        <meta property="og:description" :content="seo?.description || t('courses')" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" :content="`/${locale}/school/courses`" />
-        <meta property="og:image" content="" />
-        <meta property="og:locale" :content="locale === 'ru' ? 'ru_RU' : locale" />
+        <meta
+            name="description"
+            :content="seoDescription"
+        />
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="seo?.title || t('courses')" />
-        <meta name="twitter:description" :content="seo?.description || t('courses')" />
-        <meta name="twitter:image" content="" />
+        <meta
+            v-if="seoKeywords"
+            name="keywords"
+            :content="seoKeywords"
+        />
 
-        <meta name="DC.title" :content="seo?.title || t('courses')" />
-        <meta name="DC.description" :content="seo?.description || t('courses')" />
-        <meta name="DC.identifier" :content="`/${locale}/school/courses`" />
-        <meta name="DC.language" :content="locale" />
+        <meta
+            name="robots"
+            :content="robotsContent"
+        />
+
+        <meta
+            name="googlebot"
+            :content="robotsContent"
+        />
+
+        <link
+            rel="canonical"
+            :href="canonicalUrl"
+        />
+
+        <!-- Open Graph -->
+        <meta
+            property="og:title"
+            :content="seoTitle"
+        />
+
+        <meta
+            property="og:description"
+            :content="seoDescription"
+        />
+
+        <meta
+            property="og:type"
+            content="website"
+        />
+
+        <meta
+            property="og:url"
+            :content="canonicalUrl"
+        />
+
+        <meta
+            property="og:locale"
+            :content="ogLocale"
+        />
+
+        <meta
+            v-if="siteName"
+            property="og:site_name"
+            :content="siteName"
+        />
+
+        <!-- Twitter -->
+        <meta
+            name="twitter:card"
+            content="summary"
+        />
+
+        <meta
+            name="twitter:title"
+            :content="seoTitle"
+        />
+
+        <meta
+            name="twitter:description"
+            :content="seoDescription"
+        />
+
+        <!-- Dublin Core -->
+        <meta
+            name="DC.title"
+            :content="seoTitle"
+        />
+
+        <meta
+            name="DC.description"
+            :content="seoDescription"
+        />
+
+        <meta
+            v-if="seoKeywords"
+            name="DC.subject"
+            :content="seoKeywords"
+        />
+
+        <meta
+            name="DC.identifier"
+            :content="canonicalUrl"
+        />
+
+        <meta
+            name="DC.language"
+            :content="locale"
+        />
+
+        <meta
+            name="DC.type"
+            content="Collection"
+        />
+
+        <meta
+            name="DC.format"
+            content="text/html"
+        />
+
+        <meta
+            v-if="siteName"
+            name="DC.publisher"
+            :content="siteName"
+        />
+
+        <!-- JSON-LD -->
+        <component
+            :is="'script'"
+            type="application/ld+json"
+            v-html="collectionPageJsonLd"
+        />
+
+        <component
+            :is="'script'"
+            type="application/ld+json"
+            v-html="breadcrumbJsonLd"
+        />
+
+        <component
+            :is="'script'"
+            type="application/ld+json"
+            v-html="courseItemListJsonLd"
+        />
     </Head>
 
-    <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
+    <DefaultLayout
+        :title="title"
+        :can-login="canLogin"
+        :can-register="canRegister"
+    >
         <!-- Шапка -->
         <Navbar />
 
@@ -784,43 +1122,106 @@ const displayedCourses = computed(() => {
                     />
                 </aside>
 
-                <!-- Центральный контент -->
-                <div class="w-full lg:mt-28 pb-6 slate-1">
+                <!-- Центральный SEO-контент страницы. Сайдбары намеренно находятся вне CollectionPage. -->
+                <article
+                    class="w-full lg:mt-28 pb-6 slate-1"
+                    itemscope
+                    itemtype="https://schema.org/CollectionPage"
+                >
                     <div class="mx-auto max-w-6xl">
 
                         <!-- Хлебные крошки -->
-                        <nav class="text-sm" aria-label="Breadcrumb">
+                        <nav
+                            class="text-sm"
+                            aria-label="Breadcrumb"
+                            itemscope
+                            itemtype="https://schema.org/BreadcrumbList"
+                        >
                             <ol class="flex flex-wrap items-center font-semibold">
-                                <li>
+                                <li
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                >
                                     <Link
                                         :href="route('home')"
                                         class="breadcrumb-link hover:underline"
+                                        itemprop="item"
                                     >
-                                        {{ t('home') }}
+                                        <span itemprop="name">
+                                            {{ t('home') }}
+                                        </span>
                                     </Link>
+
+                                    <meta
+                                        itemprop="position"
+                                        content="1"
+                                    />
                                 </li>
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
-                                <li class="breadcrumbs">
-                                    {{ t('courses') }}
+
+                                <li aria-hidden="true">
+                                    <span class="mx-2 breadcrumbs">
+                                        /
+                                    </span>
+                                </li>
+
+                                <li
+                                    class="breadcrumbs"
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    aria-current="page"
+                                >
+                                    <span itemprop="name">
+                                        {{ t('courses') }}
+                                    </span>
+
+                                    <meta
+                                        itemprop="item"
+                                        :content="canonicalUrl"
+                                    />
+
+                                    <meta
+                                        itemprop="position"
+                                        content="2"
+                                    />
                                 </li>
                             </ol>
                         </nav>
 
                         <!-- Заголовок -->
-                        <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
-                            <svg class="shrink-0 h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
-                                 fill="currentColor"
-                                 viewBox="0 0 448 512">
-                                <path d="M318.38 208h-39.09c-1.49 27.03-6.54 51.35-14.21 70.41 27.71-13.24 48.02-39.19 53.3-70.41zm0-32c-5.29-31.22-25.59-57.17-53.3-70.41 7.68 19.06 12.72 43.38 14.21 70.41h39.09zM224 97.31c-7.69 7.45-20.77 34.42-23.43 78.69h46.87c-2.67-44.26-15.75-71.24-23.44-78.69zm-41.08 8.28c-27.71 13.24-48.02 39.19-53.3 70.41h39.09c1.49-27.03 6.53-51.35 14.21-70.41zm0 172.82c-7.68-19.06-12.72-43.38-14.21-70.41h-39.09c5.28 31.22 25.59 57.17 53.3 70.41zM247.43 208h-46.87c2.66 44.26 15.74 71.24 23.43 78.69 7.7-7.45 20.78-34.43 23.44-78.69zM448 358.4V25.6c0-16-9.6-25.6-25.6-25.6H96C41.6 0 0 41.6 0 96v320c0 54.4 41.6 96 96 96h326.4c12.8 0 25.6-9.6 25.6-25.6v-16c0-6.4-3.2-12.8-9.6-19.2-3.2-16-3.2-60.8 0-73.6 6.4-3.2 9.6-9.6 9.6-19.2zM224 64c70.69 0 128 57.31 128 128s-57.31 128-128 128S96 262.69 96 192 153.31 64 224 64zm160 384H96c-19.2 0-32-12.8-32-32s16-32 32-32h288v64z"/>
+                        <div
+                            class="my-3 flex flex-wrap items-center
+                                   justify-center gap-3 title"
+                        >
+                            <svg
+                                class="shrink-0 h-5 w-5
+                                       text-slate-600/85
+                                       dark:text-slate-200/85"
+                                fill="currentColor"
+                                viewBox="0 0 448 512"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M318.38 208h-39.09c-1.49 27.03-6.54 51.35-14.21 70.41 27.71-13.24 48.02-39.19 53.3-70.41zm0-32c-5.29-31.22-25.59-57.17-53.3-70.41 7.68 19.06 12.72 43.38 14.21 70.41h39.09zM224 97.31c-7.69 7.45-20.77 34.42-23.43 78.69h46.87c-2.67-44.26-15.75-71.24-23.44-78.69zm-41.08 8.28c-27.71 13.24-48.02 39.19-53.3 70.41h39.09c1.49-27.03 6.53-51.35 14.21-70.41zm0 172.82c-7.68-19.06-12.72-43.38-14.21-70.41h-39.09c5.28 31.22 25.59 57.17 53.3 70.41zM247.43 208h-46.87c2.66 44.26 15.74 71.24 23.43 78.69 7.7-7.45 20.78-34.43 23.44-78.69zM448 358.4V25.6c0-16-9.6-25.6-25.6-25.6H96C41.6 0 0 41.6 0 96v320c0 54.4 41.6 96 96 96h326.4c12.8 0 25.6-9.6 25.6-25.6v-16c0-6.4-3.2-12.8-9.6-19.2-3.2-16-3.2-60.8 0-73.6 6.4-3.2 9.6-9.6 9.6-19.2zM224 64c70.69 0 128 57.31 128 128s-57.31 128-128 128S96 262.69 96 192 153.31 64 224 64zm160 384H96c-19.2 0-32-12.8-32-32s16-32 32-32h288v64z"
+                                />
                             </svg>
-                            <h1 class="text-2xl font-bold">
+
+                            <h1
+                                class="text-2xl font-bold"
+                                itemprop="name"
+                            >
                                 {{ t('courses') }}
                             </h1>
                         </div>
 
-                        <!-- Подзаголовок -->
-                        <div class="my-1 text-sm subtitle text-center">
-                            Найдите идеальный курс для вашего развития.
+                        <!-- SEO-описание страницы -->
+                        <div
+                            v-if="seoDescription"
+                            class="my-1 text-sm subtitle text-center"
+                            itemprop="description"
+                        >
+                            {{ seoDescription }}
                         </div>
 
                         <!-- Поиск, количество, сортировка, вид -->
@@ -860,13 +1261,18 @@ const displayedCourses = computed(() => {
                         <!-- Нет данных -->
                         <div
                             v-if="displayedCourses.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            class="mt-6 text-center
+                                   text-slate-700 dark:text-slate-300"
                         >
                             {{ t('noData') }}
                         </div>
 
-                        <!-- Показ grid/rows -->
-                        <div v-else>
+                        <!-- Курсы -->
+                        <section
+                            v-else
+                            :aria-label="t('courses')"
+                            itemprop="mainEntity"
+                        >
                             <CourseGrid
                                 v-if="viewMode === 'grid'"
                                 :courses="displayedCourses"
@@ -877,7 +1283,7 @@ const displayedCourses = computed(() => {
                                 v-else
                                 :courses="displayedCourses"
                             />
-                        </div>
+                        </section>
 
                         <!-- Пагинация -->
                         <Pagination
@@ -897,16 +1303,22 @@ const displayedCourses = computed(() => {
                             :total-items="sortedCourses.length"
                         />
 
-                        <!-- Главные видео, баннеры -->
-                        <SectionVideoList :videos="mainVideos" />
-                        <SectionBanners :banners="mainBanners" />
+                        <!-- Главные видео и баннеры -->
+                        <SectionVideoList
+                            :videos="mainVideos"
+                        />
+
+                        <SectionBanners
+                            :banners="mainBanners"
+                        />
                     </div>
-                </div>
+                </article>
 
                 <!-- Правая колонка -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300"
+                    class="shrink-0 lg:mt-28
+                           transition-all duration-300"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <RightSidebarSchool
@@ -917,8 +1329,9 @@ const displayedCourses = computed(() => {
             </main>
         </div>
 
-        <!-- Подвал и кнопка с прогрессом -->
+        <!-- Подвал -->
         <FooterBlog />
+
         <Progress />
 
         <!-- Нижняя панель администратора -->

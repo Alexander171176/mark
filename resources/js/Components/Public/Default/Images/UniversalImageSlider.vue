@@ -1,46 +1,84 @@
 <script setup>
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount, useAttrs } from 'vue'
+
+defineOptions({
+    inheritAttrs: false,
+})
+
+const attrs = useAttrs()
 
 const props = defineProps({
     entity: {
         type: Object,
-        default: () => ({})
+        default: () => ({}),
+    },
+
+    alt: {
+        type: String,
+        default: '',
     },
 
     heightClass: {
         type: String,
-        default: 'h-48'
+        default: 'h-48',
     },
 
     roundedClass: {
         type: String,
-        default: ''
+        default: '',
     },
 
     wrapperClass: {
         type: String,
-        default: ''
+        default: '',
     },
 
     imgClass: {
         type: String,
-        default: 'w-full h-full object-cover transition duration-300 group-hover:scale-105'
+        default: 'w-full h-full object-cover transition duration-300 group-hover:scale-105',
     },
 
     showDots: {
         type: Boolean,
-        default: true
+        default: true,
     },
 
     autoplay: {
         type: Boolean,
-        default: true
+        default: true,
     },
 
     interval: {
         type: Number,
-        default: 4000
-    }
+        default: 4000,
+    },
+
+    width: {
+        type: Number,
+        default: 800,
+    },
+
+    height: {
+        type: Number,
+        default: 450,
+    },
+})
+
+/**
+ * Название сущности для alt.
+ *
+ * Новый Public-контракт:
+ * entity.translation.title.
+ *
+ * entity.title оставляем только как универсальную
+ * совместимость компонента с сущностями, которые
+ * ещё не переведены на новый Public Resource.
+ */
+const entityTitle = computed(() => {
+    return props.alt
+        || props.entity?.translation?.title
+        || props.entity?.title
+        || ''
 })
 
 const normalizeImages = (entity) => {
@@ -56,7 +94,7 @@ const normalizeImages = (entity) => {
         })
         .map((img, index) => ({
             id: img?.id ?? `img-${index}`,
-            alt: img?.alt ?? entity?.title ?? '',
+            alt: img?.alt || entityTitle.value,
             src: img?.webp_url || img?.url || img?.image_url || img?.thumb_url || null,
         }))
         .filter(img => !!img.src)
@@ -69,8 +107,16 @@ const hasManyImages = computed(() => images.value.length > 1)
 const currentIndex = ref(0)
 const isHovered = ref(false)
 
-const currentImage = computed(() => {
-    return images.value[currentIndex.value] ?? null
+const currentImage = computed(() => images.value[currentIndex.value] ?? null)
+
+const imageAttrs = computed(() => {
+    const {
+        class: _class,
+        style: _style,
+        ...rest
+    } = attrs
+
+    return rest
 })
 
 const setSlide = (index) => {
@@ -86,10 +132,10 @@ const nextSlide = () => {
 let timer = null
 
 const stopAutoplay = () => {
-    if (timer) {
-        clearInterval(timer)
-        timer = null
-    }
+    if (!timer) return
+
+    clearInterval(timer)
+    timer = null
 }
 
 const startAutoplay = () => {
@@ -98,9 +144,7 @@ const startAutoplay = () => {
     if (!props.autoplay || !hasManyImages.value) return
 
     timer = setInterval(() => {
-        if (!isHovered.value) {
-            nextSlide()
-        }
+        if (!isHovered.value) nextSlide()
     }, Math.max(1500, Number(props.interval) || 4000))
 }
 
@@ -109,27 +153,11 @@ watch(images, () => {
     startAutoplay()
 })
 
-watch(
-    () => props.interval,
-    () => {
-        startAutoplay()
-    }
-)
+watch(() => props.interval, startAutoplay)
+watch(() => props.autoplay, startAutoplay)
 
-watch(
-    () => props.autoplay,
-    () => {
-        startAutoplay()
-    }
-)
-
-onMounted(() => {
-    startAutoplay()
-})
-
-onBeforeUnmount(() => {
-    stopAutoplay()
-})
+onMounted(startAutoplay)
+onBeforeUnmount(stopAutoplay)
 </script>
 
 <template>
@@ -143,27 +171,37 @@ onBeforeUnmount(() => {
         <!-- Одно изображение -->
         <img
             v-if="!hasManyImages"
+            v-bind="imageAttrs"
             :src="currentImage?.src"
-            :alt="currentImage?.alt"
+            :alt="currentImage?.alt || entityTitle"
             :class="imgClass"
+            :width="width"
+            :height="height"
             loading="lazy"
-        />
+            decoding="async"
+        >
 
         <!-- Несколько изображений -->
         <template v-else>
             <transition name="fade" mode="out-in">
                 <img
                     :key="currentImage?.id || currentImage?.src"
+                    v-bind="imageAttrs"
                     :src="currentImage?.src"
-                    :alt="currentImage?.alt"
+                    :alt="currentImage?.alt || entityTitle"
                     :class="imgClass"
+                    :width="width"
+                    :height="height"
                     loading="lazy"
-                />
+                    decoding="async"
+                >
             </transition>
 
             <div
                 v-if="showDots"
                 class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5"
+                role="group"
+                :aria-label="entityTitle"
             >
                 <button
                     v-for="(img, index) in images"
@@ -173,6 +211,8 @@ onBeforeUnmount(() => {
                     :class="index === currentIndex
                         ? 'bg-red-600 dark:bg-red-400 shadow border border-rose-600'
                         : 'bg-white/50 hover:bg-white/80 border border-gray-600'"
+                    :aria-label="`${index + 1} / ${images.length}: ${img.alt || entityTitle}`"
+                    :aria-current="index === currentIndex ? 'true' : undefined"
                     @click.stop.prevent="setSlide(index)"
                 />
             </div>

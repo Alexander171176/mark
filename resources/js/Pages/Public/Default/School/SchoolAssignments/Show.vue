@@ -301,12 +301,14 @@ const getInstructorName = () => {
                                         </li>
                                     </template>
 
-                                    <template v-if="moduleData?.slug">
+                                    <template v-if="courseData?.slug && moduleData?.slug">
                                         <li><span class="mx-2 breadcrumbs">/</span></li>
                                         <li>
                                             <Link
-                                                :href="route('public.schoolModules.show',
-                                                { slug: moduleData.slug })"
+                                                :href="route('public.schoolModules.show', {
+                                                    courseSlug: courseData.slug,
+                                                    slug: moduleData.slug,
+                                                })"
                                                 class="breadcrumb-link hover:underline"
                                             >
                                                 {{ moduleData.title }}
@@ -441,9 +443,11 @@ const getInstructorName = () => {
 
                                 <!-- Модуль -->
                                 <Link
-                                    v-if="moduleData?.slug"
-                                    :href="route('public.schoolModules.show',
-                                    { slug: moduleData.slug })"
+                                    v-if="courseData?.slug && moduleData?.slug"
+                                    :href="route('public.schoolModules.show', {
+                                        courseSlug: courseData.slug,
+                                        slug: moduleData.slug,
+                                    })"
                                     class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1 px-3 py-1
                                            hover:text-blue-600 dark:hover:bg-blue-400"

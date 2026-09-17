@@ -190,12 +190,14 @@ const translateAccessType = (value) => {
                                         </li>
                                     </template>
 
-                                    <template v-if="moduleData?.slug">
+                                    <template v-if="courseData?.slug && moduleData?.slug">
                                         <li><span class="mx-2 breadcrumbs">/</span></li>
                                         <li>
                                             <Link
-                                                :href="route('public.schoolModules.show',
-                                                { slug: moduleData.slug })"
+                                                :href="route('public.schoolModules.show', {
+                                                    courseSlug: courseData.slug,
+                                                    slug: moduleData.slug,
+                                                })"
                                                 class="breadcrumb-link hover:underline"
                                             >
                                                 {{ moduleData.title }}
@@ -284,8 +286,9 @@ const translateAccessType = (value) => {
                                 </Link>
 
                                 <Link
-                                    v-if="moduleData?.slug"
+                                    v-if="courseData?.slug && moduleData?.slug"
                                     :href="route('public.schoolModules.show', {
+                                        courseSlug: courseData.slug,
                                         slug: moduleData.slug,
                                     })"
                                     class="rounded-sm border border-gray-400

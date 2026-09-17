@@ -624,14 +624,8 @@ class SchoolInstructorController extends Controller
     }
 
     /**
-     * Базовый запрос публичных курсов
+     * Базовый Public-запрос курсов
      * конкретного инструктора.
-     *
-     * ВАЖНО:
-     * SchoolCourse пока сохраняет
-     * существующий собственный контракт.
-     * Его Public scopes рефакторим отдельно
-     * вместе с сущностью курса.
      */
     private function instructorCoursesQuery(
         SchoolInstructorProfile $instructorProfile,
@@ -645,17 +639,6 @@ class SchoolInstructorController extends Controller
                 $instructorProfile->id
             )
             ->with([
-                /**
-                 * Current locale
-                 * + fallback locale.
-                 */
-                'translations' =>
-                    fn ($query) =>
-                    $query->whereIn(
-                        'locale',
-                        $locales
-                    ),
-
                 'images.media',
 
                 /**
@@ -670,54 +653,22 @@ class SchoolInstructorController extends Controller
                     ),
 
                 'instructorProfile.images.media',
-
-                /**
-                 * Треки.
-                 */
-                'tracks.translations' =>
-                    fn ($query) =>
-                    $query->whereIn(
-                        'locale',
-                        $locales
-                    ),
-
-                /**
-                 * Хештеги.
-                 */
-                'hashtags.translations' =>
-                    fn ($query) =>
-                    $query->whereIn(
-                        'locale',
-                        $locales
-                    ),
-
-                'prices',
             ])
             ->withCount([
                 'modules',
                 'lessons',
                 'tracks',
                 'hashtags',
-                'images',
-                'prices',
                 'reviews',
                 'likes',
             ]);
 
-        /**
-         * already_liked одним EXISTS.
-         */
-        return $this->withUserLike(
-            $query
-        );
+        return $this->withUserLike($query);
     }
 
     /**
      * Получение курсов инструктора
      * по активному режиму обработки.
-     *
-     * Пока используем существующие
-     * scopes модели SchoolCourse.
      */
     private function getInstructorCourses(
         SchoolInstructorProfile $instructorProfile,
@@ -728,23 +679,19 @@ class SchoolInstructorController extends Controller
         string $sort,
         string $search = ''
     ) {
-        $query =
-            $this->instructorCoursesQuery(
-                instructorProfile: $instructorProfile,
-                locale: $locale,
-                locales: $locales,
-            );
+        $query = $this->instructorCoursesQuery(
+            instructorProfile: $instructorProfile,
+            locale: $locale,
+            locales: $locales,
+        );
 
-        /**
-         * Server.
-         */
         if ($useServerProcessing) {
             return $query
-                ->search(
+                ->publicInstructorSearch(
                     $search,
                     $locale
                 )
-                ->sortByParam(
+                ->publicSortByParam(
                     $sort,
                     $locale
                 )
@@ -756,11 +703,8 @@ class SchoolInstructorController extends Controller
                 ->withQueryString();
         }
 
-        /**
-         * Frontend.
-         */
         return $query
-            ->sortByParam(
+            ->publicSortByParam(
                 $sort,
                 $locale
             )

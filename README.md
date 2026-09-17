@@ -488,6 +488,7 @@ Analytics
 `docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolTrack/SchoolTrackController` <br>
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolTrack/SchoolTrackResource` <br>
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolTrack/SchoolTrackSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/School/SchoolTrack/SchoolTrackTreeResource` <br>
 `docker exec mark-php-app php artisan make:model User/Like/SchoolTrackLike -m` <br>
 
 4) creating business logic SchoolCourse - курсы обучения

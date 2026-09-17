@@ -42,53 +42,53 @@ const props = defineProps({
 
     track: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     useServerProcessing: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     publicSchoolCoursesProcessingMode: {
         type: String,
-        default: 'server',
+        default: 'server'
     },
 
     courses: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     coursesCount: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     coursesFound: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     filters: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     trackTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ======================== Helpers ======================== */
@@ -153,7 +153,7 @@ const canonicalUrl = computed(() => {
     if (!track.value?.slug) return ''
 
     return String(route('public.schoolTracks.show', {
-        slug: track.value.slug,
+        slug: track.value.slug
     }))
 })
 
@@ -173,6 +173,145 @@ const trackSeoImage = computed(() => {
         || image?.thumb_url
         || image?.url
         || ''
+})
+
+/* ======================== Extended SEO ======================== */
+
+const trackSeoImageAlt = computed(() =>
+    trackName.value || trackMetaTitle.value
+)
+
+const trackCoursesCount = computed(() =>
+    Number(track.value?.courses_count ?? props.coursesCount ?? 0)
+)
+
+const trackChildrenCount = computed(() =>
+    Number(track.value?.children_count ?? childTracks.value.length)
+)
+
+const parentTrack = computed(() =>
+    track.value?.parent ?? null
+)
+
+const parentTrackName = computed(() =>
+    parentTrack.value?.translation?.name || ''
+)
+
+const parentTrackUrl = computed(() => {
+    if (!parentTrack.value?.slug) return ''
+
+    return String(route('public.schoolTracks.show', {
+        slug: parentTrack.value.slug
+    }))
+})
+
+const tracksIndexUrl = computed(() =>
+    String(route('public.schoolTracks.index'))
+)
+
+const homeUrl = computed(() =>
+    String(route('home'))
+)
+
+/**
+ * BreadcrumbList для JSON-LD.
+ */
+const breadcrumbJsonLd = computed(() => {
+    const items = [
+        {
+            '@type': 'ListItem',
+            position: 1,
+            name: t('home'),
+            item: homeUrl.value
+        },
+        {
+            '@type': 'ListItem',
+            position: 2,
+            name: t('tracks'),
+            item: tracksIndexUrl.value
+        }
+    ]
+
+    if (parentTrack.value && parentTrackUrl.value) {
+        items.push({
+            '@type': 'ListItem',
+            position: 3,
+            name: parentTrackName.value,
+            item: parentTrackUrl.value
+        })
+    }
+
+    items.push({
+        '@type': 'ListItem',
+        position: items.length + 1,
+        name: trackName.value,
+        item: canonicalUrl.value
+    })
+
+    return JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: items
+    })
+})
+
+/**
+ * Основная сущность направления обучения.
+ */
+const trackJsonLd = computed(() => {
+    const data = {
+        '@context': 'https://schema.org',
+        '@type': 'LearningResource',
+        '@id': canonicalUrl.value,
+        url: canonicalUrl.value,
+        name: trackName.value,
+        headline: trackMetaTitle.value,
+        description: trackMetaDescription.value,
+        inLanguage: trackLocale.value,
+        identifier: String(track.value?.id ?? '')
+    }
+
+    if (trackSeoImage.value) {
+        data.image = trackSeoImage.value
+    }
+
+    if (trackShort.value) {
+        data.abstract = trackShort.value
+    }
+
+    if (parentTrack.value && parentTrackUrl.value) {
+        data.isPartOf = {
+            '@type': 'LearningResource',
+            '@id': parentTrackUrl.value,
+            url: parentTrackUrl.value,
+            name: parentTrackName.value
+        }
+    }
+
+    return JSON.stringify(data)
+})
+
+/**
+ * Дочерние направления как отдельный ItemList.
+ */
+const childTracksJsonLd = computed(() => {
+    if (!childTracks.value.length) return ''
+
+    return JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: `${t('subheadings')}: ${trackName.value}`,
+        numberOfItems: childTracks.value.length,
+        itemListElement: childTracks.value.map((child, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            url: child?.slug
+                ? String(route('public.schoolTracks.show', { slug: child.slug }))
+                : undefined,
+            name: child?.translation?.name || '',
+            description: child?.translation?.short || undefined
+        }))
+    })
 })
 
 /* ======================== Courses ======================== */
@@ -260,7 +399,7 @@ const courseSortOptions = [
     { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
 
     { value: 'createdAtDesc', label: `${t('createdAt')} ↓` },
-    { value: 'createdAtAsc', label: `${t('createdAt')} ↑` },
+    { value: 'createdAtAsc', label: `${t('createdAt')} ↑` }
 ]
 
 const getCourseTitle = (course) =>
@@ -289,7 +428,7 @@ const frontendFilteredCourses = computed(() => {
         getCourseShort(course),
         getInstructorName(course),
         course?.level,
-        course?.availability,
+        course?.availability
     ].some((value) => normalizeText(value).includes(query)))
 })
 
@@ -359,7 +498,7 @@ const frontendSortedCourses = computed(() => {
         pricesDesc: ['prices_count', true],
 
         reviewsAsc: ['reviews_count', false],
-        reviewsDesc: ['reviews_count', true],
+        reviewsDesc: ['reviews_count', true]
     }
 
     const numberRule = numberSort[sortCourses.value]
@@ -514,12 +653,12 @@ const loadServerCourses = (pageNumber = 1) => {
         {
             q_courses: qCourses.value || undefined,
             sort_courses: sortCourses.value || undefined,
-            page_courses: pageNumber,
+            page_courses: pageNumber
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -680,39 +819,142 @@ const isAdmin = computed(() =>
 
 <template>
     <Head>
+        <!-- Основные SEO -->
         <title>{{ trackMetaTitle }}</title>
 
-        <meta v-if="trackMetaDescription" name="description" :content="trackMetaDescription">
-        <meta v-if="trackMetaKeywords" name="keywords" :content="trackMetaKeywords">
-        <meta name="robots" content="index, follow, max-image-preview:large">
+        <meta name="title" :content="trackMetaTitle">
 
-        <link v-if="canonicalUrl" rel="canonical" :href="canonicalUrl">
+        <meta
+            v-if="trackMetaDescription"
+            name="description"
+            :content="trackMetaDescription"
+        >
+
+        <meta
+            v-if="trackMetaKeywords"
+            name="keywords"
+            :content="trackMetaKeywords"
+        >
+
+        <meta
+            name="robots"
+            content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        >
+
+        <!-- Canonical -->
+        <link
+            v-if="canonicalUrl"
+            rel="canonical"
+            :href="canonicalUrl"
+        >
 
         <!-- Open Graph -->
         <meta property="og:type" content="website">
         <meta property="og:title" :content="trackMetaTitle">
-        <meta v-if="trackMetaDescription" property="og:description" :content="trackMetaDescription">
-        <meta v-if="canonicalUrl" property="og:url" :content="canonicalUrl">
-        <meta property="og:locale" :content="ogLocale">
-        <meta v-if="trackSeoImage" property="og:image" :content="trackSeoImage">
+
+        <meta
+            v-if="trackMetaDescription"
+            property="og:description"
+            :content="trackMetaDescription"
+        >
+
+        <meta
+            v-if="canonicalUrl"
+            property="og:url"
+            :content="canonicalUrl"
+        >
+
+        <meta
+            property="og:locale"
+            :content="ogLocale"
+        >
+
+        <meta
+            v-if="trackSeoImage"
+            property="og:image"
+            :content="trackSeoImage"
+        >
+
+        <meta
+            v-if="trackSeoImage"
+            property="og:image:alt"
+            :content="trackSeoImageAlt"
+        >
 
         <!-- Twitter / X -->
         <meta
             name="twitter:card"
             :content="trackSeoImage ? 'summary_large_image' : 'summary'"
         >
-        <meta name="twitter:title" :content="trackMetaTitle">
-        <meta v-if="trackMetaDescription" name="twitter:description" :content="trackMetaDescription">
-        <meta v-if="trackSeoImage" name="twitter:image" :content="trackSeoImage">
+
+        <meta
+            name="twitter:title"
+            :content="trackMetaTitle"
+        >
+
+        <meta
+            v-if="trackMetaDescription"
+            name="twitter:description"
+            :content="trackMetaDescription"
+        >
+
+        <meta
+            v-if="trackSeoImage"
+            name="twitter:image"
+            :content="trackSeoImage"
+        >
+
+        <meta
+            v-if="trackSeoImage"
+            name="twitter:image:alt"
+            :content="trackSeoImageAlt"
+        >
 
         <!-- Dublin Core -->
         <meta name="DC.title" :content="trackMetaTitle">
-        <meta v-if="trackMetaDescription" name="DC.description" :content="trackMetaDescription">
-        <meta v-if="trackMetaKeywords" name="DC.subject" :content="trackMetaKeywords">
+
+        <meta
+            v-if="trackMetaDescription"
+            name="DC.description"
+            :content="trackMetaDescription"
+        >
+
+        <meta
+            v-if="trackMetaKeywords"
+            name="DC.subject"
+            :content="trackMetaKeywords"
+        >
+
         <meta name="DC.language" :content="trackLocale">
-        <meta v-if="canonicalUrl" name="DC.identifier" :content="canonicalUrl">
-        <meta name="DC.type" content="Collection">
+
+        <meta
+            v-if="canonicalUrl"
+            name="DC.identifier"
+            :content="canonicalUrl"
+        >
+
+        <meta name="DC.type" content="InteractiveResource">
         <meta name="DC.format" content="text/html">
+
+        <!-- JSON-LD -->
+        <component
+            :is="'script'"
+            type="application/ld+json"
+            v-html="breadcrumbJsonLd"
+        />
+
+        <component
+            :is="'script'"
+            type="application/ld+json"
+            v-html="trackJsonLd"
+        />
+
+        <component
+            :is="'script'"
+            v-if="childTracksJsonLd"
+            type="application/ld+json"
+            v-html="childTracksJsonLd"
+        />
     </Head>
 
     <DefaultLayout
@@ -741,15 +983,41 @@ const isAdmin = computed(() =>
                 <!-- Content -->
                 <article
                     itemscope
-                    itemtype="https://schema.org/CollectionPage"
+                    itemtype="https://schema.org/LearningResource"
                     :itemid="canonicalUrl"
                     class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
                 >
+                    <meta itemprop="identifier" :content="String(track.id || '')">
                     <meta itemprop="name" :content="trackName">
-                    <meta v-if="trackMetaDescription" itemprop="description" :content="trackMetaDescription">
-                    <meta v-if="trackMetaKeywords" itemprop="keywords" :content="trackMetaKeywords">
-                    <meta v-if="canonicalUrl" itemprop="url" :content="canonicalUrl">
-                    <meta itemprop="inLanguage" :content="trackLocale">
+
+                    <meta
+                        v-if="trackMetaDescription"
+                        itemprop="description"
+                        :content="trackMetaDescription"
+                    >
+
+                    <meta
+                        v-if="trackMetaKeywords"
+                        itemprop="keywords"
+                        :content="trackMetaKeywords"
+                    >
+
+                    <meta
+                        v-if="canonicalUrl"
+                        itemprop="url"
+                        :content="canonicalUrl"
+                    >
+
+                    <meta
+                        itemprop="inLanguage"
+                        :content="trackLocale"
+                    >
+
+                    <meta
+                        v-if="trackSeoImage"
+                        itemprop="image"
+                        :content="trackSeoImage"
+                    >
 
                     <div class="mx-auto max-w-6xl">
 
@@ -761,37 +1029,25 @@ const isAdmin = computed(() =>
                             itemtype="https://schema.org/BreadcrumbList"
                         >
                             <ol class="flex flex-wrap items-center font-semibold">
+                                <!-- Главная -->
                                 <li
                                     itemprop="itemListElement"
                                     itemscope
                                     itemtype="https://schema.org/ListItem"
                                     class="flex items-center"
                                 >
-                                    <Link itemprop="item" :href="route('home')" class="breadcrumb-link hover:underline">
+                                    <Link
+                                        itemprop="item"
+                                        :href="route('home')"
+                                        class="breadcrumb-link hover:underline"
+                                    >
                                         <span itemprop="name">{{ t('home') }}</span>
                                     </Link>
+
                                     <meta itemprop="position" content="1">
                                 </li>
 
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <span class="mx-2 breadcrumbs">/</span>
-
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('public.schoolInstructors.index')"
-                                        class="breadcrumb-link hover:underline"
-                                    >
-                                        <span itemprop="name">{{ t('instructors') }}</span>
-                                    </Link>
-
-                                    <meta itemprop="position" content="2">
-                                </li>
-
+                                <!-- Направления -->
                                 <li
                                     itemprop="itemListElement"
                                     itemscope
@@ -808,32 +1064,33 @@ const isAdmin = computed(() =>
                                         <span itemprop="name">{{ t('tracks') }}</span>
                                     </Link>
 
+                                    <meta itemprop="position" content="2">
+                                </li>
+
+                                <!-- Родительское направление -->
+                                <li
+                                    v-if="track?.parent"
+                                    itemprop="itemListElement"
+                                    itemscope
+                                    itemtype="https://schema.org/ListItem"
+                                    class="flex items-center"
+                                >
+                                    <span class="mx-2 breadcrumbs">/</span>
+
+                                    <Link
+                                        itemprop="item"
+                                        :href="route('public.schoolTracks.show', { slug: track.parent.slug })"
+                                        class="breadcrumb-link hover:underline"
+                                    >
+                                        <span itemprop="name">
+                                            {{ track.parent?.translation?.name || '' }}
+                                        </span>
+                                    </Link>
+
                                     <meta itemprop="position" content="3">
                                 </li>
 
-                                <template v-if="track?.parent">
-                                    <li
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                    >
-                                        <span class="mx-2 breadcrumbs">/</span>
-
-                                        <Link
-                                            itemprop="item"
-                                            :href="route('public.schoolTracks.show', { slug: track.parent.slug })"
-                                            class="breadcrumb-link hover:underline"
-                                        >
-                                            <span itemprop="name">
-                                                {{ track.parent?.translation?.name || '' }}
-                                            </span>
-                                        </Link>
-
-                                        <meta itemprop="position" content="4">
-                                    </li>
-                                </template>
-
+                                <!-- Текущее направление -->
                                 <li
                                     itemprop="itemListElement"
                                     itemscope
@@ -842,10 +1099,21 @@ const isAdmin = computed(() =>
                                     aria-current="page"
                                 >
                                     <span class="mx-2 breadcrumbs">/</span>
-                                    <span itemprop="name" class="breadcrumbs">{{ trackName }}</span>
 
-                                    <meta v-if="canonicalUrl" itemprop="item" :content="canonicalUrl">
-                                    <meta itemprop="position" :content="track?.parent ? 5 : 4">
+                                    <span itemprop="name" class="breadcrumbs">
+                                        {{ trackName }}
+                                    </span>
+
+                                    <meta
+                                        v-if="canonicalUrl"
+                                        itemprop="item"
+                                        :content="canonicalUrl"
+                                    >
+
+                                    <meta
+                                        itemprop="position"
+                                        :content="track?.parent ? 4 : 3"
+                                    >
                                 </li>
                             </ol>
                         </nav>
@@ -937,79 +1205,98 @@ const isAdmin = computed(() =>
                             />
                         </div>
 
-                        <!-- Course toolbar -->
-                        <EntityPageToolbar
-                            v-if="hasCourses"
-                            v-model="qCourses"
-                            v-model:view-mode="viewMode"
-                            v-model:sort-value="sortCourses"
-                            :found="effectiveCoursesFound"
-                            :sort-options="courseSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('courses')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="applyCourseFilters"
-                            @reset="resetCourseFilters"
-                        />
-
-                        <!-- Empty -->
-                        <div
-                            v-if="hasCourses && displayedCourses.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
-
                         <!-- Courses -->
-                        <div v-if="displayedCourses.length">
-                            <CourseGrid
-                                v-if="viewMode === 'grid'"
-                                :courses="displayedCourses"
-                                :cols="gridCols"
+                        <section
+                            v-if="hasCourses"
+                            aria-labelledby="track-courses-title"
+                        >
+                            <h2
+                                id="track-courses-title"
+                                class="sr-only"
+                            >
+                                {{ t('courses') }} — {{ trackName }}
+                            </h2>
+
+                            <!-- Course toolbar -->
+                            <EntityPageToolbar
+                                v-model="qCourses"
+                                v-model:view-mode="viewMode"
+                                v-model:sort-value="sortCourses"
+                                :found="effectiveCoursesFound"
+                                :sort-options="courseSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('courses')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="applyCourseFilters"
+                                @reset="resetCourseFilters"
                             />
 
-                            <CourseRows
-                                v-else
-                                :courses="displayedCourses"
+                            <!-- Empty -->
+                            <div
+                                v-if="displayedCourses.length === 0"
+                                class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            >
+                                {{ t('noData') }}
+                            </div>
+
+                            <!-- Courses -->
+                            <div v-if="displayedCourses.length">
+                                <CourseGrid
+                                    v-if="viewMode === 'grid'"
+                                    :courses="displayedCourses"
+                                    :cols="gridCols"
+                                />
+
+                                <CourseRows
+                                    v-else
+                                    :courses="displayedCourses"
+                                />
+                            </div>
+
+                            <!-- Server pagination -->
+                            <Pagination
+                                v-if="useServerProcessing && lastPage > 1"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="coursesFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
                             />
-                        </div>
 
-                        <!-- Server pagination -->
-                        <Pagination
-                            v-if="useServerProcessing && hasCourses && lastPage > 1"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="coursesFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
-                        />
-
-                        <!-- Frontend pagination -->
-                        <FrontendPagination
-                            v-if="!useServerProcessing && effectiveCoursesFound > perPageCourses"
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPageCourses"
-                            :total-items="effectiveCoursesFound"
-                        />
+                            <!-- Frontend pagination -->
+                            <FrontendPagination
+                                v-if="!useServerProcessing && effectiveCoursesFound > perPageCourses"
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPageCourses"
+                                :total-items="effectiveCoursesFound"
+                            />
+                        </section>
 
                         <!-- Child tracks -->
-                        <div v-if="hasChildren">
+                        <section
+                            v-if="hasChildren"
+                            aria-labelledby="child-tracks-title"
+                        >
                             <div
                                 class="mt-4 flex flex-wrap items-center justify-center gap-3
-                                       text-slate-700/85 dark:text-slate-300/85"
+                                        text-slate-700/85 dark:text-slate-300/85"
                             >
                                 <svg
                                     class="h-8 w-8 opacity-70"
                                     fill="currentColor"
                                     viewBox="0 0 640 512"
+                                    aria-hidden="true"
                                 >
                                     <path
                                         d="M622.34 153.2L343.4 67.5c-15.2-4.67-31.6-4.67-46.79 0L17.66 153.2c-23.54 7.23-23.54 38.36 0 45.59l48.63 14.94c-10.67 13.19-17.23 29.28-17.88 46.9C38.78 266.15 32 276.11 32 288c0 10.78 5.68 19.85 13.86 25.65L20.33 428.53C18.11 438.52 25.71 448 35.94 448h56.11c10.24 0 17.84-9.48 15.62-19.47L82.14 313.65C90.32 307.85 96 298.78 96 288c0-11.57-6.47-21.25-15.66-26.87.76-15.02 8.44-28.3 20.69-36.72L296.6 284.5c9.06 2.78 26.44 6.25 46.79 0l278.95-85.7c23.55-7.24 23.55-38.36 0-45.6zM352.79 315.09c-28.53 8.76-52.84 3.92-65.59 0l-145.02-44.55L128 384c0 35.35 85.96 64 192 64s192-28.65 192-64l-14.18-113.47-145.03 44.56z"
                                     />
                                 </svg>
 
-                                <h2 class="text-xl font-semibold">
+                                <h2
+                                    id="child-tracks-title"
+                                    class="text-xl font-semibold"
+                                >
                                     {{ t('subheadings') }}
                                 </h2>
                             </div>
@@ -1026,7 +1313,7 @@ const isAdmin = computed(() =>
                                     :tracks="childTracks"
                                 />
                             </div>
-                        </div>
+                        </section>
 
                         <SectionVideoList :videos="mainVideos" />
                         <SectionBanners :banners="mainBanners" />

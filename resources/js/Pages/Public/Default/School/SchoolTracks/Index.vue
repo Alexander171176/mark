@@ -167,9 +167,6 @@ const getTrackTitle = (track) =>
 const getTrackShort = (track) =>
     track?.translation?.short || ''
 
-const getTrackDescription = (track) =>
-    track?.translation?.description || ''
-
 const getTrackSlug = (track) =>
     track?.slug || ''
 
@@ -326,18 +323,11 @@ const filteredTracks = computed(() => {
     }
 
     return tracksData.value.filter((track) => {
-        const parentTitle =
-            track?.parent?.translation?.name
-            || track?.parent?.name
-            || ''
-
         return [
             track?.id,
             getTrackTitle(track),
             getTrackShort(track),
-            getTrackDescription(track),
             getTrackSlug(track),
-            parentTitle,
         ].some((value) =>
             normalizeText(value).includes(query)
         )
@@ -397,6 +387,7 @@ const sortedTracks = computed(() => {
                     getTrackTitle(a),
                     getTrackTitle(b)
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -407,6 +398,7 @@ const sortedTracks = computed(() => {
                     getTrackTitle(b),
                     getTrackTitle(a)
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -416,6 +408,7 @@ const sortedTracks = computed(() => {
                     getTrackSlug(a),
                     getTrackSlug(b)
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -425,6 +418,7 @@ const sortedTracks = computed(() => {
                     getTrackSlug(b),
                     getTrackSlug(a)
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -434,6 +428,7 @@ const sortedTracks = computed(() => {
                     a?.views,
                     b?.views
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -443,6 +438,7 @@ const sortedTracks = computed(() => {
                     b?.views,
                     a?.views
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -452,6 +448,7 @@ const sortedTracks = computed(() => {
                     a?.likes_count,
                     b?.likes_count
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -461,6 +458,7 @@ const sortedTracks = computed(() => {
                     b?.likes_count,
                     a?.likes_count
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -470,6 +468,7 @@ const sortedTracks = computed(() => {
                     a?.children_count,
                     b?.children_count
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -479,6 +478,7 @@ const sortedTracks = computed(() => {
                     b?.children_count,
                     a?.children_count
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -488,6 +488,7 @@ const sortedTracks = computed(() => {
                     a?.courses_count,
                     b?.courses_count
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -497,6 +498,7 @@ const sortedTracks = computed(() => {
                     b?.courses_count,
                     a?.courses_count
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -506,6 +508,7 @@ const sortedTracks = computed(() => {
                     a?.images_count,
                     b?.images_count
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -515,6 +518,7 @@ const sortedTracks = computed(() => {
                     b?.images_count,
                     a?.images_count
                 )
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -522,6 +526,7 @@ const sortedTracks = computed(() => {
             list.sort((a, b) =>
                 safeDate(a?.created_at)
                 - safeDate(b?.created_at)
+                || compareNumber(b?.id, a?.id)
             )
             break
 
@@ -529,6 +534,7 @@ const sortedTracks = computed(() => {
             list.sort((a, b) =>
                 safeDate(b?.created_at)
                 - safeDate(a?.created_at)
+                || compareNumber(b?.id, a?.id)
             )
             break
     }

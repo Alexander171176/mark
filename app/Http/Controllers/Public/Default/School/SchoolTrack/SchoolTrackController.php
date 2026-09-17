@@ -10,9 +10,9 @@ use App\Models\Admin\School\SchoolTrack\SchoolTrack;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
 use App\Services\SiteSettings\PublicSettingsService;
-use App\Traits\Public\Blog\HasSidebarDataTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
+use App\Traits\Public\School\HasSidebarDataTrait;
 use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -209,16 +209,25 @@ class SchoolTrackController extends Controller
             ->forPublic($locale)
             ->where('slug', $slug)
             ->with([
-                'parent.translations' => fn ($query) => $query->whereIn('locale', $locales),
+                'parent' => function ($query) use ($locale) {
+                    $query->forPublic($locale);
+                },
+
                 'images.media',
 
                 'children' => function ($query) use ($locale) {
                     $query
                         ->forPublic($locale)
-                        ->with(['images.media'])
+                        ->with([
+                            'images.media',
+                        ])
                         ->withCount([
-                            'children',
-                            'courses',
+                            'children as children_count' => fn (Builder $childQuery) =>
+                            $childQuery->forPublic($locale),
+
+                            'courses as courses_count' => fn (Builder $courseQuery) =>
+                            $courseQuery->forPublic($locale),
+
                             'likes',
                             'images',
                         ])
@@ -228,8 +237,12 @@ class SchoolTrackController extends Controller
                 },
             ])
             ->withCount([
-                'children',
-                'courses',
+                'children as children_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                'courses as courses_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
                 'likes',
                 'images',
             ])
@@ -238,6 +251,7 @@ class SchoolTrackController extends Controller
         $trackQuery = $this->withUserLike($trackQuery);
 
         $track = $trackQuery->firstOrFail();
+
         $track->increment('views');
 
         /* ======================== Course settings ======================== */
@@ -260,11 +274,17 @@ class SchoolTrackController extends Controller
 
         $coursesSort = (string) $request->query(
             'sort_courses',
-            $settings->string('publicSchoolCoursesDefaultSort', 'idDesc')
+            $settings->string(
+                'publicSchoolCoursesDefaultSort',
+                'idDesc'
+            )
         );
 
         $processingMode = $this->resolveProcessingMode(
-            $settings->string('publicSchoolCoursesProcessingMode', 'server')
+            $settings->string(
+                'publicSchoolCoursesProcessingMode',
+                'server'
+            )
         );
 
         /* ======================== Processing mode ======================== */
@@ -273,7 +293,8 @@ class SchoolTrackController extends Controller
         $coursesCount = null;
 
         /**
-         * Предварительный COUNT нужен только auto.
+         * Предварительный COUNT нужен
+         * только режиму auto.
          */
         if ($processingMode === 'auto') {
             $coursesCount = $track
@@ -377,28 +398,42 @@ class SchoolTrackController extends Controller
             ->courses()
             ->forPublic($locale)
             ->with([
-                'translations' => fn ($query) => $query->whereIn('locale', $locales),
+                'translations' => fn ($query) =>
+                $query->whereIn('locale', $locales),
 
                 'images.media',
 
-                'instructorProfile.translations' =>
-                    fn ($query) => $query->whereIn('locale', $locales),
+                'instructorProfile.translations' => fn ($query) =>
+                $query->whereIn('locale', $locales),
 
                 'instructorProfile.images.media',
 
-                'tracks.translations' =>
-                    fn ($query) => $query->whereIn('locale', $locales),
+                'tracks' => function ($query) use ($locale) {
+                    $query->forPublic($locale);
+                },
 
-                'hashtags.translations' =>
-                    fn ($query) => $query->whereIn('locale', $locales),
+                'hashtags' => function ($query) use ($locale) {
+                    $query->forPublic($locale);
+                },
 
                 'prices',
             ])
             ->withCount([
-                'modules',
+                'modules as modules_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                'tracks as tracks_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                'hashtags as hashtags_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                /**
+                 * SchoolLesson ещё не переводим здесь
+                 * на Public-count до его отдельного рефакторинга.
+                 */
                 'lessons',
-                'tracks',
-                'hashtags',
+
                 'images',
                 'prices',
                 'reviews',
@@ -429,8 +464,8 @@ class SchoolTrackController extends Controller
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
+                ->publicSearch($search, $locale)
+                ->publicSortByParam($sort, $locale)
                 ->paginate(
                     $perPage,
                     ['*'],
@@ -440,20 +475,17 @@ class SchoolTrackController extends Controller
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->publicSortByParam($sort, $locale)
             ->get();
     }
 
-    /**
-     * Лайк направления обучения.
-     */
+    /** Лайк направления обучения. */
     public function like(string $id): JsonResponse
     {
         if (!auth()->check()) {
             return response()->json([
                 'success' => false,
-                'message' =>
-                    'Для постановки лайка нужно авторизоваться.',
+                'message' => 'Для постановки лайка нужно авторизоваться.',
             ], 401);
         }
 
@@ -465,10 +497,7 @@ class SchoolTrackController extends Controller
 
         if (
             $track->likes()
-                ->where(
-                    'user_id',
-                    $userId
-                )
+                ->where('user_id', $userId)
                 ->exists()
         ) {
             return response()->json([
@@ -491,22 +520,20 @@ class SchoolTrackController extends Controller
     /**
      * Базовый запрос Public Index.
      */
-    private function indexQuery(
-        string $locale
-    ): Builder {
+    private function indexQuery(string $locale): Builder
+    {
         $query = SchoolTrack::query()
-            ->forPublic(
-                $locale
-            )
+            ->forPublic($locale)
             ->with([
-                /**
-                 * Изображения + Media.
-                 */
                 'images.media',
             ])
             ->withCount([
-                'children',
-                'courses',
+                'children as children_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                'courses as courses_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
                 'likes',
                 'images',
             ]);
@@ -517,9 +544,7 @@ class SchoolTrackController extends Controller
          * Для гостя дополнительного
          * SQL-подзапроса нет.
          */
-        return $this->withUserLike(
-            $query
-        );
+        return $this->withUserLike($query);
     }
 
     /**
@@ -537,11 +562,11 @@ class SchoolTrackController extends Controller
 
         if ($useServerProcessing) {
             return $query
-                ->search(
+                ->publicSearch(
                     $search,
                     $locale
                 )
-                ->sortByParam(
+                ->publicSortByParam(
                     $sort,
                     $locale
                 )
@@ -550,7 +575,7 @@ class SchoolTrackController extends Controller
         }
 
         return $query
-            ->sortByParam(
+            ->publicSortByParam(
                 $sort,
                 $locale
             )

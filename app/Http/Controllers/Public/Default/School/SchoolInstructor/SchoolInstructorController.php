@@ -655,11 +655,27 @@ class SchoolInstructorController extends Controller
                 'instructorProfile.images.media',
             ])
             ->withCount([
-                'modules',
+                'modules as modules_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                /**
+                 * SchoolLesson пока не прошёл
+                 * собственный Public refactoring.
+                 */
                 'lessons',
-                'tracks',
-                'hashtags',
+
+                'tracks as tracks_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                'hashtags as hashtags_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                /**
+                 * Reviews пока оставляем до
+                 * отдельного Public refactoring.
+                 */
                 'reviews',
+
                 'likes',
             ]);
 

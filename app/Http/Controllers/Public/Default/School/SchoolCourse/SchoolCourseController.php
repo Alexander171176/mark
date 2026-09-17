@@ -344,31 +344,36 @@ class SchoolCourseController extends Controller
                     },
                 ])
                 ->withCount([
-                    'modules as modules_count' => fn ($query) =>
+                    /**
+                     * Только публичные модули.
+                     */
+                    'modules as modules_count' => fn (Builder $query) =>
                     $query->forPublic($locale),
 
                     /**
-                     * TODO SchoolLesson:
-                     * после Public-рефакторинга сделать public-only.
+                     * SchoolLesson пока не прошёл
+                     * собственный Public refactoring.
                      */
                     'lessons',
 
                     /**
-                     * Пока оставляем до проверки/refactoring SchoolTrack.
+                     * Только публичные направления.
                      */
-                    'tracks',
+                    'tracks as tracks_count' => fn (Builder $query) =>
+                    $query->forPublic($locale),
 
                     /**
-                     * Hashtag уже имеет Public-контракт.
+                     * Только публичные хештеги.
                      */
-                    'hashtags as hashtags_count' => fn ($query) =>
+                    'hashtags as hashtags_count' => fn (Builder $query) =>
                     $query->forPublic($locale),
 
                     'images',
                     'prices',
 
                     /**
-                     * Reviews отдельно проверим по их Public-контракту.
+                     * Reviews отдельно проверим
+                     * по их Public-контракту.
                      */
                     'reviews',
 
@@ -569,25 +574,33 @@ class SchoolCourseController extends Controller
                     'instructorProfile.images.media',
                 ])
                 ->withCount([
-                    'modules as modules_count' => fn ($query) =>
+                    /**
+                     * Только публичные модули.
+                     */
+                    'modules as modules_count' => fn (Builder $query) =>
                     $query->forPublic($locale),
 
                     /**
-                     * TODO SchoolLesson.
+                     * SchoolLesson пока не прошёл
+                     * собственный Public refactoring.
                      */
                     'lessons',
 
                     /**
-                     * Пока не меняем без проверки Public SchoolTrack.
+                     * Только публичные направления.
                      */
-                    'tracks',
-
-                    'hashtags as hashtags_count' => fn ($query) =>
+                    'tracks as tracks_count' => fn (Builder $query) =>
                     $query->forPublic($locale),
 
                     /**
-                     * Reviews пока не трогаем без проверки
-                     * их публичного контракта.
+                     * Только публичные хештеги.
+                     */
+                    'hashtags as hashtags_count' => fn (Builder $query) =>
+                    $query->forPublic($locale),
+
+                    /**
+                     * Reviews пока оставляем до
+                     * отдельной проверки их Public-контракта.
                      */
                     'reviews',
 

@@ -143,46 +143,27 @@ class SchoolTrack extends Model
     /**
      * Публичный набор.
      *
-     * Сущность доступна, если существует
+     * Трек доступен, если он активен и существует
      * перевод текущей или fallback-локали.
      *
      * Загружаем максимум две локали:
      * current + fallback.
      */
-    public function scopeForPublic(
-        Builder $q,
-        ?string $locale = null
-    ): Builder {
+    public function scopeForPublic(Builder $q, ?string $locale = null): Builder
+    {
         $locale ??= app()->getLocale();
+        $fallbackLocale = config('app.fallback_locale', 'ru');
 
-        $fallbackLocale = config(
-            'app.fallback_locale',
-            'ru'
-        );
-
-        $locales = array_values(
-            array_unique([
-                $locale,
-                $fallbackLocale,
-            ])
-        );
+        $locales = array_values(array_unique([
+            $locale,
+            $fallbackLocale,
+        ]));
 
         return $q
             ->active()
-            ->whereHas(
-                'translations',
-                fn (Builder $query) =>
-                $query->whereIn(
-                    'locale',
-                    $locales
-                )
-            )
+            ->whereHas('translations', fn (Builder $query) => $query->whereIn('locale', $locales))
             ->with([
-                'translations' => fn ($query) =>
-                $query->whereIn(
-                    'locale',
-                    $locales
-                ),
+                'translations' => fn ($query) => $query->whereIn('locale', $locales),
             ]);
     }
 
@@ -205,6 +186,58 @@ class SchoolTrack extends Model
                                 ->orWhere('description', 'like', "%{$term}%");
                         });
                 });
+        });
+    }
+
+    /**
+     * Публичный поиск.
+     *
+     * Ищем только по данным публичного списка:
+     * slug, name, short.
+     *
+     * Fallback-перевод участвует в поиске только тогда,
+     * когда перевода текущей локали у трека нет.
+     */
+    public function scopePublicSearch(
+        Builder $q,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        if (!$term) {
+            return $q;
+        }
+
+        $locale ??= app()->getLocale();
+        $fallbackLocale = config('app.fallback_locale', 'ru');
+
+        return $q->where(function (Builder $query) use ($term, $locale, $fallbackLocale) {
+            $query->where('slug', 'like', "%{$term}%")
+                ->orWhereHas('translations', function (Builder $translationQuery) use ($term, $locale) {
+                    $translationQuery
+                        ->where('locale', $locale)
+                        ->where(function (Builder $translation) use ($term) {
+                            $translation->where('name', 'like', "%{$term}%")
+                                ->orWhere('short', 'like', "%{$term}%");
+                        });
+                });
+
+            if ($fallbackLocale !== $locale) {
+                $query->orWhere(function (Builder $fallbackQuery) use ($term, $locale, $fallbackLocale) {
+                    $fallbackQuery
+                        ->whereDoesntHave(
+                            'translations',
+                            fn (Builder $translationQuery) => $translationQuery->where('locale', $locale)
+                        )
+                        ->whereHas('translations', function (Builder $translationQuery) use ($term, $fallbackLocale) {
+                            $translationQuery
+                                ->where('locale', $fallbackLocale)
+                                ->where(function (Builder $translation) use ($term) {
+                                    $translation->where('name', 'like', "%{$term}%")
+                                        ->orWhere('short', 'like', "%{$term}%");
+                                });
+                        });
+                });
+            }
         });
     }
 
@@ -298,7 +331,125 @@ class SchoolTrack extends Model
         };
     }
 
+    /**
+     * Публичная сортировка.
+     *
+     * Содержит только варианты,
+     * доступные публичному интерфейсу.
+     */
+    public function scopePublicSortByParam(
+        Builder $q,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale ??= app()->getLocale();
+        $fallbackLocale = config('app.fallback_locale', 'ru');
+
+        return match ($sort) {
+            'idAsc' => $q->orderBy('id', 'asc'),
+            'idDesc' => $q->orderBy('id', 'desc'),
+
+            'sortAsc' => $q->orderBy('sort', 'asc')->orderByDesc('id'),
+            'sortDesc' => $q->orderBy('sort', 'desc')->orderByDesc('id'),
+
+            'nameAsc' => $q
+                ->leftJoin('school_track_translations as stt_public_sort', function ($join) use ($locale) {
+                    $join->on('stt_public_sort.school_track_id', '=', 'school_tracks.id')
+                        ->where('stt_public_sort.locale', '=', $locale);
+                })
+                ->when($fallbackLocale !== $locale, function (Builder $query) use ($fallbackLocale) {
+                    $query->leftJoin(
+                        'school_track_translations as stt_public_fallback_sort',
+                        function ($join) use ($fallbackLocale) {
+                            $join->on(
+                                'stt_public_fallback_sort.school_track_id',
+                                '=',
+                                'school_tracks.id'
+                            )->where(
+                                'stt_public_fallback_sort.locale',
+                                '=',
+                                $fallbackLocale
+                            );
+                        }
+                    );
+                })
+                ->orderByRaw(
+                    $fallbackLocale !== $locale
+                        ? 'COALESCE(stt_public_sort.name, stt_public_fallback_sort.name) ASC'
+                        : 'stt_public_sort.name ASC'
+                )
+                ->orderByDesc('school_tracks.id')
+                ->select('school_tracks.*'),
+
+            'nameDesc' => $q
+                ->leftJoin('school_track_translations as stt_public_sort', function ($join) use ($locale) {
+                    $join->on('stt_public_sort.school_track_id', '=', 'school_tracks.id')
+                        ->where('stt_public_sort.locale', '=', $locale);
+                })
+                ->when($fallbackLocale !== $locale, function (Builder $query) use ($fallbackLocale) {
+                    $query->leftJoin(
+                        'school_track_translations as stt_public_fallback_sort',
+                        function ($join) use ($fallbackLocale) {
+                            $join->on(
+                                'stt_public_fallback_sort.school_track_id',
+                                '=',
+                                'school_tracks.id'
+                            )->where(
+                                'stt_public_fallback_sort.locale',
+                                '=',
+                                $fallbackLocale
+                            );
+                        }
+                    );
+                })
+                ->orderByRaw(
+                    $fallbackLocale !== $locale
+                        ? 'COALESCE(stt_public_sort.name, stt_public_fallback_sort.name) DESC'
+                        : 'stt_public_sort.name DESC'
+                )
+                ->orderByDesc('school_tracks.id')
+                ->select('school_tracks.*'),
+
+            'createdAtAsc', 'dateAsc' => $q
+                ->orderBy('created_at', 'asc')
+                ->orderByDesc('id'),
+
+            'createdAtDesc', 'dateDesc' => $q
+                ->orderBy('created_at', 'desc')
+                ->orderByDesc('id'),
+
+            'viewsAsc' => $q->orderBy('views', 'asc')->orderByDesc('id'),
+            'viewsDesc' => $q->orderBy('views', 'desc')->orderByDesc('id'),
+
+            'likesAsc' => $q->withCount('likes')->orderBy('likes_count', 'asc')->orderByDesc('id'),
+            'likesDesc' => $q->withCount('likes')->orderBy('likes_count', 'desc')->orderByDesc('id'),
+
+            default => $q->ordered(),
+        };
+    }
+
     /* ======================== Helpers ======================== */
+
+    /**
+     * Перевод текущей локали с fallback.
+     *
+     * Использует уже загруженную коллекцию translations
+     * и не выполняет дополнительных SQL-запросов.
+     */
+    public function translationOrFallback(
+        ?string $locale = null,
+        ?string $fallbackLocale = null
+    ): ?SchoolTrackTranslation {
+        $locale ??= app()->getLocale();
+        $fallbackLocale ??= config('app.fallback_locale', 'ru');
+
+        $translations = $this->relationLoaded('translations')
+            ? $this->translations
+            : collect();
+
+        return $translations->firstWhere('locale', $locale)
+            ?? $translations->firstWhere('locale', $fallbackLocale);
+    }
 
     /** Проверка корневого трека */
     public function isRoot(): bool

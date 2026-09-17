@@ -227,11 +227,36 @@ class SchoolHashtagController extends Controller
                 },
             ])
             ->withCount([
-                'modules',
+                /**
+                 * Только публичные модули.
+                 */
+                'modules as modules_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                /**
+                 * SchoolLesson пока не прошёл
+                 * собственный Public refactoring.
+                 */
                 'lessons',
-                'tracks',
-                'hashtags',
+
+                /**
+                 * Только публичные направления.
+                 */
+                'tracks as tracks_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                /**
+                 * Только публичные хештеги.
+                 */
+                'hashtags as hashtags_count' => fn (Builder $query) =>
+                $query->forPublic($locale),
+
+                /**
+                 * Reviews пока оставляем до
+                 * отдельного Public refactoring.
+                 */
                 'reviews',
+
                 'likes',
             ]);
 

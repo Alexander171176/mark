@@ -91,7 +91,17 @@ class BlogTag extends Model
             ->first();
     }
 
-    /** Перевод с fallback */
+    /**
+     * Эффективный перевод:
+     *
+     * current locale -> fallback locale.
+     *
+     * Если ни одного из этих переводов нет,
+     * возвращаем null.
+     *
+     * Метод работает только
+     * с уже загруженной коллекцией translations.
+     */
     public function translationOrFallback(
         ?string $locale = null,
         ?string $fallback = null
@@ -99,11 +109,10 @@ class BlogTag extends Model
         $locale = $locale
             ?: app()->getLocale();
 
-        $fallback = $fallback
-            ?: config(
-                'app.fallback_locale',
-                'ru'
-            );
+        $fallback ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
 
         return $this->translations
             ->firstWhere(
@@ -114,9 +123,7 @@ class BlogTag extends Model
                 ->firstWhere(
                     'locale',
                     $fallback
-                )
-                ?: $this->translations
-                    ->first();
+                );
     }
 
     /** Статьи, связанные с тегом */
@@ -306,11 +313,10 @@ class BlogTag extends Model
         $locale = $locale
             ?: app()->getLocale();
 
-        $fallbackLocale = $fallbackLocale
-            ?: config(
-                'app.fallback_locale',
-                'ru'
-            );
+        $fallbackLocale ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
 
         $query->leftJoin(
             'blog_tag_translations as btt_public_current',

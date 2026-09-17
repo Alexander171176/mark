@@ -136,7 +136,17 @@ class BlogVideo extends Model implements HasMedia
             ->first();
     }
 
-    /** Перевод с fallback */
+    /**
+     * Эффективный перевод:
+     *
+     * current locale -> fallback locale.
+     *
+     * Если ни одного из этих переводов нет,
+     * возвращаем null.
+     *
+     * Метод работает только
+     * с уже загруженной коллекцией translations.
+     */
     public function translationOrFallback(
         ?string $locale = null,
         ?string $fallback = null
@@ -144,11 +154,10 @@ class BlogVideo extends Model implements HasMedia
         $locale = $locale
             ?: app()->getLocale();
 
-        $fallback = $fallback
-            ?: config(
-                'app.fallback_locale',
-                'ru'
-            );
+        $fallback ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
 
         return $this->translations
             ->firstWhere(
@@ -159,9 +168,7 @@ class BlogVideo extends Model implements HasMedia
                 ->firstWhere(
                     'locale',
                     $fallback
-                )
-                ?: $this->translations
-                    ->first();
+                );
     }
 
     /** Видео используется в статьях */

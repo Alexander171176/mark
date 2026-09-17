@@ -318,11 +318,17 @@ class BlogTagController extends Controller
                  * Рубрики нужны карточкам,
                  * поиску и отображению статьи.
                  */
-                'rubrics.translations' => fn ($query) =>
-                $query->whereIn(
-                    'locale',
-                    $locales
-                ),
+                'rubrics' => fn ($query) =>
+                $query
+                    ->forPublic()
+                    ->with([
+                        'translations' =>
+                            fn ($translationQuery) =>
+                            $translationQuery->whereIn(
+                                'locale',
+                                $locales
+                            ),
+                    ]),
             ])
             ->withCount([
                 'likes',
@@ -338,7 +344,7 @@ class BlogTagController extends Controller
     }
 
     /**
-     * Получение статей тега
+     * Получение Public-статей тега
      * по активному режиму обработки.
      */
     private function getTagArticles(
@@ -349,35 +355,27 @@ class BlogTagController extends Controller
         string $sort,
         string $search = ''
     ) {
-        $locale =
-            app()->getLocale();
+        $locale = app()->getLocale();
 
-        $query =
-            $this->tagArticlesQuery(
-                tag: $tag,
-                locales: $locales,
-            );
+        $query = $this->tagArticlesQuery(
+            tag: $tag,
+            locales: $locales,
+        );
 
         /**
          * Server:
          *
-         * поиск, сортировка и пагинация
-         * выполняются backend.
-         *
-         * Временно используем существующие
-         * BlogArticle search()/sortByParam().
-         *
-         * Public-версию этих scopes
-         * приведём в порядок при отдельном
-         * рефакторинге BlogArticle.
+         * - Public-поиск;
+         * - Public-сортировка;
+         * - SQL-пагинация.
          */
         if ($useServerProcessing) {
             return $query
-                ->search(
+                ->publicSearch(
                     $search,
                     $locale
                 )
-                ->sortByParam(
+                ->publicSortByParam(
                     $sort,
                     $locale
                 )
@@ -392,13 +390,17 @@ class BlogTagController extends Controller
         /**
          * Frontend:
          *
-         * backend отдаёт весь Public-набор.
+         * Backend отдаёт полный
+         * Public-набор статей тега.
          *
          * Поиск и пагинация выполняются
-         * внутри Show.vue.
+         * во Vue.
+         *
+         * Начальная сортировка остаётся
+         * идентичной server-режиму.
          */
         return $query
-            ->sortByParam(
+            ->publicSortByParam(
                 $sort,
                 $locale
             )

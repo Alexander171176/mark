@@ -371,7 +371,9 @@ class BlogVideoController extends Controller
                                 ])
                                 ->withCount([
                                     'likes',
-                                    'comments',
+                                    'comments as comments_count' =>
+                                        fn (Builder $query) =>
+                                        $query->forPublic(),
                                 ])
                                 ->publicSortByParam(
                                     'sortAsc',
@@ -393,7 +395,9 @@ class BlogVideoController extends Controller
                 ])
                 ->withCount([
                     'likes',
-                    'comments',
+                    'comments as comments_count' =>
+                        fn (Builder $query) =>
+                        $query->forPublic(),
                 ]);
 
         /**
@@ -586,7 +590,9 @@ class BlogVideoController extends Controller
             ])
             ->withCount([
                 'likes',
-                'comments',
+                'comments as comments_count' =>
+                    fn (Builder $query) =>
+                    $query->forPublic(),
             ]);
     }
 

@@ -105,14 +105,39 @@ class BlogRubric extends Model
             ->first();
     }
 
-    /** Перевод с fallback */
-    public function translationOrFallback(?string $locale = null, string $fallback = 'ru'): ?BlogRubricTranslation
-    {
-        $locale = $locale ?: app()->getLocale();
+    /**
+     * Эффективный перевод:
+     *
+     * current locale -> fallback locale.
+     *
+     * Если ни одного из этих переводов нет,
+     * возвращаем null.
+     *
+     * Метод работает только
+     * с уже загруженной коллекцией translations.
+     */
+    public function translationOrFallback(
+        ?string $locale = null,
+        ?string $fallback = null
+    ): ?BlogRubricTranslation {
+        $locale =
+            $locale ?: app()->getLocale();
 
-        return $this->translations->firstWhere('locale', $locale)
-            ?: $this->translations->firstWhere('locale', $fallback)
-                ?: $this->translations->first();
+        $fallback ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return $this->translations
+            ->firstWhere(
+                'locale',
+                $locale
+            )
+            ?: $this->translations
+                ->firstWhere(
+                    'locale',
+                    $fallback
+                );
     }
 
     /**
@@ -169,10 +194,17 @@ class BlogRubric extends Model
         return (int) $this->moderation_status === 1;
     }
 
-    /** Получить title из текущего перевода */
-    public function getTranslatedTitle(?string $locale = null, string $fallback = 'ru'): ?string
-    {
-        return $this->translationOrFallback($locale, $fallback)?->title;
+    /** Получить title из эффективного перевода */
+    public function getTranslatedTitle(
+        ?string $locale = null,
+        ?string $fallback = null
+    ): ?string {
+        return $this
+            ->translationOrFallback(
+                $locale,
+                $fallback
+            )
+            ?->title;
     }
 
     /* ======================== Scopes ======================== */
@@ -238,29 +270,40 @@ class BlogRubric extends Model
     /**
      * Публичный поиск.
      *
-     * Ищет только по данным, доступным в Public Index:
-     * - id
-     * - url
-     * - title текущего перевода / fallback
-     * - short текущего перевода / fallback
-     * - имя владельца
+     * Ищет только по данным,
+     * доступным в Public Index:
+     *
+     * - id;
+     * - url;
+     * - title эффективного перевода;
+     * - short эффективного перевода;
+     * - имя владельца.
      *
      * Переводы:
-     * current locale -> fallback ru.
+     *
+     * current locale -> fallback locale.
      */
     public function scopePublicSearch(
         Builder $query,
         ?string $term,
         ?string $locale = null,
-        string $fallback = 'ru'
+        ?string $fallback = null
     ): Builder {
-        $term = trim((string) $term);
+        $term = trim(
+            (string) $term
+        );
 
         if ($term === '') {
             return $query;
         }
 
-        $locale = $locale ?: app()->getLocale();
+        $locale =
+            $locale ?: app()->getLocale();
+
+        $fallback ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
 
         return $query->where(function (Builder $query) use ($term, $locale, $fallback) {
             $query
@@ -314,9 +357,15 @@ class BlogRubric extends Model
         Builder $query,
         ?string $sort,
         ?string $locale = null,
-        string $fallback = 'ru'
+        ?string $fallback = null
     ): Builder {
-        $locale = $locale ?: app()->getLocale();
+        $locale =
+            $locale ?: app()->getLocale();
+
+        $fallback ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
 
         return match ($sort) {
             'idAsc' => $query

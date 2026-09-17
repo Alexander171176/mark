@@ -271,11 +271,10 @@ class BlogArticleController extends Controller
                     ]),
 
                 /**
-                 * Публичные видео статьи.
+                 * Только публичные видео статьи.
                  *
-                 * Public-специфичную сортировку
-                 * BlogVideo добавим на этапе
-                 * рефакторинга сущности Video.
+                 * Используем полноценный
+                 * Public-контракт BlogVideo.
                  */
                 'videos' => function ($query) use (
                     $locale,
@@ -296,9 +295,12 @@ class BlogArticleController extends Controller
                         ])
                         ->withCount([
                             'likes',
-                            'comments',
+
+                            'comments as comments_count' =>
+                                fn (Builder $query) =>
+                                $query->forPublic(),
                         ])
-                        ->sortByParam(
+                        ->publicSortByParam(
                             'sortAsc',
                             $locale
                         );
@@ -487,27 +489,61 @@ class BlogArticleController extends Controller
     }
 
     /** Базовый запрос Public Index статей. */
-    private function indexQuery(string $locale): Builder
-    {
+    private function indexQuery(
+        string $locale
+    ): Builder {
         $fallbackLocale = config(
             'app.fallback_locale',
             'ru'
         );
 
-        $locales = array_values(array_unique([
-            $locale,
-            $fallbackLocale,
-        ]));
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
 
         $query = BlogArticle::query()
             ->forPublic()
             ->with([
+                /**
+                 * Current locale + fallback.
+                 */
                 'translations' => fn ($query) =>
-                $query->whereIn('locale', $locales),
+                $query->whereIn(
+                    'locale',
+                    $locales
+                ),
 
+                /**
+                 * Автор.
+                 */
                 'owner',
 
+                /**
+                 * Изображения + Spatie Media.
+                 */
                 'images.media',
+
+                /**
+                 * Только публичные рубрики.
+                 *
+                 * Они необходимы frontend-поиску:
+                 *
+                 * rubrics[].translation.title
+                 */
+                'rubrics' => fn ($query) =>
+                $query
+                    ->forPublic()
+                    ->with([
+                        'translations' =>
+                            fn ($translationQuery) =>
+                            $translationQuery->whereIn(
+                                'locale',
+                                $locales
+                            ),
+                    ]),
             ])
             ->withCount([
                 'likes',
@@ -518,7 +554,10 @@ class BlogArticleController extends Controller
         );
     }
 
-    /** Получение Public Index статей по активному режиму. */
+    /**
+     * Получение Public Index статей
+     * по активному режиму обработки.
+     */
     private function getIndexArticles(
         string $locale,
         bool $useServerProcessing,
@@ -532,15 +571,18 @@ class BlogArticleController extends Controller
 
         /**
          * Server:
-         * SQL search / sort / pagination.
+         *
+         * - Public-поиск;
+         * - Public-сортировка;
+         * - SQL-пагинация.
          */
         if ($useServerProcessing) {
             return $query
-                ->search(
+                ->publicSearch(
                     $search,
                     $locale
                 )
-                ->sortByParam(
+                ->publicSortByParam(
                     $sort,
                     $locale
                 )
@@ -552,13 +594,18 @@ class BlogArticleController extends Controller
 
         /**
          * Frontend:
-         * весь Public-набор.
          *
-         * Начальную сортировку также
-         * выполняем согласно настройке.
+         * Backend отдаёт полный
+         * Public-набор статей.
+         *
+         * Поиск и пагинация выполняются
+         * во Vue.
+         *
+         * Начальная сортировка остаётся
+         * идентичной server-режиму.
          */
         return $query
-            ->sortByParam(
+            ->publicSortByParam(
                 $sort,
                 $locale
             )

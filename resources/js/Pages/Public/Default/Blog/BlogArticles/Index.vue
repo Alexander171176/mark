@@ -36,7 +36,7 @@ const { t } = useI18n()
 const page = usePage()
 
 const props = defineProps({
-    locale: { type: String, default: 'ru' },
+    locale: { type: String, default: '' },
 
     seo: {
         type: Object,
@@ -191,14 +191,24 @@ const seoKeywords = computed(() =>
     || ''
 )
 
+/**
+ * Активная локаль приходит
+ * исключительно от backend.
+ *
+ * Vue не определяет fallback-язык.
+ */
 const contentLocale = computed(() =>
-    props.locale || 'ru'
+    String(props.locale || '')
 )
 
+/**
+ * Open Graph locale.
+ *
+ * Vue не содержит списка языков
+ * и не преобразует локаль самостоятельно.
+ */
 const ogLocale = computed(() =>
-    contentLocale.value === 'ru'
-        ? 'ru_RU'
-        : contentLocale.value
+    contentLocale.value
 )
 
 const canonicalUrl = computed(() =>
@@ -404,7 +414,7 @@ const filteredArticles = computed(() => {
 const compareText = (a, b) =>
     String(a ?? '').localeCompare(
         String(b ?? ''),
-        props.locale,
+        props.locale || undefined,
         { sensitivity: 'base' }
     )
 

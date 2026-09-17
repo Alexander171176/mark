@@ -316,6 +316,10 @@ class CommentController extends Controller
     public function show(
         Comment $comment
     ): JsonResponse {
+        /**
+         * Сам комментарий должен
+         * быть доступен публично.
+         */
         if (
             !$comment->isActive()
             || !$comment->isApproved()
@@ -326,12 +330,44 @@ class CommentController extends Controller
             ], 404);
         }
 
+        /**
+         * Статья/видео, к которому относится
+         * комментарий, также должно
+         * оставаться публичным.
+         */
+        $commentable = $this->resolveCommentable(
+            $comment->commentable_type,
+            (int) $comment->commentable_id
+        );
+
+        if (!$commentable) {
+            return response()->json([
+                'message' =>
+                    'Комментарий не найден или недоступен.',
+            ], 404);
+        }
+
         $comment->load([
+            /**
+             * Автор комментария.
+             */
             'user:id,name',
 
+            /**
+             * Только публичные ответы,
+             * принадлежащие тому же объекту.
+             */
             'replies' => fn ($query) =>
             $query
                 ->forPublic()
+                ->where(
+                    'commentable_type',
+                    $comment->commentable_type
+                )
+                ->where(
+                    'commentable_id',
+                    $comment->commentable_id
+                )
                 ->with([
                     'user:id,name',
                 ])
@@ -340,9 +376,23 @@ class CommentController extends Controller
                     'asc'
                 ),
         ])->loadCount([
+            /**
+             * Count должен соответствовать
+             * загруженным публичным ответам
+             * того же объекта.
+             */
             'replies as replies_count' =>
                 fn ($query) =>
-                $query->forPublic(),
+                $query
+                    ->forPublic()
+                    ->where(
+                        'commentable_type',
+                        $comment->commentable_type
+                    )
+                    ->where(
+                        'commentable_id',
+                        $comment->commentable_id
+                    ),
         ]);
 
         return response()->json([

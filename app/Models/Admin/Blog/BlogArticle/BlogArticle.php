@@ -111,7 +111,18 @@ class BlogArticle extends Model
             ->first();
     }
 
-    /** Перевод с fallback */
+    /**
+     * Эффективный перевод:
+     *
+     * current locale -> fallback locale.
+     *
+     * Если ни одного из этих переводов нет,
+     * возвращаем null.
+     *
+     * Метод работает только
+     * с уже загруженной коллекцией translations
+     * и не выполняет скрытых SQL-запросов.
+     */
     public function translationOrFallback(
         ?string $locale = null,
         ?string $fallback = null
@@ -133,8 +144,7 @@ class BlogArticle extends Model
                 ->firstWhere(
                     'locale',
                     $fallback
-                )
-                ?: $this->translations->first();
+                );
     }
 
     /** Комментарии (полиморфные) */

@@ -364,12 +364,7 @@ class BlogRubricController extends Controller
         );
 
         /**
-         * Статьи пока используют существующий
-         * контракт BlogArticle.
-         *
-         * На publicSearch/publicSortByParam
-         * переведём их при рефакторинге
-         * модели BlogArticle.
+         * BlogArticle.
          */
         $articlesSort = (string) $request->query(
             'sort_articles',
@@ -542,9 +537,6 @@ class BlogRubricController extends Controller
     /**
      * Базовый запрос Public-статей
      * конкретной рубрики.
-     *
-     * Временно использует существующий
-     * контракт модели BlogArticle.
      */
     private function rubricArticlesQuery(
         BlogRubric $rubric,
@@ -586,11 +578,17 @@ class BlogRubricController extends Controller
                  * BlogArticleSharedResource
                  * и frontend-поиску.
                  */
-                'rubrics.translations' => fn ($query) =>
-                $query->whereIn(
-                    'locale',
-                    $locales
-                ),
+                'rubrics' => fn ($query) =>
+                $query
+                    ->forPublic()
+                    ->with([
+                        'translations' =>
+                            fn ($translationQuery) =>
+                            $translationQuery->whereIn(
+                                'locale',
+                                $locales
+                            ),
+                    ]),
             ])
             ->withCount([
                 'likes',
@@ -605,12 +603,8 @@ class BlogRubricController extends Controller
     }
 
     /**
-     * Получение статей рубрики
+     * Получение Public-статей рубрики
      * по активному режиму обработки.
-     *
-     * BlogArticle publicSearch/publicSortByParam
-     * подключим отдельно после рефакторинга
-     * модели BlogArticle.
      */
     private function getRubricArticles(
         BlogRubric $rubric,
@@ -629,16 +623,18 @@ class BlogRubricController extends Controller
 
         /**
          * Server:
-         * поиск / сортировка / pagination
-         * выполняются backend.
+         *
+         * - Public-поиск;
+         * - Public-сортировка;
+         * - SQL-пагинация.
          */
         if ($useServerProcessing) {
             return $query
-                ->search(
+                ->publicSearch(
                     $search,
                     $locale
                 )
-                ->sortByParam(
+                ->publicSortByParam(
                     $sort,
                     $locale
                 )
@@ -652,10 +648,18 @@ class BlogRubricController extends Controller
 
         /**
          * Frontend:
-         * отдаём весь Public-набор.
+         *
+         * Backend отдаёт полный
+         * Public-набор статей рубрики.
+         *
+         * Поиск и пагинация выполняются
+         * во Vue.
+         *
+         * Начальная сортировка остаётся
+         * идентичной server-режиму.
          */
         return $query
-            ->sortByParam(
+            ->publicSortByParam(
                 $sort,
                 $locale
             )

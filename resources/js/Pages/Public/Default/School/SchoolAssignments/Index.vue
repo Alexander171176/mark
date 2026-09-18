@@ -40,7 +40,10 @@ const { t } = useI18n()
 
 /** Props страницы */
 const props = defineProps({
-    locale: { type: String, default: 'ru' },
+    locale: {
+        type: String,
+        default: '',
+    },
 
     seo: {
         type: Object,
@@ -51,23 +54,76 @@ const props = defineProps({
         }),
     },
 
-    useServerProcessing: { type: Boolean, default: false },
-    publicSchoolAssignmentsProcessingMode: { type: String, default: 'server' },
+    useServerProcessing: {
+        type: Boolean,
+        default: false,
+    },
 
-    title: { type: String, default: '' },
-    canLogin: { type: Boolean, default: false },
-    canRegister: { type: Boolean, default: false },
+    publicSchoolAssignmentsProcessingMode: {
+        type: String,
+        default: 'server',
+    },
 
-    trackTree: { type: Array, default: () => [] },
+    title: {
+        type: String,
+        default: '',
+    },
 
-    assignments: { type: [Array, Object], default: () => [] },
-    assignmentsCount: { type: Number, default: 0 },
-    assignmentsFound: { type: Number, default: 0 },
+    canLogin: {
+        type: Boolean,
+        default: false,
+    },
 
-    filters: { type: Object, default: () => ({}) },
+    canRegister: {
+        type: Boolean,
+        default: false,
+    },
 
-    mainVideos: { type: [Array, Object], default: () => [] },
-    mainBanners: { type: [Array, Object], default: () => [] },
+    trackTree: {
+        type: Array,
+        default: () => [],
+    },
+
+    assignments: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    assignmentsCount: {
+        type: Number,
+        default: 0,
+    },
+
+    assignmentsFound: {
+        type: Number,
+        default: 0,
+    },
+
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+
+    /**
+     * Сортировка по умолчанию.
+     *
+     * Источник истины:
+     * PublicSettingsService.
+     */
+    defaultSort: {
+        type: String,
+        default: '',
+    },
+
+    mainVideos: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    mainBanners: {
+        type: [Array, Object],
+        default: () => [],
+    },
 })
 
 /* ===================== PAGE ===================== */
@@ -79,7 +135,9 @@ const page = usePage()
 const siteSettings = page.props?.siteSettings || {}
 
 /** Роль администратора */
-const isAdmin = computed(() => page.props?.isAdmin === true)
+const isAdmin = computed(() => {
+    return page.props?.isAdmin === true
+})
 
 /** Дерево треков */
 const trackTree = computed(() => {
@@ -149,12 +207,18 @@ const getStoredBoolean = (key, defaultValue = true) => {
 
 /** Левый сайдбар по умолчанию свернут */
 const leftCollapsed = ref(
-    getStoredBoolean(LEFT_SIDEBAR_KEY, true)
+    getStoredBoolean(
+        LEFT_SIDEBAR_KEY,
+        true
+    )
 )
 
 /** Правый сайдбар по умолчанию свернут */
 const rightCollapsed = ref(
-    getStoredBoolean(RIGHT_SIDEBAR_KEY, true)
+    getStoredBoolean(
+        RIGHT_SIDEBAR_KEY,
+        true
+    )
 )
 
 /**
@@ -167,8 +231,13 @@ const rightCollapsed = ref(
  * Количество заданий при этом не меняется.
  */
 const gridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
+    const leftExpanded =
+        showLeft.value
+        && !leftCollapsed.value
+
+    const rightExpanded =
+        showRight.value
+        && !rightCollapsed.value
 
     if (leftExpanded && rightExpanded) {
         return 2
@@ -182,31 +251,43 @@ const gridCols = computed(() => {
 })
 
 /** Сохраняем состояние сайдбаров */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(
-        LEFT_SIDEBAR_KEY,
-        String(leftCollapsed.value)
-    )
+watch(
+    [leftCollapsed, rightCollapsed],
+    () => {
+        localStorage.setItem(
+            LEFT_SIDEBAR_KEY,
+            String(leftCollapsed.value)
+        )
 
-    localStorage.setItem(
-        RIGHT_SIDEBAR_KEY,
-        String(rightCollapsed.value)
-    )
-})
+        localStorage.setItem(
+            RIGHT_SIDEBAR_KEY,
+            String(rightCollapsed.value)
+        )
+    }
+)
 
 /* ===================== FILTERS ===================== */
 
 /** Поисковая строка */
 const q = ref(
-    String(props.filters?.q ?? '')
+    String(
+        props.filters?.q
+        ?? ''
+    )
 )
 
-/** Сортировка по умолчанию */
-const DEFAULT_SORT = 'idDesc'
-
-/** Текущая сортировка */
+/**
+ * Текущая сортировка.
+ *
+ * Значение по умолчанию приходит
+ * исключительно от backend.
+ */
 const sort = ref(
-    String(props.filters?.sort ?? DEFAULT_SORT)
+    String(
+        props.filters?.sort
+        || props.defaultSort
+        || ''
+    )
 )
 
 /** Ключ режима отображения */
@@ -223,62 +304,139 @@ const viewMode = ref(
 
 /** Сохраняем режим отображения */
 watch(viewMode, (value) => {
-    localStorage.setItem(VIEW_KEY, value)
+    localStorage.setItem(
+        VIEW_KEY,
+        value
+    )
 })
 
 /**
  * Количество заданий на странице.
  *
  * Источник значения — backend:
- * PublicSettingsService → resolvePerPage() → filters.per_page.
- *
- * 12 используется только как аварийный fallback.
+ * PublicSettingsService → resolvePerPage()
+ * → filters.per_page.
  */
 const perPage = computed(() => {
-    const value = Number(props.filters?.per_page)
+    const value = Number(
+        props.filters?.per_page
+    )
 
-    return Number.isFinite(value) && value > 0
+    return Number.isFinite(value)
+    && value > 0
         ? value
-        : 12
+        : 1
 })
 
 /** Опции сортировки */
 const assignmentSortOptions = [
-    { value: 'idDesc', label: t('idDesc') },
-    { value: 'idAsc', label: t('idAsc') },
+    {
+        value: 'idDesc',
+        label: t('idDesc'),
+    },
+    {
+        value: 'idAsc',
+        label: t('idAsc'),
+    },
 
-    { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
-    { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
+    {
+        value: 'sortAsc',
+        label: `${t('sortNumber')} 0→9`,
+    },
+    {
+        value: 'sortDesc',
+        label: `${t('sortNumber')} 9→0`,
+    },
 
-    { value: 'titleAsc', label: `${t('title')} A→Z` },
-    { value: 'titleDesc', label: `${t('title')} Z→A` },
+    {
+        value: 'titleAsc',
+        label: `${t('title')} A→Z`,
+    },
+    {
+        value: 'titleDesc',
+        label: `${t('title')} Z→A`,
+    },
 
-    { value: 'statusAsc', label: `${t('status')} A→Z` },
-    { value: 'statusDesc', label: `${t('status')} Z→A` },
+    {
+        value: 'statusAsc',
+        label: `${t('status')} A→Z`,
+    },
+    {
+        value: 'statusDesc',
+        label: `${t('status')} Z→A`,
+    },
 
-    { value: 'gradingTypeAsc', label: `${t('gradingType')} A→Z` },
-    { value: 'gradingTypeDesc', label: `${t('gradingType')} Z→A` },
+    {
+        value: 'gradingTypeAsc',
+        label: `${t('gradingType')} A→Z`,
+    },
+    {
+        value: 'gradingTypeDesc',
+        label: `${t('gradingType')} Z→A`,
+    },
 
-    { value: 'attemptsLimitAsc', label: `${t('attemptsLimit')} 0→9` },
-    { value: 'attemptsLimitDesc', label: `${t('attemptsLimit')} 9→0` },
+    {
+        value: 'attemptsLimitAsc',
+        label: `${t('attemptsLimit')} 0→9`,
+    },
+    {
+        value: 'attemptsLimitDesc',
+        label: `${t('attemptsLimit')} 9→0`,
+    },
 
-    { value: 'maxScoreAsc', label: `${t('maxScore')} 0→9` },
-    { value: 'maxScoreDesc', label: `${t('maxScore')} 9→0` },
+    {
+        value: 'maxScoreAsc',
+        label: `${t('maxScore')} 0→9`,
+    },
+    {
+        value: 'maxScoreDesc',
+        label: `${t('maxScore')} 9→0`,
+    },
 
-    { value: 'submissionsAsc', label: `${t('submissions')} 0→9` },
-    { value: 'submissionsDesc', label: `${t('submissions')} 9→0` },
+    {
+        value: 'submissionsAsc',
+        label: `${t('submissions')} 0→9`,
+    },
+    {
+        value: 'submissionsDesc',
+        label: `${t('submissions')} 9→0`,
+    },
 
-    { value: 'imagesAsc', label: `${t('images')} 0→9` },
-    { value: 'imagesDesc', label: `${t('images')} 9→0` },
+    {
+        value: 'imagesAsc',
+        label: `${t('images')} 0→9`,
+    },
+    {
+        value: 'imagesDesc',
+        label: `${t('images')} 9→0`,
+    },
 
-    { value: 'dueAtAsc', label: `${t('dueAt')} ↑` },
-    { value: 'dueAtDesc', label: `${t('dueAt')} ↓` },
+    {
+        value: 'dueAtAsc',
+        label: `${t('dueAt')} ↑`,
+    },
+    {
+        value: 'dueAtDesc',
+        label: `${t('dueAt')} ↓`,
+    },
 
-    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
-    { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
+    {
+        value: 'publishedAtAsc',
+        label: `${t('publishedAt')} ↑`,
+    },
+    {
+        value: 'publishedAtDesc',
+        label: `${t('publishedAt')} ↓`,
+    },
 
-    { value: 'dateAsc', label: t('sortOldestFirst') },
-    { value: 'dateDesc', label: t('sortNewestFirst') },
+    {
+        value: 'dateAsc',
+        label: t('sortOldestFirst'),
+    },
+    {
+        value: 'dateDesc',
+        label: t('sortNewestFirst'),
+    },
 ]
 
 /* ===================== FRONTEND MODE ===================== */
@@ -300,51 +458,52 @@ const normalizeText = (value) => {
     return String(value ?? '').toLowerCase()
 }
 
+/**
+ * Public-перевод задания.
+ *
+ * Backend уже разрешил:
+ * текущая локаль → fallback → null.
+ */
+const getAssignmentTranslation = (assignment) => {
+    return assignment?.translation || null
+}
+
 /** Название задания */
 const getAssignmentTitle = (assignment) => {
-    return assignment?.title
-        || assignment?.name
-        || assignment?.translation?.title
-        || assignment?.translation?.name
-        || assignment?.current_translation?.title
-        || assignment?.current_translation?.name
-        || assignment?.translations?.[0]?.title
-        || assignment?.translations?.[0]?.name
-        || ''
+    return assignment?.translation?.title || ''
+}
+
+const getAssignmentSubtitle = (assignment) => {
+    return assignment?.translation?.subtitle || ''
 }
 
 /** Краткий текст задания */
 const getAssignmentShort = (assignment) => {
-    return assignment?.short
-        || assignment?.description
-        || assignment?.translation?.short
-        || assignment?.translation?.description
-        || assignment?.current_translation?.short
-        || assignment?.current_translation?.description
-        || assignment?.translations?.[0]?.short
-        || assignment?.translations?.[0]?.description
-        || ''
+    return assignment?.translation?.short || ''
 }
 
 /** Slug задания */
 const getAssignmentSlug = (assignment) => {
-    return assignment?.slug
-        || assignment?.url
-        || assignment?.translation?.slug
-        || assignment?.current_translation?.slug
-        || assignment?.translations?.[0]?.slug
-        || ''
+    return assignment?.slug || ''
 }
 
 /** Название связанной сущности */
 const getRelationTitle = (item) => {
-    return item?.title
-        || item?.name
-        || item?.translation?.title
-        || item?.translation?.name
-        || item?.translations?.[0]?.title
-        || item?.translations?.[0]?.name
+    return item?.translation?.title
+        || item?.title
         || ''
+}
+
+/** Имя преподавателя */
+const getInstructorTitle = (assignment) => {
+    return assignment?.instructor?.translation?.title
+        || assignment?.instructor?.title
+        || ''
+}
+
+/** Имя пользователя преподавателя */
+const getInstructorUserName = (assignment) => {
+    return assignment?.instructor?.user?.name || ''
 }
 
 /** Разбивка поисковой строки */
@@ -356,7 +515,12 @@ const splitSearchWords = (value) => {
         .filter((word) => word.length >= 2)
 }
 
-/** Локальный поиск */
+/**
+ * Локальный Public-поиск.
+ *
+ * Набор полей синхронизирован
+ * с SchoolAssignment::publicSearch().
+ */
 const filteredAssignments = computed(() => {
     const words = splitSearchWords(q.value)
 
@@ -378,17 +542,16 @@ const filteredAssignments = computed(() => {
             assignment.attempts_limit,
             assignment.max_score,
 
-            getAssignmentTitle(assignment),
-            getAssignmentShort(assignment),
             getAssignmentSlug(assignment),
+            getAssignmentTitle(assignment),
+            getAssignmentSubtitle(assignment),
+            getAssignmentShort(assignment),
 
             getRelationTitle(assignment.course),
             getRelationTitle(assignment.module),
             getRelationTitle(assignment.lesson),
-            getRelationTitle(assignment.instructor),
-
-            assignment.instructor?.user?.name,
-            assignment.instructor?.user?.email,
+            getInstructorTitle(assignment),
+            getInstructorUserName(assignment),
         ].filter(Boolean).join(' '))
 
         return words.every((word) => {
@@ -397,115 +560,214 @@ const filteredAssignments = computed(() => {
     })
 })
 
+/** Значение даты для frontend-сортировки */
+const dateValue = (value) => {
+    if (!value) {
+        return 0
+    }
+
+    const timestamp =
+        new Date(value).getTime()
+
+    return Number.isFinite(timestamp)
+        ? timestamp
+        : 0
+}
+
+/**
+ * Сравнение строк.
+ *
+ * Используем локаль фактически выбранного
+ * Public-перевода задания.
+ */
+const compareTitles = (
+    first,
+    second
+) => {
+    const firstTitle =
+        getAssignmentTitle(first)
+
+    const secondTitle =
+        getAssignmentTitle(second)
+
+    const locale =
+        getAssignmentTranslation(first)?.locale
+        || getAssignmentTranslation(second)?.locale
+        || undefined
+
+    return firstTitle.localeCompare(
+        secondTitle,
+        locale
+    )
+}
+
 /** Локальная сортировка */
 const sortedAssignments = computed(() => {
-    const list = [...filteredAssignments.value]
+    const list = [
+        ...filteredAssignments.value,
+    ]
 
     return list.sort((a, b) => {
         switch (sort.value) {
             case 'idAsc':
-                return (a.id ?? 0) - (b.id ?? 0)
+                return (a.id ?? 0)
+                    - (b.id ?? 0)
 
             case 'idDesc':
-                return (b.id ?? 0) - (a.id ?? 0)
+                return (b.id ?? 0)
+                    - (a.id ?? 0)
 
             case 'sortAsc':
-                return (a.sort ?? 0) - (b.sort ?? 0)
+                return (a.sort ?? 0)
+                    - (b.sort ?? 0)
 
             case 'sortDesc':
-                return (b.sort ?? 0) - (a.sort ?? 0)
+                return (b.sort ?? 0)
+                    - (a.sort ?? 0)
 
             case 'titleAsc':
-                return normalizeText(getAssignmentTitle(a))
-                    .localeCompare(
-                        normalizeText(getAssignmentTitle(b))
-                    )
+                return compareTitles(a, b)
 
             case 'titleDesc':
-                return normalizeText(getAssignmentTitle(b))
-                    .localeCompare(
-                        normalizeText(getAssignmentTitle(a))
-                    )
+                return compareTitles(b, a)
 
             case 'statusAsc':
-                return normalizeText(a.status)
-                    .localeCompare(
-                        normalizeText(b.status)
+                return normalizeText(
+                    a.status
+                ).localeCompare(
+                    normalizeText(
+                        b.status
                     )
+                )
 
             case 'statusDesc':
-                return normalizeText(b.status)
-                    .localeCompare(
-                        normalizeText(a.status)
+                return normalizeText(
+                    b.status
+                ).localeCompare(
+                    normalizeText(
+                        a.status
                     )
+                )
 
             case 'gradingTypeAsc':
-                return normalizeText(a.grading_type)
-                    .localeCompare(
-                        normalizeText(b.grading_type)
+                return normalizeText(
+                    a.grading_type
+                ).localeCompare(
+                    normalizeText(
+                        b.grading_type
                     )
+                )
 
             case 'gradingTypeDesc':
-                return normalizeText(b.grading_type)
-                    .localeCompare(
-                        normalizeText(a.grading_type)
+                return normalizeText(
+                    b.grading_type
+                ).localeCompare(
+                    normalizeText(
+                        a.grading_type
                     )
+                )
 
             case 'attemptsLimitAsc':
-                return (a.attempts_limit ?? 0)
-                    - (b.attempts_limit ?? 0)
+                return (
+                    a.attempts_limit
+                    ?? 0
+                ) - (
+                    b.attempts_limit
+                    ?? 0
+                )
 
             case 'attemptsLimitDesc':
-                return (b.attempts_limit ?? 0)
-                    - (a.attempts_limit ?? 0)
+                return (
+                    b.attempts_limit
+                    ?? 0
+                ) - (
+                    a.attempts_limit
+                    ?? 0
+                )
 
             case 'maxScoreAsc':
-                return (a.max_score ?? 0)
-                    - (b.max_score ?? 0)
+                return (
+                    a.max_score
+                    ?? 0
+                ) - (
+                    b.max_score
+                    ?? 0
+                )
 
             case 'maxScoreDesc':
-                return (b.max_score ?? 0)
-                    - (a.max_score ?? 0)
+                return (
+                    b.max_score
+                    ?? 0
+                ) - (
+                    a.max_score
+                    ?? 0
+                )
 
             case 'submissionsAsc':
-                return (a.submissions_count ?? 0)
-                    - (b.submissions_count ?? 0)
+                return (
+                    a.submissions_count
+                    ?? 0
+                ) - (
+                    b.submissions_count
+                    ?? 0
+                )
 
             case 'submissionsDesc':
-                return (b.submissions_count ?? 0)
-                    - (a.submissions_count ?? 0)
+                return (
+                    b.submissions_count
+                    ?? 0
+                ) - (
+                    a.submissions_count
+                    ?? 0
+                )
 
             case 'imagesAsc':
-                return (a.images_count ?? 0)
-                    - (b.images_count ?? 0)
+                return (
+                    a.images_count
+                    ?? 0
+                ) - (
+                    b.images_count
+                    ?? 0
+                )
 
             case 'imagesDesc':
-                return (b.images_count ?? 0)
-                    - (a.images_count ?? 0)
+                return (
+                    b.images_count
+                    ?? 0
+                ) - (
+                    a.images_count
+                    ?? 0
+                )
 
             case 'dueAtAsc':
-                return new Date(a.due_at ?? 0)
-                    - new Date(b.due_at ?? 0)
+                return dateValue(
+                    a.due_at
+                ) - dateValue(
+                    b.due_at
+                )
 
             case 'dueAtDesc':
-                return new Date(b.due_at ?? 0)
-                    - new Date(a.due_at ?? 0)
+                return dateValue(
+                    b.due_at
+                ) - dateValue(
+                    a.due_at
+                )
 
             case 'publishedAtAsc':
-                return new Date(a.published_at ?? a.created_at ?? 0)
-                    - new Date(b.published_at ?? b.created_at ?? 0)
+            case 'dateAsc':
+                return dateValue(
+                    a.published_at
+                ) - dateValue(
+                    b.published_at
+                )
 
             case 'publishedAtDesc':
-                return new Date(b.published_at ?? b.created_at ?? 0)
-                    - new Date(a.published_at ?? a.created_at ?? 0)
-
-            case 'dateAsc':
-                return new Date(a.created_at ?? a.published_at ?? 0)
-                    - new Date(b.created_at ?? b.published_at ?? 0)
-
             case 'dateDesc':
-                return new Date(b.created_at ?? b.published_at ?? 0)
-                    - new Date(a.created_at ?? a.published_at ?? 0)
+                return dateValue(
+                    b.published_at
+                ) - dateValue(
+                    a.published_at
+                )
 
             default:
                 return 0
@@ -519,28 +781,35 @@ const sortedAssignments = computed(() => {
  * Использует то же per_page,
  * которое определил backend.
  */
-const frontendPaginatedAssignments = computed(() => {
-    const start = (
-        frontendCurrentPage.value - 1
-    ) * perPage.value
+const frontendPaginatedAssignments =
+    computed(() => {
+        const start = (
+            frontendCurrentPage.value - 1
+        ) * perPage.value
 
-    return sortedAssignments.value.slice(
-        start,
-        start + perPage.value
-    )
-})
+        return sortedAssignments.value.slice(
+            start,
+            start + perPage.value
+        )
+    })
 
 /** Сбрасываем frontend-пагинацию */
-watch([q, sort, viewMode], () => {
-    frontendCurrentPage.value = 1
-})
+watch(
+    [q, sort, viewMode],
+    () => {
+        frontendCurrentPage.value = 1
+    }
+)
 
 /** Скролл при frontend-пагинации */
-watch(frontendCurrentPage, () => {
-    if (!props.useServerProcessing) {
-        scrollToTarget()
+watch(
+    frontendCurrentPage,
+    () => {
+        if (!props.useServerProcessing) {
+            scrollToTarget()
+        }
     }
-})
+)
 
 /* ===================== SERVER MODE ===================== */
 
@@ -564,22 +833,35 @@ const lastPage = computed(() => {
 
 /** Маршрут списка заданий */
 const indexRoute = () => {
-    return route('public.schoolAssignments.index')
+    return route(
+        'public.schoolAssignments.index'
+    )
 }
 
 /**
  * Server-загрузка заданий.
  *
  * per_page намеренно не отправляем.
- * Его всегда определяет backend через PublicSettingsService.
+ * Его всегда определяет backend
+ * через PublicSettingsService.
  */
-const reloadAssignments = (page = 1) => {
+const reloadAssignments = (
+    page = 1
+) => {
     router.get(
         indexRoute(),
         {
             q: q.value || undefined,
-            sort: sort.value || undefined,
-            view: viewMode.value || undefined,
+
+            sort:
+                sort.value
+                || props.defaultSort
+                || undefined,
+
+            view:
+                viewMode.value
+                || undefined,
+
             page,
         },
         {
@@ -595,10 +877,15 @@ const submitSearch = () => {
     reloadAssignments(1)
 }
 
-/** Сброс поиска и сортировки */
+/**
+ * Сброс поиска и сортировки.
+ *
+ * Сортировка восстанавливается
+ * исключительно из PublicSettingsService.
+ */
 const resetSearch = () => {
     q.value = ''
-    sort.value = DEFAULT_SORT
+    sort.value = props.defaultSort || ''
     frontendCurrentPage.value = 1
 
     if (props.useServerProcessing) {
@@ -606,9 +893,14 @@ const resetSearch = () => {
     }
 }
 
-/** Server-изменение сортировки */
+/** Изменение сортировки */
 const updateSort = (value) => {
-    sort.value = value || DEFAULT_SORT
+    sort.value =
+        value
+        || props.defaultSort
+        || ''
+
+    frontendCurrentPage.value = 1
 
     if (props.useServerProcessing) {
         reloadAssignments(1)
@@ -617,7 +909,9 @@ const updateSort = (value) => {
 
 /** Изменение режима отображения */
 const updateViewMode = (value) => {
-    viewMode.value = value || 'grid'
+    viewMode.value =
+        value || 'grid'
+
     frontendCurrentPage.value = 1
 
     if (props.useServerProcessing) {
@@ -635,10 +929,15 @@ const goToPage = (page) => {
 
     const safePage = Math.max(
         1,
-        Math.min(value, lastPage.value)
+        Math.min(
+            value,
+            lastPage.value
+        )
     )
 
-    reloadAssignments(safePage)
+    reloadAssignments(
+        safePage
+    )
 }
 
 /** Предыдущая server-страница */
@@ -647,16 +946,23 @@ const goPrev = () => {
         return
     }
 
-    goToPage(currentPage.value - 1)
+    goToPage(
+        currentPage.value - 1
+    )
 }
 
 /** Следующая server-страница */
 const goNext = () => {
-    if (currentPage.value >= lastPage.value) {
+    if (
+        currentPage.value
+        >= lastPage.value
+    ) {
         return
     }
 
-    goToPage(currentPage.value + 1)
+    goToPage(
+        currentPage.value + 1
+    )
 }
 
 /* ===================== COMMON VIEW ===================== */
@@ -670,59 +976,142 @@ const displayedAssignments = computed(() => {
 
 /** Видео внизу страницы */
 const mainVideosList = computed(() => {
-    return normalizeList(props.mainVideos)
+    return normalizeList(
+        props.mainVideos
+    )
 })
 
 /** Баннеры внизу страницы */
 const mainBannersList = computed(() => {
-    return normalizeList(props.mainBanners)
+    return normalizeList(
+        props.mainBanners
+    )
 })
 </script>
 
 <template>
     <!-- SEO -->
     <Head>
-        <title>{{ seo?.title || t('assignments') }}</title>
+        <title>
+            {{ seo?.title || t('assignments') }}
+        </title>
 
-        <meta name="title" :content="seo?.title || t('assignments')" />
-        <meta name="keywords" :content="seo?.keywords || ''" />
-        <meta name="description" :content="seo?.description || t('assignments')" />
+        <meta
+            name="title"
+            :content="seo?.title || t('assignments')"
+        />
 
-        <meta property="og:title" :content="seo?.title || t('assignments')" />
-        <meta property="og:description" :content="seo?.description || t('assignments')" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" :content="`/${locale}/school/assignments`" />
-        <meta property="og:image" content="" />
-        <meta property="og:locale" :content="locale === 'ru' ? 'ru_RU' : locale" />
+        <meta
+            name="keywords"
+            :content="seo?.keywords || ''"
+        />
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="seo?.title || t('assignments')" />
-        <meta name="twitter:description" :content="seo?.description || t('assignments')" />
-        <meta name="twitter:image" content="" />
+        <meta
+            name="description"
+            :content="seo?.description || t('assignments')"
+        />
 
-        <meta name="DC.title" :content="seo?.title || t('assignments')" />
-        <meta name="DC.description" :content="seo?.description || t('assignments')" />
-        <meta name="DC.identifier" :content="`/${locale}/school/assignments`" />
-        <meta name="DC.language" :content="locale" />
+        <meta
+            property="og:title"
+            :content="seo?.title || t('assignments')"
+        />
+
+        <meta
+            property="og:description"
+            :content="seo?.description || t('assignments')"
+        />
+
+        <meta
+            property="og:type"
+            content="website"
+        />
+
+        <meta
+            property="og:url"
+            :content="`/${locale}/school/assignments`"
+        />
+
+        <meta
+            property="og:image"
+            content=""
+        />
+
+        <meta
+            property="og:locale"
+            :content="locale"
+        />
+
+        <meta
+            name="twitter:card"
+            content="summary_large_image"
+        />
+
+        <meta
+            name="twitter:title"
+            :content="seo?.title || t('assignments')"
+        />
+
+        <meta
+            name="twitter:description"
+            :content="seo?.description || t('assignments')"
+        />
+
+        <meta
+            name="twitter:image"
+            content=""
+        />
+
+        <meta
+            name="DC.title"
+            :content="seo?.title || t('assignments')"
+        />
+
+        <meta
+            name="DC.description"
+            :content="seo?.description || t('assignments')"
+        />
+
+        <meta
+            name="DC.identifier"
+            :content="`/${locale}/school/assignments`"
+        />
+
+        <meta
+            name="DC.language"
+            :content="locale"
+        />
     </Head>
 
-    <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
+    <DefaultLayout
+        :title="title"
+        :can-login="canLogin"
+        :can-register="canRegister"
+    >
         <!-- Шапка -->
         <Navbar />
 
         <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-
+            <main
+                class="mx-auto flex flex-col
+                       lg:flex-row gap-4 tracking-wider"
+            >
                 <!-- Левая колонка -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+                    class="shrink-0 mt-12 lg:mt-28
+                           transition-all duration-300"
+                    :class="
+                        leftCollapsed
+                            ? 'lg:w-10'
+                            : 'lg:w-64'
+                    "
                 >
                     <LeftSidebarSchool
                         :track-tree="trackTree"
                         :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
+                        @collapsed="
+                            leftCollapsed = $event
+                        "
                     />
                 </aside>
 
@@ -731,62 +1120,109 @@ const mainBannersList = computed(() => {
                     <div class="mx-auto max-w-6xl">
 
                         <!-- Хлебные крошки -->
-                        <nav class="text-sm" aria-label="Breadcrumb">
-                            <ol class="flex flex-wrap items-center font-semibold">
+                        <nav
+                            class="text-sm"
+                            aria-label="Breadcrumb"
+                        >
+                            <ol
+                                class="flex flex-wrap
+                                       items-center font-semibold"
+                            >
                                 <li>
                                     <Link
                                         :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
+                                        class="breadcrumb-link
+                                               hover:underline"
                                     >
                                         {{ t('home') }}
                                     </Link>
                                 </li>
 
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
+                                <li>
+                                    <span class="mx-2 breadcrumbs">
+                                        /
+                                    </span>
+                                </li>
 
                                 <li>
                                     <Link
-                                        :href="route('public.schoolTracks.index')"
-                                        class="breadcrumb-link hover:underline"
+                                        :href="
+                                            route(
+                                                'public.schoolTracks.index'
+                                            )
+                                        "
+                                        class="breadcrumb-link
+                                               hover:underline"
                                     >
                                         {{ t('tracks') }}
                                     </Link>
                                 </li>
 
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
+                                <li>
+                                    <span class="mx-2 breadcrumbs">
+                                        /
+                                    </span>
+                                </li>
 
                                 <li>
                                     <Link
-                                        :href="route('public.schoolCourses.index')"
-                                        class="breadcrumb-link hover:underline"
+                                        :href="
+                                            route(
+                                                'public.schoolCourses.index'
+                                            )
+                                        "
+                                        class="breadcrumb-link
+                                               hover:underline"
                                     >
                                         {{ t('courses') }}
                                     </Link>
                                 </li>
 
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
+                                <li>
+                                    <span class="mx-2 breadcrumbs">
+                                        /
+                                    </span>
+                                </li>
 
                                 <li>
                                     <Link
-                                        :href="route('public.schoolModules.index')"
-                                        class="breadcrumb-link hover:underline"
+                                        :href="
+                                            route(
+                                                'public.schoolModules.index'
+                                            )
+                                        "
+                                        class="breadcrumb-link
+                                               hover:underline"
                                     >
                                         {{ t('modules') }}
                                     </Link>
                                 </li>
 
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
+                                <li>
+                                    <span class="mx-2 breadcrumbs">
+                                        /
+                                    </span>
+                                </li>
 
                                 <li>
                                     <Link
-                                        :href="route('public.schoolLessons.index')"
-                                        class="breadcrumb-link hover:underline"
+                                        :href="
+                                            route(
+                                                'public.schoolLessons.index'
+                                            )
+                                        "
+                                        class="breadcrumb-link
+                                               hover:underline"
                                     >
                                         {{ t('lessons') }}
                                     </Link>
                                 </li>
 
-                                <li><span class="mx-2 breadcrumbs">/</span></li>
+                                <li>
+                                    <span class="mx-2 breadcrumbs">
+                                        /
+                                    </span>
+                                </li>
 
                                 <li class="breadcrumbs">
                                     {{ t('assignments') }}
@@ -795,14 +1231,24 @@ const mainBannersList = computed(() => {
                         </nav>
 
                         <!-- Заголовок -->
-                        <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
+                        <div
+                            class="my-3 flex flex-wrap
+                                   items-center justify-center
+                                   gap-3 title"
+                        >
                             <svg
-                                class="shrink-0 h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
+                                class="shrink-0 h-5 w-5
+                                       text-slate-600/85
+                                       dark:text-slate-200/85"
                                 fill="currentColor"
                                 viewBox="0 0 24 24"
                             >
-                                <path d="M15,18v2H9v-2H1v5c0,0.552,0.448,1,1,1h20c0.552,0,1-0.448,1-1v-5H15z"></path>
-                                <path d="M23,4h-6V1c0-0.552-0.448-1-1-1H8C7.448,0,7,0.448,7,1v3H1C0.448,4,0,4.448,0,5v10c0,0.552,0.448,1,1,1h8v-3 h6v3h8c0.552,0,1-0.448,1-1V5C24,4.448,23.552,4,23,4z M15,4H9V2h6V4z"></path>
+                                <path
+                                    d="M15,18v2H9v-2H1v5c0,0.552,0.448,1,1,1h20c0.552,0,1-0.448,1-1v-5H15z"
+                                />
+                                <path
+                                    d="M23,4h-6V1c0-0.552-0.448-1-1-1H8C7.448,0,7,0.448,7,1v3H1C0.448,4,0,4.448,0,5v10c0,0.552,0.448,1,1,1h8v-3 h6v3h8c0.552,0,1-0.448,1-1V5C24,4.448,23.552,4,23,4z M15,4H9V2h6V4z"
+                                />
                             </svg>
 
                             <h1 class="text-2xl font-bold">
@@ -811,8 +1257,11 @@ const mainBannersList = computed(() => {
                         </div>
 
                         <!-- Подзаголовок -->
-                        <div class="my-1 text-sm subtitle text-center">
-                            Просматривайте задания, сроки сдачи и требования в удобном формате.
+                        <div
+                            class="my-1 text-sm
+                                   subtitle text-center"
+                        >
+                            {{ t('assignments') }}
                         </div>
 
                         <!-- Server toolbar -->
@@ -823,7 +1272,7 @@ const mainBannersList = computed(() => {
                             :view-mode="viewMode"
                             :sort-value="sort"
                             :sort-options="assignmentSortOptions"
-                            :default-sort="DEFAULT_SORT"
+                            :default-sort="defaultSort"
                             :found-label="t('assignments')"
                             :search-placeholder="t('searchByName')"
                             @submit="submitSearch"
@@ -840,7 +1289,7 @@ const mainBannersList = computed(() => {
                             :view-mode="viewMode"
                             :sort-value="sort"
                             :sort-options="assignmentSortOptions"
-                            :default-sort="DEFAULT_SORT"
+                            :default-sort="defaultSort"
                             :found-label="t('assignments')"
                             :search-placeholder="t('searchByName')"
                             @reset="resetSearch"
@@ -853,8 +1302,13 @@ const mainBannersList = computed(() => {
 
                         <!-- Нет данных -->
                         <div
-                            v-if="displayedAssignments.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            v-if="
+                                displayedAssignments.length
+                                === 0
+                            "
+                            class="mt-6 text-center
+                                   text-slate-700
+                                   dark:text-slate-300"
                         >
                             {{ t('noData') }}
                         </div>
@@ -862,14 +1316,20 @@ const mainBannersList = computed(() => {
                         <!-- Список -->
                         <div v-else>
                             <AssignmentGrid
-                                v-if="viewMode === 'grid'"
-                                :assignments="displayedAssignments"
+                                v-if="
+                                    viewMode === 'grid'
+                                "
+                                :assignments="
+                                    displayedAssignments
+                                "
                                 :cols="gridCols"
                             />
 
                             <AssignmentRows
                                 v-else
-                                :assignments="displayedAssignments"
+                                :assignments="
+                                    displayedAssignments
+                                "
                             />
                         </div>
 
@@ -887,28 +1347,43 @@ const mainBannersList = computed(() => {
                         <!-- Frontend-пагинация -->
                         <FrontendPagination
                             v-else
-                            v-model:currentPage="frontendCurrentPage"
+                            v-model:currentPage="
+                                frontendCurrentPage
+                            "
                             :items-per-page="perPage"
-                            :total-items="sortedAssignments.length"
+                            :total-items="
+                                sortedAssignments.length
+                            "
                         />
 
                         <!-- Видео -->
-                        <SectionVideoList :videos="mainVideosList" />
+                        <SectionVideoList
+                            :videos="mainVideosList"
+                        />
 
                         <!-- Баннеры -->
-                        <SectionBanners :banners="mainBannersList" />
+                        <SectionBanners
+                            :banners="mainBannersList"
+                        />
                     </div>
                 </div>
 
                 <!-- Правая колонка -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
+                    class="shrink-0 lg:mt-28
+                           transition-all duration-300"
+                    :class="
+                        rightCollapsed
+                            ? 'lg:w-10'
+                            : 'lg:w-64'
+                    "
                 >
                     <RightSidebarSchool
                         :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
+                        @collapsed="
+                            rightCollapsed = $event
+                        "
                     />
                 </aside>
             </main>
@@ -922,8 +1397,12 @@ const mainBannersList = computed(() => {
         <PublicAdminBottomPanel
             v-if="isAdmin"
             setting-key="publicSchoolAssignmentsProcessingMode"
-            :mode="publicSchoolAssignmentsProcessingMode"
-            :use-server-processing="useServerProcessing"
+            :mode="
+                publicSchoolAssignmentsProcessingMode
+            "
+            :use-server-processing="
+                useServerProcessing
+            "
             :total="assignmentsCount"
         />
     </DefaultLayout>

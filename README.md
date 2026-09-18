@@ -564,6 +564,8 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolAssignment/SchoolAssignmentTranslationResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolAssignment/SchoolAssignmentImageResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolAssignment/SchoolAssignmentController --resource` <br>
+`docker exec mark-php-app php artisan make:resource Public/School/SchoolAssignment/SchoolAssignmentResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/School/SchoolAssignment/SchoolAssignmentSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolAssignment/SchoolAssignmentController` <br>
 
 8) creating business logic SchoolCourseSchedule - расписание потоков

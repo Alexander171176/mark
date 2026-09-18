@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Public\Default\School\SchoolAssignment;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\School\SchoolAssignment\SchoolAssignmentResource;
+use App\Http\Resources\Public\School\SchoolAssignment\SchoolAssignmentResource;
+use App\Http\Resources\Public\School\SchoolAssignment\SchoolAssignmentSharedResource;
 use App\Models\Admin\School\SchoolAssignment\SchoolAssignment;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
 use App\Services\SiteSettings\PublicSettingsService;
-use App\Traits\Public\Blog\HasSidebarDataTrait;
+use App\Traits\Public\School\HasSidebarDataTrait;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\School\BuildsTrackTreeTrait;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,13 +31,21 @@ class SchoolAssignmentController extends Controller
         $cmsSeoPage = app(CmsPageResolverService::class)
             ->resolveSeo($request->path());
 
-        $cmsSeoTranslation = $cmsSeoPage?->translationOrFallback();
+        $cmsSeoTranslation =
+            $cmsSeoPage?->translationOrFallback();
 
         $seo = $cmsSeoTranslation
             ? [
-                'title' => $cmsSeoTranslation->meta_title ?: $cmsSeoTranslation->title,
-                'keywords' => $cmsSeoTranslation->meta_keywords,
-                'description' => $cmsSeoTranslation->meta_desc ?: $cmsSeoTranslation->short,
+                'title' =>
+                    $cmsSeoTranslation->meta_title
+                        ?: $cmsSeoTranslation->title,
+
+                'keywords' =>
+                    $cmsSeoTranslation->meta_keywords,
+
+                'description' =>
+                    $cmsSeoTranslation->meta_desc
+                        ?: $cmsSeoTranslation->short,
             ]
             : [
                 'title' => __('Задания'),
@@ -44,82 +53,140 @@ class SchoolAssignmentController extends Controller
                 'description' => '',
             ];
 
-        $settings = app(PublicSettingsService::class);
+        $settings = app(
+            PublicSettingsService::class
+        );
 
         $perPage = $this->resolvePerPage(
             $request,
-            $settings->int('publicSchoolAssignmentsPerPage', 12)
+            $settings->int(
+                'publicSchoolAssignmentsPerPage',
+                12
+            )
         );
 
-        $search = $this->resolveSearch($request);
+        $search = $this->resolveSearch(
+            $request
+        );
+
+        $defaultSort = $settings->string(
+            'publicSchoolAssignmentsDefaultSort',
+            'idDesc'
+        );
 
         $sort = $this->resolveSort(
             $request,
-            $settings->string('publicSchoolAssignmentsDefaultSort', 'idDesc')
+            $defaultSort
         );
 
         $view = $this->resolveView(
             $request,
-            $settings->string('publicSchoolAssignmentsDefaultView', 'grid')
+            $settings->string(
+                'publicSchoolAssignmentsDefaultView',
+                'grid'
+            )
         );
 
-        $processingMode = $this->resolveProcessingMode(
-            $settings->string('publicSchoolAssignmentsProcessingMode', 'server')
-        );
-
-        $assignmentsCount = SchoolAssignment::query()
-            ->forPublic($locale)
-            ->count();
-
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
-                $processingMode,
-                $assignmentsCount,
-                300
+        $processingMode =
+            $this->resolveProcessingMode(
+                $settings->string(
+                    'publicSchoolAssignmentsProcessingMode',
+                    'server'
+                )
             );
 
-        $assignments = $this->getIndexAssignments(
-            locale: $locale,
-            useServerProcessing: $useServerProcessing,
-            perPage: $perPage,
-            sort: $sort,
-            search: $search,
+        /**
+         * Общее количество Public-заданий.
+         */
+        $assignmentsCount =
+            SchoolAssignment::query()
+                ->forPublic()
+                ->count();
+
+        $useServerProcessing =
+            app(ProcessingModeService::class)
+                ->shouldUseServer(
+                    $processingMode,
+                    $assignmentsCount,
+                    300
+                );
+
+        $assignments =
+            $this->getIndexAssignments(
+                locale: $locale,
+                useServerProcessing:
+                $useServerProcessing,
+                perPage: $perPage,
+                sort: $sort,
+                search: $search,
+            );
+
+        /**
+         * Количество найденных заданий.
+         *
+         * В server-режиме total()
+         * уже учитывает Public-поиск.
+         *
+         * Во frontend-режиме поиск
+         * выполняется во Vue.
+         */
+        $assignmentsFound =
+            $useServerProcessing
+                ? $assignments->total()
+                : $assignments->count();
+
+        $assignments =
+            SchoolAssignmentSharedResource::collection(
+                $assignments
+            );
+
+        $trackTree =
+            $this->buildTrackTree($locale);
+
+        $sidebarData =
+            $this->getSidebarData($locale);
+
+        return Inertia::render(
+            'Public/Default/School/SchoolAssignments/Index',
+            [
+                'seo' => $seo,
+
+                'publicSchoolAssignmentsProcessingMode' =>
+                    $processingMode,
+
+                'useServerProcessing' =>
+                    $useServerProcessing,
+
+                'assignments' =>
+                    $assignments,
+
+                'assignmentsCount' =>
+                    $assignmentsCount,
+
+                'assignmentsFound' =>
+                    $assignmentsFound,
+
+                'filters' =>
+                    $this->buildIndexFilters(
+                        $search,
+                        $perPage,
+                        $sort,
+                        $view,
+                        $processingMode
+                    ),
+
+                'defaultSort' =>
+                    $defaultSort,
+
+                'trackTree' =>
+                    $trackTree,
+
+                'locale' =>
+                    $locale,
+
+                ...$sidebarData,
+            ]
         );
-
-        $assignmentsFound = $useServerProcessing
-            ? $assignments->total()
-            : $assignments->count();
-
-        $assignments = SchoolAssignmentResource::collection($assignments);
-
-        $trackTree = $this->buildTrackTree($locale);
-        $sidebarData = $this->getSidebarData($locale);
-
-        return Inertia::render('Public/Default/School/SchoolAssignments/Index', [
-
-            'seo' => $seo,
-
-            'publicSchoolAssignmentsProcessingMode' => $processingMode,
-            'useServerProcessing' => $useServerProcessing,
-
-            'assignments' => $assignments,
-
-            'assignmentsCount' => $assignmentsCount,
-            'assignmentsFound' => $assignmentsFound,
-
-            'filters' => $this->buildIndexFilters(
-                $search,
-                $perPage,
-                $sort,
-                $view,
-                $processingMode
-            ),
-
-            'trackTree' => $trackTree,
-            'locale' => $locale,
-
-            ...$sidebarData,
-        ]);
     }
 
     /** Страница конкретного задания. */
@@ -127,100 +194,255 @@ class SchoolAssignmentController extends Controller
     {
         $locale = app()->getLocale();
 
-        $assignment = SchoolAssignment::query()
-            ->forPublic($locale)
-            ->where('slug', $slug)
-            ->with([
-                'translation',
-                'translations',
-                'images',
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
 
-                'course.translation',
-                'course.translations',
-                'course.images',
-                'course.instructorProfile.translation',
-                'course.instructorProfile.translations',
-                'course.instructorProfile.images',
-                'course.tracks.translation',
-                'course.tracks.translations',
-                'course.hashtags.translation',
-                'course.hashtags.translations',
-
-                'module.translation',
-                'module.translations',
-                'module.images',
-                'module.course.translation',
-                'module.course.translations',
-
-                'lesson.translation',
-                'lesson.translations',
-                'lesson.images',
-                'lesson.module.translation',
-                'lesson.module.translations',
-                'lesson.module.course.translation',
-                'lesson.module.course.translations',
-
-                'instructor.translation',
-                'instructor.translations',
-                'instructor.user:id,name,email',
-                'instructor.images',
-
-                'submissions',
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
             ])
-            ->withCount([
-                'submissions',
-                'images',
-            ])
-            ->firstOrFail();
+        );
 
-        $trackTree = $this->buildTrackTree($locale);
-        $sidebarData = $this->getSidebarData($locale);
+        $assignment =
+            SchoolAssignment::query()
+                ->forPublic()
+                ->where(
+                    'slug',
+                    $slug
+                )
+                ->with([
+                    /**
+                     * Переводы задания:
+                     * текущая локаль + fallback.
+                     */
+                    'translations' =>
+                        fn ($query) =>
+                        $query->whereIn(
+                            'locale',
+                            $locales
+                        ),
 
-        return Inertia::render('Public/Default/School/SchoolAssignments/Show', [
-            'assignment' => new SchoolAssignmentResource($assignment),
+                    /**
+                     * Изображения задания.
+                     */
+                    'images',
 
-            'trackTree' => $trackTree,
-            'locale' => $locale,
+                    /**
+                     * Курс.
+                     */
+                    'course' =>
+                        fn ($query) =>
+                        $query
+                            ->forPublic($locale)
+                            ->with([
+                                'translations' =>
+                                    fn ($translationQuery) =>
+                                    $translationQuery
+                                        ->whereIn(
+                                            'locale',
+                                            $locales
+                                        ),
 
-            ...$sidebarData,
-        ]);
+                                'images',
+                            ]),
+
+                    /**
+                     * Модуль.
+                     */
+                    'module' =>
+                        fn ($query) =>
+                        $query
+                            ->forPublic($locale)
+                            ->with([
+                                'translations' =>
+                                    fn ($translationQuery) =>
+                                    $translationQuery
+                                        ->whereIn(
+                                            'locale',
+                                            $locales
+                                        ),
+
+                                'images',
+                            ]),
+
+                    /**
+                     * Урок.
+                     */
+                    'lesson' =>
+                        fn ($query) =>
+                        $query
+                            ->forPublic($locale)
+                            ->with([
+                                'translations' =>
+                                    fn ($translationQuery) =>
+                                    $translationQuery
+                                        ->whereIn(
+                                            'locale',
+                                            $locales
+                                        ),
+
+                                'images',
+                            ]),
+
+                    /**
+                     * Преподаватель.
+                     */
+                    'instructor' =>
+                        fn ($query) =>
+                        $query
+                            ->forPublic($locale)
+                            ->with([
+                                'translations' =>
+                                    fn ($translationQuery) =>
+                                    $translationQuery
+                                        ->whereIn(
+                                            'locale',
+                                            $locales
+                                        ),
+
+                                'user:id,name',
+
+                                'images',
+                            ]),
+                ])
+                ->withCount([
+                    'submissions',
+                    'images',
+                ])
+                ->firstOrFail();
+
+        $trackTree =
+            $this->buildTrackTree($locale);
+
+        $sidebarData =
+            $this->getSidebarData($locale);
+
+        return Inertia::render(
+            'Public/Default/School/SchoolAssignments/Show',
+            [
+                'assignment' =>
+                    new SchoolAssignmentResource(
+                        $assignment
+                    ),
+
+                'trackTree' =>
+                    $trackTree,
+
+                'locale' =>
+                    $locale,
+
+                ...$sidebarData,
+            ]
+        );
     }
 
-    /** Базовый запрос для списка публичных заданий. */
-    private function indexQuery(string $locale): Builder
-    {
+    /** Базовый запрос Public Index заданий. */
+    private function indexQuery(
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
         return SchoolAssignment::query()
-            ->forPublic($locale)
+            ->forPublic()
             ->with([
-                'translation',
-                'translations',
+                /**
+                 * Переводы задания:
+                 * текущая локаль + fallback.
+                 */
+                'translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                /**
+                 * Изображения задания.
+                 */
                 'images',
 
-                'course.translation',
-                'course.translations',
-                'course.images',
-                'course.instructorProfile.translation',
-                'course.instructorProfile.translations',
-                'course.instructorProfile.images',
+                /**
+                 * Курс.
+                 */
+                'course' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic($locale)
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+                        ]),
 
-                'module.translation',
-                'module.translations',
-                'module.images',
-                'module.course.translation',
-                'module.course.translations',
+                /**
+                 * Модуль.
+                 */
+                'module' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic($locale)
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+                        ]),
 
-                'lesson.translation',
-                'lesson.translations',
-                'lesson.images',
-                'lesson.module.translation',
-                'lesson.module.translations',
-                'lesson.module.course.translation',
-                'lesson.module.course.translations',
+                /**
+                 * Урок.
+                 */
+                'lesson' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic($locale)
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+                        ]),
 
-                'instructor.translation',
-                'instructor.translations',
-                'instructor.user:id,name,email',
-                'instructor.images',
+                /**
+                 * Преподаватель.
+                 */
+                'instructor' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic($locale)
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+
+                            'user:id,name',
+                        ]),
             ])
             ->withCount([
                 'submissions',
@@ -228,7 +450,10 @@ class SchoolAssignmentController extends Controller
             ]);
     }
 
-    /** Получение списка публичных заданий по активному режиму обработки. */
+    /**
+     * Получение списка Public-заданий
+     * по активному режиму обработки.
+     */
     private function getIndexAssignments(
         string $locale,
         bool $useServerProcessing,
@@ -236,18 +461,30 @@ class SchoolAssignmentController extends Controller
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery($locale);
+        $query =
+            $this->indexQuery($locale);
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->publicSearch(
+                    $search,
+                    $locale
+                )
+                ->publicSortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->publicSortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

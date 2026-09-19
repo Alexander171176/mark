@@ -1052,245 +1052,223 @@ const displayedProducts = computed(() => {
         <!-- Шапка -->
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main
-                class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
             >
-                <!-- Левая колонка -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-48 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarMarket
-                        :category-tree="categoryTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
-                    />
-                </aside>
+                    <!-- Левая колонка -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebarMarket
+                            :category-tree="categoryTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="leftCollapsed = $event"
+                        />
+                    </aside>
 
-                <!-- Центральная колонка -->
-                <div class="min-w-0 flex-1 lg:mt-48 pb-6 slate-1">
-                    <div class="w-full">
+                    <!-- Центральная колонка -->
+                    <div class="min-w-0 flex-1 pb-6 slate-1">
+                        <div class="w-full">
 
-                        <article
-                            itemscope
-                            itemtype="https://schema.org/CollectionPage"
-                            :itemid="canonicalUrl"
-                        >
-                            <!-- Мета-данные страницы каталога -->
-                            <meta
-                                itemprop="url"
-                                :content="canonicalUrl"
-                            />
-
-                            <meta
-                                itemprop="name"
-                                :content="seoTitle"
-                            />
-
-                            <meta
-                                v-if="seoDescription"
-                                itemprop="description"
-                                :content="seoDescription"
-                            />
-
-                            <!-- Хлебные крошки -->
-                            <nav
-                                class="text-sm"
-                                aria-label="Breadcrumb"
+                            <article
                                 itemscope
-                                itemtype="https://schema.org/BreadcrumbList"
+                                itemtype="https://schema.org/CollectionPage"
+                                :itemid="canonicalUrl"
                             >
-                                <ol class="flex flex-wrap items-center font-semibold">
-                                    <!-- Главная -->
-                                    <li
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                    >
-                                        <Link
-                                            itemprop="item"
-                                            :href="route('home')"
-                                            class="breadcrumb-link hover:underline"
-                                        >
-                                            <span itemprop="name">
-                                                {{ t('home') }}
-                                            </span>
-                                        </Link>
-
-                                        <meta
-                                            itemprop="position"
-                                            content="1"
-                                        />
-                                    </li>
-
-                                    <!-- Категории -->
-                                    <li
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                    >
-                                        <span class="mx-2 breadcrumbs">
-                                            /
-                                        </span>
-
-                                        <Link
-                                            itemprop="item"
-                                            :href="route('public.marketCategories.index')"
-                                            class="breadcrumb-link hover:underline"
-                                        >
-                                            <span itemprop="name">
-                                                {{ t('categories') }}
-                                            </span>
-                                        </Link>
-
-                                        <meta
-                                            itemprop="position"
-                                            content="2"
-                                        />
-                                    </li>
-
-                                    <!-- Товары -->
-                                    <li
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                        aria-current="page"
-                                    >
-                                        <span class="mx-2 breadcrumbs">
-                                            /
-                                        </span>
-
-                                        <h1
-                                            itemprop="name"
-                                            class="breadcrumbs text-sm font-semibold"
-                                        >
-                                            {{ t('products') }}
-                                        </h1>
-
-                                        <meta
-                                            itemprop="item"
-                                            :content="canonicalUrl"
-                                        />
-
-                                        <meta
-                                            itemprop="position"
-                                            content="3"
-                                        />
-                                    </li>
-                                </ol>
-                            </nav>
-
-                            <!-- Управление списком товаров -->
-                            <EntityListToolbar
-                                :found="useServerProcessing ? productsFound : sortedProducts.length"
-                                :view-mode="viewMode"
-                                :sort-value="sort"
-                                :sort-options="productSortOptions"
-                                :found-label="t('products')"
-                                @update:viewMode="updateViewMode"
-                                @update:sortValue="updateSort"
-                            />
-
-                            <!-- Точка скролла -->
-                            <div ref="scrollTarget"></div>
-
-                            <!-- Нет данных -->
-                            <div
-                                v-if="displayedProducts.length === 0"
-                                class="mt-6 text-center text-slate-700 dark:text-slate-300"
-                            >
-                                {{ t('noData') }}
-                            </div>
-
-                            <!-- Товары -->
-                            <div v-else>
-                                <MarketProductGrid
-                                    v-if="viewMode === 'grid'"
-                                    :products="displayedProducts"
-                                    :cols="productGridCols"
+                                <!-- Мета-данные страницы каталога -->
+                                <meta
+                                    itemprop="url"
+                                    :content="canonicalUrl"
                                 />
 
-                                <MarketProductRows
-                                    v-else
-                                    :products="displayedProducts"
+                                <meta
+                                    itemprop="name"
+                                    :content="seoTitle"
                                 />
-                            </div>
 
-                            <!-- Server-пагинация -->
-                            <Pagination
-                                v-if="useServerProcessing"
-                                :current-page="currentPage"
-                                :last-page="lastPage"
-                                :found="productsFound"
-                                @prev="goPrev"
-                                @next="goNext"
-                                @go="goToPage"
-                            />
+                                <meta
+                                    v-if="seoDescription"
+                                    itemprop="description"
+                                    :content="seoDescription"
+                                />
 
-                            <!-- Frontend-пагинация -->
-                            <FrontendPagination
-                                v-else
-                                v-model:currentPage="frontendCurrentPage"
-                                :items-per-page="perPage"
-                                :total-items="sortedProducts.length"
-                            />
-
-                            <!-- Недавно просмотренные товары -->
-                            <section
-                                v-if="recentlyViewed.length"
-                                class="mt-6"
-                            >
-                                <h2
-                                    class="mb-4 flex items-center justify-center
-                                           text-xl font-semibold
-                                           text-slate-800 dark:text-slate-200"
+                                <!-- Хлебные крошки -->
+                                <nav
+                                    class="text-sm"
+                                    aria-label="Breadcrumb"
+                                    itemscope
+                                    itemtype="https://schema.org/BreadcrumbList"
                                 >
-                                    <span>
-                                        {{ t('recentlyViewedProducts') }}
-                                    </span>
+                                    <ol class="flex flex-wrap items-center font-semibold">
+                                        <!-- Главная -->
+                                        <li
+                                            itemprop="itemListElement"
+                                            itemscope
+                                            itemtype="https://schema.org/ListItem"
+                                            class="flex items-center"
+                                        >
+                                            <Link
+                                                itemprop="item"
+                                                :href="route('home')"
+                                                class="breadcrumb-link hover:underline"
+                                            >
+                                                <span itemprop="name">
+                                                    {{ t('home') }}
+                                                </span>
+                                            </Link>
 
-                                    <span
-                                        class="ml-2 inline-flex min-w-6 items-center justify-center
-                                               rounded-full border border-teal-200
-                                               bg-teal-50 px-2 py-0.5
-                                               text-xs font-bold text-teal-600
-                                               shadow-sm
-                                               dark:border-teal-700/70
-                                               dark:bg-teal-950/60
-                                               dark:text-teal-300"
-                                    >
-                                        {{ recentlyViewed.length }}
-                                    </span>
-                                </h2>
+                                            <meta
+                                                itemprop="position"
+                                                content="1"
+                                            />
+                                        </li>
 
+                                        <!-- Категории -->
+                                        <li
+                                            itemprop="itemListElement"
+                                            itemscope
+                                            itemtype="https://schema.org/ListItem"
+                                            class="flex items-center"
+                                        >
+                                            <span class="mx-2 breadcrumbs">
+                                                /
+                                            </span>
+
+                                            <Link
+                                                itemprop="item"
+                                                :href="route('public.marketCategories.index')"
+                                                class="breadcrumb-link hover:underline"
+                                            >
+                                                <span itemprop="name">
+                                                    {{ t('categories') }}
+                                                </span>
+                                            </Link>
+
+                                            <meta
+                                                itemprop="position"
+                                                content="2"
+                                            />
+                                        </li>
+
+                                        <!-- Товары -->
+                                        <li
+                                            itemprop="itemListElement"
+                                            itemscope
+                                            itemtype="https://schema.org/ListItem"
+                                            class="flex items-center"
+                                            aria-current="page"
+                                        >
+                                            <span class="mx-2 breadcrumbs">
+                                                /
+                                            </span>
+
+                                            <h1
+                                                itemprop="name"
+                                                class="breadcrumbs text-sm font-semibold"
+                                            >
+                                                {{ t('products') }}
+                                            </h1>
+
+                                            <meta
+                                                itemprop="item"
+                                                :content="canonicalUrl"
+                                            />
+
+                                            <meta
+                                                itemprop="position"
+                                                content="3"
+                                            />
+                                        </li>
+                                    </ol>
+                                </nav>
+
+                                <!-- Управление списком товаров -->
+                                <EntityListToolbar
+                                    :found="useServerProcessing ? productsFound : sortedProducts.length"
+                                    :view-mode="viewMode"
+                                    :sort-value="sort"
+                                    :sort-options="productSortOptions"
+                                    :found-label="t('products')"
+                                    @update:viewMode="updateViewMode"
+                                    @update:sortValue="updateSort"
+                                />
+
+                                <!-- Точка скролла -->
+                                <div ref="scrollTarget"></div>
+
+                                <!-- Нет данных -->
+                                <div
+                                    v-if="displayedProducts.length === 0"
+                                    class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                                >
+                                    {{ t('noData') }}
+                                </div>
+
+                                <!-- Товары -->
+                                <div v-else>
+                                    <MarketProductGrid
+                                        v-if="viewMode === 'grid'"
+                                        :products="displayedProducts"
+                                        :cols="productGridCols"
+                                    />
+
+                                    <MarketProductRows
+                                        v-else
+                                        :products="displayedProducts"
+                                    />
+                                </div>
+
+                                <!-- Server-пагинация -->
+                                <Pagination
+                                    v-if="useServerProcessing"
+                                    :current-page="currentPage"
+                                    :last-page="lastPage"
+                                    :found="productsFound"
+                                    @prev="goPrev"
+                                    @next="goNext"
+                                    @go="goToPage"
+                                />
+
+                                <!-- Frontend-пагинация -->
+                                <FrontendPagination
+                                    v-else
+                                    v-model:currentPage="frontendCurrentPage"
+                                    :items-per-page="perPage"
+                                    :total-items="sortedProducts.length"
+                                />
+
+                                <!-- Недавно просмотренные товары -->
                                 <MarketRecentlyViewedProducts
                                     :products="recentlyViewed"
                                     :cols="productGridCols"
                                 />
-                            </section>
-                        </article>
+                            </article>
 
+                        </div>
                     </div>
-                </div>
 
-                <!-- Правая колонка -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-48 transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebarMarket
-                        :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
-                    />
-                </aside>
-            </main>
-        </div>
+                    <!-- Правая колонка -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebarMarket
+                            :collapsed="rightCollapsed"
+                            @collapsed="rightCollapsed = $event"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <!-- Подвал -->
         <FooterBlog />

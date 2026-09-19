@@ -10,14 +10,14 @@ import {
     computed,
     onMounted,
     ref,
-    watch,
+    watch
 } from 'vue'
 
 import {
     Head,
     Link,
     router,
-    usePage,
+    usePage
 } from '@inertiajs/vue3'
 
 import { useI18n } from 'vue-i18n'
@@ -46,7 +46,7 @@ import PublicAdminBottomPanel
 
 const {
     t,
-    locale: i18nLocale,
+    locale: i18nLocale
 } = useI18n()
 
 const page = usePage()
@@ -54,7 +54,7 @@ const page = usePage()
 const props = defineProps({
     locale: {
         type: String,
-        default: '',
+        default: ''
     },
 
     seo: {
@@ -62,13 +62,13 @@ const props = defineProps({
         default: () => ({
             title: '',
             keywords: '',
-            description: '',
-        }),
+            description: ''
+        })
     },
 
     publicBlogVideosProcessingMode: {
         type: String,
-        default: 'server',
+        default: 'server'
     },
 
     /**
@@ -78,63 +78,63 @@ const props = defineProps({
      */
     publicBlogVideosDefaultSort: {
         type: String,
-        default: 'sortAsc',
+        default: 'sortAsc'
     },
 
     useServerProcessing: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     title: {
         type: String,
-        default: '',
+        default: ''
     },
 
     canLogin: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     canRegister: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     rubricTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     videos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     videosCount: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     videosFound: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     filters: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ======================== Helpers ======================== */
@@ -399,14 +399,14 @@ const seoPreview = computed(() => {
                 alt:
                     image?.alt
                     || getVideoTitle(video)
-                    || seoTitle.value,
+                    || seoTitle.value
             }
         }
     }
 
     return {
         url: '',
-        alt: '',
+        alt: ''
     }
 })
 
@@ -468,79 +468,79 @@ const videoSortOptions = [
     {
         value: 'sortAsc',
         label:
-            `${t('sortNumber')} 0→9`,
+            `${t('sortNumber')} 0→9`
     },
     {
         value: 'sortDesc',
         label:
-            `${t('sortNumber')} 9→0`,
+            `${t('sortNumber')} 9→0`
     },
 
     {
         value: 'titleAsc',
         label:
-            `${t('title')} A→Z`,
+            `${t('title')} A→Z`
     },
     {
         value: 'titleDesc',
         label:
-            `${t('title')} Z→A`,
+            `${t('title')} Z→A`
     },
 
     {
         value: 'viewsDesc',
         label:
-            `${t('views')} 9→0`,
+            `${t('views')} 9→0`
     },
     {
         value: 'viewsAsc',
         label:
-            `${t('views')} 0→9`,
+            `${t('views')} 0→9`
     },
 
     {
         value: 'likesDesc',
         label:
-            `${t('likes')} 9→0`,
+            `${t('likes')} 9→0`
     },
     {
         value: 'likesAsc',
         label:
-            `${t('likes')} 0→9`,
+            `${t('likes')} 0→9`
     },
 
     {
         value: 'commentsDesc',
         label:
-            `${t('comments')} 9→0`,
+            `${t('comments')} 9→0`
     },
     {
         value: 'commentsAsc',
         label:
-            `${t('comments')} 0→9`,
+            `${t('comments')} 0→9`
     },
 
     {
         value: 'durationDesc',
         label:
-            `${t('duration')} 9→0`,
+            `${t('duration')} 9→0`
     },
     {
         value: 'durationAsc',
         label:
-            `${t('duration')} 0→9`,
+            `${t('duration')} 0→9`
     },
 
     {
         value: 'publishedAtDesc',
         label:
-            `${t('publishedAt')} ↓`,
+            `${t('publishedAt')} ↓`
     },
     {
         value: 'publishedAtAsc',
         label:
-            `${t('publishedAt')} ↑`,
-    },
+            `${t('publishedAt')} ↑`
+    }
 ]
 
 /* ======================== View mode ======================== */
@@ -628,7 +628,7 @@ const filteredVideos = computed(() => {
             video?.url,
             video?.source_type,
             video?.external_video_id,
-            video?.owner?.name,
+            video?.owner?.name
         ].some(
             (value) =>
                 normalizeText(value)
@@ -652,7 +652,7 @@ const compareText = (a, b) =>
             String(b ?? ''),
             contentLocale.value,
             {
-                sensitivity: 'base',
+                sensitivity: 'base'
             }
         )
 
@@ -676,7 +676,7 @@ const sortedVideos = computed(() => {
     }
 
     const list = [
-        ...filteredVideos.value,
+        ...filteredVideos.value
     ]
 
     switch (sort.value) {
@@ -942,16 +942,16 @@ const frontendCurrentPage =
 
 const {
     targetRef: scrollTarget,
-    scrollToTarget,
+    scrollToTarget
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 watch(
     [
         q,
-        sort,
+        sort
     ],
     () => {
         if (
@@ -1052,12 +1052,12 @@ const reloadVideos = (
                 || undefined,
 
             page:
-            pageNumber,
+            pageNumber
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -1454,290 +1454,295 @@ const videoGridCols = computed(() => {
     >
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main
-                class="mx-auto flex flex-col lg:flex-row
-                       gap-4 tracking-wider"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
             >
-                <!-- ======================== Left sidebar ======================== -->
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
+                >
+                    <!-- ======================== Left sidebar ======================== -->
 
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28
-                           transition-all duration-300
-                           overflow-hidden"
-                    :class="
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0
+                               transition-all duration-300
+                               overflow-hidden"
+                        :class="
                         leftCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <LeftSidebar
-                        :rubric-tree="rubricTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="setLeftCollapsed"
-                    />
-                </aside>
+                    >
+                        <LeftSidebar
+                            :rubric-tree="rubricTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="setLeftCollapsed"
+                        />
+                    </aside>
 
-                <!-- ======================== Content ======================== -->
+                    <!-- ======================== Content ======================== -->
 
-                <article
-                    itemscope
-                    itemtype="https://schema.org/CollectionPage"
-                    :itemid="canonicalUrl"
-                    class="w-full lg:mt-28 pb-6
+                    <article
+                        itemscope
+                        itemtype="https://schema.org/CollectionPage"
+                        :itemid="canonicalUrl"
+                        class="w-full pb-6
                            slate-1 min-w-0"
-                >
-                    <meta
-                        itemprop="name"
-                        :content="seoTitle"
                     >
-
-                    <meta
-                        v-if="seoDescription"
-                        itemprop="description"
-                        :content="seoDescription"
-                    >
-
-                    <meta
-                        v-if="seoKeywords"
-                        itemprop="keywords"
-                        :content="seoKeywords"
-                    >
-
-                    <meta
-                        itemprop="url"
-                        :content="canonicalUrl"
-                    >
-
-                    <meta
-                        itemprop="inLanguage"
-                        :content="contentLocale"
-                    >
-
-                    <div class="mx-auto max-w-6xl">
-                        <!-- ======================== Breadcrumbs ======================== -->
-
-                        <nav
-                            class="text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
+                        <meta
+                            itemprop="name"
+                            :content="seoTitle"
                         >
-                            <ol
-                                class="flex flex-wrap
-                                       items-center font-semibold"
+
+                        <meta
+                            v-if="seoDescription"
+                            itemprop="description"
+                            :content="seoDescription"
+                        >
+
+                        <meta
+                            v-if="seoKeywords"
+                            itemprop="keywords"
+                            :content="seoKeywords"
+                        >
+
+                        <meta
+                            itemprop="url"
+                            :content="canonicalUrl"
+                        >
+
+                        <meta
+                            itemprop="inLanguage"
+                            :content="contentLocale"
+                        >
+
+                        <div class="mx-auto max-w-6xl">
+                            <!-- ======================== Breadcrumbs ======================== -->
+
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
                             >
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
+                                <ol
+                                    class="flex flex-wrap
+                                       items-center font-semibold"
                                 >
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('home')"
-                                        class="breadcrumb-link
-                                               hover:underline"
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('home')"
+                                            class="breadcrumb-link
+                                               hover:underline"
+                                        >
                                         <span itemprop="name">
                                             {{ t('home') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="1"
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        >
+                                    </li>
+
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
                                     >
-                                </li>
-
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                    aria-current="page"
-                                >
                                     <span
                                         class="mx-2 breadcrumbs"
                                     >
                                         /
                                     </span>
 
-                                    <span
-                                        itemprop="name"
-                                        class="breadcrumbs"
-                                    >
+                                        <span
+                                            itemprop="name"
+                                            class="breadcrumbs"
+                                        >
                                         {{ t('videos') }}
                                     </span>
 
-                                    <meta
-                                        itemprop="item"
-                                        :content="canonicalUrl"
-                                    >
+                                        <meta
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        >
 
-                                    <meta
-                                        itemprop="position"
-                                        content="2"
-                                    >
-                                </li>
-                            </ol>
-                        </nav>
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        >
+                                    </li>
+                                </ol>
+                            </nav>
 
-                        <!-- ======================== Header ======================== -->
+                            <!-- ======================== Header ======================== -->
 
-                        <div
-                            class="my-3 flex flex-wrap
+                            <div
+                                class="my-3 flex flex-wrap
                                    items-center justify-center
                                    gap-2 title"
-                        >
-                            <svg
-                                class="h-5 w-5"
-                                fill="currentColor"
-                                viewBox="0 0 576 512"
-                                aria-hidden="true"
                             >
-                                <path
-                                    d="M336.2 64H47.8C21.4 64 0 85.4 0 111.8v288.4C0 426.6 21.4 448 47.8 448h288.4c26.4 0 47.8-21.4 47.8-47.8V111.8c0-26.4-21.4-47.8-47.8-47.8zm189.4 37.7L416 177.3v157.4l109.6 75.5c21.2 14.6 50.4-.3 50.4-25.8V127.5c0-25.4-29.1-40.4-50.4-25.8z"
-                                />
-                            </svg>
+                                <svg
+                                    class="h-5 w-5"
+                                    fill="currentColor"
+                                    viewBox="0 0 576 512"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M336.2 64H47.8C21.4 64 0 85.4 0 111.8v288.4C0 426.6 21.4 448 47.8 448h288.4c26.4 0 47.8-21.4 47.8-47.8V111.8c0-26.4-21.4-47.8-47.8-47.8zm189.4 37.7L416 177.3v157.4l109.6 75.5c21.2 14.6 50.4-.3 50.4-25.8V127.5c0-25.4-29.1-40.4-50.4-25.8z"
+                                    />
+                                </svg>
 
-                            <h1
-                                itemprop="name"
-                                class="text-2xl font-bold"
-                            >
-                                {{ t('videos') }}
-                            </h1>
-                        </div>
+                                <h1
+                                    itemprop="name"
+                                    class="text-2xl font-bold"
+                                >
+                                    {{ t('videos') }}
+                                </h1>
+                            </div>
 
-                        <div
-                            v-if="seoDescription"
-                            itemprop="description"
-                            class="my-1 text-sm
+                            <div
+                                v-if="seoDescription"
+                                itemprop="description"
+                                class="my-1 text-sm
                                    subtitle text-center"
-                        >
-                            {{ seoDescription }}
-                        </div>
+                            >
+                                {{ seoDescription }}
+                            </div>
 
-                        <!-- ======================== Toolbar ======================== -->
+                            <!-- ======================== Toolbar ======================== -->
 
-                        <EntityPageToolbar
-                            v-model="q"
-                            v-model:view-mode="viewMode"
-                            v-model:sort-value="sort"
-                            :found="effectiveVideosFound"
-                            :sort-options="videoSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('videos')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="applyFilters"
-                            @reset="resetFilters"
-                        />
+                            <EntityPageToolbar
+                                v-model="q"
+                                v-model:view-mode="viewMode"
+                                v-model:sort-value="sort"
+                                :found="effectiveVideosFound"
+                                :sort-options="videoSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('videos')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="applyFilters"
+                                @reset="resetFilters"
+                            />
 
-                        <div
-                            ref="scrollTarget"
-                        ></div>
+                            <div
+                                ref="scrollTarget"
+                            ></div>
 
-                        <!-- ======================== Empty ======================== -->
+                            <!-- ======================== Empty ======================== -->
 
-                        <div
-                            v-if="
+                            <div
+                                v-if="
                                 displayedVideos.length
                                 === 0
                             "
-                            class="mt-6 text-center
+                                class="mt-6 text-center
                                    text-slate-700
                                    dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
+                            >
+                                {{ t('noData') }}
+                            </div>
 
-                        <!-- ======================== Videos ======================== -->
+                            <!-- ======================== Videos ======================== -->
 
-                        <div v-else>
-                            <VideoGrid
-                                v-if="
+                            <div v-else>
+                                <VideoGrid
+                                    v-if="
                                     viewMode
                                     === 'grid'
                                 "
-                                itemprop="mainEntity"
-                                :videos="displayedVideos"
-                                :cols="videoGridCols"
-                            />
+                                    itemprop="mainEntity"
+                                    :videos="displayedVideos"
+                                    :cols="videoGridCols"
+                                />
 
-                            <VideoRows
-                                v-else
-                                itemprop="mainEntity"
-                                :videos="displayedVideos"
-                            />
-                        </div>
+                                <VideoRows
+                                    v-else
+                                    itemprop="mainEntity"
+                                    :videos="displayedVideos"
+                                />
+                            </div>
 
-                        <!-- ======================== Server pagination ======================== -->
+                            <!-- ======================== Server pagination ======================== -->
 
-                        <Pagination
-                            v-if="
+                            <Pagination
+                                v-if="
                                 useServerProcessing
                                 && lastPage > 1
                             "
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="videosFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
-                        />
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="videosFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
+                            />
 
-                        <!-- ======================== Frontend pagination ======================== -->
+                            <!-- ======================== Frontend pagination ======================== -->
 
-                        <FrontendPagination
-                            v-if="
+                            <FrontendPagination
+                                v-if="
                                 !useServerProcessing
                                 && effectiveVideosFound
                                     > perPage
                             "
-                            v-model:currentPage="
+                                v-model:currentPage="
                                 frontendCurrentPage
                             "
-                            :items-per-page="perPage"
-                            :total-items="
+                                :items-per-page="perPage"
+                                :total-items="
                                 effectiveVideosFound
                             "
-                        />
+                            />
 
-                        <!-- ======================== Main videos ======================== -->
+                            <!-- ======================== Main videos ======================== -->
 
-                        <SectionVideoList
-                            :videos="mainVideos"
-                        />
+                            <SectionVideoList
+                                :videos="mainVideos"
+                            />
 
-                        <!-- ======================== Main banners ======================== -->
+                            <!-- ======================== Main banners ======================== -->
 
-                        <SectionBanners
-                            :banners="mainBanners"
-                        />
-                    </div>
-                </article>
+                            <SectionBanners
+                                :banners="mainBanners"
+                            />
+                        </div>
+                    </article>
 
-                <!-- ======================== Right sidebar ======================== -->
+                    <!-- ======================== Right sidebar ======================== -->
 
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0
                            transition-all duration-300
                            overflow-hidden"
-                    :class="
+                        :class="
                         rightCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <RightSidebar
-                        :collapsed="rightCollapsed"
-                        @collapsed="setRightCollapsed"
-                    />
-                </aside>
-            </main>
-        </div>
+                    >
+                        <RightSidebar
+                            :collapsed="rightCollapsed"
+                            @collapsed="setRightCollapsed"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

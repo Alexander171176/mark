@@ -45,23 +45,23 @@ const props = defineProps({
 
     lesson: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     trackTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ======================== Helpers ======================== */
@@ -215,7 +215,7 @@ const lessonRouteUrl = computed(() => {
     if (!lessonData.value?.slug) return ''
 
     return route('public.schoolLessons.show', {
-        slug: lessonData.value.slug,
+        slug: lessonData.value.slug
     })
 })
 
@@ -240,7 +240,7 @@ const courseUrl = computed(() => {
 
     return absoluteUrl(
         route('public.schoolCourses.show', {
-            slug: courseData.value.slug,
+            slug: courseData.value.slug
         })
     )
 })
@@ -256,7 +256,7 @@ const moduleUrl = computed(() => {
     return absoluteUrl(
         route('public.schoolModules.show', {
             courseSlug: courseData.value.slug,
-            slug: moduleData.value.slug,
+            slug: moduleData.value.slug
         })
     )
 })
@@ -279,7 +279,7 @@ const lessonSchema = computed(() => {
         '@type': 'LearningResource',
         name: lessonTitle.value || seoTitle.value,
         url: canonicalUrl.value || lessonRouteUrl.value,
-        learningResourceType: 'Lesson',
+        learningResourceType: 'Lesson'
     }
 
     if (contentLocale.value) {
@@ -326,7 +326,7 @@ const lessonSchema = computed(() => {
     if (courseData.value?.translation?.title) {
         schema.isPartOf = {
             '@type': 'Course',
-            name: courseData.value.translation.title,
+            name: courseData.value.translation.title
         }
 
         if (courseUrl.value) {
@@ -347,9 +347,9 @@ const lessonSchema = computed(() => {
         interactions.push({
             '@type': 'InteractionCounter',
             interactionType: {
-                '@type': 'ViewAction',
+                '@type': 'ViewAction'
             },
-            userInteractionCount: views,
+            userInteractionCount: views
         })
     }
 
@@ -357,9 +357,9 @@ const lessonSchema = computed(() => {
         interactions.push({
             '@type': 'InteractionCounter',
             interactionType: {
-                '@type': 'LikeAction',
+                '@type': 'LikeAction'
             },
-            userInteractionCount: likes,
+            userInteractionCount: likes
         })
     }
 
@@ -380,14 +380,14 @@ const breadcrumbSchema = computed(() => {
         '@type': 'ListItem',
         position: position++,
         name: t('home'),
-        item: homeUrl.value,
+        item: homeUrl.value
     })
 
     items.push({
         '@type': 'ListItem',
         position: position++,
         name: t('lessons'),
-        item: lessonsIndexUrl.value,
+        item: lessonsIndexUrl.value
     })
 
     if (
@@ -398,7 +398,7 @@ const breadcrumbSchema = computed(() => {
             '@type': 'ListItem',
             position: position++,
             name: courseData.value.translation.title,
-            item: courseUrl.value,
+            item: courseUrl.value
         })
     }
 
@@ -410,7 +410,7 @@ const breadcrumbSchema = computed(() => {
             '@type': 'ListItem',
             position: position++,
             name: moduleData.value.translation.title,
-            item: moduleUrl.value,
+            item: moduleUrl.value
         })
     }
 
@@ -418,13 +418,13 @@ const breadcrumbSchema = computed(() => {
         '@type': 'ListItem',
         position,
         name: lessonTitle.value || seoTitle.value,
-        item: canonicalUrl.value || lessonRouteUrl.value,
+        item: canonicalUrl.value || lessonRouteUrl.value
     })
 
     return {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
-        itemListElement: items,
+        itemListElement: items
     }
 })
 
@@ -479,7 +479,7 @@ const translateAccessType = (value) => {
     const map = {
         free: 'free',
         paid: 'paid',
-        preview: 'preview',
+        preview: 'preview'
     }
 
     return map[normalized]
@@ -618,311 +618,318 @@ const translateAccessType = (value) => {
     >
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-
-                <!-- ======================== Left sidebar ======================== -->
-
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 pl-3 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        @collapsed="leftCollapsed = $event"
-                    />
-                </aside>
 
-                <!-- ======================== Content ======================== -->
+                    <!-- ======================== Left sidebar ======================== -->
 
-                <section class="w-full lg:mt-28 pb-6 slate-1 min-w-0">
-                    <div class="mx-auto max-w-6xl">
-                        <article
-                            class="selection:bg-red-400 selection:text-white"
-                            itemscope
-                            itemtype="https://schema.org/LearningResource"
-                        >
-                            <meta
-                                v-if="canonicalUrl"
-                                itemprop="url"
-                                :content="canonicalUrl"
-                            />
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 pl-3 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            @collapsed="leftCollapsed = $event"
+                        />
+                    </aside>
 
-                            <meta
-                                v-if="contentLocale"
-                                itemprop="inLanguage"
-                                :content="contentLocale"
-                            />
+                    <!-- ======================== Content ======================== -->
 
-                            <meta
-                                itemprop="learningResourceType"
-                                content="Lesson"
-                            />
-
-                            <meta
-                                v-if="lessonData.published_at"
-                                itemprop="datePublished"
-                                :content="lessonData.published_at"
-                            />
-
-                            <meta
-                                v-if="schemaDuration"
-                                itemprop="timeRequired"
-                                :content="schemaDuration"
-                            />
-
-                            <meta
-                                v-if="lessonData.difficulty !== null
-                                && lessonData.difficulty !== undefined"
-                                itemprop="educationalLevel"
-                                :content="String(lessonData.difficulty)"
-                            />
-
-                            <!-- ======================== Breadcrumbs ======================== -->
-
-                            <nav
-                                class="text-sm mb-3"
-                                aria-label="Breadcrumb"
+                    <section class="w-full pb-6 slate-1 min-w-0">
+                        <div class="mx-auto max-w-6xl">
+                            <article
+                                class="selection:bg-red-400 selection:text-white"
+                                itemscope
+                                itemtype="https://schema.org/LearningResource"
                             >
-                                <ol class="flex flex-wrap items-center font-semibold">
-                                    <li>
-                                        <Link
-                                            :href="route('home')"
-                                            class="breadcrumb-link hover:underline"
-                                        >
-                                            {{ t('home') }}
-                                        </Link>
-                                    </li>
+                                <meta
+                                    v-if="canonicalUrl"
+                                    itemprop="url"
+                                    :content="canonicalUrl"
+                                />
 
-                                    <li>
-                                        <span class="mx-2 breadcrumbs">/</span>
-                                    </li>
+                                <meta
+                                    v-if="contentLocale"
+                                    itemprop="inLanguage"
+                                    :content="contentLocale"
+                                />
 
-                                    <li>
-                                        <Link
-                                            :href="route('public.schoolLessons.index')"
-                                            class="breadcrumb-link hover:underline"
-                                        >
-                                            {{ t('lessons') }}
-                                        </Link>
-                                    </li>
+                                <meta
+                                    itemprop="learningResourceType"
+                                    content="Lesson"
+                                />
 
-                                    <!-- Course -->
+                                <meta
+                                    v-if="lessonData.published_at"
+                                    itemprop="datePublished"
+                                    :content="lessonData.published_at"
+                                />
 
-                                    <template v-if="courseData?.slug">
-                                        <li>
-                                            <span class="mx-2 breadcrumbs">/</span>
-                                        </li>
+                                <meta
+                                    v-if="schemaDuration"
+                                    itemprop="timeRequired"
+                                    :content="schemaDuration"
+                                />
 
+                                <meta
+                                    v-if="lessonData.difficulty !== null
+                                && lessonData.difficulty !== undefined"
+                                    itemprop="educationalLevel"
+                                    :content="String(lessonData.difficulty)"
+                                />
+
+                                <!-- ======================== Breadcrumbs ======================== -->
+
+                                <nav
+                                    class="text-sm mb-3"
+                                    aria-label="Breadcrumb"
+                                >
+                                    <ol class="flex flex-wrap items-center font-semibold">
                                         <li>
                                             <Link
-                                                :href="route('public.schoolCourses.show', {
-                                                    slug: courseData.slug,
-                                                })"
+                                                :href="route('home')"
                                                 class="breadcrumb-link hover:underline"
                                             >
-                                                {{ courseData.translation?.title }}
+                                                {{ t('home') }}
                                             </Link>
                                         </li>
-                                    </template>
 
-                                    <!-- Module -->
-
-                                    <template
-                                        v-if="courseData?.slug && moduleData?.slug"
-                                    >
                                         <li>
                                             <span class="mx-2 breadcrumbs">/</span>
                                         </li>
 
                                         <li>
                                             <Link
-                                                :href="route('public.schoolModules.show', {
+                                                :href="route('public.schoolLessons.index')"
+                                                class="breadcrumb-link hover:underline"
+                                            >
+                                                {{ t('lessons') }}
+                                            </Link>
+                                        </li>
+
+                                        <!-- Course -->
+
+                                        <template v-if="courseData?.slug">
+                                            <li>
+                                                <span class="mx-2 breadcrumbs">/</span>
+                                            </li>
+
+                                            <li>
+                                                <Link
+                                                    :href="route('public.schoolCourses.show', {
+                                                    slug: courseData.slug,
+                                                })"
+                                                    class="breadcrumb-link hover:underline"
+                                                >
+                                                    {{ courseData.translation?.title }}
+                                                </Link>
+                                            </li>
+                                        </template>
+
+                                        <!-- Module -->
+
+                                        <template
+                                            v-if="courseData?.slug && moduleData?.slug"
+                                        >
+                                            <li>
+                                                <span class="mx-2 breadcrumbs">/</span>
+                                            </li>
+
+                                            <li>
+                                                <Link
+                                                    :href="route('public.schoolModules.show', {
                                                     courseSlug: courseData.slug,
                                                     slug: moduleData.slug,
                                                 })"
-                                                class="breadcrumb-link hover:underline"
-                                            >
-                                                {{ moduleData.translation?.title }}
-                                            </Link>
+                                                    class="breadcrumb-link hover:underline"
+                                                >
+                                                    {{ moduleData.translation?.title }}
+                                                </Link>
+                                            </li>
+                                        </template>
+
+                                        <!-- Lesson -->
+
+                                        <li>
+                                            <span class="mx-2 breadcrumbs">/</span>
                                         </li>
-                                    </template>
 
-                                    <!-- Lesson -->
+                                        <li
+                                            class="breadcrumbs"
+                                            aria-current="page"
+                                        >
+                                            {{ translation.title }}
+                                        </li>
+                                    </ol>
+                                </nav>
 
-                                    <li>
-                                        <span class="mx-2 breadcrumbs">/</span>
-                                    </li>
-
-                                    <li
-                                        class="breadcrumbs"
-                                        aria-current="page"
-                                    >
-                                        {{ translation.title }}
-                                    </li>
-                                </ol>
-                            </nav>
-
-                            <!-- ======================== Title ======================== -->
-
-                            <div
-                                class="flex flex-wrap items-center justify-center
-                                       gap-3 title my-3"
-                            >
-                                <h1
-                                    class="text-2xl font-bold"
-                                    itemprop="name"
-                                >
-                                    {{ lessonTitle }}
-                                </h1>
+                                <!-- ======================== Title ======================== -->
 
                                 <div
-                                    v-if="lessonData.views > 0"
-                                    :title="t('views')"
-                                    class="flex items-center justify-center gap-1"
-                                    itemprop="interactionStatistic"
-                                    itemscope
-                                    itemtype="https://schema.org/InteractionCounter"
+                                    class="flex flex-wrap items-center justify-center
+                                       gap-3 title my-3"
                                 >
-                                    <meta
-                                        itemprop="interactionType"
-                                        content="https://schema.org/ViewAction"
-                                    />
+                                    <h1
+                                        class="text-2xl font-bold"
+                                        itemprop="name"
+                                    >
+                                        {{ lessonTitle }}
+                                    </h1>
 
-                                    <meta
-                                        itemprop="userInteractionCount"
-                                        :content="lessonData.views"
-                                    />
+                                    <div
+                                        v-if="lessonData.views > 0"
+                                        :title="t('views')"
+                                        class="flex items-center justify-center gap-1"
+                                        itemprop="interactionStatistic"
+                                        itemscope
+                                        itemtype="https://schema.org/InteractionCounter"
+                                    >
+                                        <meta
+                                            itemprop="interactionType"
+                                            content="https://schema.org/ViewAction"
+                                        />
 
-                                    <!-- существующая SVG и число просмотров -->
+                                        <meta
+                                            itemprop="userInteractionCount"
+                                            :content="lessonData.views"
+                                        />
+
+                                        <!-- существующая SVG и число просмотров -->
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- ======================== Subtitle ======================== -->
+                                <!-- ======================== Subtitle ======================== -->
 
-                            <div
-                                v-if="translation.subtitle"
-                                class="mt-1 mb-3 text-sm subtitle text-center"
-                            >
-                                {{ translation.subtitle }}
-                            </div>
-
-                            <!-- ======================== Images ======================== -->
-
-                            <div
-                                v-if="hasLessonImages"
-                                class="flex items-center justify-center"
-                            >
-                                <div class="w-full">
-                                    <ImageGalleryMain
-                                        :images="lessonImages"
-                                        :alt="lessonTitle"
-                                        itemprop="image"
-                                        loading="eager"
-                                        fetchpriority="high"
-                                        rounded-class="rounded-lg"
-                                        shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
-                                        img-class="w-full h-full object-cover"
-                                    />
+                                <div
+                                    v-if="translation.subtitle"
+                                    class="mt-1 mb-3 text-sm subtitle text-center"
+                                >
+                                    {{ translation.subtitle }}
                                 </div>
-                            </div>
 
-                            <!-- ======================== Lesson info ======================== -->
+                                <!-- ======================== Images ======================== -->
 
-                            <div
-                                class="my-4 flex flex-wrap items-center justify-center
+                                <div
+                                    v-if="hasLessonImages"
+                                    class="flex items-center justify-center"
+                                >
+                                    <div class="w-full">
+                                        <ImageGalleryMain
+                                            :images="lessonImages"
+                                            :alt="lessonTitle"
+                                            itemprop="image"
+                                            loading="eager"
+                                            fetchpriority="high"
+                                            rounded-class="rounded-lg"
+                                            shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
+                                            img-class="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- ======================== Lesson info ======================== -->
+
+                                <div
+                                    class="my-4 flex flex-wrap items-center justify-center
                                        gap-3 text-sm text-slate-600
                                        dark:text-slate-300"
-                            >
-                                <!-- Course -->
+                                >
+                                    <!-- Course -->
 
-                                <Link
-                                    v-if="courseData?.slug"
-                                    :href="route('public.schoolCourses.show', {
+                                    <Link
+                                        v-if="courseData?.slug"
+                                        :href="route('public.schoolCourses.show', {
                                         slug: courseData.slug,
                                     })"
-                                    class="rounded-sm border border-gray-400
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1
                                            px-3 py-1 hover:text-blue-600
                                            dark:hover:text-blue-400"
-                                >
-                                    <svg
-                                        class="shrink-0 h-3 w-3
-                                               text-sky-600/85 dark:text-sky-200/85"
-                                        fill="currentColor"
-                                        viewBox="0 0 448 512"
                                     >
-                                        <path
-                                            d="M318.38 208h-39.09c-1.49 27.03-6.54 51.35-14.21 70.41 27.71-13.24 48.02-39.19 53.3-70.41zm0-32c-5.29-31.22-25.59-57.17-53.3-70.41 7.68 19.06 12.72 43.38 14.21 70.41h39.09zM224 97.31c-7.69 7.45-20.77 34.42-23.43 78.69h46.87c-2.67-44.26-15.75-71.24-23.44-78.69zm-41.08 8.28c-27.71 13.24-48.02 39.19-53.3 70.41h39.09c1.49-27.03 6.53-51.35 14.21-70.41zm0 172.82c-7.68-19.06-12.72-43.38-14.21-70.41h-39.09c5.28 31.22 25.59 57.17 53.3 70.41zM247.43 208h-46.87c2.66 44.26 15.74 71.24 23.43 78.69 7.7-7.45 20.78-34.43 23.44-78.69zM448 358.4V25.6c0-16-9.6-25.6-25.6-25.6H96C41.6 0 0 41.6 0 96v320c0 54.4 41.6 96 96 96h326.4c12.8 0 25.6-9.6 25.6-25.6v-16c0-6.4-3.2-12.8-9.6-19.2-3.2-16-3.2-60.8 0-73.6 6.4-3.2 9.6-9.6 9.6-19.2zM224 64c70.69 0 128 57.31 128 128s-57.31 128-128 128S96 262.69 96 192 153.31 64 224 64zm160 384H96c-19.2 0-32-12.8-32-32s16-32 32-32h288v64z"
-                                        />
-                                    </svg>
+                                        <svg
+                                            class="shrink-0 h-3 w-3
+                                               text-sky-600/85 dark:text-sky-200/85"
+                                            fill="currentColor"
+                                            viewBox="0 0 448 512"
+                                        >
+                                            <path
+                                                d="M318.38 208h-39.09c-1.49 27.03-6.54 51.35-14.21 70.41 27.71-13.24 48.02-39.19 53.3-70.41zm0-32c-5.29-31.22-25.59-57.17-53.3-70.41 7.68 19.06 12.72 43.38 14.21 70.41h39.09zM224 97.31c-7.69 7.45-20.77 34.42-23.43 78.69h46.87c-2.67-44.26-15.75-71.24-23.44-78.69zm-41.08 8.28c-27.71 13.24-48.02 39.19-53.3 70.41h39.09c1.49-27.03 6.53-51.35 14.21-70.41zm0 172.82c-7.68-19.06-12.72-43.38-14.21-70.41h-39.09c5.28 31.22 25.59 57.17 53.3 70.41zM247.43 208h-46.87c2.66 44.26 15.74 71.24 23.43 78.69 7.7-7.45 20.78-34.43 23.44-78.69zM448 358.4V25.6c0-16-9.6-25.6-25.6-25.6H96C41.6 0 0 41.6 0 96v320c0 54.4 41.6 96 96 96h326.4c12.8 0 25.6-9.6 25.6-25.6v-16c0-6.4-3.2-12.8-9.6-19.2-3.2-16-3.2-60.8 0-73.6 6.4-3.2 9.6-9.6 9.6-19.2zM224 64c70.69 0 128 57.31 128 128s-57.31 128-128 128S96 262.69 96 192 153.31 64 224 64zm160 384H96c-19.2 0-32-12.8-32-32s16-32 32-32h288v64z"
+                                            />
+                                        </svg>
 
-                                    {{ t('course') }}:
-                                    {{ courseData.translation?.title }}
-                                </Link>
+                                        {{ t('course') }}:
+                                        {{ courseData.translation?.title }}
+                                    </Link>
 
-                                <!-- Module -->
+                                    <!-- Module -->
 
-                                <Link
-                                    v-if="courseData?.slug && moduleData?.slug"
-                                    :href="route('public.schoolModules.show', {
+                                    <Link
+                                        v-if="courseData?.slug && moduleData?.slug"
+                                        :href="route('public.schoolModules.show', {
                                         courseSlug: courseData.slug,
                                         slug: moduleData.slug,
                                     })"
-                                    class="rounded-sm border border-gray-400
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1
                                            px-3 py-1 hover:text-blue-600
                                            dark:hover:text-blue-400"
-                                >
-                                    <svg
-                                        class="shrink-0 h-3 w-3
-                                               text-teal-600/85 dark:text-teal-200/85"
-                                        fill="currentColor"
-                                        viewBox="0 0 24 24"
                                     >
-                                        <rect
-                                            x="1"
-                                            y="1"
-                                            width="10"
-                                            height="10"
-                                            rx="2"
-                                        />
+                                        <svg
+                                            class="shrink-0 h-3 w-3
+                                               text-teal-600/85 dark:text-teal-200/85"
+                                            fill="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <rect
+                                                x="1"
+                                                y="1"
+                                                width="10"
+                                                height="10"
+                                                rx="2"
+                                            />
 
-                                        <path
-                                            class="fill-current text-teal-400"
-                                            d="M23.428,4.618,19.381,.572a1.957,1.957,0,0,0-2.762,0L12.572,4.618a1.959,1.959,0,0,0,0,2.764l4.047,4.047a1.957,1.957,0,0,0,2.762,0l4.047-4.046A1.959,1.959,0,0,0,23.428,4.618Z"
-                                        />
+                                            <path
+                                                class="fill-current text-teal-400"
+                                                d="M23.428,4.618,19.381,.572a1.957,1.957,0,0,0-2.762,0L12.572,4.618a1.959,1.959,0,0,0,0,2.764l4.047,4.047a1.957,1.957,0,0,0,2.762,0l4.047-4.046A1.959,1.959,0,0,0,23.428,4.618Z"
+                                            />
 
-                                        <rect
-                                            x="13"
-                                            y="13"
-                                            width="10"
-                                            height="10"
-                                            rx="2"
-                                        />
+                                            <rect
+                                                x="13"
+                                                y="13"
+                                                width="10"
+                                                height="10"
+                                                rx="2"
+                                            />
 
-                                        <rect
-                                            x="1"
-                                            y="13"
-                                            width="10"
-                                            height="10"
-                                            rx="2"
-                                        />
-                                    </svg>
+                                            <rect
+                                                x="1"
+                                                y="13"
+                                                width="10"
+                                                height="10"
+                                                rx="2"
+                                            />
+                                        </svg>
 
-                                    {{ t('module') }}:
-                                    {{ moduleData.translation?.title }}
-                                </Link>
+                                        {{ t('module') }}:
+                                        {{ moduleData.translation?.title }}
+                                    </Link>
 
-                                <!-- Access -->
+                                    <!-- Access -->
 
-                                <span
-                                    v-if="lessonData.access_type"
-                                    class="rounded-sm border border-gray-400
+                                    <span
+                                        v-if="lessonData.access_type"
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1
                                            px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         class="h-3 w-3 text-blue-600
                                                dark:text-blue-400"
@@ -938,14 +945,14 @@ const translateAccessType = (value) => {
                                     {{ translateAccessType(lessonData.access_type) }}
                                 </span>
 
-                                <!-- Rating -->
+                                    <!-- Rating -->
 
-                                <span
-                                    v-if="lessonData.rating_avg"
-                                    class="rounded-sm border border-gray-400
+                                    <span
+                                        v-if="lessonData.rating_avg"
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1
                                            px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         viewBox="0 0 24 24"
                                         class="h-3 w-3 text-red-400
@@ -961,14 +968,14 @@ const translateAccessType = (value) => {
                                     {{ Number(lessonData.rating_avg).toFixed(1) }}
                                 </span>
 
-                                <!-- Duration -->
+                                    <!-- Duration -->
 
-                                <span
-                                    v-if="lessonData.duration"
-                                    class="rounded-sm border border-gray-400
+                                    <span
+                                        v-if="lessonData.duration"
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1
                                            px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         class="w-3 h-3 text-blue-700
                                                dark:text-blue-300"
@@ -984,86 +991,86 @@ const translateAccessType = (value) => {
                                     {{ t('minutes') }}
                                     {{ lessonData.duration }}
                                 </span>
-                            </div>
-
-                            <!-- ======================== Description ======================== -->
-
-                            <div
-                                v-if="lessonDescription"
-                                class="mt-4 text-sm subtitle"
-                                itemprop="description"
-                                v-html="lessonDescription"
-                            />
-
-                            <!-- ======================== Like ======================== -->
-
-                            <div class="my-1 flex items-center justify-center">
-                                <div
-                                    itemprop="interactionStatistic"
-                                    itemscope
-                                    itemtype="https://schema.org/InteractionCounter"
-                                >
-                                    <meta
-                                        itemprop="interactionType"
-                                        content="https://schema.org/LikeAction"
-                                    />
-
-                                    <meta
-                                        itemprop="userInteractionCount"
-                                        :content="lessonData.likes_count || 0"
-                                    />
-
-                                    <LikeButtonEntity
-                                        :likes-count="lessonData.likes_count || 0"
-                                        :already-liked="lessonData.already_liked || false"
-                                        route-name="public.schoolLessons.like"
-                                        :route-params="lessonData.id"
-                                        :title="t('like')"
-                                    />
                                 </div>
-                            </div>
 
-                            <!-- ======================== Hashtags ======================== -->
+                                <!-- ======================== Description ======================== -->
 
-                            <div
-                                v-if="hashtags.length"
-                                class="mt-4 flex flex-wrap items-center
+                                <div
+                                    v-if="lessonDescription"
+                                    class="mt-4 text-sm subtitle"
+                                    itemprop="description"
+                                    v-html="lessonDescription"
+                                />
+
+                                <!-- ======================== Like ======================== -->
+
+                                <div class="my-1 flex items-center justify-center">
+                                    <div
+                                        itemprop="interactionStatistic"
+                                        itemscope
+                                        itemtype="https://schema.org/InteractionCounter"
+                                    >
+                                        <meta
+                                            itemprop="interactionType"
+                                            content="https://schema.org/LikeAction"
+                                        />
+
+                                        <meta
+                                            itemprop="userInteractionCount"
+                                            :content="lessonData.likes_count || 0"
+                                        />
+
+                                        <LikeButtonEntity
+                                            :likes-count="lessonData.likes_count || 0"
+                                            :already-liked="lessonData.already_liked || false"
+                                            route-name="public.schoolLessons.like"
+                                            :route-params="lessonData.id"
+                                            :title="t('like')"
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- ======================== Hashtags ======================== -->
+
+                                <div
+                                    v-if="hashtags.length"
+                                    class="mt-4 flex flex-wrap items-center
                                        justify-center gap-2"
-                            >
-                                <Link
-                                    v-for="hashtag in hashtags"
-                                    :key="hashtag.id"
-                                    :href="route('public.schoolHashtags.show', {
+                                >
+                                    <Link
+                                        v-for="hashtag in hashtags"
+                                        :key="hashtag.id"
+                                        :href="route('public.schoolHashtags.show', {
                                         slug: hashtag.slug,
                                     })"
-                                    class="rounded-sm px-2 py-1 text-xs font-semibold
+                                        class="rounded-sm px-2 py-1 text-xs font-semibold
                                            text-indigo-700 bg-indigo-50
                                            dark:text-indigo-300 dark:bg-indigo-950/50
                                            border border-indigo-400 hover:underline"
-                                >
-                                    #{{ hashtag.translation?.name }}
-                                </Link>
-                            </div>
+                                    >
+                                        #{{ hashtag.translation?.name }}
+                                    </Link>
+                                </div>
 
-                            <!-- ======================== Content ======================== -->
-
-                            <div
-                                v-if="contentData"
-                                class="mt-8 rounded-md border border-gray-200
-                                       bg-white p-4 shadow-sm
-                                       dark:border-gray-700 dark:bg-gray-900"
-                            >
-                                <h2
-                                    class="mb-3 text-center text-lg font-semibold
-                                           text-gray-700 dark:text-gray-300"
-                                >
-                                    {{ t('content') }}
-                                </h2>
+                                <!-- ======================== Content ======================== -->
 
                                 <div
-                                    class="flex flex-wrap items-center
-                                           justify-center gap-3 text-sm"
+                                    v-if="contentData"
+                                    class="mt-8 rounded-md border border-gray-200
+                                       bg-white p-4 shadow-sm
+                                       dark:border-gray-700 dark:bg-gray-900"
                                 >
+                                    <h2
+                                        class="mb-3 text-center text-lg font-semibold
+                                           text-gray-700 dark:text-gray-300"
+                                    >
+                                        {{ t('content') }}
+                                    </h2>
+
+                                    <div
+                                        class="flex flex-wrap items-center
+                                           justify-center gap-3 text-sm"
+                                    >
                                     <span
                                         v-if="contentData.type"
                                         class="rounded-sm border border-gray-400
@@ -1073,49 +1080,50 @@ const translateAccessType = (value) => {
                                         {{ contentData.type }}
                                     </span>
 
-                                    <Link
-                                        v-if="contentData.slug"
-                                        :href="`#`"
-                                        class="rounded-sm border border-gray-400
+                                        <Link
+                                            v-if="contentData.slug"
+                                            :href="`#`"
+                                            class="rounded-sm border border-gray-400
                                                px-3 py-1 hover:underline"
-                                    >
-                                        {{ contentData.title || t('open') }}
-                                    </Link>
+                                        >
+                                            {{ contentData.title || t('open') }}
+                                        </Link>
 
-                                    <span v-else>
+                                        <span v-else>
                                         {{ contentData.title }}
                                     </span>
+                                    </div>
                                 </div>
-                            </div>
-                        </article>
+                            </article>
 
-                        <!-- ======================== Main videos ======================== -->
+                            <!-- ======================== Main videos ======================== -->
 
-                        <SectionVideoList
-                            :videos="mainVideosList"
+                            <SectionVideoList
+                                :videos="mainVideosList"
+                            />
+
+                            <!-- ======================== Main banners ======================== -->
+
+                            <SectionBanners
+                                :banners="mainBannersList"
+                            />
+                        </div>
+                    </section>
+
+                    <!-- ======================== Right sidebar ======================== -->
+
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 pr-3 transition-all duration-300"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebarSchool
+                            @collapsed="rightCollapsed = $event"
                         />
-
-                        <!-- ======================== Main banners ======================== -->
-
-                        <SectionBanners
-                            :banners="mainBannersList"
-                        />
-                    </div>
-                </section>
-
-                <!-- ======================== Right sidebar ======================== -->
-
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 pr-3 transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebarSchool
-                        @collapsed="rightCollapsed = $event"
-                    />
-                </aside>
-            </main>
-        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

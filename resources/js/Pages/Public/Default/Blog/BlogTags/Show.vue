@@ -44,53 +44,53 @@ const props = defineProps({
 
     tag: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     publicBlogArticlesProcessingMode: {
         type: String,
-        default: 'server',
+        default: 'server'
     },
 
     useServerProcessing: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     articles: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     articlesCount: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     articlesFound: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     filters: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     rubricTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ======================== Helpers ======================== */
@@ -202,7 +202,7 @@ const canonicalUrl = computed(() => {
 
     return String(
         route('public.blogTags.show', {
-            slug: tag.value.slug,
+            slug: tag.value.slug
         })
     )
 })
@@ -343,7 +343,7 @@ const articleSortOptions = [
     { value: 'likesAsc', label: `${t('likes')} 0→9` },
 
     { value: 'dateDesc', label: `${t('publishedAt')} ↓` },
-    { value: 'dateAsc', label: `${t('publishedAt')} ↑` },
+    { value: 'dateAsc', label: `${t('publishedAt')} ↑` }
 ]
 
 /* ======================== View mode ======================== */
@@ -426,7 +426,7 @@ const filteredArticles = computed(() => {
                 getArticleDescription(article),
                 getArticleSlug(article),
                 ownerName,
-                rubricTitles,
+                rubricTitles
             ].some((value) =>
                 normalizeText(value).includes(query)
             )
@@ -452,7 +452,7 @@ const sortedArticles = computed(() => {
     }
 
     const list = [
-        ...filteredArticles.value,
+        ...filteredArticles.value
     ]
 
     switch (sortArticles.value) {
@@ -646,16 +646,16 @@ const frontendCurrentPage = ref(1)
 
 const {
     targetRef: articlesScrollTarget,
-    scrollToTarget: scrollToArticles,
+    scrollToTarget: scrollToArticles
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 watch(
     [
         qArticles,
-        sortArticles,
+        sortArticles
     ],
     () => {
         if (!props.useServerProcessing) {
@@ -743,12 +743,12 @@ const reloadArticles = (
                 || undefined,
 
             page_articles:
-            pageNumber,
+            pageNumber
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -1094,339 +1094,346 @@ const articleGridCols = computed(() => {
     >
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
+                >
 
-                <!-- Left sidebar -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="
+                    <!-- Left sidebar -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="
                         leftCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <LeftSidebar
-                        :rubric-tree="rubricTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="setLeftCollapsed"
-                    />
-                </aside>
-
-                <!-- Content -->
-                <article
-                    itemscope
-                    itemtype="https://schema.org/CollectionPage"
-                    :itemid="canonicalUrl"
-                    class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
-                >
-                    <!-- CollectionPage metadata -->
-                    <meta
-                        itemprop="name"
-                        :content="seoTitle"
                     >
+                        <LeftSidebar
+                            :rubric-tree="rubricTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="setLeftCollapsed"
+                        />
+                    </aside>
 
-                    <meta
-                        v-if="seoDescription"
-                        itemprop="description"
-                        :content="seoDescription"
+                    <!-- Content -->
+                    <article
+                        itemscope
+                        itemtype="https://schema.org/CollectionPage"
+                        :itemid="canonicalUrl"
+                        class="w-full pb-6 slate-1 min-w-0"
                     >
-
-                    <meta
-                        v-if="seoKeywords"
-                        itemprop="keywords"
-                        :content="seoKeywords"
-                    >
-
-                    <meta
-                        v-if="canonicalUrl"
-                        itemprop="url"
-                        :content="canonicalUrl"
-                    >
-
-                    <meta
-                        itemprop="inLanguage"
-                        :content="tagLocale"
-                    >
-
-                    <div class="mx-auto max-w-6xl">
-
-                        <!-- Breadcrumbs -->
-                        <nav
-                            class="text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
+                        <!-- CollectionPage metadata -->
+                        <meta
+                            itemprop="name"
+                            :content="seoTitle"
                         >
-                            <ol class="flex flex-wrap items-center font-semibold">
 
-                                <!-- Home -->
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
+                        <meta
+                            v-if="seoDescription"
+                            itemprop="description"
+                            :content="seoDescription"
+                        >
+
+                        <meta
+                            v-if="seoKeywords"
+                            itemprop="keywords"
+                            :content="seoKeywords"
+                        >
+
+                        <meta
+                            v-if="canonicalUrl"
+                            itemprop="url"
+                            :content="canonicalUrl"
+                        >
+
+                        <meta
+                            itemprop="inLanguage"
+                            :content="tagLocale"
+                        >
+
+                        <div class="mx-auto max-w-6xl">
+
+                            <!-- Breadcrumbs -->
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol class="flex flex-wrap items-center font-semibold">
+
+                                    <!-- Home -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
                                         <span itemprop="name">
                                             {{ t('home') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="1"
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        >
+                                    </li>
+
+                                    <!-- Articles -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
-                                </li>
-
-                                <!-- Articles -->
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
 
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('public.blogArticles.index')"
-                                        class="breadcrumb-link hover:underline"
-                                    >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('public.blogArticles.index')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
                                         <span itemprop="name">
                                             {{ t('articles') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="2"
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        >
+                                    </li>
+
+                                    <!-- Current tag -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
                                     >
-                                </li>
-
-                                <!-- Current tag -->
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                    aria-current="page"
-                                >
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
 
-                                    <span
-                                        itemprop="name"
-                                        class="breadcrumbs"
-                                    >
+                                        <span
+                                            itemprop="name"
+                                            class="breadcrumbs"
+                                        >
                                         {{ t('tag') }} #{{ tagName }}
                                     </span>
 
-                                    <meta
-                                        v-if="canonicalUrl"
-                                        itemprop="item"
-                                        :content="canonicalUrl"
-                                    >
+                                        <meta
+                                            v-if="canonicalUrl"
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        >
 
-                                    <meta
-                                        itemprop="position"
-                                        content="3"
-                                    >
-                                </li>
+                                        <meta
+                                            itemprop="position"
+                                            content="3"
+                                        >
+                                    </li>
 
-                            </ol>
-                        </nav>
+                                </ol>
+                            </nav>
 
-                        <!-- Stats / title / views -->
-                        <div class="flex items-center justify-between gap-1">
+                            <!-- Stats / title / views -->
+                            <div class="flex items-center justify-between gap-1">
 
-                            <!-- Articles count -->
-                            <div
-                                :title="t('articles')"
-                                class="flex items-center justify-center gap-1"
-                            >
-                                <svg
-                                    class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                    viewBox="0 0 384 512"
-                                    fill="currentColor"
+                                <!-- Articles count -->
+                                <div
+                                    :title="t('articles')"
+                                    class="flex items-center justify-center gap-1"
                                 >
-                                    <path
-                                        d="M288 248v28c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-28c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm-12 72H108c-6.6 0-12 5.4-12 12v28c0 6.6 5.4 12 12 12h168c6.6 0 12-5.4 12-12v-28c0-6.6-5.4-12-12-12zm108-188.1V464c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V48C0 21.5 21.5 0 48 0h204.1C264.8 0 277 5.1 286 14.1L369.9 98c9 8.9 14.1 21.2 14.1 33.9zm-128-80V128h76.1L256 51.9zM336 464V176H232c-13.3 0-24-10.7-24-24V48H48v416h288z"
-                                    />
-                                </svg>
+                                    <svg
+                                        class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
+                                        viewBox="0 0 384 512"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M288 248v28c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-28c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm-12 72H108c-6.6 0-12 5.4-12 12v28c0 6.6 5.4 12 12 12h168c6.6 0 12-5.4 12-12v-28c0-6.6-5.4-12-12-12zm108-188.1V464c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V48C0 21.5 21.5 0 48 0h204.1C264.8 0 277 5.1 286 14.1L369.9 98c9 8.9 14.1 21.2 14.1 33.9zm-128-80V128h76.1L256 51.9zM336 464V176H232c-13.3 0-24-10.7-24-24V48H48v416h288z"
+                                        />
+                                    </svg>
 
-                                <span class="text-center text-sm text-gray-500">
+                                    <span class="text-center text-sm text-gray-500">
                                     {{ articlesCount }}
                                 </span>
-                            </div>
+                                </div>
 
-                            <!-- Title -->
-                            <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
+                                <!-- Title -->
+                                <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
                                 <span
                                     v-if="hasSvgIcon"
                                     class="flex"
                                     v-html="tag.icon"
                                 />
 
-                                <h1
-                                    itemprop="name"
-                                    class="text-2xl font-bold"
-                                >
-                                    #{{ tagName }}
-                                </h1>
-                            </div>
-
-                            <!-- Views -->
-                            <div
-                                :title="t('views')"
-                                class="flex items-center justify-center gap-1"
-                            >
-                                <div
-                                    itemprop="interactionStatistic"
-                                    itemscope
-                                    itemtype="https://schema.org/InteractionCounter"
-                                    class="contents"
-                                >
-                                    <link
-                                        itemprop="interactionType"
-                                        href="https://schema.org/ViewAction"
+                                    <h1
+                                        itemprop="name"
+                                        class="text-2xl font-bold"
                                     >
-
-                                    <meta
-                                        itemprop="userInteractionCount"
-                                        :content="tag.views || 0"
-                                    >
+                                        #{{ tagName }}
+                                    </h1>
                                 </div>
 
-                                <svg
-                                    class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 576 512"
-                                    fill="currentColor"
+                                <!-- Views -->
+                                <div
+                                    :title="t('views')"
+                                    class="flex items-center justify-center gap-1"
                                 >
-                                    <path
-                                        d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
-                                    />
-                                </svg>
+                                    <div
+                                        itemprop="interactionStatistic"
+                                        itemscope
+                                        itemtype="https://schema.org/InteractionCounter"
+                                        class="contents"
+                                    >
+                                        <link
+                                            itemprop="interactionType"
+                                            href="https://schema.org/ViewAction"
+                                        >
 
-                                <span class="text-center text-sm text-gray-500">
+                                        <meta
+                                            itemprop="userInteractionCount"
+                                            :content="tag.views || 0"
+                                        >
+                                    </div>
+
+                                    <svg
+                                        class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 576 512"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
+                                        />
+                                    </svg>
+
+                                    <span class="text-center text-sm text-gray-500">
                                     {{ tag.views || 0 }}
                                 </span>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Subtitle -->
-                        <div
-                            v-if="tagSubtitle"
-                            class="mt-1 text-sm subtitle text-center"
-                        >
-                            {{ tagSubtitle }}
-                        </div>
+                            <!-- Subtitle -->
+                            <div
+                                v-if="tagSubtitle"
+                                class="mt-1 text-sm subtitle text-center"
+                            >
+                                {{ tagSubtitle }}
+                            </div>
 
-                        <!-- Description -->
-                        <div
-                            v-if="tagDescription"
-                            itemprop="description"
-                            class="mt-1 mb-3 text-sm subtitle text-center"
-                        >
-                            {{ tagDescription }}
-                        </div>
+                            <!-- Description -->
+                            <div
+                                v-if="tagDescription"
+                                itemprop="description"
+                                class="mt-1 mb-3 text-sm subtitle text-center"
+                            >
+                                {{ tagDescription }}
+                            </div>
 
-                        <!-- Toolbar -->
-                        <EntityPageToolbar
-                            v-if="hasArticles"
-                            v-model="qArticles"
-                            v-model:view-mode="viewMode"
-                            v-model:sort-value="sortArticles"
-                            :found="effectiveArticlesFound"
-                            :sort-options="articleSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('articles')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="applyArticleFilters"
-                            @reset="resetArticleFilters"
-                        />
-
-                        <div ref="articlesScrollTarget"></div>
-
-                        <!-- Empty -->
-                        <div
-                            v-if="hasArticles && displayedArticles.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
-
-                        <!-- Articles -->
-                        <div v-if="displayedArticles.length">
-                            <ArticleGrid
-                                v-if="viewMode === 'grid'"
-                                :articles="displayedArticles"
-                                :cols="articleGridCols"
+                            <!-- Toolbar -->
+                            <EntityPageToolbar
+                                v-if="hasArticles"
+                                v-model="qArticles"
+                                v-model:view-mode="viewMode"
+                                v-model:sort-value="sortArticles"
+                                :found="effectiveArticlesFound"
+                                :sort-options="articleSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('articles')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="applyArticleFilters"
+                                @reset="resetArticleFilters"
                             />
 
-                            <ArticleRows
-                                v-else
-                                :articles="displayedArticles"
+                            <div ref="articlesScrollTarget"></div>
+
+                            <!-- Empty -->
+                            <div
+                                v-if="hasArticles && displayedArticles.length === 0"
+                                class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            >
+                                {{ t('noData') }}
+                            </div>
+
+                            <!-- Articles -->
+                            <div v-if="displayedArticles.length">
+                                <ArticleGrid
+                                    v-if="viewMode === 'grid'"
+                                    :articles="displayedArticles"
+                                    :cols="articleGridCols"
+                                />
+
+                                <ArticleRows
+                                    v-else
+                                    :articles="displayedArticles"
+                                />
+                            </div>
+
+                            <!-- Server pagination -->
+                            <Pagination
+                                v-if="useServerProcessing && hasArticles && lastPage > 1"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="articlesFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
+                            />
+
+                            <!-- Frontend pagination -->
+                            <FrontendPagination
+                                v-if="!useServerProcessing && effectiveArticlesFound > perPageArticles"
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPageArticles"
+                                :total-items="effectiveArticlesFound"
+                            />
+
+                            <!-- Bottom blocks -->
+                            <SectionVideoList
+                                :videos="mainVideos"
+                            />
+
+                            <SectionBanners
+                                :banners="mainBanners"
                             />
                         </div>
+                    </article>
 
-                        <!-- Server pagination -->
-                        <Pagination
-                            v-if="useServerProcessing && hasArticles && lastPage > 1"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="articlesFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
-                        />
-
-                        <!-- Frontend pagination -->
-                        <FrontendPagination
-                            v-if="!useServerProcessing && effectiveArticlesFound > perPageArticles"
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPageArticles"
-                            :total-items="effectiveArticlesFound"
-                        />
-
-                        <!-- Bottom blocks -->
-                        <SectionVideoList
-                            :videos="mainVideos"
-                        />
-
-                        <SectionBanners
-                            :banners="mainBanners"
-                        />
-                    </div>
-                </article>
-
-                <!-- Right sidebar -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="
+                    <!-- Right sidebar -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="
                         rightCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <RightSidebar
-                        :collapsed="rightCollapsed"
-                        @collapsed="setRightCollapsed"
-                    />
-                </aside>
-
-            </main>
-        </div>
+                    >
+                        <RightSidebar
+                            :collapsed="rightCollapsed"
+                            @collapsed="setRightCollapsed"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

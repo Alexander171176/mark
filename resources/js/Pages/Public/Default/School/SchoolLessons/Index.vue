@@ -57,8 +57,8 @@ const props = defineProps({
         default: () => ({
             title: '',
             keywords: '',
-            description: '',
-        }),
+            description: ''
+        })
     },
 
     useServerProcessing: { type: Boolean, default: false },
@@ -77,7 +77,7 @@ const props = defineProps({
     filters: { type: Object, default: () => ({}) },
 
     mainVideos: { type: [Array, Object], default: () => [] },
-    mainBanners: { type: [Array, Object], default: () => [] },
+    mainBanners: { type: [Array, Object], default: () => [] }
 })
 
 /* ===================== PAGE ===================== */
@@ -285,7 +285,7 @@ const lessonSortOptions = [
     { value: 'ratingAvgAsc', label: `${t('ratingAvg')} 0→9` },
 
     { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
-    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
+    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` }
 ]
 
 /* ===================== FRONTEND MODE ===================== */
@@ -296,10 +296,10 @@ const frontendCurrentPage = ref(1)
 /** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
-    scrollToTarget,
+    scrollToTarget
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 /** Нормализация текста */
@@ -337,7 +337,7 @@ const filteredLessons = computed(() => {
             lesson.id,
             lesson.slug,
             getLessonTitle(lesson),
-            getLessonShort(lesson),
+            getLessonShort(lesson)
         ].some((value) => {
             return normalizeText(value).includes(term)
         })
@@ -520,12 +520,12 @@ const reloadLessons = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            page,
+            page
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -723,7 +723,7 @@ const getAbsoluteLessonUrl = (lesson) => {
     const url = route(
         'public.schoolLessons.show',
         {
-            slug: lesson.slug,
+            slug: lesson.slug
         }
     )
 
@@ -776,8 +776,8 @@ const collectionPageSchema = computed(() => ({
         url: homeUrl.value,
         ...(siteName.value
             ? { name: siteName.value }
-            : {}),
-    },
+            : {})
+    }
 }))
 
 /**
@@ -791,15 +791,15 @@ const breadcrumbSchema = computed(() => ({
             '@type': 'ListItem',
             position: 1,
             name: t('home'),
-            item: homeUrl.value,
+            item: homeUrl.value
         },
         {
             '@type': 'ListItem',
             position: 2,
             name: seoTitle.value,
-            item: canonicalUrl.value,
-        },
-    ],
+            item: canonicalUrl.value
+        }
+    ]
 }))
 
 /**
@@ -829,7 +829,7 @@ const lessonItemListSchema = computed(() => ({
                     learningResourceType: 'Lesson',
                     inLanguage:
                         lesson?.translation?.locale
-                        || props.locale,
+                        || props.locale
                 }
 
                 if (getLessonShort(lesson)) {
@@ -874,10 +874,10 @@ const lessonItemListSchema = computed(() => ({
                         + 1,
 
                     url: lessonUrl,
-                    item,
+                    item
                 }
             }
-        ),
+        )
 }))
 
 const collectionPageJsonLd = computed(() => {
@@ -1054,184 +1054,192 @@ const mainBannersList = computed(() => {
     <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
-                    />
-                </aside>
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="leftCollapsed = $event"
+                        />
+                    </aside>
 
-                <div class="w-full lg:mt-28 pb-6 slate-1">
-                    <div class="mx-auto max-w-6xl">
+                    <div class="w-full pb-6 slate-1">
+                        <div class="mx-auto max-w-6xl">
 
-                        <nav
-                            class="text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
-                        >
-                            <ol class="flex flex-wrap items-center font-semibold">
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                >
-                                    <Link
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
-                                        itemprop="item"
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol class="flex flex-wrap items-center font-semibold">
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
                                     >
+                                        <Link
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                            itemprop="item"
+                                        >
                                         <span itemprop="name">
                                             {{ t('home') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="1"
-                                    />
-                                </li>
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        />
+                                    </li>
 
-                                <li>
+                                    <li>
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
-                                </li>
+                                    </li>
 
-                                <li
-                                    class="breadcrumbs"
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                >
+                                    <li
+                                        class="breadcrumbs"
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                    >
                                     <span itemprop="name">
                                         {{ t('lessons') }}
                                     </span>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="2"
-                                    />
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        />
 
-                                    <meta
-                                        itemprop="item"
-                                        :content="canonicalUrl"
-                                    />
-                                </li>
-                            </ol>
-                        </nav>
+                                        <meta
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        />
+                                    </li>
+                                </ol>
+                            </nav>
 
-                        <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
-                            <svg class="shrink-0 h-6 w-6 text-slate-600/85 dark:text-slate-200/85"
-                                 fill="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round" stroke-linejoin="round"
-                                      d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path>
-                            </svg>
-                            <h1 class="text-2xl font-bold">
-                                {{ seoTitle }}
-                            </h1>
-                        </div>
+                            <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
+                                <svg class="shrink-0 h-6 w-6 text-slate-600/85 dark:text-slate-200/85"
+                                     fill="currentColor"
+                                     viewBox="0 0 24 24">
+                                    <path
+                                        stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path>
+                                </svg>
+                                <h1 class="text-2xl font-bold">
+                                    {{ seoTitle }}
+                                </h1>
+                            </div>
 
-                        <div class="my-1 text-sm subtitle text-center">
-                            Выберите урок и продолжайте обучение в удобном формате.
-                        </div>
+                            <div class="my-1 text-sm subtitle text-center">
+                                Выберите урок и продолжайте обучение в удобном формате.
+                            </div>
 
-                        <EntityPageToolbar
-                            v-if="useServerProcessing"
-                            v-model="q"
-                            :found="lessonsFound"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="lessonSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('lessons')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="submitSearch"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
-
-                        <FrontendEntityPageToolbar
-                            v-else
-                            v-model="q"
-                            :found="sortedLessons.length"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="lessonSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('lessons')"
-                            :search-placeholder="t('searchByName')"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
-
-                        <div ref="scrollTarget"></div>
-
-                        <div
-                            v-if="displayedLessons.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
-
-                        <div v-else>
-                            <LessonGrid
-                                v-if="viewMode === 'grid'"
-                                :lessons="displayedLessons"
-                                :cols="gridCols"
+                            <EntityPageToolbar
+                                v-if="useServerProcessing"
+                                v-model="q"
+                                :found="lessonsFound"
+                                :view-mode="viewMode"
+                                :sort-value="sort"
+                                :sort-options="lessonSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('lessons')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="submitSearch"
+                                @reset="resetSearch"
+                                @update:viewMode="updateViewMode"
+                                @update:sortValue="updateSort"
                             />
 
-                            <LessonRows
+                            <FrontendEntityPageToolbar
                                 v-else
-                                :lessons="displayedLessons"
+                                v-model="q"
+                                :found="sortedLessons.length"
+                                :view-mode="viewMode"
+                                :sort-value="sort"
+                                :sort-options="lessonSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('lessons')"
+                                :search-placeholder="t('searchByName')"
+                                @reset="resetSearch"
+                                @update:viewMode="updateViewMode"
+                                @update:sortValue="updateSort"
                             />
+
+                            <div ref="scrollTarget"></div>
+
+                            <div
+                                v-if="displayedLessons.length === 0"
+                                class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            >
+                                {{ t('noData') }}
+                            </div>
+
+                            <div v-else>
+                                <LessonGrid
+                                    v-if="viewMode === 'grid'"
+                                    :lessons="displayedLessons"
+                                    :cols="gridCols"
+                                />
+
+                                <LessonRows
+                                    v-else
+                                    :lessons="displayedLessons"
+                                />
+                            </div>
+
+                            <Pagination
+                                v-if="useServerProcessing"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="lessonsFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
+                            />
+
+                            <FrontendPagination
+                                v-else
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPage"
+                                :total-items="sortedLessons.length"
+                            />
+
+                            <SectionVideoList :videos="mainVideosList" />
+                            <SectionBanners :banners="mainBannersList" />
                         </div>
-
-                        <Pagination
-                            v-if="useServerProcessing"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="lessonsFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
-                        />
-
-                        <FrontendPagination
-                            v-else
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPage"
-                            :total-items="sortedLessons.length"
-                        />
-
-                        <SectionVideoList :videos="mainVideosList" />
-                        <SectionBanners :banners="mainBannersList" />
                     </div>
-                </div>
 
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebarSchool
-                        :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
-                    />
-                </aside>
-            </main>
-        </div>
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebarSchool
+                            :collapsed="rightCollapsed"
+                            @collapsed="rightCollapsed = $event"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

@@ -38,43 +38,43 @@ const props = defineProps({
 
     article: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     breadcrumbRubric: {
         type: Object,
-        default: () => null,
+        default: () => null
     },
 
     recommendedArticles: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     articleVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     rubricTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     locale: {
         type: String,
-        default: 'ru',
-    },
+        default: 'ru'
+    }
 })
 
 /* ======================== Helpers ======================== */
@@ -243,7 +243,7 @@ const canonicalUrl = computed(() => {
 
     return String(
         route('public.blogArticles.show', {
-            url: articleData.value.url,
+            url: articleData.value.url
         })
     )
 })
@@ -655,403 +655,411 @@ const articleGridCols = computed(() => {
     >
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-
-                <!-- Left sidebar -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebar
-                        :rubric-tree="rubricTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="setLeftCollapsed"
-                    />
-                </aside>
 
-                <!-- Main content -->
-                <section class="w-full lg:mt-28 pb-6 slate-1 min-w-0">
-                    <div class="mx-auto max-w-6xl">
+                    <!-- Left sidebar -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebar
+                            :rubric-tree="rubricTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="setLeftCollapsed"
+                        />
+                    </aside>
 
-                        <article
-                            itemscope
-                            itemtype="https://schema.org/BlogPosting"
-                            :itemid="canonicalUrl"
-                            class="selection:bg-red-400 selection:text-white"
-                        >
-                            <!-- BlogPosting metadata -->
-                            <link
-                                v-if="canonicalUrl"
-                                itemprop="mainEntityOfPage"
-                                :href="canonicalUrl"
-                            >
+                    <!-- Main content -->
+                    <section class="w-full pb-6 slate-1 min-w-0">
+                        <div class="mx-auto max-w-6xl">
 
-                            <meta
-                                itemprop="inLanguage"
-                                :content="articleLocale"
-                            >
-
-                            <meta
-                                v-if="publishedAt"
-                                itemprop="datePublished"
-                                :content="publishedAt"
-                            >
-
-                            <meta
-                                v-if="modifiedAt"
-                                itemprop="dateModified"
-                                :content="modifiedAt"
-                            >
-
-                            <meta
-                                v-if="firstImageUrl"
-                                itemprop="image"
-                                :content="firstImageUrl"
-                            >
-
-                            <meta
-                                v-if="seoDescription"
-                                itemprop="description"
-                                :content="seoDescription"
-                            >
-
-                            <meta
-                                v-if="seoKeywords"
-                                itemprop="keywords"
-                                :content="seoKeywords"
-                            >
-
-                            <!-- Breadcrumbs -->
-                            <nav
-                                class="text-sm mb-3"
-                                aria-label="Breadcrumb"
+                            <article
                                 itemscope
-                                itemtype="https://schema.org/BreadcrumbList"
+                                itemtype="https://schema.org/BlogPosting"
+                                :itemid="canonicalUrl"
+                                class="selection:bg-red-400 selection:text-white"
                             >
-                                <ol class="flex flex-wrap items-center font-semibold">
+                                <!-- BlogPosting metadata -->
+                                <link
+                                    v-if="canonicalUrl"
+                                    itemprop="mainEntityOfPage"
+                                    :href="canonicalUrl"
+                                >
 
-                                    <!-- Home -->
-                                    <li
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                    >
-                                        <Link
-                                            itemprop="item"
-                                            :href="route('home')"
-                                            class="breadcrumb-link hover:underline"
+                                <meta
+                                    itemprop="inLanguage"
+                                    :content="articleLocale"
+                                >
+
+                                <meta
+                                    v-if="publishedAt"
+                                    itemprop="datePublished"
+                                    :content="publishedAt"
+                                >
+
+                                <meta
+                                    v-if="modifiedAt"
+                                    itemprop="dateModified"
+                                    :content="modifiedAt"
+                                >
+
+                                <meta
+                                    v-if="firstImageUrl"
+                                    itemprop="image"
+                                    :content="firstImageUrl"
+                                >
+
+                                <meta
+                                    v-if="seoDescription"
+                                    itemprop="description"
+                                    :content="seoDescription"
+                                >
+
+                                <meta
+                                    v-if="seoKeywords"
+                                    itemprop="keywords"
+                                    :content="seoKeywords"
+                                >
+
+                                <!-- Breadcrumbs -->
+                                <nav
+                                    class="text-sm mb-3"
+                                    aria-label="Breadcrumb"
+                                    itemscope
+                                    itemtype="https://schema.org/BreadcrumbList"
+                                >
+                                    <ol class="flex flex-wrap items-center font-semibold">
+
+                                        <!-- Home -->
+                                        <li
+                                            itemprop="itemListElement"
+                                            itemscope
+                                            itemtype="https://schema.org/ListItem"
+                                            class="flex items-center"
                                         >
+                                            <Link
+                                                itemprop="item"
+                                                :href="route('home')"
+                                                class="breadcrumb-link hover:underline"
+                                            >
                                             <span itemprop="name">
                                                 {{ t('home') }}
                                             </span>
-                                        </Link>
+                                            </Link>
 
-                                        <meta
-                                            itemprop="position"
-                                            content="1"
+                                            <meta
+                                                itemprop="position"
+                                                content="1"
+                                            >
+                                        </li>
+
+                                        <!-- Articles -->
+                                        <li
+                                            itemprop="itemListElement"
+                                            itemscope
+                                            itemtype="https://schema.org/ListItem"
+                                            class="flex items-center"
                                         >
-                                    </li>
-
-                                    <!-- Articles -->
-                                    <li
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                    >
                                         <span class="mx-2 breadcrumbs">
                                             /
                                         </span>
 
-                                        <Link
-                                            itemprop="item"
-                                            :href="route('public.blogArticles.index')"
-                                            class="breadcrumb-link hover:underline"
-                                        >
+                                            <Link
+                                                itemprop="item"
+                                                :href="route('public.blogArticles.index')"
+                                                class="breadcrumb-link hover:underline"
+                                            >
                                             <span itemprop="name">
                                                 {{ t('articles') }}
                                             </span>
-                                        </Link>
+                                            </Link>
 
-                                        <meta
-                                            itemprop="position"
-                                            content="2"
+                                            <meta
+                                                itemprop="position"
+                                                content="2"
+                                            >
+                                        </li>
+
+                                        <!-- Current rubric -->
+                                        <li
+                                            v-if="hasBreadcrumbRubric"
+                                            itemprop="itemListElement"
+                                            itemscope
+                                            itemtype="https://schema.org/ListItem"
+                                            class="flex items-center"
                                         >
-                                    </li>
-
-                                    <!-- Current rubric -->
-                                    <li
-                                        v-if="hasBreadcrumbRubric"
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                    >
                                         <span class="mx-2 breadcrumbs">
                                             /
                                         </span>
 
-                                        <Link
-                                            itemprop="item"
-                                            :href="route('public.blogRubrics.show', {
+                                            <Link
+                                                itemprop="item"
+                                                :href="route('public.blogRubrics.show', {
                                                 url: breadcrumbRubricData.url
                                             })"
-                                            class="breadcrumb-link hover:underline"
-                                        >
+                                                class="breadcrumb-link hover:underline"
+                                            >
                                             <span itemprop="name">
                                                 {{ breadcrumbRubricTitle }}
                                             </span>
-                                        </Link>
+                                            </Link>
 
-                                        <meta
-                                            itemprop="position"
-                                            content="3"
+                                            <meta
+                                                itemprop="position"
+                                                content="3"
+                                            >
+                                        </li>
+
+                                        <!-- Article -->
+                                        <li
+                                            itemprop="itemListElement"
+                                            itemscope
+                                            itemtype="https://schema.org/ListItem"
+                                            class="flex items-center"
+                                            aria-current="page"
                                         >
-                                    </li>
-
-                                    <!-- Article -->
-                                    <li
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                        aria-current="page"
-                                    >
                                         <span class="mx-2 breadcrumbs">
                                             /
                                         </span>
 
-                                        <span
-                                            itemprop="name"
-                                            class="breadcrumbs"
-                                        >
+                                            <span
+                                                itemprop="name"
+                                                class="breadcrumbs"
+                                            >
                                             {{ articleTitle }}
                                         </span>
 
-                                        <meta
-                                            v-if="canonicalUrl"
-                                            itemprop="item"
-                                            :content="canonicalUrl"
-                                        >
+                                            <meta
+                                                v-if="canonicalUrl"
+                                                itemprop="item"
+                                                :content="canonicalUrl"
+                                            >
 
-                                        <meta
-                                            itemprop="position"
-                                            :content="hasBreadcrumbRubric ? '4' : '3'"
-                                        >
-                                    </li>
+                                            <meta
+                                                itemprop="position"
+                                                :content="hasBreadcrumbRubric ? '4' : '3'"
+                                            >
+                                        </li>
 
-                                </ol>
-                            </nav>
+                                    </ol>
+                                </nav>
 
-                            <!-- Images -->
-                            <div
-                                v-if="hasArticleImages"
-                                class="flex items-center justify-center"
-                            >
-                                <div class="w-full">
-                                    <ImageGalleryMain
-                                        :images="articleImages"
-                                        :alt="articleTitle"
-                                        rounded-class="rounded-lg"
-                                        shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
-                                        img-class="w-full h-full object-cover"
-                                    />
-                                </div>
-                            </div>
-
-                            <!-- Header -->
-                            <div
-                                class="my-3 flex flex-wrap items-center
-                                       justify-center gap-3 title"
-                            >
-                                <h1
-                                    itemprop="headline"
-                                    class="text-2xl font-bold"
-                                >
-                                    {{ articleTitle }}
-                                </h1>
-
-                                <!-- Views -->
+                                <!-- Images -->
                                 <div
-                                    :title="t('views')"
-                                    class="flex items-center justify-center gap-1"
-                                    itemprop="interactionStatistic"
-                                    itemscope
-                                    itemtype="https://schema.org/InteractionCounter"
+                                    v-if="hasArticleImages"
+                                    class="flex items-center justify-center"
                                 >
-                                    <svg
-                                        class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                        viewBox="0 0 576 512"
-                                        fill="currentColor"
-                                    >
-                                        <path
-                                            d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
+                                    <div class="w-full">
+                                        <ImageGalleryMain
+                                            :images="articleImages"
+                                            :alt="articleTitle"
+                                            rounded-class="rounded-lg"
+                                            shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
+                                            img-class="w-full h-full object-cover"
                                         />
-                                    </svg>
+                                    </div>
+                                </div>
 
-                                    <meta
-                                        itemprop="interactionType"
-                                        content="https://schema.org/ViewAction"
+                                <!-- Header -->
+                                <div
+                                    class="my-3 flex flex-wrap items-center
+                                       justify-center gap-3 title"
+                                >
+                                    <h1
+                                        itemprop="headline"
+                                        class="text-2xl font-bold"
                                     >
+                                        {{ articleTitle }}
+                                    </h1>
 
-                                    <meta
-                                        itemprop="userInteractionCount"
-                                        :content="articleData.views || 0"
+                                    <!-- Views -->
+                                    <div
+                                        :title="t('views')"
+                                        class="flex items-center justify-center gap-1"
+                                        itemprop="interactionStatistic"
+                                        itemscope
+                                        itemtype="https://schema.org/InteractionCounter"
                                     >
+                                        <svg
+                                            class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
+                                            viewBox="0 0 576 512"
+                                            fill="currentColor"
+                                        >
+                                            <path
+                                                d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
+                                            />
+                                        </svg>
 
-                                    <span class="text-sm text-gray-500">
+                                        <meta
+                                            itemprop="interactionType"
+                                            content="https://schema.org/ViewAction"
+                                        >
+
+                                        <meta
+                                            itemprop="userInteractionCount"
+                                            :content="articleData.views || 0"
+                                        >
+
+                                        <span class="text-sm text-gray-500">
                                         {{ articleData.views || 0 }}
                                     </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Article body -->
-                            <div
-                                v-if="articleDescription"
-                                itemprop="articleBody"
-                                class="my-3 text-sm subtitle"
-                                v-html="articleDescription"
-                            />
-
-                            <!-- Tags + like -->
-                            <div
-                                class="flex flex-wrap items-center
-                                       justify-center gap-3"
-                            >
+                                <!-- Article body -->
                                 <div
-                                    v-if="activeTags.length"
+                                    v-if="articleDescription"
+                                    itemprop="articleBody"
+                                    class="my-3 text-sm subtitle"
+                                    v-html="articleDescription"
+                                />
+
+                                <!-- Tags + like -->
+                                <div
                                     class="flex flex-wrap items-center
+                                       justify-center gap-3"
+                                >
+                                    <div
+                                        v-if="activeTags.length"
+                                        class="flex flex-wrap items-center
                                            justify-center gap-1
                                            font-semibold italic"
-                                >
-                                    <template
-                                        v-for="(tag, index) in activeTags"
-                                        :key="tag.id"
                                     >
-                                        <Link
-                                            :href="route('public.blogTags.show', {
+                                        <template
+                                            v-for="(tag, index) in activeTags"
+                                            :key="tag.id"
+                                        >
+                                            <Link
+                                                :href="route('public.blogTags.show', {
                                                 slug: tag.slug
                                             })"
-                                            class="text-sm text-blue-500
+                                                class="text-sm text-blue-500
                                                    dark:text-violet-300
                                                    hover:text-rose-400
                                                    dark:hover:text-rose-300"
-                                        >
-                                            {{ tag.translation?.name || tag.name }}
-                                        </Link>
+                                            >
+                                                {{ tag.translation?.name || tag.name }}
+                                            </Link>
 
-                                        <span
-                                            v-if="index < activeTags.length - 1"
-                                            class="text-slate-500 dark:text-slate-400"
-                                        >
+                                            <span
+                                                v-if="index < activeTags.length - 1"
+                                                class="text-slate-500 dark:text-slate-400"
+                                            >
                                             ,
                                         </span>
-                                    </template>
+                                        </template>
+                                    </div>
+
+                                    <LikeButtonEntity
+                                        :likes-count="articleData.likes_count || 0"
+                                        :already-liked="articleData.already_liked || false"
+                                        route-name="public.blogArticles.like"
+                                        :route-params="{ id: articleData.id }"
+                                        :title="t('like')"
+                                        icon-class="w-4 h-4"
+                                    />
                                 </div>
 
-                                <LikeButtonEntity
-                                    :likes-count="articleData.likes_count || 0"
-                                    :already-liked="articleData.already_liked || false"
-                                    route-name="public.blogArticles.like"
-                                    :route-params="{ id: articleData.id }"
-                                    :title="t('like')"
-                                    icon-class="w-4 h-4"
-                                />
-                            </div>
-
-                            <!-- Author -->
-                            <div
-                                v-if="articleAuthor"
-                                itemprop="author"
-                                itemscope
-                                itemtype="https://schema.org/Person"
-                                class="mt-4 flex items-center justify-center gap-2"
-                            >
-                                <meta
-                                    itemprop="name"
-                                    :content="articleAuthor"
-                                >
-
-                                <img
-                                    v-if="articleData.owner?.profile_photo_url"
-                                    :src="articleData.owner.profile_photo_url"
-                                    :alt="articleAuthor"
-                                    loading="lazy"
-                                    class="h-8 w-8 rounded-full object-cover
-                                           ring-1 ring-gray-200 dark:ring-gray-700"
-                                >
-
+                                <!-- Author -->
                                 <div
-                                    class="min-w-0 text-sm font-semibold
+                                    v-if="articleAuthor"
+                                    itemprop="author"
+                                    itemscope
+                                    itemtype="https://schema.org/Person"
+                                    class="mt-4 flex items-center justify-center gap-2"
+                                >
+                                    <meta
+                                        itemprop="name"
+                                        :content="articleAuthor"
+                                    >
+
+                                    <img
+                                        v-if="articleData.owner?.profile_photo_url"
+                                        :src="articleData.owner.profile_photo_url"
+                                        :alt="articleAuthor"
+                                        loading="lazy"
+                                        class="h-8 w-8 rounded-full object-cover
+                                           ring-1 ring-gray-200 dark:ring-gray-700"
+                                    >
+
+                                    <div
+                                        class="min-w-0 text-sm font-semibold
                                            text-slate-700/85 dark:text-slate-300/85"
-                                >
-                                    {{ articleAuthor }}
+                                    >
+                                        {{ articleAuthor }}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Recommended articles -->
-                            <div
-                                v-if="recommendedArticlesList.length"
-                                class="mt-8"
-                            >
-                                <h2
-                                    class="mb-4 text-center text-lg font-semibold
-                                           text-gray-700 dark:text-gray-300"
+                                <!-- Recommended articles -->
+                                <div
+                                    v-if="recommendedArticlesList.length"
+                                    class="mt-8"
                                 >
-                                    {{ t('relatedArticles') }}
-                                </h2>
+                                    <h2
+                                        class="mb-4 text-center text-lg font-semibold
+                                           text-gray-700 dark:text-gray-300"
+                                    >
+                                        {{ t('relatedArticles') }}
+                                    </h2>
 
-                                <ArticleGrid
-                                    :articles="recommendedArticlesList"
-                                    :cols="articleGridCols"
+                                    <ArticleGrid
+                                        :articles="recommendedArticlesList"
+                                        :cols="articleGridCols"
+                                    />
+                                </div>
+
+                                <!-- Article videos -->
+                                <div
+                                    v-if="articleVideosList.length"
+                                    class="mt-8"
+                                >
+                                    <RecommendedVideos
+                                        :videos="articleVideosList"
+                                    />
+                                </div>
+
+                                <!-- Comments -->
+                                <CommentThread
+                                    commentable-type="App\Models\Admin\Blog\BlogArticle\BlogArticle"
+                                    :commentable-id="articleData.id"
+                                    :auth-user="authUser"
                                 />
-                            </div>
+                            </article>
 
-                            <!-- Article videos -->
-                            <div
-                                v-if="articleVideosList.length"
-                                class="mt-8"
-                            >
-                                <RecommendedVideos
-                                    :videos="articleVideosList"
-                                />
-                            </div>
-
-                            <!-- Comments -->
-                            <CommentThread
-                                commentable-type="App\Models\Admin\Blog\BlogArticle\BlogArticle"
-                                :commentable-id="articleData.id"
-                                :auth-user="authUser"
+                            <!-- Bottom content -->
+                            <SectionVideoList
+                                :videos="mainVideosList"
                             />
-                        </article>
 
-                        <!-- Bottom content -->
-                        <SectionVideoList
-                            :videos="mainVideosList"
+                            <SectionBanners
+                                :banners="mainBannersList"
+                            />
+                        </div>
+                    </section>
+
+                    <!-- Right sidebar -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebar
+                            :collapsed="rightCollapsed"
+                            @collapsed="setRightCollapsed"
                         />
-
-                        <SectionBanners
-                            :banners="mainBannersList"
-                        />
-                    </div>
-                </section>
-
-                <!-- Right sidebar -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebar
-                        :collapsed="rightCollapsed"
-                        @collapsed="setRightCollapsed"
-                    />
-                </aside>
-            </main>
-        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

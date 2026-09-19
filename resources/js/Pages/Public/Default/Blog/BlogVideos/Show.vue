@@ -35,33 +35,33 @@ const props = defineProps({
 
     video: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     recommendedVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     rubricTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     locale: {
         type: String,
-        default: 'ru',
-    },
+        default: 'ru'
+    }
 })
 
 /* ======================== Helpers ======================== */
@@ -269,7 +269,7 @@ const canonicalUrl = computed(() => {
 
     return String(
         route('public.blogVideos.show', {
-            url: videoData.value.url,
+            url: videoData.value.url
         })
     )
 })
@@ -596,332 +596,340 @@ const videoGridCols = computed(() => {
     >
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-
-                <!-- Left sidebar -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebar
-                        :rubric-tree="rubricTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="setLeftCollapsed"
-                    />
-                </aside>
 
-                <!-- Content -->
-                <section class="w-full lg:mt-28 pb-6 slate-1 min-w-0">
-                    <div class="mx-auto max-w-6xl">
+                    <!-- Left sidebar -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebar
+                            :rubric-tree="rubricTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="setLeftCollapsed"
+                        />
+                    </aside>
 
-                        <article
-                            itemscope
-                            itemtype="https://schema.org/VideoObject"
-                            :itemid="canonicalUrl"
-                            class="selection:bg-red-400 selection:text-white"
-                        >
-                            <!-- VideoObject metadata -->
-                            <meta
-                                itemprop="name"
-                                :content="videoTitle"
-                            >
+                    <!-- Content -->
+                    <section class="w-full pb-6 slate-1 min-w-0">
+                        <div class="mx-auto max-w-6xl">
 
-                            <meta
-                                v-if="seoDescription"
-                                itemprop="description"
-                                :content="seoDescription"
-                            >
-
-                            <meta
-                                itemprop="inLanguage"
-                                :content="videoLocale"
-                            >
-
-                            <meta
-                                v-if="canonicalUrl"
-                                itemprop="mainEntityOfPage"
-                                :content="canonicalUrl"
-                            >
-
-                            <meta
-                                v-if="firstImageUrl"
-                                itemprop="thumbnailUrl"
-                                :content="firstImageUrl"
-                            >
-
-                            <meta
-                                v-if="publishedAt"
-                                itemprop="uploadDate"
-                                :content="publishedAt"
-                            >
-
-                            <meta
-                                v-if="schemaDuration"
-                                itemprop="duration"
-                                :content="schemaDuration"
-                            >
-
-                            <meta
-                                v-if="contentUrl"
-                                itemprop="contentUrl"
-                                :content="contentUrl"
-                            >
-
-                            <meta
-                                v-if="embedUrl"
-                                itemprop="embedUrl"
-                                :content="embedUrl"
-                            >
-
-                            <!-- Breadcrumbs -->
-                            <nav
-                                class="text-sm"
-                                aria-label="Breadcrumb"
+                            <article
                                 itemscope
-                                itemtype="https://schema.org/BreadcrumbList"
+                                itemtype="https://schema.org/VideoObject"
+                                :itemid="canonicalUrl"
+                                class="selection:bg-red-400 selection:text-white"
                             >
-                                <ol class="flex flex-wrap items-center font-semibold">
+                                <!-- VideoObject metadata -->
+                                <meta
+                                    itemprop="name"
+                                    :content="videoTitle"
+                                >
 
-                                    <!-- Home -->
-                                    <li
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                    >
-                                        <Link
-                                            itemprop="item"
-                                            :href="route('home')"
-                                            class="breadcrumb-link hover:underline"
+                                <meta
+                                    v-if="seoDescription"
+                                    itemprop="description"
+                                    :content="seoDescription"
+                                >
+
+                                <meta
+                                    itemprop="inLanguage"
+                                    :content="videoLocale"
+                                >
+
+                                <meta
+                                    v-if="canonicalUrl"
+                                    itemprop="mainEntityOfPage"
+                                    :content="canonicalUrl"
+                                >
+
+                                <meta
+                                    v-if="firstImageUrl"
+                                    itemprop="thumbnailUrl"
+                                    :content="firstImageUrl"
+                                >
+
+                                <meta
+                                    v-if="publishedAt"
+                                    itemprop="uploadDate"
+                                    :content="publishedAt"
+                                >
+
+                                <meta
+                                    v-if="schemaDuration"
+                                    itemprop="duration"
+                                    :content="schemaDuration"
+                                >
+
+                                <meta
+                                    v-if="contentUrl"
+                                    itemprop="contentUrl"
+                                    :content="contentUrl"
+                                >
+
+                                <meta
+                                    v-if="embedUrl"
+                                    itemprop="embedUrl"
+                                    :content="embedUrl"
+                                >
+
+                                <!-- Breadcrumbs -->
+                                <nav
+                                    class="text-sm"
+                                    aria-label="Breadcrumb"
+                                    itemscope
+                                    itemtype="https://schema.org/BreadcrumbList"
+                                >
+                                    <ol class="flex flex-wrap items-center font-semibold">
+
+                                        <!-- Home -->
+                                        <li
+                                            itemprop="itemListElement"
+                                            itemscope
+                                            itemtype="https://schema.org/ListItem"
+                                            class="flex items-center"
                                         >
+                                            <Link
+                                                itemprop="item"
+                                                :href="route('home')"
+                                                class="breadcrumb-link hover:underline"
+                                            >
                                             <span itemprop="name">
                                                 {{ t('home') }}
                                             </span>
-                                        </Link>
+                                            </Link>
 
-                                        <meta
-                                            itemprop="position"
-                                            content="1"
+                                            <meta
+                                                itemprop="position"
+                                                content="1"
+                                            >
+                                        </li>
+
+                                        <!-- Videos -->
+                                        <li
+                                            itemprop="itemListElement"
+                                            itemscope
+                                            itemtype="https://schema.org/ListItem"
+                                            class="flex items-center"
                                         >
-                                    </li>
-
-                                    <!-- Videos -->
-                                    <li
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                    >
                                         <span class="mx-2 breadcrumbs">
                                             /
                                         </span>
 
-                                        <Link
-                                            itemprop="item"
-                                            :href="route('public.blogVideos.index')"
-                                            class="breadcrumb-link hover:underline"
-                                        >
+                                            <Link
+                                                itemprop="item"
+                                                :href="route('public.blogVideos.index')"
+                                                class="breadcrumb-link hover:underline"
+                                            >
                                             <span itemprop="name">
                                                 {{ t('videos') }}
                                             </span>
-                                        </Link>
+                                            </Link>
 
-                                        <meta
-                                            itemprop="position"
-                                            content="2"
+                                            <meta
+                                                itemprop="position"
+                                                content="2"
+                                            >
+                                        </li>
+
+                                        <!-- Current video -->
+                                        <li
+                                            itemprop="itemListElement"
+                                            itemscope
+                                            itemtype="https://schema.org/ListItem"
+                                            class="flex items-center"
+                                            aria-current="page"
                                         >
-                                    </li>
-
-                                    <!-- Current video -->
-                                    <li
-                                        itemprop="itemListElement"
-                                        itemscope
-                                        itemtype="https://schema.org/ListItem"
-                                        class="flex items-center"
-                                        aria-current="page"
-                                    >
                                         <span class="mx-2 breadcrumbs">
                                             /
                                         </span>
 
-                                        <span
-                                            itemprop="name"
-                                            class="breadcrumbs"
-                                        >
+                                            <span
+                                                itemprop="name"
+                                                class="breadcrumbs"
+                                            >
                                             {{ videoTitle }}
                                         </span>
 
-                                        <meta
-                                            v-if="canonicalUrl"
-                                            itemprop="item"
-                                            :content="canonicalUrl"
-                                        >
+                                            <meta
+                                                v-if="canonicalUrl"
+                                                itemprop="item"
+                                                :content="canonicalUrl"
+                                            >
 
-                                        <meta
-                                            itemprop="position"
-                                            content="3"
-                                        >
-                                    </li>
-                                </ol>
-                            </nav>
+                                            <meta
+                                                itemprop="position"
+                                                content="3"
+                                            >
+                                        </li>
+                                    </ol>
+                                </nav>
 
-                            <!-- Video player -->
-                            <div
-                                class="overflow-hidden rounded-sm mt-4
+                                <!-- Video player -->
+                                <div
+                                    class="overflow-hidden rounded-sm mt-4
                                        shadow-md shadow-gray-400
                                        dark:shadow-gray-800"
-                            >
-                                <VideoPlayer
-                                    :video="videoData"
-                                />
-                            </div>
-
-                            <!-- Title / stats -->
-                            <div
-                                class="my-3 flex flex-wrap items-center
-                                       justify-center gap-3 title"
-                            >
-                                <h1
-                                    class="text-2xl font-bold"
                                 >
-                                    {{ videoTitle }}
-                                </h1>
+                                    <VideoPlayer
+                                        :video="videoData"
+                                    />
+                                </div>
 
+                                <!-- Title / stats -->
                                 <div
-                                    :title="t('views')"
-                                    class="flex items-center justify-center gap-1"
-                                    itemprop="interactionStatistic"
-                                    itemscope
-                                    itemtype="https://schema.org/InteractionCounter"
+                                    class="my-3 flex flex-wrap items-center
+                                       justify-center gap-3 title"
                                 >
-                                    <svg
-                                        class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                        viewBox="0 0 576 512"
-                                        fill="currentColor"
+                                    <h1
+                                        class="text-2xl font-bold"
                                     >
-                                        <path
-                                            d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
-                                        />
-                                    </svg>
+                                        {{ videoTitle }}
+                                    </h1>
 
-                                    <meta
-                                        itemprop="interactionType"
-                                        content="https://schema.org/WatchAction"
+                                    <div
+                                        :title="t('views')"
+                                        class="flex items-center justify-center gap-1"
+                                        itemprop="interactionStatistic"
+                                        itemscope
+                                        itemtype="https://schema.org/InteractionCounter"
                                     >
+                                        <svg
+                                            class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
+                                            viewBox="0 0 576 512"
+                                            fill="currentColor"
+                                        >
+                                            <path
+                                                d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
+                                            />
+                                        </svg>
 
-                                    <meta
-                                        itemprop="userInteractionCount"
-                                        :content="videoData.views || 0"
-                                    >
+                                        <meta
+                                            itemprop="interactionType"
+                                            content="https://schema.org/WatchAction"
+                                        >
 
-                                    <span class="text-sm text-gray-500">
+                                        <meta
+                                            itemprop="userInteractionCount"
+                                            :content="videoData.views || 0"
+                                        >
+
+                                        <span class="text-sm text-gray-500">
                                         {{ videoData.views || 0 }}
                                     </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Description -->
-                            <div
-                                v-if="videoDescription"
-                                class="my-4 text-sm subtitle text-center"
-                                v-html="videoDescription"
-                            />
-
-                            <!-- Like -->
-                            <div class="flex items-center justify-center gap-3">
-                                <LikeButtonEntity
-                                    :likes-count="videoData.likes_count || 0"
-                                    :already-liked="videoData.already_liked || false"
-                                    route-name="public.blogVideos.like"
-                                    :route-params="{ id: videoData.id }"
-                                    :title="t('like')"
-                                    icon-class="w-4 h-4"
-                                />
-                            </div>
-
-                            <!-- Author -->
-                            <div
-                                v-if="videoData.owner"
-                                itemprop="author"
-                                itemscope
-                                itemtype="https://schema.org/Person"
-                                class="mt-4 flex items-center justify-center gap-2"
-                            >
-                                <meta
-                                    itemprop="name"
-                                    :content="videoAuthor"
-                                >
-
-                                <img
-                                    v-if="videoData.owner?.profile_photo_url"
-                                    :src="videoData.owner.profile_photo_url"
-                                    :alt="videoAuthor"
-                                    loading="lazy"
-                                    class="h-8 w-8 rounded-full object-cover
-                                           ring-1 ring-gray-200 dark:ring-gray-700"
-                                >
-
+                                <!-- Description -->
                                 <div
-                                    class="min-w-0 text-sm font-semibold
-                                           text-slate-700/85 dark:text-slate-300/85"
-                                >
-                                    {{ videoAuthor }}
+                                    v-if="videoDescription"
+                                    class="my-4 text-sm subtitle text-center"
+                                    v-html="videoDescription"
+                                />
+
+                                <!-- Like -->
+                                <div class="flex items-center justify-center gap-3">
+                                    <LikeButtonEntity
+                                        :likes-count="videoData.likes_count || 0"
+                                        :already-liked="videoData.already_liked || false"
+                                        route-name="public.blogVideos.like"
+                                        :route-params="{ id: videoData.id }"
+                                        :title="t('like')"
+                                        icon-class="w-4 h-4"
+                                    />
                                 </div>
-                            </div>
 
-                            <!-- Comments -->
-                            <CommentThread
-                                commentable-type="App\Models\Admin\Blog\BlogVideo\BlogVideo"
-                                :commentable-id="videoData.id"
-                                :auth-user="authUser"
-                            />
+                                <!-- Author -->
+                                <div
+                                    v-if="videoData.owner"
+                                    itemprop="author"
+                                    itemscope
+                                    itemtype="https://schema.org/Person"
+                                    class="mt-4 flex items-center justify-center gap-2"
+                                >
+                                    <meta
+                                        itemprop="name"
+                                        :content="videoAuthor"
+                                    >
 
-                            <!-- Related videos -->
-                            <div
-                                v-if="recommendedVideosList.length"
-                                class="mt-8"
-                            >
-                                <h2
-                                    class="mb-4 text-center text-lg
+                                    <img
+                                        v-if="videoData.owner?.profile_photo_url"
+                                        :src="videoData.owner.profile_photo_url"
+                                        :alt="videoAuthor"
+                                        loading="lazy"
+                                        class="h-8 w-8 rounded-full object-cover
+                                           ring-1 ring-gray-200 dark:ring-gray-700"
+                                    >
+
+                                    <div
+                                        class="min-w-0 text-sm font-semibold
+                                           text-slate-700/85 dark:text-slate-300/85"
+                                    >
+                                        {{ videoAuthor }}
+                                    </div>
+                                </div>
+
+                                <!-- Comments -->
+                                <CommentThread
+                                    commentable-type="App\Models\Admin\Blog\BlogVideo\BlogVideo"
+                                    :commentable-id="videoData.id"
+                                    :auth-user="authUser"
+                                />
+
+                                <!-- Related videos -->
+                                <div
+                                    v-if="recommendedVideosList.length"
+                                    class="mt-8"
+                                >
+                                    <h2
+                                        class="mb-4 text-center text-lg
                                            font-semibold text-gray-700
                                            dark:text-gray-300"
-                                >
-                                    {{ t('relatedVideos') }}
-                                </h2>
+                                    >
+                                        {{ t('relatedVideos') }}
+                                    </h2>
 
-                                <VideoGrid
-                                    :videos="recommendedVideosList"
-                                    :cols="videoGridCols"
-                                />
-                            </div>
-                        </article>
+                                    <VideoGrid
+                                        :videos="recommendedVideosList"
+                                        :cols="videoGridCols"
+                                    />
+                                </div>
+                            </article>
 
-                        <!-- Bottom main blocks -->
-                        <SectionVideoList
-                            :videos="mainVideosList"
+                            <!-- Bottom main blocks -->
+                            <SectionVideoList
+                                :videos="mainVideosList"
+                            />
+
+                            <SectionBanners
+                                :banners="mainBannersList"
+                            />
+                        </div>
+                    </section>
+
+                    <!-- Right sidebar -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebar
+                            :collapsed="rightCollapsed"
+                            @collapsed="setRightCollapsed"
                         />
-
-                        <SectionBanners
-                            :banners="mainBannersList"
-                        />
-                    </div>
-                </section>
-
-                <!-- Right sidebar -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebar
-                        :collapsed="rightCollapsed"
-                        @collapsed="setRightCollapsed"
-                    />
-                </aside>
-            </main>
-        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

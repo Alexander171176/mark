@@ -51,7 +51,7 @@ const { t } = useI18n()
 const props = defineProps({
     locale: {
         type: String,
-        default: 'ru',
+        default: 'ru'
     },
 
     seo: {
@@ -59,74 +59,74 @@ const props = defineProps({
         default: () => ({
             title: '',
             keywords: '',
-            description: '',
-        }),
+            description: ''
+        })
     },
 
     useServerProcessing: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     publicSchoolModulesProcessingMode: {
         type: String,
-        default: 'server',
+        default: 'server'
     },
 
     title: {
         type: String,
-        default: '',
+        default: ''
     },
 
     canLogin: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     canRegister: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     trackTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     modules: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     modulesCount: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     modulesFound: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     filters: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     hashtags: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ===================== PAGE ===================== */
@@ -305,7 +305,7 @@ const moduleSortOptions = [
     { value: 'ratingCountAsc', label: `${t('ratingCount')} 0→9` },
 
     { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
-    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
+    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` }
 ]
 
 /* ===================== FRONTEND MODE ===================== */
@@ -314,10 +314,10 @@ const frontendCurrentPage = ref(1)
 
 const {
     targetRef: scrollTarget,
-    scrollToTarget,
+    scrollToTarget
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 const normalizeText = (value) => {
@@ -355,7 +355,7 @@ const filteredModules = computed(() => {
         return [
             getModuleTitle(module),
             getModuleShort(module),
-            getModuleSlug(module),
+            getModuleSlug(module)
         ].some((value) =>
             normalizeText(value).includes(query)
         )
@@ -548,12 +548,12 @@ const reloadModules = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            page,
+            page
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -695,7 +695,7 @@ const getAbsoluteModuleUrl = (module) => {
 
     const url = route('public.schoolModules.show', {
         courseSlug: module.course.slug,
-        slug: module.slug,
+        slug: module.slug
     })
 
     if (typeof window === 'undefined') return url
@@ -730,8 +730,8 @@ const collectionPageSchema = computed(() => ({
         url: homeUrl.value,
         ...(siteName.value
             ? { name: siteName.value }
-            : {}),
-    },
+            : {})
+    }
 }))
 
 const breadcrumbSchema = computed(() => ({
@@ -742,15 +742,15 @@ const breadcrumbSchema = computed(() => ({
             '@type': 'ListItem',
             position: 1,
             name: t('home'),
-            item: homeUrl.value,
+            item: homeUrl.value
         },
         {
             '@type': 'ListItem',
             position: 2,
             name: seoTitle.value,
-            item: canonicalUrl.value,
-        },
-    ],
+            item: canonicalUrl.value
+        }
+    ]
 }))
 
 const moduleItemListSchema = computed(() => ({
@@ -768,7 +768,7 @@ const moduleItemListSchema = computed(() => ({
                 '@id': `${moduleUrl}#learning-resource`,
                 url: moduleUrl,
                 name: getModuleTitle(module),
-                inLanguage: props.locale,
+                inLanguage: props.locale
             }
 
             if (getModuleShort(module)) {
@@ -787,10 +787,10 @@ const moduleItemListSchema = computed(() => ({
                     + index
                     + 1,
                 url: moduleUrl,
-                item,
+                item
             }
         }
-    ),
+    )
 }))
 
 const collectionPageJsonLd = computed(() => {
@@ -969,231 +969,239 @@ const moduleItemListJsonLd = computed(() => {
         <!-- Шапка -->
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-                <!-- Левая колонка -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
-                    />
-                </aside>
+                    <!-- Левая колонка -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="leftCollapsed = $event"
+                        />
+                    </aside>
 
-                <!-- Центральный SEO-контент страницы. Сайдбары намеренно находятся вне CollectionPage. -->
-                <article
-                    class="w-full lg:mt-28 pb-6 slate-1"
-                    itemscope
-                    itemtype="https://schema.org/CollectionPage"
-                >
-                    <div class="mx-auto max-w-6xl">
+                    <!-- Центральный SEO-контент страницы. Сайдбары намеренно находятся вне CollectionPage. -->
+                    <article
+                        class="w-full pb-6 slate-1"
+                        itemscope
+                        itemtype="https://schema.org/CollectionPage"
+                    >
+                        <div class="mx-auto max-w-6xl">
 
-                        <!-- Хлебные крошки -->
-                        <nav
-                            class="text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
-                        >
-                            <ol class="flex flex-wrap items-center font-semibold">
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                >
-                                    <Link
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
-                                        itemprop="item"
+                            <!-- Хлебные крошки -->
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol class="flex flex-wrap items-center font-semibold">
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
                                     >
+                                        <Link
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                            itemprop="item"
+                                        >
                                         <span itemprop="name">
                                             {{ t('home') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="1"
-                                    />
-                                </li>
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        />
+                                    </li>
 
-                                <li aria-hidden="true">
+                                    <li aria-hidden="true">
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
-                                </li>
+                                    </li>
 
-                                <li
-                                    class="breadcrumbs"
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    aria-current="page"
-                                >
+                                    <li
+                                        class="breadcrumbs"
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        aria-current="page"
+                                    >
                                     <span itemprop="name">
                                         {{ t('modules') }}
                                     </span>
 
-                                    <meta
-                                        itemprop="item"
-                                        :content="canonicalUrl"
-                                    />
+                                        <meta
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        />
 
-                                    <meta
-                                        itemprop="position"
-                                        content="2"
-                                    />
-                                </li>
-                            </ol>
-                        </nav>
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        />
+                                    </li>
+                                </ol>
+                            </nav>
 
-                        <!-- Заголовок -->
-                        <div
-                            class="my-3 flex flex-wrap items-center
+                            <!-- Заголовок -->
+                            <div
+                                class="my-3 flex flex-wrap items-center
                                    justify-center gap-3 title"
-                        >
-                            <svg
-                                class="shrink-0 h-5 w-5
+                            >
+                                <svg
+                                    class="shrink-0 h-5 w-5
                                        text-slate-600/85
                                        dark:text-slate-200/85"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                                aria-hidden="true"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <rect x="1" y="1" width="10" height="10" rx="2"></rect>
+                                    <path
+                                        class="fill-current text-slate-400"
+                                        d="M23.428,4.618,19.381.572h0a1.957,1.957,0,0,0-2.762,0L12.572,4.618a1.959,1.959,0,0,0,0,2.764l4.047,4.047a1.957,1.957,0,0,0,2.762,0l4.047-4.046A1.959,1.959,0,0,0,23.428,4.618Z"
+                                    ></path>
+                                    <rect x="13" y="13" width="10" height="10" rx="2"></rect>
+                                    <rect x="1" y="13" width="10" height="10" rx="2"></rect>
+                                </svg>
+
+                                <h1
+                                    class="text-2xl font-bold"
+                                    itemprop="name"
+                                >
+                                    {{ t('modules') }}
+                                </h1>
+                            </div>
+
+                            <!-- SEO-описание страницы -->
+                            <div
+                                v-if="seoDescription"
+                                class="my-1 text-sm subtitle text-center"
+                                itemprop="description"
                             >
-                                <rect x="1" y="1" width="10" height="10" rx="2"></rect>
-                                <path
-                                    class="fill-current text-slate-400"
-                                    d="M23.428,4.618,19.381.572h0a1.957,1.957,0,0,0-2.762,0L12.572,4.618a1.959,1.959,0,0,0,0,2.764l4.047,4.047a1.957,1.957,0,0,0,2.762,0l4.047-4.046A1.959,1.959,0,0,0,23.428,4.618Z"
-                                ></path>
-                                <rect x="13" y="13" width="10" height="10" rx="2"></rect>
-                                <rect x="1" y="13" width="10" height="10" rx="2"></rect>
-                            </svg>
+                                {{ seoDescription }}
+                            </div>
 
-                            <h1
-                                class="text-2xl font-bold"
-                                itemprop="name"
-                            >
-                                {{ t('modules') }}
-                            </h1>
-                        </div>
-
-                        <!-- SEO-описание страницы -->
-                        <div
-                            v-if="seoDescription"
-                            class="my-1 text-sm subtitle text-center"
-                            itemprop="description"
-                        >
-                            {{ seoDescription }}
-                        </div>
-
-                        <!-- Поиск, количество, сортировка, вид -->
-                        <EntityPageToolbar
-                            v-if="useServerProcessing"
-                            v-model="q"
-                            :found="modulesFound"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="moduleSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('modules')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="submitSearch"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
-
-                        <FrontendEntityPageToolbar
-                            v-else
-                            v-model="q"
-                            :found="sortedModules.length"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="moduleSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('modules')"
-                            :search-placeholder="t('searchByName')"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
-
-                        <div ref="scrollTarget"></div>
-
-                        <!-- Нет данных -->
-                        <div
-                            v-if="displayedModules.length === 0"
-                            class="mt-6 text-center
-                                   text-slate-700 dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
-
-                        <!-- Модули -->
-                        <section
-                            v-else
-                            :aria-label="t('modules')"
-                            itemprop="mainEntity"
-                        >
-                            <ModuleGrid
-                                v-if="viewMode === 'grid'"
-                                :modules="displayedModules"
-                                :cols="gridCols"
+                            <!-- Поиск, количество, сортировка, вид -->
+                            <EntityPageToolbar
+                                v-if="useServerProcessing"
+                                v-model="q"
+                                :found="modulesFound"
+                                :view-mode="viewMode"
+                                :sort-value="sort"
+                                :sort-options="moduleSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('modules')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="submitSearch"
+                                @reset="resetSearch"
+                                @update:viewMode="updateViewMode"
+                                @update:sortValue="updateSort"
                             />
 
-                            <ModuleRows
+                            <FrontendEntityPageToolbar
                                 v-else
-                                :modules="displayedModules"
+                                v-model="q"
+                                :found="sortedModules.length"
+                                :view-mode="viewMode"
+                                :sort-value="sort"
+                                :sort-options="moduleSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('modules')"
+                                :search-placeholder="t('searchByName')"
+                                @reset="resetSearch"
+                                @update:viewMode="updateViewMode"
+                                @update:sortValue="updateSort"
                             />
-                        </section>
 
-                        <!-- Пагинация -->
-                        <Pagination
-                            v-if="useServerProcessing"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="modulesFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
-                        />
+                            <div ref="scrollTarget"></div>
 
-                        <FrontendPagination
-                            v-else
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPage"
-                            :total-items="sortedModules.length"
-                        />
+                            <!-- Нет данных -->
+                            <div
+                                v-if="displayedModules.length === 0"
+                                class="mt-6 text-center
+                                   text-slate-700 dark:text-slate-300"
+                            >
+                                {{ t('noData') }}
+                            </div>
 
-                        <!-- Главные видео и баннеры -->
-                        <SectionVideoList
-                            :videos="mainVideos"
-                        />
+                            <!-- Модули -->
+                            <section
+                                v-else
+                                :aria-label="t('modules')"
+                                itemprop="mainEntity"
+                            >
+                                <ModuleGrid
+                                    v-if="viewMode === 'grid'"
+                                    :modules="displayedModules"
+                                    :cols="gridCols"
+                                />
 
-                        <SectionBanners
-                            :banners="mainBanners"
-                        />
-                    </div>
-                </article>
+                                <ModuleRows
+                                    v-else
+                                    :modules="displayedModules"
+                                />
+                            </section>
 
-                <!-- Правая колонка -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28
+                            <!-- Пагинация -->
+                            <Pagination
+                                v-if="useServerProcessing"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="modulesFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
+                            />
+
+                            <FrontendPagination
+                                v-else
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPage"
+                                :total-items="sortedModules.length"
+                            />
+
+                            <!-- Главные видео и баннеры -->
+                            <SectionVideoList
+                                :videos="mainVideos"
+                            />
+
+                            <SectionBanners
+                                :banners="mainBanners"
+                            />
+                        </div>
+                    </article>
+
+                    <!-- Правая колонка -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0
                            transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebarSchool
-                        :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
-                    />
-                </aside>
-            </main>
-        </div>
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebarSchool
+                            :collapsed="rightCollapsed"
+                            @collapsed="rightCollapsed = $event"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <!-- Подвал -->
         <FooterBlog />

@@ -52,7 +52,7 @@ const toggleSidebar = () => {
 
 <template>
     <div class="relative">
-        <div class="flex items-center justify-center">
+        <div class="flex items-center justify-center mb-2">
             <button
                 type="button"
                 class="focus:outline-none"

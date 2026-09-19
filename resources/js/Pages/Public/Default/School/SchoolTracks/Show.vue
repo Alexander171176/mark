@@ -964,375 +964,383 @@ const isAdmin = computed(() =>
     >
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-
-                <!-- Left sidebar -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 pl-3 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="setLeftCollapsed"
-                    />
-                </aside>
 
-                <!-- Content -->
-                <article
-                    itemscope
-                    itemtype="https://schema.org/LearningResource"
-                    :itemid="canonicalUrl"
-                    class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
-                >
-                    <meta itemprop="identifier" :content="String(track.id || '')">
-                    <meta itemprop="name" :content="trackName">
-
-                    <meta
-                        v-if="trackMetaDescription"
-                        itemprop="description"
-                        :content="trackMetaDescription"
+                    <!-- Left sidebar -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 pl-3 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
                     >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="setLeftCollapsed"
+                        />
+                    </aside>
 
-                    <meta
-                        v-if="trackMetaKeywords"
-                        itemprop="keywords"
-                        :content="trackMetaKeywords"
+                    <!-- Content -->
+                    <article
+                        itemscope
+                        itemtype="https://schema.org/LearningResource"
+                        :itemid="canonicalUrl"
+                        class="w-full pb-6 slate-1 min-w-0"
                     >
+                        <meta itemprop="identifier" :content="String(track.id || '')">
+                        <meta itemprop="name" :content="trackName">
 
-                    <meta
-                        v-if="canonicalUrl"
-                        itemprop="url"
-                        :content="canonicalUrl"
-                    >
-
-                    <meta
-                        itemprop="inLanguage"
-                        :content="trackLocale"
-                    >
-
-                    <meta
-                        v-if="trackSeoImage"
-                        itemprop="image"
-                        :content="trackSeoImage"
-                    >
-
-                    <div class="mx-auto max-w-6xl">
-
-                        <!-- Breadcrumbs -->
-                        <nav
-                            class="mb-3 text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
+                        <meta
+                            v-if="trackMetaDescription"
+                            itemprop="description"
+                            :content="trackMetaDescription"
                         >
-                            <ol class="flex flex-wrap items-center font-semibold">
-                                <!-- Главная -->
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
+
+                        <meta
+                            v-if="trackMetaKeywords"
+                            itemprop="keywords"
+                            :content="trackMetaKeywords"
+                        >
+
+                        <meta
+                            v-if="canonicalUrl"
+                            itemprop="url"
+                            :content="canonicalUrl"
+                        >
+
+                        <meta
+                            itemprop="inLanguage"
+                            :content="trackLocale"
+                        >
+
+                        <meta
+                            v-if="trackSeoImage"
+                            itemprop="image"
+                            :content="trackSeoImage"
+                        >
+
+                        <div class="mx-auto max-w-6xl">
+
+                            <!-- Breadcrumbs -->
+                            <nav
+                                class="mb-3 text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol class="flex flex-wrap items-center font-semibold">
+                                    <!-- Главная -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
-                                        <span itemprop="name">{{ t('home') }}</span>
-                                    </Link>
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
+                                            <span itemprop="name">{{ t('home') }}</span>
+                                        </Link>
 
-                                    <meta itemprop="position" content="1">
-                                </li>
+                                        <meta itemprop="position" content="1">
+                                    </li>
 
-                                <!-- Направления -->
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <span class="mx-2 breadcrumbs">/</span>
-
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('public.schoolTracks.index')"
-                                        class="breadcrumb-link hover:underline"
+                                    <!-- Направления -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
-                                        <span itemprop="name">{{ t('tracks') }}</span>
-                                    </Link>
+                                        <span class="mx-2 breadcrumbs">/</span>
 
-                                    <meta itemprop="position" content="2">
-                                </li>
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('public.schoolTracks.index')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
+                                            <span itemprop="name">{{ t('tracks') }}</span>
+                                        </Link>
 
-                                <!-- Родительское направление -->
-                                <li
-                                    v-if="track?.parent"
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <span class="mx-2 breadcrumbs">/</span>
+                                        <meta itemprop="position" content="2">
+                                    </li>
 
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('public.schoolTracks.show', { slug: track.parent.slug })"
-                                        class="breadcrumb-link hover:underline"
+                                    <!-- Родительское направление -->
+                                    <li
+                                        v-if="track?.parent"
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
+                                        <span class="mx-2 breadcrumbs">/</span>
+
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('public.schoolTracks.show', { slug: track.parent.slug })"
+                                            class="breadcrumb-link hover:underline"
+                                        >
                                         <span itemprop="name">
                                             {{ track.parent?.translation?.name || '' }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta itemprop="position" content="3">
-                                </li>
+                                        <meta itemprop="position" content="3">
+                                    </li>
 
-                                <!-- Текущее направление -->
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                    aria-current="page"
-                                >
-                                    <span class="mx-2 breadcrumbs">/</span>
+                                    <!-- Текущее направление -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
+                                    >
+                                        <span class="mx-2 breadcrumbs">/</span>
 
-                                    <span itemprop="name" class="breadcrumbs">
+                                        <span itemprop="name" class="breadcrumbs">
                                         {{ trackName }}
                                     </span>
 
-                                    <meta
-                                        v-if="canonicalUrl"
-                                        itemprop="item"
-                                        :content="canonicalUrl"
-                                    >
+                                        <meta
+                                            v-if="canonicalUrl"
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        >
 
-                                    <meta
-                                        itemprop="position"
-                                        :content="track?.parent ? 4 : 3"
-                                    >
-                                </li>
-                            </ol>
-                        </nav>
+                                        <meta
+                                            itemprop="position"
+                                            :content="track?.parent ? 4 : 3"
+                                        >
+                                    </li>
+                                </ol>
+                            </nav>
 
-                        <!-- Gallery -->
-                        <div v-if="hasTrackImages" class="flex items-center justify-center">
-                            <div class="w-full">
-                                <ImageGalleryMain
-                                    :images="trackImages"
-                                    :alt="trackName"
-                                    rounded-class="rounded-lg"
-                                    shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
-                                    img-class="w-full h-full object-cover"
-                                />
-                            </div>
-                        </div>
-
-                        <!-- Header -->
-                        <div class="flex items-center justify-between gap-1">
-                            <div :title="t('courses')" class="flex items-center justify-center gap-1">
-                                <svg
-                                    class="h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                            <!-- Gallery -->
+                            <div v-if="hasTrackImages" class="flex items-center justify-center">
+                                <div class="w-full">
+                                    <ImageGalleryMain
+                                        :images="trackImages"
+                                        :alt="trackName"
+                                        rounded-class="rounded-lg"
+                                        shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
+                                        img-class="w-full h-full object-cover"
                                     />
-                                </svg>
+                                </div>
+                            </div>
 
-                                <span
-                                    v-if="hasCourses"
-                                    class="text-center text-sm text-gray-500"
-                                >
+                            <!-- Header -->
+                            <div class="flex items-center justify-between gap-1">
+                                <div :title="t('courses')" class="flex items-center justify-center gap-1">
+                                    <svg
+                                        class="h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
+                                        fill="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                                        />
+                                    </svg>
+
+                                    <span
+                                        v-if="hasCourses"
+                                        class="text-center text-sm text-gray-500"
+                                    >
                                     {{ coursesCount }}
                                 </span>
-                            </div>
+                                </div>
 
-                            <div class="flex flex-wrap items-center justify-center gap-3 title my-3">
-                                <h1 itemprop="headline" class="text-2xl font-bold">
-                                    {{ trackName }}
-                                </h1>
-                            </div>
+                                <div class="flex flex-wrap items-center justify-center gap-3 title my-3">
+                                    <h1 itemprop="headline" class="text-2xl font-bold">
+                                        {{ trackName }}
+                                    </h1>
+                                </div>
 
-                            <div :title="t('views')" class="flex items-center justify-center gap-1">
-                                <svg
-                                    class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 576 512"
-                                    fill="currentColor"
-                                >
-                                    <path
-                                        d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
-                                    />
-                                </svg>
+                                <div :title="t('views')" class="flex items-center justify-center gap-1">
+                                    <svg
+                                        class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 576 512"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
+                                        />
+                                    </svg>
 
-                                <span class="text-center text-sm text-gray-500">
+                                    <span class="text-center text-sm text-gray-500">
                                     {{ track.views || 0 }}
                                 </span>
+                                </div>
                             </div>
-                        </div>
 
-                        <div
-                            v-if="trackShort"
-                            itemprop="abstract"
-                            class="mb-3 text-sm subtitle text-center"
-                        >
-                            {{ trackShort }}
-                        </div>
-
-                        <div
-                            v-if="trackDescription"
-                            itemprop="text"
-                            class="my-3 text-sm subtitle text-center"
-                            v-html="trackDescription"
-                        />
-
-                        <!-- Like -->
-                        <div class="flex justify-center items-center">
-                            <LikeButtonEntity
-                                :likes-count="track.likes_count || 0"
-                                :already-liked="track.already_liked || false"
-                                route-name="public.schoolTracks.like"
-                                :route-params="track.id"
-                                :title="t('like')"
-                                icon-class="w-4 h-4"
-                            />
-                        </div>
-
-                        <!-- Courses -->
-                        <section
-                            v-if="hasCourses"
-                            aria-labelledby="track-courses-title"
-                        >
-                            <h2
-                                id="track-courses-title"
-                                class="sr-only"
-                            >
-                                {{ t('courses') }} — {{ trackName }}
-                            </h2>
-
-                            <!-- Course toolbar -->
-                            <EntityPageToolbar
-                                v-model="qCourses"
-                                v-model:view-mode="viewMode"
-                                v-model:sort-value="sortCourses"
-                                :found="effectiveCoursesFound"
-                                :sort-options="courseSortOptions"
-                                :default-sort="DEFAULT_SORT"
-                                :found-label="t('courses')"
-                                :search-placeholder="t('searchByName')"
-                                @submit="applyCourseFilters"
-                                @reset="resetCourseFilters"
-                            />
-
-                            <!-- Empty -->
                             <div
-                                v-if="displayedCourses.length === 0"
-                                class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                                v-if="trackShort"
+                                itemprop="abstract"
+                                class="mb-3 text-sm subtitle text-center"
                             >
-                                {{ t('noData') }}
+                                {{ trackShort }}
+                            </div>
+
+                            <div
+                                v-if="trackDescription"
+                                itemprop="text"
+                                class="my-3 text-sm subtitle text-center"
+                                v-html="trackDescription"
+                            />
+
+                            <!-- Like -->
+                            <div class="flex justify-center items-center">
+                                <LikeButtonEntity
+                                    :likes-count="track.likes_count || 0"
+                                    :already-liked="track.already_liked || false"
+                                    route-name="public.schoolTracks.like"
+                                    :route-params="track.id"
+                                    :title="t('like')"
+                                    icon-class="w-4 h-4"
+                                />
                             </div>
 
                             <!-- Courses -->
-                            <div v-if="displayedCourses.length">
-                                <CourseGrid
-                                    v-if="viewMode === 'grid'"
-                                    :courses="displayedCourses"
-                                    :cols="gridCols"
-                                />
-
-                                <CourseRows
-                                    v-else
-                                    :courses="displayedCourses"
-                                />
-                            </div>
-
-                            <!-- Server pagination -->
-                            <Pagination
-                                v-if="useServerProcessing && lastPage > 1"
-                                :current-page="currentPage"
-                                :last-page="lastPage"
-                                :found="coursesFound"
-                                @prev="goPrev"
-                                @next="goNext"
-                                @go="goToPage"
-                            />
-
-                            <!-- Frontend pagination -->
-                            <FrontendPagination
-                                v-if="!useServerProcessing && effectiveCoursesFound > perPageCourses"
-                                v-model:currentPage="frontendCurrentPage"
-                                :items-per-page="perPageCourses"
-                                :total-items="effectiveCoursesFound"
-                            />
-                        </section>
-
-                        <!-- Child tracks -->
-                        <section
-                            v-if="hasChildren"
-                            aria-labelledby="child-tracks-title"
-                        >
-                            <div
-                                class="mt-4 flex flex-wrap items-center justify-center gap-3
-                                        text-slate-700/85 dark:text-slate-300/85"
+                            <section
+                                v-if="hasCourses"
+                                aria-labelledby="track-courses-title"
                             >
-                                <svg
-                                    class="h-8 w-8 opacity-70"
-                                    fill="currentColor"
-                                    viewBox="0 0 640 512"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        d="M622.34 153.2L343.4 67.5c-15.2-4.67-31.6-4.67-46.79 0L17.66 153.2c-23.54 7.23-23.54 38.36 0 45.59l48.63 14.94c-10.67 13.19-17.23 29.28-17.88 46.9C38.78 266.15 32 276.11 32 288c0 10.78 5.68 19.85 13.86 25.65L20.33 428.53C18.11 438.52 25.71 448 35.94 448h56.11c10.24 0 17.84-9.48 15.62-19.47L82.14 313.65C90.32 307.85 96 298.78 96 288c0-11.57-6.47-21.25-15.66-26.87.76-15.02 8.44-28.3 20.69-36.72L296.6 284.5c9.06 2.78 26.44 6.25 46.79 0l278.95-85.7c23.55-7.24 23.55-38.36 0-45.6zM352.79 315.09c-28.53 8.76-52.84 3.92-65.59 0l-145.02-44.55L128 384c0 35.35 85.96 64 192 64s192-28.65 192-64l-14.18-113.47-145.03 44.56z"
-                                    />
-                                </svg>
-
                                 <h2
-                                    id="child-tracks-title"
-                                    class="text-xl font-semibold"
+                                    id="track-courses-title"
+                                    class="sr-only"
                                 >
-                                    {{ t('subheadings') }}
+                                    {{ t('courses') }} — {{ trackName }}
                                 </h2>
-                            </div>
 
-                            <div class="mt-6">
-                                <TrackGrid
-                                    v-if="viewMode === 'grid'"
-                                    :tracks="childTracks"
-                                    :cols="gridCols"
+                                <!-- Course toolbar -->
+                                <EntityPageToolbar
+                                    v-model="qCourses"
+                                    v-model:view-mode="viewMode"
+                                    v-model:sort-value="sortCourses"
+                                    :found="effectiveCoursesFound"
+                                    :sort-options="courseSortOptions"
+                                    :default-sort="DEFAULT_SORT"
+                                    :found-label="t('courses')"
+                                    :search-placeholder="t('searchByName')"
+                                    @submit="applyCourseFilters"
+                                    @reset="resetCourseFilters"
                                 />
 
-                                <TrackRows
-                                    v-else
-                                    :tracks="childTracks"
+                                <!-- Empty -->
+                                <div
+                                    v-if="displayedCourses.length === 0"
+                                    class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                                >
+                                    {{ t('noData') }}
+                                </div>
+
+                                <!-- Courses -->
+                                <div v-if="displayedCourses.length">
+                                    <CourseGrid
+                                        v-if="viewMode === 'grid'"
+                                        :courses="displayedCourses"
+                                        :cols="gridCols"
+                                    />
+
+                                    <CourseRows
+                                        v-else
+                                        :courses="displayedCourses"
+                                    />
+                                </div>
+
+                                <!-- Server pagination -->
+                                <Pagination
+                                    v-if="useServerProcessing && lastPage > 1"
+                                    :current-page="currentPage"
+                                    :last-page="lastPage"
+                                    :found="coursesFound"
+                                    @prev="goPrev"
+                                    @next="goNext"
+                                    @go="goToPage"
                                 />
-                            </div>
-                        </section>
 
-                        <SectionVideoList :videos="mainVideos" />
-                        <SectionBanners :banners="mainBanners" />
-                    </div>
-                </article>
+                                <!-- Frontend pagination -->
+                                <FrontendPagination
+                                    v-if="!useServerProcessing && effectiveCoursesFound > perPageCourses"
+                                    v-model:currentPage="frontendCurrentPage"
+                                    :items-per-page="perPageCourses"
+                                    :total-items="effectiveCoursesFound"
+                                />
+                            </section>
 
-                <!-- Right sidebar -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 pr-3 transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebarSchool
-                        :collapsed="rightCollapsed"
-                        @collapsed="setRightCollapsed"
-                    />
-                </aside>
-            </main>
-        </div>
+                            <!-- Child tracks -->
+                            <section
+                                v-if="hasChildren"
+                                aria-labelledby="child-tracks-title"
+                            >
+                                <div
+                                    class="mt-4 flex flex-wrap items-center justify-center gap-3
+                                        text-slate-700/85 dark:text-slate-300/85"
+                                >
+                                    <svg
+                                        class="h-8 w-8 opacity-70"
+                                        fill="currentColor"
+                                        viewBox="0 0 640 512"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M622.34 153.2L343.4 67.5c-15.2-4.67-31.6-4.67-46.79 0L17.66 153.2c-23.54 7.23-23.54 38.36 0 45.59l48.63 14.94c-10.67 13.19-17.23 29.28-17.88 46.9C38.78 266.15 32 276.11 32 288c0 10.78 5.68 19.85 13.86 25.65L20.33 428.53C18.11 438.52 25.71 448 35.94 448h56.11c10.24 0 17.84-9.48 15.62-19.47L82.14 313.65C90.32 307.85 96 298.78 96 288c0-11.57-6.47-21.25-15.66-26.87.76-15.02 8.44-28.3 20.69-36.72L296.6 284.5c9.06 2.78 26.44 6.25 46.79 0l278.95-85.7c23.55-7.24 23.55-38.36 0-45.6zM352.79 315.09c-28.53 8.76-52.84 3.92-65.59 0l-145.02-44.55L128 384c0 35.35 85.96 64 192 64s192-28.65 192-64l-14.18-113.47-145.03 44.56z"
+                                        />
+                                    </svg>
+
+                                    <h2
+                                        id="child-tracks-title"
+                                        class="text-xl font-semibold"
+                                    >
+                                        {{ t('subheadings') }}
+                                    </h2>
+                                </div>
+
+                                <div class="mt-6">
+                                    <TrackGrid
+                                        v-if="viewMode === 'grid'"
+                                        :tracks="childTracks"
+                                        :cols="gridCols"
+                                    />
+
+                                    <TrackRows
+                                        v-else
+                                        :tracks="childTracks"
+                                    />
+                                </div>
+                            </section>
+
+                            <SectionVideoList :videos="mainVideos" />
+                            <SectionBanners :banners="mainBanners" />
+                        </div>
+                    </article>
+
+                    <!-- Right sidebar -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 pr-3 transition-all duration-300"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebarSchool
+                            :collapsed="rightCollapsed"
+                            @collapsed="setRightCollapsed"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

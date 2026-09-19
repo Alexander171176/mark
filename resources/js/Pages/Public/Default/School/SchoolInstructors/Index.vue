@@ -31,7 +31,7 @@ const page = usePage()
 const props = defineProps({
     locale: {
         type: String,
-        default: 'ru',
+        default: 'ru'
     },
 
     seo: {
@@ -39,69 +39,69 @@ const props = defineProps({
         default: () => ({
             title: '',
             keywords: '',
-            description: '',
-        }),
+            description: ''
+        })
     },
 
     publicSchoolInstructorsProcessingMode: {
         type: String,
-        default: 'server',
+        default: 'server'
     },
 
     useServerProcessing: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     title: {
         type: String,
-        default: '',
+        default: ''
     },
 
     canLogin: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     canRegister: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     instructorProfiles: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     instructorProfilesCount: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     instructorProfilesFound: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     filters: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     trackTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ======================== Helpers ======================== */
@@ -251,8 +251,8 @@ const collectionPageSchema = computed(() => ({
     isPartOf: {
         '@type': 'WebSite',
         url: homeUrl.value,
-        ...(siteName.value ? { name: siteName.value } : {}),
-    },
+        ...(siteName.value ? { name: siteName.value } : {})
+    }
 }))
 
 const breadcrumbSchema = computed(() => ({
@@ -260,8 +260,8 @@ const breadcrumbSchema = computed(() => ({
     '@type': 'BreadcrumbList',
     itemListElement: [
         { '@type': 'ListItem', position: 1, name: t('home'), item: homeUrl.value },
-        { '@type': 'ListItem', position: 2, name: seoTitle.value, item: canonicalUrl.value },
-    ],
+        { '@type': 'ListItem', position: 2, name: seoTitle.value, item: canonicalUrl.value }
+    ]
 }))
 
 /** ItemList содержит только инструкторов, реально отображаемых на текущей странице. */
@@ -278,7 +278,7 @@ const instructorItemListSchema = computed(() => ({
             '@type': 'Person',
             '@id': `${instructorUrl}#person`,
             url: instructorUrl,
-            name: getInstructorTitle(instructor),
+            name: getInstructorTitle(instructor)
         }
 
         if (contentLocale.value) item.inLanguage = contentLocale.value
@@ -289,9 +289,9 @@ const instructorItemListSchema = computed(() => ({
             '@type': 'ListItem',
             position: ((seoCurrentPage.value - 1) * perPage.value) + index + 1,
             url: instructorUrl,
-            item,
+            item
         }
-    }),
+    })
 }))
 
 const collectionPageJsonLd = computed(() => JSON.stringify(collectionPageSchema.value))
@@ -358,7 +358,7 @@ const instructorSortOptions = [
     { value: 'coursesAsc', label: `${t('courses')} 0→9` },
 
     { value: 'dateDesc', label: `${t('createdAt')} ↓` },
-    { value: 'dateAsc', label: `${t('createdAt')} ↑` },
+    { value: 'dateAsc', label: `${t('createdAt')} ↑` }
 ]
 
 /* ======================== View mode ======================== */
@@ -422,7 +422,7 @@ const filteredInstructors = computed(() => {
             getInstructorTitle(instructor),
             getInstructorShort(instructor),
             getInstructorSlug(instructor),
-            instructor?.user?.name,
+            instructor?.user?.name
         ].some((value) =>
             normalizeText(value).includes(query)
         )
@@ -447,7 +447,7 @@ const sortedInstructors = computed(() => {
     }
 
     const list = [
-        ...filteredInstructors.value,
+        ...filteredInstructors.value
     ]
 
     switch (sort.value) {
@@ -609,16 +609,16 @@ const frontendCurrentPage = ref(1)
 
 const {
     targetRef: scrollTarget,
-    scrollToTarget,
+    scrollToTarget
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 watch(
     [
         q,
-        sort,
+        sort
     ],
     () => {
         if (!props.useServerProcessing) {
@@ -716,12 +716,12 @@ const reloadInstructors = (
                 || undefined,
 
             page:
-            pageNumber,
+            pageNumber
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -974,249 +974,256 @@ const instructorGridCols = computed(() => {
     >
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
+                >
 
-                <!-- Left sidebar -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="
+                    <!-- Left sidebar -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="
                         leftCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="setLeftCollapsed"
-                    />
-                </aside>
-
-                <!-- Content -->
-                <article
-                    itemscope
-                    itemtype="https://schema.org/CollectionPage"
-                    :itemid="canonicalUrl"
-                    class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
-                >
-                    <!-- Schema.org -->
-                    <meta
-                        itemprop="name"
-                        :content="seoTitle"
                     >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="setLeftCollapsed"
+                        />
+                    </aside>
 
-                    <meta
-                        v-if="seoDescription"
-                        itemprop="description"
-                        :content="seoDescription"
+                    <!-- Content -->
+                    <article
+                        itemscope
+                        itemtype="https://schema.org/CollectionPage"
+                        :itemid="canonicalUrl"
+                        class="w-full pb-6 slate-1 min-w-0"
                     >
-
-                    <meta
-                        v-if="seoKeywords"
-                        itemprop="keywords"
-                        :content="seoKeywords"
-                    >
-
-                    <meta
-                        itemprop="url"
-                        :content="canonicalUrl"
-                    >
-
-                    <meta
-                        itemprop="inLanguage"
-                        :content="contentLocale"
-                    >
-
-                    <div class="mx-auto max-w-6xl">
-
-                        <!-- Breadcrumbs -->
-                        <nav
-                            class="text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
+                        <!-- Schema.org -->
+                        <meta
+                            itemprop="name"
+                            :content="seoTitle"
                         >
-                            <ol class="flex flex-wrap items-center font-semibold">
 
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
+                        <meta
+                            v-if="seoDescription"
+                            itemprop="description"
+                            :content="seoDescription"
+                        >
+
+                        <meta
+                            v-if="seoKeywords"
+                            itemprop="keywords"
+                            :content="seoKeywords"
+                        >
+
+                        <meta
+                            itemprop="url"
+                            :content="canonicalUrl"
+                        >
+
+                        <meta
+                            itemprop="inLanguage"
+                            :content="contentLocale"
+                        >
+
+                        <div class="mx-auto max-w-6xl">
+
+                            <!-- Breadcrumbs -->
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol class="flex flex-wrap items-center font-semibold">
+
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
                                         <span itemprop="name">
                                             {{ t('home') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="1"
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        >
+                                    </li>
+
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
                                     >
-                                </li>
-
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                    aria-current="page"
-                                >
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
 
-                                    <span
-                                        itemprop="name"
-                                        class="breadcrumbs"
-                                    >
+                                        <span
+                                            itemprop="name"
+                                            class="breadcrumbs"
+                                        >
                                         {{ t('instructors') }}
                                     </span>
 
-                                    <meta
-                                        itemprop="item"
-                                        :content="canonicalUrl"
-                                    >
+                                        <meta
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        >
 
-                                    <meta
-                                        itemprop="position"
-                                        content="2"
-                                    >
-                                </li>
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        >
+                                    </li>
 
-                            </ol>
-                        </nav>
+                                </ol>
+                            </nav>
 
-                        <!-- Header -->
-                        <div
-                            class="my-3 flex flex-wrap items-center
+                            <!-- Header -->
+                            <div
+                                class="my-3 flex flex-wrap items-center
                                    justify-center gap-2 title"
-                        >
-                            <svg
-                                class="shrink-0 h-7 w-7 text-slate-600/85
+                            >
+                                <svg
+                                    class="shrink-0 h-7 w-7 text-slate-600/85
                                        dark:text-slate-200/85"
-                                fill="currentColor"
-                                viewBox="0 0 640 512"
+                                    fill="currentColor"
+                                    viewBox="0 0 640 512"
+                                >
+                                    <path
+                                        d="M622.34 153.2L343.4 67.5c-15.2-4.67-31.6-4.67-46.79 0L17.66 153.2c-23.54 7.23-23.54 38.36 0 45.59l48.63 14.94c-10.67 13.19-17.23 29.28-17.88 46.9C38.78 266.15 32 276.11 32 288c0 10.78 5.68 19.85 13.86 25.65L20.33 428.53C18.11 438.52 25.71 448 35.94 448h56.11c10.24 0 17.84-9.48 15.62-19.47L82.14 313.65C90.32 307.85 96 298.78 96 288c0-11.57-6.47-21.25-15.66-26.87.76-15.02 8.44-28.3 20.69-36.72L296.6 284.5c9.06 2.78 26.44 6.25 46.79 0l278.95-85.7c23.55-7.24 23.55-38.36 0-45.6zM352.79 315.09c-28.53 8.76-52.84 3.92-65.59 0l-145.02-44.55L128 384c0 35.35 85.96 64 192 64s192-28.65 192-64l-14.18-113.47-145.03 44.56z"
+                                    />
+                                </svg>
+
+                                <h1
+                                    itemprop="name"
+                                    class="text-2xl font-bold"
+                                >
+                                    {{ t('instructors') }}
+                                </h1>
+                            </div>
+
+                            <!-- SEO description -->
+                            <div
+                                v-if="seoDescription"
+                                itemprop="description"
+                                class="my-1 text-sm subtitle text-center"
                             >
-                                <path
-                                    d="M622.34 153.2L343.4 67.5c-15.2-4.67-31.6-4.67-46.79 0L17.66 153.2c-23.54 7.23-23.54 38.36 0 45.59l48.63 14.94c-10.67 13.19-17.23 29.28-17.88 46.9C38.78 266.15 32 276.11 32 288c0 10.78 5.68 19.85 13.86 25.65L20.33 428.53C18.11 438.52 25.71 448 35.94 448h56.11c10.24 0 17.84-9.48 15.62-19.47L82.14 313.65C90.32 307.85 96 298.78 96 288c0-11.57-6.47-21.25-15.66-26.87.76-15.02 8.44-28.3 20.69-36.72L296.6 284.5c9.06 2.78 26.44 6.25 46.79 0l278.95-85.7c23.55-7.24 23.55-38.36 0-45.6zM352.79 315.09c-28.53 8.76-52.84 3.92-65.59 0l-145.02-44.55L128 384c0 35.35 85.96 64 192 64s192-28.65 192-64l-14.18-113.47-145.03 44.56z"
-                                />
-                            </svg>
+                                {{ seoDescription }}
+                            </div>
 
-                            <h1
-                                itemprop="name"
-                                class="text-2xl font-bold"
-                            >
-                                {{ t('instructors') }}
-                            </h1>
-                        </div>
+                            <!-- Toolbar -->
+                            <EntityPageToolbar
+                                v-model="q"
+                                v-model:view-mode="viewMode"
+                                v-model:sort-value="sort"
+                                :found="effectiveInstructorsFound"
+                                :sort-options="instructorSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('instructors')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="applyFilters"
+                                @reset="resetFilters"
+                            />
 
-                        <!-- SEO description -->
-                        <div
-                            v-if="seoDescription"
-                            itemprop="description"
-                            class="my-1 text-sm subtitle text-center"
-                        >
-                            {{ seoDescription }}
-                        </div>
+                            <div ref="scrollTarget"></div>
 
-                        <!-- Toolbar -->
-                        <EntityPageToolbar
-                            v-model="q"
-                            v-model:view-mode="viewMode"
-                            v-model:sort-value="sort"
-                            :found="effectiveInstructorsFound"
-                            :sort-options="instructorSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('instructors')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="applyFilters"
-                            @reset="resetFilters"
-                        />
-
-                        <div ref="scrollTarget"></div>
-
-                        <!-- Empty -->
-                        <div
-                            v-if="displayedInstructors.length === 0"
-                            class="mt-6 text-center
+                            <!-- Empty -->
+                            <div
+                                v-if="displayedInstructors.length === 0"
+                                class="mt-6 text-center
                                    text-slate-700 dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
+                            >
+                                {{ t('noData') }}
+                            </div>
 
-                        <!-- Instructors -->
-                        <div v-else>
-                            <InstructorGrid
-                                v-if="viewMode === 'grid'"
-                                :instructors="displayedInstructors"
-                                :cols="instructorGridCols"
+                            <!-- Instructors -->
+                            <div v-else>
+                                <InstructorGrid
+                                    v-if="viewMode === 'grid'"
+                                    :instructors="displayedInstructors"
+                                    :cols="instructorGridCols"
+                                />
+
+                                <InstructorRows
+                                    v-else
+                                    :instructors="displayedInstructors"
+                                />
+                            </div>
+
+                            <!-- Server pagination -->
+                            <Pagination
+                                v-if="useServerProcessing && lastPage > 1"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="instructorProfilesFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
                             />
 
-                            <InstructorRows
-                                v-else
-                                :instructors="displayedInstructors"
-                            />
-                        </div>
-
-                        <!-- Server pagination -->
-                        <Pagination
-                            v-if="useServerProcessing && lastPage > 1"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="instructorProfilesFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
-                        />
-
-                        <!-- Frontend pagination -->
-                        <FrontendPagination
-                            v-if="
+                            <!-- Frontend pagination -->
+                            <FrontendPagination
+                                v-if="
                                 !useServerProcessing
                                 && effectiveInstructorsFound > perPage
                             "
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPage"
-                            :total-items="effectiveInstructorsFound"
-                        />
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPage"
+                                :total-items="effectiveInstructorsFound"
+                            />
 
-                        <!-- Main content -->
-                        <SectionVideoList
-                            :videos="mainVideos"
-                        />
+                            <!-- Main content -->
+                            <SectionVideoList
+                                :videos="mainVideos"
+                            />
 
-                        <SectionBanners
-                            :banners="mainBanners"
-                        />
-                    </div>
-                </article>
+                            <SectionBanners
+                                :banners="mainBanners"
+                            />
+                        </div>
+                    </article>
 
-                <!-- Right sidebar -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="
+                    <!-- Right sidebar -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="
                         rightCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <RightSidebarSchool
-                        :collapsed="rightCollapsed"
-                        @collapsed="setRightCollapsed"
-                    />
-                </aside>
-
-            </main>
-        </div>
+                    >
+                        <RightSidebarSchool
+                            :collapsed="rightCollapsed"
+                            @collapsed="setRightCollapsed"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

@@ -38,43 +38,43 @@ const page = usePage()
 const props = defineProps({
     locale: {
         type: String,
-        default: '',
+        default: ''
     },
 
     title: {
         type: String,
-        default: '',
+        default: ''
     },
 
     canLogin: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     canRegister: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     assignment: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     trackTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ===================== PAGE ===================== */
@@ -328,7 +328,7 @@ const instructorImageUrl = computed(() => {
 const translateGradingType = (value) => {
     const map = {
         manual: t('gradingManual'),
-        auto: t('gradingAuto'),
+        auto: t('gradingAuto')
     }
 
     return map[value]
@@ -341,7 +341,7 @@ const translateVisibility = (value) => {
     const map = {
         public: t('public'),
         enrolled: t('enrolled'),
-        private: t('private'),
+        private: t('private')
     }
 
     return map[value]
@@ -354,7 +354,7 @@ const translateStatus = (value) => {
     const map = {
         draft: t('statusDraft'),
         published: t('statusPublished'),
-        archived: t('statusArchived'),
+        archived: t('statusArchived')
     }
 
     return map[value]
@@ -386,7 +386,7 @@ const formatDate = (value) => {
             month: '2-digit',
             year: 'numeric',
             hour: '2-digit',
-            minute: '2-digit',
+            minute: '2-digit'
         }
     ).format(date)
 }
@@ -477,86 +477,112 @@ const formatDate = (value) => {
         <!-- Шапка -->
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-
-                <!-- LEFT -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 pl-3 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        @collapsed="leftCollapsed = $event"
-                    />
-                </aside>
 
-                <!-- CENTER -->
-                <section class="w-full lg:mt-28 pb-6 slate-1 min-w-0">
-                    <div class="mx-auto max-w-6xl">
-                        <article class="selection:bg-red-400 selection:text-white">
+                    <!-- LEFT -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 pl-3 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            @collapsed="leftCollapsed = $event"
+                        />
+                    </aside>
 
-                            <!-- Breadcrumbs -->
-                            <nav
-                                class="text-sm mb-3"
-                                aria-label="Breadcrumb"
-                            >
-                                <ol class="flex flex-wrap items-center font-semibold">
-                                    <li>
-                                        <Link
-                                            :href="route('home')"
-                                            class="breadcrumb-link hover:underline"
-                                        >
-                                            {{ t('home') }}
-                                        </Link>
-                                    </li>
+                    <!-- CENTER -->
+                    <section class="w-full pb-6 slate-1 min-w-0">
+                        <div class="mx-auto max-w-6xl">
+                            <article class="selection:bg-red-400 selection:text-white">
 
-                                    <template v-if="courseData?.slug">
-                                        <li>
-                                            <span class="mx-2 breadcrumbs">/</span>
-                                        </li>
-
+                                <!-- Breadcrumbs -->
+                                <nav
+                                    class="text-sm mb-3"
+                                    aria-label="Breadcrumb"
+                                >
+                                    <ol class="flex flex-wrap items-center font-semibold">
                                         <li>
                                             <Link
-                                                :href="route(
+                                                :href="route('home')"
+                                                class="breadcrumb-link hover:underline"
+                                            >
+                                                {{ t('home') }}
+                                            </Link>
+                                        </li>
+
+                                        <template v-if="courseData?.slug">
+                                            <li>
+                                                <span class="mx-2 breadcrumbs">/</span>
+                                            </li>
+
+                                            <li>
+                                                <Link
+                                                    :href="route(
                                                     'public.schoolCourses.show',
                                                     {
                                                         slug: courseData.slug,
                                                     }
                                                 )"
-                                                class="breadcrumb-link hover:underline"
-                                            >
-                                                {{ courseTitle }}
-                                            </Link>
-                                        </li>
-                                    </template>
+                                                    class="breadcrumb-link hover:underline"
+                                                >
+                                                    {{ courseTitle }}
+                                                </Link>
+                                            </li>
+                                        </template>
 
-                                    <template
-                                        v-if="courseData?.slug
+                                        <template
+                                            v-if="courseData?.slug
                                             && moduleData?.slug"
-                                    >
-                                        <li>
-                                            <span class="mx-2 breadcrumbs">/</span>
-                                        </li>
+                                        >
+                                            <li>
+                                                <span class="mx-2 breadcrumbs">/</span>
+                                            </li>
 
-                                        <li>
-                                            <Link
-                                                :href="route(
+                                            <li>
+                                                <Link
+                                                    :href="route(
                                                     'public.schoolModules.show',
                                                     {
                                                         courseSlug: courseData.slug,
                                                         slug: moduleData.slug,
                                                     }
                                                 )"
-                                                class="breadcrumb-link hover:underline"
-                                            >
-                                                {{ moduleTitle }}
-                                            </Link>
-                                        </li>
-                                    </template>
+                                                    class="breadcrumb-link hover:underline"
+                                                >
+                                                    {{ moduleTitle }}
+                                                </Link>
+                                            </li>
+                                        </template>
 
-                                    <template v-if="lessonData?.slug">
+                                        <template v-if="lessonData?.slug">
+                                            <li>
+                                                <span class="mx-2 breadcrumbs">/</span>
+                                            </li>
+
+                                            <li>
+                                                <Link
+                                                    :href="route(
+                                                    'public.schoolLessons.show',
+                                                    {
+                                                        slug: lessonData.slug,
+                                                    }
+                                                )"
+                                                    class="breadcrumb-link hover:underline"
+                                                >
+                                                    {{ lessonTitle }}
+                                                </Link>
+                                            </li>
+                                        </template>
+
                                         <li>
                                             <span class="mx-2 breadcrumbs">/</span>
                                         </li>
@@ -564,107 +590,88 @@ const formatDate = (value) => {
                                         <li>
                                             <Link
                                                 :href="route(
-                                                    'public.schoolLessons.show',
-                                                    {
-                                                        slug: lessonData.slug,
-                                                    }
-                                                )"
-                                                class="breadcrumb-link hover:underline"
-                                            >
-                                                {{ lessonTitle }}
-                                            </Link>
-                                        </li>
-                                    </template>
-
-                                    <li>
-                                        <span class="mx-2 breadcrumbs">/</span>
-                                    </li>
-
-                                    <li>
-                                        <Link
-                                            :href="route(
                                                 'public.schoolAssignments.index'
                                             )"
-                                            class="breadcrumb-link hover:underline"
-                                        >
-                                            {{ t('assignments') }}
-                                        </Link>
-                                    </li>
+                                                class="breadcrumb-link hover:underline"
+                                            >
+                                                {{ t('assignments') }}
+                                            </Link>
+                                        </li>
 
-                                    <li>
-                                        <span class="mx-2 breadcrumbs">/</span>
-                                    </li>
+                                        <li>
+                                            <span class="mx-2 breadcrumbs">/</span>
+                                        </li>
 
-                                    <li class="breadcrumbs">
-                                        {{ assignmentTitle }}
-                                    </li>
-                                </ol>
-                            </nav>
+                                        <li class="breadcrumbs">
+                                            {{ assignmentTitle }}
+                                        </li>
+                                    </ol>
+                                </nav>
 
-                            <!-- Title -->
-                            <div
-                                class="flex items-center justify-center
+                                <!-- Title -->
+                                <div
+                                    class="flex items-center justify-center
                                        gap-3 title my-3"
-                            >
-                                <svg
-                                    class="shrink-0 h-5 w-5
+                                >
+                                    <svg
+                                        class="shrink-0 h-5 w-5
                                            text-slate-600/85
                                            dark:text-slate-200/85"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        d="M15,18v2H9v-2H1v5c0,0.552,0.448,1,1,1h20c0.552,0,1-0.448,1-1v-5H15z"
-                                    />
-                                    <path
-                                        d="M23,4h-6V1c0-0.552-0.448-1-1-1H8C7.448,0,7,0.448,7,1v3H1C0.448,4,0,4.448,0,5v10c0,0.552,0.448,1,1,1h8v-3 h6v3h8c0.552,0,1-0.448,1-1V5C24,4.448,23.552,4,23,4z M15,4H9V2h6V4z"
-                                    />
-                                </svg>
+                                        fill="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            d="M15,18v2H9v-2H1v5c0,0.552,0.448,1,1,1h20c0.552,0,1-0.448,1-1v-5H15z"
+                                        />
+                                        <path
+                                            d="M23,4h-6V1c0-0.552-0.448-1-1-1H8C7.448,0,7,0.448,7,1v3H1C0.448,4,0,4.448,0,5v10c0,0.552,0.448,1,1,1h8v-3 h6v3h8c0.552,0,1-0.448,1-1V5C24,4.448,23.552,4,23,4z M15,4H9V2h6V4z"
+                                        />
+                                    </svg>
 
-                                <h1 class="text-2xl font-bold">
-                                    {{ assignmentTitle }}
-                                </h1>
-                            </div>
-
-                            <!-- Subtitle -->
-                            <div
-                                v-if="assignmentSubtitle"
-                                class="mt-1 mb-3 text-sm
-                                       subtitle text-center"
-                            >
-                                {{ assignmentSubtitle }}
-                            </div>
-
-                            <!-- Images || Slider -->
-                            <div
-                                v-if="hasAssignmentImages"
-                                class="flex items-center justify-center"
-                            >
-                                <div class="w-full">
-                                    <ImageGalleryMain
-                                        :images="assignmentImages"
-                                        :alt="assignmentTitle"
-                                        rounded-class="rounded-lg"
-                                        shadow-class="shadow-lg shadow-gray-400
-                                                      dark:shadow-gray-700"
-                                        img-class="w-full h-full object-cover"
-                                    />
+                                    <h1 class="text-2xl font-bold">
+                                        {{ assignmentTitle }}
+                                    </h1>
                                 </div>
-                            </div>
 
-                            <!-- Данные -->
-                            <div
-                                class="my-4 flex flex-wrap items-center
+                                <!-- Subtitle -->
+                                <div
+                                    v-if="assignmentSubtitle"
+                                    class="mt-1 mb-3 text-sm
+                                       subtitle text-center"
+                                >
+                                    {{ assignmentSubtitle }}
+                                </div>
+
+                                <!-- Images || Slider -->
+                                <div
+                                    v-if="hasAssignmentImages"
+                                    class="flex items-center justify-center"
+                                >
+                                    <div class="w-full">
+                                        <ImageGalleryMain
+                                            :images="assignmentImages"
+                                            :alt="assignmentTitle"
+                                            rounded-class="rounded-lg"
+                                            shadow-class="shadow-lg shadow-gray-400
+                                                      dark:shadow-gray-700"
+                                            img-class="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Данные -->
+                                <div
+                                    class="my-4 flex flex-wrap items-center
                                        justify-center gap-3 text-sm
                                        text-slate-600 dark:text-slate-300"
-                            >
-                                <!-- Инструктор -->
-                                <span
-                                    v-if="instructorData"
-                                    class="rounded-sm border border-gray-400
+                                >
+                                    <!-- Инструктор -->
+                                    <span
+                                        v-if="instructorData"
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-2 px-3 py-1"
-                                >
+                                    >
                                     <img
                                         v-if="instructorImageUrl"
                                         :src="instructorImageUrl"
@@ -694,136 +701,136 @@ const formatDate = (value) => {
                                     </span>
                                 </span>
 
-                                <!-- Курс -->
-                                <Link
-                                    v-if="courseData?.slug"
-                                    :href="route(
+                                    <!-- Курс -->
+                                    <Link
+                                        v-if="courseData?.slug"
+                                        :href="route(
                                         'public.schoolCourses.show',
                                         {
                                             slug: courseData.slug,
                                         }
                                     )"
-                                    class="rounded-sm border border-gray-400
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-1 px-3 py-1 hover:text-blue-600
                                            dark:hover:bg-blue-400"
-                                >
-                                    <svg
-                                        class="shrink-0 h-3 w-3
+                                    >
+                                        <svg
+                                            class="shrink-0 h-3 w-3
                                                text-sky-600/85
                                                dark:text-sky-200/85"
-                                        fill="currentColor"
-                                        viewBox="0 0 448 512"
-                                    >
-                                        <path
-                                            d="M318.38 208h-39.09c-1.49 27.03-6.54 51.35-14.21 70.41 27.71-13.24 48.02-39.19 53.3-70.41zm0-32c-5.29-31.22-25.59-57.17-53.3-70.41 7.68 19.06 12.72 43.38 14.21 70.41h39.09zM224 97.31c-7.69 7.45-20.77 34.42-23.43 78.69h46.87c-2.67-44.26-15.75-71.24-23.44-78.69zm-41.08 8.28c-27.71 13.24-48.02 39.19-53.3 70.41h39.09c1.49-27.03 6.53-51.35 14.21-70.41zm0 172.82c-7.68-19.06-12.72-43.38-14.21-70.41h-39.09c5.28 31.22 25.59 57.17 53.3 70.41zM247.43 208h-46.87c2.66 44.26 15.74 71.24 23.43 78.69 7.7-7.45 20.78-34.43 23.44-78.69zM448 358.4V25.6c0-16-9.6-25.6-25.6-25.6H96C41.6 0 0 41.6 0 96v320c0 54.4 41.6 96 96 96h326.4c12.8 0 25.6-9.6 25.6-25.6v-16c0-6.4-3.2-12.8-9.6-19.2-3.2-16-3.2-60.8 0-73.6 6.4-3.2 9.6-9.6 9.6-19.2zM224 64c70.69 0 128 57.31 128 128s-57.31 128-128 128S96 262.69 96 192 153.31 64 224 64zm160 384H96c-19.2 0-32-12.8-32-32s16-32 32-32h288v64z"
-                                        />
-                                    </svg>
+                                            fill="currentColor"
+                                            viewBox="0 0 448 512"
+                                        >
+                                            <path
+                                                d="M318.38 208h-39.09c-1.49 27.03-6.54 51.35-14.21 70.41 27.71-13.24 48.02-39.19 53.3-70.41zm0-32c-5.29-31.22-25.59-57.17-53.3-70.41 7.68 19.06 12.72 43.38 14.21 70.41h39.09zM224 97.31c-7.69 7.45-20.77 34.42-23.43 78.69h46.87c-2.67-44.26-15.75-71.24-23.44-78.69zm-41.08 8.28c-27.71 13.24-48.02 39.19-53.3 70.41h39.09c1.49-27.03 6.53-51.35 14.21-70.41zm0 172.82c-7.68-19.06-12.72-43.38-14.21-70.41h-39.09c5.28 31.22 25.59 57.17 53.3 70.41zM247.43 208h-46.87c2.66 44.26 15.74 71.24 23.43 78.69 7.7-7.45 20.78-34.43 23.44-78.69zM448 358.4V25.6c0-16-9.6-25.6-25.6-25.6H96C41.6 0 0 41.6 0 96v320c0 54.4 41.6 96 96 96h326.4c12.8 0 25.6-9.6 25.6-25.6v-16c0-6.4-3.2-12.8-9.6-19.2-3.2-16-3.2-60.8 0-73.6 6.4-3.2 9.6-9.6 9.6-19.2zM224 64c70.69 0 128 57.31 128 128s-57.31 128-128 128S96 262.69 96 192 153.31 64 224 64zm160 384H96c-19.2 0-32-12.8-32-32s16-32 32-32h288v64z"
+                                            />
+                                        </svg>
 
-                                    {{ t('course') }}:
-                                    {{ courseTitle }}
-                                </Link>
+                                        {{ t('course') }}:
+                                        {{ courseTitle }}
+                                    </Link>
 
-                                <!-- Модуль -->
-                                <Link
-                                    v-if="courseData?.slug
+                                    <!-- Модуль -->
+                                    <Link
+                                        v-if="courseData?.slug
                                         && moduleData?.slug"
-                                    :href="route(
+                                        :href="route(
                                         'public.schoolModules.show',
                                         {
                                             courseSlug: courseData.slug,
                                             slug: moduleData.slug,
                                         }
                                     )"
-                                    class="rounded-sm border border-gray-400
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-1 px-3 py-1 hover:text-blue-600
                                            dark:hover:bg-blue-400"
-                                >
-                                    <svg
-                                        class="shrink-0 h-3 w-3
+                                    >
+                                        <svg
+                                            class="shrink-0 h-3 w-3
                                                text-teal-600/85
                                                dark:text-teal-200/85"
-                                        fill="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <rect
-                                            x="1"
-                                            y="1"
-                                            width="10"
-                                            height="10"
-                                            rx="2"
-                                        />
+                                            fill="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <rect
+                                                x="1"
+                                                y="1"
+                                                width="10"
+                                                height="10"
+                                                rx="2"
+                                            />
 
-                                        <path
-                                            class="fill-current text-teal-400"
-                                            d="M23.428,4.618,19.381.572h0a1.957,1.957,0,0,0-2.762,0L12.572,4.618a1.959,1.959,0,0,0,0,2.764l4.047,4.047a1.957,1.957,0,0,0,2.762,0l4.047-4.046A1.959,1.959,0,0,0,23.428,4.618Z"
-                                        />
+                                            <path
+                                                class="fill-current text-teal-400"
+                                                d="M23.428,4.618,19.381.572h0a1.957,1.957,0,0,0-2.762,0L12.572,4.618a1.959,1.959,0,0,0,0,2.764l4.047,4.047a1.957,1.957,0,0,0,2.762,0l4.047-4.046A1.959,1.959,0,0,0,23.428,4.618Z"
+                                            />
 
-                                        <rect
-                                            x="13"
-                                            y="13"
-                                            width="10"
-                                            height="10"
-                                            rx="2"
-                                        />
+                                            <rect
+                                                x="13"
+                                                y="13"
+                                                width="10"
+                                                height="10"
+                                                rx="2"
+                                            />
 
-                                        <rect
-                                            x="1"
-                                            y="13"
-                                            width="10"
-                                            height="10"
-                                            rx="2"
-                                        />
-                                    </svg>
+                                            <rect
+                                                x="1"
+                                                y="13"
+                                                width="10"
+                                                height="10"
+                                                rx="2"
+                                            />
+                                        </svg>
 
-                                    {{ t('module') }}:
-                                    {{ moduleTitle }}
-                                </Link>
+                                        {{ t('module') }}:
+                                        {{ moduleTitle }}
+                                    </Link>
 
-                                <!-- Урок -->
-                                <Link
-                                    v-if="lessonData?.slug"
-                                    :href="route(
+                                    <!-- Урок -->
+                                    <Link
+                                        v-if="lessonData?.slug"
+                                        :href="route(
                                         'public.schoolLessons.show',
                                         {
                                             slug: lessonData.slug,
                                         }
                                     )"
-                                    class="rounded-sm border border-gray-400
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-1 px-3 py-1 hover:text-blue-600
                                            dark:hover:bg-blue-400"
-                                >
-                                    <svg
-                                        class="shrink-0 h-3 w-3
+                                    >
+                                        <svg
+                                            class="shrink-0 h-3 w-3
                                                text-indigo-600/85
                                                dark:text-indigo-300/85"
-                                        fill="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            d="M7 4.75h8.5A2.75 2.75 0 0 1 18.25 7.5v9A2.75 2.75 0 0 1 15.5 19.25H7A2.25 2.25 0 0 1 4.75 17V7A2.25 2.25 0 0 1 7 4.75Z"
-                                        />
-                                        <path
-                                            d="M8.5 8.5h6M8.5 12h6M8.5 15.5h4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="1.5"
-                                            stroke-linecap="round"
-                                        />
-                                    </svg>
+                                            fill="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                d="M7 4.75h8.5A2.75 2.75 0 0 1 18.25 7.5v9A2.75 2.75 0 0 1 15.5 19.25H7A2.25 2.25 0 0 1 4.75 17V7A2.25 2.25 0 0 1 7 4.75Z"
+                                            />
+                                            <path
+                                                d="M8.5 8.5h6M8.5 12h6M8.5 15.5h4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.5"
+                                                stroke-linecap="round"
+                                            />
+                                        </svg>
 
-                                    {{ t('lesson') }}:
-                                    {{ lessonTitle }}
-                                </Link>
+                                        {{ t('lesson') }}:
+                                        {{ lessonTitle }}
+                                    </Link>
 
-                                <!-- Статус -->
-                                <span
-                                    class="rounded-sm border border-gray-400
+                                    <!-- Статус -->
+                                    <span
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-1 px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         class="h-3 w-3 text-violet-600
                                                dark:text-violet-300"
@@ -839,13 +846,13 @@ const formatDate = (value) => {
                                     {{ translateStatus(assignmentData.status) }}
                                 </span>
 
-                                <!-- Дата публикации -->
-                                <span
-                                    v-if="assignmentData.published_at"
-                                    class="rounded-sm border border-gray-400
+                                    <!-- Дата публикации -->
+                                    <span
+                                        v-if="assignmentData.published_at"
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-1 px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         class="h-3 w-3 text-slate-600
                                                dark:text-slate-300"
@@ -858,17 +865,15 @@ const formatDate = (value) => {
                                     </svg>
 
                                     {{ t('publishedAt') }}:
-                                    {{ formatDate(
-                                    assignmentData.published_at
-                                ) }}
+                                    {{ formatDate(assignmentData.published_at) }}
                                 </span>
 
-                                <!-- Тип оценки -->
-                                <span
-                                    class="rounded-sm border border-gray-400
+                                    <!-- Тип оценки -->
+                                    <span
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-1 px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         class="h-3 w-3 text-emerald-600
                                                dark:text-emerald-300"
@@ -881,19 +886,17 @@ const formatDate = (value) => {
                                     </svg>
 
                                     {{ t('gradingType') }}:
-                                    {{ translateGradingType(
-                                    assignmentData.grading_type
-                                ) }}
+                                    {{ translateGradingType(assignmentData.grading_type) }}
                                 </span>
 
-                                <!-- Максимальная оценка -->
-                                <span
-                                    v-if="assignmentData.max_score !== null
+                                    <!-- Максимальная оценка -->
+                                    <span
+                                        v-if="assignmentData.max_score !== null
                                         && assignmentData.max_score !== undefined"
-                                    class="rounded-sm border border-gray-400
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-1 px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         class="h-3 w-3 text-amber-500"
                                         fill="currentColor"
@@ -908,14 +911,14 @@ const formatDate = (value) => {
                                     {{ assignmentData.max_score }}
                                 </span>
 
-                                <!-- Количество попыток -->
-                                <span
-                                    v-if="assignmentData.attempts_limit !== null
+                                    <!-- Количество попыток -->
+                                    <span
+                                        v-if="assignmentData.attempts_limit !== null
                                         && assignmentData.attempts_limit !== undefined"
-                                    class="rounded-sm border border-gray-400
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-1 px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         class="h-3 w-3 text-blue-700
                                                dark:text-blue-300"
@@ -928,19 +931,15 @@ const formatDate = (value) => {
                                     </svg>
 
                                     {{ t('attemptsLimit') }}:
-                                    {{
-                                        assignmentData.attempts_limit === 0
-                                            ? t('no')
-                                            : assignmentData.attempts_limit
-                                    }}
+                                    {{ assignmentData.attempts_limit === 0 ? t('no') : assignmentData.attempts_limit }}
                                 </span>
 
-                                <!-- Видимость -->
-                                <span
-                                    class="rounded-sm border border-gray-400
+                                    <!-- Видимость -->
+                                    <span
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-1 px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         class="h-3 w-3 text-sky-600
                                                dark:text-sky-300"
@@ -953,19 +952,17 @@ const formatDate = (value) => {
                                     </svg>
 
                                     {{ t('visibility') }}:
-                                    {{ translateVisibility(
-                                    assignmentData.visibility
-                                ) }}
+                                    {{ translateVisibility(assignmentData.visibility) }}
                                 </span>
 
-                                <!-- Дедлайн -->
-                                <span
-                                    v-if="assignmentData.due_at"
-                                    class="rounded-sm border border-gray-400
+                                    <!-- Дедлайн -->
+                                    <span
+                                        v-if="assignmentData.due_at"
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center
                                            gap-1 px-3 py-1
                                            text-rose-600 dark:text-rose-300"
-                                >
+                                    >
                                     <svg
                                         class="h-3 w-3"
                                         fill="currentColor"
@@ -977,64 +974,63 @@ const formatDate = (value) => {
                                     </svg>
 
                                     {{ t('dueAt') }}:
-                                    {{ formatDate(
-                                    assignmentData.due_at
-                                ) }}
+                                    {{ formatDate(assignmentData.due_at) }}
                                 </span>
-                            </div>
+                                </div>
 
-                            <!-- Описание -->
-                            <div
-                                v-if="assignmentDescription"
-                                class="mt-4 text-sm subtitle"
-                                v-html="assignmentDescription"
-                            />
+                                <!-- Описание -->
+                                <div
+                                    v-if="assignmentDescription"
+                                    class="mt-4 text-sm subtitle"
+                                    v-html="assignmentDescription"
+                                />
 
-                            <!-- Инструкции -->
-                            <div
-                                v-if="assignmentInstructions"
-                                class="mt-6"
-                            >
-                                <h2
-                                    class="mb-3 text-lg font-semibold
+                                <!-- Инструкции -->
+                                <div
+                                    v-if="assignmentInstructions"
+                                    class="mt-6"
+                                >
+                                    <h2
+                                        class="mb-3 text-lg font-semibold
                                            text-slate-800
                                            dark:text-slate-200"
-                                >
-                                    {{ t('instructions') }}
-                                </h2>
+                                    >
+                                        {{ t('instructions') }}
+                                    </h2>
 
-                                <div
-                                    class="text-sm subtitle"
-                                    v-html="assignmentInstructions"
-                                />
-                            </div>
-                        </article>
+                                    <div
+                                        class="text-sm subtitle"
+                                        v-html="assignmentInstructions"
+                                    />
+                                </div>
+                            </article>
 
-                        <SectionVideoList
-                            :videos="mainVideosList"
-                        />
+                            <SectionVideoList
+                                :videos="mainVideosList"
+                            />
 
-                        <SectionBanners
-                            :banners="mainBannersList"
-                        />
-                    </div>
-                </section>
+                            <SectionBanners
+                                :banners="mainBannersList"
+                            />
+                        </div>
+                    </section>
 
-                <!-- RIGHT -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 pr-3
+                    <!-- RIGHT -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 pr-3
                            transition-all duration-300"
-                    :class="rightCollapsed
-                        ? 'lg:w-10'
-                        : 'lg:w-64'"
-                >
-                    <RightSidebarSchool
-                        @collapsed="rightCollapsed = $event"
-                    />
-                </aside>
-            </main>
-        </div>
+                        :class="rightCollapsed
+                        ? 'lg:w-6'
+                        : 'lg:w-72'"
+                    >
+                        <RightSidebarSchool
+                            @collapsed="rightCollapsed = $event"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <!-- Подвал и прогресс -->
         <FooterBlog />

@@ -43,18 +43,18 @@ const props = defineProps({
         default: () => ({
             title: '',
             keywords: '',
-            description: '',
-        }),
+            description: ''
+        })
     },
 
     publicBlogRubricsProcessingMode: {
         type: String,
-        default: 'server',
+        default: 'server'
     },
 
     useServerProcessing: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     title: { type: String, default: '' },
@@ -63,38 +63,38 @@ const props = defineProps({
 
     rubricTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     rubrics: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     rubricsCount: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     rubricsFound: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     filters: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ======================== Helpers ======================== */
@@ -275,7 +275,7 @@ const rubricSortOptions = [
     { value: 'articlesAsc', label: `${t('articles')} 0→9` },
 
     { value: 'dateDesc', label: `${t('createdAt')} ↓` },
-    { value: 'dateAsc', label: `${t('createdAt')} ↑` },
+    { value: 'dateAsc', label: `${t('createdAt')} ↑` }
 ]
 
 /* ======================== View mode ======================== */
@@ -340,7 +340,7 @@ const filteredRubrics = computed(() => {
             getRubricTitle(rubric),
             getRubricShort(rubric),
             rubric?.url,
-            rubric?.owner?.name,
+            rubric?.owner?.name
         ].some((value) =>
             normalizeText(value).includes(query)
         )
@@ -365,7 +365,7 @@ const sortedRubrics = computed(() => {
     }
 
     const list = [
-        ...filteredRubrics.value,
+        ...filteredRubrics.value
     ]
 
     switch (sort.value) {
@@ -473,10 +473,10 @@ const frontendCurrentPage = ref(1)
 
 const {
     targetRef: scrollTarget,
-    scrollToTarget,
+    scrollToTarget
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 watch(
@@ -564,12 +564,12 @@ const reloadRubrics = (
                 || undefined,
 
             page:
-            pageNumber,
+            pageNumber
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -872,200 +872,208 @@ const rubricGridCols = computed(() => {
     >
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-
-                <!-- Left sidebar -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebar
-                        :rubric-tree="rubricTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="setLeftCollapsed"
-                    />
-                </aside>
 
-                <!-- Content -->
-                <article
-                    itemscope
-                    itemtype="https://schema.org/CollectionPage"
-                    :itemid="canonicalUrl"
-                    class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
-                >
-                    <meta itemprop="name" :content="seoTitle">
-
-                    <meta
-                        v-if="seoDescription"
-                        itemprop="description"
-                        :content="seoDescription"
+                    <!-- Left sidebar -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
                     >
+                        <LeftSidebar
+                            :rubric-tree="rubricTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="setLeftCollapsed"
+                        />
+                    </aside>
 
-                    <meta
-                        v-if="seoKeywords"
-                        itemprop="keywords"
-                        :content="seoKeywords"
+                    <!-- Content -->
+                    <article
+                        itemscope
+                        itemtype="https://schema.org/CollectionPage"
+                        :itemid="canonicalUrl"
+                        class="w-full pb-6 slate-1 min-w-0"
                     >
+                        <meta itemprop="name" :content="seoTitle">
 
-                    <meta itemprop="url" :content="canonicalUrl">
-                    <meta itemprop="inLanguage" :content="contentLocale">
-
-                    <div class="mx-auto max-w-6xl">
-
-                        <!-- Breadcrumbs -->
-                        <nav
-                            class="text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
+                        <meta
+                            v-if="seoDescription"
+                            itemprop="description"
+                            :content="seoDescription"
                         >
-                            <ol class="flex flex-wrap items-center font-semibold">
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
+
+                        <meta
+                            v-if="seoKeywords"
+                            itemprop="keywords"
+                            :content="seoKeywords"
+                        >
+
+                        <meta itemprop="url" :content="canonicalUrl">
+                        <meta itemprop="inLanguage" :content="contentLocale">
+
+                        <div class="mx-auto max-w-6xl">
+
+                            <!-- Breadcrumbs -->
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol class="flex flex-wrap items-center font-semibold">
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
                                         <span itemprop="name">
                                             {{ t('home') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta itemprop="position" content="1">
-                                </li>
+                                        <meta itemprop="position" content="1">
+                                    </li>
 
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                    aria-current="page"
-                                >
-                                    <span class="mx-2 breadcrumbs">/</span>
-
-                                    <span
-                                        itemprop="name"
-                                        class="breadcrumbs"
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
                                     >
+                                        <span class="mx-2 breadcrumbs">/</span>
+
+                                        <span
+                                            itemprop="name"
+                                            class="breadcrumbs"
+                                        >
                                         {{ t('rubrics') }}
                                     </span>
 
-                                    <meta
-                                        itemprop="item"
-                                        :content="canonicalUrl"
-                                    >
+                                        <meta
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        >
 
-                                    <meta itemprop="position" content="2">
-                                </li>
-                            </ol>
-                        </nav>
+                                        <meta itemprop="position" content="2">
+                                    </li>
+                                </ol>
+                            </nav>
 
-                        <!-- Header -->
-                        <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
-                            <svg
-                                class="h-5 w-5"
-                                viewBox="0 0 512 512"
-                                fill="currentColor"
+                            <!-- Header -->
+                            <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
+                                <svg
+                                    class="h-5 w-5"
+                                    viewBox="0 0 512 512"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M489.2 287.9h-27.4c-2.6 0-4.6 2-4.6 4.6v32h-36.6V146.2c0-2.6-2-4.6-4.6-4.6h-27.4c-2.6 0-4.6 2-4.6 4.6v32h-36.6v-32c0-2.6-2-4.6-4.6-4.6h-27.4c-2.6 0-4.6 2-4.6 4.6v32h-36.6v-32c0-6-8-4.6-11.7-4.6v-38c8.3-2 17.1-3.4 25.7-3.4 10.9 0 20.9 4.3 31.4 4.3 4.6 0 27.7-1.1 27.7-8v-60c0-2.6-2-4.6-4.6-4.6-5.1 0-15.1 4.3-24 4.3-9.7 0-20.9-4.3-32.6-4.3-8 0-16 1.1-23.7 2.9v-4.9c5.4-2.6 9.1-8.3 9.1-14.3 0-20.7-31.4-20.8-31.4 0 0 6 3.7 11.7 9.1 14.3v111.7c-3.7 0-11.7-1.4-11.7 4.6v32h-36.6v-32c0-2.6-2-4.6-4.6-4.6h-27.4c-2.6 0-4.6 2-4.6 4.6v32H128v-32c0-2.6-2-4.6-4.6-4.6H96c-2.6 0-4.6 2-4.6 4.6v178.3H54.8v-32c0-2.6-2-4.6-4.6-4.6H22.8c-2.6 0-4.6 2-4.6 4.6V512h182.9v-96c0-72.6 109.7-72.6 109.7 0v96h182.9V292.5c.1-2.6-1.9-4.6-4.5-4.6z"
+                                    />
+                                </svg>
+
+                                <h1
+                                    itemprop="headline"
+                                    class="text-2xl font-bold"
+                                >
+                                    {{ t('rubrics') }}
+                                </h1>
+                            </div>
+
+                            <div
+                                v-if="seoDescription"
+                                itemprop="abstract"
+                                class="my-1 text-sm subtitle text-center"
                             >
-                                <path
-                                    d="M489.2 287.9h-27.4c-2.6 0-4.6 2-4.6 4.6v32h-36.6V146.2c0-2.6-2-4.6-4.6-4.6h-27.4c-2.6 0-4.6 2-4.6 4.6v32h-36.6v-32c0-2.6-2-4.6-4.6-4.6h-27.4c-2.6 0-4.6 2-4.6 4.6v32h-36.6v-32c0-6-8-4.6-11.7-4.6v-38c8.3-2 17.1-3.4 25.7-3.4 10.9 0 20.9 4.3 31.4 4.3 4.6 0 27.7-1.1 27.7-8v-60c0-2.6-2-4.6-4.6-4.6-5.1 0-15.1 4.3-24 4.3-9.7 0-20.9-4.3-32.6-4.3-8 0-16 1.1-23.7 2.9v-4.9c5.4-2.6 9.1-8.3 9.1-14.3 0-20.7-31.4-20.8-31.4 0 0 6 3.7 11.7 9.1 14.3v111.7c-3.7 0-11.7-1.4-11.7 4.6v32h-36.6v-32c0-2.6-2-4.6-4.6-4.6h-27.4c-2.6 0-4.6 2-4.6 4.6v32H128v-32c0-2.6-2-4.6-4.6-4.6H96c-2.6 0-4.6 2-4.6 4.6v178.3H54.8v-32c0-2.6-2-4.6-4.6-4.6H22.8c-2.6 0-4.6 2-4.6 4.6V512h182.9v-96c0-72.6 109.7-72.6 109.7 0v96h182.9V292.5c.1-2.6-1.9-4.6-4.5-4.6z"
+                                {{ seoDescription }}
+                            </div>
+
+                            <!-- One toolbar -->
+                            <EntityPageToolbar
+                                v-model="q"
+                                v-model:view-mode="viewMode"
+                                v-model:sort-value="sort"
+                                :found="effectiveRubricsFound"
+                                :sort-options="rubricSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('rubrics')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="applyFilters"
+                                @reset="resetFilters"
+                            />
+
+                            <div ref="scrollTarget"></div>
+
+                            <div
+                                v-if="displayedRubrics.length === 0"
+                                class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            >
+                                {{ t('noData') }}
+                            </div>
+
+                            <div v-else>
+                                <RubricGrid
+                                    v-if="viewMode === 'grid'"
+                                    :rubrics="displayedRubrics"
+                                    :cols="rubricGridCols"
                                 />
-                            </svg>
 
-                            <h1
-                                itemprop="headline"
-                                class="text-2xl font-bold"
-                            >
-                                {{ t('rubrics') }}
-                            </h1>
-                        </div>
+                                <RubricRows
+                                    v-else
+                                    :rubrics="displayedRubrics"
+                                />
+                            </div>
 
-                        <div
-                            v-if="seoDescription"
-                            itemprop="abstract"
-                            class="my-1 text-sm subtitle text-center"
-                        >
-                            {{ seoDescription }}
-                        </div>
-
-                        <!-- One toolbar -->
-                        <EntityPageToolbar
-                            v-model="q"
-                            v-model:view-mode="viewMode"
-                            v-model:sort-value="sort"
-                            :found="effectiveRubricsFound"
-                            :sort-options="rubricSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('rubrics')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="applyFilters"
-                            @reset="resetFilters"
-                        />
-
-                        <div ref="scrollTarget"></div>
-
-                        <div
-                            v-if="displayedRubrics.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
-
-                        <div v-else>
-                            <RubricGrid
-                                v-if="viewMode === 'grid'"
-                                :rubrics="displayedRubrics"
-                                :cols="rubricGridCols"
+                            <Pagination
+                                v-if="useServerProcessing && lastPage > 1"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="rubricsFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
                             />
 
-                            <RubricRows
-                                v-else
-                                :rubrics="displayedRubrics"
+                            <FrontendPagination
+                                v-if="!useServerProcessing && effectiveRubricsFound > perPage"
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPage"
+                                :total-items="effectiveRubricsFound"
                             />
+
+                            <SectionVideoList :videos="mainVideos" />
+                            <SectionBanners :banners="mainBanners" />
                         </div>
+                    </article>
 
-                        <Pagination
-                            v-if="useServerProcessing && lastPage > 1"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="rubricsFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
+                    <!-- Right sidebar -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebar
+                            :collapsed="rightCollapsed"
+                            @collapsed="setRightCollapsed"
                         />
-
-                        <FrontendPagination
-                            v-if="!useServerProcessing && effectiveRubricsFound > perPage"
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPage"
-                            :total-items="effectiveRubricsFound"
-                        />
-
-                        <SectionVideoList :videos="mainVideos" />
-                        <SectionBanners :banners="mainBanners" />
-                    </div>
-                </article>
-
-                <!-- Right sidebar -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebar
-                        :collapsed="rightCollapsed"
-                        @collapsed="setRightCollapsed"
-                    />
-                </aside>
-            </main>
-        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

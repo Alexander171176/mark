@@ -36,58 +36,58 @@ const props = defineProps({
 
     locale: {
         type: String,
-        default: 'ru',
+        default: 'ru'
     },
 
     instructorProfile: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     publicSchoolCoursesProcessingMode: {
         type: String,
-        default: 'server',
+        default: 'server'
     },
 
     useServerProcessing: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     courses: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     coursesCount: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     coursesFound: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     filters: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     trackTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ======================== Helpers ======================== */
@@ -219,7 +219,7 @@ const normalizedSocialLinks = computed(() => {
                     || item.name
                     || item.platform
                     || t('link'),
-                url: item.url,
+                url: item.url
             }))
     }
 
@@ -228,7 +228,7 @@ const normalizedSocialLinks = computed(() => {
         .filter(([, value]) => Boolean(value))
         .map(([key, value]) => ({
             label: key,
-            url: value,
+            url: value
         }))
 })
 
@@ -368,7 +368,7 @@ const canonicalUrl = computed(() => {
 
     return String(
         route('public.schoolInstructors.show', {
-            slug: instructor.value.slug,
+            slug: instructor.value.slug
         })
     )
 })
@@ -491,7 +491,7 @@ const courseSortOptions = [
     { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
 
     { value: 'createdAtDesc', label: `${t('createdAt')} ↓` },
-    { value: 'createdAtAsc', label: `${t('createdAt')} ↑` },
+    { value: 'createdAtAsc', label: `${t('createdAt')} ↑` }
 ]
 
 const getCourseTitle = (course) =>
@@ -527,7 +527,7 @@ const frontendFilteredCourses = computed(() => {
         getCourseShort(course),
         getCourseInstructorName(course),
         course?.level,
-        course?.availability,
+        course?.availability
     ].some((value) =>
         normalizeText(value).includes(query)
     ))
@@ -551,7 +551,7 @@ const frontendSortedCourses = computed(() => {
     }
 
     const list = [
-        ...frontendFilteredCourses.value,
+        ...frontendFilteredCourses.value
     ]
 
     const numberSort = {
@@ -604,7 +604,7 @@ const frontendSortedCourses = computed(() => {
         pricesDesc: ['prices_count', true],
 
         reviewsAsc: ['reviews_count', false],
-        reviewsDesc: ['reviews_count', true],
+        reviewsDesc: ['reviews_count', true]
     }
 
     const numberRule =
@@ -722,16 +722,16 @@ const frontendCurrentPage = ref(1)
 
 const {
     targetRef: coursesScrollTarget,
-    scrollToTarget: scrollToCourses,
+    scrollToTarget: scrollToCourses
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 watch(
     [
         qCourses,
-        sortCourses,
+        sortCourses
     ],
     () => {
         if (!props.useServerProcessing) {
@@ -816,12 +816,12 @@ const loadServerCourses = (
                 || undefined,
 
             page_courses:
-            pageNumber,
+            pageNumber
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -1234,462 +1234,470 @@ const mainBannersList = computed(() =>
     >
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
+                >
 
-                <!-- Left sidebar -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="
+                    <!-- Left sidebar -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="
                         leftCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="setLeftCollapsed"
-                    />
-                </aside>
-
-                <!-- Profile page -->
-                <article
-                    itemscope
-                    itemtype="https://schema.org/ProfilePage"
-                    :itemid="canonicalUrl"
-                    class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
-                >
-                    <!-- ProfilePage metadata -->
-                    <meta
-                        itemprop="name"
-                        :content="seoTitle"
                     >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="setLeftCollapsed"
+                        />
+                    </aside>
 
-                    <meta
-                        v-if="seoDescription"
-                        itemprop="description"
-                        :content="seoDescription"
+                    <!-- Profile page -->
+                    <article
+                        itemscope
+                        itemtype="https://schema.org/ProfilePage"
+                        :itemid="canonicalUrl"
+                        class="w-full pb-6 slate-1 min-w-0"
                     >
-
-                    <meta
-                        itemprop="inLanguage"
-                        :content="instructorLocale"
-                    >
-
-                    <meta
-                        v-if="canonicalUrl"
-                        itemprop="url"
-                        :content="canonicalUrl"
-                    >
-
-                    <meta
-                        v-if="seoCreatedAt"
-                        itemprop="dateCreated"
-                        :content="seoCreatedAt"
-                    >
-
-                    <div class="mx-auto max-w-6xl">
-
-                        <!-- Breadcrumbs -->
-                        <nav
-                            class="mb-3 text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
+                        <!-- ProfilePage metadata -->
+                        <meta
+                            itemprop="name"
+                            :content="seoTitle"
                         >
-                            <ol class="flex flex-wrap items-center font-semibold">
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
+
+                        <meta
+                            v-if="seoDescription"
+                            itemprop="description"
+                            :content="seoDescription"
+                        >
+
+                        <meta
+                            itemprop="inLanguage"
+                            :content="instructorLocale"
+                        >
+
+                        <meta
+                            v-if="canonicalUrl"
+                            itemprop="url"
+                            :content="canonicalUrl"
+                        >
+
+                        <meta
+                            v-if="seoCreatedAt"
+                            itemprop="dateCreated"
+                            :content="seoCreatedAt"
+                        >
+
+                        <div class="mx-auto max-w-6xl">
+
+                            <!-- Breadcrumbs -->
+                            <nav
+                                class="mb-3 text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol class="flex flex-wrap items-center font-semibold">
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
                                         <span itemprop="name">
                                             {{ t('home') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="1"
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        >
+                                    </li>
+
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
-                                </li>
-
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
 
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('public.schoolInstructors.index')"
-                                        class="breadcrumb-link hover:underline"
-                                    >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('public.schoolInstructors.index')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
                                         <span itemprop="name">
                                             {{ t('instructors') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="2"
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        >
+                                    </li>
+
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
                                     >
-                                </li>
-
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                    aria-current="page"
-                                >
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
 
-                                    <span
-                                        itemprop="name"
-                                        class="breadcrumbs"
-                                    >
+                                        <span
+                                            itemprop="name"
+                                            class="breadcrumbs"
+                                        >
                                         {{ instructorName }}
                                     </span>
 
-                                    <meta
-                                        v-if="canonicalUrl"
-                                        itemprop="item"
-                                        :content="canonicalUrl"
-                                    >
+                                        <meta
+                                            v-if="canonicalUrl"
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        >
 
-                                    <meta
-                                        itemprop="position"
-                                        content="3"
-                                    >
-                                </li>
-                            </ol>
-                        </nav>
+                                        <meta
+                                            itemprop="position"
+                                            content="3"
+                                        >
+                                    </li>
+                                </ol>
+                            </nav>
 
-                        <!-- Person -->
-                        <div
-                            itemprop="mainEntity"
-                            itemscope
-                            itemtype="https://schema.org/Person"
-                        >
-                            <meta
-                                itemprop="name"
-                                :content="instructorName"
-                            >
-
-                            <meta
-                                v-if="instructorShort"
-                                itemprop="description"
-                                :content="instructorShort"
-                            >
-
-                            <meta
-                                v-if="canonicalUrl"
-                                itemprop="url"
-                                :content="canonicalUrl"
-                            >
-
-                            <meta
-                                v-if="seoImage"
-                                itemprop="image"
-                                :content="seoImage"
-                            >
-
-                            <link
-                                v-for="(item, index) in normalizedSocialLinks"
-                                :key="`same-as-${index}`"
-                                itemprop="sameAs"
-                                :href="item.url"
-                            >
-
-                            <!-- Gallery -->
+                            <!-- Person -->
                             <div
-                                v-if="hasInstructorImages"
-                                class="flex items-center justify-center"
+                                itemprop="mainEntity"
+                                itemscope
+                                itemtype="https://schema.org/Person"
                             >
-                                <div class="w-full">
-                                    <ImageGalleryMain
-                                        :images="instructorImages"
-                                        :alt="instructorName"
-                                        rounded-class="rounded-lg"
-                                        shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
-                                        img-class="w-full h-full object-cover"
-                                    />
-                                </div>
-                            </div>
-
-                            <!-- Stats / title / views -->
-                            <div class="flex items-center justify-between gap-1">
-                                <div
-                                    :title="t('courses')"
-                                    class="flex items-center justify-center gap-1"
+                                <meta
+                                    itemprop="name"
+                                    :content="instructorName"
                                 >
-                                    <svg
-                                        class="h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
-                                        fill="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-                                        />
-                                    </svg>
 
-                                    <span
-                                        v-if="hasCourses"
-                                        class="text-center text-sm text-gray-500"
+                                <meta
+                                    v-if="instructorShort"
+                                    itemprop="description"
+                                    :content="instructorShort"
+                                >
+
+                                <meta
+                                    v-if="canonicalUrl"
+                                    itemprop="url"
+                                    :content="canonicalUrl"
+                                >
+
+                                <meta
+                                    v-if="seoImage"
+                                    itemprop="image"
+                                    :content="seoImage"
+                                >
+
+                                <link
+                                    v-for="(item, index) in normalizedSocialLinks"
+                                    :key="`same-as-${index}`"
+                                    itemprop="sameAs"
+                                    :href="item.url"
+                                >
+
+                                <!-- Gallery -->
+                                <div
+                                    v-if="hasInstructorImages"
+                                    class="flex items-center justify-center"
+                                >
+                                    <div class="w-full">
+                                        <ImageGalleryMain
+                                            :images="instructorImages"
+                                            :alt="instructorName"
+                                            rounded-class="rounded-lg"
+                                            shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
+                                            img-class="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Stats / title / views -->
+                                <div class="flex items-center justify-between gap-1">
+                                    <div
+                                        :title="t('courses')"
+                                        class="flex items-center justify-center gap-1"
                                     >
+                                        <svg
+                                            class="h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
+                                            fill="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                                            />
+                                        </svg>
+
+                                        <span
+                                            v-if="hasCourses"
+                                            class="text-center text-sm text-gray-500"
+                                        >
                                         {{ coursesCount }}
                                     </span>
-                                </div>
+                                    </div>
 
-                                <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
-                                    <h1
-                                        itemprop="headline"
-                                        class="text-2xl font-bold"
+                                    <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
+                                        <h1
+                                            itemprop="headline"
+                                            class="text-2xl font-bold"
+                                        >
+                                            {{ instructorName }}
+                                        </h1>
+                                    </div>
+
+                                    <div
+                                        :title="t('views')"
+                                        class="flex items-center justify-center gap-1"
                                     >
-                                        {{ instructorName }}
-                                    </h1>
-                                </div>
+                                        <svg
+                                            class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 576 512"
+                                            fill="currentColor"
+                                        >
+                                            <path
+                                                d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
+                                            />
+                                        </svg>
 
-                                <div
-                                    :title="t('views')"
-                                    class="flex items-center justify-center gap-1"
-                                >
-                                    <svg
-                                        class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 576 512"
-                                        fill="currentColor"
-                                    >
-                                        <path
-                                            d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
-                                        />
-                                    </svg>
-
-                                    <span class="text-center text-sm text-gray-500">
+                                        <span class="text-center text-sm text-gray-500">
                                         {{ instructor.views ?? 0 }}
                                     </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Short -->
-                            <div
-                                v-if="instructorShort"
-                                itemprop="abstract"
-                                class="mb-4 text-center text-sm text-slate-600 dark:text-slate-300"
-                            >
-                                {{ instructorShort }}
-                            </div>
+                                <!-- Short -->
+                                <div
+                                    v-if="instructorShort"
+                                    itemprop="abstract"
+                                    class="mb-4 text-center text-sm text-slate-600 dark:text-slate-300"
+                                >
+                                    {{ instructorShort }}
+                                </div>
 
-                            <!-- Details -->
-                            <div
-                                class="mb-4 flex flex-wrap items-center justify-center gap-3
+                                <!-- Details -->
+                                <div
+                                    class="mb-4 flex flex-wrap items-center justify-center gap-3
                                        text-sm text-slate-600 dark:text-slate-300"
-                            >
-                                <!-- Rating -->
-                                <div
-                                    class="rounded-sm border border-slate-400 px-3 py-1
-                                           flex items-center justify-center gap-1"
                                 >
-                                    {{ t('rating') }}:
-
-                                    <svg
-                                        viewBox="0 0 24 24"
-                                        class="shrink-0 h-4 w-4"
-                                    >
-                                        <path
-                                            class="fill-current text-red-400 dark:text-red-300"
-                                            d="M12.746,1.464l3.11,6.3L22.81,8.776a.831.831,0,0,1,.461,1.418l-5.033,4.9,1.188,6.926a.832.832,0,0,1-1.207.877L12,19.632,5.78,22.9a.833.833,0,0,1-1.207-.878L5.761,15.1l-5.033-4.9a.831.831,0,0,1,.461-1.418L8.143,7.765l3.11-6.3A.833.833,0,0,1,12.746,1.464Z"
-                                        />
-                                    </svg>
-
-                                    {{ formattedRating }}
-                                    ({{ ratingCount }})
-                                </div>
-
-                                <!-- Experience -->
-                                <div
-                                    v-if="safeNumber(instructor.experience_years) > 0"
-                                    class="relative inline-flex text-center px-3 py-1
-                                           rounded bg-emerald-500"
-                                >
+                                    <!-- Rating -->
                                     <div
-                                        class="absolute w-3 h-3 rounded-full
+                                        class="rounded-sm border border-slate-400 px-3 py-1
+                                           flex items-center justify-center gap-1"
+                                    >
+                                        {{ t('rating') }}:
+
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            class="shrink-0 h-4 w-4"
+                                        >
+                                            <path
+                                                class="fill-current text-red-400 dark:text-red-300"
+                                                d="M12.746,1.464l3.11,6.3L22.81,8.776a.831.831,0,0,1,.461,1.418l-5.033,4.9,1.188,6.926a.832.832,0,0,1-1.207.877L12,19.632,5.78,22.9a.833.833,0,0,1-1.207-.878L5.761,15.1l-5.033-4.9a.831.831,0,0,1,.461-1.418L8.143,7.765l3.11-6.3A.833.833,0,0,1,12.746,1.464Z"
+                                            />
+                                        </svg>
+
+                                        {{ formattedRating }}
+                                        ({{ ratingCount }})
+                                    </div>
+
+                                    <!-- Experience -->
+                                    <div
+                                        v-if="safeNumber(instructor.experience_years) > 0"
+                                        class="relative inline-flex text-center px-3 py-1
+                                           rounded bg-emerald-500"
+                                    >
+                                        <div
+                                            class="absolute w-3 h-3 rounded-full
                                                bg-white left-0 -translate-x-1/2
                                                top-1/2 -translate-y-1/2"
-                                        aria-hidden="true"
-                                    />
+                                            aria-hidden="true"
+                                        />
 
-                                    <div
-                                        class="absolute w-3 h-3 rounded-full
+                                        <div
+                                            class="absolute w-3 h-3 rounded-full
                                                bg-white right-0 translate-x-1/2
                                                top-1/2 -translate-y-1/2"
-                                        aria-hidden="true"
-                                    />
+                                            aria-hidden="true"
+                                        />
 
-                                    <span class="text-sm text-emerald-50 font-medium">
+                                        <span class="text-sm text-emerald-50 font-medium">
                                         {{ t('experienceYears') }}:
                                         {{ instructor.experience_years }}
                                     </span>
+                                    </div>
+
+                                    <!-- Hourly rate -->
+                                    <div
+                                        v-if="instructor.hourly_rate"
+                                        class="rounded-sm border border-slate-400 px-3 py-1"
+                                    >
+                                        {{ t('hourlyRate') }}:
+                                        {{ instructor.hourly_rate }}
+                                    </div>
                                 </div>
 
-                                <!-- Hourly rate -->
+                                <!-- Bio -->
                                 <div
-                                    v-if="instructor.hourly_rate"
-                                    class="rounded-sm border border-slate-400 px-3 py-1"
-                                >
-                                    {{ t('hourlyRate') }}:
-                                    {{ instructor.hourly_rate }}
-                                </div>
-                            </div>
-
-                            <!-- Bio -->
-                            <div
-                                v-if="instructorBio"
-                                itemprop="description"
-                                class="mb-6 rounded-md border border-gray-200
+                                    v-if="instructorBio"
+                                    itemprop="description"
+                                    class="mb-6 rounded-md border border-gray-200
                                        bg-white p-4 text-sm leading-7
                                        text-slate-700 shadow-sm
                                        dark:border-gray-700 dark:bg-gray-900
                                        dark:text-slate-300"
-                                v-html="instructorBio"
-                            />
+                                    v-html="instructorBio"
+                                />
 
-                            <!-- Social links -->
-                            <div
-                                v-if="normalizedSocialLinks.length"
-                                class="mb-6 flex flex-wrap items-center justify-center gap-3"
-                            >
-                                <a
-                                    v-for="(item, index) in normalizedSocialLinks"
-                                    :key="index"
-                                    :href="item.url"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="rounded-md px-3 py-1 btn-default
+                                <!-- Social links -->
+                                <div
+                                    v-if="normalizedSocialLinks.length"
+                                    class="mb-6 flex flex-wrap items-center justify-center gap-3"
+                                >
+                                    <a
+                                        v-for="(item, index) in normalizedSocialLinks"
+                                        :key="index"
+                                        :href="item.url"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="rounded-md px-3 py-1 btn-default
                                            text-sm font-semibold
                                            inline-flex items-center gap-2"
-                                >
-                                    <svg
-                                        class="h-4 w-4"
-                                        viewBox="0 0 24 24"
-                                        fill="currentColor"
-                                        aria-hidden="true"
                                     >
-                                        <path
-                                            d="M14 3h7v7h-2V6.41l-8.29 8.3-1.42-1.42L17.59 5H14V3ZM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"
-                                        />
-                                    </svg>
+                                        <svg
+                                            class="h-4 w-4"
+                                            viewBox="0 0 24 24"
+                                            fill="currentColor"
+                                            aria-hidden="true"
+                                        >
+                                            <path
+                                                d="M14 3h7v7h-2V6.41l-8.29 8.3-1.42-1.42L17.59 5H14V3ZM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"
+                                            />
+                                        </svg>
 
-                                    <span>
+                                        <span>
                                         {{ getSocialLabel(item) }}
                                     </span>
-                                </a>
+                                    </a>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Courses toolbar -->
-                        <EntityPageToolbar
-                            v-if="hasCourses"
-                            v-model="qCourses"
-                            v-model:view-mode="viewMode"
-                            v-model:sort-value="sortCourses"
-                            :found="effectiveCoursesFound"
-                            :sort-options="courseSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('courses')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="applyCourseFilters"
-                            @reset="resetCourseFilters"
-                        />
-
-                        <div ref="coursesScrollTarget" />
-
-                        <!-- Empty -->
-                        <div
-                            v-if="hasCourses && displayedCourses.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
-
-                        <!-- Courses -->
-                        <div v-if="displayedCourses.length">
-                            <CourseGrid
-                                v-if="viewMode === 'grid'"
-                                :courses="displayedCourses"
-                                :cols="gridCols"
+                            <!-- Courses toolbar -->
+                            <EntityPageToolbar
+                                v-if="hasCourses"
+                                v-model="qCourses"
+                                v-model:view-mode="viewMode"
+                                v-model:sort-value="sortCourses"
+                                :found="effectiveCoursesFound"
+                                :sort-options="courseSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('courses')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="applyCourseFilters"
+                                @reset="resetCourseFilters"
                             />
 
-                            <CourseRows
-                                v-else
-                                :courses="displayedCourses"
+                            <div ref="coursesScrollTarget" />
+
+                            <!-- Empty -->
+                            <div
+                                v-if="hasCourses && displayedCourses.length === 0"
+                                class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            >
+                                {{ t('noData') }}
+                            </div>
+
+                            <!-- Courses -->
+                            <div v-if="displayedCourses.length">
+                                <CourseGrid
+                                    v-if="viewMode === 'grid'"
+                                    :courses="displayedCourses"
+                                    :cols="gridCols"
+                                />
+
+                                <CourseRows
+                                    v-else
+                                    :courses="displayedCourses"
+                                />
+                            </div>
+
+                            <!-- Server pagination -->
+                            <Pagination
+                                v-if="useServerProcessing && hasCourses && lastPage > 1"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="coursesFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
+                            />
+
+                            <!-- Frontend pagination -->
+                            <FrontendPagination
+                                v-if="!useServerProcessing && effectiveCoursesFound > perPageCourses"
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPageCourses"
+                                :total-items="effectiveCoursesFound"
+                            />
+
+                            <!-- Main content -->
+                            <SectionVideoList
+                                :videos="mainVideosList"
+                            />
+
+                            <SectionBanners
+                                :banners="mainBannersList"
                             />
                         </div>
+                    </article>
 
-                        <!-- Server pagination -->
-                        <Pagination
-                            v-if="useServerProcessing && hasCourses && lastPage > 1"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="coursesFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
-                        />
-
-                        <!-- Frontend pagination -->
-                        <FrontendPagination
-                            v-if="!useServerProcessing && effectiveCoursesFound > perPageCourses"
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPageCourses"
-                            :total-items="effectiveCoursesFound"
-                        />
-
-                        <!-- Main content -->
-                        <SectionVideoList
-                            :videos="mainVideosList"
-                        />
-
-                        <SectionBanners
-                            :banners="mainBannersList"
-                        />
-                    </div>
-                </article>
-
-                <!-- Right sidebar -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300 overflow-hidden"
-                    :class="
+                    <!-- Right sidebar -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300 overflow-hidden"
+                        :class="
                         rightCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <RightSidebarSchool
-                        :collapsed="rightCollapsed"
-                        @collapsed="setRightCollapsed"
-                    />
-                </aside>
-            </main>
-        </div>
+                    >
+                        <RightSidebarSchool
+                            :collapsed="rightCollapsed"
+                            @collapsed="setRightCollapsed"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

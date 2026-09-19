@@ -77,9 +77,9 @@ const onSortChange = () => {
 
 <template>
     <div
-        class="my-2 p-2 rounded-md shadow-sm
+        class="my-4 p-2 rounded-md shadow-sm
                bg-white dark:bg-gray-900
-               border border-gray-400 dark:border-gray-600"
+               border border-gray-300 dark:border-gray-600"
     >
         <div
             class="px-2 py-2

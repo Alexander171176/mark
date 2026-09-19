@@ -55,7 +55,7 @@ const { t } = useI18n()
 const props = defineProps({
     locale: {
         type: String,
-        default: 'ru',
+        default: 'ru'
     },
 
     seo: {
@@ -63,74 +63,74 @@ const props = defineProps({
         default: () => ({
             title: '',
             keywords: '',
-            description: '',
-        }),
+            description: ''
+        })
     },
 
     useServerProcessing: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     publicSchoolCoursesProcessingMode: {
         type: String,
-        default: 'server',
+        default: 'server'
     },
 
     title: {
         type: String,
-        default: '',
+        default: ''
     },
 
     canLogin: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     canRegister: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     trackTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     courses: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     coursesCount: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     coursesFound: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     filters: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     hashtags: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ===================== PAGE ===================== */
@@ -328,7 +328,7 @@ const courseSortOptions = [
     { value: 'reviewsAsc', label: `${t('reviews')} 0→9` },
 
     { value: 'publishedAtDesc', label: `${t('publishedAt')} ↓` },
-    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` },
+    { value: 'publishedAtAsc', label: `${t('publishedAt')} ↑` }
 ]
 
 /* ===================== FRONTEND MODE ===================== */
@@ -337,10 +337,10 @@ const frontendCurrentPage = ref(1)
 
 const {
     targetRef: scrollTarget,
-    scrollToTarget,
+    scrollToTarget
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 const normalizeText = (value) => {
@@ -388,7 +388,7 @@ const filteredCourses = computed(() => {
 
             course?.instructorProfile
                 ?.user
-                ?.name,
+                ?.name
         ].some((value) =>
             normalizeText(value).includes(query)
         )
@@ -607,12 +607,12 @@ const reloadCourses = (page = 1) => {
             q: q.value || undefined,
             sort: sort.value || undefined,
             view: viewMode.value || undefined,
-            page,
+            page
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -803,7 +803,7 @@ const getAbsoluteCourseUrl = (course) => {
     const url = route(
         'public.schoolCourses.show',
         {
-            slug: course.slug,
+            slug: course.slug
         }
     )
 
@@ -861,8 +861,8 @@ const collectionPageSchema = computed(() => ({
         url: homeUrl.value,
         ...(siteName.value
             ? { name: siteName.value }
-            : {}),
-    },
+            : {})
+    }
 }))
 
 /**
@@ -876,15 +876,15 @@ const breadcrumbSchema = computed(() => ({
             '@type': 'ListItem',
             position: 1,
             name: t('home'),
-            item: homeUrl.value,
+            item: homeUrl.value
         },
         {
             '@type': 'ListItem',
             position: 2,
             name: seoTitle.value,
-            item: canonicalUrl.value,
-        },
-    ],
+            item: canonicalUrl.value
+        }
+    ]
 }))
 
 /**
@@ -906,7 +906,7 @@ const courseItemListSchema = computed(() => ({
                 '@id': `${courseUrl}#course`,
                 url: courseUrl,
                 name: getCourseTitle(course),
-                inLanguage: props.locale,
+                inLanguage: props.locale
             }
 
             if (getCourseShort(course)) {
@@ -925,10 +925,10 @@ const courseItemListSchema = computed(() => ({
                     + index
                     + 1,
                 url: courseUrl,
-                item,
+                item
             }
         }
-    ),
+    )
 }))
 
 const collectionPageJsonLd = computed(() => {
@@ -1107,227 +1107,235 @@ const courseItemListJsonLd = computed(() => {
         <!-- Шапка -->
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-                <!-- Левая колонка -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
-                    />
-                </aside>
 
-                <!-- Центральный SEO-контент страницы. Сайдбары намеренно находятся вне CollectionPage. -->
-                <article
-                    class="w-full lg:mt-28 pb-6 slate-1"
-                    itemscope
-                    itemtype="https://schema.org/CollectionPage"
-                >
-                    <div class="mx-auto max-w-6xl">
+                    <!-- Левая колонка -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="leftCollapsed = $event"
+                        />
+                    </aside>
 
-                        <!-- Хлебные крошки -->
-                        <nav
-                            class="text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
-                        >
-                            <ol class="flex flex-wrap items-center font-semibold">
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                >
-                                    <Link
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
-                                        itemprop="item"
+                    <!-- Центральный SEO-контент страницы. Сайдбары намеренно находятся вне CollectionPage. -->
+                    <article
+                        class="w-full pb-6 slate-1"
+                        itemscope
+                        itemtype="https://schema.org/CollectionPage"
+                    >
+                        <div class="mx-auto max-w-6xl">
+
+                            <!-- Хлебные крошки -->
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol class="flex flex-wrap items-center font-semibold">
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
                                     >
+                                        <Link
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                            itemprop="item"
+                                        >
                                         <span itemprop="name">
                                             {{ t('home') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="1"
-                                    />
-                                </li>
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        />
+                                    </li>
 
-                                <li aria-hidden="true">
+                                    <li aria-hidden="true">
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
-                                </li>
+                                    </li>
 
-                                <li
-                                    class="breadcrumbs"
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    aria-current="page"
-                                >
+                                    <li
+                                        class="breadcrumbs"
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        aria-current="page"
+                                    >
                                     <span itemprop="name">
                                         {{ t('courses') }}
                                     </span>
 
-                                    <meta
-                                        itemprop="item"
-                                        :content="canonicalUrl"
-                                    />
+                                        <meta
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        />
 
-                                    <meta
-                                        itemprop="position"
-                                        content="2"
-                                    />
-                                </li>
-                            </ol>
-                        </nav>
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        />
+                                    </li>
+                                </ol>
+                            </nav>
 
-                        <!-- Заголовок -->
-                        <div
-                            class="my-3 flex flex-wrap items-center
+                            <!-- Заголовок -->
+                            <div
+                                class="my-3 flex flex-wrap items-center
                                    justify-center gap-3 title"
-                        >
-                            <svg
-                                class="shrink-0 h-5 w-5
+                            >
+                                <svg
+                                    class="shrink-0 h-5 w-5
                                        text-slate-600/85
                                        dark:text-slate-200/85"
-                                fill="currentColor"
-                                viewBox="0 0 448 512"
-                                aria-hidden="true"
+                                    fill="currentColor"
+                                    viewBox="0 0 448 512"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M318.38 208h-39.09c-1.49 27.03-6.54 51.35-14.21 70.41 27.71-13.24 48.02-39.19 53.3-70.41zm0-32c-5.29-31.22-25.59-57.17-53.3-70.41 7.68 19.06 12.72 43.38 14.21 70.41h39.09zM224 97.31c-7.69 7.45-20.77 34.42-23.43 78.69h46.87c-2.67-44.26-15.75-71.24-23.44-78.69zm-41.08 8.28c-27.71 13.24-48.02 39.19-53.3 70.41h39.09c1.49-27.03 6.53-51.35 14.21-70.41zm0 172.82c-7.68-19.06-12.72-43.38-14.21-70.41h-39.09c5.28 31.22 25.59 57.17 53.3 70.41zM247.43 208h-46.87c2.66 44.26 15.74 71.24 23.43 78.69 7.7-7.45 20.78-34.43 23.44-78.69zM448 358.4V25.6c0-16-9.6-25.6-25.6-25.6H96C41.6 0 0 41.6 0 96v320c0 54.4 41.6 96 96 96h326.4c12.8 0 25.6-9.6 25.6-25.6v-16c0-6.4-3.2-12.8-9.6-19.2-3.2-16-3.2-60.8 0-73.6 6.4-3.2 9.6-9.6 9.6-19.2zM224 64c70.69 0 128 57.31 128 128s-57.31 128-128 128S96 262.69 96 192 153.31 64 224 64zm160 384H96c-19.2 0-32-12.8-32-32s16-32 32-32h288v64z"
+                                    />
+                                </svg>
+
+                                <h1
+                                    class="text-2xl font-bold"
+                                    itemprop="name"
+                                >
+                                    {{ t('courses') }}
+                                </h1>
+                            </div>
+
+                            <!-- SEO-описание страницы -->
+                            <div
+                                v-if="seoDescription"
+                                class="my-1 text-sm subtitle text-center"
+                                itemprop="description"
                             >
-                                <path
-                                    d="M318.38 208h-39.09c-1.49 27.03-6.54 51.35-14.21 70.41 27.71-13.24 48.02-39.19 53.3-70.41zm0-32c-5.29-31.22-25.59-57.17-53.3-70.41 7.68 19.06 12.72 43.38 14.21 70.41h39.09zM224 97.31c-7.69 7.45-20.77 34.42-23.43 78.69h46.87c-2.67-44.26-15.75-71.24-23.44-78.69zm-41.08 8.28c-27.71 13.24-48.02 39.19-53.3 70.41h39.09c1.49-27.03 6.53-51.35 14.21-70.41zm0 172.82c-7.68-19.06-12.72-43.38-14.21-70.41h-39.09c5.28 31.22 25.59 57.17 53.3 70.41zM247.43 208h-46.87c2.66 44.26 15.74 71.24 23.43 78.69 7.7-7.45 20.78-34.43 23.44-78.69zM448 358.4V25.6c0-16-9.6-25.6-25.6-25.6H96C41.6 0 0 41.6 0 96v320c0 54.4 41.6 96 96 96h326.4c12.8 0 25.6-9.6 25.6-25.6v-16c0-6.4-3.2-12.8-9.6-19.2-3.2-16-3.2-60.8 0-73.6 6.4-3.2 9.6-9.6 9.6-19.2zM224 64c70.69 0 128 57.31 128 128s-57.31 128-128 128S96 262.69 96 192 153.31 64 224 64zm160 384H96c-19.2 0-32-12.8-32-32s16-32 32-32h288v64z"
-                                />
-                            </svg>
+                                {{ seoDescription }}
+                            </div>
 
-                            <h1
-                                class="text-2xl font-bold"
-                                itemprop="name"
-                            >
-                                {{ t('courses') }}
-                            </h1>
-                        </div>
-
-                        <!-- SEO-описание страницы -->
-                        <div
-                            v-if="seoDescription"
-                            class="my-1 text-sm subtitle text-center"
-                            itemprop="description"
-                        >
-                            {{ seoDescription }}
-                        </div>
-
-                        <!-- Поиск, количество, сортировка, вид -->
-                        <EntityPageToolbar
-                            v-if="useServerProcessing"
-                            v-model="q"
-                            :found="coursesFound"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="courseSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('courses')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="submitSearch"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
-
-                        <FrontendEntityPageToolbar
-                            v-else
-                            v-model="q"
-                            :found="sortedCourses.length"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="courseSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('courses')"
-                            :search-placeholder="t('searchByName')"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
-
-                        <div ref="scrollTarget"></div>
-
-                        <!-- Нет данных -->
-                        <div
-                            v-if="displayedCourses.length === 0"
-                            class="mt-6 text-center
-                                   text-slate-700 dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
-
-                        <!-- Курсы -->
-                        <section
-                            v-else
-                            :aria-label="t('courses')"
-                            itemprop="mainEntity"
-                        >
-                            <CourseGrid
-                                v-if="viewMode === 'grid'"
-                                :courses="displayedCourses"
-                                :cols="gridCols"
+                            <!-- Поиск, количество, сортировка, вид -->
+                            <EntityPageToolbar
+                                v-if="useServerProcessing"
+                                v-model="q"
+                                :found="coursesFound"
+                                :view-mode="viewMode"
+                                :sort-value="sort"
+                                :sort-options="courseSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('courses')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="submitSearch"
+                                @reset="resetSearch"
+                                @update:viewMode="updateViewMode"
+                                @update:sortValue="updateSort"
                             />
 
-                            <CourseRows
+                            <FrontendEntityPageToolbar
                                 v-else
-                                :courses="displayedCourses"
+                                v-model="q"
+                                :found="sortedCourses.length"
+                                :view-mode="viewMode"
+                                :sort-value="sort"
+                                :sort-options="courseSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('courses')"
+                                :search-placeholder="t('searchByName')"
+                                @reset="resetSearch"
+                                @update:viewMode="updateViewMode"
+                                @update:sortValue="updateSort"
                             />
-                        </section>
 
-                        <!-- Пагинация -->
-                        <Pagination
-                            v-if="useServerProcessing"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="coursesFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
+                            <div ref="scrollTarget"></div>
+
+                            <!-- Нет данных -->
+                            <div
+                                v-if="displayedCourses.length === 0"
+                                class="mt-6 text-center
+                                   text-slate-700 dark:text-slate-300"
+                            >
+                                {{ t('noData') }}
+                            </div>
+
+                            <!-- Курсы -->
+                            <section
+                                v-else
+                                :aria-label="t('courses')"
+                                itemprop="mainEntity"
+                            >
+                                <CourseGrid
+                                    v-if="viewMode === 'grid'"
+                                    :courses="displayedCourses"
+                                    :cols="gridCols"
+                                />
+
+                                <CourseRows
+                                    v-else
+                                    :courses="displayedCourses"
+                                />
+                            </section>
+
+                            <!-- Пагинация -->
+                            <Pagination
+                                v-if="useServerProcessing"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="coursesFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
+                            />
+
+                            <FrontendPagination
+                                v-else
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPage"
+                                :total-items="sortedCourses.length"
+                            />
+
+                            <!-- Главные видео и баннеры -->
+                            <SectionVideoList
+                                :videos="mainVideos"
+                            />
+
+                            <SectionBanners
+                                :banners="mainBanners"
+                            />
+                        </div>
+                    </article>
+
+                    <!-- Правая колонка -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebarSchool
+                            :collapsed="rightCollapsed"
+                            @collapsed="rightCollapsed = $event"
                         />
-
-                        <FrontendPagination
-                            v-else
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPage"
-                            :total-items="sortedCourses.length"
-                        />
-
-                        <!-- Главные видео и баннеры -->
-                        <SectionVideoList
-                            :videos="mainVideos"
-                        />
-
-                        <SectionBanners
-                            :banners="mainBanners"
-                        />
-                    </div>
-                </article>
-
-                <!-- Правая колонка -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28
-                           transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebarSchool
-                        :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
-                    />
-                </aside>
-            </main>
-        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <!-- Подвал -->
         <FooterBlog />

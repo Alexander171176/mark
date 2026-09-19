@@ -36,69 +36,69 @@ const props = defineProps({
         default: () => ({
             title: '',
             keywords: '',
-            description: '',
-        }),
+            description: ''
+        })
     },
 
     publicSchoolTracksProcessingMode: {
         type: String,
-        default: 'server',
+        default: 'server'
     },
 
     useServerProcessing: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     title: {
         type: String,
-        default: '',
+        default: ''
     },
 
     canLogin: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     canRegister: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     tracks: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     tracksCount: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     tracksFound: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     filters: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     trackTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ======================== Helpers ======================== */
@@ -278,7 +278,7 @@ const trackSortOptions = [
     { value: 'imagesAsc', label: `${t('images')} 0→9` },
 
     { value: 'dateDesc', label: t('sortNewestFirst') },
-    { value: 'dateAsc', label: t('sortOldestFirst') },
+    { value: 'dateAsc', label: t('sortOldestFirst') }
 ]
 
 /* ======================== View ======================== */
@@ -327,7 +327,7 @@ const filteredTracks = computed(() => {
             track?.id,
             getTrackTitle(track),
             getTrackShort(track),
-            getTrackSlug(track),
+            getTrackSlug(track)
         ].some((value) =>
             normalizeText(value).includes(query)
         )
@@ -548,10 +548,10 @@ const frontendCurrentPage = ref(1)
 
 const {
     targetRef: scrollTarget,
-    scrollToTarget,
+    scrollToTarget
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 watch([q, sort], () => {
@@ -621,12 +621,12 @@ const reloadTracks = (pageNumber = 1) => {
         {
             q: q.value || undefined,
             sort: sort.value || undefined,
-            page: pageNumber,
+            page: pageNumber
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -949,273 +949,281 @@ const trackGridCols = computed(() => {
     >
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
+                >
 
-                <!-- Left sidebar -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
-                    :class="
+                    <!-- Left sidebar -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300"
+                        :class="
                         leftCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="setLeftCollapsed"
-                    />
-                </aside>
-
-                <!-- Content -->
-                <article
-                    itemscope
-                    itemtype="https://schema.org/CollectionPage"
-                    :itemid="canonicalUrl"
-                    class="w-full lg:mt-28 pb-6 slate-1 min-w-0"
-                >
-                    <!-- Schema.org -->
-                    <meta
-                        itemprop="name"
-                        :content="seoTitle"
                     >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="setLeftCollapsed"
+                        />
+                    </aside>
 
-                    <meta
-                        v-if="seoDescription"
-                        itemprop="description"
-                        :content="seoDescription"
+                    <!-- Content -->
+                    <article
+                        itemscope
+                        itemtype="https://schema.org/CollectionPage"
+                        :itemid="canonicalUrl"
+                        class="w-full pb-6 slate-1 min-w-0"
                     >
-
-                    <meta
-                        v-if="seoKeywords"
-                        itemprop="keywords"
-                        :content="seoKeywords"
-                    >
-
-                    <meta
-                        itemprop="url"
-                        :content="canonicalUrl"
-                    >
-
-                    <meta
-                        itemprop="inLanguage"
-                        :content="contentLocale"
-                    >
-
-                    <div class="mx-auto max-w-6xl">
-
-                        <!-- Breadcrumbs -->
-                        <nav
-                            class="text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
+                        <!-- Schema.org -->
+                        <meta
+                            itemprop="name"
+                            :content="seoTitle"
                         >
-                            <ol class="flex flex-wrap items-center font-semibold">
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
+
+                        <meta
+                            v-if="seoDescription"
+                            itemprop="description"
+                            :content="seoDescription"
+                        >
+
+                        <meta
+                            v-if="seoKeywords"
+                            itemprop="keywords"
+                            :content="seoKeywords"
+                        >
+
+                        <meta
+                            itemprop="url"
+                            :content="canonicalUrl"
+                        >
+
+                        <meta
+                            itemprop="inLanguage"
+                            :content="contentLocale"
+                        >
+
+                        <div class="mx-auto max-w-6xl">
+
+                            <!-- Breadcrumbs -->
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol class="flex flex-wrap items-center font-semibold">
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
                                         <span itemprop="name">
                                             {{ t('home') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="1"
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        >
+                                    </li>
+
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
-                                </li>
-
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
 
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('public.schoolInstructors.index')"
-                                        class="breadcrumb-link hover:underline"
-                                    >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('public.schoolInstructors.index')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
                                         <span itemprop="name">
                                             {{ t('instructors') }}
                                         </span>
-                                    </Link>
+                                        </Link>
 
-                                    <meta
-                                        itemprop="position"
-                                        content="2"
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        >
+                                    </li>
+
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
                                     >
-                                </li>
-
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                    aria-current="page"
-                                >
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
 
-                                    <span
-                                        itemprop="name"
-                                        class="breadcrumbs"
-                                    >
+                                        <span
+                                            itemprop="name"
+                                            class="breadcrumbs"
+                                        >
                                         {{ t('tracks') }}
                                     </span>
 
-                                    <meta
-                                        itemprop="item"
-                                        :content="canonicalUrl"
-                                    >
+                                        <meta
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        >
 
-                                    <meta
-                                        itemprop="position"
-                                        content="3"
-                                    >
-                                </li>
-                            </ol>
-                        </nav>
+                                        <meta
+                                            itemprop="position"
+                                            content="3"
+                                        >
+                                    </li>
+                                </ol>
+                            </nav>
 
-                        <!-- Header -->
-                        <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
-                            <svg
-                                class="shrink-0 h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
+                            <!-- Header -->
+                            <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
+                                <svg
+                                    class="shrink-0 h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        d="M23.58.424A1,1,0,0,0,22.819.13C8.791.862,3.609,13.358,3.559,13.484a1,1,0,0,0,.22,1.08l5.657,5.657a1,1,0,0,0,1.085.218c.125-.051,12.554-5.291,13.348-19.253A1,1,0,0,0,23.58.424Zm-8.166,10.99a2,2,0,1,1,0-2.828A2,2,0,0,1,15.414,11.414Z"
+                                    />
+                                    <path
+                                        d="M1.113,18.844a2.844,2.844,0,1,1,4.022,4.022C4.024,23.977,0,24,0,24S0,19.954,1.113,18.844Z"
+                                    />
+                                    <path
+                                        d="M10.357,2.341A8.911,8.911,0,0,0,2.522,4.825a9.084,9.084,0,0,0-1.384,1.8,1,1,0,0,0,.155,1.215l1.989,1.99A26.623,26.623,0,0,1,10.357,2.341Z"
+                                    />
+                                    <path
+                                        d="M21.659,13.643a8.911,8.911,0,0,1-2.484,7.835,9.084,9.084,0,0,1-1.8,1.384,1,1,0,0,1-1.215-.155l-1.99-1.989A26.623,26.623,0,0,0,21.659,13.643Z"
+                                    />
+                                </svg>
+
+                                <h1
+                                    itemprop="headline"
+                                    class="text-2xl font-bold"
+                                >
+                                    {{ t('tracks') }}
+                                </h1>
+                            </div>
+
+                            <!-- Description -->
+                            <div
+                                v-if="seoDescription"
+                                itemprop="abstract"
+                                class="my-1 text-sm subtitle text-center"
                             >
-                                <path
-                                    d="M23.58.424A1,1,0,0,0,22.819.13C8.791.862,3.609,13.358,3.559,13.484a1,1,0,0,0,.22,1.08l5.657,5.657a1,1,0,0,0,1.085.218c.125-.051,12.554-5.291,13.348-19.253A1,1,0,0,0,23.58.424Zm-8.166,10.99a2,2,0,1,1,0-2.828A2,2,0,0,1,15.414,11.414Z"
-                                />
-                                <path
-                                    d="M1.113,18.844a2.844,2.844,0,1,1,4.022,4.022C4.024,23.977,0,24,0,24S0,19.954,1.113,18.844Z"
-                                />
-                                <path
-                                    d="M10.357,2.341A8.911,8.911,0,0,0,2.522,4.825a9.084,9.084,0,0,0-1.384,1.8,1,1,0,0,0,.155,1.215l1.989,1.99A26.623,26.623,0,0,1,10.357,2.341Z"
-                                />
-                                <path
-                                    d="M21.659,13.643a8.911,8.911,0,0,1-2.484,7.835,9.084,9.084,0,0,1-1.8,1.384,1,1,0,0,1-1.215-.155l-1.99-1.989A26.623,26.623,0,0,0,21.659,13.643Z"
-                                />
-                            </svg>
+                                {{ seoDescription }}
+                            </div>
 
-                            <h1
-                                itemprop="headline"
-                                class="text-2xl font-bold"
-                            >
-                                {{ t('tracks') }}
-                            </h1>
-                        </div>
-
-                        <!-- Description -->
-                        <div
-                            v-if="seoDescription"
-                            itemprop="abstract"
-                            class="my-1 text-sm subtitle text-center"
-                        >
-                            {{ seoDescription }}
-                        </div>
-
-                        <!-- Toolbar -->
-                        <EntityPageToolbar
-                            v-model="q"
-                            v-model:view-mode="viewMode"
-                            v-model:sort-value="sort"
-                            :found="effectiveTracksFound"
-                            :sort-options="trackSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('tracks')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="applyFilters"
-                            @reset="resetFilters"
-                        />
-
-                        <div ref="scrollTarget"></div>
-
-                        <!-- Empty -->
-                        <div
-                            v-if="displayedTracks.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
-
-                        <!-- Tracks -->
-                        <div v-else>
-                            <TrackGrid
-                                v-if="viewMode === 'grid'"
-                                :tracks="displayedTracks"
-                                :cols="trackGridCols"
+                            <!-- Toolbar -->
+                            <EntityPageToolbar
+                                v-model="q"
+                                v-model:view-mode="viewMode"
+                                v-model:sort-value="sort"
+                                :found="effectiveTracksFound"
+                                :sort-options="trackSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('tracks')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="applyFilters"
+                                @reset="resetFilters"
                             />
 
-                            <TrackRows
-                                v-else
-                                :tracks="displayedTracks"
+                            <div ref="scrollTarget"></div>
+
+                            <!-- Empty -->
+                            <div
+                                v-if="displayedTracks.length === 0"
+                                class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            >
+                                {{ t('noData') }}
+                            </div>
+
+                            <!-- Tracks -->
+                            <div v-else>
+                                <TrackGrid
+                                    v-if="viewMode === 'grid'"
+                                    :tracks="displayedTracks"
+                                    :cols="trackGridCols"
+                                />
+
+                                <TrackRows
+                                    v-else
+                                    :tracks="displayedTracks"
+                                />
+                            </div>
+
+                            <!-- Server pagination -->
+                            <Pagination
+                                v-if="useServerProcessing && lastPage > 1"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="tracksFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
+                            />
+
+                            <!-- Frontend pagination -->
+                            <FrontendPagination
+                                v-if="!useServerProcessing && effectiveTracksFound > perPage"
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPage"
+                                :total-items="effectiveTracksFound"
+                            />
+
+                            <!-- Main content -->
+                            <SectionVideoList
+                                :videos="mainVideos"
+                            />
+
+                            <SectionBanners
+                                :banners="mainBanners"
                             />
                         </div>
+                    </article>
 
-                        <!-- Server pagination -->
-                        <Pagination
-                            v-if="useServerProcessing && lastPage > 1"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="tracksFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
-                        />
-
-                        <!-- Frontend pagination -->
-                        <FrontendPagination
-                            v-if="!useServerProcessing && effectiveTracksFound > perPage"
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPage"
-                            :total-items="effectiveTracksFound"
-                        />
-
-                        <!-- Main content -->
-                        <SectionVideoList
-                            :videos="mainVideos"
-                        />
-
-                        <SectionBanners
-                            :banners="mainBanners"
-                        />
-                    </div>
-                </article>
-
-                <!-- Right sidebar -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300"
-                    :class="
+                    <!-- Right sidebar -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300"
+                        :class="
                         rightCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <RightSidebarSchool
-                        :collapsed="rightCollapsed"
-                        @collapsed="setRightCollapsed"
-                    />
-                </aside>
-            </main>
-        </div>
+                    >
+                        <RightSidebarSchool
+                            :collapsed="rightCollapsed"
+                            @collapsed="setRightCollapsed"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

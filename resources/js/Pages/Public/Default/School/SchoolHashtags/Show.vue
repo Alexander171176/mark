@@ -44,7 +44,7 @@ const props = defineProps({
     trackTree: { type: Array, default: () => [] },
 
     mainVideos: { type: [Array, Object], default: () => [] },
-    mainBanners: { type: [Array, Object], default: () => [] },
+    mainBanners: { type: [Array, Object], default: () => [] }
 })
 
 /* ======================== Helpers ======================== */
@@ -111,11 +111,11 @@ const jsonLd = computed(() => {
             inLanguage: contentLocale.value,
             isPartOf: {
                 '@type': 'WebSite',
-                url: homeUrl.value,
+                url: homeUrl.value
             },
             mainEntity: {
-                '@id': `${canonicalUrl.value}#courses`,
-            },
+                '@id': `${canonicalUrl.value}#courses`
+            }
         },
         {
             '@type': 'BreadcrumbList',
@@ -125,21 +125,21 @@ const jsonLd = computed(() => {
                     '@type': 'ListItem',
                     position: 1,
                     name: t('home'),
-                    item: homeUrl.value,
+                    item: homeUrl.value
                 },
                 {
                     '@type': 'ListItem',
                     position: 2,
                     name: t('courses'),
-                    item: coursesIndexUrl.value,
+                    item: coursesIndexUrl.value
                 },
                 {
                     '@type': 'ListItem',
                     position: 3,
                     name: `#${hashtagName.value}`,
-                    item: canonicalUrl.value,
-                },
-            ],
+                    item: canonicalUrl.value
+                }
+            ]
         },
         {
             '@type': 'ItemList',
@@ -152,9 +152,9 @@ const jsonLd = computed(() => {
                 name: getCourseTitle(course),
                 url: course?.slug
                     ? absoluteUrl(route('public.schoolCourses.show', { slug: course.slug }))
-                    : undefined,
-            })).filter((item) => item.url),
-        },
+                    : undefined
+            })).filter((item) => item.url)
+        }
     ]
 
     if (seoDescription.value) graph[0].description = seoDescription.value
@@ -162,7 +162,7 @@ const jsonLd = computed(() => {
 
     return {
         '@context': 'https://schema.org',
-        '@graph': graph,
+        '@graph': graph
     }
 })
 
@@ -212,7 +212,7 @@ const courseSortOptions = computed(() => [
     { value: 'reviewsAsc', label: `${t('reviews')} ↑` },
     { value: 'reviewsDesc', label: `${t('reviews')} ↓` },
     { value: 'publishedAtAsc', label: `${t('date')} ↑` },
-    { value: 'publishedAtDesc', label: `${t('date')} ↓` },
+    { value: 'publishedAtDesc', label: `${t('date')} ↓` }
 ])
 
 /* ======================== View ======================== */
@@ -262,7 +262,7 @@ const frontendFilteredCourses = computed(() => {
         course?.slug,
         getCourseTitle(course),
         getCourseShort(course),
-        getInstructorName(course),
+        getInstructorName(course)
     ].some((value) => normalizeText(value).includes(query)))
 })
 
@@ -405,12 +405,12 @@ const loadServerCourses = (pageNumber = 1) => {
         {
             q_courses: qCourses.value || undefined,
             sort_courses: sortCourses.value,
-            page_courses: pageNumber,
+            page_courses: pageNumber
         },
         {
             preserveScroll: true,
             preserveState: true,
-            replace: true,
+            replace: true
         }
     )
 }
@@ -553,219 +553,226 @@ const mainBanners = computed(() => unwrapList(props.mainBanners))
     <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
-            <main class="mx-auto flex flex-col gap-4 tracking-wider lg:flex-row">
-
-                <!-- Left sidebar -->
-                <aside
-                    v-if="showLeft"
-                    class="mt-12 shrink-0 pl-3 transition-all duration-300 lg:mt-28"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="setLeftCollapsed"
-                    />
-                </aside>
 
-                <!-- Content -->
-                <article
-                    itemscope
-                    itemtype="https://schema.org/CollectionPage"
-                    :itemid="canonicalUrl || undefined"
-                    class="slate-1 w-full min-w-0 pb-6 lg:mt-28"
-                >
-                    <meta itemprop="name" :content="seoTitle">
-                    <meta v-if="seoDescription" itemprop="description" :content="seoDescription">
-                    <meta v-if="seoKeywords" itemprop="keywords" :content="seoKeywords">
-                    <link v-if="canonicalUrl" itemprop="url" :href="canonicalUrl">
-                    <meta itemprop="inLanguage" :content="contentLocale">
+                    <!-- Left sidebar -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 pl-3 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="setLeftCollapsed"
+                        />
+                    </aside>
 
-                    <div class="mx-auto max-w-6xl">
+                    <!-- Content -->
+                    <article
+                        itemscope
+                        itemtype="https://schema.org/CollectionPage"
+                        :itemid="canonicalUrl || undefined"
+                        class="slate-1 w-full min-w-0 pb-6"
+                    >
+                        <meta itemprop="name" :content="seoTitle">
+                        <meta v-if="seoDescription" itemprop="description" :content="seoDescription">
+                        <meta v-if="seoKeywords" itemprop="keywords" :content="seoKeywords">
+                        <link v-if="canonicalUrl" itemprop="url" :href="canonicalUrl">
+                        <meta itemprop="inLanguage" :content="contentLocale">
 
-                        <!-- Breadcrumbs -->
-                        <nav
-                            class="mb-3 text-sm"
-                            aria-label="Breadcrumb"
-                            itemscope
-                            itemtype="https://schema.org/BreadcrumbList"
-                        >
-                            <ol class="flex flex-wrap items-center font-semibold">
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <Link itemprop="item" :href="route('home')"
-                                          class="breadcrumb-link hover:underline">
-                                        <span itemprop="name">{{ t('home') }}</span>
-                                    </Link>
-                                    <meta itemprop="position" content="1">
-                                </li>
+                        <div class="mx-auto max-w-6xl">
 
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                >
-                                    <span class="mx-2 breadcrumbs">/</span>
-                                    <Link
-                                        itemprop="item"
-                                        :href="route('public.schoolCourses.index')"
-                                        class="breadcrumb-link hover:underline"
+                            <!-- Breadcrumbs -->
+                            <nav
+                                class="mb-3 text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol class="flex flex-wrap items-center font-semibold">
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
                                     >
-                                        <span itemprop="name">{{ t('courses') }}</span>
-                                    </Link>
-                                    <meta itemprop="position" content="2">
-                                </li>
+                                        <Link itemprop="item" :href="route('home')"
+                                              class="breadcrumb-link hover:underline">
+                                            <span itemprop="name">{{ t('home') }}</span>
+                                        </Link>
+                                        <meta itemprop="position" content="1">
+                                    </li>
 
-                                <li
-                                    itemprop="itemListElement"
-                                    itemscope
-                                    itemtype="https://schema.org/ListItem"
-                                    class="flex items-center"
-                                    aria-current="page"
-                                >
-                                    <span class="mx-2 breadcrumbs">/</span>
-                                    <span itemprop="name" class="breadcrumbs">
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                    >
+                                        <span class="mx-2 breadcrumbs">/</span>
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('public.schoolCourses.index')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
+                                            <span itemprop="name">{{ t('courses') }}</span>
+                                        </Link>
+                                        <meta itemprop="position" content="2">
+                                    </li>
+
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
+                                    >
+                                        <span class="mx-2 breadcrumbs">/</span>
+                                        <span itemprop="name" class="breadcrumbs">
                                         #{{ hashtagName }}
                                     </span>
-                                    <link v-if="canonicalUrl" itemprop="item" :href="canonicalUrl">
-                                    <meta itemprop="position" content="3">
-                                </li>
-                            </ol>
-                        </nav>
+                                        <link v-if="canonicalUrl" itemprop="item" :href="canonicalUrl">
+                                        <meta itemprop="position" content="3">
+                                    </li>
+                                </ol>
+                            </nav>
 
-                        <!-- Hashtag -->
-                        <header
-                            class="mb-5 rounded-md border border-gray-200 bg-white p-4
+                            <!-- Hashtag -->
+                            <header
+                                class="mb-5 rounded-md border border-gray-200 bg-white p-4
                                    shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                            <div class="flex flex-wrap items-center justify-center gap-3">
-                                <h1 itemprop="headline"
-                                    class="text-2xl font-bold text-slate-800 dark:text-slate-100">
-                                    #{{ hashtagName }}
-                                </h1>
+                                <div class="flex flex-wrap items-center justify-center gap-3">
+                                    <h1 itemprop="headline"
+                                        class="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                                        #{{ hashtagName }}
+                                    </h1>
 
-                                <span
-                                    v-if="hashtag.color"
-                                    class="h-4 w-4 rounded-full border border-slate-400"
-                                    :style="{ backgroundColor: hashtag.color }"
-                                    aria-hidden="true"
+                                    <span
+                                        v-if="hashtag.color"
+                                        class="h-4 w-4 rounded-full border border-slate-400"
+                                        :style="{ backgroundColor: hashtag.color }"
+                                        aria-hidden="true"
+                                    />
+                                </div>
+
+                                <div
+                                    v-if="hashtagShort"
+                                    itemprop="abstract"
+                                    class="mt-2 text-center text-sm text-slate-600 dark:text-slate-300"
+                                >
+                                    {{ hashtagShort }}
+                                </div>
+
+                                <div
+                                    v-if="hashtagDescription"
+                                    itemprop="text"
+                                    class="mt-4 text-sm text-slate-700 dark:text-slate-300"
+                                    v-html="hashtagDescription"
                                 />
-                            </div>
 
-                            <div
-                                v-if="hashtagShort"
-                                itemprop="abstract"
-                                class="mt-2 text-center text-sm text-slate-600 dark:text-slate-300"
-                            >
-                                {{ hashtagShort }}
-                            </div>
-
-                            <div
-                                v-if="hashtagDescription"
-                                itemprop="text"
-                                class="mt-4 text-sm text-slate-700 dark:text-slate-300"
-                                v-html="hashtagDescription"
-                            />
-
-                            <div
-                                class="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2
+                                <div
+                                    class="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2
                                        text-xs text-slate-500 dark:text-slate-400">
                                 <span v-if="hashtagCoursesCount">
                                     {{ t('courses') }}: {{ hashtagCoursesCount }}
                                 </span>
-                                <span v-if="hashtagModulesCount">
+                                    <span v-if="hashtagModulesCount">
                                     {{ t('modules') }}: {{ hashtagModulesCount }}
                                 </span>
-                                <span v-if="hashtagLessonsCount">
+                                    <span v-if="hashtagLessonsCount">
                                     {{ t('lessons') }}: {{ hashtagLessonsCount }}
                                 </span>
-                                <span v-if="hashtag.views">
+                                    <span v-if="hashtag.views">
                                     {{ t('views') }}: {{ hashtag.views }}
                                 </span>
-                                <span v-if="hashtag.likes">
+                                    <span v-if="hashtag.likes">
                                     {{ t('likes') }}: {{ hashtag.likes }}
                                 </span>
-                            </div>
-                        </header>
+                                </div>
+                            </header>
 
-                        <!-- Controls -->
-                        <EntityPageToolbar
-                            v-model="qCourses"
-                            v-model:view-mode="viewMode"
-                            v-model:sort-value="sortCourses"
-                            :found="effectiveCoursesFound"
-                            :sort-options="courseSortOptions"
-                            :default-sort="DEFAULT_SORT"
-                            :found-label="t('courses')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="applyFilters"
-                            @reset="resetFilters"
-                        />
-
-                        <!-- Empty -->
-                        <div
-                            v-if="!displayedCourses.length"
-                            class="rounded-md border border-gray-200 bg-white p-8
-                                   text-center text-sm text-slate-500 dark:border-gray-700
-                                   dark:bg-gray-900 dark:text-slate-400"
-                        >
-                            {{ t('nothingFound') }}
-                        </div>
-
-                        <!-- Courses -->
-                        <template v-else>
-                            <CourseGrid
-                                v-if="viewMode === 'grid'"
-                                :courses="displayedCourses"
-                                :cols="courseGridCols"
+                            <!-- Controls -->
+                            <EntityPageToolbar
+                                v-model="qCourses"
+                                v-model:view-mode="viewMode"
+                                v-model:sort-value="sortCourses"
+                                :found="effectiveCoursesFound"
+                                :sort-options="courseSortOptions"
+                                :default-sort="DEFAULT_SORT"
+                                :found-label="t('courses')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="applyFilters"
+                                @reset="resetFilters"
                             />
 
-                            <CourseRows v-else :courses="displayedCourses" />
-                        </template>
+                            <!-- Empty -->
+                            <div
+                                v-if="!displayedCourses.length"
+                                class="rounded-md border border-gray-200 bg-white p-8
+                                   text-center text-sm text-slate-500 dark:border-gray-700
+                                   dark:bg-gray-900 dark:text-slate-400"
+                            >
+                                {{ t('nothingFound') }}
+                            </div>
 
-                        <!-- Server pagination -->
-                        <Pagination
-                            v-if="useServerProcessing && lastPage > 1"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="coursesFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
+                            <!-- Courses -->
+                            <template v-else>
+                                <CourseGrid
+                                    v-if="viewMode === 'grid'"
+                                    :courses="displayedCourses"
+                                    :cols="courseGridCols"
+                                />
+
+                                <CourseRows v-else :courses="displayedCourses" />
+                            </template>
+
+                            <!-- Server pagination -->
+                            <Pagination
+                                v-if="useServerProcessing && lastPage > 1"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="coursesFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
+                            />
+
+                            <!-- Frontend pagination -->
+                            <FrontendPagination
+                                v-if="!useServerProcessing && effectiveCoursesFound > perPageCourses"
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPageCourses"
+                                :total-items="effectiveCoursesFound"
+                            />
+
+                            <SectionVideoList :videos="mainVideos" />
+                            <SectionBanners :banners="mainBanners" />
+                        </div>
+                    </article>
+
+                    <!-- Right sidebar -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 pr-3 transition-all duration-300"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebarSchool
+                            :collapsed="rightCollapsed"
+                            @collapsed="setRightCollapsed"
                         />
-
-                        <!-- Frontend pagination -->
-                        <FrontendPagination
-                            v-if="!useServerProcessing && effectiveCoursesFound > perPageCourses"
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPageCourses"
-                            :total-items="effectiveCoursesFound"
-                        />
-
-                        <SectionVideoList :videos="mainVideos" />
-                        <SectionBanners :banners="mainBanners" />
-                    </div>
-                </article>
-
-                <!-- Right sidebar -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 pr-3 transition-all duration-300 lg:mt-28"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebarSchool
-                        :collapsed="rightCollapsed"
-                        @collapsed="setRightCollapsed"
-                    />
-                </aside>
-
-            </main>
-        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

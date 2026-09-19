@@ -33,7 +33,7 @@ const props = defineProps({
     category: { type: Object, default: () => ({}) },
     categoryTree: { type: Array, default: () => [] },
 
-    locale: { type: String, default: 'ru' },
+    locale: { type: String, default: 'ru' }
 })
 
 /* ===================== CATEGORY ===================== */
@@ -325,261 +325,273 @@ const categoryGridCols = computed(() => {
     <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-
-                <!-- Левая колонка -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 pl-3 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarMarket
-                        :category-tree="categoryTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
-                    />
-                </aside>
 
-                <!-- Центральная колонка -->
-                <div class="w-full lg:mt-28 pb-6 slate-1">
-                    <div class="mx-auto max-w-6xl">
+                    <!-- Левая колонка -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 pl-3 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebarMarket
+                            :category-tree="categoryTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="leftCollapsed = $event"
+                        />
+                    </aside>
 
-                        <!-- Хлебные крошки -->
-                        <nav class="mb-3 text-sm" aria-label="Breadcrumb">
-                            <ol class="flex flex-wrap items-center font-semibold">
-                                <li>
-                                    <Link
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
-                                    >
-                                        {{ t('home') }}
-                                    </Link>
-                                </li>
+                    <!-- Центральная колонка -->
+                    <div class="w-full pb-6 slate-1">
+                        <div class="mx-auto max-w-6xl">
 
-                                <li>
-                                    <span class="mx-2 breadcrumbs">/</span>
-                                </li>
+                            <!-- Хлебные крошки -->
+                            <nav class="mb-3 text-sm" aria-label="Breadcrumb">
+                                <ol class="flex flex-wrap items-center font-semibold">
+                                    <li>
+                                        <Link
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
+                                            {{ t('home') }}
+                                        </Link>
+                                    </li>
 
-                                <li>
-                                    <Link
-                                        :href="route('public.marketCategories.index')"
-                                        class="breadcrumb-link hover:underline"
-                                    >
-                                        {{ t('categories') }}
-                                    </Link>
-                                </li>
-
-                                <template v-if="parentCategory">
                                     <li>
                                         <span class="mx-2 breadcrumbs">/</span>
                                     </li>
 
                                     <li>
                                         <Link
-                                            :href="route('public.marketCategories.show', { url: parentCategory.url })"
+                                            :href="route('public.marketCategories.index')"
                                             class="breadcrumb-link hover:underline"
                                         >
-                                            {{ parentCategory.translation?.title || '' }}
+                                            {{ t('categories') }}
                                         </Link>
                                     </li>
-                                </template>
 
-                                <li>
-                                    <span class="mx-2 breadcrumbs">/</span>
-                                </li>
+                                    <template v-if="parentCategory">
+                                        <li>
+                                            <span class="mx-2 breadcrumbs">/</span>
+                                        </li>
 
-                                <li class="breadcrumbs">
-                                    {{ categoryTitle }}
-                                </li>
-                            </ol>
-                        </nav>
+                                        <li>
+                                            <Link
+                                                :href="route('public.marketCategories.show', { url: parentCategory.url })"
+                                                class="breadcrumb-link hover:underline"
+                                            >
+                                                {{ parentCategory.translation?.title || '' }}
+                                            </Link>
+                                        </li>
+                                    </template>
 
-                        <!-- Галерея -->
-                        <div
-                            v-if="hasCategoryImages"
-                            class="flex items-center justify-center"
-                        >
-                            <div class="w-full">
-                                <ImageGalleryMain
-                                    :images="categoryImages"
-                                    :alt="categoryTitle"
-                                    rounded-class="rounded-lg"
-                                    shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
-                                    img-class="w-full h-full object-cover"
-                                />
-                            </div>
-                        </div>
+                                    <li>
+                                        <span class="mx-2 breadcrumbs">/</span>
+                                    </li>
 
-                        <!-- Заголовок и статистика -->
-                        <div class="flex items-center justify-between gap-1">
+                                    <li class="breadcrumbs">
+                                        {{ categoryTitle }}
+                                    </li>
+                                </ol>
+                            </nav>
 
-                            <!-- Подкатегории -->
+                            <!-- Галерея -->
                             <div
-                                :title="t('subheadings')"
-                                class="flex items-center justify-center gap-1"
+                                v-if="hasCategoryImages"
+                                class="flex items-center justify-center"
                             >
-                                <svg
-                                    class="h-4 w-4 text-fuchsia-600/85 dark:text-fuchsia-200/85"
-                                    viewBox="0 0 24 24"
-                                    fill="currentColor"
-                                >
-                                    <path d="M4 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6-12h10v2H10V5Zm0 7h10v2H10v-2Zm0 7h10v2H10v-2Z" />
-                                </svg>
+                                <div class="w-full">
+                                    <ImageGalleryMain
+                                        :images="categoryImages"
+                                        :alt="categoryTitle"
+                                        rounded-class="rounded-lg"
+                                        shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
+                                        img-class="w-full h-full object-cover"
+                                    />
+                                </div>
+                            </div>
 
-                                <span class="text-center text-sm text-gray-500">
+                            <!-- Заголовок и статистика -->
+                            <div class="flex items-center justify-between gap-1">
+
+                                <!-- Подкатегории -->
+                                <div
+                                    :title="t('subheadings')"
+                                    class="flex items-center justify-center gap-1"
+                                >
+                                    <svg
+                                        class="h-4 w-4 text-fuchsia-600/85 dark:text-fuchsia-200/85"
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M4 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6-12h10v2H10V5Zm0 7h10v2H10v-2Zm0 7h10v2H10v-2Z" />
+                                    </svg>
+
+                                    <span class="text-center text-sm text-gray-500">
                                     {{ childrenCount }}
                                 </span>
-                            </div>
+                                </div>
 
-                            <!-- Название -->
-                            <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
+                                <!-- Название -->
+                                <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
                                 <span
                                     v-if="hasSvgIcon"
                                     class="flex"
                                     v-html="category.icon"
                                 />
 
-                                <h1 class="text-2xl font-bold">
-                                    {{ categoryTitle }}
-                                </h1>
-                            </div>
+                                    <h1 class="text-2xl font-bold">
+                                        {{ categoryTitle }}
+                                    </h1>
+                                </div>
 
-                            <!-- Просмотры -->
-                            <div
-                                :title="t('views')"
-                                class="flex items-center justify-center gap-1"
-                            >
-                                <svg
-                                    class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 576 512"
-                                    fill="currentColor"
+                                <!-- Просмотры -->
+                                <div
+                                    :title="t('views')"
+                                    class="flex items-center justify-center gap-1"
                                 >
-                                    <path d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z" />
-                                </svg>
+                                    <svg
+                                        class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 576 512"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z" />
+                                    </svg>
 
-                                <span class="text-center text-sm text-gray-500">
+                                    <span class="text-center text-sm text-gray-500">
                                     {{ category.views || 0 }}
                                 </span>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Подзаголовок -->
-                        <div
-                            v-if="categorySubtitle"
-                            class="mb-2 text-center text-sm font-semibold
-                                   text-slate-500 dark:text-slate-400"
-                        >
-                            {{ categorySubtitle }}
-                        </div>
-
-                        <!-- Описание -->
-                        <div
-                            v-if="categoryDescription"
-                            class="mt-1 mb-3 text-sm subtitle text-center"
-                        >
-                            {{ categoryDescription }}
-                        </div>
-
-                        <!-- Черновой блок товаров -->
-                        <div
-                            class="my-5 flex items-center justify-center gap-3
-                                   text-slate-700/85 dark:text-slate-300/85"
-                        >
-                            <svg
-                                class="h-7 w-7 text-sky-600/85 dark:text-sky-200/85"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                            >
-                                <path d="M21 8.5 12 3 3 8.5V19l9 5 9-5V8.5ZM12 5.3l5.8 3.5-2.2 1.3L10 6.8 12 5.3Zm-3.8 2.6 5.8 3.5-2 1.2-5.8-3.5 2-1.2ZM5 10.6l6 3.6v7L5 17.8v-7.2Zm8 10.6v-7l6-3.6v7.2l-6 3.4Z" />
-                            </svg>
-
-                            <h2 class="text-xl font-semibold">
-                                {{ t('products') }}
-                            </h2>
-
-                            <span class="text-sm text-gray-500">
-                                {{ productsCount }}
-                            </span>
-                        </div>
-
-                        <!-- Пока товары не подключены -->
-                        <div
-                            class="rounded-md border border-dashed border-gray-300
-                                   px-4 py-6 text-center text-sm text-slate-500
-                                   dark:border-gray-700 dark:text-slate-400"
-                        >
-                            {{ t('products') }} — блок будет подключён после реализации публичных товаров.
-                        </div>
-
-                        <!-- Дочерние категории -->
-                        <div v-if="childCategories.length">
+                            <!-- Подзаголовок -->
                             <div
-                                class="mt-6 flex flex-wrap items-center justify-center gap-3
-                                       text-slate-700/85 dark:text-slate-300/85"
+                                v-if="categorySubtitle"
+                                class="mb-2 text-center text-sm font-semibold
+                                   text-slate-500 dark:text-slate-400"
+                            >
+                                {{ categorySubtitle }}
+                            </div>
+
+                            <!-- Описание -->
+                            <div
+                                v-if="categoryDescription"
+                                class="mt-1 mb-3 text-sm subtitle text-center"
+                            >
+                                {{ categoryDescription }}
+                            </div>
+
+                            <!-- Черновой блок товаров -->
+                            <div
+                                class="my-5 flex items-center justify-center gap-3
+                                   text-slate-700/85 dark:text-slate-300/85"
                             >
                                 <svg
-                                    class="h-8 w-8 opacity-70"
+                                    class="h-7 w-7 text-sky-600/85 dark:text-sky-200/85"
                                     viewBox="0 0 24 24"
                                     fill="currentColor"
                                 >
-                                    <path d="M4 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6-12h10v2H10V5Zm0 7h10v2H10v-2Zm0 7h10v2H10v-2Z" />
+                                    <path
+                                        d="M21 8.5 12 3 3 8.5V19l9 5 9-5V8.5ZM12 5.3l5.8 3.5-2.2 1.3L10 6.8 12 5.3Zm-3.8 2.6 5.8 3.5-2 1.2-5.8-3.5 2-1.2ZM5 10.6l6 3.6v7L5 17.8v-7.2Zm8 10.6v-7l6-3.6v7.2l-6 3.4Z" />
                                 </svg>
 
                                 <h2 class="text-xl font-semibold">
-                                    {{ t('subheadings') }}
+                                    {{ t('products') }}
                                 </h2>
+
+                                <span class="text-sm text-gray-500">
+                                {{ productsCount }}
+                            </span>
                             </div>
 
-                            <!-- Переключатель пока используем простой -->
-                            <div class="mt-3 flex items-center justify-center gap-2">
-                                <button
-                                    type="button"
-                                    class="rounded-sm px-3 py-1 text-sm btn-default"
-                                    @click="viewMode = 'grid'"
-                                >
-                                    Grid
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="rounded-sm px-3 py-1 text-sm btn-default"
-                                    @click="viewMode = 'rows'"
-                                >
-                                    Rows
-                                </button>
+                            <!-- Пока товары не подключены -->
+                            <div
+                                class="rounded-md border border-dashed border-gray-300
+                                   px-4 py-6 text-center text-sm text-slate-500
+                                   dark:border-gray-700 dark:text-slate-400"
+                            >
+                                {{ t('products') }} — блок будет подключён после реализации публичных товаров.
                             </div>
 
-                            <div class="mt-4">
-                                <MarketCategoryGrid
-                                    v-if="viewMode === 'grid'"
-                                    :categories="childCategories"
-                                    :cols="categoryGridCols"
-                                />
+                            <!-- Дочерние категории -->
+                            <div v-if="childCategories.length">
+                                <div
+                                    class="mt-6 flex flex-wrap items-center justify-center gap-3
+                                       text-slate-700/85 dark:text-slate-300/85"
+                                >
+                                    <svg
+                                        class="h-8 w-8 opacity-70"
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M4 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6-12h10v2H10V5Zm0 7h10v2H10v-2Zm0 7h10v2H10v-2Z" />
+                                    </svg>
 
-                                <MarketCategoryRows
-                                    v-else
-                                    :categories="childCategories"
-                                />
+                                    <h2 class="text-xl font-semibold">
+                                        {{ t('subheadings') }}
+                                    </h2>
+                                </div>
+
+                                <!-- Переключатель пока используем простой -->
+                                <div class="mt-3 flex items-center justify-center gap-2">
+                                    <button
+                                        type="button"
+                                        class="rounded-sm px-3 py-1 text-sm btn-default"
+                                        @click="viewMode = 'grid'"
+                                    >
+                                        Grid
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="rounded-sm px-3 py-1 text-sm btn-default"
+                                        @click="viewMode = 'rows'"
+                                    >
+                                        Rows
+                                    </button>
+                                </div>
+
+                                <div class="mt-4">
+                                    <MarketCategoryGrid
+                                        v-if="viewMode === 'grid'"
+                                        :categories="childCategories"
+                                        :cols="categoryGridCols"
+                                    />
+
+                                    <MarketCategoryRows
+                                        v-else
+                                        :categories="childCategories"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Правая колонка -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 pr-3 transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebarMarket
-                        :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
-                    />
-                </aside>
-            </main>
-        </div>
+                    <!-- Правая колонка -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 pr-3 transition-all duration-300"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebarMarket
+                            :collapsed="rightCollapsed"
+                            @collapsed="rightCollapsed = $event"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

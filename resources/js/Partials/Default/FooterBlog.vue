@@ -37,11 +37,11 @@ const getFooterChildren = (item) => {
 </script>
 
 <template>
-    <footer class="relative bg-gray-100 dark:bg-gray-900 border-dashed
-                   border-t border-gray-300 dark:border-gray-400">
+    <footer class="mx-1 lg:mx-6 my-3 lg:my-5 relative bg-gray-100 dark:bg-gray-900
+                   border-2 border-slate-300 dark:border-slate-500 rounded-t-3xl">
 
         <!-- MAIN CONTENT -->
-        <div class="mx-auto px-3 py-16">
+        <div class="mx-auto px-3 py-3">
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
 

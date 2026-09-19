@@ -42,7 +42,7 @@ const { t } = useI18n()
 const props = defineProps({
     locale: {
         type: String,
-        default: '',
+        default: ''
     },
 
     seo: {
@@ -50,58 +50,58 @@ const props = defineProps({
         default: () => ({
             title: '',
             keywords: '',
-            description: '',
-        }),
+            description: ''
+        })
     },
 
     useServerProcessing: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     publicSchoolAssignmentsProcessingMode: {
         type: String,
-        default: 'server',
+        default: 'server'
     },
 
     title: {
         type: String,
-        default: '',
+        default: ''
     },
 
     canLogin: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     canRegister: {
         type: Boolean,
-        default: false,
+        default: false
     },
 
     trackTree: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
 
     assignments: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     assignmentsCount: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     assignmentsFound: {
         type: Number,
-        default: 0,
+        default: 0
     },
 
     filters: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
 
     /**
@@ -112,18 +112,18 @@ const props = defineProps({
      */
     defaultSort: {
         type: String,
-        default: '',
+        default: ''
     },
 
     mainVideos: {
         type: [Array, Object],
-        default: () => [],
+        default: () => []
     },
 
     mainBanners: {
         type: [Array, Object],
-        default: () => [],
-    },
+        default: () => []
+    }
 })
 
 /* ===================== PAGE ===================== */
@@ -332,111 +332,111 @@ const perPage = computed(() => {
 const assignmentSortOptions = [
     {
         value: 'idDesc',
-        label: t('idDesc'),
+        label: t('idDesc')
     },
     {
         value: 'idAsc',
-        label: t('idAsc'),
+        label: t('idAsc')
     },
 
     {
         value: 'sortAsc',
-        label: `${t('sortNumber')} 0→9`,
+        label: `${t('sortNumber')} 0→9`
     },
     {
         value: 'sortDesc',
-        label: `${t('sortNumber')} 9→0`,
+        label: `${t('sortNumber')} 9→0`
     },
 
     {
         value: 'titleAsc',
-        label: `${t('title')} A→Z`,
+        label: `${t('title')} A→Z`
     },
     {
         value: 'titleDesc',
-        label: `${t('title')} Z→A`,
+        label: `${t('title')} Z→A`
     },
 
     {
         value: 'statusAsc',
-        label: `${t('status')} A→Z`,
+        label: `${t('status')} A→Z`
     },
     {
         value: 'statusDesc',
-        label: `${t('status')} Z→A`,
+        label: `${t('status')} Z→A`
     },
 
     {
         value: 'gradingTypeAsc',
-        label: `${t('gradingType')} A→Z`,
+        label: `${t('gradingType')} A→Z`
     },
     {
         value: 'gradingTypeDesc',
-        label: `${t('gradingType')} Z→A`,
+        label: `${t('gradingType')} Z→A`
     },
 
     {
         value: 'attemptsLimitAsc',
-        label: `${t('attemptsLimit')} 0→9`,
+        label: `${t('attemptsLimit')} 0→9`
     },
     {
         value: 'attemptsLimitDesc',
-        label: `${t('attemptsLimit')} 9→0`,
+        label: `${t('attemptsLimit')} 9→0`
     },
 
     {
         value: 'maxScoreAsc',
-        label: `${t('maxScore')} 0→9`,
+        label: `${t('maxScore')} 0→9`
     },
     {
         value: 'maxScoreDesc',
-        label: `${t('maxScore')} 9→0`,
+        label: `${t('maxScore')} 9→0`
     },
 
     {
         value: 'submissionsAsc',
-        label: `${t('submissions')} 0→9`,
+        label: `${t('submissions')} 0→9`
     },
     {
         value: 'submissionsDesc',
-        label: `${t('submissions')} 9→0`,
+        label: `${t('submissions')} 9→0`
     },
 
     {
         value: 'imagesAsc',
-        label: `${t('images')} 0→9`,
+        label: `${t('images')} 0→9`
     },
     {
         value: 'imagesDesc',
-        label: `${t('images')} 9→0`,
+        label: `${t('images')} 9→0`
     },
 
     {
         value: 'dueAtAsc',
-        label: `${t('dueAt')} ↑`,
+        label: `${t('dueAt')} ↑`
     },
     {
         value: 'dueAtDesc',
-        label: `${t('dueAt')} ↓`,
+        label: `${t('dueAt')} ↓`
     },
 
     {
         value: 'publishedAtAsc',
-        label: `${t('publishedAt')} ↑`,
+        label: `${t('publishedAt')} ↑`
     },
     {
         value: 'publishedAtDesc',
-        label: `${t('publishedAt')} ↓`,
+        label: `${t('publishedAt')} ↓`
     },
 
     {
         value: 'dateAsc',
-        label: t('sortOldestFirst'),
+        label: t('sortOldestFirst')
     },
     {
         value: 'dateDesc',
-        label: t('sortNewestFirst'),
-    },
+        label: t('sortNewestFirst')
+    }
 ]
 
 /* ===================== FRONTEND MODE ===================== */
@@ -447,10 +447,10 @@ const frontendCurrentPage = ref(1)
 /** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
-    scrollToTarget,
+    scrollToTarget
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 /** Нормализация текста */
@@ -551,7 +551,7 @@ const filteredAssignments = computed(() => {
             getRelationTitle(assignment.module),
             getRelationTitle(assignment.lesson),
             getInstructorTitle(assignment),
-            getInstructorUserName(assignment),
+            getInstructorUserName(assignment)
         ].filter(Boolean).join(' '))
 
         return words.every((word) => {
@@ -604,7 +604,7 @@ const compareTitles = (
 /** Локальная сортировка */
 const sortedAssignments = computed(() => {
     const list = [
-        ...filteredAssignments.value,
+        ...filteredAssignments.value
     ]
 
     return list.sort((a, b) => {
@@ -862,12 +862,12 @@ const reloadAssignments = (
                 viewMode.value
                 || undefined,
 
-            page,
+            page
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -1090,304 +1090,309 @@ const mainBannersList = computed(() => {
         <!-- Шапка -->
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main
-                class="mx-auto flex flex-col
-                       lg:flex-row gap-4 tracking-wider"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
             >
-                <!-- Левая колонка -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28
-                           transition-all duration-300"
-                    :class="
-                        leftCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
-                    "
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="
+                    <!-- Левая колонка -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0
+                           transition-all duration-300"
+                        :class="
+                        leftCollapsed
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
+                    "
+                    >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="
                             leftCollapsed = $event
                         "
-                    />
-                </aside>
+                        />
+                    </aside>
 
-                <!-- Центральная колонка -->
-                <div class="w-full lg:mt-28 pb-6 slate-1">
-                    <div class="mx-auto max-w-6xl">
+                    <!-- Центральная колонка -->
+                    <div class="w-full pb-6 slate-1">
+                        <div class="mx-auto max-w-6xl">
 
-                        <!-- Хлебные крошки -->
-                        <nav
-                            class="text-sm"
-                            aria-label="Breadcrumb"
-                        >
-                            <ol
-                                class="flex flex-wrap
-                                       items-center font-semibold"
+                            <!-- Хлебные крошки -->
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
                             >
-                                <li>
-                                    <Link
-                                        :href="route('home')"
-                                        class="breadcrumb-link
+                                <ol
+                                    class="flex flex-wrap
+                                       items-center font-semibold"
+                                >
+                                    <li>
+                                        <Link
+                                            :href="route('home')"
+                                            class="breadcrumb-link
                                                hover:underline"
-                                    >
-                                        {{ t('home') }}
-                                    </Link>
-                                </li>
+                                        >
+                                            {{ t('home') }}
+                                        </Link>
+                                    </li>
 
-                                <li>
+                                    <li>
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
-                                </li>
+                                    </li>
 
-                                <li>
-                                    <Link
-                                        :href="
+                                    <li>
+                                        <Link
+                                            :href="
                                             route(
                                                 'public.schoolTracks.index'
                                             )
                                         "
-                                        class="breadcrumb-link
+                                            class="breadcrumb-link
                                                hover:underline"
-                                    >
-                                        {{ t('tracks') }}
-                                    </Link>
-                                </li>
+                                        >
+                                            {{ t('tracks') }}
+                                        </Link>
+                                    </li>
 
-                                <li>
+                                    <li>
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
-                                </li>
+                                    </li>
 
-                                <li>
-                                    <Link
-                                        :href="
+                                    <li>
+                                        <Link
+                                            :href="
                                             route(
                                                 'public.schoolCourses.index'
                                             )
                                         "
-                                        class="breadcrumb-link
+                                            class="breadcrumb-link
                                                hover:underline"
-                                    >
-                                        {{ t('courses') }}
-                                    </Link>
-                                </li>
+                                        >
+                                            {{ t('courses') }}
+                                        </Link>
+                                    </li>
 
-                                <li>
+                                    <li>
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
-                                </li>
+                                    </li>
 
-                                <li>
-                                    <Link
-                                        :href="
+                                    <li>
+                                        <Link
+                                            :href="
                                             route(
                                                 'public.schoolModules.index'
                                             )
                                         "
-                                        class="breadcrumb-link
+                                            class="breadcrumb-link
                                                hover:underline"
-                                    >
-                                        {{ t('modules') }}
-                                    </Link>
-                                </li>
+                                        >
+                                            {{ t('modules') }}
+                                        </Link>
+                                    </li>
 
-                                <li>
+                                    <li>
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
-                                </li>
+                                    </li>
 
-                                <li>
-                                    <Link
-                                        :href="
+                                    <li>
+                                        <Link
+                                            :href="
                                             route(
                                                 'public.schoolLessons.index'
                                             )
                                         "
-                                        class="breadcrumb-link
+                                            class="breadcrumb-link
                                                hover:underline"
-                                    >
-                                        {{ t('lessons') }}
-                                    </Link>
-                                </li>
+                                        >
+                                            {{ t('lessons') }}
+                                        </Link>
+                                    </li>
 
-                                <li>
+                                    <li>
                                     <span class="mx-2 breadcrumbs">
                                         /
                                     </span>
-                                </li>
+                                    </li>
 
-                                <li class="breadcrumbs">
-                                    {{ t('assignments') }}
-                                </li>
-                            </ol>
-                        </nav>
+                                    <li class="breadcrumbs">
+                                        {{ t('assignments') }}
+                                    </li>
+                                </ol>
+                            </nav>
 
-                        <!-- Заголовок -->
-                        <div
-                            class="my-3 flex flex-wrap
+                            <!-- Заголовок -->
+                            <div
+                                class="my-3 flex flex-wrap
                                    items-center justify-center
                                    gap-3 title"
-                        >
-                            <svg
-                                class="shrink-0 h-5 w-5
+                            >
+                                <svg
+                                    class="shrink-0 h-5 w-5
                                        text-slate-600/85
                                        dark:text-slate-200/85"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    d="M15,18v2H9v-2H1v5c0,0.552,0.448,1,1,1h20c0.552,0,1-0.448,1-1v-5H15z"
-                                />
-                                <path
-                                    d="M23,4h-6V1c0-0.552-0.448-1-1-1H8C7.448,0,7,0.448,7,1v3H1C0.448,4,0,4.448,0,5v10c0,0.552,0.448,1,1,1h8v-3 h6v3h8c0.552,0,1-0.448,1-1V5C24,4.448,23.552,4,23,4z M15,4H9V2h6V4z"
-                                />
-                            </svg>
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        d="M15,18v2H9v-2H1v5c0,0.552,0.448,1,1,1h20c0.552,0,1-0.448,1-1v-5H15z"
+                                    />
+                                    <path
+                                        d="M23,4h-6V1c0-0.552-0.448-1-1-1H8C7.448,0,7,0.448,7,1v3H1C0.448,4,0,4.448,0,5v10c0,0.552,0.448,1,1,1h8v-3 h6v3h8c0.552,0,1-0.448,1-1V5C24,4.448,23.552,4,23,4z M15,4H9V2h6V4z"
+                                    />
+                                </svg>
 
-                            <h1 class="text-2xl font-bold">
-                                {{ t('assignments') }}
-                            </h1>
-                        </div>
+                                <h1 class="text-2xl font-bold">
+                                    {{ t('assignments') }}
+                                </h1>
+                            </div>
 
-                        <!-- Подзаголовок -->
-                        <div
-                            class="my-1 text-sm
+                            <!-- Подзаголовок -->
+                            <div
+                                class="my-1 text-sm
                                    subtitle text-center"
-                        >
-                            {{ t('assignments') }}
-                        </div>
+                            >
+                                {{ t('assignments') }}
+                            </div>
 
-                        <!-- Server toolbar -->
-                        <EntityPageToolbar
-                            v-if="useServerProcessing"
-                            v-model="q"
-                            :found="assignmentsFound"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="assignmentSortOptions"
-                            :default-sort="defaultSort"
-                            :found-label="t('assignments')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="submitSearch"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
+                            <!-- Server toolbar -->
+                            <EntityPageToolbar
+                                v-if="useServerProcessing"
+                                v-model="q"
+                                :found="assignmentsFound"
+                                :view-mode="viewMode"
+                                :sort-value="sort"
+                                :sort-options="assignmentSortOptions"
+                                :default-sort="defaultSort"
+                                :found-label="t('assignments')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="submitSearch"
+                                @reset="resetSearch"
+                                @update:viewMode="updateViewMode"
+                                @update:sortValue="updateSort"
+                            />
 
-                        <!-- Frontend toolbar -->
-                        <FrontendEntityPageToolbar
-                            v-else
-                            v-model="q"
-                            :found="sortedAssignments.length"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="assignmentSortOptions"
-                            :default-sort="defaultSort"
-                            :found-label="t('assignments')"
-                            :search-placeholder="t('searchByName')"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
+                            <!-- Frontend toolbar -->
+                            <FrontendEntityPageToolbar
+                                v-else
+                                v-model="q"
+                                :found="sortedAssignments.length"
+                                :view-mode="viewMode"
+                                :sort-value="sort"
+                                :sort-options="assignmentSortOptions"
+                                :default-sort="defaultSort"
+                                :found-label="t('assignments')"
+                                :search-placeholder="t('searchByName')"
+                                @reset="resetSearch"
+                                @update:viewMode="updateViewMode"
+                                @update:sortValue="updateSort"
+                            />
 
-                        <!-- Точка скролла -->
-                        <div ref="scrollTarget"></div>
+                            <!-- Точка скролла -->
+                            <div ref="scrollTarget"></div>
 
-                        <!-- Нет данных -->
-                        <div
-                            v-if="
+                            <!-- Нет данных -->
+                            <div
+                                v-if="
                                 displayedAssignments.length
                                 === 0
                             "
-                            class="mt-6 text-center
+                                class="mt-6 text-center
                                    text-slate-700
                                    dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
+                            >
+                                {{ t('noData') }}
+                            </div>
 
-                        <!-- Список -->
-                        <div v-else>
-                            <AssignmentGrid
-                                v-if="
+                            <!-- Список -->
+                            <div v-else>
+                                <AssignmentGrid
+                                    v-if="
                                     viewMode === 'grid'
                                 "
-                                :assignments="
+                                    :assignments="
                                     displayedAssignments
                                 "
-                                :cols="gridCols"
+                                    :cols="gridCols"
+                                />
+
+                                <AssignmentRows
+                                    v-else
+                                    :assignments="
+                                    displayedAssignments
+                                "
+                                />
+                            </div>
+
+                            <!-- Server-пагинация -->
+                            <Pagination
+                                v-if="useServerProcessing"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="assignmentsFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
                             />
 
-                            <AssignmentRows
+                            <!-- Frontend-пагинация -->
+                            <FrontendPagination
                                 v-else
-                                :assignments="
-                                    displayedAssignments
-                                "
-                            />
-                        </div>
-
-                        <!-- Server-пагинация -->
-                        <Pagination
-                            v-if="useServerProcessing"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="assignmentsFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
-                        />
-
-                        <!-- Frontend-пагинация -->
-                        <FrontendPagination
-                            v-else
-                            v-model:currentPage="
+                                v-model:currentPage="
                                 frontendCurrentPage
                             "
-                            :items-per-page="perPage"
-                            :total-items="
+                                :items-per-page="perPage"
+                                :total-items="
                                 sortedAssignments.length
                             "
-                        />
+                            />
 
-                        <!-- Видео -->
-                        <SectionVideoList
-                            :videos="mainVideosList"
-                        />
+                            <!-- Видео -->
+                            <SectionVideoList
+                                :videos="mainVideosList"
+                            />
 
-                        <!-- Баннеры -->
-                        <SectionBanners
-                            :banners="mainBannersList"
-                        />
+                            <!-- Баннеры -->
+                            <SectionBanners
+                                :banners="mainBannersList"
+                            />
+                        </div>
                     </div>
-                </div>
 
-                <!-- Правая колонка -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28
+                    <!-- Правая колонка -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0
                            transition-all duration-300"
-                    :class="
+                        :class="
                         rightCollapsed
-                            ? 'lg:w-10'
-                            : 'lg:w-64'
+                            ? 'lg:w-6'
+                            : 'lg:w-72'
                     "
-                >
-                    <RightSidebarSchool
-                        :collapsed="rightCollapsed"
-                        @collapsed="
+                    >
+                        <RightSidebarSchool
+                            :collapsed="rightCollapsed"
+                            @collapsed="
                             rightCollapsed = $event
                         "
-                    />
-                </aside>
-            </main>
-        </div>
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <!-- Подвал и прогресс -->
         <FooterBlog />

@@ -201,11 +201,8 @@ const logout = () => {
 
 <template>
     <nav
-        class="fixed top-0 left-2 right-2
-               z-[100]
-               overflow-hidden
-               border-2 border-t-0
-               border-blue-700 dark:border-blue-300
+        class="fixed top-0 left-1 right-1 lg:left-6 lg:right-6 z-[100]
+               border-2 border-slate-300 dark:border-slate-500
                transition-[background-color,backdrop-filter]
                duration-300 ease-out"
         :class="[
@@ -225,7 +222,7 @@ const logout = () => {
         <!-- HEADER CONTENT -->
         <div>
             <!-- TOP BAR -->
-            <div class="px-3 lg:px-5">
+            <div class="px-1 lg:px-12">
                 <div
                     class="grid h-16 items-center gap-2
                            grid-cols-[1fr_auto]
@@ -468,8 +465,8 @@ const logout = () => {
             <!-- CMS PAGES ROW -->
             <div
                 v-if="cmsMenu.length"
-                class="hidden lg:flex h-10
-                       px-5
+                class="relative z-[200]
+                       hidden lg:flex h-10 px-6
                        items-center justify-center gap-6"
             >
                 <div
@@ -600,7 +597,8 @@ const logout = () => {
 
             <!-- ADVERTISING BANNER -->
             <div
-                class="hidden lg:grid
+                class="relative z-0
+                       hidden lg:grid
                        transition-[grid-template-rows,opacity]
                        duration-300 ease-out"
                 :class="
@@ -609,10 +607,13 @@ const logout = () => {
                         : 'grid-rows-[1fr] opacity-100'
                 "
             >
-                <div class="min-h-0 overflow-hidden">
+                <div
+                    class="min-h-0 overflow-hidden"
+                    :class="isCatalogOpen ? '' : 'rounded-b-3xl'"
+                >
                     <a
                         href="#"
-                        class="block h-16 overflow-hidden"
+                        class="block h-14 overflow-hidden"
                     >
                         <img
                             src="/storage/header/rectangle_large.webp"
@@ -627,10 +628,14 @@ const logout = () => {
         <!-- DESKTOP CATALOG: MARKET CATEGORIES -->
         <div
             v-if="isCatalogOpen"
-            class="hidden lg:block absolute left-0 right-0 top-full z-50
+            class="hidden lg:block
+                   absolute left-0 right-0 top-full
+                   z-[400]
                    rounded-b-3xl overflow-hidden
-                   border-t border-gray-200 dark:border-gray-800
-                   bg-white dark:bg-gray-950 shadow-2xl"
+                   border-t border-gray-200
+                   dark:border-gray-800
+                   bg-white dark:bg-gray-950
+                   shadow-2xl"
         >
             <div class="px-4 py-5">
                 <div class="grid grid-cols-4 gap-5">

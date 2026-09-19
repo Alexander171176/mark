@@ -51,7 +51,7 @@ const props = defineProps({
     locale: { type: String, default: 'ru' },
 
     mainVideos: { type: Array, default: () => [] },
-    mainBanners: { type: Array, default: () => [] },
+    mainBanners: { type: Array, default: () => [] }
 })
 
 /* ===================== HELPERS ===================== */
@@ -111,7 +111,7 @@ const courseRouteUrl = computed(() => {
     if (!parentCourse.value?.slug) return ''
 
     return route('public.schoolCourses.show', {
-        slug: parentCourse.value.slug,
+        slug: parentCourse.value.slug
     })
 })
 
@@ -182,7 +182,7 @@ const moduleRouteUrl = computed(() => {
 
     return route('public.schoolModules.show', {
         courseSlug: parentCourse.value.slug,
-        slug: moduleData.value.slug,
+        slug: moduleData.value.slug
     })
 })
 
@@ -212,7 +212,7 @@ const moduleSchema = computed(() => {
         '@type': 'LearningResource',
         name: moduleTitle.value || seoTitle.value,
         url: canonicalUrl.value || moduleRouteUrl.value,
-        inLanguage: contentLocale.value,
+        inLanguage: contentLocale.value
     }
 
     const description = stripHtml(
@@ -229,7 +229,7 @@ const moduleSchema = computed(() => {
     if (parentCourse.value && courseTitle.value) {
         schema.isPartOf = {
             '@type': 'Course',
-            name: courseTitle.value,
+            name: courseTitle.value
         }
 
         if (courseUrl.value) {
@@ -251,7 +251,7 @@ const moduleSchema = computed(() => {
             ratingValue: ratingAvg,
             ratingCount,
             bestRating: 5,
-            worstRating: 1,
+            worstRating: 1
         }
     }
 
@@ -264,7 +264,7 @@ const moduleSchema = computed(() => {
         interactions.push({
             '@type': 'InteractionCounter',
             interactionType: { '@type': 'ViewAction' },
-            userInteractionCount: views,
+            userInteractionCount: views
         })
     }
 
@@ -272,7 +272,7 @@ const moduleSchema = computed(() => {
         interactions.push({
             '@type': 'InteractionCounter',
             interactionType: { '@type': 'LikeAction' },
-            userInteractionCount: likes,
+            userInteractionCount: likes
         })
     }
 
@@ -289,14 +289,14 @@ const breadcrumbSchema = computed(() => {
             '@type': 'ListItem',
             position: 1,
             name: t('home'),
-            item: homeUrl.value,
+            item: homeUrl.value
         },
         {
             '@type': 'ListItem',
             position: 2,
             name: t('courses'),
-            item: coursesIndexUrl.value,
-        },
+            item: coursesIndexUrl.value
+        }
     ]
 
     if (parentCourse.value?.slug) {
@@ -304,7 +304,7 @@ const breadcrumbSchema = computed(() => {
             '@type': 'ListItem',
             position: 3,
             name: courseTitle.value,
-            item: courseUrl.value,
+            item: courseUrl.value
         })
     }
 
@@ -312,13 +312,13 @@ const breadcrumbSchema = computed(() => {
         '@type': 'ListItem',
         position: items.length + 1,
         name: moduleTitle.value || seoTitle.value,
-        item: canonicalUrl.value || moduleRouteUrl.value,
+        item: canonicalUrl.value || moduleRouteUrl.value
     })
 
     return {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
-        itemListElement: items,
+        itemListElement: items
     }
 })
 
@@ -403,163 +403,170 @@ const gridCols = computed(() => {
     <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
         <Navbar />
 
-        <div class="min-h-screen px-1.5">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-                <!-- LEFT -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 pl-3 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarSchool
-                        :track-tree="trackTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
-                    />
-                </aside>
+                    <!-- LEFT -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 pl-3 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebarSchool
+                            :track-tree="trackTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="leftCollapsed = $event"
+                        />
+                    </aside>
 
-                <!-- CENTER -->
-                <section class="w-full lg:mt-28 pb-6 slate-1 min-w-0">
-                    <div class="mx-auto max-w-6xl">
-                        <article
-                            class="selection:bg-red-400 selection:text-white"
-                            itemscope
-                            itemtype="https://schema.org/LearningResource"
-                            :itemid="canonicalUrl"
-                        >
-                            <meta itemprop="url" :content="canonicalUrl" />
-                            <meta itemprop="inLanguage" :content="contentLocale" />
-                            <meta
-                                v-if="moduleData.published_at"
-                                itemprop="datePublished"
-                                :content="moduleData.published_at"
-                            />
-                            <meta
-                                v-if="schemaDuration"
-                                itemprop="timeRequired"
-                                :content="schemaDuration"
-                            />
+                    <!-- CENTER -->
+                    <section class="w-full pb-6 slate-1 min-w-0">
+                        <div class="mx-auto max-w-6xl">
+                            <article
+                                class="selection:bg-red-400 selection:text-white"
+                                itemscope
+                                itemtype="https://schema.org/LearningResource"
+                                :itemid="canonicalUrl"
+                            >
+                                <meta itemprop="url" :content="canonicalUrl" />
+                                <meta itemprop="inLanguage" :content="contentLocale" />
+                                <meta
+                                    v-if="moduleData.published_at"
+                                    itemprop="datePublished"
+                                    :content="moduleData.published_at"
+                                />
+                                <meta
+                                    v-if="schemaDuration"
+                                    itemprop="timeRequired"
+                                    :content="schemaDuration"
+                                />
 
-                            <!-- Breadcrumbs -->
-                            <nav class="text-sm mb-3" aria-label="Breadcrumb">
-                                <ol class="flex flex-wrap items-center font-semibold">
-                                    <li>
-                                        <Link :href="route('home')" class="breadcrumb-link hover:underline">
-                                            {{ t('home') }}
-                                        </Link>
-                                    </li>
+                                <!-- Breadcrumbs -->
+                                <nav class="text-sm mb-3" aria-label="Breadcrumb">
+                                    <ol class="flex flex-wrap items-center font-semibold">
+                                        <li>
+                                            <Link :href="route('home')" class="breadcrumb-link hover:underline">
+                                                {{ t('home') }}
+                                            </Link>
+                                        </li>
 
-                                    <li aria-hidden="true">
-                                        <span class="mx-2 breadcrumbs">/</span>
-                                    </li>
-
-                                    <li>
-                                        <Link
-                                            :href="route('public.schoolCourses.index')"
-                                            class="breadcrumb-link hover:underline"
-                                        >
-                                            {{ t('courses') }}
-                                        </Link>
-                                    </li>
-
-                                    <template v-if="parentCourse?.slug">
                                         <li aria-hidden="true">
                                             <span class="mx-2 breadcrumbs">/</span>
                                         </li>
 
                                         <li>
                                             <Link
-                                                :href="route('public.schoolCourses.show', { slug: parentCourse.slug })"
+                                                :href="route('public.schoolCourses.index')"
                                                 class="breadcrumb-link hover:underline"
                                             >
-                                                {{ courseTitle }}
+                                                {{ t('courses') }}
                                             </Link>
                                         </li>
-                                    </template>
 
-                                    <li aria-hidden="true">
-                                        <span class="mx-2 breadcrumbs">/</span>
-                                    </li>
+                                        <template v-if="parentCourse?.slug">
+                                            <li aria-hidden="true">
+                                                <span class="mx-2 breadcrumbs">/</span>
+                                            </li>
 
-                                    <li class="breadcrumbs" aria-current="page">
+                                            <li>
+                                                <Link
+                                                    :href="route('public.schoolCourses.show', { slug: parentCourse.slug })"
+                                                    class="breadcrumb-link hover:underline"
+                                                >
+                                                    {{ courseTitle }}
+                                                </Link>
+                                            </li>
+                                        </template>
+
+                                        <li aria-hidden="true">
+                                            <span class="mx-2 breadcrumbs">/</span>
+                                        </li>
+
+                                        <li class="breadcrumbs" aria-current="page">
+                                            {{ moduleTitle }}
+                                        </li>
+                                    </ol>
+                                </nav>
+
+                                <!-- Title / views -->
+                                <div class="flex flex-wrap items-center justify-center gap-3 title my-3">
+                                    <h1 class="text-2xl font-bold" itemprop="name">
                                         {{ moduleTitle }}
-                                    </li>
-                                </ol>
-                            </nav>
+                                    </h1>
 
-                            <!-- Title / views -->
-                            <div class="flex flex-wrap items-center justify-center gap-3 title my-3">
-                                <h1 class="text-2xl font-bold" itemprop="name">
-                                    {{ moduleTitle }}
-                                </h1>
-
-                                <div
-                                    v-if="moduleData.views > 0"
-                                    :title="t('views')"
-                                    class="flex items-center justify-center gap-1"
-                                    itemprop="interactionStatistic"
-                                    itemscope
-                                    itemtype="https://schema.org/InteractionCounter"
-                                >
-                                    <link itemprop="interactionType" href="https://schema.org/ViewAction" />
-                                    <meta itemprop="userInteractionCount" :content="moduleData.views" />
-
-                                    <svg
-                                        class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 576 512"
-                                        fill="currentColor"
-                                        aria-hidden="true"
+                                    <div
+                                        v-if="moduleData.views > 0"
+                                        :title="t('views')"
+                                        class="flex items-center justify-center gap-1"
+                                        itemprop="interactionStatistic"
+                                        itemscope
+                                        itemtype="https://schema.org/InteractionCounter"
                                     >
-                                        <path
-                                            d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
-                                        />
-                                    </svg>
+                                        <link itemprop="interactionType" href="https://schema.org/ViewAction" />
+                                        <meta itemprop="userInteractionCount" :content="moduleData.views" />
 
-                                    <span class="text-center text-sm text-gray-500">
+                                        <svg
+                                            class="h-4 w-4 text-slate-600/85 dark:text-slate-200/85"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 576 512"
+                                            fill="currentColor"
+                                            aria-hidden="true"
+                                        >
+                                            <path
+                                                d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
+                                            />
+                                        </svg>
+
+                                        <span class="text-center text-sm text-gray-500">
                                         {{ moduleData.views }}
                                     </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Subtitle -->
-                            <div
-                                v-if="moduleSubtitle"
-                                class="mt-1 mb-3 text-sm subtitle text-center"
-                            >
-                                {{ moduleSubtitle }}
-                            </div>
-
-                            <!-- Main image -->
-                            <div
-                                v-if="hasModuleImages"
-                                class="flex items-center justify-center"
-                            >
-                                <div class="w-full">
-                                    <ImageGalleryMain
-                                        :images="moduleImages"
-                                        :alt="moduleTitle"
-                                        itemprop="image"
-                                        loading="eager"
-                                        fetchpriority="high"
-                                        rounded-class="rounded-lg"
-                                        shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
-                                        img-class="w-full h-full object-cover"
-                                    />
-                                </div>
-                            </div>
-
-                            <!-- Meta info -->
-                            <div
-                                class="my-4 flex flex-wrap items-center justify-center gap-3
-                                       text-sm text-slate-600 dark:text-slate-300"
-                            >
-                                <!-- Lessons -->
-                                <span
-                                    v-if="lessonsCount"
-                                    class="rounded-sm border border-gray-400
-                                           flex items-center justify-center gap-1 px-3 py-1"
+                                <!-- Subtitle -->
+                                <div
+                                    v-if="moduleSubtitle"
+                                    class="mt-1 mb-3 text-sm subtitle text-center"
                                 >
+                                    {{ moduleSubtitle }}
+                                </div>
+
+                                <!-- Main image -->
+                                <div
+                                    v-if="hasModuleImages"
+                                    class="flex items-center justify-center"
+                                >
+                                    <div class="w-full">
+                                        <ImageGalleryMain
+                                            :images="moduleImages"
+                                            :alt="moduleTitle"
+                                            itemprop="image"
+                                            loading="eager"
+                                            fetchpriority="high"
+                                            rounded-class="rounded-lg"
+                                            shadow-class="shadow-lg shadow-gray-400 dark:shadow-gray-700"
+                                            img-class="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Meta info -->
+                                <div
+                                    class="my-4 flex flex-wrap items-center justify-center gap-3
+                                       text-sm text-slate-600 dark:text-slate-300"
+                                >
+                                    <!-- Lessons -->
+                                    <span
+                                        v-if="lessonsCount"
+                                        class="rounded-sm border border-gray-400
+                                           flex items-center justify-center gap-1 px-3 py-1"
+                                    >
                                     <svg
                                         class="h-4 w-4 text-sky-600/85 dark:text-sky-300/85"
                                         fill="currentColor"
@@ -576,12 +583,12 @@ const gridCols = computed(() => {
                                     {{ t('lessons') }}: {{ lessonsCount }}
                                 </span>
 
-                                <!-- Duration -->
-                                <span
-                                    v-if="moduleData.duration"
-                                    class="rounded-sm border border-gray-400
+                                    <!-- Duration -->
+                                    <span
+                                        v-if="moduleData.duration"
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1 px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         class="w-3 h-3 text-blue-700 dark:text-blue-300"
                                         viewBox="0 0 24 24"
@@ -598,15 +605,15 @@ const gridCols = computed(() => {
                                     {{ t('minutes') }}
                                 </span>
 
-                                <!-- Rating -->
-                                <span
-                                    v-if="moduleData.rating_avg"
-                                    class="rounded-sm border border-gray-400
+                                    <!-- Rating -->
+                                    <span
+                                        v-if="moduleData.rating_avg"
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1 px-3 py-1"
-                                    itemprop="aggregateRating"
-                                    itemscope
-                                    itemtype="https://schema.org/AggregateRating"
-                                >
+                                        itemprop="aggregateRating"
+                                        itemscope
+                                        itemtype="https://schema.org/AggregateRating"
+                                    >
                                     <meta itemprop="ratingValue" :content="moduleData.rating_avg" />
                                     <meta itemprop="ratingCount" :content="moduleData.rating_count || 0" />
                                     <meta itemprop="bestRating" content="5" />
@@ -627,12 +634,12 @@ const gridCols = computed(() => {
                                     {{ Number(moduleData.rating_avg).toFixed(1) }}
                                 </span>
 
-                                <!-- Rating count -->
-                                <span
-                                    v-if="moduleData.rating_count"
-                                    class="rounded-sm border border-gray-400
+                                    <!-- Rating count -->
+                                    <span
+                                        v-if="moduleData.rating_count"
+                                        class="rounded-sm border border-gray-400
                                            flex items-center justify-center gap-1 px-3 py-1"
-                                >
+                                    >
                                     <svg
                                         class="w-3 h-3 text-teal-600/85 dark:text-teal-300/85"
                                         fill="currentColor"
@@ -647,53 +654,53 @@ const gridCols = computed(() => {
                                     {{ t('reviews') }}:
                                     {{ moduleData.rating_count }}
                                 </span>
-                            </div>
-
-                            <!-- Description -->
-                            <div
-                                v-if="moduleDescription"
-                                class="mt-4 text-sm subtitle"
-                                itemprop="description"
-                                v-html="moduleDescription"
-                            />
-
-                            <!-- Like -->
-                            <div class="my-1 flex items-center justify-center">
-                                <div
-                                    itemprop="interactionStatistic"
-                                    itemscope
-                                    itemtype="https://schema.org/InteractionCounter"
-                                >
-                                    <link itemprop="interactionType" href="https://schema.org/LikeAction" />
-                                    <meta
-                                        itemprop="userInteractionCount"
-                                        :content="moduleData.likes_count || 0"
-                                    />
-
-                                    <LikeButtonEntity
-                                        :likes-count="moduleData.likes_count || 0"
-                                        :already-liked="moduleData.already_liked || false"
-                                        route-name="public.schoolModules.like"
-                                        :route-params="moduleData.id"
-                                        :title="t('like')"
-                                    />
                                 </div>
-                            </div>
 
-                            <!-- Parent course -->
-                            <div
-                                v-if="parentCourse?.slug"
-                                class="mt-6 flex items-center justify-center gap-2 text-sm"
-                                itemprop="isPartOf"
-                                itemscope
-                                itemtype="https://schema.org/Course"
-                            >
-                                <link itemprop="url" :href="courseUrl" />
+                                <!-- Description -->
+                                <div
+                                    v-if="moduleDescription"
+                                    class="mt-4 text-sm subtitle"
+                                    itemprop="description"
+                                    v-html="moduleDescription"
+                                />
 
-                                <span
-                                    class="flex items-center justify-center gap-0.5
-                                           text-slate-500 dark:text-slate-400 uppercase"
+                                <!-- Like -->
+                                <div class="my-1 flex items-center justify-center">
+                                    <div
+                                        itemprop="interactionStatistic"
+                                        itemscope
+                                        itemtype="https://schema.org/InteractionCounter"
+                                    >
+                                        <link itemprop="interactionType" href="https://schema.org/LikeAction" />
+                                        <meta
+                                            itemprop="userInteractionCount"
+                                            :content="moduleData.likes_count || 0"
+                                        />
+
+                                        <LikeButtonEntity
+                                            :likes-count="moduleData.likes_count || 0"
+                                            :already-liked="moduleData.already_liked || false"
+                                            route-name="public.schoolModules.like"
+                                            :route-params="moduleData.id"
+                                            :title="t('like')"
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Parent course -->
+                                <div
+                                    v-if="parentCourse?.slug"
+                                    class="mt-6 flex items-center justify-center gap-2 text-sm"
+                                    itemprop="isPartOf"
+                                    itemscope
+                                    itemtype="https://schema.org/Course"
                                 >
+                                    <link itemprop="url" :href="courseUrl" />
+
+                                    <span
+                                        class="flex items-center justify-center gap-0.5
+                                           text-slate-500 dark:text-slate-400 uppercase"
+                                    >
                                     <svg
                                         class="h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
                                         fill="currentColor"
@@ -710,41 +717,42 @@ const gridCols = computed(() => {
                                     {{ t('course') }}:
                                 </span>
 
-                                <Link
-                                    :href="route('public.schoolCourses.show', { slug: parentCourse.slug })"
-                                    class="font-semibold text-indigo-700 hover:underline dark:text-indigo-300"
-                                    itemprop="name"
-                                >
-                                    {{ courseTitle }}
-                                </Link>
-                            </div>
+                                    <Link
+                                        :href="route('public.schoolCourses.show', { slug: parentCourse.slug })"
+                                        class="font-semibold text-indigo-700 hover:underline dark:text-indigo-300"
+                                        itemprop="name"
+                                    >
+                                        {{ courseTitle }}
+                                    </Link>
+                                </div>
 
-                            <!-- Lessons -->
-                            <ModuleLessonsSection
-                                :lessons="lessonsList"
-                                :cols="gridCols"
-                            />
-                        </article>
+                                <!-- Lessons -->
+                                <ModuleLessonsSection
+                                    :lessons="lessonsList"
+                                    :cols="gridCols"
+                                />
+                            </article>
 
-                        <!-- Bottom main blocks -->
-                        <SectionVideoList :videos="mainVideosList" />
-                        <SectionBanners :banners="mainBannersList" />
-                    </div>
-                </section>
+                            <!-- Bottom main blocks -->
+                            <SectionVideoList :videos="mainVideosList" />
+                            <SectionBanners :banners="mainBannersList" />
+                        </div>
+                    </section>
 
-                <!-- RIGHT -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 pr-3 transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebarSchool
-                        :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
-                    />
-                </aside>
-            </main>
-        </div>
+                    <!-- RIGHT -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 pr-3 transition-all duration-300"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebarSchool
+                            :collapsed="rightCollapsed"
+                            @collapsed="rightCollapsed = $event"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <FooterBlog />
         <Progress />

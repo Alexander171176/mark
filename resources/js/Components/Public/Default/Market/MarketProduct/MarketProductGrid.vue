@@ -147,7 +147,7 @@ const hasMarketingFlags = (product) => {
         <div
             v-for="product in products"
             :key="product.id"
-            class="group flex h-full flex-col overflow-hidden rounded-md
+            class="group flex h-full flex-col overflow-hidden rounded-2xl
                    border border-gray-200 bg-white shadow-sm transition
                    hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-900"
         >

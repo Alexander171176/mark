@@ -38,8 +38,8 @@ const props = defineProps({
         default: () => ({
             title: '',
             keywords: '',
-            description: '',
-        }),
+            description: ''
+        })
     },
 
     useServerProcessing: { type: Boolean, default: false },
@@ -61,7 +61,7 @@ const props = defineProps({
      * Источник значения —
      * PublicSettingsService на backend.
      */
-    defaultSort: { type: String, default: '' },
+    defaultSort: { type: String, default: '' }
 })
 
 /* ===================== PAGE ===================== */
@@ -289,7 +289,7 @@ const categorySortOptions = [
     { value: 'urlDesc', label: 'URL Z→A' },
 
     { value: 'publishedAtDesc', label: `${t('publishedAt')} 9→0` },
-    { value: 'publishedAtAsc', label: `${t('publishedAt')} 0→9` },
+    { value: 'publishedAtAsc', label: `${t('publishedAt')} 0→9` }
 ]
 
 /* ===================== FRONTEND MODE ===================== */
@@ -300,10 +300,10 @@ const frontendCurrentPage = ref(1)
 /** Плавный скролл к списку */
 const {
     targetRef: scrollTarget,
-    scrollToTarget,
+    scrollToTarget
 } = useSmoothScrollTo({
     offset: 80,
-    duration: 1200,
+    duration: 1200
 })
 
 /** Нормализация текста */
@@ -386,7 +386,7 @@ const getCategorySearchValues = (category) => {
         getCategorySubtitle(category),
         getCategoryShort(category),
 
-        getParentTitle(category),
+        getParentTitle(category)
     ].map(normalizeText)
 }
 
@@ -482,7 +482,7 @@ const compareIdDesc = (a, b) => {
 /** Локальная сортировка */
 const sortedCategories = computed(() => {
     const list = [
-        ...filteredCategories.value,
+        ...filteredCategories.value
     ]
 
     return list.sort((a, b) => {
@@ -746,12 +746,12 @@ const reloadCategories = (page = 1) => {
                 viewMode.value
                 || undefined,
 
-            page,
+            page
         },
         {
             preserveState: true,
             replace: true,
-            preserveScroll: true,
+            preserveScroll: true
         }
     )
 }
@@ -889,160 +889,168 @@ const displayedCategories = computed(() => {
         <!-- Шапка -->
         <Navbar />
 
-        <div class="min-h-screen px-3 max-w-full">
-            <main class="mx-auto flex flex-col lg:flex-row gap-4 tracking-wider">
-
-                <!-- Левая колонка -->
-                <aside
-                    v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
-                    :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
+        <main class="min-h-screen px-1 lg:px-6 max-w-full">
+            <div
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
+            >
+                <div
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4 rounded-3xl
+                           border-2 border-slate-300 dark:border-slate-500"
                 >
-                    <LeftSidebarMarket
-                        :category-tree="categoryTree"
-                        :collapsed="leftCollapsed"
-                        @collapsed="leftCollapsed = $event"
-                    />
-                </aside>
 
-                <!-- Центральная колонка -->
-                <div class="w-full lg:mt-28 pb-6 slate-1">
-                    <div class="mx-auto max-w-6xl">
+                    <!-- Левая колонка -->
+                    <aside
+                        v-if="showLeft"
+                        class="shrink-0 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <LeftSidebarMarket
+                            :category-tree="categoryTree"
+                            :collapsed="leftCollapsed"
+                            @collapsed="leftCollapsed = $event"
+                        />
+                    </aside>
 
-                        <!-- Хлебные крошки -->
-                        <nav class="text-sm" aria-label="Breadcrumb">
-                            <ol class="flex flex-wrap items-center font-semibold">
-                                <li>
-                                    <Link
-                                        :href="route('home')"
-                                        class="breadcrumb-link hover:underline"
-                                    >
-                                        {{ t('home') }}
-                                    </Link>
-                                </li>
+                    <!-- Центральная колонка -->
+                    <div class="w-full pb-6 slate-1">
+                        <div class="mx-auto max-w-6xl">
 
-                                <li>
-                                    <span class="mx-2 breadcrumbs">/</span>
-                                </li>
+                            <!-- Хлебные крошки -->
+                            <nav class="text-sm" aria-label="Breadcrumb">
+                                <ol class="flex flex-wrap items-center font-semibold">
+                                    <li>
+                                        <Link
+                                            :href="route('home')"
+                                            class="breadcrumb-link hover:underline"
+                                        >
+                                            {{ t('home') }}
+                                        </Link>
+                                    </li>
 
-                                <li class="breadcrumbs">
+                                    <li>
+                                        <span class="mx-2 breadcrumbs">/</span>
+                                    </li>
+
+                                    <li class="breadcrumbs">
+                                        {{ t('categories') }}
+                                    </li>
+                                </ol>
+                            </nav>
+
+                            <!-- Заголовок -->
+                            <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
+                                <svg
+                                    class="h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                >
+                                    <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z" />
+                                </svg>
+
+                                <h1 class="text-2xl font-bold">
                                     {{ t('categories') }}
-                                </li>
-                            </ol>
-                        </nav>
+                                </h1>
+                            </div>
 
-                        <!-- Заголовок -->
-                        <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
-                            <svg
-                                class="h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                            >
-                                <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z" />
-                            </svg>
+                            <!-- Подзаголовок -->
+                            <div class="my-1 text-sm subtitle text-center">
+                                Выберите категорию товаров и найдите всё необходимое в каталоге
+                            </div>
 
-                            <h1 class="text-2xl font-bold">
-                                {{ t('categories') }}
-                            </h1>
-                        </div>
-
-                        <!-- Подзаголовок -->
-                        <div class="my-1 text-sm subtitle text-center">
-                            Выберите категорию товаров и найдите всё необходимое в каталоге
-                        </div>
-
-                        <!-- Server toolbar -->
-                        <EntityPageToolbar
-                            v-if="useServerProcessing"
-                            v-model="q"
-                            :found="categoriesFound"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="categorySortOptions"
-                            :default-sort="defaultSort"
-                            :found-label="t('categories')"
-                            :search-placeholder="t('searchByName')"
-                            @submit="submitSearch"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
-
-                        <!-- Frontend toolbar -->
-                        <FrontendEntityPageToolbar
-                            v-else
-                            v-model="q"
-                            :found="sortedCategories.length"
-                            :view-mode="viewMode"
-                            :sort-value="sort"
-                            :sort-options="categorySortOptions"
-                            :default-sort="defaultSort"
-                            :found-label="t('categories')"
-                            :search-placeholder="t('searchByName')"
-                            @reset="resetSearch"
-                            @update:viewMode="updateViewMode"
-                            @update:sortValue="updateSort"
-                        />
-
-                        <!-- Точка скролла -->
-                        <div ref="scrollTarget"></div>
-
-                        <!-- Нет данных -->
-                        <div
-                            v-if="displayedCategories.length === 0"
-                            class="mt-6 text-center text-slate-700 dark:text-slate-300"
-                        >
-                            {{ t('noData') }}
-                        </div>
-
-                        <!-- Список -->
-                        <div v-else>
-                            <MarketCategoryGrid
-                                v-if="viewMode === 'grid'"
-                                :categories="displayedCategories"
-                                :cols="categoryGridCols"
+                            <!-- Server toolbar -->
+                            <EntityPageToolbar
+                                v-if="useServerProcessing"
+                                v-model="q"
+                                :found="categoriesFound"
+                                :view-mode="viewMode"
+                                :sort-value="sort"
+                                :sort-options="categorySortOptions"
+                                :default-sort="defaultSort"
+                                :found-label="t('categories')"
+                                :search-placeholder="t('searchByName')"
+                                @submit="submitSearch"
+                                @reset="resetSearch"
+                                @update:viewMode="updateViewMode"
+                                @update:sortValue="updateSort"
                             />
 
-                            <MarketCategoryRows
+                            <!-- Frontend toolbar -->
+                            <FrontendEntityPageToolbar
                                 v-else
-                                :categories="displayedCategories"
+                                v-model="q"
+                                :found="sortedCategories.length"
+                                :view-mode="viewMode"
+                                :sort-value="sort"
+                                :sort-options="categorySortOptions"
+                                :default-sort="defaultSort"
+                                :found-label="t('categories')"
+                                :search-placeholder="t('searchByName')"
+                                @reset="resetSearch"
+                                @update:viewMode="updateViewMode"
+                                @update:sortValue="updateSort"
+                            />
+
+                            <!-- Точка скролла -->
+                            <div ref="scrollTarget"></div>
+
+                            <!-- Нет данных -->
+                            <div
+                                v-if="displayedCategories.length === 0"
+                                class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                            >
+                                {{ t('noData') }}
+                            </div>
+
+                            <!-- Список -->
+                            <div v-else>
+                                <MarketCategoryGrid
+                                    v-if="viewMode === 'grid'"
+                                    :categories="displayedCategories"
+                                    :cols="categoryGridCols"
+                                />
+
+                                <MarketCategoryRows
+                                    v-else
+                                    :categories="displayedCategories"
+                                />
+                            </div>
+
+                            <!-- Server-пагинация -->
+                            <Pagination
+                                v-if="useServerProcessing"
+                                :current-page="currentPage"
+                                :last-page="lastPage"
+                                :found="categoriesFound"
+                                @prev="goPrev"
+                                @next="goNext"
+                                @go="goToPage"
+                            />
+
+                            <!-- Frontend-пагинация -->
+                            <FrontendPagination
+                                v-else
+                                v-model:currentPage="frontendCurrentPage"
+                                :items-per-page="perPage"
+                                :total-items="sortedCategories.length"
                             />
                         </div>
-
-                        <!-- Server-пагинация -->
-                        <Pagination
-                            v-if="useServerProcessing"
-                            :current-page="currentPage"
-                            :last-page="lastPage"
-                            :found="categoriesFound"
-                            @prev="goPrev"
-                            @next="goNext"
-                            @go="goToPage"
-                        />
-
-                        <!-- Frontend-пагинация -->
-                        <FrontendPagination
-                            v-else
-                            v-model:currentPage="frontendCurrentPage"
-                            :items-per-page="perPage"
-                            :total-items="sortedCategories.length"
-                        />
                     </div>
-                </div>
 
-                <!-- Правая колонка -->
-                <aside
-                    v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300"
-                    :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
-                >
-                    <RightSidebarMarket
-                        :collapsed="rightCollapsed"
-                        @collapsed="rightCollapsed = $event"
-                    />
-                </aside>
-            </main>
-        </div>
+                    <!-- Правая колонка -->
+                    <aside
+                        v-if="showRight"
+                        class="shrink-0 transition-all duration-300"
+                        :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                    >
+                        <RightSidebarMarket
+                            :collapsed="rightCollapsed"
+                            @collapsed="rightCollapsed = $event"
+                        />
+                    </aside>
+                </div>
+            </div>
+        </main>
 
         <!-- Подвал -->
         <FooterBlog />

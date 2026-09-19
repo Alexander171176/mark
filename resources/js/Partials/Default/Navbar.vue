@@ -8,6 +8,7 @@ import ThemeToggle from '@/Components/User/ThemeToggle/ThemeToggle.vue'
 import DropdownLink from '@/Components/Base/DropdownLink.vue'
 import Dropdown from '@/Components/Base/Dropdown.vue'
 import LocaleSelectOption from '@/Components/Admin/UI/Select/LocaleSelectOption.vue'
+import MarketProductSearch from '@/Components/Public/Default/Market/MarketProduct/MarketProductSearch.vue'
 
 const { t, locale } = useI18n()
 const page = usePage()
@@ -21,7 +22,6 @@ const marketCatalog = computed(() => page.props?.marketCatalog || [])
 
 const isCatalogOpen = ref(false)
 const showingNavigationDropdown = ref(false)
-const searchQuery = ref('')
 const isSolid = ref(false)
 
 const availableLocales = computed(() => {
@@ -194,17 +194,6 @@ onBeforeUnmount(() => {
 
 watch(() => page.url, () => closeAllMenus())
 
-const submitSearch = () => {
-    const query = searchQuery.value.trim()
-
-    if (!query) return
-
-    Inertia.visit(`${getHref({ url: '/search' })}?q=${encodeURIComponent(query)}`, {
-        preserveState: false,
-        preserveScroll: false,
-    })
-}
-
 const logout = () => {
     router.post(route('logout'))
 }
@@ -212,237 +201,276 @@ const logout = () => {
 
 <template>
     <nav
-        class="fixed top-0 left-0 right-0 z-[100] transition-all duration-300 border-b lg:px-8"
+        class="fixed top-0 left-2 right-2
+               z-[100]
+               overflow-hidden
+               border-2 border-t-0
+               border-blue-700 dark:border-blue-300
+               transition-[background-color,backdrop-filter]
+               duration-300 ease-out"
         :class="[
-            isSolid || isCatalogOpen || showingNavigationDropdown
-                ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur ' +
-                 'border-gray-200 dark:border-gray-800 shadow-md'
-                : 'bg-white/80 dark:bg-slate-800/80 backdrop-blur border-transparent'
+            isSolid
+                ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md'
+                : 'bg-white/80 dark:bg-slate-800/80 backdrop-blur',
+
+            isCatalogOpen || showingNavigationDropdown
+                ? 'bg-white/95 dark:bg-gray-900/95'
+                : '',
+
+            isCatalogOpen
+                ? ''
+                : 'rounded-b-3xl'
         ]"
     >
-        <div class="px-3">
+        <!-- HEADER CONTENT -->
+        <div>
             <!-- TOP BAR -->
-            <div
-                class="grid h-16 items-center gap-2
-                       grid-cols-[1fr_auto]
-                       sm:grid-cols-[180px_1fr_auto]
-                       lg:grid-cols-[200px_1fr_200px]
-                       xl:grid-cols-[220px_1fr_220px]
-                       2xl:grid-cols-[240px_1fr_240px]
-                       lg:gap-6"
-            >
-                <div class="flex items-center lg:justify-between gap-2 min-w-0">
-                    <button
-                        type="button"
-                        @click="toggleMobileMenu"
-                        class="inline-flex items-center justify-center lg:hidden
-                               rounded-md p-1 text-gray-600
-                               hover:bg-gray-100 hover:text-gray-900
-                               dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white
-                               focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
-                    >
-                        <svg class="h-5 w-5" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path
-                                v-if="!showingNavigationDropdown"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16"
-                            />
-                            <path
-                                v-else
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
-                    </button>
-
-                    <Link
-                        :href="route('home')"
-                        class="flex items-center justify-center gap-1 shrink-0 logo"
-                        @click="closeAllMenus"
-                    >
-                        <svg class="w-6 h-6 fill-current text-teal-500"
-                             viewBox="0 0 576 512">
-                            <path d="M546.2 9.7c-5.6-12.5-21.6-13-28.3-1.2C486.9 62.4 431.4 96 368 96h-80C182 96 96 182 96 288c0 7 .8 13.7 1.5 20.5C161.3 262.8 253.4 224 384 224c8.8 0 16 7.2 16 16s-7.2 16-16 16C132.6 256 26 410.1 2.4 468c-6.6 16.3 1.2 34.9 17.5 41.6 16.4 6.8 35-1.1 41.8-17.3 1.5-3.6 20.9-47.9 71.9-90.6 32.4 43.9 94 85.8 174.9 77.2C465.5 467.5 576 326.7 576 154.3c0-50.2-10.8-102.2-29.8-144.6z" />
-                        </svg>
-                        <span class="inline-flex font-bold text-xl sm:text-2xl text-blue-600 truncate">
-                            AGROVENT
-                        </span>
-                    </Link>
-
-                    <button
-                        type="button"
-                        @click="toggleCatalog"
-                        class="hidden lg:inline-flex items-center gap-2 rounded-lg
-                               bg-blue-600 px-3 py-3 text-sm font-bold text-white
-                               hover:bg-blue-700 active:bg-blue-800 transition"
-                    >
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                                v-if="!isCatalogOpen"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16"
-                            />
-                            <path
-                                v-else
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
-                    </button>
-                </div>
-
-                <form
-                    class="hidden lg:flex justify-center w-full min-w-0"
-                    @submit.prevent="submitSearch"
+            <div class="px-3 lg:px-5">
+                <div
+                    class="grid h-16 items-center gap-2
+                           grid-cols-[1fr_auto]
+                           sm:grid-cols-[180px_1fr_auto]
+                           lg:grid-cols-[200px_1fr_200px]
+                           xl:grid-cols-[220px_1fr_220px]
+                           2xl:grid-cols-[240px_1fr_240px]
+                           lg:gap-6"
                 >
-                    <div class="flex w-full max-w-[1100px] bg-white dark:bg-gray-900 overflow-hidden">
-                        <input
-                            v-model="searchQuery"
-                            type="search"
-                            class="w-full rounded-xl border-2 border-blue-600 bg-white px-4 py-2
-                                   text-sm text-slate-800 dark:text-slate-100 -mr-3 z-10
-                                   placeholder:text-slate-400 focus:ring-0"
-                            :placeholder="t('search')"
-                        />
+                    <div class="flex items-center lg:justify-between gap-2 min-w-0">
+                        <button
+                            type="button"
+                            @click="toggleMobileMenu"
+                            class="inline-flex items-center justify-center lg:hidden
+                                   rounded-md p-1 text-gray-600
+                                   hover:bg-gray-100 hover:text-gray-900
+                                   dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white
+                                   focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                stroke="currentColor"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    v-if="!showingNavigationDropdown"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16"
+                                />
+                                <path
+                                    v-else
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+
+                        <Link
+                            :href="route('home')"
+                            class="flex items-center justify-center gap-1 shrink-0 logo"
+                            @click="closeAllMenus"
+                        >
+                            <svg
+                                class="w-6 h-6 fill-current text-teal-500"
+                                viewBox="0 0 576 512"
+                            >
+                                <path
+                                    d="M546.2 9.7c-5.6-12.5-21.6-13-28.3-1.2C486.9 62.4 431.4 96 368 96h-80C182 96 96 182 96 288c0 7 .8 13.7 1.5 20.5C161.3 262.8 253.4 224 384 224c8.8 0 16 7.2 16 16s-7.2 16-16 16C132.6 256 26 410.1 2.4 468c-6.6 16.3 1.2 34.9 17.5 41.6 16.4 6.8 35-1.1 41.8-17.3 1.5-3.6 20.9-47.9 71.9-90.6 32.4 43.9 94 85.8 174.9 77.2C465.5 467.5 576 326.7 576 154.3c0-50.2-10.8-102.2-29.8-144.6z"
+                                />
+                            </svg>
+
+                            <span
+                                class="inline-flex font-bold text-xl sm:text-2xl
+                                       text-blue-600 truncate"
+                            >
+                                AGROVENT
+                            </span>
+                        </Link>
 
                         <button
-                            type="submit"
-                            class="px-8 bg-blue-600 text-white font-bold text-sm
-                                   hover:bg-blue-700 transition rounded-r-xl"
+                            type="button"
+                            @click="toggleCatalog"
+                            class="hidden lg:inline-flex items-center gap-2 rounded-lg
+                                   bg-blue-600 px-2.5 py-2.5 text-sm font-bold text-white
+                                   hover:bg-blue-700 active:bg-blue-800 transition"
                         >
-                            <svg class="h-5 w-5 fill-current text-white" viewBox="0 0 512 512">
+                            <svg
+                                class="h-4 w-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
                                 <path
-                                    d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z" />
+                                    v-if="!isCatalogOpen"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16"
+                                />
+                                <path
+                                    v-else
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
                             </svg>
                         </button>
                     </div>
-                </form>
 
-                <div class="flex justify-end items-center gap-1 sm:gap-2 min-w-0">
-                    <LocaleSelectOption
-                        v-model="selectedLocale"
-                        :locales="availableLocales"
-                        placement="bottom-end"
-                    />
+                    <div class="hidden lg:block w-full min-w-0">
+                        <MarketProductSearch />
+                    </div>
 
-                    <ThemeToggle class="relative z-10" />
+                    <div class="flex justify-end items-center gap-1 sm:gap-2 min-w-0">
+                        <LocaleSelectOption
+                            v-model="selectedLocale"
+                            :locales="availableLocales"
+                            placement="bottom-end"
+                        />
 
-                    <Dropdown
-                        v-if="isAuth"
-                        align="right"
-                        width="60"
-                        class="relative z-10"
-                    >
-                        <template #trigger>
-                            <button
-                                v-if="managesProfilePhotos"
-                                class="flex items-center px-2 py-1 border-2 border-transparent rounded-full
-                                       hover:bg-slate-100 dark:hover:bg-gray-800
-                                       focus:outline-none focus:border-gray-400 transition"
-                            >
-                                <img
-                                    class="h-7 w-7 rounded-full object-cover"
-                                    :src="user.profile_photo_url"
-                                    :alt="user.name"
-                                />
+                        <ThemeToggle class="relative z-10" />
 
-                                <div class="hidden xl:flex flex-col ml-2 text-left">
-                                    <span class="font-semibold text-xs text-slate-700 dark:text-slate-100">
+                        <Dropdown
+                            v-if="isAuth"
+                            align="right"
+                            width="60"
+                            class="relative z-10"
+                        >
+                            <template #trigger>
+                                <button
+                                    v-if="managesProfilePhotos"
+                                    class="flex items-center px-2 py-1
+                                           border-2 border-transparent rounded-full
+                                           hover:bg-slate-100 dark:hover:bg-gray-800
+                                           focus:outline-none focus:border-gray-400 transition"
+                                >
+                                    <img
+                                        class="h-7 w-7 rounded-full object-cover"
+                                        :src="user.profile_photo_url"
+                                        :alt="user.name"
+                                    />
+
+                                    <div class="hidden xl:flex flex-col ml-2 text-left">
+                                        <span
+                                            class="font-semibold text-xs
+                                                   text-slate-700 dark:text-slate-100"
+                                        >
+                                            {{ user.name }}
+                                        </span>
+
+                                        <span
+                                            class="font-semibold text-[10px]
+                                                   text-slate-400 dark:text-slate-300"
+                                        >
+                                            {{ user.email }}
+                                        </span>
+                                    </div>
+                                </button>
+
+                                <span
+                                    v-else
+                                    class="inline-flex rounded-md"
+                                >
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center
+                                               bg-white dark:bg-gray-900
+                                               px-3 py-1
+                                               border border-gray-200 dark:border-gray-700
+                                               rounded-md text-sm font-medium
+                                               text-slate-600 hover:text-blue-700
+                                               dark:text-slate-200 dark:hover:text-blue-300
+                                               focus:outline-none transition"
+                                    >
                                         {{ user.name }}
-                                    </span>
-                                    <span class="font-semibold text-[10px] text-slate-400 dark:text-slate-300">
-                                        {{ user.email }}
-                                    </span>
-                                </div>
-                            </button>
+                                    </button>
+                                </span>
+                            </template>
 
-                            <span v-else class="inline-flex rounded-md">
+                            <template #content>
+                                <div class="block px-4 py-2 text-sm text-slate-400">
+                                    {{ t('accountManagement') }}
+                                </div>
+
+                                <DropdownLink :href="route('profile.show')">
+                                    {{ t('profile') }}
+                                </DropdownLink>
+
+                                <div
+                                    class="border-t border-gray-200
+                                           dark:border-gray-700"
+                                ></div>
+
+                                <form @submit.prevent="logout">
+                                    <DropdownLink as="button">
+                                        {{ t('logout') }}
+                                    </DropdownLink>
+                                </form>
+                            </template>
+                        </Dropdown>
+
+                        <Dropdown
+                            v-else
+                            align="right"
+                            width="60"
+                            class="relative z-10"
+                        >
+                            <template #trigger>
                                 <button
                                     type="button"
-                                    class="inline-flex items-center bg-white dark:bg-gray-900
-                                           px-3 py-1 border border-gray-200 dark:border-gray-700
-                                           rounded-md text-sm font-medium
-                                           text-slate-600 hover:text-blue-700
-                                           dark:text-slate-200 dark:hover:text-blue-300
-                                           focus:outline-none transition"
+                                    class="inline-flex items-center gap-2
+                                           rounded-lg px-3 py-2
+                                           text-sm font-semibold
+                                           bg-white dark:bg-gray-900
+                                           border border-gray-200 dark:border-gray-700
+                                           text-slate-700 dark:text-slate-300
+                                           hover:text-blue-700
+                                           dark:hover:text-blue-300 transition"
                                 >
-                                    {{ user.name }}
+                                    <svg
+                                        class="h-4 w-4"
+                                        fill="currentColor"
+                                        viewBox="0 0 448 512"
+                                    >
+                                        <path
+                                            d="M224 256A128 128 0 10224 0a128 128 0 000 256zm89.6 32h-16.7a174.1 174.1 0 01-145.8 0h-16.7A134.4 134.4 0 000 422.4V464a48 48 0 0048 48h352a48 48 0 0048-48v-41.6A134.4 134.4 0 00313.6 288z"
+                                        />
+                                    </svg>
+
+                                    <span class="hidden sm:inline">
+                                        {{ t('account') }}
+                                    </span>
                                 </button>
-                            </span>
-                        </template>
+                            </template>
 
-                        <template #content>
-                            <div class="block px-4 py-2 text-sm text-slate-400">
-                                {{ t('accountManagement') }}
-                            </div>
+                            <template #content>
+                                <div class="block px-4 py-2 text-md text-slate-400">
+                                    {{ t('guest') }}
+                                </div>
 
-                            <DropdownLink :href="route('profile.show')">
-                                {{ t('profile') }}
-                            </DropdownLink>
-
-                            <div class="border-t border-gray-200 dark:border-gray-700"></div>
-
-                            <form @submit.prevent="logout">
-                                <DropdownLink as="button">
-                                    {{ t('logout') }}
+                                <DropdownLink :href="route('login')">
+                                    {{ t('login') }}
                                 </DropdownLink>
-                            </form>
-                        </template>
-                    </Dropdown>
 
-                    <Dropdown
-                        v-else
-                        align="right"
-                        width="60"
-                        class="relative z-10"
-                    >
-                        <template #trigger>
-                            <button
-                                type="button"
-                                class="inline-flex items-center gap-2 rounded-lg px-3 py-2
-                                       text-sm font-semibold bg-white dark:bg-gray-900
-                                       border border-gray-200 dark:border-gray-700
-                                       text-slate-700 dark:text-slate-300
-                                       hover:text-blue-700 dark:hover:text-blue-300 transition"
-                            >
-                                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 448 512">
-                                    <path
-                                        d="M224 256A128 128 0 10224 0a128 128 0 000 256zm89.6 32h-16.7a174.1 174.1 0 01-145.8 0h-16.7A134.4 134.4 0 000 422.4V464a48 48 0 0048 48h352a48 48 0 0048-48v-41.6A134.4 134.4 0 00313.6 288z" />
-                                </svg>
-
-                                <span class="hidden sm:inline">{{ t('account') }}</span>
-                            </button>
-                        </template>
-
-                        <template #content>
-                            <div class="block px-4 py-2 text-md text-slate-400">
-                                {{ t('guest') }}
-                            </div>
-
-                            <DropdownLink :href="route('login')">
-                                {{ t('login') }}
-                            </DropdownLink>
-
-                            <DropdownLink :href="route('register')">
-                                {{ t('register') }}
-                            </DropdownLink>
-                        </template>
-                    </Dropdown>
+                                <DropdownLink :href="route('register')">
+                                    {{ t('register') }}
+                                </DropdownLink>
+                            </template>
+                        </Dropdown>
+                    </div>
                 </div>
             </div>
 
             <!-- CMS PAGES ROW -->
             <div
                 v-if="cmsMenu.length"
-                class="hidden lg:flex h-10 items-center justify-center gap-6"
+                class="hidden lg:flex h-10
+                       px-5
+                       items-center justify-center gap-6"
             >
                 <div
                     v-for="rootPage in cmsMenu"
@@ -454,7 +482,10 @@ const logout = () => {
                         class="flex items-center gap-2 text-sm font-semibold transition
                                text-slate-700 dark:text-slate-200
                                hover:text-blue-700 dark:hover:text-blue-300"
-                        :class="{ 'text-blue-700 dark:text-blue-300': isPageActive(rootPage) }"
+                        :class="{
+                            'text-blue-700 dark:text-blue-300':
+                                isPageActive(rootPage)
+                        }"
                     >
                         <span
                             v-if="rootPage.icon"
@@ -462,15 +493,20 @@ const logout = () => {
                             v-html="rootPage.icon"
                         />
 
-                        <span>{{ getTitle(rootPage) }}</span>
+                        <span>
+                            {{ getTitle(rootPage) }}
+                        </span>
                     </Link>
 
                     <div
                         v-if="getPageChildren(rootPage).length"
                         class="invisible opacity-0 translate-y-2
-                               group-hover:visible group-hover:opacity-100 group-hover:translate-y-0
+                               group-hover:visible
+                               group-hover:opacity-100
+                               group-hover:translate-y-0
                                absolute left-0 top-full z-[300]
-                               min-w-64 rounded-xl border border-gray-200 dark:border-gray-700
+                               min-w-64 rounded-xl border
+                               border-gray-200 dark:border-gray-700
                                bg-white dark:bg-gray-950 shadow-xl
                                transition-all duration-200"
                     >
@@ -487,20 +523,31 @@ const logout = () => {
                                            text-sm font-semibold
                                            text-slate-700 dark:text-slate-200
                                            hover:bg-blue-50 dark:hover:bg-gray-900
-                                           hover:text-blue-700 dark:hover:text-blue-300"
+                                           hover:text-blue-700
+                                           dark:hover:text-blue-300"
                                 >
-                                    <div class="flex items-center justify-center gap-2">
+                                    <div
+                                        class="flex items-center
+                                               justify-center gap-2"
+                                    >
                                         <span
                                             v-if="child.icon"
-                                            class="w-4 h-4 flex items-center justify-center"
+                                            class="w-4 h-4
+                                                   flex items-center
+                                                   justify-center"
                                             v-html="child.icon"
                                         />
+
                                         <span>
                                             {{ getTitle(child) }}
                                         </span>
                                     </div>
 
-                                    <span v-if="getPageChildren(child).length">›</span>
+                                    <span
+                                        v-if="getPageChildren(child).length"
+                                    >
+                                        ›
+                                    </span>
                                 </Link>
 
                                 <div
@@ -520,18 +567,25 @@ const logout = () => {
                                             v-for="subChild in getPageChildren(child)"
                                             :key="subChild.id"
                                             :href="getHref(subChild)"
-                                            class="flex items-center justify-start gap-2
+                                            class="flex items-center
+                                                   justify-start gap-2
                                                    rounded-lg px-3 py-2
                                                    text-sm font-semibold
-                                                   text-slate-600 dark:text-slate-300
-                                                   hover:bg-blue-50 dark:hover:bg-gray-900
-                                                   hover:text-blue-700 dark:hover:text-blue-300"
+                                                   text-slate-600
+                                                   dark:text-slate-300
+                                                   hover:bg-blue-50
+                                                   dark:hover:bg-gray-900
+                                                   hover:text-blue-700
+                                                   dark:hover:text-blue-300"
                                         >
                                             <span
                                                 v-if="subChild.icon"
-                                                class="w-3.5 h-3.5 flex items-center justify-center"
+                                                class="w-3.5 h-3.5
+                                                       flex items-center
+                                                       justify-center"
                                                 v-html="subChild.icon"
                                             />
+
                                             <span>
                                                 {{ getTitle(subChild) }}
                                             </span>
@@ -543,12 +597,38 @@ const logout = () => {
                     </div>
                 </div>
             </div>
+
+            <!-- ADVERTISING BANNER -->
+            <div
+                class="hidden lg:grid
+                       transition-[grid-template-rows,opacity]
+                       duration-300 ease-out"
+                :class="
+                    isSolid
+                        ? 'grid-rows-[0fr] opacity-0'
+                        : 'grid-rows-[1fr] opacity-100'
+                "
+            >
+                <div class="min-h-0 overflow-hidden">
+                    <a
+                        href="#"
+                        class="block h-16 overflow-hidden"
+                    >
+                        <img
+                            src="/storage/header/rectangle_large.webp"
+                            alt=""
+                            class="block h-full w-full object-cover"
+                        />
+                    </a>
+                </div>
+            </div>
         </div>
 
         <!-- DESKTOP CATALOG: MARKET CATEGORIES -->
         <div
             v-if="isCatalogOpen"
             class="hidden lg:block absolute left-0 right-0 top-full z-50
+                   rounded-b-3xl overflow-hidden
                    border-t border-gray-200 dark:border-gray-800
                    bg-white dark:bg-gray-950 shadow-2xl"
         >
@@ -557,25 +637,33 @@ const logout = () => {
                     <div
                         v-for="rootCategory in marketCatalog"
                         :key="rootCategory.id"
-                        class="rounded-xl border border-gray-200 dark:border-gray-800
+                        class="rounded-xl border
+                               border-gray-200 dark:border-gray-800
                                bg-gray-50 dark:bg-gray-900 p-4"
                     >
                         <Link
                             :href="getHref(rootCategory)"
                             class="flex items-center gap-2 font-bold
                                    text-slate-900 dark:text-white
-                                   hover:text-blue-700 dark:hover:text-blue-300 transition"
-                            :class="{ 'text-blue-700 dark:text-blue-300': isCategoryActive(rootCategory) }"
+                                   hover:text-blue-700
+                                   dark:hover:text-blue-300 transition"
+                            :class="{
+                                'text-blue-700 dark:text-blue-300':
+                                    isCategoryActive(rootCategory)
+                            }"
                             @click="closeCatalog"
                         >
                             <span
                                 v-if="rootCategory.icon"
-                                class="w-5 h-5 flex items-center justify-center
+                                class="w-5 h-5 flex items-center
+                                       justify-center
                                        text-slate-500 dark:text-slate-300"
                                 v-html="rootCategory.icon"
                             />
 
-                            <span>{{ getTitle(rootCategory) }}</span>
+                            <span>
+                                {{ getTitle(rootCategory) }}
+                            </span>
                         </Link>
 
                         <ul
@@ -588,10 +676,15 @@ const logout = () => {
                             >
                                 <Link
                                     :href="getHref(child)"
-                                    class="flex items-center gap-2 text-sm font-semibold
+                                    class="flex items-center gap-2
+                                           text-sm font-semibold
                                            text-slate-700 dark:text-slate-300
-                                           hover:text-blue-700 dark:hover:text-blue-300 transition"
-                            :class="{ 'text-blue-700 dark:text-blue-300': isCategoryActive(child) }"
+                                           hover:text-blue-700
+                                           dark:hover:text-blue-300 transition"
+                                    :class="{
+                                        'text-blue-700 dark:text-blue-300':
+                                            isCategoryActive(child)
+                                    }"
                                     @click="closeCatalog"
                                 >
                                     <span
@@ -601,7 +694,9 @@ const logout = () => {
                                         v-html="child.icon"
                                     />
 
-                                    <span>{{ getTitle(child) }}</span>
+                                    <span>
+                                        {{ getTitle(child) }}
+                                    </span>
                                 </Link>
 
                                 <ul
@@ -615,9 +710,15 @@ const logout = () => {
                                         <Link
                                             :href="getHref(subChild)"
                                             class="flex items-center gap-2 text-xs
-                                                   text-slate-500 dark:text-slate-400
-                                                   hover:text-blue-700 dark:hover:text-blue-300 transition"
-                                            :class="{ 'text-blue-700 dark:text-blue-300': isCategoryActive(subChild) }"
+                                                   text-slate-500
+                                                   dark:text-slate-400
+                                                   hover:text-blue-700
+                                                   dark:hover:text-blue-300
+                                                   transition"
+                                            :class="{
+                                                'text-blue-700 dark:text-blue-300':
+                                                    isCategoryActive(subChild)
+                                            }"
                                             @click="closeCatalog"
                                         >
                                             <span
@@ -626,7 +727,9 @@ const logout = () => {
                                                 v-html="subChild.icon"
                                             />
 
-                                            <span>{{ getTitle(subChild) }}</span>
+                                            <span>
+                                                {{ getTitle(subChild) }}
+                                            </span>
                                         </Link>
                                     </li>
                                 </ul>
@@ -637,6 +740,7 @@ const logout = () => {
             </div>
         </div>
     </nav>
+
     <!-- MOBILE MENU -->
     <Teleport to="body">
         <div
@@ -650,49 +754,40 @@ const logout = () => {
 
             <div
                 class="absolute left-3 right-3 top-20 bottom-3
-                       rounded-xl border border-gray-200 dark:border-gray-700
-                       bg-white dark:bg-gray-950 shadow-xl overflow-hidden"
+                       rounded-xl border
+                       border-gray-200 dark:border-gray-700
+                       bg-white dark:bg-gray-950
+                       shadow-xl overflow-hidden"
             >
                 <div
                     class="h-full overflow-y-auto overflow-x-hidden
                            overscroll-contain px-3 py-3"
                 >
-                    <form class="mb-3" @submit.prevent="submitSearch">
-                        <div class="flex rounded-lg border-2 border-blue-600 overflow-hidden">
-                            <input
-                                v-model="searchQuery"
-                                type="search"
-                                class="w-full border-0 px-3 py-2 text-sm
-                                       bg-white dark:bg-gray-900
-                                       text-slate-800 dark:text-slate-100
-                                       focus:ring-0"
-                                :placeholder="t('search')"
-                            />
-
-                            <button
-                                type="submit"
-                                class="px-4 bg-blue-600 text-white text-sm font-bold"
-                            >
-                                {{ t('find') }}
-                            </button>
-                        </div>
-                    </form>
+                    <MarketProductSearch
+                        mobile
+                        @submitted="closeMobileMenu"
+                    />
 
                     <div class="space-y-2 pb-4">
                         <div
                             v-for="rootPage in cmsMenu"
                             :key="rootPage.id"
-                            class="rounded-lg border border-gray-200 dark:border-gray-800
-                                   bg-gray-50 dark:bg-gray-900 overflow-hidden"
+                            class="rounded-lg border
+                                   border-gray-200 dark:border-gray-800
+                                   bg-gray-50 dark:bg-gray-900
+                                   overflow-hidden"
                         >
                             <Link
                                 :href="getHref(rootPage)"
                                 @click="closeMobileMenu"
-                                class="flex items-center gap-3 px-3 py-2 text-sm font-bold transition"
+                                class="flex items-center gap-3
+                                       px-3 py-2 text-sm font-bold transition"
                                 :class="
                                     isPageActive(rootPage)
-                                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-                                        : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+                                        ? 'bg-blue-100 text-blue-800 ' +
+                                          'dark:bg-blue-900/40 dark:text-blue-300'
+                                        : 'text-slate-700 hover:bg-slate-100 ' +
+                                          'dark:text-slate-200 dark:hover:bg-slate-800'
                                 "
                             >
                                 <span
@@ -701,7 +796,9 @@ const logout = () => {
                                     v-html="rootPage.icon"
                                 />
 
-                                <span>{{ getTitle(rootPage) }}</span>
+                                <span>
+                                    {{ getTitle(rootPage) }}
+                                </span>
                             </Link>
 
                             <div
@@ -715,20 +812,28 @@ const logout = () => {
                                     <Link
                                         :href="getHref(child)"
                                         @click="closeMobileMenu"
-                                        class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition"
+                                        class="flex items-center gap-2
+                                               rounded-md px-3 py-2
+                                               text-sm font-semibold transition"
                                         :class="
                                             isPageActive(child)
-                                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-                                                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                                                ? 'bg-blue-100 text-blue-800 ' +
+                                                  'dark:bg-blue-900/40 dark:text-blue-300'
+                                                : 'text-slate-600 hover:bg-slate-100 ' +
+                                                  'dark:text-slate-300 dark:hover:bg-slate-800'
                                         "
                                     >
                                         <span
                                             v-if="child.icon"
-                                            class="h-4 w-4 flex items-center justify-center"
+                                            class="h-4 w-4
+                                                   flex items-center
+                                                   justify-center"
                                             v-html="child.icon"
                                         />
 
-                                        <span>{{ getTitle(child) }}</span>
+                                        <span>
+                                            {{ getTitle(child) }}
+                                        </span>
                                     </Link>
 
                                     <div
@@ -740,34 +845,47 @@ const logout = () => {
                                             :key="subChild.id"
                                             :href="getHref(subChild)"
                                             @click="closeMobileMenu"
-                                            class="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold transition"
+                                            class="flex items-center gap-2
+                                                   rounded-md px-3 py-1.5
+                                                   text-xs font-semibold transition"
                                             :class="
                                                 isPageActive(subChild)
-                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-                                                    : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                                                    ? 'bg-blue-100 text-blue-800 ' +
+                                                      'dark:bg-blue-900/40 dark:text-blue-300'
+                                                    : 'text-slate-500 hover:bg-slate-100 ' +
+                                                      'dark:text-slate-400 dark:hover:bg-slate-800'
                                             "
                                         >
                                             <span
                                                 v-if="subChild.icon"
-                                                class="h-3.5 w-3.5 flex items-center justify-center"
+                                                class="h-3.5 w-3.5
+                                                       flex items-center
+                                                       justify-center"
                                                 v-html="subChild.icon"
                                             />
 
-                                            <span>{{ getTitle(subChild) }}</span>
+                                            <span>
+                                                {{ getTitle(subChild) }}
+                                            </span>
                                         </Link>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div
+                            class="pt-2 border-t
+                                   border-gray-200 dark:border-gray-700"
+                        >
                             <template v-if="isAuth">
                                 <Link
                                     :href="route('profile.show')"
                                     @click="closeMobileMenu"
-                                    class="block rounded-md px-3 py-2 text-sm font-semibold
+                                    class="block rounded-md px-3 py-2
+                                           text-sm font-semibold
                                            text-slate-700 hover:bg-slate-100
-                                           dark:text-slate-200 dark:hover:bg-slate-800"
+                                           dark:text-slate-200
+                                           dark:hover:bg-slate-800"
                                 >
                                     {{ t('profile') }}
                                 </Link>
@@ -775,9 +893,12 @@ const logout = () => {
                                 <button
                                     type="button"
                                     @click="logout"
-                                    class="block w-full text-left rounded-md px-3 py-2 text-sm font-semibold
+                                    class="block w-full text-left
+                                           rounded-md px-3 py-2
+                                           text-sm font-semibold
                                            text-slate-700 hover:bg-slate-100
-                                           dark:text-slate-200 dark:hover:bg-slate-800"
+                                           dark:text-slate-200
+                                           dark:hover:bg-slate-800"
                                 >
                                     {{ t('logout') }}
                                 </button>
@@ -787,9 +908,11 @@ const logout = () => {
                                 <Link
                                     :href="route('login')"
                                     @click="closeMobileMenu"
-                                    class="block rounded-md px-3 py-2 text-sm font-semibold
+                                    class="block rounded-md px-3 py-2
+                                           text-sm font-semibold
                                            text-slate-700 hover:bg-slate-100
-                                           dark:text-slate-200 dark:hover:bg-slate-800"
+                                           dark:text-slate-200
+                                           dark:hover:bg-slate-800"
                                 >
                                     {{ t('login') }}
                                 </Link>
@@ -797,9 +920,11 @@ const logout = () => {
                                 <Link
                                     :href="route('register')"
                                     @click="closeMobileMenu"
-                                    class="block rounded-md px-3 py-2 text-sm font-semibold
+                                    class="block rounded-md px-3 py-2
+                                           text-sm font-semibold
                                            text-slate-700 hover:bg-slate-100
-                                           dark:text-slate-200 dark:hover:bg-slate-800"
+                                           dark:text-slate-200
+                                           dark:hover:bg-slate-800"
                                 >
                                     {{ t('register') }}
                                 </Link>

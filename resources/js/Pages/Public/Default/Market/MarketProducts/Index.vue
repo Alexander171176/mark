@@ -19,9 +19,7 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarMarket from '@/Components/Public/Default/Partials/LeftSidebarMarket.vue'
 import RightSidebarMarket from '@/Components/Public/Default/Partials/RightSidebarMarket.vue'
 
-import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
-import FrontendEntityPageToolbar
-    from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
+import EntityListToolbar from '@/Components/Public/Default/PageToolbar/EntityListToolbar.vue'
 
 import MarketProductGrid
     from '@/Components/Public/Default/Market/MarketProduct/MarketProductGrid.vue'
@@ -46,8 +44,6 @@ const { t } = useI18n()
 
 /** Props страницы */
 const props = defineProps({
-    locale: { type: String, default: 'ru' },
-
     seo: {
         type: Object,
         default: () => ({
@@ -59,6 +55,9 @@ const props = defineProps({
 
     useServerProcessing: { type: Boolean, default: false },
     publicMarketProductsProcessingMode: { type: String, default: 'server' },
+
+    /** Сортировка Public по умолчанию из backend */
+    defaultSort: { type: String, default: 'sortAsc' },
 
     title: { type: String, default: '' },
     canLogin: { type: Boolean, default: false },
@@ -267,12 +266,12 @@ watch([leftCollapsed, rightCollapsed], () => {
 /** Поисковая строка */
 const q = ref(String(props.filters?.q ?? ''))
 
-/** Сортировка по умолчанию */
-const DEFAULT_SORT = 'sortAsc'
-
 /** Текущая сортировка */
 const sort = ref(
-    String(props.filters?.sort ?? DEFAULT_SORT)
+    String(
+        props.filters?.sort
+        ?? props.defaultSort
+    )
 )
 
 /** Ключ режима отображения */
@@ -366,7 +365,9 @@ const {
 
 /** Нормализация текста */
 const normalizeText = (value) => {
-    return String(value ?? '').toLowerCase()
+    return String(value ?? '')
+        .toLocaleLowerCase()
+        .trim()
 }
 
 /** Нормализация числа */
@@ -391,170 +392,374 @@ const normalizeDate = (value) => {
         : 0
 }
 
-/** Название товара */
+/**
+ * Название товара.
+ *
+ * Перевод уже разрешён Laravel:
+ * current → fallback → null.
+ */
 const getProductTitle = (product) => {
-    return product?.title
-        || product?.translation?.title
-        || product?.current_translation?.title
-        || product?.translations?.[0]?.title
-        || ''
+    return product?.translation?.title || ''
 }
 
 /** Подзаголовок товара */
 const getProductSubtitle = (product) => {
-    return product?.subtitle
-        || product?.translation?.subtitle
-        || product?.current_translation?.subtitle
-        || product?.translations?.[0]?.subtitle
-        || ''
+    return product?.translation?.subtitle || ''
 }
 
 /** Краткое описание товара */
 const getProductShort = (product) => {
-    return product?.short
-        || product?.description
-        || product?.translation?.short
-        || product?.translation?.description
-        || product?.current_translation?.short
-        || product?.current_translation?.description
-        || product?.translations?.[0]?.short
-        || product?.translations?.[0]?.description
-        || ''
-}
-
-/** Название компании */
-const getCompanyTitle = (product) => {
-    return product?.company?.title
-        || product?.company?.legal_name
-        || ''
-}
-
-/** Название магазина */
-const getShopTitle = (product) => {
-    return product?.shop?.title || ''
+    return product?.translation?.short || ''
 }
 
 /** Название бренда */
 const getBrandTitle = (product) => {
-    return product?.brand?.title || ''
+    return product?.brand?.translation?.title || ''
 }
 
-/** Локальный поиск */
-const filteredProducts = computed(() => {
-    const query = normalizeText(q.value).trim()
+/**
+ * Слова Public-поиска.
+ *
+ * Полностью повторяет backend:
+ * - разделение по пробелам;
+ * - слова от 2 символов;
+ * - AND между словами;
+ * - OR между полями.
+ */
+const searchWords = computed(() => {
+    return normalizeText(q.value)
+        .split(/\s+/u)
+        .filter((word) => word.length >= 2)
+})
 
-    if (!query) {
+/**
+ * Локальный Public-поиск.
+ *
+ * Поля совпадают с MarketProduct::publicSearch():
+ * title, subtitle, short,
+ * url, sku, vendor_code, barcode,
+ * brand.translation.title.
+ */
+const filteredProducts = computed(() => {
+    const words = searchWords.value
+
+    if (!words.length) {
         return productsData.value
     }
 
     return productsData.value.filter((product) => {
-        return [
+        const fields = [
             getProductTitle(product),
             getProductSubtitle(product),
             getProductShort(product),
-            product.url,
-            product.sku,
-            product.vendor_code,
-            product.barcode,
-            getCompanyTitle(product),
-            getShopTitle(product),
+
+            product?.url,
+            product?.sku,
+            product?.vendor_code,
+            product?.barcode,
+
             getBrandTitle(product),
-        ].some((value) => {
-            return normalizeText(value).includes(query)
+        ].map(normalizeText)
+
+        return words.every((word) => {
+            return fields.some((field) => {
+                return field.includes(word)
+            })
         })
     })
 })
 
-/** Локальная сортировка */
+/**
+ * Дополнительная сортировка по ID DESC.
+ *
+ * Повторяет второй orderBy backend
+ * для одинаковых значений.
+ */
+const compareIdDesc = (a, b) => {
+    return normalizeNumber(b?.id)
+        - normalizeNumber(a?.id)
+}
+
+/**
+ * Сравнение числового поля.
+ */
+const compareNumber = (
+    a,
+    b,
+    field,
+    direction = 'asc'
+) => {
+    const first = normalizeNumber(a?.[field])
+    const second = normalizeNumber(b?.[field])
+
+    const result = direction === 'desc'
+        ? second - first
+        : first - second
+
+    return result || compareIdDesc(a, b)
+}
+
+/**
+ * Сравнение текстового значения.
+ */
+const compareText = (
+    first,
+    second,
+    direction = 'asc'
+) => {
+    const a = normalizeText(first)
+    const b = normalizeText(second)
+
+    return direction === 'desc'
+        ? b.localeCompare(a)
+        : a.localeCompare(b)
+}
+
+/**
+ * Сравнение даты.
+ */
+const compareDate = (
+    a,
+    b,
+    field,
+    direction = 'asc'
+) => {
+    const first = normalizeDate(a?.[field])
+    const second = normalizeDate(b?.[field])
+
+    const result = direction === 'desc'
+        ? second - first
+        : first - second
+
+    return result || compareIdDesc(a, b)
+}
+
+/**
+ * Локальная Public-сортировка.
+ *
+ * Набор sort-параметров совпадает
+ * с MarketProduct::publicSortByParam().
+ */
 const sortedProducts = computed(() => {
     const list = [...filteredProducts.value]
 
     return list.sort((a, b) => {
         switch (sort.value) {
             case 'idAsc':
-                return normalizeNumber(a.id) - normalizeNumber(b.id)
+                return normalizeNumber(a.id)
+                    - normalizeNumber(b.id)
 
             case 'idDesc':
-                return normalizeNumber(b.id) - normalizeNumber(a.id)
+                return normalizeNumber(b.id)
+                    - normalizeNumber(a.id)
 
             case 'sortAsc':
-                return normalizeNumber(a.sort) - normalizeNumber(b.sort)
+                return compareNumber(
+                    a,
+                    b,
+                    'sort',
+                    'asc'
+                )
 
             case 'sortDesc':
-                return normalizeNumber(b.sort) - normalizeNumber(a.sort)
+                return compareNumber(
+                    a,
+                    b,
+                    'sort',
+                    'desc'
+                )
 
-            case 'titleAsc':
-                return normalizeText(getProductTitle(a))
-                    .localeCompare(normalizeText(getProductTitle(b)))
+            case 'titleAsc': {
+                const result = compareText(
+                    getProductTitle(a),
+                    getProductTitle(b),
+                    'asc'
+                )
 
-            case 'titleDesc':
-                return normalizeText(getProductTitle(b))
-                    .localeCompare(normalizeText(getProductTitle(a)))
+                return result || compareIdDesc(a, b)
+            }
+
+            case 'titleDesc': {
+                const result = compareText(
+                    getProductTitle(a),
+                    getProductTitle(b),
+                    'desc'
+                )
+
+                return result || compareIdDesc(a, b)
+            }
 
             case 'priceAsc':
-                return normalizeNumber(a.price) - normalizeNumber(b.price)
+                return compareNumber(
+                    a,
+                    b,
+                    'price',
+                    'asc'
+                )
 
             case 'priceDesc':
-                return normalizeNumber(b.price) - normalizeNumber(a.price)
+                return compareNumber(
+                    a,
+                    b,
+                    'price',
+                    'desc'
+                )
 
             case 'quantityAsc':
-                return normalizeNumber(a.quantity) - normalizeNumber(b.quantity)
+                return compareNumber(
+                    a,
+                    b,
+                    'quantity',
+                    'asc'
+                )
 
             case 'quantityDesc':
-                return normalizeNumber(b.quantity) - normalizeNumber(a.quantity)
+                return compareNumber(
+                    a,
+                    b,
+                    'quantity',
+                    'desc'
+                )
 
             case 'viewsAsc':
-                return normalizeNumber(a.views) - normalizeNumber(b.views)
+                return compareNumber(
+                    a,
+                    b,
+                    'views',
+                    'asc'
+                )
 
             case 'viewsDesc':
-                return normalizeNumber(b.views) - normalizeNumber(a.views)
+                return compareNumber(
+                    a,
+                    b,
+                    'views',
+                    'desc'
+                )
 
             case 'likesAsc':
-                return normalizeNumber(a.likes_count) - normalizeNumber(b.likes_count)
+                return compareNumber(
+                    a,
+                    b,
+                    'likes_count',
+                    'asc'
+                )
 
             case 'likesDesc':
-                return normalizeNumber(b.likes_count) - normalizeNumber(a.likes_count)
+                return compareNumber(
+                    a,
+                    b,
+                    'likes_count',
+                    'desc'
+                )
 
             case 'ratingAsc':
-                return normalizeNumber(a.rating_avg) - normalizeNumber(b.rating_avg)
+                return compareNumber(
+                    a,
+                    b,
+                    'rating_avg',
+                    'asc'
+                )
 
             case 'ratingDesc':
-                return normalizeNumber(b.rating_avg) - normalizeNumber(a.rating_avg)
+                return compareNumber(
+                    a,
+                    b,
+                    'rating_avg',
+                    'desc'
+                )
 
             case 'ratingCountAsc':
-                return normalizeNumber(a.rating_count) - normalizeNumber(b.rating_count)
+                return compareNumber(
+                    a,
+                    b,
+                    'rating_count',
+                    'asc'
+                )
 
             case 'ratingCountDesc':
-                return normalizeNumber(b.rating_count) - normalizeNumber(a.rating_count)
+                return compareNumber(
+                    a,
+                    b,
+                    'rating_count',
+                    'desc'
+                )
 
             case 'reviewsAsc':
-                return normalizeNumber(a.reviews_count) - normalizeNumber(b.reviews_count)
+                return compareNumber(
+                    a,
+                    b,
+                    'reviews_count',
+                    'asc'
+                )
 
             case 'reviewsDesc':
-                return normalizeNumber(b.reviews_count) - normalizeNumber(a.reviews_count)
+                return compareNumber(
+                    a,
+                    b,
+                    'reviews_count',
+                    'desc'
+                )
 
-            case 'brandAsc':
-                return normalizeText(getBrandTitle(a))
-                    .localeCompare(normalizeText(getBrandTitle(b)))
+            case 'brandAsc': {
+                const result = compareText(
+                    getBrandTitle(a),
+                    getBrandTitle(b),
+                    'asc'
+                )
 
-            case 'brandDesc':
-                return normalizeText(getBrandTitle(b))
-                    .localeCompare(normalizeText(getBrandTitle(a)))
+                return result || compareIdDesc(a, b)
+            }
+
+            case 'brandDesc': {
+                const result = compareText(
+                    getBrandTitle(a),
+                    getBrandTitle(b),
+                    'desc'
+                )
+
+                return result || compareIdDesc(a, b)
+            }
 
             case 'publishedAtAsc':
-                return normalizeDate(a.published_at) - normalizeDate(b.published_at)
+                return compareDate(
+                    a,
+                    b,
+                    'published_at',
+                    'asc'
+                )
 
             case 'publishedAtDesc':
-                return normalizeDate(b.published_at) - normalizeDate(a.published_at)
+                return compareDate(
+                    a,
+                    b,
+                    'published_at',
+                    'desc'
+                )
 
             case 'createdAtAsc':
-                return normalizeDate(a.created_at) - normalizeDate(b.created_at)
+                return compareDate(
+                    a,
+                    b,
+                    'created_at',
+                    'asc'
+                )
 
             case 'createdAtDesc':
-                return normalizeDate(b.created_at) - normalizeDate(a.created_at)
+                return compareDate(
+                    a,
+                    b,
+                    'created_at',
+                    'desc'
+                )
 
             default:
-                return 0
+                return compareNumber(
+                    a,
+                    b,
+                    'sort',
+                    'asc'
+                )
         }
     })
 })
@@ -667,7 +872,7 @@ const robotsContent = computed(() => {
     const hasSearch = String(q.value || '').trim() !== ''
 
     const hasAlternativeSort =
-        String(sort.value || DEFAULT_SORT) !== DEFAULT_SORT
+        String(sort.value || props.defaultSort) !== String(props.defaultSort)
 
     if (
         props.useServerProcessing
@@ -707,25 +912,9 @@ const reloadProducts = (page = 1) => {
     )
 }
 
-/** Server-поиск */
-const submitSearch = () => {
-    reloadProducts(1)
-}
-
-/** Сброс поиска и сортировки */
-const resetSearch = () => {
-    q.value = ''
-    sort.value = DEFAULT_SORT
-    frontendCurrentPage.value = 1
-
-    if (props.useServerProcessing) {
-        reloadProducts(1)
-    }
-}
-
 /** Изменение сортировки */
 const updateSort = (value) => {
-    sort.value = value || DEFAULT_SORT
+    sort.value = value || props.defaultSort
 
     if (props.useServerProcessing) {
         reloadProducts(1)
@@ -870,7 +1059,7 @@ const displayedProducts = computed(() => {
                 <!-- Левая колонка -->
                 <aside
                     v-if="showLeft"
-                    class="shrink-0 mt-12 lg:mt-28 transition-all duration-300"
+                    class="shrink-0 mt-12 lg:mt-48 transition-all duration-300"
                     :class="leftCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <LeftSidebarMarket
@@ -881,7 +1070,7 @@ const displayedProducts = computed(() => {
                 </aside>
 
                 <!-- Центральная колонка -->
-                <div class="min-w-0 flex-1 lg:mt-28 pb-6 slate-1">
+                <div class="min-w-0 flex-1 lg:mt-48 pb-6 slate-1">
                     <div class="w-full">
 
                         <article
@@ -976,12 +1165,12 @@ const displayedProducts = computed(() => {
                                             /
                                         </span>
 
-                                        <span
+                                        <h1
                                             itemprop="name"
-                                            class="breadcrumbs"
+                                            class="breadcrumbs text-sm font-semibold"
                                         >
                                             {{ t('products') }}
-                                        </span>
+                                        </h1>
 
                                         <meta
                                             itemprop="item"
@@ -996,62 +1185,13 @@ const displayedProducts = computed(() => {
                                 </ol>
                             </nav>
 
-                            <!-- Заголовок -->
-                            <div
-                                class="my-3 flex flex-wrap items-center justify-center gap-3 title"
-                            >
-                                <svg
-                                    class="h-6 w-6 text-slate-600/85 dark:text-slate-200/85"
-                                    fill="currentColor"
-                                    viewBox="0 0 512 512">
-                                    <path d="M239.1 6.3l-208 78c-18.7 7-31.1 25-31.1 45v225.1c0 18.2 10.3 34.8 26.5 42.9l208 104c13.5 6.8 29.4 6.8 42.9 0l208-104c16.3-8.1 26.5-24.8 26.5-42.9V129.3c0-20-12.4-37.9-31.1-44.9l-208-78C262 2.2 250 2.2 239.1 6.3zM256 68.4l192 72v1.1l-192 78-192-78v-1.1l192-72zm32 356V275.5l160-65v133.9l-160 80z" />
-                                </svg>
-
-                                <h1
-                                    itemprop="headline"
-                                    class="text-2xl font-bold"
-                                >
-                                    {{ t('products') }}
-                                </h1>
-                            </div>
-
-                            <!-- Подзаголовок -->
-                            <div
-                                itemprop="abstract"
-                                class="my-1 text-sm subtitle text-center"
-                            >
-                                {{ t('catalogDesc') }}
-                            </div>
-
-                            <!-- Server toolbar -->
-                            <EntityPageToolbar
-                                v-if="useServerProcessing"
-                                v-model="q"
-                                :found="productsFound"
+                            <!-- Управление списком товаров -->
+                            <EntityListToolbar
+                                :found="useServerProcessing ? productsFound : sortedProducts.length"
                                 :view-mode="viewMode"
                                 :sort-value="sort"
                                 :sort-options="productSortOptions"
-                                :default-sort="DEFAULT_SORT"
                                 :found-label="t('products')"
-                                :search-placeholder="t('searchByName')"
-                                @submit="submitSearch"
-                                @reset="resetSearch"
-                                @update:viewMode="updateViewMode"
-                                @update:sortValue="updateSort"
-                            />
-
-                            <!-- Frontend toolbar -->
-                            <FrontendEntityPageToolbar
-                                v-else
-                                v-model="q"
-                                :found="sortedProducts.length"
-                                :view-mode="viewMode"
-                                :sort-value="sort"
-                                :sort-options="productSortOptions"
-                                :default-sort="DEFAULT_SORT"
-                                :found-label="t('products')"
-                                :search-placeholder="t('searchByName')"
-                                @reset="resetSearch"
                                 @update:viewMode="updateViewMode"
                                 @update:sortValue="updateSort"
                             />
@@ -1131,7 +1271,6 @@ const displayedProducts = computed(() => {
                                 <MarketRecentlyViewedProducts
                                     :products="recentlyViewed"
                                     :cols="productGridCols"
-                                    :locale="locale"
                                 />
                             </section>
                         </article>
@@ -1142,7 +1281,7 @@ const displayedProducts = computed(() => {
                 <!-- Правая колонка -->
                 <aside
                     v-if="showRight"
-                    class="shrink-0 lg:mt-28 transition-all duration-300"
+                    class="shrink-0 lg:mt-48 transition-all duration-300"
                     :class="rightCollapsed ? 'lg:w-10' : 'lg:w-64'"
                 >
                     <RightSidebarMarket

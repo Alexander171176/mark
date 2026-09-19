@@ -3,7 +3,6 @@
 namespace App\Services\Public\Market;
 
 use App\Models\Admin\Market\MarketCategory\MarketCategory;
-use Illuminate\Support\Collection;
 
 class MarketCategoryTreeService
 {
@@ -13,13 +12,68 @@ class MarketCategoryTreeService
      */
     public function getTree(string $locale): array
     {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
         $categories = MarketCategory::query()
             ->forMenu()
             ->root()
             ->with([
-                'translations',
+                /**
+                 * Переводы корневых категорий.
+                 */
+                'translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                /**
+                 * Изображения корневых категорий.
+                 */
                 'images.media',
-                'publicCatalogChildren',
+
+                /**
+                 * Второй уровень.
+                 */
+                'publicCatalogChildren' =>
+                    fn ($query) =>
+                    $query->with([
+                        'translations' =>
+                            fn ($query) =>
+                            $query->whereIn(
+                                'locale',
+                                $locales
+                            ),
+
+                        'images.media',
+
+                        /**
+                         * Третий уровень.
+                         */
+                        'publicCatalogChildren' =>
+                            fn ($query) =>
+                            $query->with([
+                                'translations' =>
+                                    fn ($query) =>
+                                    $query->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+
+                                'images.media',
+                            ]),
+                    ]),
             ])
             ->get();
 
@@ -28,7 +82,8 @@ class MarketCategoryTreeService
                 fn (MarketCategory $category) =>
                 $this->mapCategory(
                     $category,
-                    $locale
+                    $locale,
+                    $fallbackLocale
                 )
             )
             ->values()
@@ -37,49 +92,78 @@ class MarketCategoryTreeService
 
     /**
      * Преобразовать категорию
-     * в элемент дерева.
+     * в элемент Public-дерева.
      */
     private function mapCategory(
         MarketCategory $category,
-        string $locale
+        string $locale,
+        string $fallbackLocale
     ): array {
-        $translation = $category
-            ->translationOrFallback($locale);
+        $translation =
+            $category->translationOrFallback(
+                $locale,
+                $fallbackLocale
+            );
 
         $image = $category
             ->images
             ->first();
 
-        /** @var Collection $children */
-        $children = $category
-            ->publicCatalogChildren;
+        /**
+         * Relation уже содержит только
+         * публичные категории меню.
+         */
+        $children = $category->relationLoaded(
+            'publicCatalogChildren'
+        )
+            ? $category->publicCatalogChildren
+            : collect();
 
         return [
-            'id' => $category->id,
-            'parent_id' => $category->parent_id,
-            'level' => (int) $category->level,
+            'id' =>
+                $category->id,
 
-            'url' => $category->url,
-            'icon' => $category->icon,
+            'parent_id' =>
+                $category->parent_id,
 
-            'title' => $translation?->title,
-            'subtitle' => $translation?->subtitle,
-            'short' => $translation?->short,
+            'level' =>
+                (int) $category->level,
 
-            'thumbnail_url' => $image?->thumb_url,
+            'url' =>
+                $category->url,
 
-            'children_count' => $children->count(),
+            'icon' =>
+                $category->icon,
 
-            'children' => $children
-                ->map(
-                    fn (MarketCategory $child) =>
-                    $this->mapCategory(
-                        $child,
-                        $locale
+            'title' =>
+                $translation?->title,
+
+            'subtitle' =>
+                $translation?->subtitle,
+
+            'short' =>
+                $translation?->short,
+
+            'thumbnail_url' =>
+                $image?->thumb_url,
+
+            'children_count' =>
+                $children->count(),
+
+            'children' =>
+                $children
+                    ->map(
+                        fn (
+                            MarketCategory $child
+                        ) =>
+                        $this->mapCategory(
+                            $child,
+                            $locale,
+                            $fallbackLocale
+                        )
                     )
-                )
-                ->values()
-                ->all(),
+                    ->values()
+                    ->all(),
         ];
     }
 }

@@ -999,6 +999,8 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketCategory/MarketCategoryImageResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketCategory/MarketCategoryRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketCategory/MarketCategoryController --resource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Market/MarketCategory/MarketCategoryResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Market/MarketCategory/MarketCategorySharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/Market/MarketCategory/MarketCategoryController` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -1049,6 +1051,8 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketProduct/MarketProductImageResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketProduct/MarketProductRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketProduct/MarketProductController --resource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Market/MarketProduct/MarketProductResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Market/MarketProduct/MarketProductSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/Market/MarketProduct/MarketProductController` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>

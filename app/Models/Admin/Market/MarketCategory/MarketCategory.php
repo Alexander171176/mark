@@ -101,22 +101,14 @@ class MarketCategory extends Model
     /**
      * Публичные дочерние категории каталога.
      *
-     * Публичный контракт остаётся самостоятельным:
-     * здесь загрузка переводов и изображений допустима,
-     * так как relation предназначена для публичного дерева.
+     * Relation определяет только Public-набор.
+     * Переводы, изображения и рекурсивные связи
+     * загружает Public Controller.
      */
     public function publicCatalogChildren(): HasMany
     {
         return $this->children()
-            ->forMenu()
-            ->with([
-                'translations',
-                'images.media',
-                'publicCatalogChildren',
-            ])
-            ->withCount([
-                'children',
-            ]);
+            ->forMenu();
     }
 
     /** Переводы категории */
@@ -175,27 +167,39 @@ class MarketCategory extends Model
     }
 
     /**
-     * Перевод с fallback.
+     * Получить перевод категории
+     * для текущей или fallback-локали.
      *
-     * Метод работает с уже загруженной коллекцией translations.
-     * Если translations заранее не загружены,
-     * стандартный Eloquent property может выполнить запрос.
+     * Метод работает с уже загруженной
+     * коллекцией translations.
+     *
+     * Строгий порядок:
+     * текущая локаль → fallback → null.
      */
     public function translationOrFallback(
         ?string $locale = null,
-        string $fallback = 'ru'
+        ?string $fallback = null
     ): ?MarketCategoryTranslation {
         $locale = $locale ?: app()->getLocale();
 
-        return $this->translations->firstWhere('locale', $locale)
-            ?: $this->translations->firstWhere('locale', $fallback)
-                ?: $this->translations->first();
+        $fallback ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return $this->translations
+            ->firstWhere('locale', $locale)
+            ?: $this->translations
+                ->firstWhere('locale', $fallback);
     }
 
-    /** Получить title из текущего перевода */
+    /**
+     * Получить title из перевода
+     * текущей или fallback-локали.
+     */
     public function getTranslatedTitle(
         ?string $locale = null,
-        string $fallback = 'ru'
+        ?string $fallback = null
     ): ?string {
         return $this->translationOrFallback(
             locale: $locale,
@@ -330,6 +334,170 @@ class MarketCategory extends Model
                         ->orWhere('email', 'like', "%{$term}%");
                 });
         });
+    }
+
+    /**
+     * Public-поиск категорий.
+     *
+     * Поиск выполняется только по данным,
+     * доступным в Public SharedResource.
+     *
+     * Используются:
+     * - поля категории;
+     * - текущий и fallback-перевод;
+     * - перевод родительской категории.
+     *
+     * Между словами используется AND,
+     * между полями одного слова — OR.
+     */
+    public function scopePublicSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $locale = $locale ?: app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        $words = preg_split(
+            '/\s+/u',
+            $term,
+            -1,
+            PREG_SPLIT_NO_EMPTY
+        );
+
+        $words = array_values(
+            array_filter(
+                $words ?: [],
+                static fn (string $word): bool =>
+                    mb_strlen($word) >= 2
+            )
+        );
+
+        if ($words === []) {
+            return $query;
+        }
+
+        return $query->where(
+            function (Builder $searchQuery) use (
+                $words,
+                $locales
+            ) {
+                foreach ($words as $word) {
+                    $searchQuery->where(
+                        function (Builder $wordQuery) use (
+                            $word,
+                            $locales
+                        ) {
+                            $wordQuery
+                                ->where(
+                                    'market_categories.id',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'market_categories.parent_id',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'market_categories.level',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'market_categories.url',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'market_categories.icon',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhere(
+                                    'market_categories.views',
+                                    'like',
+                                    "%{$word}%"
+                                )
+                                ->orWhereHas(
+                                    'translations',
+                                    function (
+                                        Builder $translationQuery
+                                    ) use (
+                                        $word,
+                                        $locales
+                                    ) {
+                                        $translationQuery
+                                            ->whereIn(
+                                                'locale',
+                                                $locales
+                                            )
+                                            ->where(
+                                                function (
+                                                    Builder $q
+                                                ) use ($word) {
+                                                    $q
+                                                        ->where(
+                                                            'title',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'subtitle',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'short',
+                                                            'like',
+                                                            "%{$word}%"
+                                                        );
+                                                }
+                                            );
+                                    }
+                                )
+                                ->orWhereHas(
+                                    'parent.translations',
+                                    function (
+                                        Builder $parentTranslationQuery
+                                    ) use (
+                                        $word,
+                                        $locales
+                                    ) {
+                                        $parentTranslationQuery
+                                            ->whereIn(
+                                                'locale',
+                                                $locales
+                                            )
+                                            ->where(
+                                                'title',
+                                                'like',
+                                                "%{$word}%"
+                                            );
+                                    }
+                                );
+                        }
+                    );
+                }
+            }
+        );
     }
 
     /** Сортировка по параметру */
@@ -607,6 +775,313 @@ class MarketCategory extends Model
 
             default => $query->ordered(),
         };
+    }
+
+    /**
+     * Public-сортировка категорий.
+     *
+     * Содержит только параметры,
+     * доступные публичному интерфейсу.
+     */
+    public function scopePublicSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale = $locale ?: app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return match ($sort) {
+            'idAsc' => $query
+                ->orderBy(
+                    'market_categories.id',
+                    'asc'
+                ),
+
+            'idDesc' => $query
+                ->orderBy(
+                    'market_categories.id',
+                    'desc'
+                ),
+
+            'sortAsc' => $query
+                ->orderBy(
+                    'market_categories.sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'sortDesc' => $query
+                ->orderBy(
+                    'market_categories.sort',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'levelAsc' => $query
+                ->orderBy(
+                    'market_categories.level',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'levelDesc' => $query
+                ->orderBy(
+                    'market_categories.level',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'parentAsc' => $query
+                ->orderBy(
+                    'market_categories.parent_id',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'parentDesc' => $query
+                ->orderBy(
+                    'market_categories.parent_id',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'urlAsc' => $query
+                ->orderBy(
+                    'market_categories.url',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'urlDesc' => $query
+                ->orderBy(
+                    'market_categories.url',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'viewsAsc' => $query
+                ->orderBy(
+                    'market_categories.views',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'viewsDesc', 'views' => $query
+                ->orderBy(
+                    'market_categories.views',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'publishedAtAsc' => $query
+                ->orderBy(
+                    'market_categories.published_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'publishedAtDesc' => $query
+                ->orderBy(
+                    'market_categories.published_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'createdAtAsc', 'dateAsc' => $query
+                ->orderBy(
+                    'market_categories.created_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'createdAtDesc', 'dateDesc' => $query
+                ->orderBy(
+                    'market_categories.created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'imagesAsc' => $query
+                ->orderBy(
+                    'images_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'imagesDesc' => $query
+                ->orderBy(
+                    'images_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'productsAsc' => $query
+                ->orderBy(
+                    'products_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'productsDesc' => $query
+                ->orderBy(
+                    'products_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'childrenAsc' => $query
+                ->orderBy(
+                    'children_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'childrenDesc' => $query
+                ->orderBy(
+                    'children_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+
+            'titleAsc' => $this->scopePublicSortByTitle(
+                $query,
+                'asc',
+                $locale,
+                $fallbackLocale
+            ),
+
+            'titleDesc' => $this->scopePublicSortByTitle(
+                $query,
+                'desc',
+                $locale,
+                $fallbackLocale
+            ),
+
+            default => $query
+                ->orderBy(
+                    'market_categories.sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_categories.id'
+                ),
+        };
+    }
+
+    /**
+     * Public-сортировка по title
+     * с учётом fallback-перевода.
+     */
+    protected function scopePublicSortByTitle(
+        Builder $query,
+        string $direction,
+        string $locale,
+        string $fallbackLocale
+    ): Builder {
+        $direction = strtolower($direction) === 'desc'
+            ? 'desc'
+            : 'asc';
+
+        $query->leftJoin(
+            'market_category_translations as mct_current',
+            function ($join) use ($locale) {
+                $join
+                    ->on(
+                        'mct_current.market_category_id',
+                        '=',
+                        'market_categories.id'
+                    )
+                    ->where(
+                        'mct_current.locale',
+                        '=',
+                        $locale
+                    );
+            }
+        );
+
+        if ($fallbackLocale !== $locale) {
+            $query->leftJoin(
+                'market_category_translations as mct_fallback',
+                function ($join) use ($fallbackLocale) {
+                    $join
+                        ->on(
+                            'mct_fallback.market_category_id',
+                            '=',
+                            'market_categories.id'
+                        )
+                        ->where(
+                            'mct_fallback.locale',
+                            '=',
+                            $fallbackLocale
+                        );
+                }
+            );
+
+            $query->orderByRaw(
+                'COALESCE(
+                mct_current.title,
+                mct_fallback.title
+            ) ' . $direction
+            );
+        } else {
+            $query->orderBy(
+                'mct_current.title',
+                $direction
+            );
+        }
+
+        return $query
+            ->orderByDesc(
+                'market_categories.id'
+            )
+            ->addSelect(
+                'market_categories.*'
+            );
     }
 
     /** Категория корневая */

@@ -1,6 +1,6 @@
 /* Стили светлого режима */
 html, body {
-    background: var(--white-1);
+    background: var(--white-2);
     color: var(--black-1);
 }
 /* логотип в топ-баре */

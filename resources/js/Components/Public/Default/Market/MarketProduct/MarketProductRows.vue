@@ -25,47 +25,17 @@ const productLink = (product) => {
 
 /** Название товара */
 const getProductTitle = (product) => {
-    return product?.title
-        || product?.translation?.title
-        || product?.current_translation?.title
-        || product?.translations?.[0]?.title
-        || ''
+    return product?.translation?.title || ''
 }
 
 /** Краткое описание */
 const getProductShort = (product) => {
-    return product?.short
-        || product?.translation?.short
-        || product?.translation?.description
-        || product?.current_translation?.short
-        || product?.current_translation?.description
-        || product?.translations?.[0]?.short
-        || product?.translations?.[0]?.description
-        || ''
+    return product?.translation?.short || ''
 }
 
 /** Название бренда */
 const getBrandTitle = (product) => {
-    return product?.brand?.title || ''
-}
-
-/** Название магазина */
-const getShopTitle = (product) => {
-    return product?.shop?.title || ''
-}
-
-/** Название компании */
-const getCompanyTitle = (product) => {
-    return product?.company?.title
-        || product?.company?.legal_name
-        || ''
-}
-
-/** Название продавца */
-const getSellerTitle = (product) => {
-    return getShopTitle(product)
-        || getCompanyTitle(product)
-        || ''
+    return product?.brand?.translation?.title || ''
 }
 
 /** Цена */

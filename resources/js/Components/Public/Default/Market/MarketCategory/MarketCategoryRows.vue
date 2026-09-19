@@ -12,48 +12,71 @@ defineProps({
 /** Ссылка на категорию */
 const categoryLink = (category) => {
     return category?.url
-        ? route('public.marketCategories.show', { url: category.url })
+        ? route(
+            'public.marketCategories.show',
+            { url: category.url }
+        )
         : '#'
 }
 
 /** Название категории */
 const getCategoryTitle = (category) => {
-    return category?.title
-        || category?.translation?.title
-        || category?.translations?.[0]?.title
+    return category?.translation?.title
         || ''
 }
 
 /** Подзаголовок категории */
 const getCategorySubtitle = (category) => {
-    return category?.subtitle
-        || category?.translation?.subtitle
-        || category?.translations?.[0]?.subtitle
+    return category?.translation?.subtitle
         || ''
 }
 
 /** Краткое описание */
 const getCategoryShort = (category) => {
-    return category?.short
-        || category?.translation?.short
-        || category?.translations?.[0]?.short
+    return category?.translation?.short
+        || ''
+}
+
+/** Первое изображение категории */
+const getCategoryImage = (category) => {
+    return Array.isArray(category?.images)
+        ? category.images[0] || null
+        : null
+}
+
+/** Превью категории */
+const getCategoryThumbnail = (category) => {
+    const image = getCategoryImage(
+        category
+    )
+
+    return image?.thumb_url
+        || image?.url
         || ''
 }
 
 /** Количество дочерних категорий */
 const childrenCount = (category) => {
-    return Number(category?.children_count ?? 0)
+    return Number(
+        category?.children_count
+        ?? 0
+    )
 }
 
 /** Количество товаров */
 const productsCount = (category) => {
-    return Number(category?.products_count ?? 0)
+    return Number(
+        category?.products_count
+        ?? 0
+    )
 }
 
 /** Есть SVG-иконка */
 const hasSvgIcon = (category) => {
     return typeof category?.icon === 'string'
-        && category.icon.trim().startsWith('<svg')
+        && category.icon
+            .trim()
+            .startsWith('<svg')
 }
 </script>
 
@@ -79,8 +102,8 @@ const hasSvgIcon = (category) => {
                            sm:w-60"
                 >
                     <img
-                        v-if="category.thumbnail_url"
-                        :src="category.thumbnail_url"
+                        v-if="getCategoryThumbnail(category)"
+                        :src="getCategoryThumbnail(category)"
                         :alt="getCategoryTitle(category)"
                         loading="lazy"
                         class="h-44 w-full object-cover transition
@@ -187,7 +210,8 @@ const hasSvgIcon = (category) => {
                             viewBox="0 0 24 24"
                             fill="currentColor"
                         >
-                            <path d="M4 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6-12h10v2H10V5Zm0 7h10v2H10v-2Zm0 7h10v2H10v-2Z" />
+                            <path
+                                d="M4 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 7a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6-12h10v2H10V5Zm0 7h10v2H10v-2Zm0 7h10v2H10v-2Z" />
                         </svg>
 
                         {{ t('subheadings') }}:
@@ -208,7 +232,8 @@ const hasSvgIcon = (category) => {
                             viewBox="0 0 24 24"
                             fill="currentColor"
                         >
-                            <path d="M21 8.5 12 3 3 8.5V19l9 5 9-5V8.5ZM12 5.3l5.8 3.5-2.2 1.3L10 6.8 12 5.3Zm-3.8 2.6 5.8 3.5-2 1.2-5.8-3.5 2-1.2ZM5 10.6l6 3.6v7L5 17.8v-7.2Zm8 10.6v-7l6-3.6v7.2l-6 3.4Z" />
+                            <path
+                                d="M21 8.5 12 3 3 8.5V19l9 5 9-5V8.5ZM12 5.3l5.8 3.5-2.2 1.3L10 6.8 12 5.3Zm-3.8 2.6 5.8 3.5-2 1.2-5.8-3.5 2-1.2ZM5 10.6l6 3.6v7L5 17.8v-7.2Zm8 10.6v-7l6-3.6v7.2l-6 3.4Z" />
                         </svg>
 
                         {{ t('products') }}:
@@ -229,7 +254,8 @@ const hasSvgIcon = (category) => {
                             viewBox="0 0 24 24"
                             fill="currentColor"
                         >
-                            <path d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v11.2l4.2-4.2 3 3 2.8-2.8L20 18.2V5H4Zm3 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+                            <path
+                                d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v11.2l4.2-4.2 3 3 2.8-2.8L20 18.2V5H4Zm3 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
                         </svg>
 
                         {{ category.images_count }}

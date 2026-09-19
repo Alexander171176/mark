@@ -31,7 +31,7 @@ const { t } = useI18n()
 
 /** Props страницы */
 const props = defineProps({
-    locale: { type: String, default: 'ru' },
+    locale: { type: String, default: '' },
 
     seo: {
         type: Object,
@@ -56,6 +56,12 @@ const props = defineProps({
     categoriesFound: { type: Number, default: 0 },
 
     filters: { type: Object, default: () => ({}) },
+
+    /**
+     * Источник значения —
+     * PublicSettingsService на backend.
+     */
+    defaultSort: { type: String, default: '' },
 })
 
 /* ===================== PAGE ===================== */
@@ -124,12 +130,18 @@ const getStoredBoolean = (key, defaultValue = true) => {
 
 /** Левый сайдбар по умолчанию свернут */
 const leftCollapsed = ref(
-    getStoredBoolean(LEFT_SIDEBAR_KEY, true)
+    getStoredBoolean(
+        LEFT_SIDEBAR_KEY,
+        true
+    )
 )
 
 /** Правый сайдбар по умолчанию свернут */
 const rightCollapsed = ref(
-    getStoredBoolean(RIGHT_SIDEBAR_KEY, true)
+    getStoredBoolean(
+        RIGHT_SIDEBAR_KEY,
+        true
+    )
 )
 
 /**
@@ -138,12 +150,15 @@ const rightCollapsed = ref(
  * Оба открыты  → 2.
  * Один свернут → 3.
  * Оба свернуты → 4.
- *
- * Количество категорий при этом не меняется.
  */
 const categoryGridCols = computed(() => {
-    const leftExpanded = showLeft.value && !leftCollapsed.value
-    const rightExpanded = showRight.value && !rightCollapsed.value
+    const leftExpanded =
+        showLeft.value
+        && !leftCollapsed.value
+
+    const rightExpanded =
+        showRight.value
+        && !rightCollapsed.value
 
     if (leftExpanded && rightExpanded) {
         return 2
@@ -157,35 +172,48 @@ const categoryGridCols = computed(() => {
 })
 
 /** Сохраняем состояние сайдбаров */
-watch([leftCollapsed, rightCollapsed], () => {
-    localStorage.setItem(
-        LEFT_SIDEBAR_KEY,
-        String(leftCollapsed.value)
-    )
+watch(
+    [leftCollapsed, rightCollapsed],
+    () => {
+        localStorage.setItem(
+            LEFT_SIDEBAR_KEY,
+            String(leftCollapsed.value)
+        )
 
-    localStorage.setItem(
-        RIGHT_SIDEBAR_KEY,
-        String(rightCollapsed.value)
-    )
-})
+        localStorage.setItem(
+            RIGHT_SIDEBAR_KEY,
+            String(rightCollapsed.value)
+        )
+    }
+)
 
 /* ===================== FILTERS ===================== */
 
 /** Поисковая строка */
 const q = ref(
-    String(props.filters?.q ?? '')
+    String(
+        props.filters?.q
+        ?? ''
+    )
 )
 
-/** Сортировка по умолчанию */
-const DEFAULT_SORT = 'sortAsc'
-
-/** Текущая сортировка */
+/**
+ * Текущая сортировка.
+ *
+ * Значение по умолчанию приходит
+ * исключительно с backend.
+ */
 const sort = ref(
-    String(props.filters?.sort ?? DEFAULT_SORT)
+    String(
+        props.filters?.sort
+        || props.defaultSort
+        || ''
+    )
 )
 
 /** Ключ режима отображения */
-const VIEW_KEY = 'public_market_categories_view'
+const VIEW_KEY =
+    'public_market_categories_view'
 
 /** Режим отображения */
 const viewMode = ref(
@@ -198,27 +226,41 @@ const viewMode = ref(
 
 /** Сохраняем режим отображения */
 watch(viewMode, (value) => {
-    localStorage.setItem(VIEW_KEY, value)
+    localStorage.setItem(
+        VIEW_KEY,
+        value
+    )
 })
 
 /**
  * Количество категорий на странице.
  *
  * Источник значения — backend:
- * PublicSettingsService → resolvePerPage() → filters.per_page.
- *
- * 12 используется только как аварийный fallback.
+ * PublicSettingsService →
+ * resolvePerPage() →
+ * filters.per_page.
  */
 const perPage = computed(() => {
-    const value = Number(props.filters?.per_page)
+    const value = Number(
+        props.filters?.per_page
+    )
 
-    return Number.isFinite(value) && value > 0
+    return Number.isFinite(value)
+    && value > 0
         ? value
-        : 12
+        : 1
 })
 
-/** Опции сортировки */
+/**
+ * Public-сортировки.
+ *
+ * Список соответствует
+ * scopePublicSortByParam().
+ */
 const categorySortOptions = [
+    { value: 'idDesc', label: 'ID 9→0' },
+    { value: 'idAsc', label: 'ID 0→9' },
+
     { value: 'sortAsc', label: `${t('sortNumber')} 0→9` },
     { value: 'sortDesc', label: `${t('sortNumber')} 9→0` },
 
@@ -227,6 +269,9 @@ const categorySortOptions = [
 
     { value: 'levelAsc', label: `${t('level')} 0→9` },
     { value: 'levelDesc', label: `${t('level')} 9→0` },
+
+    { value: 'parentAsc', label: `Parent ID 0→9` },
+    { value: 'parentDesc', label: `Parent ID 9→0` },
 
     { value: 'childrenDesc', label: `${t('subheadings')} 9→0` },
     { value: 'childrenAsc', label: `${t('subheadings')} 0→9` },
@@ -237,8 +282,14 @@ const categorySortOptions = [
     { value: 'imagesDesc', label: `${t('images')} 9→0` },
     { value: 'imagesAsc', label: `${t('images')} 0→9` },
 
+    { value: 'viewsDesc', label: `${t('views')} 9→0` },
+    { value: 'viewsAsc', label: `${t('views')} 0→9` },
+
     { value: 'urlAsc', label: 'URL A→Z' },
     { value: 'urlDesc', label: 'URL Z→A' },
+
+    { value: 'publishedAtDesc', label: `${t('publishedAt')} 9→0` },
+    { value: 'publishedAtAsc', label: `${t('publishedAt')} 0→9` },
 ]
 
 /* ===================== FRONTEND MODE ===================== */
@@ -257,126 +308,361 @@ const {
 
 /** Нормализация текста */
 const normalizeText = (value) => {
-    return String(value ?? '').toLowerCase()
+    return String(
+        value ?? ''
+    ).toLowerCase()
+}
+
+/**
+ * Перевод категории уже разрешен backend:
+ * current locale → fallback → null.
+ */
+const getCategoryTranslation = (category) => {
+    return category?.translation || null
 }
 
 /** Название категории */
 const getCategoryTitle = (category) => {
-    return category?.title
-        || category?.translation?.title
-        || category?.current_translation?.title
-        || category?.translations?.[0]?.title
-        || ''
+    return getCategoryTranslation(
+        category
+    )?.title || ''
 }
 
 /** Подзаголовок категории */
 const getCategorySubtitle = (category) => {
-    return category?.subtitle
-        || category?.translation?.subtitle
-        || category?.current_translation?.subtitle
-        || category?.translations?.[0]?.subtitle
-        || ''
+    return getCategoryTranslation(
+        category
+    )?.subtitle || ''
 }
 
 /** Краткое описание категории */
 const getCategoryShort = (category) => {
-    return category?.short
-        || category?.translation?.short
-        || category?.current_translation?.short
-        || category?.translations?.[0]?.short
-        || ''
+    return getCategoryTranslation(
+        category
+    )?.short || ''
+}
+
+/** Название родительской категории */
+const getParentTitle = (category) => {
+    return category?.parent
+        ?.translation
+        ?.title || ''
+}
+
+/**
+ * Слова frontend-поиска.
+ *
+ * Повторяет Public Search:
+ * - разделение по пробелам;
+ * - минимальная длина слова 2;
+ * - AND между словами;
+ * - OR между полями.
+ */
+const searchWords = computed(() => {
+    return normalizeText(q.value)
+        .trim()
+        .split(/\s+/u)
+        .filter(
+            (word) => word.length >= 2
+        )
+})
+
+/**
+ * Поля Public-поиска категории.
+ *
+ * Должны соответствовать
+ * scopePublicSearch().
+ */
+const getCategorySearchValues = (category) => {
+    return [
+        category?.id,
+        category?.parent_id,
+        category?.level,
+        category?.url,
+        category?.icon,
+        category?.views,
+
+        getCategoryTitle(category),
+        getCategorySubtitle(category),
+        getCategoryShort(category),
+
+        getParentTitle(category),
+    ].map(normalizeText)
 }
 
 /** Локальный поиск */
 const filteredCategories = computed(() => {
-    const query = normalizeText(q.value).trim()
+    const words = searchWords.value
 
-    if (!query) {
+    if (!words.length) {
         return categoriesData.value
     }
 
-    return categoriesData.value.filter((category) => {
-        return [
-            getCategoryTitle(category),
-            getCategorySubtitle(category),
-            getCategoryShort(category),
-            category.url,
-            category.icon,
-        ].some((value) => {
-            return normalizeText(value).includes(query)
-        })
-    })
+    return categoriesData.value.filter(
+        (category) => {
+            const values =
+                getCategorySearchValues(
+                    category
+                )
+
+            return words.every(
+                (word) =>
+                    values.some(
+                        (value) =>
+                            value.includes(word)
+                    )
+            )
+        }
+    )
 })
+
+/**
+ * Стабильное сравнение числовых значений.
+ *
+ * При равенстве повторяет backend:
+ * id DESC.
+ */
+const compareNumber = (
+    a,
+    b,
+    direction = 'asc'
+) => {
+    const first = Number(a ?? 0)
+    const second = Number(b ?? 0)
+
+    return direction === 'desc'
+        ? second - first
+        : first - second
+}
+
+/** Стабильное сравнение строк */
+const compareText = (
+    a,
+    b,
+    direction = 'asc'
+) => {
+    const first = normalizeText(a)
+    const second = normalizeText(b)
+
+    const result = first.localeCompare(second)
+
+    return direction === 'desc'
+        ? -result
+        : result
+}
+
+/** Сравнение дат */
+const compareDate = (
+    a,
+    b,
+    direction = 'asc'
+) => {
+    const first = a
+        ? new Date(a).getTime()
+        : 0
+
+    const second = b
+        ? new Date(b).getTime()
+        : 0
+
+    return direction === 'desc'
+        ? second - first
+        : first - second
+}
+
+/**
+ * Backend использует id DESC
+ * как дополнительную сортировку.
+ */
+const compareIdDesc = (a, b) => {
+    return Number(b?.id ?? 0)
+        - Number(a?.id ?? 0)
+}
 
 /** Локальная сортировка */
 const sortedCategories = computed(() => {
-    const list = [...filteredCategories.value]
+    const list = [
+        ...filteredCategories.value,
+    ]
 
     return list.sort((a, b) => {
+        let result = 0
+
         switch (sort.value) {
+            case 'idAsc':
+                return compareNumber(
+                    a.id,
+                    b.id
+                )
+
+            case 'idDesc':
+                return compareNumber(
+                    a.id,
+                    b.id,
+                    'desc'
+                )
+
             case 'sortAsc':
-                return (a.sort ?? 0) - (b.sort ?? 0)
+                result = compareNumber(
+                    a.sort,
+                    b.sort
+                )
+                break
 
             case 'sortDesc':
-                return (b.sort ?? 0) - (a.sort ?? 0)
+                result = compareNumber(
+                    a.sort,
+                    b.sort,
+                    'desc'
+                )
+                break
 
             case 'titleAsc':
-                return normalizeText(getCategoryTitle(a))
-                    .localeCompare(
-                        normalizeText(getCategoryTitle(b))
-                    )
+                result = compareText(
+                    getCategoryTitle(a),
+                    getCategoryTitle(b)
+                )
+                break
 
             case 'titleDesc':
-                return normalizeText(getCategoryTitle(b))
-                    .localeCompare(
-                        normalizeText(getCategoryTitle(a))
-                    )
+                result = compareText(
+                    getCategoryTitle(a),
+                    getCategoryTitle(b),
+                    'desc'
+                )
+                break
 
             case 'levelAsc':
-                return (a.level ?? 0) - (b.level ?? 0)
+                result = compareNumber(
+                    a.level,
+                    b.level
+                )
+                break
 
             case 'levelDesc':
-                return (b.level ?? 0) - (a.level ?? 0)
+                result = compareNumber(
+                    a.level,
+                    b.level,
+                    'desc'
+                )
+                break
+
+            case 'parentAsc':
+                result = compareNumber(
+                    a.parent_id,
+                    b.parent_id
+                )
+                break
+
+            case 'parentDesc':
+                result = compareNumber(
+                    a.parent_id,
+                    b.parent_id,
+                    'desc'
+                )
+                break
 
             case 'childrenAsc':
-                return (a.children_count ?? 0)
-                    - (b.children_count ?? 0)
+                result = compareNumber(
+                    a.children_count,
+                    b.children_count
+                )
+                break
 
             case 'childrenDesc':
-                return (b.children_count ?? 0)
-                    - (a.children_count ?? 0)
+                result = compareNumber(
+                    a.children_count,
+                    b.children_count,
+                    'desc'
+                )
+                break
 
             case 'productsAsc':
-                return (a.products_count ?? 0)
-                    - (b.products_count ?? 0)
+                result = compareNumber(
+                    a.products_count,
+                    b.products_count
+                )
+                break
 
             case 'productsDesc':
-                return (b.products_count ?? 0)
-                    - (a.products_count ?? 0)
+                result = compareNumber(
+                    a.products_count,
+                    b.products_count,
+                    'desc'
+                )
+                break
 
             case 'imagesAsc':
-                return (a.images_count ?? 0)
-                    - (b.images_count ?? 0)
+                result = compareNumber(
+                    a.images_count,
+                    b.images_count
+                )
+                break
 
             case 'imagesDesc':
-                return (b.images_count ?? 0)
-                    - (a.images_count ?? 0)
+                result = compareNumber(
+                    a.images_count,
+                    b.images_count,
+                    'desc'
+                )
+                break
+
+            case 'viewsAsc':
+                result = compareNumber(
+                    a.views,
+                    b.views
+                )
+                break
+
+            case 'viewsDesc':
+                result = compareNumber(
+                    a.views,
+                    b.views,
+                    'desc'
+                )
+                break
 
             case 'urlAsc':
-                return normalizeText(a.url)
-                    .localeCompare(
-                        normalizeText(b.url)
-                    )
+                result = compareText(
+                    a.url,
+                    b.url
+                )
+                break
 
             case 'urlDesc':
-                return normalizeText(b.url)
-                    .localeCompare(
-                        normalizeText(a.url)
-                    )
+                result = compareText(
+                    a.url,
+                    b.url,
+                    'desc'
+                )
+                break
+
+            case 'publishedAtAsc':
+                result = compareDate(
+                    a.published_at,
+                    b.published_at
+                )
+                break
+
+            case 'publishedAtDesc':
+                result = compareDate(
+                    a.published_at,
+                    b.published_at,
+                    'desc'
+                )
+                break
 
             default:
-                return 0
+                result = compareNumber(
+                    a.sort,
+                    b.sort
+                )
+                break
         }
+
+        return result !== 0
+            ? result
+            : compareIdDesc(a, b)
     })
 })
 
@@ -398,9 +684,12 @@ const frontendPaginatedCategories = computed(() => {
 })
 
 /** Сбрасываем frontend-пагинацию */
-watch([q, sort, viewMode], () => {
-    frontendCurrentPage.value = 1
-})
+watch(
+    [q, sort, viewMode],
+    () => {
+        frontendCurrentPage.value = 1
+    }
+)
 
 /** Скролл при frontend-пагинации */
 watch(frontendCurrentPage, () => {
@@ -431,22 +720,32 @@ const lastPage = computed(() => {
 
 /** Маршрут списка категорий */
 const indexRoute = () => {
-    return route('public.marketCategories.index')
+    return route(
+        'public.marketCategories.index'
+    )
 }
 
 /**
  * Server-загрузка категорий.
  *
  * per_page намеренно не отправляем.
- * Его всегда определяет backend через PublicSettingsService.
+ * Его всегда определяет backend.
  */
 const reloadCategories = (page = 1) => {
     router.get(
         indexRoute(),
         {
             q: q.value || undefined,
-            sort: sort.value || undefined,
-            view: viewMode.value || undefined,
+
+            sort:
+                sort.value
+                || props.defaultSort
+                || undefined,
+
+            view:
+                viewMode.value
+                || undefined,
+
             page,
         },
         {
@@ -465,7 +764,11 @@ const submitSearch = () => {
 /** Сброс поиска и сортировки */
 const resetSearch = () => {
     q.value = ''
-    sort.value = DEFAULT_SORT
+
+    sort.value =
+        props.defaultSort
+        || ''
+
     frontendCurrentPage.value = 1
 
     if (props.useServerProcessing) {
@@ -475,7 +778,10 @@ const resetSearch = () => {
 
 /** Изменение сортировки */
 const updateSort = (value) => {
-    sort.value = value || DEFAULT_SORT
+    sort.value =
+        value
+        || props.defaultSort
+        || ''
 
     if (props.useServerProcessing) {
         reloadCategories(1)
@@ -484,7 +790,10 @@ const updateSort = (value) => {
 
 /** Изменение режима отображения */
 const updateViewMode = (value) => {
-    viewMode.value = value || 'grid'
+    viewMode.value =
+        value
+        || 'grid'
+
     frontendCurrentPage.value = 1
 
     if (props.useServerProcessing) {
@@ -502,7 +811,10 @@ const goToPage = (page) => {
 
     const safePage = Math.max(
         1,
-        Math.min(value, lastPage.value)
+        Math.min(
+            value,
+            lastPage.value
+        )
     )
 
     reloadCategories(safePage)
@@ -514,16 +826,23 @@ const goPrev = () => {
         return
     }
 
-    goToPage(currentPage.value - 1)
+    goToPage(
+        currentPage.value - 1
+    )
 }
 
 /** Следующая server-страница */
 const goNext = () => {
-    if (currentPage.value >= lastPage.value) {
+    if (
+        currentPage.value
+        >= lastPage.value
+    ) {
         return
     }
 
-    goToPage(currentPage.value + 1)
+    goToPage(
+        currentPage.value + 1
+    )
 }
 
 /* ===================== COMMON VIEW ===================== */
@@ -550,7 +869,10 @@ const displayedCategories = computed(() => {
         <meta property="og:type" content="website" />
         <meta property="og:url" :content="`/${locale}/catalog/categories`" />
         <meta property="og:image" content="" />
-        <meta property="og:locale" :content="locale === 'ru' ? 'ru_RU' : locale" />
+        <meta
+            property="og:locale"
+            :content="locale"
+        />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" :content="seo?.title || t('categories')" />
@@ -637,7 +959,7 @@ const displayedCategories = computed(() => {
                             :view-mode="viewMode"
                             :sort-value="sort"
                             :sort-options="categorySortOptions"
-                            :default-sort="DEFAULT_SORT"
+                            :default-sort="defaultSort"
                             :found-label="t('categories')"
                             :search-placeholder="t('searchByName')"
                             @submit="submitSearch"
@@ -654,7 +976,7 @@ const displayedCategories = computed(() => {
                             :view-mode="viewMode"
                             :sort-value="sort"
                             :sort-options="categorySortOptions"
-                            :default-sort="DEFAULT_SORT"
+                            :default-sort="defaultSort"
                             :found-label="t('categories')"
                             :search-placeholder="t('searchByName')"
                             @reset="resetSearch"

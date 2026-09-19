@@ -18,8 +18,41 @@ const props = defineProps({
     },
 })
 
+/** Ключ состояния дерева категорий */
+const TREE_OPEN_KEY =
+    'public_market_category_tree_open_ids'
+
+/** Получить открытые категории */
+const getStoredOpenIds = () => {
+    try {
+        const value =
+            localStorage.getItem(TREE_OPEN_KEY)
+
+        if (!value) {
+            return []
+        }
+
+        const ids = JSON.parse(value)
+
+        return Array.isArray(ids)
+            ? ids.map(Number)
+            : []
+    } catch {
+        return []
+    }
+}
+
+/** ID текущей категории */
+const categoryId = computed(() => {
+    return Number(props.item?.id)
+})
+
 /** Состояние дочернего списка */
-const isOpen = ref(false)
+const isOpen = ref(
+    getStoredOpenIds().includes(
+        Number(props.item?.id)
+    )
+)
 
 /** Дочерние категории */
 const children = computed(() => {
@@ -36,7 +69,10 @@ const hasChildren = computed(() => {
 /** Ссылка на категорию */
 const categoryLink = computed(() => {
     return props.item?.url
-        ? route('public.marketCategories.show', { url: props.item.url })
+        ? route(
+            'public.marketCategories.show',
+            { url: props.item.url }
+        )
         : '#'
 })
 
@@ -53,6 +89,24 @@ const itemPadding = computed(() => {
     }
 })
 
+/** Сохранить состояние категории */
+const storeOpenState = (open) => {
+    const ids = new Set(
+        getStoredOpenIds()
+    )
+
+    if (open) {
+        ids.add(categoryId.value)
+    } else {
+        ids.delete(categoryId.value)
+    }
+
+    localStorage.setItem(
+        TREE_OPEN_KEY,
+        JSON.stringify([...ids])
+    )
+}
+
 /** Открыть / закрыть дочерние категории */
 const toggleChildren = () => {
     if (!hasChildren.value) {
@@ -60,6 +114,10 @@ const toggleChildren = () => {
     }
 
     isOpen.value = !isOpen.value
+
+    storeOpenState(
+        isOpen.value
+    )
 }
 </script>
 

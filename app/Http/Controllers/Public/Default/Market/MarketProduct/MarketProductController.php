@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Public\Default\Market\MarketProduct;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\Market\MarketCategory\MarketCategorySharedResource;
-use App\Http\Resources\Admin\Market\MarketProduct\MarketProductResource;
-use App\Http\Resources\Admin\Market\MarketProduct\MarketProductSharedResource;
+use App\Http\Resources\Public\Market\MarketCategory\MarketCategorySharedResource;
+use App\Http\Resources\Public\Market\MarketProduct\MarketProductResource;
+use App\Http\Resources\Public\Market\MarketProduct\MarketProductSharedResource;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
@@ -14,7 +14,6 @@ use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\Market\BuildsMarketCategoryTreeTrait;
 use App\Traits\Public\Market\HasMarketSidebarDataTrait;
-use App\Traits\Public\WithUserLikesTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,10 +22,9 @@ use Inertia\Response;
 
 class MarketProductController extends Controller
 {
-    use WithUserLikesTrait;            // трейт лайков
-    use HasPublicIndexFiltersTrait;    // трейт для списка
-    use BuildsMarketCategoryTreeTrait; // трейт дерево категорий для сайдбара
-    use HasMarketSidebarDataTrait;     // трейт сервиса данных сайдбаров
+    use HasPublicIndexFiltersTrait;
+    use BuildsMarketCategoryTreeTrait;
+    use HasMarketSidebarDataTrait;
 
     /** Конструктор с сервисом просмотренных товаров */
     public function __construct(
@@ -34,22 +32,32 @@ class MarketProductController extends Controller
     ) {
     }
 
-    /** Страница списка товаров маркетплейса. */
+    /** Страница списка товаров маркетплейса */
     public function index(Request $request): Response
     {
         $locale = app()->getLocale();
 
-        /** SEO из CMS */
+        /**
+         * SEO из CMS.
+         */
         $cmsSeoPage = app(CmsPageResolverService::class)
             ->resolveSeo($request->path());
 
-        $cmsSeoTranslation = $cmsSeoPage?->translationOrFallback();
+        $cmsSeoTranslation = $cmsSeoPage
+            ?->translationOrFallback();
 
         $seo = $cmsSeoTranslation
             ? [
-                'title' => $cmsSeoTranslation->meta_title ?: $cmsSeoTranslation->title,
-                'keywords' => $cmsSeoTranslation->meta_keywords,
-                'description' => $cmsSeoTranslation->meta_desc ?: $cmsSeoTranslation->short,
+                'title' =>
+                    $cmsSeoTranslation->meta_title
+                        ?: $cmsSeoTranslation->title,
+
+                'keywords' =>
+                    $cmsSeoTranslation->meta_keywords,
+
+                'description' =>
+                    $cmsSeoTranslation->meta_desc
+                        ?: $cmsSeoTranslation->short,
             ]
             : [
                 'title' => __('Товары'),
@@ -57,44 +65,67 @@ class MarketProductController extends Controller
                 'description' => '',
             ];
 
-        /** Публичные настройки */
+        /**
+         * Публичные настройки.
+         */
         $settings = app(PublicSettingsService::class);
 
         $perPage = $this->resolvePerPage(
             $request,
-            $settings->int('publicMarketProductsPerPage', 12)
+            $settings->int(
+                'publicMarketProductsPerPage',
+                12
+            )
         );
 
         $search = $this->resolveSearch($request);
 
+        $defaultSort = $settings->string(
+            'publicMarketProductsDefaultSort',
+            'sortAsc'
+        );
+
         $sort = $this->resolveSort(
             $request,
-            $settings->string('publicMarketProductsDefaultSort', 'sortAsc')
+            $defaultSort
         );
 
         $view = $this->resolveView(
             $request,
-            $settings->string('publicMarketProductsDefaultView', 'grid')
+            $settings->string(
+                'publicMarketProductsDefaultView',
+                'grid'
+            )
         );
 
         $processingMode = $this->resolveProcessingMode(
-            $settings->string('publicMarketProductsProcessingMode', 'server')
+            $settings->string(
+                'publicMarketProductsProcessingMode',
+                'server'
+            )
         );
 
-        /** Общее количество публичных товаров */
+        /**
+         * Общее количество публичных товаров.
+         */
         $productsCount = MarketProduct::query()
             ->forPublic()
             ->count();
 
-        /** Определяем server/frontend режим */
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
-                $processingMode,
-                $productsCount,
-                300
-            );
+        /**
+         * Определяем server/frontend режим.
+         */
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $productsCount,
+            300
+        );
 
-        /** Получаем товары */
+        /**
+         * Получаем товары.
+         */
         $products = $this->getIndexProducts(
             locale: $locale,
             useServerProcessing: $useServerProcessing,
@@ -103,321 +134,557 @@ class MarketProductController extends Controller
             search: $search,
         );
 
-        /** Количество найденных товаров */
+        /**
+         * Количество найденных товаров.
+         */
         $productsFound = $useServerProcessing
             ? $products->total()
             : $products->count();
 
         /**
-         * В server-режиме добавляем already_liked
-         * непосредственно в элементы пагинации.
+         * Единый Public SharedResource-контракт.
          */
-        $products = $useServerProcessing
-            ? $this->appendUserLikes(
-                $products,
-                MarketProductSharedResource::class
-            )
-            : MarketProductSharedResource::collection($products);
-
-        /** Дерево категорий для левого сайдбара */
-        $categoryTree = $this->getMarketCategoryTree($locale);
-
-        /** Данные сайдбаров маркетплейса */
-        $sidebarData = $this->getMarketSidebarData($locale);
-
-        /** Недавно просмотренные товары */
-        $recentlyViewedProducts = $this->getRecentlyViewedProducts(
-            locale: $locale
+        $products = MarketProductSharedResource::collection(
+            $products
         );
 
-        return Inertia::render('Public/Default/Market/MarketProducts/Index', [
-            'seo' => $seo,
+        /**
+         * Дерево категорий для левого сайдбара.
+         */
+        $categoryTree = $this->getMarketCategoryTree(
+            $locale
+        );
 
-            'publicMarketProductsProcessingMode' => $processingMode,
-            'useServerProcessing' => $useServerProcessing,
+        /**
+         * Данные сайдбаров маркетплейса.
+         */
+        $sidebarData = $this->getMarketSidebarData(
+            $locale
+        );
 
-            'products' => $products,
+        /**
+         * Недавно просмотренные товары.
+         */
+        $recentlyViewedProducts =
+            $this->getRecentlyViewedProducts(
+                locale: $locale
+            );
 
-            'productsCount' => $productsCount,
-            'productsFound' => $productsFound,
+        return Inertia::render(
+            'Public/Default/Market/MarketProducts/Index',
+            [
+                'seo' =>
+                    $seo,
 
-            'filters' => $this->buildIndexFilters(
-                $search,
-                $perPage,
-                $sort,
-                $view,
-                $processingMode
-            ),
+                'publicMarketProductsProcessingMode' =>
+                    $processingMode,
 
-            /** Недавно просмотренные товары */
-            'recentlyViewedProducts' => $recentlyViewedProducts,
+                'useServerProcessing' =>
+                    $useServerProcessing,
 
-            'categoryTree' => $categoryTree,
-            'locale' => $locale,
+                'products' =>
+                    $products,
 
-            ...$sidebarData,
-        ]);
+                'productsCount' =>
+                    $productsCount,
+
+                'productsFound' =>
+                    $productsFound,
+
+                'filters' =>
+                    $this->buildIndexFilters(
+                        $search,
+                        $perPage,
+                        $sort,
+                        $view,
+                        $processingMode
+                    ),
+
+                'defaultSort' =>
+                    $defaultSort,
+
+                'recentlyViewedProducts' =>
+                    $recentlyViewedProducts,
+
+                'categoryTree' =>
+                    $categoryTree,
+
+                'locale' =>
+                    $locale,
+
+                ...$sidebarData,
+            ]
+        );
     }
 
-    /** Страница конкретного товара маркетплейса. */
+    /** Страница конкретного товара маркетплейса */
     public function show(string $url): Response
     {
         $locale = app()->getLocale();
 
-        /** Получаем публичный товар */
-        $product = MarketProduct::query()
+        $locales = $this->publicLocales(
+            $locale
+        );
+
+        $userId = auth()->check()
+            ? (int) auth()->id()
+            : null;
+
+        /**
+         * Получаем только публичный товар.
+         */
+        $query = MarketProduct::query()
             ->forPublic()
-            ->where('url', $url)
+            ->where(
+                'market_products.url',
+                $url
+            )
             ->with([
-                /** Основные данные */
-                'translations',
-                'owner',
+                /**
+                 * Переводы только:
+                 * current + configured fallback.
+                 */
+                'translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
                 'currency',
+
                 'images.media',
 
-                /** Компания / магазин / бренд */
-                'company.translations',
-                'shop.translations',
-                'brand.translations',
+                /**
+                 * Бренд только Public.
+                 */
+                'brand' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic()
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+                        ]),
 
-                /** Категории */
-                'categories' => fn ($query) => $query
-                    ->forPublic()
-                    ->with([
-                        'translations',
-                        'images.media',
-                    ])
-                    ->ordered(),
+                /**
+                 * Публичные категории.
+                 */
+                'categories' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic()
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
 
-                /** Основные категории */
-                'mainCategories' => fn ($query) => $query
-                    ->forPublic()
-                    ->with([
-                        'translations',
-                        'images.media',
-                    ])
-                    ->ordered(),
+                            'images.media',
+                        ])
+                        ->ordered(),
 
-                /** Теги */
-                'tags' => fn ($query) => $query
-                    ->forPublic()
-                    ->with('translations')
-                    ->ordered($locale),
+                /**
+                 * Основные публичные категории.
+                 */
+                'mainCategories' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic()
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
 
-                /** Характеристики */
-                'attributeValues' => fn ($query) => $query
-                    ->where('activity', true)
-                    ->with([
-                        'attribute.translations',
-                        'attributeValue.translations',
-                    ])
-                    ->orderBy('order')
-                    ->orderBy('id'),
+                            'images.media',
+                        ])
+                        ->ordered(),
 
-                /** Только публичные варианты */
-                'publicVariants' => fn ($query) => $query
-                    ->with([
-                        'translations',
-                        'currency',
-                        'images.media',
+                /**
+                 * Public-теги.
+                 */
+                'tags' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic()
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+                        ])
+                        ->ordered($locale),
 
-                        'values.attribute.translations',
-                        'values.attributeValue.translations',
-                    ])
-                    ->withCount([
-                        'values',
-                        'images',
-                    ]),
+                /**
+                 * Значения характеристик.
+                 */
+                'attributeValues' =>
+                    fn ($query) =>
+                    $query
+                        ->where(
+                            'activity',
+                            true
+                        )
+                        ->with([
+                            'attribute.translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
 
-                /** Публичные отзывы */
-                'reviews' => fn ($query) => $query
-                    ->forPublic()
-                    ->with([
-                        'author:id,name,profile_photo_path',
-                        'replier:id,name,profile_photo_path',
-                        'images.media',
-                    ])
-                    ->latest(),
+                            'attributeValue.translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+                        ])
+                        ->orderBy('order')
+                        ->orderBy('id'),
 
-                /** Рекомендуемые / похожие товары */
-                'relatedProducts' => fn ($query) => $query
-                    ->forPublic()
-                    ->with([
-                        'translations',
-                        'currency',
-                        'images.media',
-                        'company.translations',
-                        'shop.translations',
-                        'brand.translations',
-                    ])
-                    ->withCount([
-                        'images',
-                        'categories',
-                        'tags',
-                        'variants',
-                        'reviews',
-                        'likes',
-                    ]),
+                /**
+                 * Публичные варианты.
+                 */
+                'publicVariants' =>
+                    fn ($query) =>
+                    $query
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+
+                            'currency',
+
+                            'images.media',
+
+                            'values.attribute.translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+
+                            'values.attributeValue.translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+                        ])
+                        ->withCount([
+                            'values',
+                            'images',
+                        ]),
+
+                /**
+                 * Только публичные отзывы.
+                 */
+                'reviews' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic()
+                        ->with([
+                            'author:id,name,profile_photo_path',
+                            'replier:id,name,profile_photo_path',
+                            'images.media',
+                        ])
+                        ->latest(),
+
+                /**
+                 * Похожие товары:
+                 * только Public.
+                 */
+                'relatedProducts' =>
+                    function ($query) use (
+                        $locales,
+                        $userId
+                    ) {
+                        $query
+                            ->forPublic()
+                            ->with([
+                                'translations' =>
+                                    fn ($translationQuery) =>
+                                    $translationQuery
+                                        ->whereIn(
+                                            'locale',
+                                            $locales
+                                        ),
+
+                                'currency',
+
+                                'images.media',
+
+                                'brand' =>
+                                    fn ($brandQuery) =>
+                                    $brandQuery
+                                        ->forPublic()
+                                        ->with([
+                                            'translations' =>
+                                                fn ($translationQuery) =>
+                                                $translationQuery
+                                                    ->whereIn(
+                                                        'locale',
+                                                        $locales
+                                                    ),
+                                        ]),
+                            ])
+                            ->withCount([
+                                'publicVariants',
+
+                                'reviews' =>
+                                    fn ($reviewQuery) =>
+                                    $reviewQuery->forPublic(),
+                            ]);
+
+                        /**
+                         * Состояние лайка связанных товаров.
+                         */
+                        if ($userId) {
+                            $query->withExists([
+                                'likes as already_liked' =>
+                                    fn ($likeQuery) =>
+                                    $likeQuery->where(
+                                        'user_id',
+                                        $userId
+                                    ),
+                            ]);
+                        }
+                    },
             ])
             ->withCount([
                 'images',
-                'categories',
-                'tags',
-                'attributeValues',
-                'variants',
-                'reviews',
-                'likes',
-                'relatedProducts',
-            ])
-            ->firstOrFail();
 
-        /** Увеличиваем просмотры товара */
+                'categories' =>
+                    fn ($query) =>
+                    $query->forPublic(),
+
+                'publicVariants',
+
+                'reviews' =>
+                    fn ($query) =>
+                    $query->forPublic(),
+            ]);
+
+        /**
+         * Состояние лайка основного товара.
+         */
+        if ($userId) {
+            $query->withExists([
+                'likes as already_liked' =>
+                    fn ($likeQuery) =>
+                    $likeQuery->where(
+                        'user_id',
+                        $userId
+                    ),
+            ]);
+        }
+
+        $product = $query->firstOrFail();
+
+        /**
+         * Увеличиваем просмотры.
+         */
         $product->increment('views');
 
         /**
          * Запоминаем просмотр товара
-         * для авторизованного пользователя.
-         *
-         * Для гостя история будет храниться
-         * на frontend в localStorage.
+         * авторизованного пользователя.
          */
-        if (auth()->check()) {
+        if ($userId) {
             $this->recentlyViewedService->remember(
-                userId: (int) auth()->id(),
+                userId: $userId,
                 productId: (int) $product->id
             );
         }
 
-        /** Лайк текущего пользователя */
-        $alreadyLiked = auth()->check()
-            ? $product->likes()
-                ->where('user_id', auth()->id())
-                ->exists()
-            : false;
+        /**
+         * Основной Public Resource.
+         *
+         * already_liked уже входит
+         * в MarketProductResource.
+         */
+        $productData = (
+        new MarketProductResource(
+            $product
+        )
+        )->resolve();
 
-        /** Формируем основной ресурс товара */
-        $productData = (new MarketProductResource($product))->resolve();
+        /**
+         * Связанные товары.
+         *
+         * already_liked уже входит
+         * в MarketProductSharedResource.
+         */
+        $productData['related_products'] =
+            $product
+                ->relatedProducts
+                ->map(
+                    fn (MarketProduct $relatedProduct) =>
+                    (
+                    new MarketProductSharedResource(
+                        $relatedProduct
+                    )
+                    )->resolve()
+                )
+                ->values()
+                ->all();
 
-        $productData['already_liked'] = $alreadyLiked;
+        /**
+         * Основная категория
+         * для хлебных крошек.
+         */
+        $breadcrumbCategory =
+            $product
+                ->mainCategories
+                ->first()
+                ?: $product
+                ->categories
+                ->first();
 
-        /** Добавляем состояние лайка связанным товарам */
-        $productData['related_products'] = $product->relatedProducts
-            ->map(function ($relatedProduct) {
-                $resolved = (new MarketProductSharedResource(
-                    $relatedProduct
-                ))->resolve();
+        /**
+         * Дерево категорий.
+         */
+        $categoryTree =
+            $this->getMarketCategoryTree(
+                $locale
+            );
 
-                $resolved['already_liked'] = auth()->check()
-                    ? $relatedProduct->likes()
-                        ->where('user_id', auth()->id())
-                        ->exists()
-                    : false;
-
-                return $resolved;
-            })
-            ->values()
-            ->all();
-
-        /** Основная категория для хлебных крошек */
-        $breadcrumbCategory = $product->mainCategories
-            ->first()
-            ?: $product->categories->first();
-
-        /** Дерево категорий для левого сайдбара */
-        $categoryTree = $this->getMarketCategoryTree($locale);
-
-        /** Данные сайдбаров маркетплейса */
-        $sidebarData = $this->getMarketSidebarData($locale);
+        /**
+         * Данные сайдбаров.
+         */
+        $sidebarData =
+            $this->getMarketSidebarData(
+                $locale
+            );
 
         /**
          * Недавно просмотренные товары.
-         *
-         * Текущий товар исключаем,
-         * чтобы он не показывался сам у себя.
+         * Текущий товар исключаем.
          */
-        $recentlyViewedProducts = $this->getRecentlyViewedProducts(
-            locale: $locale,
-            excludeProductId: $product->id
-        );
+        $recentlyViewedProducts =
+            $this->getRecentlyViewedProducts(
+                locale: $locale,
+                excludeProductId: $product->id
+            );
 
-        return Inertia::render('Public/Default/Market/MarketProducts/Show', [
-            'product' => $productData,
+        return Inertia::render(
+            'Public/Default/Market/MarketProducts/Show',
+            [
+                'product' =>
+                    $productData,
 
-            'breadcrumbCategory' => $breadcrumbCategory
-                ? (new MarketCategorySharedResource(
+                'breadcrumbCategory' =>
                     $breadcrumbCategory
-                ))->resolve()
-                : null,
+                        ? (
+                    new MarketCategorySharedResource(
+                        $breadcrumbCategory
+                    )
+                    )->resolve()
+                        : null,
 
-            /** Недавно просмотренные товары */
-            'recentlyViewedProducts' => $recentlyViewedProducts,
+                'recentlyViewedProducts' =>
+                    $recentlyViewedProducts,
 
-            'categoryTree' => $categoryTree,
-            'locale' => $locale,
+                'categoryTree' =>
+                    $categoryTree,
 
-            ...$sidebarData,
-        ]);
+                'locale' =>
+                    $locale,
+
+                ...$sidebarData,
+            ]
+        );
     }
 
-    /** Лайк товара. */
+    /** Лайк товара */
     public function like(string $id): JsonResponse
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Для постановки лайка нужно авторизоваться.',
+                'message' =>
+                    'Для постановки лайка нужно авторизоваться.',
             ], 401);
         }
 
-        /** Получаем публичный товар */
         $product = MarketProduct::query()
             ->forPublic()
             ->findOrFail($id);
 
-        $userId = auth()->id();
+        $userId = (int) auth()->id();
 
-        /** Проверяем существующий лайк */
-        $alreadyLiked = $product->likes()
-            ->where('user_id', $userId)
+        $alreadyLiked = $product
+            ->likes()
+            ->where(
+                'user_id',
+                $userId
+            )
             ->exists();
 
         if ($alreadyLiked) {
             return response()->json([
                 'success' => false,
-                'message' => 'Вы уже поставили лайк.',
-                'likes' => $product->likes()->count(),
+                'message' =>
+                    'Вы уже поставили лайк.',
+                'likes' =>
+                    $product->likes()->count(),
             ]);
         }
 
-        /** Создаём лайк */
         $product->likes()->create([
             'user_id' => $userId,
         ]);
 
         return response()->json([
             'success' => true,
-            'likes' => $product->likes()->count(),
+            'likes' =>
+                $product->likes()->count(),
         ]);
     }
 
     /**
      * Получить недавно просмотренные товары.
      *
-     * Для авторизованного пользователя история берётся из БД.
-     * Для гостя ID товаров передаются с frontend из localStorage.
+     * Авторизованный пользователь:
+     * история из БД.
+     *
+     * Гость:
+     * ID приходят из localStorage.
      */
-    public function recentlyViewed(Request $request): JsonResponse
-    {
+    public function recentlyViewed(
+        Request $request
+    ): JsonResponse {
         $locale = app()->getLocale();
 
-        /**
-         * Авторизованный пользователь:
-         * получаем персональную историю из БД.
-         */
         if (auth()->check()) {
-            $products = $this->getRecentlyViewedProducts(
-                locale: $locale
-            );
+            $products =
+                $this->getRecentlyViewedProducts(
+                    locale: $locale
+                );
 
             return response()->json([
                 'success' => true,
@@ -425,10 +692,6 @@ class MarketProductController extends Controller
             ]);
         }
 
-        /**
-         * Гость:
-         * frontend передаёт ID из localStorage.
-         */
         $validated = $request->validate([
             'ids' => [
                 'nullable',
@@ -443,9 +706,17 @@ class MarketProductController extends Controller
             ],
         ]);
 
-        $ids = collect($validated['ids'] ?? [])
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn ($id) => $id > 0)
+        $ids = collect(
+            $validated['ids'] ?? []
+        )
+            ->map(
+                fn ($id) =>
+                (int) $id
+            )
+            ->filter(
+                fn ($id) =>
+                    $id > 0
+            )
             ->unique()
             ->take(8)
             ->values();
@@ -457,58 +728,77 @@ class MarketProductController extends Controller
             ]);
         }
 
+        $locales = $this->publicLocales(
+            $locale
+        );
+
         /**
-         * Получаем только актуальные публичные товары.
+         * Только актуальные Public товары.
          */
         $products = MarketProduct::query()
             ->forPublic()
-            ->whereIn('market_products.id', $ids)
+            ->whereIn(
+                'market_products.id',
+                $ids
+            )
             ->with([
-                'translations',
+                'translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
                 'currency',
+
                 'images.media',
 
-                'company.translations',
-                'shop.translations',
-                'brand.translations',
+                'brand' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic()
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+                        ]),
             ])
             ->withCount([
-                'images',
-                'categories',
-                'tags',
-                'variants',
-                'reviews',
-                'likes',
+                'publicVariants',
+
+                'reviews' =>
+                    fn ($query) =>
+                    $query->forPublic(),
             ])
             ->get();
 
         /**
-         * whereIn() не гарантирует порядок ID,
-         * поэтому восстанавливаем порядок localStorage:
-         * самый свежий товар должен остаться первым.
+         * whereIn() не гарантирует порядок.
+         * Восстанавливаем порядок localStorage.
          */
-        $positions = $ids
-            ->flip();
+        $positions = $ids->flip();
 
         $products = $products
             ->sortBy(
                 fn (MarketProduct $product) =>
-                $positions->get($product->id, PHP_INT_MAX)
+                $positions->get(
+                    $product->id,
+                    PHP_INT_MAX
+                )
             )
             ->values()
-            ->map(function (MarketProduct $product) {
-                $resolved = (new MarketProductSharedResource(
+            ->map(
+                fn (MarketProduct $product) =>
+                (
+                new MarketProductSharedResource(
                     $product
-                ))->resolve();
-
-                /**
-                 * У гостя лайк не может принадлежать
-                 * текущему пользователю.
-                 */
-                $resolved['already_liked'] = false;
-
-                return $resolved;
-            })
+                )
+                )->resolve()
+            )
             ->all();
 
         return response()->json([
@@ -521,12 +811,14 @@ class MarketProductController extends Controller
      * Объединить гостевую историю просмотров
      * с историей авторизованного пользователя.
      */
-    public function mergeRecentlyViewed(Request $request): JsonResponse
-    {
-        if (!auth()->check()) {
+    public function mergeRecentlyViewed(
+        Request $request
+    ): JsonResponse {
+        if (! auth()->check()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Необходимо авторизоваться.',
+                'message' =>
+                    'Необходимо авторизоваться.',
             ], 401);
         }
 
@@ -545,9 +837,17 @@ class MarketProductController extends Controller
             ],
         ]);
 
-        $ids = collect($validated['ids'])
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn ($id) => $id > 0)
+        $ids = collect(
+            $validated['ids']
+        )
+            ->map(
+                fn ($id) =>
+                (int) $id
+            )
+            ->filter(
+                fn ($id) =>
+                    $id > 0
+            )
             ->unique()
             ->values()
             ->all();
@@ -559,24 +859,16 @@ class MarketProductController extends Controller
             ]);
         }
 
-        /**
-         * Передаём гостевую историю сервису.
-         *
-         * Ожидаемый порядок:
-         * первый ID — самый недавно просмотренный товар.
-         */
-        $this->recentlyViewedService->mergeGuestHistory(
-            userId: (int) auth()->id(),
-            productIds: $ids
-        );
+        $this->recentlyViewedService
+            ->mergeGuestHistory(
+                userId: (int) auth()->id(),
+                productIds: $ids
+            );
 
-        /**
-         * Сразу возвращаем объединённую историю,
-         * чтобы frontend не делал дополнительный запрос.
-         */
-        $products = $this->getRecentlyViewedProducts(
-            locale: app()->getLocale()
-        );
+        $products =
+            $this->getRecentlyViewedProducts(
+                locale: app()->getLocale()
+            );
 
         return response()->json([
             'success' => true,
@@ -585,15 +877,16 @@ class MarketProductController extends Controller
     }
 
     /**
-     * Очистить историю недавно просмотренных товаров
-     * авторизованного пользователя.
+     * Очистить историю недавно
+     * просмотренных товаров.
      */
     public function clearRecentlyViewed(): JsonResponse
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Необходимо авторизоваться.',
+                'message' =>
+                    'Необходимо авторизоваться.',
             ], 401);
         }
 
@@ -608,65 +901,114 @@ class MarketProductController extends Controller
     }
 
     /**
-     * Получить недавно просмотренные товары
+     * Получить recently viewed
      * авторизованного пользователя.
-     *
-     * Для гостя возвращается пустой массив:
-     * его история обрабатывается через localStorage.
      */
     private function getRecentlyViewedProducts(
         string $locale,
         ?int $excludeProductId = null
     ): array {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return [];
         }
 
-        return $this->recentlyViewedService
+        return $this
+            ->recentlyViewedService
             ->getProducts(
                 userId: (int) auth()->id(),
                 excludeProductId: $excludeProductId,
                 locale: $locale
             )
-            ->map(function (MarketProduct $product) {
-                $resolved = (new MarketProductSharedResource(
+            ->map(
+                fn (MarketProduct $product) =>
+                (
+                new MarketProductSharedResource(
                     $product
-                ))->resolve();
-
-                $resolved['already_liked'] =
-                    (bool) $product->already_liked;
-
-                return $resolved;
-            })
+                )
+                )->resolve()
+            )
             ->values()
             ->all();
     }
 
-    /** Базовый запрос списка публичных товаров. */
-    private function indexQuery(): Builder
-    {
-        return MarketProduct::query()
+    /**
+     * Базовый запрос Public Index.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
+        $locales = $this->publicLocales(
+            $locale
+        );
+
+        $query = MarketProduct::query()
             ->forPublic()
             ->with([
-                'translations',
+                /**
+                 * Только current + fallback.
+                 */
+                'translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
                 'currency',
+
                 'images.media',
 
-                'company.translations',
-                'shop.translations',
-                'brand.translations',
+                /**
+                 * Компания и магазин
+                 * Public Index не нужны.
+                 */
+                'brand' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic()
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+                        ]),
             ])
             ->withCount([
-                'images',
-                'categories',
-                'tags',
-                'variants',
-                'reviews',
-                'likes',
+                /**
+                 * SharedResource использует
+                 * эти два count.
+                 */
+                'publicVariants',
+
+                'reviews' =>
+                    fn ($query) =>
+                    $query->forPublic(),
             ]);
+
+        /**
+         * Состояние лайка текущего пользователя.
+         */
+        if (auth()->check()) {
+            $query->withExists([
+                'likes as already_liked' =>
+                    fn ($likeQuery) =>
+                    $likeQuery->where(
+                        'user_id',
+                        auth()->id()
+                    ),
+            ]);
+        }
+
+        return $query;
     }
 
-    /** Получение товаров по активному режиму обработки. */
+    /**
+     * Получение товаров
+     * по активному режиму обработки.
+     */
     private function getIndexProducts(
         string $locale,
         bool $useServerProcessing,
@@ -674,18 +1016,58 @@ class MarketProductController extends Controller
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query = $this->indexQuery(
+            $locale
+        );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->publicSearch(
+                    $search,
+                    $locale
+                )
+                ->publicSortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
+        /**
+         * Frontend получает полный
+         * Public-набор уже в том же
+         * начальном порядке.
+         *
+         * Поиск выполняет Vue.
+         */
         return $query
-            ->sortByParam($sort, $locale)
+            ->publicSortByParam(
+                $sort,
+                $locale
+            )
             ->get();
+    }
+
+    /**
+     * Разрешённые локали Public:
+     * current + configured fallback.
+     */
+    private function publicLocales(
+        string $locale
+    ): array {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
     }
 }

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Public\Default\Market\MarketCategory;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Admin\Market\MarketCategory\MarketCategoryResource;
-use App\Http\Resources\Admin\Market\MarketCategory\MarketCategorySharedResource;
+use App\Http\Resources\Public\Market\MarketCategory\MarketCategoryResource;
+use App\Http\Resources\Public\Market\MarketCategory\MarketCategorySharedResource;
 use App\Models\Admin\Market\MarketCategory\MarketCategory;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
@@ -24,206 +24,474 @@ class MarketCategoryController extends Controller
     use BuildsMarketCategoryTreeTrait;
     use HasMarketSidebarDataTrait;
 
-    /** Страница списка категорий маркетплейса. */
+    /**
+     * Страница списка категорий маркетплейса.
+     */
     public function index(Request $request): Response
     {
         $locale = app()->getLocale();
 
-        /** SEO из CMS */
-        $cmsSeoPage = app(CmsPageResolverService::class)
-            ->resolveSeo($request->path());
+        /**
+         * SEO из CMS.
+         */
+        $cmsSeoPage = app(
+            CmsPageResolverService::class
+        )->resolveSeo(
+            $request->path()
+        );
 
-        $cmsSeoTranslation = $cmsSeoPage?->translationOrFallback();
+        $cmsSeoTranslation =
+            $cmsSeoPage?->translationOrFallback();
 
         $seo = $cmsSeoTranslation
             ? [
-                'title' => $cmsSeoTranslation->meta_title ?: $cmsSeoTranslation->title,
-                'keywords' => $cmsSeoTranslation->meta_keywords,
-                'description' => $cmsSeoTranslation->meta_desc ?: $cmsSeoTranslation->short,
+                'title' =>
+                    $cmsSeoTranslation->meta_title
+                        ?: $cmsSeoTranslation->title,
+
+                'keywords' =>
+                    $cmsSeoTranslation->meta_keywords,
+
+                'description' =>
+                    $cmsSeoTranslation->meta_desc
+                        ?: $cmsSeoTranslation->short,
             ]
             : [
-                'title' => __('Категории товаров'),
+                'title' =>
+                    __('Категории товаров'),
+
                 'keywords' => '',
                 'description' => '',
             ];
 
-        /** Публичные настройки */
-        $settings = app(PublicSettingsService::class);
+        /**
+         * Публичные настройки.
+         *
+         * PublicSettingsService является
+         * единственным источником значений
+         * по умолчанию.
+         */
+        $settings = app(
+            PublicSettingsService::class
+        );
 
         $perPage = $this->resolvePerPage(
             $request,
-            $settings->int('publicMarketCategoriesPerPage', 12)
+            $settings->int(
+                'publicMarketCategoriesPerPage',
+                12
+            )
         );
 
-        $search = $this->resolveSearch($request);
+        $search = $this->resolveSearch(
+            $request
+        );
+
+        $defaultSort = $settings->string(
+            'publicMarketCategoriesDefaultSort',
+            'sortAsc'
+        );
 
         $sort = $this->resolveSort(
             $request,
-            $settings->string('publicMarketCategoriesDefaultSort', 'sortAsc')
+            $defaultSort
         );
 
         $view = $this->resolveView(
             $request,
-            $settings->string('publicMarketCategoriesDefaultView', 'grid')
+            $settings->string(
+                'publicMarketCategoriesDefaultView',
+                'grid'
+            )
         );
 
-        $processingMode = $this->resolveProcessingMode(
-            $settings->string('publicMarketCategoriesProcessingMode', 'server')
-        );
-
-        /** Общее количество публичных категорий */
-        $categoriesCount = MarketCategory::query()
-            ->forPublic()
-            ->count();
-
-        /** Определяем server/frontend режим */
-        $useServerProcessing = app(ProcessingModeService::class)
-            ->shouldUseServer(
-                $processingMode,
-                $categoriesCount,
-                300
+        $processingMode =
+            $this->resolveProcessingMode(
+                $settings->string(
+                    'publicMarketCategoriesProcessingMode',
+                    'server'
+                )
             );
 
-        /** Получаем категории */
-        $categories = $this->getIndexCategories(
-            locale: $locale,
-            useServerProcessing: $useServerProcessing,
-            perPage: $perPage,
-            sort: $sort,
-            search: $search,
+        /**
+         * Общее количество
+         * публичных категорий.
+         */
+        $categoriesCount =
+            MarketCategory::query()
+                ->forPublic()
+                ->count();
+
+        /**
+         * Определяем server/frontend режим.
+         */
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $categoriesCount,
+            300
         );
 
-        /** Количество найденных категорий */
-        $categoriesFound = $useServerProcessing
-            ? $categories->total()
-            : $categories->count();
+        /**
+         * Получаем категории.
+         */
+        $categories =
+            $this->getIndexCategories(
+                locale: $locale,
+                useServerProcessing:
+                $useServerProcessing,
+                perPage: $perPage,
+                sort: $sort,
+                search: $search,
+            );
 
-        /** Лёгкий ресурс для списка */
-        $categories = MarketCategorySharedResource::collection($categories);
+        /**
+         * Количество найденных категорий.
+         */
+        $categoriesFound =
+            $useServerProcessing
+                ? $categories->total()
+                : $categories->count();
 
-        /** Дерево категорий для левого сайдбара */
-        $categoryTree = $this->getMarketCategoryTree($locale);
+        /**
+         * Компактный Public Resource
+         * для Index.
+         */
+        $categories =
+            MarketCategorySharedResource::collection(
+                $categories
+            );
 
-        /** Данные сайдбаров маркетплейса */
-        $sidebarData = $this->getMarketSidebarData($locale);
+        /**
+         * Дерево категорий
+         * для левого сайдбара.
+         */
+        $categoryTree =
+            $this->getMarketCategoryTree(
+                $locale
+            );
 
-        return Inertia::render('Public/Default/Market/MarketCategories/Index', [
-            'seo' => $seo,
+        /**
+         * Данные сайдбаров маркетплейса.
+         */
+        $sidebarData =
+            $this->getMarketSidebarData(
+                $locale
+            );
 
-            'publicMarketCategoriesProcessingMode' => $processingMode,
-            'useServerProcessing' => $useServerProcessing,
+        return Inertia::render(
+            'Public/Default/Market/MarketCategories/Index',
+            [
+                'seo' => $seo,
 
-            'categories' => $categories,
+                'publicMarketCategoriesProcessingMode' =>
+                    $processingMode,
 
-            'categoriesCount' => $categoriesCount,
-            'categoriesFound' => $categoriesFound,
+                'useServerProcessing' =>
+                    $useServerProcessing,
 
-            'filters' => $this->buildIndexFilters(
-                $search,
-                $perPage,
-                $sort,
-                $view,
-                $processingMode
-            ),
+                'categories' =>
+                    $categories,
 
-            'categoryTree' => $categoryTree,
-            'locale' => $locale,
+                'categoriesCount' =>
+                    $categoriesCount,
 
-            ...$sidebarData,
-        ]);
+                'categoriesFound' =>
+                    $categoriesFound,
+
+                'filters' =>
+                    $this->buildIndexFilters(
+                        $search,
+                        $perPage,
+                        $sort,
+                        $view,
+                        $processingMode
+                    ),
+
+                /**
+                 * Источник истины для
+                 * frontend-сортировки.
+                 */
+                'defaultSort' =>
+                    $defaultSort,
+
+                'categoryTree' =>
+                    $categoryTree,
+
+                'locale' =>
+                    $locale,
+
+                ...$sidebarData,
+            ]
+        );
     }
 
-    /** Категории для публичного меню маркетплейса. */
+    /**
+     * Категории для публичного
+     * меню маркетплейса.
+     */
     public function menuCategories(): JsonResponse
     {
         $locale = app()->getLocale();
 
         return response()->json([
-            'categories' => $this->getMarketCategoryTree($locale),
+            'categories' =>
+                $this->getMarketCategoryTree(
+                    $locale
+                ),
         ]);
     }
 
-    /** Страница конкретной категории маркетплейса. */
-    public function show(Request $request, string $url): Response
-    {
+    /**
+     * Страница конкретной
+     * категории маркетплейса.
+     */
+    public function show(
+        Request $request,
+        string $url
+    ): Response {
         $locale = app()->getLocale();
 
-        /** Получаем публичную категорию */
-        $category = MarketCategory::query()
-            ->forPublic()
-            ->where('url', $url)
-            ->with([
-                'translations',
-                'owner',
-                'images',
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
 
-                'parent' => fn ($query) => $query
-                    ->forPublic()
-                    ->with([
-                        'translations',
-                        'images',
-                    ]),
-
-                'children' => fn ($query) => $query
-                    ->forPublic()
-                    ->with([
-                        'translations',
-                        'images',
-                    ])
-                    ->withCount([
-                        'children',
-                        'products',
-                        'images',
-                    ])
-                    ->ordered(),
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
             ])
-            ->withCount([
-                'children',
-                'products',
-                'images',
-            ])
-            ->firstOrFail();
+        );
 
-        /** Увеличиваем просмотры категории */
+        /**
+         * Получаем только публичную категорию.
+         */
+        $category =
+            MarketCategory::query()
+                ->forPublic()
+                ->where(
+                    'market_categories.url',
+                    $url
+                )
+                ->with([
+                    /**
+                     * Переводы самой категории:
+                     * current + fallback.
+                     */
+                    'translations' =>
+                        fn ($query) =>
+                        $query->whereIn(
+                            'locale',
+                            $locales
+                        ),
+
+                    /**
+                     * Изображения категории.
+                     */
+                    'images',
+
+                    /**
+                     * Родительская категория.
+                     */
+                    'parent' =>
+                        fn ($query) =>
+                        $query
+                            ->forPublic()
+                            ->with([
+                                'translations' =>
+                                    fn ($query) =>
+                                    $query->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+
+                                'images',
+                            ]),
+
+                    /**
+                     * Публичные дочерние
+                     * категории.
+                     */
+                    'publicCatalogChildren' =>
+                        fn ($query) =>
+                        $query
+                            ->with([
+                                'translations' =>
+                                    fn ($query) =>
+                                    $query->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+
+                                'images',
+                            ])
+                            ->withCount([
+                                /**
+                                 * Только публичные
+                                 * дочерние категории.
+                                 */
+                                'children as children_count' =>
+                                    fn ($query) =>
+                                    $query->forPublic(),
+
+                                /**
+                                 * Только публичные товары.
+                                 */
+                                'products as products_count' =>
+                                    fn ($query) =>
+                                    $query->forPublic(),
+
+                                'images',
+                            ]),
+                ])
+                ->withCount([
+                    /**
+                     * Только публичные
+                     * дочерние категории.
+                     */
+                    'children as children_count' =>
+                        fn ($query) =>
+                        $query->forPublic(),
+
+                    /**
+                     * Только публичные товары.
+                     */
+                    'products as products_count' =>
+                        fn ($query) =>
+                        $query->forPublic(),
+
+                    'images',
+                ])
+                ->firstOrFail();
+
+        /**
+         * Увеличиваем просмотры категории.
+         *
+         * increment() обновляет значение
+         * в БД и текущей модели.
+         */
         $category->increment('views');
 
-        /** Дерево категорий для левого сайдбара */
-        $categoryTree = $this->getMarketCategoryTree($locale);
+        /**
+         * Дерево категорий
+         * для левого сайдбара.
+         */
+        $categoryTree =
+            $this->getMarketCategoryTree(
+                $locale
+            );
 
-        /** Данные сайдбаров маркетплейса */
-        $sidebarData = $this->getMarketSidebarData($locale);
+        /**
+         * Данные сайдбаров маркетплейса.
+         */
+        $sidebarData =
+            $this->getMarketSidebarData(
+                $locale
+            );
 
-        return Inertia::render('Public/Default/Market/MarketCategories/Show', [
-            'category' => new MarketCategoryResource($category),
+        return Inertia::render(
+            'Public/Default/Market/MarketCategories/Show',
+            [
+                'category' =>
+                    new MarketCategoryResource(
+                        $category
+                    ),
 
-            'categoryTree' => $categoryTree,
-            'locale' => $locale,
+                'categoryTree' =>
+                    $categoryTree,
 
-            ...$sidebarData,
-        ]);
+                'locale' =>
+                    $locale,
+
+                ...$sidebarData,
+            ]
+        );
     }
 
-    /** Базовый запрос списка публичных категорий. */
-    private function indexQuery(): Builder
-    {
+    /**
+     * Базовый запрос списка
+     * публичных категорий.
+     */
+    private function indexQuery(
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
         return MarketCategory::query()
             ->forPublic()
             ->with([
-                'translations',
+                /**
+                 * Только current + fallback
+                 * переводы категории.
+                 */
+                'translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                /**
+                 * Изображения категории.
+                 */
                 'images',
 
-                'parent' => fn ($query) => $query
-                    ->forPublic()
-                    ->with('translations'),
+                /**
+                 * Родительская категория
+                 * нужна для Public-поиска.
+                 */
+                'parent' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic()
+                        ->with([
+                            'translations' =>
+                                fn ($query) =>
+                                $query->whereIn(
+                                    'locale',
+                                    $locales
+                                ),
+                        ]),
             ])
             ->withCount([
-                'children',
-                'products',
+                /**
+                 * Только публичные
+                 * дочерние категории.
+                 */
+                'children as children_count' =>
+                    fn ($query) =>
+                    $query->forPublic(),
+
+                /**
+                 * Только публичные товары.
+                 */
+                'products as products_count' =>
+                    fn ($query) =>
+                    $query->forPublic(),
+
+                /**
+                 * Количество изображений.
+                 */
                 'images',
             ]);
     }
 
-    /** Получение категорий по активному режиму обработки. */
+    /**
+     * Получение категорий
+     * по активному режиму обработки.
+     */
     private function getIndexCategories(
         string $locale,
         bool $useServerProcessing,
@@ -231,18 +499,32 @@ class MarketCategoryController extends Controller
         string $sort,
         string $search = ''
     ) {
-        $query = $this->indexQuery();
+        $query =
+            $this->indexQuery(
+                $locale
+            );
 
         if ($useServerProcessing) {
             return $query
-                ->search($search, $locale)
-                ->sortByParam($sort, $locale)
-                ->paginate($perPage)
+                ->publicSearch(
+                    $search,
+                    $locale
+                )
+                ->publicSortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
                 ->withQueryString();
         }
 
         return $query
-            ->sortByParam($sort, $locale)
+            ->publicSortByParam(
+                $sort,
+                $locale
+            )
             ->get();
     }
 }

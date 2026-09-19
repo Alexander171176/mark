@@ -39,38 +39,33 @@ const props = defineProps({
 /* ===================== CATEGORY ===================== */
 
 /** Текущая категория */
-const category = computed(() => props.category || {})
+const category = computed(() => {
+    return props.category || {}
+})
 
-/** Текущий перевод */
+/** Разрешённый backend перевод */
 const categoryTranslation = computed(() => {
-    return category.value.translation || {}
+    return category.value?.translation || null
 })
 
 /** Название категории */
 const categoryTitle = computed(() => {
-    return categoryTranslation.value.title
-        || category.value.title
-        || ''
+    return categoryTranslation.value?.title || ''
 })
 
 /** Подзаголовок категории */
 const categorySubtitle = computed(() => {
-    return categoryTranslation.value.subtitle
-        || category.value.subtitle
-        || ''
+    return categoryTranslation.value?.subtitle || ''
 })
 
 /** Краткое описание */
 const categoryShort = computed(() => {
-    return categoryTranslation.value.short
-        || category.value.short
-        || ''
+    return categoryTranslation.value?.short || ''
 })
 
 /** Полное описание */
 const categoryDescription = computed(() => {
-    return categoryTranslation.value.description
-        || category.value.description
+    return categoryTranslation.value?.description
         || categoryShort.value
         || ''
 })
@@ -79,22 +74,19 @@ const categoryDescription = computed(() => {
 
 /** SEO title */
 const categoryMetaTitle = computed(() => {
-    return categoryTranslation.value.meta_title
-        || category.value.meta_title
+    return categoryTranslation.value?.meta_title
         || categoryTitle.value
 })
 
 /** SEO keywords */
 const categoryMetaKeywords = computed(() => {
-    return categoryTranslation.value.meta_keywords
-        || category.value.meta_keywords
+    return categoryTranslation.value?.meta_keywords
         || ''
 })
 
 /** SEO description */
-const categoryMetaDesc = computed(() => {
-    return categoryTranslation.value.meta_desc
-        || category.value.meta_desc
+const categoryMetaDescription = computed(() => {
+    return categoryTranslation.value?.meta_description
         || categoryShort.value
         || ''
 })
@@ -244,26 +236,90 @@ const categoryGridCols = computed(() => {
     <Head>
         <title>{{ categoryMetaTitle }}</title>
 
-        <meta name="title" :content="categoryMetaTitle" />
-        <meta name="keywords" :content="categoryMetaKeywords" />
-        <meta name="description" :content="categoryMetaDesc" />
+        <meta
+            name="title"
+            :content="categoryMetaTitle"
+        />
 
-        <meta property="og:title" :content="categoryMetaTitle" />
-        <meta property="og:description" :content="categoryMetaDesc" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" :content="`/${locale}/catalog/categories/${category.url}`" />
-        <meta property="og:image" :content="categoryImages?.[0]?.url || ''" />
-        <meta property="og:locale" :content="locale" />
+        <meta
+            name="keywords"
+            :content="categoryMetaKeywords"
+        />
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="categoryMetaTitle" />
-        <meta name="twitter:description" :content="categoryMetaDesc" />
-        <meta name="twitter:image" :content="categoryImages?.[0]?.url || ''" />
+        <meta
+            name="description"
+            :content="categoryMetaDescription"
+        />
 
-        <meta name="DC.title" :content="categoryMetaTitle" />
-        <meta name="DC.description" :content="categoryMetaDesc" />
-        <meta name="DC.identifier" :content="`/${locale}/catalog/categories/${category.url}`" />
-        <meta name="DC.language" :content="locale" />
+        <meta
+            property="og:title"
+            :content="categoryMetaTitle"
+        />
+
+        <meta
+            property="og:description"
+            :content="categoryMetaDescription"
+        />
+
+        <meta
+            property="og:type"
+            content="website"
+        />
+
+        <meta
+            property="og:url"
+            :content="`/${locale}/catalog/categories/${category.url}`"
+        />
+
+        <meta
+            property="og:image"
+            :content="categoryImages?.[0]?.url || ''"
+        />
+
+        <meta
+            property="og:locale"
+            :content="locale"
+        />
+
+        <meta
+            name="twitter:card"
+            content="summary_large_image"
+        />
+
+        <meta
+            name="twitter:title"
+            :content="categoryMetaTitle"
+        />
+
+        <meta
+            name="twitter:description"
+            :content="categoryMetaDescription"
+        />
+
+        <meta
+            name="twitter:image"
+            :content="categoryImages?.[0]?.url || ''"
+        />
+
+        <meta
+            name="DC.title"
+            :content="categoryMetaTitle"
+        />
+
+        <meta
+            name="DC.description"
+            :content="categoryMetaDescription"
+        />
+
+        <meta
+            name="DC.identifier"
+            :content="`/${locale}/catalog/categories/${category.url}`"
+        />
+
+        <meta
+            name="DC.language"
+            :content="locale"
+        />
     </Head>
 
     <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
@@ -324,7 +380,7 @@ const categoryGridCols = computed(() => {
                                             :href="route('public.marketCategories.show', { url: parentCategory.url })"
                                             class="breadcrumb-link hover:underline"
                                         >
-                                            {{ parentCategory.title || parentCategory.translation?.title }}
+                                            {{ parentCategory.translation?.title || '' }}
                                         </Link>
                                     </li>
                                 </template>

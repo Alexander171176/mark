@@ -18,7 +18,7 @@ import { useI18n } from 'vue-i18n'
 import UniversalImageSlider from '@/Components/Public/Default/Images/UniversalImageSlider.vue'
 import LikeButtonEntity from '@/Components/Public/Like/LikeButtonEntity.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 /* ===================== PROPS ===================== */
 
@@ -40,11 +40,6 @@ const props = defineProps({
     cols: {
         type: Number,
         default: 4,
-    },
-
-    locale: {
-        type: String,
-        default: 'ru',
     },
 })
 
@@ -224,27 +219,17 @@ const productLink = (product) => {
 
 /** Название товара */
 const getProductTitle = (product) => {
-    return product?.title
-        || product?.translation?.title
-        || product?.current_translation?.title
-        || product?.translations?.[0]?.title
-        || ''
+    return product?.translation?.title || ''
 }
 
 /** Краткое описание */
 const getProductShort = (product) => {
-    return product?.short
-        || product?.translation?.short
-        || product?.current_translation?.short
-        || product?.translations?.[0]?.short
-        || ''
+    return product?.translation?.short || ''
 }
 
-/** Бренд */
+/** Название бренда */
 const getBrandTitle = (product) => {
-    return product?.brand?.title
-        || product?.brand?.translation?.title
-        || ''
+    return product?.brand?.translation?.title || ''
 }
 
 /** Числовое значение */
@@ -281,7 +266,7 @@ const getCurrency = (product) => {
 
 /** Форматирование цены */
 const formatPrice = (value) => {
-    return new Intl.NumberFormat(props.locale, {
+    return new Intl.NumberFormat(locale.value, {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
     }).format(toNumber(value))

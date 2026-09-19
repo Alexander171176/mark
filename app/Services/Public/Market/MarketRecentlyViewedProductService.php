@@ -47,6 +47,9 @@ class MarketRecentlyViewedProductService
      *
      * Текущий товар можно исключить из результата,
      * чтобы он не отображался на своей же странице.
+     *
+     * Загружаем только данные,
+     * необходимые Public MarketProductSharedResource.
      */
     public function getProducts(
         int $userId,
@@ -55,6 +58,19 @@ class MarketRecentlyViewedProductService
         ?string $locale = null
     ): Collection {
         $locale = $locale ?: app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
         $limit = $limit ?: $this->displayLimit;
 
         return MarketProduct::query()
@@ -77,23 +93,38 @@ class MarketRecentlyViewedProductService
                 )
             )
             ->with([
-                'translations',
+                'translations' => fn ($query) => $query
+                    ->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
                 'images.media',
+
                 'currency',
 
-                'company.translations',
-                'shop.translations',
-                'brand.translations',
+                'brand' => fn ($query) => $query
+                    ->forPublic()
+                    ->with([
+                        'translations' => fn ($translationQuery) =>
+                        $translationQuery->whereIn(
+                            'locale',
+                            $locales
+                        ),
+                    ]),
             ])
             ->withCount([
-                'likes',
-                'reviews',
-                'variants',
-                'images',
+                'publicVariants',
+
+                'reviews' => fn ($query) => $query
+                    ->forPublic(),
             ])
             ->withExists([
                 'likes as already_liked' => fn ($query) => $query
-                    ->where('user_id', $userId),
+                    ->where(
+                        'user_id',
+                        $userId
+                    ),
             ])
             ->orderByDesc(
                 MarketRecentlyViewedProduct::query()

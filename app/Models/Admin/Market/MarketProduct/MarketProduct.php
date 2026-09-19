@@ -194,22 +194,31 @@ class MarketProduct extends Model
             ->where('locale', app()->getLocale());
     }
 
-    /** Перевод с fallback */
+    /**
+     * Получить перевод товара:
+     * текущая локаль → fallback приложения → null.
+     */
     public function translationOrFallback(
         ?string $locale = null,
-        string $fallback = 'ru'
+        ?string $fallback = null
     ): ?MarketProductTranslation {
         $locale = $locale ?: app()->getLocale();
 
-        return $this->translations->firstWhere('locale', $locale)
-            ?: $this->translations->firstWhere('locale', $fallback)
-                ?: $this->translations->first();
+        $fallback ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return $this->translations
+            ->firstWhere('locale', $locale)
+            ?: $this->translations
+                ->firstWhere('locale', $fallback);
     }
 
-    /** Получить title из текущего перевода */
+    /** Получить название товара из разрешённого перевода */
     public function getTranslatedTitle(
         ?string $locale = null,
-        string $fallback = 'ru'
+        ?string $fallback = null
     ): ?string {
         return $this->translationOrFallback(
             locale: $locale,
@@ -575,6 +584,179 @@ class MarketProduct extends Model
         return $this->relationLoaded('bundleItems')
             ? $this->bundleItems->count()
             : $this->bundleItems()->count();
+    }
+
+    /**
+     * Public-сортировка товара по переведённому названию.
+     */
+    protected function scopePublicSortByTitle(
+        Builder $query,
+        string $direction,
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $query
+            ->leftJoin(
+                'market_product_translations as mpt_current',
+                function ($join) use ($locale) {
+                    $join
+                        ->on(
+                            'mpt_current.market_product_id',
+                            '=',
+                            'market_products.id'
+                        )
+                        ->where(
+                            'mpt_current.locale',
+                            '=',
+                            $locale
+                        );
+                }
+            )
+            ->leftJoin(
+                'market_product_translations as mpt_fallback',
+                function ($join) use ($fallbackLocale) {
+                    $join
+                        ->on(
+                            'mpt_fallback.market_product_id',
+                            '=',
+                            'market_products.id'
+                        )
+                        ->where(
+                            'mpt_fallback.locale',
+                            '=',
+                            $fallbackLocale
+                        );
+                }
+            )
+            ->addSelect('market_products.*')
+            ->orderByRaw(
+                'COALESCE(mpt_current.title, mpt_fallback.title) '
+                . ($direction === 'desc' ? 'DESC' : 'ASC')
+            )
+            ->orderByDesc('market_products.id');
+
+        return $query;
+    }
+
+    /**
+     * Public-сортировка товара
+     * по переведённому названию бренда.
+     */
+    protected function scopePublicSortByBrand(
+        Builder $query,
+        string $direction,
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        return $query
+            /**
+             * Бренд должен быть доступен в Public.
+             */
+            ->leftJoin(
+                'market_brands as mb_public',
+                function ($join) {
+                    $join
+                        ->on(
+                            'mb_public.id',
+                            '=',
+                            'market_products.market_brand_id'
+                        )
+                        ->where(
+                            'mb_public.moderation_status',
+                            '=',
+                            1
+                        )
+                        ->where(
+                            'mb_public.status',
+                            '=',
+                            'published'
+                        )
+                        ->where(
+                            'mb_public.activity',
+                            '=',
+                            true
+                        )
+                        ->whereNotNull(
+                            'mb_public.published_at'
+                        )
+                        ->where(
+                            function ($query) {
+                                $query
+                                    ->whereNull(
+                                        'mb_public.show_from_at'
+                                    )
+                                    ->orWhere(
+                                        'mb_public.show_from_at',
+                                        '<=',
+                                        now()
+                                    );
+                            }
+                        )
+                        ->where(
+                            function ($query) {
+                                $query
+                                    ->whereNull(
+                                        'mb_public.show_to_at'
+                                    )
+                                    ->orWhere(
+                                        'mb_public.show_to_at',
+                                        '>=',
+                                        now()
+                                    );
+                            }
+                        );
+                }
+            )
+            ->leftJoin(
+                'market_brand_translations as mbt_current',
+                function ($join) use ($locale) {
+                    $join
+                        ->on(
+                            'mbt_current.market_brand_id',
+                            '=',
+                            'mb_public.id'
+                        )
+                        ->where(
+                            'mbt_current.locale',
+                            '=',
+                            $locale
+                        );
+                }
+            )
+            ->leftJoin(
+                'market_brand_translations as mbt_fallback',
+                function ($join) use ($fallbackLocale) {
+                    $join
+                        ->on(
+                            'mbt_fallback.market_brand_id',
+                            '=',
+                            'mb_public.id'
+                        )
+                        ->where(
+                            'mbt_fallback.locale',
+                            '=',
+                            $fallbackLocale
+                        );
+                }
+            )
+            ->addSelect('market_products.*')
+            ->orderByRaw(
+                'COALESCE(mbt_current.title, mbt_fallback.title) '
+                . ($direction === 'desc'
+                    ? 'DESC'
+                    : 'ASC')
+            )
+            ->orderByDesc(
+                'market_products.id'
+            );
     }
 
     /* ======================== Scopes ======================== */
@@ -1029,6 +1211,595 @@ class MarketProduct extends Model
                 ->orderByDesc('market_products.id'),
 
             default => $query->ordered(),
+        };
+    }
+
+    /**
+     * Поиск товаров в Public.
+     *
+     * Семантика:
+     * - current → fallback → null;
+     * - fallback используется только при отсутствии current-перевода;
+     * - слова от 2 символов;
+     * - AND между словами;
+     * - OR между публичными полями;
+     * - без Admin/internal полей;
+     * - бренд участвует только если доступен в Public;
+     * - полностью соответствует Public MarketProducts/Index.vue.
+     */
+    public function scopePublicSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $locale = $locale ?: app()->getLocale();
+
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $words = preg_split(
+            '/\s+/u',
+            $term,
+            -1,
+            PREG_SPLIT_NO_EMPTY
+        );
+
+        $words = array_values(
+            array_filter(
+                $words ?: [],
+                fn (string $word) =>
+                    mb_strlen($word) >= 2
+            )
+        );
+
+        if ($words === []) {
+            return $query;
+        }
+
+        foreach ($words as $word) {
+            $query->where(
+                function (Builder $wordQuery) use (
+                    $word,
+                    $locale,
+                    $fallbackLocale
+                ) {
+                    $like = "%{$word}%";
+
+                    $wordQuery
+                        ->where(
+                            'market_products.url',
+                            'like',
+                            $like
+                        )
+                        ->orWhere(
+                            'market_products.sku',
+                            'like',
+                            $like
+                        )
+                        ->orWhere(
+                            'market_products.vendor_code',
+                            'like',
+                            $like
+                        )
+                        ->orWhere(
+                            'market_products.barcode',
+                            'like',
+                            $like
+                        )
+
+                        /**
+                         * Разрешённый перевод товара:
+                         * current → fallback → null.
+                         */
+                        ->orWhere(
+                            function (Builder $translationBlock) use (
+                                $like,
+                                $locale,
+                                $fallbackLocale
+                            ) {
+                                $translationBlock
+                                    ->whereHas(
+                                        'translations',
+                                        function (Builder $translationQuery) use (
+                                            $like,
+                                            $locale
+                                        ) {
+                                            $translationQuery
+                                                ->where(
+                                                    'locale',
+                                                    $locale
+                                                )
+                                                ->where(
+                                                    function (Builder $translationSearch) use ($like) {
+                                                        $translationSearch
+                                                            ->where(
+                                                                'title',
+                                                                'like',
+                                                                $like
+                                                            )
+                                                            ->orWhere(
+                                                                'subtitle',
+                                                                'like',
+                                                                $like
+                                                            )
+                                                            ->orWhere(
+                                                                'short',
+                                                                'like',
+                                                                $like
+                                                            );
+                                                    }
+                                                );
+                                        }
+                                    );
+
+                                /**
+                                 * Fallback разрешён только если
+                                 * current-перевода товара нет.
+                                 */
+                                if ($fallbackLocale !== $locale) {
+                                    $translationBlock
+                                        ->orWhere(
+                                            function (Builder $fallbackBlock) use (
+                                                $like,
+                                                $locale,
+                                                $fallbackLocale
+                                            ) {
+                                                $fallbackBlock
+                                                    ->whereDoesntHave(
+                                                        'translations',
+                                                        function (Builder $currentTranslationQuery) use ($locale) {
+                                                            $currentTranslationQuery
+                                                                ->where(
+                                                                    'locale',
+                                                                    $locale
+                                                                );
+                                                        }
+                                                    )
+                                                    ->whereHas(
+                                                        'translations',
+                                                        function (Builder $fallbackTranslationQuery) use (
+                                                            $like,
+                                                            $fallbackLocale
+                                                        ) {
+                                                            $fallbackTranslationQuery
+                                                                ->where(
+                                                                    'locale',
+                                                                    $fallbackLocale
+                                                                )
+                                                                ->where(
+                                                                    function (Builder $translationSearch) use ($like) {
+                                                                        $translationSearch
+                                                                            ->where(
+                                                                                'title',
+                                                                                'like',
+                                                                                $like
+                                                                            )
+                                                                            ->orWhere(
+                                                                                'subtitle',
+                                                                                'like',
+                                                                                $like
+                                                                            )
+                                                                            ->orWhere(
+                                                                                'short',
+                                                                                'like',
+                                                                                $like
+                                                                            );
+                                                                    }
+                                                                );
+                                                        }
+                                                    );
+                                            }
+                                        );
+                                }
+                            }
+                        )
+
+                        /**
+                         * Разрешённый перевод публичного бренда:
+                         * current → fallback → null.
+                         */
+                        ->orWhereHas(
+                            'brand',
+                            function (Builder $brandQuery) use (
+                                $like,
+                                $locale,
+                                $fallbackLocale
+                            ) {
+                                $brandQuery
+                                    ->forPublic()
+                                    ->where(
+                                        function (Builder $brandTranslationBlock) use (
+                                            $like,
+                                            $locale,
+                                            $fallbackLocale
+                                        ) {
+                                            $brandTranslationBlock
+                                                ->whereHas(
+                                                    'translations',
+                                                    function (Builder $brandTranslationQuery) use (
+                                                        $like,
+                                                        $locale
+                                                    ) {
+                                                        $brandTranslationQuery
+                                                            ->where(
+                                                                'locale',
+                                                                $locale
+                                                            )
+                                                            ->where(
+                                                                'title',
+                                                                'like',
+                                                                $like
+                                                            );
+                                                    }
+                                                );
+
+                                            /**
+                                             * Fallback бренда разрешён только
+                                             * при отсутствии current-перевода.
+                                             */
+                                            if ($fallbackLocale !== $locale) {
+                                                $brandTranslationBlock
+                                                    ->orWhere(
+                                                        function (Builder $brandFallbackBlock) use (
+                                                            $like,
+                                                            $locale,
+                                                            $fallbackLocale
+                                                        ) {
+                                                            $brandFallbackBlock
+                                                                ->whereDoesntHave(
+                                                                    'translations',
+                                                                    function (Builder $currentBrandTranslationQuery) use ($locale) {
+                                                                        $currentBrandTranslationQuery
+                                                                            ->where(
+                                                                                'locale',
+                                                                                $locale
+                                                                            );
+                                                                    }
+                                                                )
+                                                                ->whereHas(
+                                                                    'translations',
+                                                                    function (Builder $fallbackBrandTranslationQuery) use (
+                                                                        $like,
+                                                                        $fallbackLocale
+                                                                    ) {
+                                                                        $fallbackBrandTranslationQuery
+                                                                            ->where(
+                                                                                'locale',
+                                                                                $fallbackLocale
+                                                                            )
+                                                                            ->where(
+                                                                                'title',
+                                                                                'like',
+                                                                                $like
+                                                                            );
+                                                                    }
+                                                                );
+                                                        }
+                                                    );
+                                            }
+                                        }
+                                    );
+                            }
+                        );
+                }
+            );
+        }
+
+        return $query;
+    }
+
+    /**
+     * Сортировка публичного каталога товаров.
+     *
+     * Семантика полностью соответствует
+     * Public MarketProducts/Index.vue.
+     */
+    public function scopePublicSortByParam(
+        Builder $query,
+        ?string $sort,
+        ?string $locale = null
+    ): Builder {
+        $locale = $locale ?: app()->getLocale();
+
+        return match ($sort) {
+            /**
+             * ID.
+             */
+            'idAsc' =>
+            $query->orderBy(
+                'market_products.id',
+                'asc'
+            ),
+
+            'idDesc' =>
+            $query->orderBy(
+                'market_products.id',
+                'desc'
+            ),
+
+            /**
+             * Ручной порядок.
+             */
+            'sortAsc' =>
+            $query
+                ->orderBy(
+                    'market_products.sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            'sortDesc' =>
+            $query
+                ->orderBy(
+                    'market_products.sort',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            /**
+             * Название товара.
+             */
+            'titleAsc' =>
+            $this->scopePublicSortByTitle(
+                $query,
+                'asc',
+                $locale
+            ),
+
+            'titleDesc' =>
+            $this->scopePublicSortByTitle(
+                $query,
+                'desc',
+                $locale
+            ),
+
+            /**
+             * Цена.
+             */
+            'priceAsc' =>
+            $query
+                ->orderBy(
+                    'market_products.price',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            'priceDesc' =>
+            $query
+                ->orderBy(
+                    'market_products.price',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            /**
+             * Количество.
+             */
+            'quantityAsc' =>
+            $query
+                ->orderBy(
+                    'market_products.quantity',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            'quantityDesc' =>
+            $query
+                ->orderBy(
+                    'market_products.quantity',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            /**
+             * Просмотры.
+             */
+            'viewsAsc' =>
+            $query
+                ->orderBy(
+                    'market_products.views',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            'viewsDesc' =>
+            $query
+                ->orderBy(
+                    'market_products.views',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            /**
+             * Лайки.
+             *
+             * likes_count хранится непосредственно
+             * в market_products.
+             */
+            'likesAsc' =>
+            $query
+                ->orderBy(
+                    'market_products.likes_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            'likesDesc' =>
+            $query
+                ->orderBy(
+                    'market_products.likes_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            /**
+             * Средний рейтинг.
+             */
+            'ratingAsc' =>
+            $query
+                ->orderBy(
+                    'market_products.rating_avg',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            'ratingDesc' =>
+            $query
+                ->orderBy(
+                    'market_products.rating_avg',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            /**
+             * Количество оценок.
+             */
+            'ratingCountAsc' =>
+            $query
+                ->orderBy(
+                    'market_products.rating_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            'ratingCountDesc' =>
+            $query
+                ->orderBy(
+                    'market_products.rating_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            /**
+             * Отзывы.
+             *
+             * reviews_count должен быть заранее
+             * добавлен Public Controller.
+             */
+            'reviewsAsc' =>
+            $query
+                ->orderBy(
+                    'reviews_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            'reviewsDesc' =>
+            $query
+                ->orderBy(
+                    'reviews_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            /**
+             * Бренд.
+             */
+            'brandAsc' =>
+            $this->scopePublicSortByBrand(
+                $query,
+                'asc',
+                $locale
+            ),
+
+            'brandDesc' =>
+            $this->scopePublicSortByBrand(
+                $query,
+                'desc',
+                $locale
+            ),
+
+            /**
+             * Дата публикации.
+             */
+            'publishedAtAsc' =>
+            $query
+                ->orderBy(
+                    'market_products.published_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            'publishedAtDesc' =>
+            $query
+                ->orderBy(
+                    'market_products.published_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            /**
+             * Дата создания.
+             */
+            'createdAtAsc' =>
+            $query
+                ->orderBy(
+                    'market_products.created_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            'createdAtDesc' =>
+            $query
+                ->orderBy(
+                    'market_products.created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'market_products.id'
+                ),
+
+            /**
+             * Настройка Public по умолчанию.
+             */
+            default =>
+            $query->ordered(),
         };
     }
 }

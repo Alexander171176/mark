@@ -80,6 +80,7 @@ export default {
     age: 'Жасы',
     ageGroup: 'Жас тобы',
     agreeTerms1: 'Мен келісемін,',
+    agreeTerms2: 'Және',
     alertLikeError: 'Ұнату әрекетінде қате орын алды.',
     alertLikeAlready: 'Сізге әлдеқашан ұнады)',
     alertLikeAuthRequired: 'Ұнату үшін жүйеге кіру керек',

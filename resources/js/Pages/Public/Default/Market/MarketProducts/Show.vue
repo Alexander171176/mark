@@ -48,11 +48,10 @@ const page = usePage()
 
 /** Props страницы */
 const props = defineProps({
-    title: { type: String, default: '' },
-    canLogin: { type: Boolean, default: false },
-    canRegister: { type: Boolean, default: false },
-
-    locale: { type: String, default: 'ru' },
+    locale: {
+        type: String,
+        default: '',
+    },
 
     product: {
         type: Object,
@@ -182,35 +181,27 @@ onMounted(async () => {
 
 /** Текущий перевод товара */
 const translation = computed(() => {
-    return productData.value?.translation ?? {}
+    return productData.value?.translation ?? null
 })
 
 /** Название товара */
 const productTitle = computed(() => {
-    return translation.value?.title
-        || productData.value?.title
-        || ''
+    return translation.value?.title || ''
 })
 
 /** Подзаголовок товара */
 const productSubtitle = computed(() => {
-    return translation.value?.subtitle
-        || productData.value?.subtitle
-        || ''
+    return translation.value?.subtitle || ''
 })
 
 /** Краткое описание */
 const productShort = computed(() => {
-    return translation.value?.short
-        || productData.value?.short
-        || ''
+    return translation.value?.short || ''
 })
 
 /** Полное описание */
 const productDescription = computed(() => {
-    return translation.value?.description
-        || productData.value?.description
-        || ''
+    return translation.value?.description || ''
 })
 
 /* ===================== SEO ===================== */
@@ -229,7 +220,7 @@ const seoKeywords = computed(() => {
 
 /** SEO description */
 const seoDescription = computed(() => {
-    return translation.value?.meta_desc
+    return translation.value?.meta_description
         || productShort.value
         || ''
 })
@@ -247,11 +238,32 @@ const canonicalUrl = computed(() => {
     )
 })
 
+/** Локаль контента страницы */
+const contentLocale = computed(() => {
+    return props.locale || ''
+})
+
+/** Open Graph locale */
+const openGraphLocale = computed(() => {
+    return contentLocale.value
+        ? contentLocale.value.replace('-', '_')
+        : ''
+})
+
+/** Название бренда из разрешённого Public-перевода */
+const brandTitle = computed(() => {
+    return productData.value?.brand?.translation?.title || ''
+})
+
+/** Есть корректный AggregateRating */
+const hasAggregateRating = computed(() => {
+    return rating.value > 0
+        && ratingCount.value > 0
+})
+
 /** Название категории для хлебных крошек */
 const breadcrumbCategoryTitle = computed(() => {
-    return props.breadcrumbCategory?.translation?.title
-        || props.breadcrumbCategory?.title
-        || ''
+    return props.breadcrumbCategory?.translation?.title || ''
 })
 
 /** Первое изображение товара */
@@ -704,6 +716,12 @@ const hasMarketingFlags = computed(() => {
             content="index, follow, max-image-preview:large"
         />
 
+        <meta
+            v-if="contentLocale"
+            http-equiv="content-language"
+            :content="contentLocale"
+        />
+
         <!-- Canonical -->
         <link
             v-if="canonicalUrl"
@@ -732,6 +750,12 @@ const hasMarketingFlags = computed(() => {
             v-if="canonicalUrl"
             property="og:url"
             :content="canonicalUrl"
+        />
+
+        <meta
+            v-if="openGraphLocale"
+            property="og:locale"
+            :content="openGraphLocale"
         />
 
         <meta
@@ -772,7 +796,7 @@ const hasMarketingFlags = computed(() => {
         <!-- Twitter / X -->
         <meta
             name="twitter:card"
-            content="summary_large_image"
+            :content="primaryImageUrl ? 'summary_large_image' : 'summary'"
         />
 
         <meta
@@ -797,9 +821,49 @@ const hasMarketingFlags = computed(() => {
             name="twitter:image:alt"
             :content="productTitle"
         />
+
+        <!-- Dublin Core -->
+        <meta
+            name="DC.title"
+            :content="seoTitle"
+        />
+
+        <meta
+            v-if="seoDescription"
+            name="DC.description"
+            :content="seoDescription"
+        />
+
+        <meta
+            v-if="seoKeywords"
+            name="DC.subject"
+            :content="seoKeywords"
+        />
+
+        <meta
+            v-if="contentLocale"
+            name="DC.language"
+            :content="contentLocale"
+        />
+
+        <meta
+            v-if="canonicalUrl"
+            name="DC.identifier"
+            :content="canonicalUrl"
+        />
+
+        <meta
+            name="DC.type"
+            content="Product"
+        />
+
+        <meta
+            name="DC.format"
+            content="text/html"
+        />
     </Head>
 
-    <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
+    <DefaultLayout>
         <!-- Шапка -->
         <Navbar />
 
@@ -1033,12 +1097,13 @@ const hasMarketingFlags = computed(() => {
                                                     </div>
 
                                                     <div
-                                                        v-if="rating > 0 && ratingCount > 0"
+                                                        v-if="hasAggregateRating"
                                                         :title="t('rating')"
                                                         itemprop="aggregateRating"
                                                         itemscope
                                                         itemtype="https://schema.org/AggregateRating"
-                                                        class="inline-flex items-center gap-1 text-sm font-semibold"
+                                                        class="inline-flex items-center gap-1
+                                                               text-sm font-semibold"
                                                     >
                                                         <meta
                                                             itemprop="ratingValue"
@@ -1048,6 +1113,21 @@ const hasMarketingFlags = computed(() => {
                                                         <meta
                                                             itemprop="ratingCount"
                                                             :content="String(ratingCount)"
+                                                        />
+                                                        <meta
+                                                            v-if="productData.reviews_count > 0"
+                                                            itemprop="reviewCount"
+                                                            :content="String(productData.reviews_count)"
+                                                        />
+
+                                                        <meta
+                                                            itemprop="bestRating"
+                                                            content="5"
+                                                        />
+
+                                                        <meta
+                                                            itemprop="worstRating"
+                                                            content="1"
                                                         />
 
                                                         <svg
@@ -1074,7 +1154,7 @@ const hasMarketingFlags = computed(() => {
 
                                             <!-- Бренд -->
                                             <div
-                                                v-if="productData.brand?.title"
+                                                v-if="brandTitle"
                                                 itemprop="brand"
                                                 itemscope
                                                 itemtype="https://schema.org/Brand"
@@ -1082,7 +1162,7 @@ const hasMarketingFlags = computed(() => {
                                                    tracking-wide text-slate-500 dark:text-slate-400"
                                             >
                                             <span itemprop="name">
-                                                {{ productData.brand.title }}
+                                                {{ brandTitle }}
                                             </span>
                                             </div>
 
@@ -1177,6 +1257,10 @@ const hasMarketingFlags = computed(() => {
                                                         itemprop="availability"
                                                         :href="schemaAvailability"
                                                     />
+                                                    <link
+                                                        itemprop="itemCondition"
+                                                        href="https://schema.org/NewCondition"
+                                                    />
 
                                                     <div class="flex flex-wrap items-end gap-3">
                                                         <div
@@ -1247,13 +1331,8 @@ const hasMarketingFlags = computed(() => {
                                                         {{ getVariantTitle(variant) }}
                                                         —
                                                         {{ formatPrice(variant.effective_price) }}
-                                                        {{ variant.currency?.symbol
-                                                    || variant.currency?.sign
-                                                    || variant.currency?.code
-                                                    || currencyLabel }}
-                                                        {{ !variant.has_stock
-                                                        ? `(${t('outOfStock')})`
-                                                        : '' }}
+                                                        {{ variant.currency?.symbol || variant.currency?.sign || variant.currency?.code || currencyLabel }}
+                                                        {{ !variant.has_stock ? `(${t('outOfStock')})` : '' }}
                                                     </option>
                                                 </select>
 
@@ -1467,7 +1546,7 @@ const hasMarketingFlags = computed(() => {
                                                transition bg-slate-50 dark:bg-slate-950
                                                hover:bg-slate-100 dark:hover:bg-slate-800"
                                         >
-                                            {{ category.translation?.title || category.title }}
+                                            {{ category.translation?.title || '' }}
                                         </Link>
                                     </div>
                                 </section>
@@ -1521,15 +1600,9 @@ const hasMarketingFlags = computed(() => {
                                     <MarketRecommendedProducts
                                         :products="relatedProducts"
                                         :cols="relatedGridCols"
-                                        :locale="locale"
+                                        :locale="props.locale"
                                     />
                                 </section>
-
-                                <!-- Недавно просмотренные товары -->
-                                <MarketRecentlyViewedProducts
-                                    :products="recentlyViewed"
-                                    :cols="relatedGridCols"
-                                />
 
                             </article>
                         </div>
@@ -1547,6 +1620,10 @@ const hasMarketingFlags = computed(() => {
                         />
                     </aside>
                 </div>
+                <!-- Недавно просмотренные товары -->
+                <MarketRecentlyViewedProducts
+                    :products="recentlyViewed"
+                />
             </div>
         </main>
 

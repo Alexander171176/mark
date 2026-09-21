@@ -16,5 +16,4 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         require __DIR__ . '/two-factor.php'; // Двухфакторная аутентификация (2FA)
 
         require __DIR__ . '/teams.php'; // Работа с командами (Teams)
-        require __DIR__ . '/legal.php'; // Политика конфиденциальности и условия использования
     });

@@ -80,6 +80,7 @@ export default {
     age: 'Возраст',
     ageGroup: 'Возрастная группа',
     agreeTerms1: 'Я согласен,',
+    agreeTerms2: 'и',
     alertLikeError: 'Произошла ошибка при попытке поставить лайк.',
     alertLikeAlready: 'Вы уже лайкнули)',
     alertLikeAuthRequired: 'Для лайка нужно авторизоваться',

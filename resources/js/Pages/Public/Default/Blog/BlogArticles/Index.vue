@@ -57,10 +57,6 @@ const props = defineProps({
         default: false
     },
 
-    title: { type: String, default: '' },
-    canLogin: { type: Boolean, default: false },
-    canRegister: { type: Boolean, default: false },
-
     rubricTree: {
         type: Array,
         default: () => []
@@ -1020,11 +1016,7 @@ const articleGridCols = computed(() => {
         >
     </Head>
 
-    <DefaultLayout
-        :title="title"
-        :can-login="canLogin"
-        :can-register="canRegister"
-    >
+    <DefaultLayout>
         <Navbar />
 
         <main class="min-h-screen px-1 lg:px-6 max-w-full">

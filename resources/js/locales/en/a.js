@@ -80,6 +80,7 @@ export default {
     age: 'Age',
     ageGroup: 'Age group',
     agreeTerms1: 'I agree to the',
+    agreeTerms2: 'and',
     alertLikeError: 'An error occurred when trying to like it.',
     alertLikeAlready: 'You\'ve already liked it.)',
     alertLikeAuthRequired: 'You need to log in for a like',

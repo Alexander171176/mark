@@ -55,6 +55,7 @@ export default {
     effectivePrice: 'Прайс',
     email: 'Email',
     emailNotVerified: 'Ваш адрес электронной почты не подтвержден.',
+    emailPasswordResetLink: 'Отправить ссылку для сброса пароля',
     emailVerificationTitle: 'Проверка электронной почты',
     en: 'en',
     enable: 'Включить',

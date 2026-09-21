@@ -434,8 +434,7 @@ onBeforeUnmount(() => {
         >
             <!-- Главное изображение -->
             <div
-                class="relative min-w-0 overflow-hidden
-                       bg-slate-200 dark:bg-slate-800"
+                class="relative min-w-0 overflow-hidden"
                 @touchstart.passive="handleTouchStart"
                 @touchend.passive="handleTouchEnd"
             >
@@ -531,7 +530,6 @@ onBeforeUnmount(() => {
                 <div
                     ref="thumbnailsRef"
                     class="flex min-w-0 flex-1 justify-center gap-2
-                           bg-slate-100 dark:bg-slate-800
                            overflow-x-auto scroll-smooth
                            [scrollbar-width:none]
                            [&::-webkit-scrollbar]:hidden"

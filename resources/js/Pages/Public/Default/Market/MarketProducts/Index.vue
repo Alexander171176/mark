@@ -44,6 +44,11 @@ const { t } = useI18n()
 
 /** Props страницы */
 const props = defineProps({
+    locale: {
+        type: String,
+        default: '',
+    },
+
     seo: {
         type: Object,
         default: () => ({
@@ -58,10 +63,6 @@ const props = defineProps({
 
     /** Сортировка Public по умолчанию из backend */
     defaultSort: { type: String, default: 'sortAsc' },
-
-    title: { type: String, default: '' },
-    canLogin: { type: Boolean, default: false },
-    canRegister: { type: Boolean, default: false },
 
     categoryTree: { type: Array, default: () => [] },
 
@@ -834,6 +835,76 @@ const seoDescription = computed(() => {
 })
 
 /**
+ * Активная локаль приходит
+ * исключительно от backend.
+ *
+ * Vue не определяет fallback-язык.
+ */
+const contentLocale = computed(() => {
+    return String(props.locale || '')
+})
+
+/**
+ * Open Graph locale.
+ *
+ * Значение локали определяет backend.
+ */
+const ogLocale = computed(() => {
+    return contentLocale.value
+})
+
+/** Dublin Core subject */
+const dcSubject = computed(() => {
+    return seoKeywords.value
+        || seoTitle.value
+})
+
+/**
+ * Первое доступное изображение товара
+ * используется как social preview каталога.
+ */
+const seoPreview = computed(() => {
+    for (const product of productsData.value) {
+        const images = normalizeList(
+            product?.images
+        )
+
+        const image = images[0]
+
+        const url =
+            image?.webp_url
+            || image?.image_url
+            || image?.thumb_url
+            || image?.url
+            || ''
+
+        if (url) {
+            return {
+                url,
+                alt:
+                    getProductTitle(product)
+                    || seoTitle.value,
+            }
+        }
+    }
+
+    return {
+        url: '',
+        alt: '',
+    }
+})
+
+/** Изображение social preview */
+const seoImage = computed(() => {
+    return seoPreview.value.url
+})
+
+/** Alt изображения social preview */
+const seoImageAlt = computed(() => {
+    return seoPreview.value.alt
+})
+
+/**
  * Канонический URL каталога.
  *
  * Каждая страница серверной пагинации имеет
@@ -973,13 +1044,30 @@ const displayedProducts = computed(() => {
         ? productsData.value
         : frontendPaginatedProducts.value
 })
+
+/** Начальная позиция товара для Schema.org ItemList */
+const productListStartPosition = computed(() => {
+    const pageNumber = props.useServerProcessing
+        ? currentPage.value
+        : frontendCurrentPage.value
+
+    return Math.max(
+        0,
+        (pageNumber - 1) * perPage.value
+    )
+})
 </script>
 
 <template>
     <!-- SEO -->
     <Head>
-        <!-- Основные SEO -->
+        <!-- Basic SEO -->
         <title>{{ seoTitle }}</title>
+
+        <meta
+            name="title"
+            :content="seoTitle"
+        />
 
         <meta
             v-if="seoDescription"
@@ -1026,10 +1114,32 @@ const displayedProducts = computed(() => {
             :content="canonicalUrl"
         />
 
+        <meta
+            v-if="ogLocale"
+            property="og:locale"
+            :content="ogLocale"
+        />
+
+        <meta
+            v-if="seoImage"
+            property="og:image"
+            :content="seoImage"
+        />
+
+        <meta
+            v-if="seoImage && seoImageAlt"
+            property="og:image:alt"
+            :content="seoImageAlt"
+        />
+
         <!-- Twitter / X -->
         <meta
             name="twitter:card"
-            content="summary"
+            :content="
+            seoImage
+                ? 'summary_large_image'
+                : 'summary'
+        "
         />
 
         <meta
@@ -1042,13 +1152,60 @@ const displayedProducts = computed(() => {
             name="twitter:description"
             :content="seoDescription"
         />
+
+        <meta
+            v-if="seoImage"
+            name="twitter:image"
+            :content="seoImage"
+        />
+
+        <meta
+            v-if="seoImage && seoImageAlt"
+            name="twitter:image:alt"
+            :content="seoImageAlt"
+        />
+
+        <!-- Dublin Core -->
+        <meta
+            name="DC.title"
+            :content="seoTitle"
+        />
+
+        <meta
+            v-if="seoDescription"
+            name="DC.description"
+            :content="seoDescription"
+        />
+
+        <meta
+            v-if="dcSubject"
+            name="DC.subject"
+            :content="dcSubject"
+        />
+
+        <meta
+            v-if="contentLocale"
+            name="DC.language"
+            :content="contentLocale"
+        />
+
+        <meta
+            name="DC.identifier"
+            :content="canonicalUrl"
+        />
+
+        <meta
+            name="DC.type"
+            content="Collection"
+        />
+
+        <meta
+            name="DC.format"
+            content="text/html"
+        />
     </Head>
 
-    <DefaultLayout
-        :title="title"
-        :can-login="canLogin"
-        :can-register="canRegister"
-    >
+    <DefaultLayout>
         <!-- Шапка -->
         <Navbar />
 
@@ -1098,6 +1255,18 @@ const displayedProducts = computed(() => {
                                     v-if="seoDescription"
                                     itemprop="description"
                                     :content="seoDescription"
+                                />
+
+                                <meta
+                                    v-if="seoKeywords"
+                                    itemprop="keywords"
+                                    :content="seoKeywords"
+                                />
+
+                                <meta
+                                    v-if="contentLocale"
+                                    itemprop="inLanguage"
+                                    :content="contentLocale"
                                 />
 
                                 <!-- Хлебные крошки -->
@@ -1218,11 +1387,13 @@ const displayedProducts = computed(() => {
                                         v-if="viewMode === 'grid'"
                                         :products="displayedProducts"
                                         :cols="productGridCols"
+                                        :start-position="productListStartPosition"
                                     />
 
                                     <MarketProductRows
                                         v-else
                                         :products="displayedProducts"
+                                        :start-position="productListStartPosition"
                                     />
                                 </div>
 
@@ -1244,12 +1415,6 @@ const displayedProducts = computed(() => {
                                     :items-per-page="perPage"
                                     :total-items="sortedProducts.length"
                                 />
-
-                                <!-- Недавно просмотренные товары -->
-                                <MarketRecentlyViewedProducts
-                                    :products="recentlyViewed"
-                                    :cols="productGridCols"
-                                />
                             </article>
 
                         </div>
@@ -1267,6 +1432,11 @@ const displayedProducts = computed(() => {
                         />
                     </aside>
                 </div>
+
+                <!-- Недавно просмотренные товары -->
+                <MarketRecentlyViewedProducts
+                    :products="recentlyViewed"
+                />
             </div>
         </main>
 

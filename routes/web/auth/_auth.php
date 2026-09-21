@@ -8,3 +8,5 @@ require __DIR__ . '/password.php';
 
 // Email verification (часть под auth — но логически держим в auth ветке)
 require __DIR__ . '/email-verification.php';
+
+require __DIR__ . '/legal.php'; // Политика конфиденциальности и условия использования

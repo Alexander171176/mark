@@ -169,7 +169,7 @@ const resetSearch = () => {
         @submit.prevent="submitSearch"
     >
         <div
-            class="flex w-full max-w-[1100px]
+            class="flex w-full max-w-[1200px]
                    items-stretch"
         >
             <!--

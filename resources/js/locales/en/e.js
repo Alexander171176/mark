@@ -55,6 +55,7 @@ export default {
     effectivePrice: 'Price',
     email: 'Email',
     emailNotVerified: 'Your email address is not verified.',
+    emailPasswordResetLink: 'Email Password Reset Link',
     emailVerificationTitle: 'Email Verification',
     en: 'en',
     enable: 'Enable',

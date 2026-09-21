@@ -1,22 +1,21 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Link, router, usePage } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 import { Inertia } from '@inertiajs/inertia'
 import { useI18n } from 'vue-i18n'
 
 import ThemeToggle from '@/Components/User/ThemeToggle/ThemeToggle.vue'
-import DropdownLink from '@/Components/Base/DropdownLink.vue'
-import Dropdown from '@/Components/Base/Dropdown.vue'
 import LocaleSelectOption from '@/Components/Admin/UI/Select/LocaleSelectOption.vue'
 import MarketProductSearch from '@/Components/Public/Default/Market/MarketProduct/MarketProductSearch.vue'
+import HeaderAccountDropdown from '@/Components/Public/Default/Header/Auth/HeaderAccountDropdown.vue'
+import HeaderAuthDropdown from '@/Components/Public/Default/Header/Auth/HeaderAuthDropdown.vue'
 
 const { t, locale } = useI18n()
 const page = usePage()
 
-const isAuth = computed(() => !!page.props?.auth?.user)
-const user = computed(() => page.props?.auth?.user || null)
-const managesProfilePhotos = computed(() => !!page.props?.jetstream?.managesProfilePhotos)
-
+const isAuth = computed(() => {
+    return !!page.props?.auth?.user
+})
 const cmsMenu = computed(() => page.props?.cmsMenu || [])
 const marketCatalog = computed(() => page.props?.marketCatalog || [])
 
@@ -193,10 +192,6 @@ onBeforeUnmount(() => {
 })
 
 watch(() => page.url, () => closeAllMenus())
-
-const logout = () => {
-    router.post(route('logout'))
-}
 </script>
 
 <template>
@@ -222,7 +217,7 @@ const logout = () => {
         <!-- HEADER CONTENT -->
         <div>
             <!-- TOP BAR -->
-            <div class="px-1 lg:px-12">
+            <div class="relative z-50 px-1 lg:px-12">
                 <div
                     class="grid h-16 items-center gap-2
                            grid-cols-[1fr_auto]
@@ -323,141 +318,21 @@ const logout = () => {
                     </div>
 
                     <div class="flex justify-end items-center gap-1 sm:gap-2 min-w-0">
+                        <ThemeToggle class="relative" />
+
                         <LocaleSelectOption
                             v-model="selectedLocale"
                             :locales="availableLocales"
                             placement="bottom-end"
                         />
 
-                        <ThemeToggle class="relative z-10" />
-
-                        <Dropdown
+                        <HeaderAccountDropdown
                             v-if="isAuth"
-                            align="right"
-                            width="60"
-                            class="relative z-10"
-                        >
-                            <template #trigger>
-                                <button
-                                    v-if="managesProfilePhotos"
-                                    class="flex items-center px-2 py-1
-                                           border-2 border-transparent rounded-full
-                                           hover:bg-slate-100 dark:hover:bg-gray-800
-                                           focus:outline-none focus:border-gray-400 transition"
-                                >
-                                    <img
-                                        class="h-7 w-7 rounded-full object-cover"
-                                        :src="user.profile_photo_url"
-                                        :alt="user.name"
-                                    />
+                        />
 
-                                    <div class="hidden xl:flex flex-col ml-2 text-left">
-                                        <span
-                                            class="font-semibold text-xs
-                                                   text-slate-700 dark:text-slate-100"
-                                        >
-                                            {{ user.name }}
-                                        </span>
-
-                                        <span
-                                            class="font-semibold text-[10px]
-                                                   text-slate-400 dark:text-slate-300"
-                                        >
-                                            {{ user.email }}
-                                        </span>
-                                    </div>
-                                </button>
-
-                                <span
-                                    v-else
-                                    class="inline-flex rounded-md"
-                                >
-                                    <button
-                                        type="button"
-                                        class="inline-flex items-center
-                                               bg-white dark:bg-gray-900
-                                               px-3 py-1
-                                               border border-gray-200 dark:border-gray-700
-                                               rounded-md text-sm font-medium
-                                               text-slate-600 hover:text-blue-700
-                                               dark:text-slate-200 dark:hover:text-blue-300
-                                               focus:outline-none transition"
-                                    >
-                                        {{ user.name }}
-                                    </button>
-                                </span>
-                            </template>
-
-                            <template #content>
-                                <div class="block px-4 py-2 text-sm text-slate-400">
-                                    {{ t('accountManagement') }}
-                                </div>
-
-                                <DropdownLink :href="route('profile.show')">
-                                    {{ t('profile') }}
-                                </DropdownLink>
-
-                                <div
-                                    class="border-t border-gray-200
-                                           dark:border-gray-700"
-                                ></div>
-
-                                <form @submit.prevent="logout">
-                                    <DropdownLink as="button">
-                                        {{ t('logout') }}
-                                    </DropdownLink>
-                                </form>
-                            </template>
-                        </Dropdown>
-
-                        <Dropdown
+                        <HeaderAuthDropdown
                             v-else
-                            align="right"
-                            width="60"
-                            class="relative z-10"
-                        >
-                            <template #trigger>
-                                <button
-                                    type="button"
-                                    class="inline-flex items-center gap-2
-                                           rounded-lg px-3 py-2
-                                           text-sm font-semibold
-                                           bg-white dark:bg-gray-900
-                                           border border-gray-200 dark:border-gray-700
-                                           text-slate-700 dark:text-slate-300
-                                           hover:text-blue-700
-                                           dark:hover:text-blue-300 transition"
-                                >
-                                    <svg
-                                        class="h-4 w-4"
-                                        fill="currentColor"
-                                        viewBox="0 0 448 512"
-                                    >
-                                        <path
-                                            d="M224 256A128 128 0 10224 0a128 128 0 000 256zm89.6 32h-16.7a174.1 174.1 0 01-145.8 0h-16.7A134.4 134.4 0 000 422.4V464a48 48 0 0048 48h352a48 48 0 0048-48v-41.6A134.4 134.4 0 00313.6 288z"
-                                        />
-                                    </svg>
-
-                                    <span class="hidden sm:inline">
-                                        {{ t('account') }}
-                                    </span>
-                                </button>
-                            </template>
-
-                            <template #content>
-                                <div class="block px-4 py-2 text-md text-slate-400">
-                                    {{ t('guest') }}
-                                </div>
-
-                                <DropdownLink :href="route('login')">
-                                    {{ t('login') }}
-                                </DropdownLink>
-
-                                <DropdownLink :href="route('register')">
-                                    {{ t('register') }}
-                                </DropdownLink>
-                            </template>
-                        </Dropdown>
+                        />
                     </div>
                 </div>
             </div>
@@ -465,7 +340,7 @@ const logout = () => {
             <!-- CMS PAGES ROW -->
             <div
                 v-if="cmsMenu.length"
-                class="relative z-[200]
+                class="relative z-10
                        hidden lg:flex h-10 px-6
                        items-center justify-center gap-6"
             >
@@ -501,7 +376,7 @@ const logout = () => {
                                group-hover:visible
                                group-hover:opacity-100
                                group-hover:translate-y-0
-                               absolute left-0 top-full z-[300]
+                               absolute left-0 top-full z-20
                                min-w-64 rounded-xl border
                                border-gray-200 dark:border-gray-700
                                bg-white dark:bg-gray-950 shadow-xl
@@ -553,7 +428,7 @@ const logout = () => {
                                            group-hover/child:visible
                                            group-hover/child:opacity-100
                                            group-hover/child:translate-x-0
-                                           absolute left-full top-0 z-[310]
+                                           absolute left-full top-0 z-30
                                            min-w-60 rounded-xl border
                                            border-gray-200 dark:border-gray-700
                                            bg-white dark:bg-gray-950 shadow-xl
@@ -629,8 +504,7 @@ const logout = () => {
         <div
             v-if="isCatalogOpen"
             class="hidden lg:block
-                   absolute left-0 right-0 top-full
-                   z-[400]
+                   absolute left-0 right-0 top-full z-[40]
                    rounded-b-3xl overflow-hidden
                    border-t border-gray-200
                    dark:border-gray-800

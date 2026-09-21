@@ -55,6 +55,7 @@ export default {
     effectivePrice: 'Бағалар тізімі',
     email: 'Email',
     emailNotVerified: 'Сіздің электрондық пошта мекенжайыңыз расталмаған.',
+    emailPasswordResetLink: 'Құпия сөзіңізді қалпына келтіру үшін сілтеме жіберіңіз',
     emailVerificationTitle: 'Электрондық поштаны тексеру',
     en: 'en',
     enable: 'Қосу',

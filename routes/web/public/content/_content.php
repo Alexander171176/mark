@@ -19,3 +19,4 @@ require __DIR__ . '/school/assignments.php'; // Задания
 require __DIR__ . '/market/categories.php'; // Категории магазина
 require __DIR__ . '/market/tags.php'; // Теги магазина
 require __DIR__ . '/market/products.php'; // Товары магазина
+require __DIR__ . '/market/brands.php'; // Бренды магазина

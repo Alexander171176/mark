@@ -33,6 +33,7 @@ export default {
     bonus: 'bonus',
     boolean: 'Logical value',
     brand: 'Brand',
+    brands: 'Brands',
     browserSessionDescription: 'Manage and log out your active sessions on other browsers and devices.',
     browserSessionTitle: 'Browser Session',
     browserSessionWarning: 'If necessary, you may log out of all of your other browser sessions across all of your devices. Some of your recent sessions are listed below; however, this list may not be exhaustive. If you feel your account has been compromised, you should also update your password.',

@@ -87,6 +87,16 @@ class MarketTagController extends Controller
             )
         );
 
+        /**
+         * Поисковая строка товаров тега.
+         */
+        $search = trim(
+            (string) $request->input(
+                'q',
+                ''
+            )
+        );
+
         $defaultSort = $settings->string(
             'publicMarketProductsDefaultSort',
             'sortAsc'
@@ -142,15 +152,13 @@ class MarketTagController extends Controller
             locale: $locale,
             useServerProcessing: $useServerProcessing,
             perPage: $perPage,
+            search: $search,
             sort: $sort,
         );
 
         /**
-         * Количество найденных товаров.
-         *
-         * Пока отдельного поиска на странице
-         * тега нет, оно совпадает с количеством
-         * Public-товаров тега.
+         * Количество найденных товаров
+         * после применения поиска.
          */
         $productsFound = $useServerProcessing
             ? $products->total()
@@ -210,7 +218,7 @@ class MarketTagController extends Controller
 
                 'filters' =>
                     $this->buildIndexFilters(
-                        '',
+                        $search,
                         $perPage,
                         $sort,
                         $view,
@@ -319,6 +327,7 @@ class MarketTagController extends Controller
         string $locale,
         bool $useServerProcessing,
         int $perPage,
+        string $search,
         string $sort
     ) {
         $query = $this->productsQuery(
@@ -328,6 +337,10 @@ class MarketTagController extends Controller
 
         if ($useServerProcessing) {
             return $query
+                ->publicSearch(
+                    $search,
+                    $locale
+                )
                 ->publicSortByParam(
                     $sort,
                     $locale

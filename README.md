@@ -1018,6 +1018,10 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketBrand/MarketBrandImageResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketBrand/MarketBrandRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketBrand/MarketBrandController --resource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Market/MarketBrand/MarketBrandResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Market/MarketBrand/MarketBrandTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Market/MarketBrand/MarketBrandSharedResource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Default/Market/MarketBrand/MarketBrandController` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketBrandSeeder` <br>

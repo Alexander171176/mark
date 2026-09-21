@@ -1,15 +1,15 @@
 <script setup>
 /**
- * Страница конкретного тега товаров маркетплейса.
+ * Публичная страница бренда маркетплейса.
  *
- * - Public Resource тега
+ * - Public Resource бренда
  * - связанные Public-товары
  * - server / frontend / auto
  * - поиск и сортировка товаров
  * - grid / rows
  * - server / frontend pagination
- * - SEO
- * - Schema.org
+ * - SEO / Open Graph / Twitter / Dublin Core
+ * - Schema.org BreadcrumbList / Brand / ItemList / Product
  *
  * @version PulsarCMS 1.0
  * @author Александр
@@ -51,6 +51,12 @@ import LeftSidebarMarket
 import RightSidebarMarket
     from '@/Components/Public/Default/Partials/RightSidebarMarket.vue'
 
+import EntityPageToolbar
+    from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
+
+import FrontendEntityPageToolbar
+    from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
+
 import MarketProductGrid
     from '@/Components/Public/Default/Market/MarketProduct/MarketProductGrid.vue'
 
@@ -63,14 +69,9 @@ import Pagination
 import FrontendPagination
     from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
 
-import EntityPageToolbar
-    from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
-
-import FrontendEntityPageToolbar
-    from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
-
 import PublicAdminBottomPanel
     from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
+import ImageGalleryMain from '@/Components/Public/Default/Media/ImageGalleryMain.vue'
 
 const { t } = useI18n()
 
@@ -84,8 +85,8 @@ const props = defineProps({
         default: '',
     },
 
-    /** Текущий Public-тег */
-    tag: {
+    /** Текущий Public-бренд */
+    brand: {
         type: Object,
         default: () => ({}),
     },
@@ -96,7 +97,7 @@ const props = defineProps({
         default: () => [],
     },
 
-    /** Общее количество Public-товаров тега */
+    /** Общее количество Public-товаров бренда */
     productsCount: {
         type: Number,
         default: 0,
@@ -145,7 +146,8 @@ const props = defineProps({
 const page = usePage()
 
 /** Глобальные настройки сайта */
-const siteSettings = page.props?.siteSettings || {}
+const siteSettings =
+    page.props?.siteSettings || {}
 
 /** Роль администратора */
 const isAdmin = computed(() => {
@@ -154,71 +156,193 @@ const isAdmin = computed(() => {
 
 /** Дерево категорий */
 const categoryTree = computed(() => {
-    return Array.isArray(props.categoryTree)
+    return Array.isArray(
+        props.categoryTree
+    )
         ? props.categoryTree
         : []
 })
 
-/* ===================== TAG ===================== */
+/* ===================== BRAND ===================== */
 
-/** Текущий тег */
-const tag = computed(() => {
-    return props.tag || {}
+/** Текущий бренд */
+const brand = computed(() => {
+    return props.brand || {}
 })
 
 /**
- * Активный перевод тега.
+ * Активный перевод бренда.
  *
  * Перевод уже разрешён Laravel:
  * current → configured fallback → null.
  */
-const tagTranslation = computed(() => {
-    return tag.value?.translation || {}
+const brandTranslation = computed(() => {
+    return brand.value?.translation || {}
 })
 
-/** Название тега */
-const tagTitle = computed(() => {
-    return tagTranslation.value?.title || ''
+/** Название бренда */
+const brandTitle = computed(() => {
+    return brandTranslation.value?.title || ''
 })
 
-/** Подзаголовок тега */
-const tagSubtitle = computed(() => {
-    return tagTranslation.value?.subtitle || ''
+/** Подзаголовок бренда */
+const brandSubtitle = computed(() => {
+    return brandTranslation.value?.subtitle || ''
 })
 
-/** Краткое описание */
-const tagShort = computed(() => {
-    return tagTranslation.value?.short || ''
+/** Краткое описание бренда */
+const brandShort = computed(() => {
+    return brandTranslation.value?.short || ''
 })
 
-/** Полное описание */
-const tagDescription = computed(() => {
-    return tagTranslation.value?.description
-        || tagShort.value
+/** Полное описание бренда */
+const brandDescription = computed(() => {
+    return brandTranslation.value?.description
+        || brandShort.value
         || ''
 })
 
-/** Количество Public-товаров тега */
-const tagProductsCount = computed(() => {
+/** Количество Public-товаров бренда */
+const brandProductsCount = computed(() => {
     return Number(
-        props.productsCount ?? 0
+        props.productsCount
+        ?? brand.value?.products_count
+        ?? 0
     )
 })
 
-/** Количество просмотров тега */
-const tagViews = computed(() => {
-    return Number(tag.value?.views ?? 0)
+/** Количество просмотров бренда */
+const brandViews = computed(() => {
+    return Number(
+        brand.value?.views ?? 0
+    )
 })
 
-/** Проверка SVG-иконки */
-const hasSvgIcon = computed(() => {
-    if (!tag.value?.icon) {
-        return false
+/** Универсальный список изображений бренда */
+const brandImages = computed(() => {
+    const value = brand.value?.images
+
+    if (Array.isArray(value)) {
+        return value
     }
 
-    return /^\s*<svg[\s\S]*<\/svg>\s*$/i.test(
-        String(tag.value.icon)
+    if (Array.isArray(value?.data)) {
+        return value.data
+    }
+
+    return []
+})
+
+/** Наличие изображений бренда */
+const hasBrandImages = computed(() => {
+    return brandImages.value.length > 0
+})
+
+/** Нормализация storage URL */
+const normalizeStorageUrl = (value) => {
+    if (!value) {
+        return ''
+    }
+
+    const url = String(value).trim()
+
+    if (!url) {
+        return ''
+    }
+
+    if (
+        url.startsWith('http://')
+        || url.startsWith('https://')
+        || url.startsWith('/storage/')
+    ) {
+        return url
+    }
+
+    return `/storage/${url}`
+}
+
+/** Логотип бренда */
+const brandLogo = computed(() => {
+    return normalizeStorageUrl(
+        brand.value?.logo
     )
+})
+
+/** Основное изображение бренда */
+const brandPrimaryImage = computed(() => {
+    const image = brandImages.value[0]
+
+    return normalizeStorageUrl(
+        image?.webp_url
+        || image?.image_url
+        || image?.thumb_url
+        || image?.url
+        || ''
+    )
+})
+
+/** Alt основного изображения */
+const brandPrimaryImageAlt = computed(() => {
+    const image = brandImages.value[0]
+
+    return image?.alt
+        || brandTitle.value
+        || ''
+})
+
+/** Website бренда */
+const brandWebsite = computed(() => {
+    return String(
+        brand.value?.website || ''
+    ).trim()
+})
+
+/** Социальные ссылки бренда */
+const brandSocialLinks = computed(() => {
+    const value = brand.value?.social_links
+
+    if (!value) {
+        return []
+    }
+
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => {
+                if (typeof item === 'string') {
+                    return {
+                        name: '',
+                        url: item,
+                    }
+                }
+
+                return {
+                    name:
+                        item?.name
+                        || item?.title
+                        || item?.label
+                        || '',
+                    url:
+                        item?.url
+                        || item?.link
+                        || '',
+                }
+            })
+            .filter((item) => item.url)
+    }
+
+    if (typeof value === 'object') {
+        return Object.entries(value)
+            .map(([name, url]) => ({
+                name,
+                url:
+                    typeof url === 'string'
+                        ? url
+                        : url?.url || url?.link || '',
+            }))
+            .filter((item) => item.url)
+    }
+
+    return []
 })
 
 /* ===================== PRODUCTS DATA ===================== */
@@ -229,25 +353,16 @@ const productsData = computed(() => {
         return props.products
     }
 
-    if (Array.isArray(props.products?.data)) {
+    if (
+        Array.isArray(
+            props.products?.data
+        )
+    ) {
         return props.products.data
     }
 
     return []
 })
-
-/** Универсальная нормализация коллекции */
-const normalizeList = (value) => {
-    if (Array.isArray(value)) {
-        return value
-    }
-
-    if (Array.isArray(value?.data)) {
-        return value.data
-    }
-
-    return []
-}
 
 /* ===================== SIDEBARS ===================== */
 
@@ -276,7 +391,8 @@ const getStoredBoolean = (
     key,
     defaultValue = true
 ) => {
-    const value = localStorage.getItem(key)
+    const value =
+        localStorage.getItem(key)
 
     if (value === null) {
         return defaultValue
@@ -411,7 +527,7 @@ const perPage = computed(() => {
     return Number.isFinite(value)
     && value > 0
         ? value
-        : 12
+        : 1
 })
 
 /** Опции сортировки товаров */
@@ -578,17 +694,13 @@ const normalizeDate = (value) => {
         : 0
 }
 
-/**
- * Название товара.
- *
- * Перевод уже разрешён Laravel.
- */
+/** Название товара */
 const getProductTitle = (product) => {
     return product?.translation?.title || ''
 }
 
-/** Название бренда */
-const getBrandTitle = (product) => {
+/** Название бренда товара */
+const getProductBrandTitle = (product) => {
     return product?.brand
         ?.translation
         ?.title || ''
@@ -612,7 +724,6 @@ const searchWords = computed(() => {
 /** Поля frontend-поиска товара */
 const getProductSearchValues = (product) => {
     return [
-        product?.id,
         product?.url,
         product?.sku,
         product?.vendor_code,
@@ -685,7 +796,7 @@ const compareNumber = (
         || compareIdDesc(a, b)
 }
 
-/** Сравнение текстового значения */
+/** Сравнение текста */
 const compareText = (
     first,
     second,
@@ -724,7 +835,7 @@ const compareDate = (
 /**
  * Локальная Public-сортировка.
  *
- * Набор параметров полностью совпадает
+ * Набор параметров совпадает
  * с MarketProduct::publicSortByParam().
  */
 const sortedProducts = computed(() => {
@@ -897,8 +1008,8 @@ const sortedProducts = computed(() => {
             case 'brandAsc': {
                 const result =
                     compareText(
-                        getBrandTitle(a),
-                        getBrandTitle(b),
+                        getProductBrandTitle(a),
+                        getProductBrandTitle(b),
                         'asc'
                     )
 
@@ -909,8 +1020,8 @@ const sortedProducts = computed(() => {
             case 'brandDesc': {
                 const result =
                     compareText(
-                        getBrandTitle(a),
-                        getBrandTitle(b),
+                        getProductBrandTitle(a),
+                        getProductBrandTitle(b),
                         'desc'
                     )
 
@@ -963,9 +1074,6 @@ const sortedProducts = computed(() => {
 
 /**
  * Frontend-пагинация.
- *
- * Использует per_page,
- * определённый backend.
  */
 const frontendPaginatedProducts =
     computed(() => {
@@ -1035,21 +1143,21 @@ const contentLocale = computed(() => {
 
 /** SEO title */
 const seoTitle = computed(() => {
-    return tagTranslation.value?.meta_title
-        || tagTitle.value
+    return brandTranslation.value?.meta_title
+        || brandTitle.value
 })
 
 /** SEO keywords */
 const seoKeywords = computed(() => {
-    return tagTranslation.value?.meta_keywords
+    return brandTranslation.value?.meta_keywords
         || ''
 })
 
 /** SEO description */
 const seoDescription = computed(() => {
-    return tagTranslation.value?.meta_desc
-        || tagShort.value
-        || tagDescription.value
+    return brandTranslation.value?.meta_desc
+        || brandShort.value
+        || brandDescription.value
         || ''
 })
 
@@ -1061,61 +1169,36 @@ const ogLocale = computed(() => {
 /** Dublin Core subject */
 const dcSubject = computed(() => {
     return seoKeywords.value
-        || tagTitle.value
+        || brandTitle.value
 })
 
 /**
- * Первое доступное изображение товара
- * используется как social preview тега.
+ * Social preview бренда.
+ *
+ * Приоритет:
+ * - основное изображение;
+ * - логотип.
  */
-const seoPreview = computed(() => {
-    for (const product of productsData.value) {
-        const images = normalizeList(
-            product?.images
-        )
-
-        const image = images[0]
-
-        const url =
-            image?.webp_url
-            || image?.image_url
-            || image?.thumb_url
-            || image?.url
-            || ''
-
-        if (url) {
-            return {
-                url,
-                alt:
-                    getProductTitle(product)
-                    || tagTitle.value,
-            }
-        }
-    }
-
-    return {
-        url: '',
-        alt: '',
-    }
-})
-
-/** Изображение social preview */
 const seoImage = computed(() => {
-    return seoPreview.value.url
+    return brandPrimaryImage.value
+        || brandLogo.value
+        || ''
 })
 
-/** Alt изображения social preview */
+/** Alt social preview */
 const seoImageAlt = computed(() => {
-    return seoPreview.value.alt
+    return brandPrimaryImageAlt.value
+        || brandTitle.value
+        || ''
 })
 
 /**
- * Канонический URL страницы тега.
+ * Канонический URL страницы бренда.
  *
  * Server pagination:
  *
- * /catalog/tags/{url}
- * /catalog/tags/{url}?page=2
+ * /catalog/brands/{url}
+ * /catalog/brands/{url}?page=2
  *
  * Сортировка и view
  * в canonical не включаются.
@@ -1123,9 +1206,9 @@ const seoImageAlt = computed(() => {
 const canonicalUrl = computed(() => {
     const baseUrl = String(
         route(
-            'public.marketTags.show',
+            'public.marketBrands.show',
             {
-                url: tag.value?.url
+                url: brand.value?.url
             }
         )
     )
@@ -1144,7 +1227,7 @@ const canonicalUrl = computed(() => {
  * Альтернативную server-сортировку
  * не индексируем.
  *
- * Основная страница тега и обычные
+ * Основная страница бренда и обычные
  * страницы пагинации индексируются.
  */
 const robotsContent = computed(() => {
@@ -1174,18 +1257,18 @@ const robotsContent = computed(() => {
 
 /* ===================== SERVER ACTIONS ===================== */
 
-/** Маршрут текущего тега */
+/** Маршрут текущего бренда */
 const showRoute = () => {
     return route(
-        'public.marketTags.show',
+        'public.marketBrands.show',
         {
-            url: tag.value?.url
+            url: brand.value?.url
         }
     )
 }
 
 /**
- * Server-загрузка товаров тега.
+ * Server-загрузка товаров бренда.
  *
  * per_page намеренно не отправляем:
  * значение определяет backend.
@@ -1220,7 +1303,7 @@ const reloadProducts = (
     )
 }
 
-/** Применение server-поиска */
+/** Поиск товаров */
 const submitSearch = () => {
     frontendCurrentPage.value = 1
 
@@ -1351,9 +1434,7 @@ const productListStartPosition =
     <!-- SEO -->
     <Head>
         <!-- Basic SEO -->
-        <title>
-            {{ seoTitle }}
-        </title>
+        <title>{{ seoTitle }}</title>
 
         <meta
             name="title"
@@ -1370,6 +1451,12 @@ const productListStartPosition =
             v-if="seoKeywords"
             name="keywords"
             :content="seoKeywords"
+        />
+
+        <meta
+            v-if="contentLocale"
+            http-equiv="content-language"
+            :content="contentLocale"
         />
 
         <meta
@@ -1418,10 +1505,7 @@ const productListStartPosition =
         />
 
         <meta
-            v-if="
-                seoImage
-                && seoImageAlt
-            "
+            v-if="seoImage && seoImageAlt"
             property="og:image:alt"
             :content="seoImageAlt"
         />
@@ -1454,10 +1538,7 @@ const productListStartPosition =
         />
 
         <meta
-            v-if="
-                seoImage
-                && seoImageAlt
-            "
+            v-if="seoImage && seoImageAlt"
             name="twitter:image:alt"
             :content="seoImageAlt"
         />
@@ -1493,7 +1574,7 @@ const productListStartPosition =
 
         <meta
             name="DC.type"
-            content="Collection"
+            content="Text"
         />
 
         <meta
@@ -1534,12 +1615,18 @@ const productListStartPosition =
                         class="shrink-0
                                transition-all
                                duration-300"
-                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
+                        :class="
+                            leftCollapsed
+                                ? 'lg:w-6'
+                                : 'lg:w-72'
+                        "
                     >
                         <LeftSidebarMarket
                             :category-tree="categoryTree"
                             :collapsed="leftCollapsed"
-                            @collapsed="leftCollapsed = $event"
+                            @collapsed="
+                                leftCollapsed = $event
+                            "
                         />
                     </aside>
 
@@ -1551,12 +1638,119 @@ const productListStartPosition =
                                slate-1"
                     >
                         <div class="w-full">
-                            <article
+                            <!-- Хлебные крошки -->
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
                                 itemscope
-                                itemtype="https://schema.org/CollectionPage"
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
+                                <ol
+                                    class="flex flex-wrap
+                                           items-center
+                                           font-semibold"
+                                >
+                                    <!-- Главная -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                    >
+                                        <Link
+                                            itemprop="item"
+                                            :href="route('home')"
+                                            class="breadcrumb-link
+                                                   hover:underline"
+                                        >
+                                            <span itemprop="name">
+                                                {{ t('home') }}
+                                            </span>
+                                        </Link>
+
+                                        <meta
+                                            itemprop="position"
+                                            content="1"
+                                        />
+                                    </li>
+
+                                    <!-- Бренды -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                    >
+                                        <span
+                                            class="mx-2 breadcrumbs"
+                                        >
+                                            /
+                                        </span>
+
+                                        <Link
+                                            itemprop="item"
+                                            :href="
+                                                route(
+                                                    'public.marketBrands.index'
+                                                )
+                                            "
+                                            class="breadcrumb-link
+                                                   hover:underline"
+                                        >
+                                            <span itemprop="name">
+                                                {{ t('brands') }}
+                                            </span>
+                                        </Link>
+
+                                        <meta
+                                            itemprop="position"
+                                            content="2"
+                                        />
+                                    </li>
+
+                                    <!-- Текущий бренд -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
+                                    >
+                                        <span
+                                            class="mx-2 breadcrumbs"
+                                        >
+                                            /
+                                        </span>
+
+                                        <h1
+                                            itemprop="name"
+                                            class="breadcrumbs
+                                                   text-sm
+                                                   font-semibold"
+                                        >
+                                            {{ brandTitle }}
+                                        </h1>
+
+                                        <meta
+                                            itemprop="item"
+                                            :content="canonicalUrl"
+                                        />
+
+                                        <meta
+                                            itemprop="position"
+                                            content="3"
+                                        />
+                                    </li>
+                                </ol>
+                            </nav>
+
+                            <!-- Бренд -->
+                            <article
+                                class="mt-4"
+                                itemscope
+                                itemtype="https://schema.org/Brand"
                                 :itemid="canonicalUrl"
                             >
-                                <!-- Schema.org страницы -->
                                 <meta
                                     itemprop="url"
                                     :content="canonicalUrl"
@@ -1564,243 +1758,274 @@ const productListStartPosition =
 
                                 <meta
                                     itemprop="name"
-                                    :content="tagTitle"
+                                    :content="brandTitle"
                                 />
 
-                                <meta
-                                    v-if="seoDescription"
-                                    itemprop="description"
-                                    :content="seoDescription"
-                                />
-
-                                <meta
-                                    v-if="seoKeywords"
-                                    itemprop="keywords"
-                                    :content="seoKeywords"
-                                />
-
-                                <meta
-                                    v-if="contentLocale"
-                                    itemprop="inLanguage"
-                                    :content="contentLocale"
-                                />
-
-                                <!-- Хлебные крошки -->
-                                <nav
-                                    class="text-sm"
-                                    aria-label="Breadcrumb"
-                                    itemscope
-                                    itemtype="https://schema.org/BreadcrumbList"
+                                <!-- Основная информация -->
+                                <section
+                                    class="overflow-hidden
+                                           rounded-2xl
+                                           border
+                                           border-slate-200
+                                           bg-white
+                                           dark:border-slate-700
+                                           dark:bg-slate-900"
                                 >
-                                    <ol
-                                        class="flex flex-wrap
-                                               items-center
-                                               font-semibold"
+                                    <!-- Большое изображение -->
+                                    <div
+                                        v-if="brandPrimaryImage"
+                                        class="relative"
                                     >
-                                        <!-- Главная -->
-                                        <li
-                                            itemprop="itemListElement"
-                                            itemscope
-                                            itemtype="https://schema.org/ListItem"
-                                            class="flex items-center"
+                                        <!-- Brand images -->
+                                        <div
+                                            v-if="hasBrandImages"
+                                            class="flex items-center justify-center"
                                         >
-                                            <Link
-                                                itemprop="item"
-                                                :href="route('home')"
-                                                class="breadcrumb-link
-                                                       hover:underline"
-                                            >
-                                                <span
-                                                    itemprop="name"
-                                                >
-                                                    {{ t('home') }}
-                                                </span>
-                                            </Link>
+                                            <div class="w-full">
+                                                <ImageGalleryMain
+                                                    :images="brandImages"
+                                                    :alt="brandTitle"
+                                                    rounded-class="rounded-lg"
+                                                    shadow-class="shadow-lg shadow-gray-400
+                                                                  dark:shadow-gray-700"
+                                                    img-class="w-full h-full object-cover"
+                                                    itemprop="image"
+                                                    loading="eager"
+                                                    fetchpriority="high"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                            <meta
-                                                itemprop="position"
-                                                content="1"
-                                            />
-                                        </li>
-
-                                        <!-- Категории -->
-                                        <li
-                                            itemprop="itemListElement"
-                                            itemscope
-                                            itemtype="https://schema.org/ListItem"
-                                            class="flex items-center"
+                                    <div
+                                        class="px-4
+                                               pb-5
+                                               sm:px-6"
+                                    >
+                                        <!-- Логотип -->
+                                        <div
+                                            v-if="brandLogo"
+                                            class="relative
+                                                   z-10
+                                                   flex
+                                                   justify-center"
+                                            :class="brandPrimaryImage ? 'mt-1' : 'pt-5'"
                                         >
-                                            <span
-                                                class="mx-2 breadcrumbs"
-                                            >
-                                                /
-                                            </span>
-
-                                            <Link
-                                                itemprop="item"
-                                                :href="route('public.marketCategories.index')"
-                                                class="breadcrumb-link
-                                                       hover:underline"
-                                            >
-                                                <span
-                                                    itemprop="name"
-                                                >
-                                                    {{ t('categories') }}
-                                                </span>
-                                            </Link>
-
-                                            <meta
-                                                itemprop="position"
-                                                content="2"
-                                            />
-                                        </li>
-
-                                        <!-- Тег -->
-                                        <li
-                                            itemprop="itemListElement"
-                                            itemscope
-                                            itemtype="https://schema.org/ListItem"
-                                            class="flex items-center"
-                                            aria-current="page"
-                                        >
-                                            <span class="mx-2 breadcrumbs">
-                                                /
-                                            </span>
-
                                             <div
                                                 class="flex
+                                                       h-24 w-auto
                                                        items-center
-                                                       gap-1.5"
+                                                       justify-center
+                                                       rounded-xl
+                                                       border
+                                                       border-slate-200
+                                                       bg-white
+                                                       p-3
+                                                       shadow-sm
+                                                       dark:border-slate-700
+                                                       dark:bg-slate-800"
                                             >
-                                                <span
-                                                    v-if="hasSvgIcon"
-                                                    class="flex
-                                                           shrink-0"
-                                                    v-html="tag.icon"
+                                                <img
+                                                    itemprop="logo"
+                                                    :src="brandLogo"
+                                                    :alt="brandTitle"
+                                                    class="max-h-full
+                                                           max-w-full
+                                                           object-contain"
                                                 />
+                                            </div>
+                                        </div>
 
-                                                <h1
-                                                    itemprop="name"
-                                                    class="breadcrumbs
-                                                           text-sm
-                                                           font-semibold"
-                                                    :style="tag.color ? {
-                                                                color:
-                                                                    tag.color
-                                                            }
-                                                            : undefined"
+                                        <!-- Название -->
+                                        <div
+                                            class="mt-4
+                                                   text-center"
+                                        >
+                                            <h2
+                                                class="text-xl
+                                                       font-semibold
+                                                       text-slate-900
+                                                       dark:text-slate-100"
+                                            >
+                                                {{ brandTitle }}
+                                            </h2>
+
+                                            <div
+                                                v-if="brandSubtitle"
+                                                class="mt-1
+                                                       text-sm
+                                                       subtitle"
+                                            >
+                                                {{ brandSubtitle }}
+                                            </div>
+                                        </div>
+
+                                        <!-- Статистика -->
+                                        <div
+                                            class="mt-3
+                                                   flex
+                                                   flex-wrap
+                                                   items-center
+                                                   justify-center
+                                                   gap-x-5
+                                                   gap-y-2"
+                                        >
+                                            <!-- Товары -->
+                                            <div
+                                                :title="t('products')"
+                                                class="flex
+                                                       items-center
+                                                       gap-1"
+                                            >
+                                                <svg
+                                                    class="h-4 w-4
+                                                           text-sky-600/85
+                                                           dark:text-sky-200/85"
+                                                    viewBox="0 0 24 24"
+                                                    fill="currentColor"
                                                 >
-                                                    #{{ tagTitle }}
-                                                </h1>
+                                                    <path
+                                                        d="M21 8.5 12 3 3 8.5V19l9 5 9-5V8.5ZM12 5.3l5.8 3.5-2.2 1.3L10 6.8 12 5.3Zm-3.8 2.6 5.8 3.5-2 1.2-5.8-3.5 2-1.2ZM5 10.6l6 3.6v7L5 17.8v-7.2Zm8 10.6v-7l6-3.6v7.2l-6 3.4Z"
+                                                    />
+                                                </svg>
+
+                                                <span
+                                                    class="text-sm
+                                                           text-gray-500"
+                                                >
+                                                    {{ brandProductsCount }}
+                                                </span>
                                             </div>
 
-                                            <meta
-                                                itemprop="item"
-                                                :content="canonicalUrl"
-                                            />
-
-                                            <meta
-                                                itemprop="position"
-                                                content="3"
-                                            />
-                                        </li>
-                                    </ol>
-                                </nav>
-
-                                <!-- Информация о теге -->
-                                <section
-                                    class="mt-4 mb-3"
-                                    itemscope
-                                    itemtype="https://schema.org/DefinedTerm"
-                                >
-                                    <meta
-                                        itemprop="url"
-                                        :content="canonicalUrl"
-                                    />
-
-                                    <meta
-                                        itemprop="name"
-                                        :content="tagTitle"
-                                    />
-
-                                    <!-- Статистика -->
-                                    <div
-                                        class="flex flex-wrap items-center justify-center
-                                               gap-x-5 gap-y-2"
-                                    >
-                                        <!-- Количество товаров -->
-                                        <div
-                                            :title="t('products')"
-                                            class="flex items-center justify-center gap-1"
-                                        >
-                                            <svg
-                                                class="h-4 w-4
-                                                       text-sky-600/85
-                                                       dark:text-sky-200/85"
-                                                viewBox="0 0 24 24"
-                                                fill="currentColor"
+                                            <!-- Просмотры -->
+                                            <div
+                                                :title="t('views')"
+                                                class="flex
+                                                       items-center
+                                                       gap-1"
                                             >
-                                                <path
-                                                    d="M21 8.5 12 3 3 8.5V19l9 5 9-5V8.5ZM12 5.3l5.8 3.5-2.2 1.3L10 6.8 12 5.3Zm-3.8 2.6 5.8 3.5-2 1.2-5.8-3.5 2-1.2ZM5 10.6l6 3.6v7L5 17.8v-7.2Zm8 10.6v-7l6-3.6v7.2l-6 3.4Z"
-                                                />
-                                            </svg>
+                                                <svg
+                                                    class="h-4 w-4
+                                                           text-slate-600/85
+                                                           dark:text-slate-200/85"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 576 512"
+                                                    fill="currentColor"
+                                                >
+                                                    <path
+                                                        d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
+                                                    />
+                                                </svg>
 
-                                            <span
-                                                class="text-sm text-gray-500"
-                                            >
-                                                {{ tagProductsCount }}
-                                            </span>
+                                                <span
+                                                    class="text-sm
+                                                           text-gray-500"
+                                                >
+                                                    {{ brandViews }}
+                                                </span>
+                                            </div>
                                         </div>
 
-                                        <!-- Просмотры -->
+                                        <!-- Краткое описание -->
                                         <div
-                                            :title="t('views')"
-                                            class="flex items-center justify-center gap-1"
+                                            v-if="brandShort"
+                                            class="mx-auto
+                                                   mt-4
+                                                   max-w-4xl
+                                                   text-center
+                                                   text-sm
+                                                   subtitle"
                                         >
-                                            <svg
-                                                class="h-4 w-4
-                                                       text-slate-600/85
-                                                       dark:text-slate-200/85"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 576 512"
-                                                fill="currentColor"
-                                            >
-                                                <path
-                                                    d="M569.354 231.631C512.97 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-102.556 0-192.091-54.701-240-136 44.157-74.933 123.677-127.27 216.162-135.007C273.958 131.078 280 144.83 280 160c0 30.928-25.072 56-56 56s-56-25.072-56-56l.001-.042C157.794 179.043 152 200.844 152 224c0 75.111 60.889 136 136 136s136-60.889 136-136c0-31.031-10.4-59.629-27.895-82.515C451.704 164.638 498.009 205.106 528 256c-47.908 81.299-137.444 136-240 136z"
-                                                />
-                                            </svg>
-
-                                            <span
-                                                class="text-sm text-gray-500"
-                                            >
-                                                {{ tagViews }}
-                                            </span>
+                                            {{ brandShort }}
                                         </div>
-                                    </div>
 
-                                    <!-- Подзаголовок -->
-                                    <div
-                                        v-if="tagSubtitle"
-                                        class="mt-2
-                                               text-sm
-                                               subtitle
-                                               text-center"
-                                    >
-                                        {{ tagSubtitle }}
-                                    </div>
+                                        <!-- Website -->
+                                        <div
+                                            v-if="brandWebsite"
+                                            class="mt-4
+                                                   text-center"
+                                        >
+                                            <a
+                                                :href="brandWebsite"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="text-sm
+                                                       text-sky-600
+                                                       hover:underline
+                                                       dark:text-sky-300"
+                                            >
+                                                {{ brandWebsite }}
+                                            </a>
+                                        </div>
 
-                                    <!-- Описание -->
-                                    <div
-                                        v-if="tagDescription"
-                                        itemprop="description"
-                                        class="mt-1 mb-3
-                                               text-sm
-                                               subtitle
-                                               text-center"
-                                    >
-                                        {{ tagDescription }}
+                                        <!-- Социальные ссылки -->
+                                        <div
+                                            v-if="brandSocialLinks.length"
+                                            class="mt-3
+                                                   flex
+                                                   flex-wrap
+                                                   justify-center
+                                                   gap-3"
+                                        >
+                                            <a
+                                                v-for="(social, index) in brandSocialLinks"
+                                                :key="`${social.url}-${index}`"
+                                                :href="social.url"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="text-sm
+                                                       text-sky-600
+                                                       hover:underline
+                                                       dark:text-sky-300"
+                                            >
+                                                {{ social.name || social.url }}
+                                            </a>
+                                        </div>
                                     </div>
                                 </section>
+
+                                <!-- Полное описание -->
+                                <section
+                                    v-if="brandDescription"
+                                    class="mt-5
+                                           rounded-2xl
+                                           border
+                                           border-slate-200
+                                           bg-white
+                                           p-4
+                                           dark:border-slate-700
+                                           dark:bg-slate-900"
+                                >
+                                    <div
+                                        itemprop="description"
+                                        class="text-sm
+                                               leading-7
+                                               text-slate-700
+                                               dark:text-slate-300
+                                               whitespace-pre-line"
+                                    >
+                                        {{ brandDescription }}
+                                    </div>
+                                </section>
+                            </article>
+
+                            <!-- Каталог товаров бренда -->
+                            <section
+                                class="mt-6"
+                                aria-labelledby="brand-products-title"
+                            >
+                                <h2
+                                    id="brand-products-title"
+                                    class="mb-3
+                                           text-lg
+                                           font-semibold
+                                           text-slate-900
+                                           dark:text-slate-100"
+                                >
+                                    {{ t('products') }}
+                                    —
+                                    {{ brandTitle }}
+                                </h2>
 
                                 <!-- Server toolbar -->
                                 <EntityPageToolbar
@@ -1835,18 +2060,16 @@ const productListStartPosition =
                                     @update:sortValue="updateSort"
                                 />
 
-                                <!-- Точка плавного скролла -->
-                                <div ref="scrollTarget"></div>
+                                <!-- Точка скролла -->
+                                <div
+                                    ref="scrollTarget"
+                                ></div>
 
-                                <!--
-                                    Список товаров.
-
-                                    MarketProductGrid / Rows
-                                    формируют Schema.org ItemList:
-                                    ListItem → Product → Offer /
-                                    Brand / AggregateRating.
-                                -->
-                                <div v-if="displayedProducts.length === 0"
+                                <!-- Нет товаров -->
+                                <div
+                                    v-if="
+                                        displayedProducts.length === 0
+                                    "
                                     class="mt-6
                                            text-center
                                            text-slate-700
@@ -1855,6 +2078,16 @@ const productListStartPosition =
                                     {{ t('noData') }}
                                 </div>
 
+                                <!--
+                                    MarketProductGrid / Rows
+                                    формируют:
+
+                                    ItemList
+                                    → ListItem
+                                    → Product
+                                    → Brand / Offer /
+                                      AggregateRating.
+                                -->
                                 <div v-else>
                                     <MarketProductGrid
                                         v-if="viewMode === 'grid'"
@@ -1888,7 +2121,7 @@ const productListStartPosition =
                                     :items-per-page="perPage"
                                     :total-items="sortedProducts.length"
                                 />
-                            </article>
+                            </section>
                         </div>
                     </div>
 
@@ -1902,7 +2135,9 @@ const productListStartPosition =
                     >
                         <RightSidebarMarket
                             :collapsed="rightCollapsed"
-                            @collapsed="rightCollapsed = $event"
+                            @collapsed="
+                                rightCollapsed = $event
+                            "
                         />
                     </aside>
                 </div>

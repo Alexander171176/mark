@@ -109,6 +109,52 @@ class MarketTag extends Model
         );
     }
 
+    /**
+     * Получить перевод тега
+     * для текущей или fallback-локали.
+     *
+     * Метод работает только с уже загруженной
+     * коллекцией translations.
+     *
+     * Строгий порядок:
+     * current → configured fallback → null.
+     */
+    public function translationOrFallback(
+        ?string $locale = null,
+        ?string $fallback = null
+    ): ?MarketTagTranslation {
+        if (! $this->relationLoaded('translations')) {
+            return null;
+        }
+
+        $locale ??= app()->getLocale();
+
+        $fallback ??= config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $translation = $this->translations
+            ->firstWhere(
+                'locale',
+                $locale
+            );
+
+        if ($translation) {
+            return $translation;
+        }
+
+        if ($fallback !== $locale) {
+            return $this->translations
+                ->firstWhere(
+                    'locale',
+                    $fallback
+                );
+        }
+
+        return null;
+    }
+
     /** Товары тега */
     public function products(): BelongsToMany
     {

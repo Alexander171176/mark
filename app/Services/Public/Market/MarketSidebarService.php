@@ -2,7 +2,7 @@
 
 namespace App\Services\Public\Market;
 
-use App\Http\Resources\Admin\Market\MarketTag\MarketTagSharedResource;
+use App\Http\Resources\Public\Market\MarketTag\MarketTagResource;
 use App\Models\Admin\Market\MarketTag\MarketTag;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -40,7 +40,7 @@ class MarketSidebarService
     protected function buildSidebarData(string $locale): array
     {
         return [
-            'tags' => MarketTagSharedResource::collection(
+            'tags' => MarketTagResource::collection(
                 $this->getTags($locale)
             ),
         ];
@@ -49,10 +49,25 @@ class MarketSidebarService
     /** Облако тегов маркетплейса. */
     protected function getTags(string $locale): Collection
     {
+        $fallbackLocale = config('app.fallback_locale', 'ru');
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
         return MarketTag::query()
             ->forPublic()
-            ->with('translations')
-            ->withCount('products')
+            ->with([
+                'translations' => fn ($query) =>
+                $query->whereIn('locale', $locales),
+            ])
+            ->withCount([
+                'products' => fn ($query) =>
+                $query->forPublic(),
+            ])
             ->sortByParam('sortAsc', $locale)
             ->get();
     }

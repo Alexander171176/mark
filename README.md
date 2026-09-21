@@ -1030,6 +1030,8 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketTag/MarketTagTranslationResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketTag/MarketTagRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketTag/MarketTagController --resource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Market/MarketTag/MarketTagResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Market/MarketTag/MarketTagTranslationResource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/Market/MarketTag/MarketTagController` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>

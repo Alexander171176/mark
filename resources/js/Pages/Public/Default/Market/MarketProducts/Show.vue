@@ -32,9 +32,11 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarMarket from '@/Components/Public/Default/Partials/LeftSidebarMarket.vue'
 import RightSidebarMarket from '@/Components/Public/Default/Partials/RightSidebarMarket.vue'
 
-import MarketProductGallery from '@/Components/Public/Default/Market/MarketProduct/MarketProductGallery.vue'
+import MarketProductGallery
+    from '@/Components/Public/Default/Market/MarketProduct/MarketProductGallery.vue'
 import LikeButtonEntity from '@/Components/Public/Like/LikeButtonEntity.vue'
-import MarketRecommendedProducts from '@/Components/Public/Default/Market/MarketProduct/MarketRecommendedProducts.vue'
+import MarketRecommendedProducts
+    from '@/Components/Public/Default/Market/MarketProduct/MarketRecommendedProducts.vue'
 
 import MarketRecentlyViewedProducts
     from '@/Components/Public/Default/Market/MarketProduct/MarketRecentlyViewedProducts.vue'
@@ -943,9 +945,9 @@ const hasMarketingFlags = computed(() => {
                                                 :href="route('public.marketProducts.index')"
                                                 class="transition hover:text-indigo-500"
                                             >
-                <span itemprop="name">
-                    {{ t('products') }}
-                </span>
+                                                <span itemprop="name">
+                                                    {{ t('products') }}
+                                                </span>
                                             </Link>
 
                                             <meta
@@ -967,13 +969,13 @@ const hasMarketingFlags = computed(() => {
                                             <Link
                                                 itemprop="item"
                                                 :href="route('public.marketCategories.show', {
-                    url: breadcrumbCategory.url,
-                })"
+                                                    url: breadcrumbCategory.url,
+                                                })"
                                                 class="transition hover:text-indigo-500"
                                             >
-                <span itemprop="name">
-                    {{ breadcrumbCategoryTitle }}
-                </span>
+                                                <span itemprop="name">
+                                                    {{ breadcrumbCategoryTitle }}
+                                                </span>
                                             </Link>
 
                                             <meta
@@ -996,8 +998,8 @@ const hasMarketingFlags = computed(() => {
                                                 itemprop="name"
                                                 class="breadcrumbs"
                                             >
-                {{ productTitle }}
-            </span>
+                                                {{ productTitle }}
+                                            </span>
 
                                             <meta
                                                 itemprop="item"
@@ -1044,35 +1046,35 @@ const hasMarketingFlags = computed(() => {
                                                     <span
                                                         v-if="productData.is_new"
                                                         class="inline-flex items-center rounded-sm
-                                                       bg-teal-500 dark:bg-teal-600
-                                                       px-3 py-1 text-[10px] font-bold
-                                                       uppercase tracking-wide text-white"
+                                                               bg-teal-500 dark:bg-teal-600
+                                                               px-3 py-1 text-[10px] font-bold
+                                                               uppercase tracking-wide text-white"
                                                     >
-                                                NEW
-                                            </span>
+                                                        NEW
+                                                    </span>
 
                                                     <!-- Хит -->
                                                     <span
                                                         v-if="productData.is_hit"
                                                         class="inline-flex items-center rounded-sm
-                                                       bg-amber-500 dark:bg-amber-400
-                                                       px-3 py-1 text-[10px] font-bold
-                                                       uppercase tracking-wide text-white
-                                                       dark:text-slate-900"
+                                                               bg-amber-500 dark:bg-amber-400
+                                                               px-3 py-1 text-[10px] font-bold
+                                                               uppercase tracking-wide text-white
+                                                               dark:text-slate-900"
                                                     >
-                                                HIT
-                                            </span>
+                                                        HIT
+                                                    </span>
 
                                                     <!-- Распродажа -->
                                                     <span
                                                         v-if="productData.is_sale"
                                                         class="inline-flex items-center rounded-sm
-                                                       bg-red-500 dark:bg-red-600
-                                                       px-3 py-1 text-[10px] font-bold
-                                                       uppercase tracking-wide text-white"
+                                                               bg-red-500 dark:bg-red-600
+                                                               px-3 py-1 text-[10px] font-bold
+                                                               uppercase tracking-wide text-white"
                                                     >
-                                                SALE
-                                            </span>
+                                                        SALE
+                                                    </span>
                                                 </div>
 
                                                 <!-- Рейтинг / отзывы -->
@@ -1081,7 +1083,7 @@ const hasMarketingFlags = computed(() => {
                                                     <div
                                                         v-if="productData.reviews_count > 0"
                                                         class="text-xs font-semibold
-                                                   text-slate-500 dark:text-slate-400"
+                                                               text-slate-500 dark:text-slate-400"
                                                     >
                                                         {{ t('reviews') }}:
                                                         {{ productData.reviews_count }}
@@ -1090,7 +1092,7 @@ const hasMarketingFlags = computed(() => {
                                                     <div
                                                         v-if="productData.views > 0"
                                                         class="text-xs font-semibold
-                                                   text-slate-500 dark:text-slate-400"
+                                                               text-slate-500 dark:text-slate-400"
                                                     >
                                                         {{ t('views') }}:
                                                         {{ productData.views }}
@@ -1140,12 +1142,12 @@ const hasMarketingFlags = computed(() => {
                                                         </svg>
 
                                                         <span>
-                                                    {{ rating.toFixed(1) }}
-                                                </span>
+                                                            {{ rating.toFixed(1) }}
+                                                        </span>
 
                                                         <span class="font-normal text-slate-500">
-                                                    ({{ ratingCount }})
-                                                </span>
+                                                            ({{ ratingCount }})
+                                                        </span>
                                                     </div>
 
                                                 </div>
@@ -1159,11 +1161,12 @@ const hasMarketingFlags = computed(() => {
                                                 itemscope
                                                 itemtype="https://schema.org/Brand"
                                                 class="mb-1 text-sm font-semibold uppercase
-                                                   tracking-wide text-slate-500 dark:text-slate-400"
+                                                      tracking-wide text-slate-500
+                                                      dark:text-slate-400"
                                             >
-                                            <span itemprop="name">
-                                                {{ brandTitle }}
-                                            </span>
+                                                <span itemprop="name">
+                                                    {{ brandTitle }}
+                                                </span>
                                             </div>
 
                                             <!-- Название -->
@@ -1179,7 +1182,7 @@ const hasMarketingFlags = computed(() => {
                                             <div
                                                 v-if="productSubtitle"
                                                 class="mt-2 text-sm font-medium text-slate-500
-                                               dark:text-slate-400"
+                                                       dark:text-slate-400"
                                             >
                                                 {{ productSubtitle }}
                                             </div>
@@ -1189,7 +1192,7 @@ const hasMarketingFlags = computed(() => {
                                                 v-if="productShort"
                                                 itemprop="description"
                                                 class="mt-3 text-sm leading-6 text-slate-700
-                                                   dark:text-slate-300"
+                                                       dark:text-slate-300"
                                             >
                                                 {{ productShort }}
                                             </div>
@@ -1199,10 +1202,10 @@ const hasMarketingFlags = computed(() => {
                                                 <!-- Наличие -->
                                                 <div
                                                     class="flex items-center gap-2
-                                               text-sm font-semibold"
+                                                           text-sm font-semibold"
                                                     :class="hasStock
-                                            ? 'text-emerald-600 dark:text-emerald-300'
-                                            : 'text-red-500 dark:text-red-400'"
+                                                        ? 'text-emerald-600 dark:text-emerald-300'
+                                                        : 'text-red-500 dark:text-red-400'"
                                                 >
                                                     <svg
                                                         class="h-4 w-4"
@@ -1222,11 +1225,11 @@ const hasMarketingFlags = computed(() => {
 
                                                     <span>
                                                   {{ hasStock ? t('remainder') : t('outOfStock') }}
-                                                </span>
+                                                    </span>
 
                                                     <span v-if="hasStock && quantity > 0">
-                                                    [{{ quantity }}]
-                                                </span>
+                                                        [{{ quantity }}]
+                                                    </span>
                                                 </div>
 
                                                 <!-- Цена / предложение -->
@@ -1265,7 +1268,7 @@ const hasMarketingFlags = computed(() => {
                                                     <div class="flex flex-wrap items-end gap-3">
                                                         <div
                                                             class="text-xl font-bold
-                                                           text-teal-600 dark:text-teal-400"
+                                                                   text-teal-600 dark:text-teal-400"
                                                         >
                                                             {{ formatPrice(currentPrice) }}
                                                             {{ currencyLabel }}
@@ -1274,8 +1277,8 @@ const hasMarketingFlags = computed(() => {
                                                         <div
                                                             v-if="hasOldPrice"
                                                             class="pb-1 text-base font-semibold
-                                                           text-slate-400 line-through
-                                                           dark:text-slate-500"
+                                                                   text-slate-400 line-through
+                                                                   dark:text-slate-500"
                                                         >
                                                             {{ formatPrice(currentOldPrice) }}
                                                             {{ currencyLabel }}
@@ -1293,10 +1296,10 @@ const hasMarketingFlags = computed(() => {
                                                         {{ currencyLabel }}
 
                                                         <span>
-                                                    /
-                                                    {{ t('wholesaleMinQuantity') }}:
-                                                    {{ wholesaleMinQuantity }}
-                                                </span>
+                                                        /
+                                                        {{ t('wholesaleMinQuantity') }}:
+                                                        {{ wholesaleMinQuantity }}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1316,11 +1319,12 @@ const hasMarketingFlags = computed(() => {
                                                 <select
                                                     v-model="selectedVariantId"
                                                     class="w-full rounded-sm border
-                                                       bg-white dark:bg-gray-800 px-3 py-1
-                                                       border-gray-400 dark:border-gray-600
-                                                       text-sm text-slate-700 dark:text-slate-300
-                                                       focus:border-indigo-500
-                                                       focus:ring-indigo-500"
+                                                           bg-white dark:bg-gray-800 px-3 py-1
+                                                           border-gray-400 dark:border-gray-600
+                                                           text-sm text-slate-700
+                                                           dark:text-slate-300
+                                                           focus:border-indigo-500
+                                                           focus:ring-indigo-500"
                                                 >
                                                     <option
                                                         v-for="variant in publicVariants"
@@ -1331,8 +1335,8 @@ const hasMarketingFlags = computed(() => {
                                                         {{ getVariantTitle(variant) }}
                                                         —
                                                         {{ formatPrice(variant.effective_price) }}
-                                                        {{ variant.currency?.symbol || variant.currency?.sign || variant.currency?.code || currencyLabel }}
-                                                        {{ !variant.has_stock ? `(${t('outOfStock')})` : '' }}
+{{ variant.currency?.symbol || variant.currency?.sign || variant.currency?.code || currencyLabel }}
+                                            {{ !variant.has_stock ? `(${t('outOfStock')})` : '' }}
                                                     </option>
                                                 </select>
 
@@ -1341,40 +1345,39 @@ const hasMarketingFlags = computed(() => {
                                                     v-if="selectedVariant?.values?.length"
                                                     class="mt-3 flex flex-wrap gap-2"
                                                 >
-                                            <span
-                                                v-for="value in selectedVariant.values"
-                                                :key="value.id"
-                                                class="bg-white dark:bg-slate-950
-                                                       rounded-sm border
-                                                       border-slate-400 dark:border-slate-600
-                                                       px-2 py-1 text-xs font-semibold
-                                                       text-slate-600 dark:text-slate-300"
-                                            >
-                                                {{ value.display_value }}
-                                            </span>
+                                                    <span
+                                                        v-for="value in selectedVariant.values"
+                                                        :key="value.id"
+                                                        class="bg-white dark:bg-slate-950
+                                                               rounded-sm border
+                                                               border-slate-400 dark:border-slate-600
+                                                               px-2 py-1 text-xs font-semibold
+                                                               text-slate-600 dark:text-slate-300"
+                                                    >
+                                                        {{ value.display_value }}
+                                                    </span>
                                                 </div>
                                             </div>
 
                                             <!-- Артикулы -->
                                             <div
-                                                v-if="productData.sku
-                                            || productData.vendor_code
-                                            || productData.barcode"
+                                                v-if="productData.sku || productData.vendor_code
+                                                || productData.barcode"
                                                 class="mt-3 flex lg:flex-row lg:justify-between
-                                                   items-center gap-2
-                                                   text-xs text-slate-600 dark:text-slate-400"
+                                                       items-center gap-2 text-xs text-slate-600
+                                                       dark:text-slate-400"
                                             >
                                                 <div v-if="productData.vendor_code">
                                                     {{ t('vendorCode') }}:
                                                     <span class="font-semibold">
-                                                    {{ productData.vendor_code }}
-                                                </span>
+                                                        {{ productData.vendor_code }}
+                                                    </span>
                                                 </div>
                                                 <div v-if="productData.sku">
                                                     {{ t('sku') }}:
                                                     <span class="font-semibold">
-                                                    {{ productData.sku }}
-                                                </span>
+                                                        {{ productData.sku }}
+                                                    </span>
                                                 </div>
                                             </div>
 
@@ -1382,10 +1385,11 @@ const hasMarketingFlags = computed(() => {
                                             <div class="mt-3">
                                                 <LikeButtonEntity
                                                     :likes-count="productData.likes_count || 0"
-                                                    :already-liked="productData.already_liked || false"
+                                                :already-liked="productData.already_liked || false"
                                                     route-name="public.marketProducts.like"
                                                     :route-params="{ id: productData.id }"
-                                                    icon-class="w-5 h-5 hover:scale-110 active:scale-95"
+                                                    icon-class="w-5 h-5 hover:scale-110
+                                                                active:scale-95"
                                                 />
                                             </div>
                                         </div>
@@ -1396,12 +1400,12 @@ const hasMarketingFlags = computed(() => {
                                 <section
                                     v-if="productDescription"
                                     class="mt-4 p-4 rounded-sm shadow-sm
-                                       border border-gray-300 dark:border-gray-600
-                                       bg-white dark:bg-gray-900"
+                                           border border-gray-300 dark:border-gray-600
+                                           bg-white dark:bg-gray-900"
                                 >
                                     <h2
                                         class="mb-4 text-lg font-semibold
-                                       text-slate-800 dark:text-slate-200"
+                                               text-slate-800 dark:text-slate-200"
                                     >
                                         {{ t('description') }}
                                     </h2>
@@ -1416,66 +1420,66 @@ const hasMarketingFlags = computed(() => {
                                 <section
                                     v-if="hasPhysicalParameters"
                                     class="mt-4 p-4 rounded-sm shadow-sm
-                                       border border-gray-300 dark:border-gray-600
-                                       bg-white dark:bg-gray-900"
+                                           border border-gray-300 dark:border-gray-600
+                                           bg-white dark:bg-gray-900"
                                 >
                                     <h2
                                         class="mb-4 text-lg font-semibold
-                                       text-slate-800 dark:text-slate-200"
+                                               text-slate-800 dark:text-slate-200"
                                     >
                                         {{ t('dimensions') }}
                                     </h2>
 
                                     <div
                                         class="grid gap-3 text-sm
-                                       sm:grid-cols-2 lg:grid-cols-4"
+                                               sm:grid-cols-2 lg:grid-cols-4"
                                     >
                                         <div v-if="productData.weight">
-                                    <span
-                                        class="text-slate-500 dark:text-slate-400"
-                                    >
-                                        {{ t('weight') }}:
-                                    </span>
+                                            <span
+                                                class="text-slate-500 dark:text-slate-400"
+                                            >
+                                                {{ t('weight') }}:
+                                            </span>
 
                                             <span class="ml-1 font-semibold">
-                                        {{ productData.weight }}
-                                    </span>
+                                                {{ productData.weight }}
+                                            </span>
                                         </div>
 
                                         <div v-if="productData.length">
-                                    <span
-                                        class="text-slate-500 dark:text-slate-400"
-                                    >
-                                        {{ t('length') }}:
-                                    </span>
+                                            <span
+                                                class="text-slate-500 dark:text-slate-400"
+                                            >
+                                                {{ t('length') }}:
+                                            </span>
 
                                             <span class="ml-1 font-semibold">
-                                        {{ productData.length }}
-                                    </span>
+                                                {{ productData.length }}
+                                            </span>
                                         </div>
 
                                         <div v-if="productData.width">
-                                    <span
-                                        class="text-slate-500 dark:text-slate-400"
-                                    >
-                                        {{ t('width') }}:
-                                    </span>
+                                            <span
+                                                class="text-slate-500 dark:text-slate-400"
+                                            >
+                                                {{ t('width') }}:
+                                            </span>
 
                                             <span class="ml-1 font-semibold">
-                                        {{ productData.width }}
-                                    </span>
+                                                {{ productData.width }}
+                                            </span>
                                         </div>
 
                                         <div v-if="productData.height">
-                                    <span
-                                        class="text-slate-500 dark:text-slate-400"
-                                    >
-                                        {{ t('height') }}:
-                                    </span>
+                                            <span
+                                                class="text-slate-500 dark:text-slate-400"
+                                            >
+                                                {{ t('height') }}:
+                                            </span>
 
                                             <span class="ml-1 font-semibold">
-                                        {{ productData.height }}
-                                    </span>
+                                                {{ productData.height }}
+                                            </span>
                                         </div>
                                     </div>
                                 </section>
@@ -1484,12 +1488,12 @@ const hasMarketingFlags = computed(() => {
                                 <section
                                     v-if="attributeValues.length"
                                     class="mt-4 p-4 rounded-sm shadow-sm
-                                       border border-gray-300 dark:border-gray-600
-                                       bg-white dark:bg-gray-900"
+                                           border border-gray-300 dark:border-gray-600
+                                           bg-white dark:bg-gray-900"
                                 >
                                     <h2
                                         class="mb-4 text-lg font-semibold
-                                       text-slate-800 dark:text-slate-200"
+                                               text-slate-800 dark:text-slate-200"
                                     >
                                         {{ t('attributes') }}
                                     </h2>
@@ -1498,12 +1502,11 @@ const hasMarketingFlags = computed(() => {
                                         <div
                                             v-for="item in attributeValues"
                                             :key="item.id"
-                                            class="grid gap-2 py-2
-                                           text-sm sm:grid-cols-2"
+                                            class="grid gap-2 py-2 text-sm sm:grid-cols-2"
                                         >
                                             <div
                                                 class="font-semibold text-slate-600
-                                               dark:text-slate-400"
+                                                       dark:text-slate-400"
                                             >
                                                 {{ item.attribute?.title || '—' }}
                                             </div>
@@ -1521,12 +1524,12 @@ const hasMarketingFlags = computed(() => {
                                 <section
                                     v-if="categories.length"
                                     class="mt-4 p-4 rounded-sm shadow-sm
-                                       border border-gray-300 dark:border-gray-600
-                                       bg-white dark:bg-gray-900"
+                                           border border-gray-300 dark:border-gray-600
+                                           bg-white dark:bg-gray-900"
                                 >
                                     <h2
                                         class="mb-3 text-lg font-semibold
-                                       text-slate-800 dark:text-slate-200"
+                                               text-slate-800 dark:text-slate-200"
                                     >
                                         {{ t('categories') }}
                                     </h2>
@@ -1536,15 +1539,15 @@ const hasMarketingFlags = computed(() => {
                                             v-for="category in categories"
                                             :key="category.id"
                                             :href="route('public.marketCategories.show', {
-                                        url: category.url,
-                                    })"
+                                                url: category.url,
+                                            })"
                                             class="rounded-sm border
-                                               border-slate-300 dark:border-slate-600
-                                               px-3 py-1 text-xs font-semibold
-                                               text-slate-600 dark:text-slate-300
-                                               hover:text-blue-600 dark:hover:text-blue-400
-                                               transition bg-slate-50 dark:bg-slate-950
-                                               hover:bg-slate-100 dark:hover:bg-slate-800"
+                                                   border-slate-300 dark:border-slate-600
+                                                   px-3 py-1 text-xs font-semibold
+                                                   text-slate-600 dark:text-slate-300
+                                                   hover:text-blue-600 dark:hover:text-blue-400
+                                                   transition bg-slate-50 dark:bg-slate-950
+                                                   hover:bg-slate-100 dark:hover:bg-slate-800"
                                         >
                                             {{ category.translation?.title || '' }}
                                         </Link>
@@ -1555,12 +1558,12 @@ const hasMarketingFlags = computed(() => {
                                 <section
                                     v-if="tags.length"
                                     class="mt-4 p-4 rounded-sm shadow-sm
-                                       border border-gray-300 dark:border-gray-600
-                                       bg-white dark:bg-gray-900"
+                                           border border-gray-300 dark:border-gray-600
+                                           bg-white dark:bg-gray-900"
                                 >
                                     <h2
                                         class="mb-3 text-lg font-semibold
-                                       text-slate-800 dark:text-slate-200"
+                                               text-slate-800 dark:text-slate-200"
                                     >
                                         {{ t('tags') }}
                                     </h2>
@@ -1570,15 +1573,15 @@ const hasMarketingFlags = computed(() => {
                                             v-for="tag in tags"
                                             :key="tag.id"
                                             :href="route('public.marketTags.show', {
-                                        url: tag.url,
-                                    })"
+                                                url: tag.url,
+                                            })"
                                             class="rounded-sm border
-                                               border-slate-300 dark:border-slate-600
-                                               px-3 py-1 text-xs font-semibold
-                                               text-slate-600 dark:text-slate-300
-                                               hover:text-blue-600 dark:hover:text-blue-400
-                                               transition bg-slate-50 dark:bg-slate-950
-                                               hover:bg-slate-100 dark:hover:bg-slate-800"
+                                                   border-slate-300 dark:border-slate-600
+                                                   px-3 py-1 text-xs font-semibold
+                                                   text-slate-600 dark:text-slate-300
+                                                   hover:text-blue-600 dark:hover:text-blue-400
+                                                   transition bg-slate-50 dark:bg-slate-950
+                                                   hover:bg-slate-100 dark:hover:bg-slate-800"
                                         >
                                             {{ tag.translation?.title || tag.title }}
                                         </Link>
@@ -1592,7 +1595,7 @@ const hasMarketingFlags = computed(() => {
                                 >
                                     <h2
                                         class="mb-4 text-xl font-semibold text-center
-                                           text-slate-800 dark:text-slate-200"
+                                               text-slate-800 dark:text-slate-200"
                                     >
                                         {{ t('relatedProducts') }}
                                     </h2>

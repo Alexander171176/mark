@@ -454,20 +454,12 @@ onBeforeUnmount(() => {
                 :disabled="products.length <= 1"
                 class="shrink-0 items-center justify-center
                        rounded-sm border border-dotted border-gray-600
-                       bg-slate-50 text-slate-600 shadow-sm
-                       transition
-                       hover:border-2 hover:border-solid
-                       hover:border-indigo-400
-                       hover:bg-slate-200
-                       hover:text-indigo-500
-                       disabled:cursor-default
-                       disabled:opacity-30
-                       dark:border-gray-400
-                       dark:bg-slate-950
-                       dark:text-slate-300
-                       dark:hover:border-indigo-500
-                       dark:hover:bg-slate-800
-                       sm:flex h-8 w-8"
+                       bg-slate-50 text-slate-600 shadow-sm transition
+                       hover:border-2 hover:border-solid hover:border-indigo-400
+                       hover:bg-slate-200 hover:text-indigo-500
+                       disabled:cursor-default disabled:opacity-30
+                       dark:border-gray-400 dark:bg-slate-950 dark:text-slate-300
+                       dark:hover:border-indigo-500 dark:hover:bg-slate-800 sm:flex h-8 w-8"
                 :title="t('previous')"
                 aria-label="Previous products"
             >
@@ -494,18 +486,10 @@ onBeforeUnmount(() => {
                 </span>
 
                 <span
-                    class="ml-2 inline-flex min-w-6
-                           items-center justify-center
-                           rounded-full
-                           border border-teal-200
-                           bg-teal-50
-                           px-2 py-0.5
-                           text-xs font-bold
-                           text-teal-600
-                           shadow-sm
-                           dark:border-teal-700/70
-                           dark:bg-teal-950/60
-                           dark:text-teal-300"
+                    class="ml-2 inline-flex min-w-6 items-center justify-center rounded-full
+                           border border-teal-200 bg-teal-50 px-2 py-0.5
+                           text-xs font-bold text-teal-600 shadow-sm
+                           dark:border-teal-700/70 dark:bg-teal-950/60 dark:text-teal-300"
                 >
                     {{ products.length }}
                 </span>
@@ -518,19 +502,11 @@ onBeforeUnmount(() => {
                 :disabled="products.length <= 1"
                 class="shrink-0 items-center justify-center
                        rounded-sm border border-dotted border-gray-600
-                       bg-slate-50 text-slate-600 shadow-sm
-                       transition
-                       hover:border-2 hover:border-solid
-                       hover:border-indigo-400
-                       hover:bg-slate-200
-                       hover:text-indigo-500
-                       disabled:cursor-default
-                       disabled:opacity-30
-                       dark:border-gray-400
-                       dark:bg-slate-950
-                       dark:text-slate-300
-                       dark:hover:border-indigo-500
-                       dark:hover:bg-slate-800
+                       bg-slate-50 text-slate-600 shadow-sm transition
+                       hover:border-2 hover:border-solid hover:border-indigo-400
+                       hover:bg-slate-200 hover:text-indigo-500 disabled:cursor-default
+                       disabled:opacity-30 dark:border-gray-400 dark:bg-slate-950
+                       dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:bg-slate-800
                        sm:flex h-8 w-8"
                 :title="t('next')"
                 aria-label="Next products"
@@ -551,29 +527,18 @@ onBeforeUnmount(() => {
         <div
             ref="sliderRef"
             @scroll.passive="updateScrollState"
-            class="flex min-w-0 w-full
-                   snap-x snap-mandatory
-                   gap-4 overflow-x-auto
-                   scroll-smooth pb-2
-                   [scrollbar-width:none]
-                   [&::-webkit-scrollbar]:hidden"
+            class="flex min-w-0 w-full snap-x snap-mandatory gap-4 overflow-x-auto
+                   scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
             <!-- Карточка -->
             <article
                 v-for="(product, index) in products"
                 :key="product.id"
-                class="group flex shrink-0 snap-start
-                       w-full
-                       sm:w-[calc(50%-0.5rem)]
-                       md:w-[calc(33.333333%-0.667rem)]
-                       lg:w-[calc(25%-0.75rem)]
-                       flex-col overflow-hidden rounded-2xl
-                       border border-gray-200
-                       bg-white shadow-sm transition
-                       hover:-translate-y-0.5
-                       hover:shadow-md
-                       dark:border-gray-700
-                       dark:bg-gray-900"
+                class="group flex shrink-0 snap-start w-full sm:w-[calc(50%-0.5rem)]
+                       md:w-[calc(33.333333%-0.667rem)] lg:w-[calc(25%-0.75rem)]
+                       flex-col overflow-hidden rounded-2xl border border-gray-200
+                       bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md
+                       dark:border-gray-700 dark:bg-gray-900"
                 itemprop="itemListElement"
                 itemscope
                 itemtype="https://schema.org/ListItem"
@@ -605,50 +570,39 @@ onBeforeUnmount(() => {
                                 height-class="h-40"
                                 rounded-class=""
                                 wrapper-class=""
-                                img-class="w-full h-full object-cover
-                                       transition duration-300
-                                       group-hover:scale-105"
+                                img-class="w-full h-full object-cover transition duration-300
+                                           group-hover:scale-105"
                             />
                         </Link>
 
                         <!-- Маркетинговые признаки -->
                         <div
                             v-if="hasMarketingFlags(product)"
-                            class="absolute left-2 top-2 z-10
-                               flex flex-wrap gap-1"
+                            class="absolute left-2 top-2 z-10 flex flex-wrap gap-1"
                         >
-                        <span
-                            v-if="product.is_new"
-                            class="rounded-sm bg-teal-500
-                                   px-1.5 py-0.5
-                                   text-[9px] font-bold
-                                   uppercase tracking-wide
-                                   text-white shadow-sm"
-                        >
-                            NEW
-                        </span>
+                            <span
+                                v-if="product.is_new"
+                                class="rounded-sm bg-teal-500 px-1.5 py-0.5 text-[9px] font-bold
+                                       uppercase tracking-wide text-white shadow-sm"
+                            >
+                                NEW
+                            </span>
 
                             <span
                                 v-if="product.is_hit"
-                                class="rounded-sm bg-amber-500
-                                   px-1.5 py-0.5
-                                   text-[9px] font-bold
-                                   uppercase tracking-wide
-                                   text-slate-900 shadow-sm"
+                                class="rounded-sm bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold
+                                       uppercase tracking-wide text-slate-900 shadow-sm"
                             >
-                            HIT
-                        </span>
+                                HIT
+                            </span>
 
                             <span
                                 v-if="product.is_sale"
-                                class="rounded-sm bg-red-500
-                                   px-1.5 py-0.5
-                                   text-[9px] font-bold
-                                   uppercase tracking-wide
-                                   text-white shadow-sm"
+                                class="rounded-sm bg-red-500 px-1.5 py-0.5 text-[9px] font-bold
+                                       uppercase tracking-wide text-white shadow-sm"
                             >
-                            SALE
-                        </span>
+                                SALE
+                            </span>
                         </div>
                     </div>
 
@@ -664,10 +618,8 @@ onBeforeUnmount(() => {
                         >
                             <span
                                 itemprop="name"
-                                class="text-[10px] font-semibold
-                                       uppercase tracking-wide
-                                       text-slate-500
-                                       dark:text-slate-400"
+                                class="text-[10px] font-semibold uppercase tracking-wide
+                                       text-slate-500 dark:text-slate-400"
                             >
                                 {{ getBrandTitle(product) }}
                             </span>
@@ -682,12 +634,8 @@ onBeforeUnmount(() => {
                             >
                                 <span
                                     itemprop="name"
-                                    class="line-clamp-2 text-xs
-                                           font-semibold
-                                           text-slate-900/85
-                                           transition
-                                           group-hover:opacity-75
-                                           dark:text-slate-100/85"
+                                    class="line-clamp-2 text-xs font-semibold text-slate-900/85
+                                           transition group-hover:opacity-75 dark:text-slate-100/85"
                                                             >
                                     {{ getProductTitle(product) }}
                                 </span>
@@ -735,44 +683,38 @@ onBeforeUnmount(() => {
 
                                 <!-- Цена -->
                                 <div
-                                    class="mt-2 flex flex-col
-                                       items-center justify-center"
+                                    class="mt-2 flex flex-col items-center justify-center"
                                 >
-                                <span
-                                    class="text-sm font-bold
-                                           text-teal-600
-                                           dark:text-teal-400"
-                                >
-                                    {{ formatPrice(getPrice(product)) }}
-                                    {{ getCurrency(product) }}
-                                </span>
+                                    <span
+                                        class="text-sm font-bold text-teal-600 dark:text-teal-400"
+                                    >
+                                        {{ formatPrice(getPrice(product)) }}
+                                        {{ getCurrency(product) }}
+                                    </span>
 
                                     <span
                                         v-if="hasOldPrice(product)"
-                                        class="text-[11px] font-semibold
-                                           text-slate-400 line-through
-                                           dark:text-slate-500"
+                                        class="text-[11px] font-semibold text-slate-400 line-through
+                                               dark:text-slate-500"
                                     >
-                                    {{ formatPrice(getOldPrice(product)) }}
-                                    {{ getCurrency(product) }}
-                                </span>
+                                        {{ formatPrice(getOldPrice(product)) }}
+                                        {{ getCurrency(product) }}
+                                    </span>
                                 </div>
 
                                 <!-- Наличие -->
                                 <div
-                                    class="mt-1 flex items-center
-                                       justify-center gap-1
-                                       text-[10px] font-semibold
-                                       text-slate-500
-                                       dark:text-slate-400"
+                                    class="mt-1 flex items-center justify-center gap-1
+                                           text-[10px] font-semibold text-slate-500
+                                           dark:text-slate-400"
                                 >
                                     <svg
                                         class="h-3 w-3 shrink-0"
                                         viewBox="0 0 24 24"
                                         fill="currentColor"
                                         :class="hasStock(product)
-                                        ? 'text-emerald-600 dark:text-emerald-300'
-                                        : 'text-red-500 dark:text-red-300'"
+                                            ? 'text-emerald-600 dark:text-emerald-300'
+                                            : 'text-red-500 dark:text-red-300'"
                                     >
                                         <path
                                             v-if="hasStock(product)"
@@ -786,36 +728,31 @@ onBeforeUnmount(() => {
                                     </svg>
 
                                     <span>
-                                    {{ hasStock(product) ? t('remainder') : t('outOfStock') }}
-                                </span>
+                                        {{ hasStock(product) ? t('remainder') : t('outOfStock') }}
+                                    </span>
 
                                     <span
                                         v-if="hasStock(product)
                                         && quantity(product) > 0"
                                     >
-                                    [{{ quantity(product) }}]
-                                </span>
+                                        [{{ quantity(product) }}]
+                                    </span>
                                 </div>
 
                             </div>
 
                         <!-- Статистика -->
                         <div
-                            class="mt-2 flex flex-wrap
-                               items-center justify-center gap-2"
+                            class="mt-2 flex flex-wrap items-center justify-center gap-2"
                         >
                             <!-- Просмотры -->
                             <div
                                 v-if="product.views > 0"
-                                class="inline-flex items-center gap-1
-                                   text-[10px] font-semibold
-                                   text-slate-500
-                                   dark:text-slate-400"
+                                class="inline-flex items-center gap-1 text-[10px] font-semibold
+                                       text-slate-500 dark:text-slate-400"
                             >
                                 <svg
-                                    class="h-3 w-3
-                                       text-blue-600/85
-                                       dark:text-blue-200/85"
+                                    class="h-3 w-3 text-blue-600/85 dark:text-blue-200/85"
                                     viewBox="0 0 576 512"
                                     fill="currentColor"
                                 >
@@ -831,14 +768,10 @@ onBeforeUnmount(() => {
                             <div
                                 v-if="rating(product) > 0"
                                 class="inline-flex items-center gap-1
-                                   text-[10px] font-semibold
-                                   text-slate-500
-                                   dark:text-slate-400"
+                                       text-[10px] font-semibold text-slate-500 dark:text-slate-400"
                             >
                                 <svg
-                                    class="h-3 w-3
-                                       text-amber-500
-                                       dark:text-amber-300"
+                                    class="h-3 w-3 text-amber-500 dark:text-amber-300"
                                     viewBox="0 0 24 24"
                                     fill="currentColor"
                                 >
@@ -853,9 +786,7 @@ onBeforeUnmount(() => {
                             <!-- Отзывы -->
                             <div
                                 v-if="reviewsCount(product) > 0"
-                                class="text-[10px] font-semibold
-                                   text-slate-500
-                                   dark:text-slate-400"
+                                class="text-[10px] font-semibold text-slate-500 dark:text-slate-400"
                             >
                                 {{ t('reviews') }}:
                                 {{ reviewsCount(product) }}
@@ -899,17 +830,14 @@ onBeforeUnmount(() => {
 
                         <!-- Лайк -->
                         <div
-                            class="mt-auto flex
-                               items-center justify-center pt-2"
+                            class="mt-auto flex items-center justify-center pt-2"
                         >
                             <LikeButtonEntity
                                 :likes-count="product.likes_count || 0"
                                 :already-liked="product.already_liked || false"
                                 route-name="public.marketProducts.like"
                                 :route-params="{ id: product.id }"
-                                icon-class="w-3 h-3
-                                        hover:scale-110
-                                        active:scale-95"
+                                icon-class="w-3 h-3 hover:scale-110 active:scale-95"
                             />
                         </div>
                     </div>

@@ -243,8 +243,7 @@ const getViews = (brand) => {
                             :entity="brand"
                             height-class="h-44"
                             rounded-class="rounded-md"
-                            wrapper-class="w-full sm:w-60 border
-                                           border-gray-400
+                            wrapper-class="w-full sm:w-60 border border-gray-400
                                            dark:border-gray-600"
                             img-class="w-full h-full object-cover transition
                                        duration-300 group-hover:scale-105"
@@ -254,14 +253,12 @@ const getViews = (brand) => {
 
                 <!-- Основная информация -->
                 <div
-                    class="flex min-w-0 flex-1 flex-col
-                           justify-between gap-3"
+                    class="flex min-w-0 flex-1 flex-col justify-between gap-3"
                 >
                     <div>
                         <!-- Логотип + название -->
                         <div
-                            class="flex flex-col gap-3
-                                   sm:flex-row sm:items-center"
+                            class="flex flex-col gap-3 sm:flex-row sm:items-center"
                         >
                             <!-- Логотип -->
                             <Link
@@ -288,14 +285,11 @@ const getViews = (brand) => {
                                     v-if="getBrandTitle(brand)"
                                     :href="brandLink(brand)"
                                     :title="getBrandShort(brand)"
-                                    class="inline-flex min-w-0
-                                           items-center gap-2"
+                                    class="inline-flex min-w-0 items-center gap-2"
                                 >
                                     <span
-                                        class="text-lg font-semibold
-                                               text-slate-900/85
-                                               group-hover:opacity-75
-                                               dark:text-slate-100/85"
+                                        class="text-lg font-semibold text-slate-900/85
+                                               group-hover:opacity-75 dark:text-slate-100/85"
                                     >
                                         {{ getBrandTitle(brand) }}
                                     </span>
@@ -307,8 +301,7 @@ const getViews = (brand) => {
                                     :href="brand.website"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="mt-1 block w-fit max-w-full
-                                           truncate text-xs
+                                    class="mt-1 block w-fit max-w-full truncate text-xs
                                            text-amber-700 hover:underline
                                            dark:text-amber-300"
                                     :title="brand.website"
@@ -321,8 +314,7 @@ const getViews = (brand) => {
                         <!-- Краткое описание -->
                         <div
                             v-if="getBrandShort(brand)"
-                            class="mt-3 text-sm leading-relaxed
-                                   text-slate-700 dark:text-slate-300"
+                            class="mt-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300"
                         >
                             {{ getBrandShort(brand) }}
                         </div>
@@ -330,26 +322,21 @@ const getViews = (brand) => {
 
                     <!-- Нижняя строка -->
                     <div
-                        class="flex flex-wrap items-center
-                               justify-between gap-3"
+                        class="flex flex-wrap items-center justify-between gap-3"
                     >
                         <!-- Данные -->
                         <div
                             class="flex flex-wrap items-center gap-2
-                                   text-xs font-semibold
-                                   text-slate-500 dark:text-slate-400"
+                                   text-xs font-semibold text-slate-500 dark:text-slate-400"
                         >
                             <!-- Товары -->
                             <div
                                 class="flex items-center justify-center gap-1
-                                       rounded-sm border border-slate-400
-                                       px-2 py-1"
+                                       rounded-sm border border-slate-400 px-2 py-1"
                                 :title="t('products')"
                             >
                                 <svg
-                                    class="h-3 w-3 shrink-0
-                                           text-violet-600
-                                           dark:text-violet-300"
+                                    class="h-3 w-3 shrink-0 text-violet-600 dark:text-violet-300"
                                     viewBox="0 0 24 24"
                                     fill="currentColor"
                                     aria-hidden="true"
@@ -366,14 +353,11 @@ const getViews = (brand) => {
                             <div
                                 v-if="getViews(brand) > 0"
                                 class="flex items-center justify-center gap-1
-                                       rounded-sm border border-slate-400
-                                       px-2 py-1"
+                                       rounded-sm border border-slate-400 px-2 py-1"
                                 :title="t('views')"
                             >
                                 <svg
-                                    class="h-3 w-3
-                                           text-blue-600/85
-                                           dark:text-blue-200/85"
+                                    class="h-3 w-3 text-blue-600/85 dark:text-blue-200/85"
                                     viewBox="0 0 576 512"
                                     fill="currentColor"
                                     aria-hidden="true"
@@ -391,8 +375,7 @@ const getViews = (brand) => {
                         <Link
                             :href="brandLink(brand)"
                             :title="getBrandTitle(brand)"
-                            class="flex w-fit items-center
-                                   justify-center gap-2 rounded-sm
+                            class="flex w-fit items-center justify-center gap-2 rounded-sm
                                    px-3 py-1 btn-default"
                         >
                             <span class="text-sm font-semibold">

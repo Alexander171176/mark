@@ -33,13 +33,16 @@ class MarketCategorySharedResource extends JsonResource
             : null;
 
         return [
-            'id' => $this->id,
+            'id' =>
+                (int) $this->id,
 
             'parent_id' =>
-                $this->parent_id,
+                $this->parent_id !== null
+                    ? (int) $this->parent_id
+                    : null,
 
             'level' =>
-                $this->level,
+                (int) $this->level,
 
             'url' =>
                 $this->url,
@@ -48,13 +51,13 @@ class MarketCategorySharedResource extends JsonResource
                 $this->icon,
 
             'sort' =>
-                $this->sort,
+                (int) $this->sort,
 
             'in_menu' =>
                 (bool) $this->in_menu,
 
             'views' =>
-                $this->views,
+                (int) $this->views,
 
             'published_at' =>
                 $this->published_at?->toISOString(),
@@ -75,23 +78,41 @@ class MarketCategorySharedResource extends JsonResource
                 ]
                 : null,
 
+            /**
+             * Родительская категория.
+             */
             'parent' =>
                 self::make(
                     $this->whenLoaded('parent')
                 ),
 
-            'public_catalog_children' =>
+            /**
+             * Публичные дочерние категории.
+             *
+             * Laravel relation:
+             * publicCatalogChildren.
+             *
+             * Public API:
+             * children.
+             */
+            'children' =>
                 self::collection(
                     $this->whenLoaded(
                         'publicCatalogChildren'
                     )
                 ),
 
+            /**
+             * Изображения категории.
+             */
             'images' =>
                 MarketCategoryImageResource::collection(
                     $this->whenLoaded('images')
                 ),
 
+            /**
+             * Public counts.
+             */
             'products_count' =>
                 $this->whenCounted(
                     'products'

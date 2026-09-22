@@ -1507,33 +1507,20 @@ const productListStartPosition =
         <Navbar />
 
         <main
-            class="min-h-screen
-                   px-1 lg:px-6
-                   max-w-full"
+            class="min-h-screen px-1 lg:px-6 max-w-full"
         >
             <div
-                class="mx-auto
-                       tracking-wider
-                       pt-20 lg:pt-44"
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
             >
                 <div
-                    class="ext-color
-                           w-full min-w-0
-                           py-3 px-1
-                           flex flex-col
-                           lg:flex-row
-                           gap-4
-                           rounded-3xl
-                           border-2
-                           border-slate-300
-                           dark:border-slate-500"
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4
+                           rounded-3xl border-2 border-slate-300 dark:border-slate-500"
                 >
                     <!-- Левая колонка -->
                     <aside
                         v-if="showLeft"
-                        class="shrink-0
-                               transition-all
-                               duration-300"
+                        class="shrink-0 transition-all duration-300"
                         :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
                     >
                         <LeftSidebarMarket
@@ -1545,10 +1532,7 @@ const productListStartPosition =
 
                     <!-- Центральная колонка -->
                     <div
-                        class="min-w-0
-                               flex-1
-                               pb-6
-                               slate-1"
+                        class="min-w-0 flex-1 pb-6 slate-1"
                     >
                         <div class="w-full">
                             <article
@@ -1593,9 +1577,7 @@ const productListStartPosition =
                                     itemtype="https://schema.org/BreadcrumbList"
                                 >
                                     <ol
-                                        class="flex flex-wrap
-                                               items-center
-                                               font-semibold"
+                                        class="flex flex-wrap items-center font-semibold"
                                     >
                                         <!-- Главная -->
                                         <li
@@ -1607,12 +1589,9 @@ const productListStartPosition =
                                             <Link
                                                 itemprop="item"
                                                 :href="route('home')"
-                                                class="breadcrumb-link
-                                                       hover:underline"
+                                                class="breadcrumb-link hover:underline"
                                             >
-                                                <span
-                                                    itemprop="name"
-                                                >
+                                                <span itemprop="name">
                                                     {{ t('home') }}
                                                 </span>
                                             </Link>
@@ -1630,21 +1609,16 @@ const productListStartPosition =
                                             itemtype="https://schema.org/ListItem"
                                             class="flex items-center"
                                         >
-                                            <span
-                                                class="mx-2 breadcrumbs"
-                                            >
+                                            <span class="mx-2 breadcrumbs">
                                                 /
                                             </span>
 
                                             <Link
                                                 itemprop="item"
                                                 :href="route('public.marketCategories.index')"
-                                                class="breadcrumb-link
-                                                       hover:underline"
+                                                class="breadcrumb-link hover:underline"
                                             >
-                                                <span
-                                                    itemprop="name"
-                                                >
+                                                <span itemprop="name">
                                                     {{ t('categories') }}
                                                 </span>
                                             </Link>
@@ -1668,22 +1642,17 @@ const productListStartPosition =
                                             </span>
 
                                             <div
-                                                class="flex
-                                                       items-center
-                                                       gap-1.5"
+                                                class="flex items-center gap-1.5"
                                             >
                                                 <span
                                                     v-if="hasSvgIcon"
-                                                    class="flex
-                                                           shrink-0"
+                                                    class="flex shrink-0"
                                                     v-html="tag.icon"
                                                 />
 
                                                 <h1
                                                     itemprop="name"
-                                                    class="breadcrumbs
-                                                           text-sm
-                                                           font-semibold"
+                                                    class="breadcrumbs text-sm font-semibold"
                                                     :style="tag.color ? {
                                                                 color:
                                                                     tag.color
@@ -1734,9 +1703,7 @@ const productListStartPosition =
                                             class="flex items-center justify-center gap-1"
                                         >
                                             <svg
-                                                class="h-4 w-4
-                                                       text-sky-600/85
-                                                       dark:text-sky-200/85"
+                                                class="h-4 w-4 text-sky-600/85 dark:text-sky-200/85"
                                                 viewBox="0 0 24 24"
                                                 fill="currentColor"
                                             >
@@ -1758,8 +1725,7 @@ const productListStartPosition =
                                             class="flex items-center justify-center gap-1"
                                         >
                                             <svg
-                                                class="h-4 w-4
-                                                       text-slate-600/85
+                                                class="h-4 w-4 text-slate-600/85
                                                        dark:text-slate-200/85"
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 viewBox="0 0 576 512"
@@ -1770,9 +1736,7 @@ const productListStartPosition =
                                                 />
                                             </svg>
 
-                                            <span
-                                                class="text-sm text-gray-500"
-                                            >
+                                            <span class="text-sm text-gray-500">
                                                 {{ tagViews }}
                                             </span>
                                         </div>
@@ -1781,10 +1745,7 @@ const productListStartPosition =
                                     <!-- Подзаголовок -->
                                     <div
                                         v-if="tagSubtitle"
-                                        class="mt-2
-                                               text-sm
-                                               subtitle
-                                               text-center"
+                                        class="mt-2 text-sm subtitle text-center"
                                     >
                                         {{ tagSubtitle }}
                                     </div>
@@ -1793,10 +1754,7 @@ const productListStartPosition =
                                     <div
                                         v-if="tagDescription"
                                         itemprop="description"
-                                        class="mt-1 mb-3
-                                               text-sm
-                                               subtitle
-                                               text-center"
+                                        class="mt-1 mb-3 text-sm subtitle text-center"
                                     >
                                         {{ tagDescription }}
                                     </div>
@@ -1847,10 +1805,7 @@ const productListStartPosition =
                                     Brand / AggregateRating.
                                 -->
                                 <div v-if="displayedProducts.length === 0"
-                                    class="mt-6
-                                           text-center
-                                           text-slate-700
-                                           dark:text-slate-300"
+                                    class="mt-6 text-center text-slate-700 dark:text-slate-300"
                                 >
                                     {{ t('noData') }}
                                 </div>
@@ -1895,9 +1850,7 @@ const productListStartPosition =
                     <!-- Правая колонка -->
                     <aside
                         v-if="showRight"
-                        class="shrink-0
-                               transition-all
-                               duration-300"
+                        class="shrink-0 transition-all duration-300"
                         :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
                     >
                         <RightSidebarMarket

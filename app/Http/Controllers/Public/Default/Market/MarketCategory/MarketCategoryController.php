@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Public\Default\Market\MarketCategory;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Public\Market\MarketCategory\MarketCategoryResource;
 use App\Http\Resources\Public\Market\MarketCategory\MarketCategorySharedResource;
+use App\Http\Resources\Public\Market\MarketProduct\MarketProductSharedResource;
 use App\Models\Admin\Market\MarketCategory\MarketCategory;
+use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\Public\Cms\CmsPageResolverService;
 use App\Services\SiteSettings\PublicSettingsService;
@@ -290,7 +292,7 @@ class MarketCategoryController extends Controller
                     /**
                      * Изображения категории.
                      */
-                    'images',
+                    'images.media',
 
                     /**
                      * Родительская категория.
@@ -307,12 +309,12 @@ class MarketCategoryController extends Controller
                                         $locales
                                     ),
 
-                                'images',
+                                'images.media',
                             ]),
 
                     /**
                      * Публичные дочерние
-                     * категории.
+                     * категории каталога.
                      */
                     'publicCatalogChildren' =>
                         fn ($query) =>
@@ -325,7 +327,7 @@ class MarketCategoryController extends Controller
                                         $locales
                                     ),
 
-                                'images',
+                                'images.media',
                             ])
                             ->withCount([
                                 /**
@@ -375,6 +377,108 @@ class MarketCategoryController extends Controller
         $category->increment('views');
 
         /**
+         * Публичные настройки
+         * каталога товаров категории.
+         */
+        $settings = app(
+            PublicSettingsService::class
+        );
+
+        $perPage = $this->resolvePerPage(
+            $request,
+            $settings->int(
+                'publicMarketProductsPerPage',
+                12
+            )
+        );
+
+        $search = $this->resolveSearch(
+            $request
+        );
+
+        $defaultSort = $settings->string(
+            'publicMarketProductsDefaultSort',
+            'sortAsc'
+        );
+
+        $sort = $this->resolveSort(
+            $request,
+            $defaultSort
+        );
+
+        $view = $this->resolveView(
+            $request,
+            $settings->string(
+                'publicMarketProductsDefaultView',
+                'grid'
+            )
+        );
+
+        $processingMode =
+            $this->resolveProcessingMode(
+                $settings->string(
+                    'publicMarketProductsProcessingMode',
+                    'server'
+                )
+            );
+
+        /**
+         * Количество только публичных
+         * товаров текущей категории.
+         */
+        $productsCount = (int) (
+            $category->products_count ?? 0
+        );
+
+        /**
+         * Определяем server/frontend режим.
+         */
+        $useServerProcessing = app(
+            ProcessingModeService::class
+        )->shouldUseServer(
+            $processingMode,
+            $productsCount,
+            300
+        );
+
+        /**
+         * Получаем товары категории.
+         *
+         * В server-режиме поиск и сортировка
+         * выполняются Laravel.
+         *
+         * Во frontend-режиме полный публичный
+         * набор передаётся Vue.
+         */
+        $products =
+            $this->getCategoryProducts(
+                categoryId: (int) $category->id,
+                locale: $locale,
+                useServerProcessing:
+                $useServerProcessing,
+                perPage: $perPage,
+                sort: $sort,
+                search: $search,
+            );
+
+        /**
+         * Количество найденных товаров.
+         */
+        $productsFound =
+            $useServerProcessing
+                ? $products->total()
+                : $products->count();
+
+        /**
+         * Компактный Public Resource
+         * товаров категории.
+         */
+        $products =
+            MarketProductSharedResource::collection(
+                $products
+            );
+
+        /**
          * Дерево категорий
          * для левого сайдбара.
          */
@@ -398,6 +502,37 @@ class MarketCategoryController extends Controller
                     new MarketCategoryResource(
                         $category
                     ),
+
+                'products' =>
+                    $products,
+
+                'productsCount' =>
+                    $productsCount,
+
+                'productsFound' =>
+                    $productsFound,
+
+                'publicMarketProductsProcessingMode' =>
+                    $processingMode,
+
+                'useServerProcessing' =>
+                    $useServerProcessing,
+
+                'filters' =>
+                    $this->buildIndexFilters(
+                        $search,
+                        $perPage,
+                        $sort,
+                        $view,
+                        $processingMode
+                    ),
+
+                /**
+                 * Источник истины для
+                 * frontend-сортировки товаров.
+                 */
+                'defaultSort' =>
+                    $defaultSort,
 
                 'categoryTree' =>
                     $categoryTree,
@@ -446,7 +581,7 @@ class MarketCategoryController extends Controller
                 /**
                  * Изображения категории.
                  */
-                'images',
+                'images.media',
 
                 /**
                  * Родительская категория
@@ -486,6 +621,164 @@ class MarketCategoryController extends Controller
                  */
                 'images',
             ]);
+    }
+
+    /**
+     * Базовый запрос публичных
+     * товаров конкретной категории.
+     */
+    private function productsQuery(
+        int $categoryId,
+        string $locale
+    ): Builder {
+        $fallbackLocale = config(
+            'app.fallback_locale',
+            'ru'
+        );
+
+        $locales = array_values(
+            array_unique([
+                $locale,
+                $fallbackLocale,
+            ])
+        );
+
+        $query = MarketProduct::query()
+            ->forPublic()
+
+            /**
+             * Только товары,
+             * связанные с текущей категорией.
+             */
+            ->whereHas(
+                'categories',
+                fn (Builder $categoryQuery) =>
+                $categoryQuery->where(
+                    'market_categories.id',
+                    $categoryId
+                )
+            )
+
+            ->with([
+                /**
+                 * Только current + fallback
+                 * переводы товара.
+                 */
+                'translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                /**
+                 * Валюта товара.
+                 */
+                'currency',
+
+                /**
+                 * Изображения товара.
+                 */
+                'images.media',
+
+                /**
+                 * Публичный бренд товара.
+                 *
+                 * MarketProductSharedResource
+                 * использует relation brand.
+                 */
+                'brand' =>
+                    fn ($query) =>
+                    $query
+                        ->forPublic()
+                        ->with([
+                            'translations' =>
+                                fn ($translationQuery) =>
+                                $translationQuery
+                                    ->whereIn(
+                                        'locale',
+                                        $locales
+                                    ),
+                        ]),
+            ])
+            ->withCount([
+                /**
+                 * Только публичные варианты.
+                 */
+                'publicVariants',
+
+                /**
+                 * Только публичные отзывы.
+                 */
+                'reviews' =>
+                    fn ($query) =>
+                    $query->forPublic(),
+            ]);
+
+        /**
+         * Лайк текущего пользователя.
+         */
+        if (auth()->check()) {
+            $query->withExists([
+                'likes as already_liked' =>
+                    fn ($likeQuery) =>
+                    $likeQuery->where(
+                        'user_id',
+                        auth()->id()
+                    ),
+            ]);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Получение товаров категории
+     * по активному режиму обработки.
+     */
+    private function getCategoryProducts(
+        int $categoryId,
+        string $locale,
+        bool $useServerProcessing,
+        int $perPage,
+        string $sort,
+        string $search = ''
+    ) {
+        $query =
+            $this->productsQuery(
+                $categoryId,
+                $locale
+            );
+
+        if ($useServerProcessing) {
+            return $query
+                ->publicSearch(
+                    $search,
+                    $locale
+                )
+                ->publicSortByParam(
+                    $sort,
+                    $locale
+                )
+                ->paginate(
+                    $perPage
+                )
+                ->withQueryString();
+        }
+
+        /**
+         * Во frontend режиме отдаём
+         * весь публичный набор.
+         *
+         * Поиск и сортировка далее
+         * выполняются Vue.
+         */
+        return $query
+            ->publicSortByParam(
+                $sort,
+                $locale
+            )
+            ->get();
     }
 
     /**

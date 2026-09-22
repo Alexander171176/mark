@@ -250,8 +250,7 @@ const hasMarketingFlags = (product) => {
                     >
                         <span
                             class="text-xs font-semibold text-slate-900/85
-                                   group-hover:opacity-75
-                                   dark:text-slate-100/85
+                                   group-hover:opacity-75 dark:text-slate-100/85
                                    dark:group-hover:opacity-75"
                         >
                             {{ getProductTitle(product) }}
@@ -330,8 +329,7 @@ const hasMarketingFlags = (product) => {
                 <!-- Дополнительные данные -->
                 <div
                     class="mt-2 flex flex-wrap items-center justify-center gap-2
-                           text-xs font-semibold
-                           text-slate-500 dark:text-slate-400"
+                           text-xs font-semibold text-slate-500 dark:text-slate-400"
                 >
                     <!-- Варианты -->
                     <div
@@ -341,8 +339,7 @@ const hasMarketingFlags = (product) => {
                         :title="t('variants')"
                     >
                         <svg
-                            class="h-3 w-3 shrink-0
-                                   text-violet-600 dark:text-violet-300"
+                            class="h-3 w-3 shrink-0 text-violet-600 dark:text-violet-300"
                             viewBox="0 0 24 24"
                             fill="currentColor"
                         >
@@ -360,8 +357,7 @@ const hasMarketingFlags = (product) => {
                         :title="t('views')"
                     >
                         <svg
-                            class="h-3 w-3 text-blue-600/85
-                                   dark:text-blue-200/85"
+                            class="h-3 w-3 text-blue-600/85 dark:text-blue-200/85"
                             viewBox="0 0 576 512"
                             fill="currentColor"
                         >
@@ -385,8 +381,7 @@ const hasMarketingFlags = (product) => {
                             class="h-3 w-3 shrink-0"
                         >
                             <path
-                                class="fill-current
-                                       text-amber-500 dark:text-amber-300"
+                                class="fill-current text-amber-500 dark:text-amber-300"
                                 d="M12.746,1.464l3.11,6.3L22.81,8.776a.831.831,0,0,1,.461,1.418l-5.033,4.9,1.188,6.926a.832.832,0,0,1-1.207.877L12,19.632,5.78,22.9a.833.833,0,0,1-1.207-.878L5.761,15.1l-5.033-4.9a.831.831,0,0,1,.461-1.418L8.143,7.765l3.11-6.3A.833.833,0,0,1,12.746,1.464Z"
                             />
                         </svg>
@@ -402,8 +397,7 @@ const hasMarketingFlags = (product) => {
                         :title="t('reviews')"
                     >
                         <svg
-                            class="h-3 w-3 shrink-0
-                                   text-sky-600 dark:text-sky-300"
+                            class="h-3 w-3 shrink-0 text-sky-600 dark:text-sky-300"
                             viewBox="0 0 24 24"
                             fill="currentColor"
                         >

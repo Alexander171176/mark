@@ -1337,9 +1337,7 @@ const brandListStartPosition = computed(() => {
                                 <!-- Нет данных -->
                                 <div
                                     v-if="displayedBrands.length === 0"
-                                    class="mt-6 text-center
-                                           text-slate-700
-                                           dark:text-slate-300"
+                                    class="mt-6 text-center text-slate-700 dark:text-slate-300"
                                 >
                                     {{ t('noData') }}
                                 </div>

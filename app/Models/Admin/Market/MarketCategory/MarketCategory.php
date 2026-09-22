@@ -100,15 +100,12 @@ class MarketCategory extends Model
 
     /**
      * Публичные дочерние категории каталога.
-     *
-     * Relation определяет только Public-набор.
-     * Переводы, изображения и рекурсивные связи
-     * загружает Public Controller.
      */
     public function publicCatalogChildren(): HasMany
     {
         return $this->children()
-            ->forMenu();
+            ->forPublic()
+            ->ordered();
     }
 
     /** Переводы категории */
@@ -344,8 +341,11 @@ class MarketCategory extends Model
      *
      * Используются:
      * - поля категории;
-     * - текущий и fallback-перевод;
-     * - перевод родительской категории.
+     * - resolved translation категории;
+     * - resolved translation родительской категории.
+     *
+     * Строгий порядок перевода:
+     * текущая локаль → fallback → null.
      *
      * Между словами используется AND,
      * между полями одного слова — OR.
@@ -361,18 +361,12 @@ class MarketCategory extends Model
             return $query;
         }
 
-        $locale = $locale ?: app()->getLocale();
+        $locale = $locale
+            ?: app()->getLocale();
 
         $fallbackLocale = config(
             'app.fallback_locale',
             'ru'
-        );
-
-        $locales = array_values(
-            array_unique([
-                $locale,
-                $fallbackLocale,
-            ])
         );
 
         $words = preg_split(
@@ -397,13 +391,15 @@ class MarketCategory extends Model
         return $query->where(
             function (Builder $searchQuery) use (
                 $words,
-                $locales
+                $locale,
+                $fallbackLocale
             ) {
                 foreach ($words as $word) {
                     $searchQuery->where(
                         function (Builder $wordQuery) use (
                             $word,
-                            $locales
+                            $locale,
+                            $fallbackLocale
                         ) {
                             $wordQuery
                                 ->where(
@@ -436,61 +432,220 @@ class MarketCategory extends Model
                                     'like',
                                     "%{$word}%"
                                 )
-                                ->orWhereHas(
-                                    'translations',
+
+                                /*
+                                 * Resolved translation
+                                 * текущей категории.
+                                 */
+                                ->orWhere(
                                     function (
-                                        Builder $translationQuery
+                                        Builder $translationSearch
                                     ) use (
                                         $word,
-                                        $locales
+                                        $locale,
+                                        $fallbackLocale
                                     ) {
-                                        $translationQuery
-                                            ->whereIn(
-                                                'locale',
-                                                $locales
-                                            )
-                                            ->where(
+                                        $translationSearch
+                                            ->whereHas(
+                                                'translations',
                                                 function (
-                                                    Builder $q
-                                                ) use ($word) {
-                                                    $q
+                                                    Builder $translationQuery
+                                                ) use (
+                                                    $word,
+                                                    $locale
+                                                ) {
+                                                    $translationQuery
+                                                        ->where(
+                                                            'locale',
+                                                            $locale
+                                                        )
+                                                        ->where(
+                                                            function (
+                                                                Builder $q
+                                                            ) use ($word) {
+                                                                $q
+                                                                    ->where(
+                                                                        'title',
+                                                                        'like',
+                                                                        "%{$word}%"
+                                                                    )
+                                                                    ->orWhere(
+                                                                        'subtitle',
+                                                                        'like',
+                                                                        "%{$word}%"
+                                                                    )
+                                                                    ->orWhere(
+                                                                        'short',
+                                                                        'like',
+                                                                        "%{$word}%"
+                                                                    );
+                                                            }
+                                                        );
+                                                }
+                                            );
+
+                                        if (
+                                            $fallbackLocale !== $locale
+                                        ) {
+                                            $translationSearch
+                                                ->orWhere(
+                                                    function (
+                                                        Builder $fallbackSearch
+                                                    ) use (
+                                                        $word,
+                                                        $locale,
+                                                        $fallbackLocale
+                                                    ) {
+                                                        $fallbackSearch
+                                                            ->whereDoesntHave(
+                                                                'translations',
+                                                                function (
+                                                                    Builder $currentQuery
+                                                                ) use ($locale) {
+                                                                    $currentQuery
+                                                                        ->where(
+                                                                            'locale',
+                                                                            $locale
+                                                                        );
+                                                                }
+                                                            )
+                                                            ->whereHas(
+                                                                'translations',
+                                                                function (
+                                                                    Builder $fallbackQuery
+                                                                ) use (
+                                                                    $word,
+                                                                    $fallbackLocale
+                                                                ) {
+                                                                    $fallbackQuery
+                                                                        ->where(
+                                                                            'locale',
+                                                                            $fallbackLocale
+                                                                        )
+                                                                        ->where(
+                                                                            function (
+                                                                                Builder $q
+                                                                            ) use ($word) {
+                                                                                $q
+                                                                                    ->where(
+                                                                                        'title',
+                                                                                        'like',
+                                                                                        "%{$word}%"
+                                                                                    )
+                                                                                    ->orWhere(
+                                                                                        'subtitle',
+                                                                                        'like',
+                                                                                        "%{$word}%"
+                                                                                    )
+                                                                                    ->orWhere(
+                                                                                        'short',
+                                                                                        'like',
+                                                                                        "%{$word}%"
+                                                                                    );
+                                                                            }
+                                                                        );
+                                                                }
+                                                            );
+                                                    }
+                                                );
+                                        }
+                                    }
+                                )
+
+                                /*
+                                 * Resolved translation
+                                 * родительской категории.
+                                 */
+                                ->orWhere(
+                                    function (
+                                        Builder $parentSearch
+                                    ) use (
+                                        $word,
+                                        $locale,
+                                        $fallbackLocale
+                                    ) {
+                                        $parentSearch
+                                            ->whereHas(
+                                                'parent.translations',
+                                                function (
+                                                    Builder $parentTranslationQuery
+                                                ) use (
+                                                    $word,
+                                                    $locale
+                                                ) {
+                                                    $parentTranslationQuery
+                                                        ->where(
+                                                            'locale',
+                                                            $locale
+                                                        )
                                                         ->where(
                                                             'title',
-                                                            'like',
-                                                            "%{$word}%"
-                                                        )
-                                                        ->orWhere(
-                                                            'subtitle',
-                                                            'like',
-                                                            "%{$word}%"
-                                                        )
-                                                        ->orWhere(
-                                                            'short',
                                                             'like',
                                                             "%{$word}%"
                                                         );
                                                 }
                                             );
-                                    }
-                                )
-                                ->orWhereHas(
-                                    'parent.translations',
-                                    function (
-                                        Builder $parentTranslationQuery
-                                    ) use (
-                                        $word,
-                                        $locales
-                                    ) {
-                                        $parentTranslationQuery
-                                            ->whereIn(
-                                                'locale',
-                                                $locales
-                                            )
-                                            ->where(
-                                                'title',
-                                                'like',
-                                                "%{$word}%"
-                                            );
+
+                                        if (
+                                            $fallbackLocale !== $locale
+                                        ) {
+                                            $parentSearch
+                                                ->orWhere(
+                                                    function (
+                                                        Builder $fallbackSearch
+                                                    ) use (
+                                                        $word,
+                                                        $locale,
+                                                        $fallbackLocale
+                                                    ) {
+                                                        $fallbackSearch
+                                                            ->whereHas(
+                                                                'parent',
+                                                                function (
+                                                                    Builder $parentQuery
+                                                                ) use (
+                                                                    $word,
+                                                                    $locale,
+                                                                    $fallbackLocale
+                                                                ) {
+                                                                    $parentQuery
+                                                                        ->whereDoesntHave(
+                                                                            'translations',
+                                                                            function (
+                                                                                Builder $currentQuery
+                                                                            ) use ($locale) {
+                                                                                $currentQuery
+                                                                                    ->where(
+                                                                                        'locale',
+                                                                                        $locale
+                                                                                    );
+                                                                            }
+                                                                        )
+                                                                        ->whereHas(
+                                                                            'translations',
+                                                                            function (
+                                                                                Builder $fallbackQuery
+                                                                            ) use (
+                                                                                $word,
+                                                                                $fallbackLocale
+                                                                            ) {
+                                                                                $fallbackQuery
+                                                                                    ->where(
+                                                                                        'locale',
+                                                                                        $fallbackLocale
+                                                                                    )
+                                                                                    ->where(
+                                                                                        'title',
+                                                                                        'like',
+                                                                                        "%{$word}%"
+                                                                                    );
+                                                                            }
+                                                                        );
+                                                                }
+                                                            );
+                                                    }
+                                                );
+                                        }
                                     }
                                 );
                         }

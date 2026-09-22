@@ -34,13 +34,15 @@ class MarketCategoryResource extends JsonResource
 
         return [
             'id' =>
-                $this->id,
+                (int) $this->id,
 
             'parent_id' =>
-                $this->parent_id,
+                $this->parent_id !== null
+                    ? (int) $this->parent_id
+                    : null,
 
             'level' =>
-                $this->level,
+                (int) $this->level,
 
             'url' =>
                 $this->url,
@@ -49,8 +51,14 @@ class MarketCategoryResource extends JsonResource
                 $this->icon,
 
             'views' =>
-                $this->views,
+                (int) $this->views,
 
+            /**
+             * Resolved translation.
+             *
+             * Строгий порядок:
+             * current → fallback → null.
+             */
             'translation' => $translation
                 ? [
                     'locale' =>
@@ -90,8 +98,11 @@ class MarketCategoryResource extends JsonResource
             /**
              * Публичные дочерние категории.
              *
-             * Во frontend используем простой
-             * контракт category.children.
+             * Laravel relation:
+             * publicCatalogChildren.
+             *
+             * Public API:
+             * children.
              */
             'children' =>
                 MarketCategorySharedResource::collection(

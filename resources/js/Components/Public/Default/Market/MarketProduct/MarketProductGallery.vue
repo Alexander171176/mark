@@ -452,16 +452,13 @@ onBeforeUnmount(() => {
 
                 <!-- Управление поверх изображения -->
                 <div
-                    class="absolute right-3 top-3 z-10
-                           flex items-center gap-2"
+                    class="absolute right-3 top-3 z-10 flex items-center gap-2"
                 >
                     <!-- Счётчик -->
                     <div
                         v-if="totalImages > 1"
-                        class="flex h-8 items-center justify-center
-                               rounded-sm bg-black/55 px-3
-                               text-xs font-semibold text-white
-                               shadow-sm backdrop-blur-sm"
+                        class="flex h-8 items-center justify-center rounded-sm bg-black/55 px-3
+                               text-xs font-semibold text-white shadow-sm backdrop-blur-sm"
                     >
                         {{ currentIndex + 1 }} / {{ totalImages }}
                     </div>
@@ -501,17 +498,11 @@ onBeforeUnmount(() => {
                 <button
                     type="button"
                     @click="prev"
-                    class="flex h-16 w-10 shrink-0
-                           items-center justify-center
-                           rounded-sm border border-gray-400
-                           bg-white text-slate-600 shadow-sm
-                           transition hover:border-indigo-400
-                           hover:bg-slate-100 hover:text-indigo-500
-                           focus:outline-none
-                           dark:border-gray-600
-                           dark:bg-slate-900
-                           dark:text-slate-300
-                           dark:hover:border-indigo-500
+                    class="flex h-16 w-10 shrink-0 items-center justify-center
+                           rounded-sm border border-gray-400 bg-white text-slate-600 shadow-sm
+                           transition hover:border-indigo-400 hover:bg-slate-100
+                           hover:text-indigo-500 focus:outline-none dark:border-gray-600
+                           dark:bg-slate-900 dark:text-slate-300 dark:hover:border-indigo-500
                            dark:hover:bg-slate-800"
                     aria-label="Previous image"
                 >
@@ -530,8 +521,7 @@ onBeforeUnmount(() => {
                 <div
                     ref="thumbnailsRef"
                     class="flex min-w-0 flex-1 justify-center gap-2
-                           overflow-x-auto scroll-smooth
-                           [scrollbar-width:none]
+                           overflow-x-auto scroll-smooth [scrollbar-width:none]
                            [&::-webkit-scrollbar]:hidden"
                 >
                     <button
@@ -540,11 +530,8 @@ onBeforeUnmount(() => {
                         :data-thumbnail-index="index"
                         type="button"
                         @click="setIndex(index)"
-                        class="relative h-16 w-16 shrink-0
-                               overflow-hidden rounded-sm border-2
-                               bg-white transition
-                               hover:border-indigo-400
-                               dark:bg-slate-950"
+                        class="relative h-16 w-16 shrink-0 overflow-hidden rounded-sm border-2
+                               bg-white transition hover:border-indigo-400 dark:bg-slate-950"
                         :class="currentIndex === index
                             ? 'border-indigo-500 shadow-sm'
                             : 'border-gray-300 dark:border-gray-700'"
@@ -569,18 +556,14 @@ onBeforeUnmount(() => {
                 <button
                     type="button"
                     @click="next"
-                    class="flex h-16 w-10 shrink-0
-                           items-center justify-center
+                    class="flex h-16 w-10 shrink-0 items-center justify-center
                            rounded-sm border border-gray-400
                            bg-white text-slate-600 shadow-sm
                            transition hover:border-indigo-400
                            hover:bg-slate-100 hover:text-indigo-500
-                           focus:outline-none
-                           dark:border-gray-600
-                           dark:bg-slate-900
-                           dark:text-slate-300
-                           dark:hover:border-indigo-500
-                           dark:hover:bg-slate-800"
+                           focus:outline-none dark:border-gray-600
+                           dark:bg-slate-900 dark:text-slate-300
+                           dark:hover:border-indigo-500 dark:hover:bg-slate-800"
                     aria-label="Next image"
                 >
                     <svg
@@ -624,17 +607,14 @@ onBeforeUnmount(() => {
                     tabindex="-1"
                     role="dialog"
                     aria-modal="true"
-                    class="fixed inset-0 z-[100]
-                           flex flex-col bg-gray-800/95 outline-none"
+                    class="fixed inset-0 z-[100] flex flex-col bg-gray-800/95 outline-none"
                     @touchstart.passive="handleTouchStart"
                     @touchend.passive="handleTouchEnd"
                 >
                     <!-- Верхняя панель -->
                     <div
-                        class="relative z-30 flex h-16 shrink-0
-                               items-center justify-between
-                               border-b border-white/10
-                               bg-black/20 px-4 text-white"
+                        class="relative z-30 flex h-16 shrink-0 items-center justify-between
+                               border-b border-white/10 bg-black/20 px-4 text-white"
                     >
                         <!-- Счётчик -->
                         <div
@@ -647,8 +627,7 @@ onBeforeUnmount(() => {
                         <div class="flex items-center gap-2">
                             <!-- Масштаб -->
                             <div
-                                class="hidden min-w-14 text-center
-                                       text-xs font-semibold
+                                class="hidden min-w-14 text-center text-xs font-semibold
                                        text-white/70 sm:block"
                             >
                                 {{ zoomPercent }}%
@@ -659,12 +638,9 @@ onBeforeUnmount(() => {
                                 type="button"
                                 @click="zoomOut"
                                 :disabled="!canZoomOut"
-                                class="flex h-10 w-10 items-center
-                                       justify-center rounded-sm
-                                       bg-white/10 transition
-                                       hover:bg-white/20
-                                       disabled:cursor-not-allowed
-                                       disabled:opacity-30"
+                                class="flex h-10 w-10 items-center justify-center rounded-sm
+                                       bg-white/10 transition hover:bg-white/20
+                                       disabled:cursor-not-allowed disabled:opacity-30"
                                 aria-label="Zoom out"
                             >
                                 <svg
@@ -685,12 +661,9 @@ onBeforeUnmount(() => {
                                 type="button"
                                 @click="zoomIn"
                                 :disabled="!canZoomIn"
-                                class="flex h-10 w-10 items-center
-                                       justify-center rounded-sm
-                                       bg-white/10 transition
-                                       hover:bg-white/20
-                                       disabled:cursor-not-allowed
-                                       disabled:opacity-30"
+                                class="flex h-10 w-10 items-center justify-center rounded-sm
+                                       bg-white/10 transition hover:bg-white/20
+                                       disabled:cursor-not-allowed disabled:opacity-30"
                                 aria-label="Zoom in"
                             >
                                 <svg
@@ -712,8 +685,7 @@ onBeforeUnmount(() => {
                                 type="button"
                                 @click="resetZoom"
                                 class="hidden h-10 items-center justify-center
-                                       rounded-sm bg-white/10 px-3
-                                       text-xs font-semibold transition
+                                       rounded-sm bg-white/10 px-3 text-xs font-semibold transition
                                        hover:bg-white/20 sm:flex"
                                 aria-label="Reset zoom"
                             >
@@ -724,10 +696,8 @@ onBeforeUnmount(() => {
                             <button
                                 type="button"
                                 @click="closeFullscreen"
-                                class="flex h-10 w-10 items-center
-                                       justify-center rounded-sm
-                                       bg-white/10 transition
-                                       hover:bg-white/20"
+                                class="flex h-10 w-10 items-center justify-center rounded-sm
+                                       bg-white/10 transition hover:bg-white/20"
                                 aria-label="Close"
                             >
                                 <svg
@@ -746,15 +716,13 @@ onBeforeUnmount(() => {
 
                     <!-- Полноэкранное изображение -->
                     <div
-                        class="relative flex min-h-0 flex-1
-                               items-center justify-center
+                        class="relative flex min-h-0 flex-1 items-center justify-center
                                overflow-auto px-16 py-5"
                         @wheel.prevent="handleWheel"
                     >
                         <!-- Изображение -->
                         <div
-                            class="flex min-h-full min-w-full
-                                   items-center justify-center"
+                            class="flex min-h-full min-w-full items-center justify-center"
                         >
                             <img
                                 :src="getImageUrl(currentImage)"
@@ -762,12 +730,9 @@ onBeforeUnmount(() => {
                                     currentImage,
                                     currentIndex
                                 )"
-                                class="max-h-[calc(100vh-11rem)]
-                                       max-w-[calc(100vw-10rem)]
-                                       object-contain
-                                       transition-transform
-                                       duration-200 ease-out
-                                       select-none"
+                                class="max-h-[calc(100vh-11rem)] max-w-[calc(100vw-10rem)]
+                                       object-contain transition-transform
+                                       duration-200 ease-out select-none"
                                 :style="{
                                     transform: `scale(${zoomScale})`,
                                 }"
@@ -780,12 +745,9 @@ onBeforeUnmount(() => {
                             v-if="totalImages > 1"
                             type="button"
                             @click.stop="prev"
-                            class="fixed left-4 top-1/2 z-20
-                                   flex h-12 w-12
-                                   -translate-y-1/2
-                                   items-center justify-center
-                                   rounded-sm bg-white/10
-                                   text-white backdrop-blur-sm
+                            class="fixed left-4 top-1/2 z-20 flex h-12 w-12
+                                   -translate-y-1/2 items-center justify-center
+                                   rounded-sm bg-white/10 text-white backdrop-blur-sm
                                    transition hover:bg-white/20"
                             aria-label="Previous image"
                         >
@@ -805,12 +767,9 @@ onBeforeUnmount(() => {
                             v-if="totalImages > 1"
                             type="button"
                             @click.stop="next"
-                            class="fixed right-4 top-1/2 z-20
-                                   flex h-12 w-12
-                                   -translate-y-1/2
-                                   items-center justify-center
-                                   rounded-sm bg-white/10
-                                   text-white backdrop-blur-sm
+                            class="fixed right-4 top-1/2 z-20 flex h-12 w-12
+                                   -translate-y-1/2 items-center justify-center
+                                   rounded-sm bg-white/10 text-white backdrop-blur-sm
                                    transition hover:bg-white/20"
                             aria-label="Next image"
                         >
@@ -829,22 +788,18 @@ onBeforeUnmount(() => {
                     <!-- Нижняя лента fullscreen -->
                     <div
                         v-if="totalImages > 1"
-                        class="relative z-30 shrink-0
-                               border-t border-white/10
+                        class="relative z-30 shrink-0 border-t border-white/10
                                bg-black/30 px-4 py-3"
                     >
                         <div
-                            class="mx-auto flex max-w-5xl
-                                   items-center gap-2"
+                            class="mx-auto flex max-w-5xl items-center gap-2"
                         >
                             <!-- Назад -->
                             <button
                                 type="button"
                                 @click="prev"
-                                class="flex h-16 w-10 shrink-0
-                                       items-center justify-center
-                                       rounded-sm bg-white/10
-                                       text-white transition
+                                class="flex h-16 w-10 shrink-0 items-center justify-center
+                                       rounded-sm bg-white/10 text-white transition
                                        hover:bg-white/20"
                                 aria-label="Previous image"
                             >
@@ -862,10 +817,8 @@ onBeforeUnmount(() => {
                             <!-- Миниатюры -->
                             <div
                                 ref="fullscreenThumbnailsRef"
-                                class="flex min-w-0 flex-1
-                                       items-center justify-center gap-2
-                                       overflow-x-auto scroll-smooth
-                                       [scrollbar-width:none]
+                                class="flex min-w-0 flex-1 items-center justify-center gap-2
+                                       overflow-x-auto scroll-smooth [scrollbar-width:none]
                                        [&::-webkit-scrollbar]:hidden"
                             >
                                 <button
@@ -874,10 +827,8 @@ onBeforeUnmount(() => {
                                     :data-thumbnail-index="index"
                                     type="button"
                                     @click="setIndex(index)"
-                                    class="h-16 w-16 shrink-0
-                                           overflow-hidden rounded-sm
-                                           border-2 bg-white/5
-                                           transition"
+                                    class="h-16 w-16 shrink-0 overflow-hidden rounded-sm
+                                           border-2 bg-white/5 transition"
                                     :class="currentIndex === index
                                         ? 'border-white opacity-100'
                                         : 'border-transparent opacity-60 hover:opacity-100'"
@@ -887,8 +838,7 @@ onBeforeUnmount(() => {
                                         :src="getThumbnailUrl(image)"
                                         :alt="getImageAlt(image, index)"
                                         loading="lazy"
-                                        class="h-full w-full
-                                               object-contain p-1"
+                                        class="h-full w-full object-contain p-1"
                                     />
                                 </button>
                             </div>
@@ -897,10 +847,8 @@ onBeforeUnmount(() => {
                             <button
                                 type="button"
                                 @click="next"
-                                class="flex h-16 w-10 shrink-0
-                                       items-center justify-center
-                                       rounded-sm bg-white/10
-                                       text-white transition
+                                class="flex h-16 w-10 shrink-0 items-center justify-center
+                                       rounded-sm bg-white/10 text-white transition
                                        hover:bg-white/20"
                                 aria-label="Next image"
                             >

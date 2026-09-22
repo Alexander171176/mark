@@ -104,19 +104,15 @@ const resetSearch = () => {
         @submit.prevent="submitSearch"
     >
         <div
-            class="flex overflow-hidden rounded-lg
-                   border-2 border-blue-600"
+            class="flex overflow-hidden rounded-lg border-2 border-blue-600"
         >
             <div class="relative min-w-0 flex-1">
                 <input
                     v-model="searchQuery"
                     type="text"
-                    class="w-full border-0
-                           bg-white dark:bg-gray-900
-                           px-3 py-2 pr-10
+                    class="w-full border-0 bg-white dark:bg-gray-900 px-3 py-2 pr-10
                            text-sm text-slate-800 dark:text-slate-100
-                           placeholder:text-slate-400
-                           focus:ring-0"
+                           placeholder:text-slate-400 focus:ring-0"
                     :placeholder="t('search')"
                 />
 
@@ -124,16 +120,10 @@ const resetSearch = () => {
                 <button
                     v-if="hasSearch"
                     type="button"
-                    class="absolute right-2 top-1/2
-                           z-20 -translate-y-1/2
-                           flex h-7 w-7 items-center justify-center
-                           rounded-full
-                           text-slate-400
-                           transition
-                           hover:bg-slate-100 hover:text-blue-600
-                           dark:text-slate-500
-                           dark:hover:bg-slate-800
-                           dark:hover:text-blue-400"
+                    class="absolute right-2 top-1/2 z-20 -translate-y-1/2
+                           flex h-7 w-7 items-center justify-center rounded-full
+                           text-slate-400 transition hover:bg-slate-100 hover:text-blue-600
+                           dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-blue-400"
                     :title="t('reset')"
                     @click="resetSearch"
                 >
@@ -152,9 +142,7 @@ const resetSearch = () => {
 
             <button
                 type="submit"
-                class="shrink-0
-                       bg-blue-600 px-4
-                       text-sm font-bold text-white
+                class="shrink-0 bg-blue-600 px-4 text-sm font-bold text-white
                        transition hover:bg-blue-700"
             >
                 {{ t('find') }}
@@ -169,8 +157,7 @@ const resetSearch = () => {
         @submit.prevent="submitSearch"
     >
         <div
-            class="flex w-full max-w-[1200px]
-                   items-stretch"
+            class="flex w-full max-w-[1200px] items-stretch"
         >
             <!--
                 Поле находится выше кнопки.
@@ -178,22 +165,15 @@ const resetSearch = () => {
                 немного заходить под правый край поля.
             -->
             <div
-                class="relative z-20
-                       min-w-0 flex-1
-                       -mr-4"
+                class="relative z-20 min-w-0 flex-1 -mr-4"
             >
                 <input
                     v-model="searchQuery"
                     type="text"
-                    class="relative z-10
-                           block h-full w-full
-                           rounded-xl
-                           border-2 border-blue-600
-                           bg-white dark:bg-gray-900
-                           px-4 py-2 pr-12
-                           text-sm text-slate-800 dark:text-slate-100
-                           placeholder:text-slate-400
-                           outline-none
+                    class="relative z-10 block h-full w-full rounded-xl
+                           border-2 border-blue-600 bg-white dark:bg-gray-900
+                           px-4 py-2 pr-12 text-sm text-slate-800 dark:text-slate-100
+                           placeholder:text-slate-400 outline-none
                            focus:border-blue-600 focus:ring-0"
                     :placeholder="t('search')"
                 />
@@ -202,16 +182,11 @@ const resetSearch = () => {
                 <button
                     v-if="hasSearch"
                     type="button"
-                    class="absolute right-4 top-1/2
-                           z-20 -translate-y-1/2
+                    class="absolute right-4 top-1/2 z-20 -translate-y-1/2
                            flex h-7 w-7 items-center justify-center
-                           rounded-full
-                           text-slate-600
-                           transition
+                           rounded-full text-slate-600 transition
                            hover:bg-slate-100 hover:text-blue-600
-                           dark:text-slate-400
-                           dark:hover:bg-slate-800
-                           dark:hover:text-blue-400"
+                           dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-400"
                     :title="t('reset')"
                     @click="resetSearch"
                 >
@@ -235,13 +210,8 @@ const resetSearch = () => {
             -->
             <button
                 type="submit"
-                class="relative z-10
-                       shrink-0
-                       rounded-r-xl
-                       bg-blue-600
-                       pl-9 pr-6
-                       text-sm font-bold text-white
-                       transition hover:bg-blue-700"
+                class="relative z-10 shrink-0 rounded-r-xl bg-blue-600 pl-9 pr-6
+                       text-sm font-bold text-white transition hover:bg-blue-700"
                 :title="t('search')"
             >
                 <svg

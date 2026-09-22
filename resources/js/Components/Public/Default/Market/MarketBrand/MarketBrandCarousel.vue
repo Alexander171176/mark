@@ -392,12 +392,9 @@ onBeforeUnmount(() => {
 <template>
     <section
         v-if="brandsData.length"
-        class="mx-auto mt-5 w-full min-w-0
-               py-3 px-1 lg:px-6
-               max-w-screen-2xl ext-color
-               rounded-3xl border-2
-               border-slate-300
-               dark:border-slate-500"
+        class="mx-auto mt-5 w-full min-w-0 py-3 px-1 lg:px-6
+               max-w-screen-2xl ext-color rounded-3xl border-2
+               border-slate-300 dark:border-slate-500"
         itemscope
         itemtype="https://schema.org/ItemList"
     >
@@ -408,31 +405,19 @@ onBeforeUnmount(() => {
 
         <!-- Заголовок и управление -->
         <div
-            class="mb-4 flex items-center
-                   justify-center gap-3"
+            class="mb-4 flex items-center justify-center gap-3"
         >
             <!-- Назад -->
             <button
                 type="button"
                 @click="scrollPrev"
                 :disabled="brandsData.length <= 1"
-                class="shrink-0 items-center justify-center
-                       rounded-sm border border-dotted
-                       border-gray-600
-                       bg-slate-50 text-slate-600 shadow-sm
-                       transition
-                       hover:border-2 hover:border-solid
-                       hover:border-indigo-400
-                       hover:bg-slate-200
-                       hover:text-indigo-500
-                       disabled:cursor-default
-                       disabled:opacity-30
-                       dark:border-gray-400
-                       dark:bg-slate-950
-                       dark:text-slate-300
-                       dark:hover:border-indigo-500
-                       dark:hover:bg-slate-800
-                       sm:flex h-8 w-8"
+                class="shrink-0 items-center justify-center rounded-sm border border-dotted
+                       border-gray-600 bg-slate-50 text-slate-600 shadow-sm transition
+                       hover:border-2 hover:border-solid hover:border-indigo-400 hover:bg-slate-200
+                       hover:text-indigo-500 disabled:cursor-default disabled:opacity-30
+                       dark:border-gray-400 dark:bg-slate-950 dark:text-slate-300
+                       dark:hover:border-indigo-500 dark:hover:bg-slate-800 sm:flex h-8 w-8"
                 :title="t('previous')"
                 aria-label="Previous brands"
             >
@@ -450,8 +435,7 @@ onBeforeUnmount(() => {
             <!-- Заголовок -->
             <h2
                 itemprop="name"
-                class="flex items-center justify-center
-                       text-sm sm:text-xl font-semibold
+                class="flex items-center justify-center text-sm sm:text-xl font-semibold
                        text-slate-800 dark:text-slate-200"
             >
                 <span>
@@ -459,18 +443,10 @@ onBeforeUnmount(() => {
                 </span>
 
                 <span
-                    class="ml-2 inline-flex min-w-6
-                           items-center justify-center
-                           rounded-full
-                           border border-teal-200
-                           bg-teal-50
-                           px-2 py-0.5
-                           text-xs font-bold
-                           text-teal-600
-                           shadow-sm
-                           dark:border-teal-700/70
-                           dark:bg-teal-950/60
-                           dark:text-teal-300"
+                    class="ml-2 inline-flex min-w-6 items-center justify-center
+                           rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5
+                           text-xs font-bold text-teal-600 shadow-sm
+                           dark:border-teal-700/70 dark:bg-teal-950/60 dark:text-teal-300"
                 >
                     {{ brandsData.length }}
                 </span>
@@ -481,23 +457,12 @@ onBeforeUnmount(() => {
                 type="button"
                 @click="scrollNext"
                 :disabled="brandsData.length <= 1"
-                class="shrink-0 items-center justify-center
-                       rounded-sm border border-dotted
-                       border-gray-600
-                       bg-slate-50 text-slate-600 shadow-sm
-                       transition
-                       hover:border-2 hover:border-solid
-                       hover:border-indigo-400
-                       hover:bg-slate-200
-                       hover:text-indigo-500
-                       disabled:cursor-default
-                       disabled:opacity-30
-                       dark:border-gray-400
-                       dark:bg-slate-950
-                       dark:text-slate-300
-                       dark:hover:border-indigo-500
-                       dark:hover:bg-slate-800
-                       sm:flex h-8 w-8"
+                class="shrink-0 items-center justify-center rounded-sm border border-dotted
+                       border-gray-600 bg-slate-50 text-slate-600 shadow-sm transition
+                       hover:border-2 hover:border-solid hover:border-indigo-400 hover:bg-slate-200
+                       hover:text-indigo-500 disabled:cursor-default disabled:opacity-30
+                       dark:border-gray-400 dark:bg-slate-950 dark:text-slate-300
+                       dark:hover:border-indigo-500 dark:hover:bg-slate-800 sm:flex h-8 w-8"
                 :title="t('next')"
                 aria-label="Next brands"
             >
@@ -517,30 +482,19 @@ onBeforeUnmount(() => {
         <div
             ref="sliderRef"
             @scroll.passive="updateScrollState"
-            class="flex min-w-0 w-full
-                   snap-x snap-mandatory
-                   gap-4 overflow-x-auto
-                   scroll-smooth pb-2
-                   [scrollbar-width:none]
-                   [&::-webkit-scrollbar]:hidden"
+            class="flex min-w-0 w-full snap-x snap-mandatory gap-4 overflow-x-auto
+                   scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
             <!-- Карточка бренда -->
             <article
                 v-for="(brand, index) in brandsData"
                 :key="brand.id"
-                class="group flex shrink-0 snap-start
-                       w-full
-                       sm:w-[calc(50%-0.5rem)]
-                       md:w-[calc(33.333333%-0.667rem)]
-                       lg:w-[calc(25%-0.75rem)]
-                       flex-col overflow-hidden
-                       rounded-2xl
-                       border border-gray-200
-                       bg-white shadow-sm transition
-                       hover:-translate-y-0.5
-                       hover:shadow-md
-                       dark:border-gray-700
-                       dark:bg-gray-900"
+                class="group flex shrink-0 snap-start w-full
+                       sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333333%-0.667rem)]
+                       lg:w-[calc(25%-0.75rem)] flex-col overflow-hidden rounded-2xl
+                       border border-gray-200 bg-white shadow-sm transition
+                       hover:-translate-y-0.5 hover:shadow-md
+                       dark:border-gray-700 dark:bg-gray-900"
                 itemprop="itemListElement"
                 itemscope
                 itemtype="https://schema.org/ListItem"
@@ -596,31 +550,23 @@ onBeforeUnmount(() => {
 
                     <!-- Информация -->
                     <div
-                        class="flex flex-1 flex-col
-                               items-center p-3 text-center"
+                        class="flex flex-1 flex-col items-center p-3 text-center"
                     >
                         <!-- Логотип -->
                         <Link
-                            v-if="
-                                getBrandLogo(brand)
-                                && getBrandLogo(brand)
-                                    !== getBrandVisual(brand)
-                            "
+                            v-if="getBrandLogo(brand)
+                            && getBrandLogo(brand)
+                            !== getBrandVisual(brand)"
                             :href="brandLink(brand)"
-                            class="mt-1 mb-2 flex h-32 w-auto
-                                   items-center justify-center
-                                   rounded-sm border
-                                   border-slate-200
-                                   bg-white p-2 shadow-sm
-                                   dark:border-slate-700
-                                   dark:bg-slate-950"
+                            class="mt-1 mb-2 flex h-32 w-auto items-center justify-center
+                                   rounded-sm border border-slate-200 bg-white p-2 shadow-sm
+                                   dark:border-slate-700 dark:bg-slate-950"
                             :title="getBrandTitle(brand)"
                         >
                             <img
                                 :src="getBrandLogo(brand)"
                                 :alt="getBrandTitle(brand)"
-                                class="max-h-full max-w-full
-                                       object-contain"
+                                class="max-h-full max-w-full object-contain"
                                 loading="lazy"
                                 decoding="async"
                             >
@@ -634,13 +580,9 @@ onBeforeUnmount(() => {
                         >
                             <span
                                 itemprop="name"
-                                class="line-clamp-2
-                                       text-sm font-bold
-                                       text-slate-900/90
-                                       transition
-                                       group-hover:text-indigo-600
-                                       dark:text-slate-100/90
-                                       dark:group-hover:text-indigo-400"
+                                class="line-clamp-2 text-sm font-bold text-slate-900/90
+                                       transition group-hover:text-indigo-600
+                                       dark:text-slate-100/90 dark:group-hover:text-indigo-400"
                             >
                                 {{ getBrandTitle(brand) }}
                             </span>
@@ -649,10 +591,8 @@ onBeforeUnmount(() => {
                         <!-- Краткое описание -->
                         <p
                             v-if="getBrandShort(brand)"
-                            class="mt-2 line-clamp-3
-                                   text-xs leading-5
-                                   text-slate-500
-                                   dark:text-slate-400"
+                            class="mt-2 line-clamp-3 text-xs leading-5
+                                   text-slate-500 dark:text-slate-400"
                         >
                             {{ getBrandShort(brand) }}
                         </p>
@@ -663,21 +603,12 @@ onBeforeUnmount(() => {
                         >
                             <Link
                                 :href="brandLink(brand)"
-                                class="inline-flex items-center
-                                       gap-1.5 rounded-full
-                                       border border-teal-200
-                                       bg-teal-50
-                                       px-3 py-1
-                                       text-[11px] font-semibold
-                                       text-teal-700
-                                       transition
-                                       hover:border-teal-300
-                                       hover:bg-teal-100
-                                       dark:border-teal-800
-                                       dark:bg-teal-950/50
-                                       dark:text-teal-300
-                                       dark:hover:border-teal-700
-                                       dark:hover:bg-teal-950"
+                                class="inline-flex items-center gap-1.5 rounded-full
+                                       border border-teal-200 bg-teal-50 px-3 py-1
+                                       text-[11px] font-semibold text-teal-700 transition
+                                       hover:border-teal-300 hover:bg-teal-100
+                                       dark:border-teal-800 dark:bg-teal-950/50 dark:text-teal-300
+                                       dark:hover:border-teal-700 dark:hover:bg-teal-950"
                             >
                                 <span>
                                     {{ t('products') }}:

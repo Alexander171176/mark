@@ -185,8 +185,7 @@ const toggleChildren = () => {
                 <!-- Стандартная иконка -->
                 <svg
                     v-else
-                    class="h-4 w-4 shrink-0
-                           text-slate-500 dark:text-slate-400"
+                    class="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400"
                     viewBox="0 0 24 24"
                     fill="currentColor"
                 >
@@ -205,8 +204,7 @@ const toggleChildren = () => {
                 <!-- Количество детей -->
                 <span
                     v-if="hasChildren"
-                    class="shrink-0 text-[11px] font-semibold
-                           text-slate-400 dark:text-slate-500"
+                    class="shrink-0 text-[11px] font-semibold text-slate-400 dark:text-slate-500"
                 >
                     {{ children.length }}
                 </span>

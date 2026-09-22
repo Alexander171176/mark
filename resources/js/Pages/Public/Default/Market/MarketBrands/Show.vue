@@ -1588,54 +1588,32 @@ const productListStartPosition =
         <Navbar />
 
         <main
-            class="min-h-screen
-                   px-1 lg:px-6
-                   max-w-full"
+            class="min-h-screen px-1 lg:px-6 max-w-full"
         >
             <div
-                class="mx-auto
-                       tracking-wider
-                       pt-20 lg:pt-44"
+                class="mx-auto tracking-wider pt-20 lg:pt-44"
             >
                 <div
-                    class="ext-color
-                           w-full min-w-0
-                           py-3 px-1
-                           flex flex-col
-                           lg:flex-row
-                           gap-4
-                           rounded-3xl
-                           border-2
-                           border-slate-300
-                           dark:border-slate-500"
+                    class="ext-color w-full min-w-0 py-3 px-1
+                           flex flex-col lg:flex-row gap-4
+                           rounded-3xl border-2 border-slate-300 dark:border-slate-500"
                 >
                     <!-- Левая колонка -->
                     <aside
                         v-if="showLeft"
-                        class="shrink-0
-                               transition-all
-                               duration-300"
-                        :class="
-                            leftCollapsed
-                                ? 'lg:w-6'
-                                : 'lg:w-72'
-                        "
+                        class="shrink-0 transition-all duration-300"
+                        :class="leftCollapsed ? 'lg:w-6' : 'lg:w-72'"
                     >
                         <LeftSidebarMarket
                             :category-tree="categoryTree"
                             :collapsed="leftCollapsed"
-                            @collapsed="
-                                leftCollapsed = $event
-                            "
+                            @collapsed="leftCollapsed = $event"
                         />
                     </aside>
 
                     <!-- Центральная колонка -->
                     <div
-                        class="min-w-0
-                               flex-1
-                               pb-6
-                               slate-1"
+                        class="min-w-0 flex-1 pb-6 slate-1"
                     >
                         <div class="w-full">
                             <!-- Хлебные крошки -->
@@ -1646,9 +1624,7 @@ const productListStartPosition =
                                 itemtype="https://schema.org/BreadcrumbList"
                             >
                                 <ol
-                                    class="flex flex-wrap
-                                           items-center
-                                           font-semibold"
+                                    class="flex flex-wrap items-center font-semibold"
                                 >
                                     <!-- Главная -->
                                     <li
@@ -1660,8 +1636,7 @@ const productListStartPosition =
                                         <Link
                                             itemprop="item"
                                             :href="route('home')"
-                                            class="breadcrumb-link
-                                                   hover:underline"
+                                            class="breadcrumb-link hover:underline"
                                         >
                                             <span itemprop="name">
                                                 {{ t('home') }}
@@ -1681,21 +1656,14 @@ const productListStartPosition =
                                         itemtype="https://schema.org/ListItem"
                                         class="flex items-center"
                                     >
-                                        <span
-                                            class="mx-2 breadcrumbs"
-                                        >
+                                        <span class="mx-2 breadcrumbs">
                                             /
                                         </span>
 
                                         <Link
                                             itemprop="item"
-                                            :href="
-                                                route(
-                                                    'public.marketBrands.index'
-                                                )
-                                            "
-                                            class="breadcrumb-link
-                                                   hover:underline"
+                                            :href="route('public.marketBrands.index')"
+                                            class="breadcrumb-link hover:underline"
                                         >
                                             <span itemprop="name">
                                                 {{ t('brands') }}
@@ -1716,17 +1684,13 @@ const productListStartPosition =
                                         class="flex items-center"
                                         aria-current="page"
                                     >
-                                        <span
-                                            class="mx-2 breadcrumbs"
-                                        >
+                                        <span class="mx-2 breadcrumbs">
                                             /
                                         </span>
 
                                         <h1
                                             itemprop="name"
-                                            class="breadcrumbs
-                                                   text-sm
-                                                   font-semibold"
+                                            class="breadcrumbs text-sm font-semibold"
                                         >
                                             {{ brandTitle }}
                                         </h1>
@@ -1763,13 +1727,9 @@ const productListStartPosition =
 
                                 <!-- Основная информация -->
                                 <section
-                                    class="overflow-hidden
-                                           rounded-2xl
-                                           border
-                                           border-slate-200
-                                           bg-white
-                                           dark:border-slate-700
-                                           dark:bg-slate-900"
+                                    class="overflow-hidden rounded-2xl
+                                           border border-slate-200
+                                           bg-white dark:border-slate-700 dark:bg-slate-900"
                                 >
                                     <!-- Большое изображение -->
                                     <div
@@ -1797,64 +1757,42 @@ const productListStartPosition =
                                         </div>
                                     </div>
 
-                                    <div
-                                        class="px-4
-                                               pb-5
-                                               sm:px-6"
+                                    <div class="px-4 pb-5 sm:px-6"
                                     >
                                         <!-- Логотип -->
                                         <div
                                             v-if="brandLogo"
-                                            class="relative
-                                                   z-10
-                                                   flex
-                                                   justify-center"
+                                            class="relative z-10 flex justify-center"
                                             :class="brandPrimaryImage ? 'mt-1' : 'pt-5'"
                                         >
                                             <div
-                                                class="flex
-                                                       h-24 w-auto
-                                                       items-center
-                                                       justify-center
-                                                       rounded-xl
-                                                       border
-                                                       border-slate-200
-                                                       bg-white
-                                                       p-3
-                                                       shadow-sm
-                                                       dark:border-slate-700
-                                                       dark:bg-slate-800"
+                                                class="flex h-24 w-auto
+                                                       items-center justify-center
+                                                       rounded-xl border border-slate-200
+                                                       bg-white p-3 shadow-sm
+                                                       dark:border-slate-700 dark:bg-slate-800"
                                             >
                                                 <img
                                                     itemprop="logo"
                                                     :src="brandLogo"
                                                     :alt="brandTitle"
-                                                    class="max-h-full
-                                                           max-w-full
-                                                           object-contain"
+                                                    class="max-h-full max-w-full object-contain"
                                                 />
                                             </div>
                                         </div>
 
                                         <!-- Название -->
-                                        <div
-                                            class="mt-4
-                                                   text-center"
-                                        >
+                                        <div class="mt-4 text-center">
                                             <h2
-                                                class="text-xl
-                                                       font-semibold
-                                                       text-slate-900
-                                                       dark:text-slate-100"
+                                                class="text-xl font-semibold
+                                                       text-slate-900 dark:text-slate-100"
                                             >
                                                 {{ brandTitle }}
                                             </h2>
 
                                             <div
                                                 v-if="brandSubtitle"
-                                                class="mt-1
-                                                       text-sm
-                                                       subtitle"
+                                                class="mt-1 text-sm subtitle"
                                             >
                                                 {{ brandSubtitle }}
                                             </div>
@@ -1862,24 +1800,16 @@ const productListStartPosition =
 
                                         <!-- Статистика -->
                                         <div
-                                            class="mt-3
-                                                   flex
-                                                   flex-wrap
-                                                   items-center
-                                                   justify-center
-                                                   gap-x-5
-                                                   gap-y-2"
+                                            class="mt-3 flex flex-wrap items-center
+                                                   justify-center gap-x-5 gap-y-2"
                                         >
                                             <!-- Товары -->
                                             <div
                                                 :title="t('products')"
-                                                class="flex
-                                                       items-center
-                                                       gap-1"
+                                                class="flex items-center gap-1"
                                             >
                                                 <svg
-                                                    class="h-4 w-4
-                                                           text-sky-600/85
+                                                    class="h-4 w-4 text-sky-600/85
                                                            dark:text-sky-200/85"
                                                     viewBox="0 0 24 24"
                                                     fill="currentColor"
@@ -1889,10 +1819,7 @@ const productListStartPosition =
                                                     />
                                                 </svg>
 
-                                                <span
-                                                    class="text-sm
-                                                           text-gray-500"
-                                                >
+                                                <span class="text-sm text-gray-500">
                                                     {{ brandProductsCount }}
                                                 </span>
                                             </div>
@@ -1900,9 +1827,7 @@ const productListStartPosition =
                                             <!-- Просмотры -->
                                             <div
                                                 :title="t('views')"
-                                                class="flex
-                                                       items-center
-                                                       gap-1"
+                                                class="flex items-center gap-1"
                                             >
                                                 <svg
                                                     class="h-4 w-4
@@ -1917,10 +1842,7 @@ const productListStartPosition =
                                                     />
                                                 </svg>
 
-                                                <span
-                                                    class="text-sm
-                                                           text-gray-500"
-                                                >
+                                                <span class="text-sm text-gray-500">
                                                     {{ brandViews }}
                                                 </span>
                                             </div>
@@ -1929,12 +1851,8 @@ const productListStartPosition =
                                         <!-- Краткое описание -->
                                         <div
                                             v-if="brandShort"
-                                            class="mx-auto
-                                                   mt-4
-                                                   max-w-4xl
-                                                   text-center
-                                                   text-sm
-                                                   subtitle"
+                                            class="mx-auto mt-4 max-w-4xl
+                                                   text-center text-sm subtitle"
                                         >
                                             {{ brandShort }}
                                         </div>
@@ -1942,17 +1860,14 @@ const productListStartPosition =
                                         <!-- Website -->
                                         <div
                                             v-if="brandWebsite"
-                                            class="mt-4
-                                                   text-center"
+                                            class="mt-4 text-center"
                                         >
                                             <a
                                                 :href="brandWebsite"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                class="text-sm
-                                                       text-sky-600
-                                                       hover:underline
-                                                       dark:text-sky-300"
+                                                class="text-sm text-sky-600
+                                                       hover:underline dark:text-sky-300"
                                             >
                                                 {{ brandWebsite }}
                                             </a>
@@ -1961,11 +1876,8 @@ const productListStartPosition =
                                         <!-- Социальные ссылки -->
                                         <div
                                             v-if="brandSocialLinks.length"
-                                            class="mt-3
-                                                   flex
-                                                   flex-wrap
-                                                   justify-center
-                                                   gap-3"
+                                            class="mt-3 flex flex-wrap
+                                                   justify-center gap-3"
                                         >
                                             <a
                                                 v-for="(social, index) in brandSocialLinks"
@@ -1973,10 +1885,8 @@ const productListStartPosition =
                                                 :href="social.url"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                class="text-sm
-                                                       text-sky-600
-                                                       hover:underline
-                                                       dark:text-sky-300"
+                                                class="text-sm text-sky-600
+                                                       hover:underline dark:text-sky-300"
                                             >
                                                 {{ social.name || social.url }}
                                             </a>
@@ -1987,21 +1897,14 @@ const productListStartPosition =
                                 <!-- Полное описание -->
                                 <section
                                     v-if="brandDescription"
-                                    class="mt-5
-                                           rounded-2xl
-                                           border
-                                           border-slate-200
-                                           bg-white
-                                           p-4
-                                           dark:border-slate-700
-                                           dark:bg-slate-900"
+                                    class="mt-5 rounded-2xl
+                                           border border-slate-200
+                                           bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
                                 >
                                     <div
                                         itemprop="description"
-                                        class="text-sm
-                                               leading-7
-                                               text-slate-700
-                                               dark:text-slate-300
+                                        class="text-sm leading-7
+                                               text-slate-700 dark:text-slate-300
                                                whitespace-pre-line"
                                     >
                                         {{ brandDescription }}
@@ -2016,11 +1919,8 @@ const productListStartPosition =
                             >
                                 <h2
                                     id="brand-products-title"
-                                    class="mb-3
-                                           text-lg
-                                           font-semibold
-                                           text-slate-900
-                                           dark:text-slate-100"
+                                    class="mb-3 text-lg font-semibold
+                                           text-slate-900 dark:text-slate-100"
                                 >
                                     {{ t('products') }}
                                     —
@@ -2061,19 +1961,12 @@ const productListStartPosition =
                                 />
 
                                 <!-- Точка скролла -->
-                                <div
-                                    ref="scrollTarget"
-                                ></div>
+                                <div ref="scrollTarget"></div>
 
                                 <!-- Нет товаров -->
                                 <div
-                                    v-if="
-                                        displayedProducts.length === 0
-                                    "
-                                    class="mt-6
-                                           text-center
-                                           text-slate-700
-                                           dark:text-slate-300"
+                                    v-if="displayedProducts.length === 0"
+                                    class="mt-6 text-center text-slate-700 dark:text-slate-300"
                                 >
                                     {{ t('noData') }}
                                 </div>
@@ -2128,16 +2021,12 @@ const productListStartPosition =
                     <!-- Правая колонка -->
                     <aside
                         v-if="showRight"
-                        class="shrink-0
-                               transition-all
-                               duration-300"
+                        class="shrink-0 transition-all duration-300"
                         :class="rightCollapsed ? 'lg:w-6' : 'lg:w-72'"
                     >
                         <RightSidebarMarket
                             :collapsed="rightCollapsed"
-                            @collapsed="
-                                rightCollapsed = $event
-                            "
+                            @collapsed="rightCollapsed = $event"
                         />
                     </aside>
                 </div>

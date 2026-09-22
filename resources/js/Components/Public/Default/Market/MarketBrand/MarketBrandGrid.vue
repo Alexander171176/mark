@@ -281,8 +281,7 @@ const getViews = (brand) => {
 
                 <!-- Информация -->
                 <div
-                    class="flex flex-1 flex-col items-center
-                           px-4 pb-4 text-center"
+                    class="flex flex-1 flex-col items-center px-4 pb-4 text-center"
                     :class="hasBrandImages(brand) ? 'pt-3' : 'pt-4'"
                 >
                     <!-- Логотип -->
@@ -313,10 +312,8 @@ const getViews = (brand) => {
                         class="inline-flex items-center justify-center"
                     >
                         <span
-                            class="text-base font-semibold
-                                   text-slate-900/85
-                                   group-hover:opacity-75
-                                   dark:text-slate-100/85"
+                            class="text-base font-semibold text-slate-900/85
+                                   group-hover:opacity-75 dark:text-slate-100/85"
                         >
                             {{ getBrandTitle(brand) }}
                         </span>
@@ -325,30 +322,24 @@ const getViews = (brand) => {
                     <!-- Краткое описание -->
                     <div
                         v-if="getBrandShort(brand)"
-                        class="mt-2 line-clamp-3 text-sm
-                               text-slate-600 dark:text-slate-300"
+                        class="mt-2 line-clamp-3 text-sm text-slate-600 dark:text-slate-300"
                     >
                         {{ getBrandShort(brand) }}
                     </div>
 
                     <!-- Нижняя информация -->
                     <div
-                        class="mt-auto flex flex-wrap items-center
-                               justify-center gap-2 pt-4
-                               text-xs font-semibold
-                               text-slate-500 dark:text-slate-400"
+                        class="mt-auto flex flex-wrap items-center justify-center gap-2 pt-4
+                               text-xs font-semibold text-slate-500 dark:text-slate-400"
                     >
                         <!-- Количество товаров -->
                         <div
                             class="flex items-center justify-center gap-1
-                                   rounded-sm border border-slate-400
-                                   px-2 py-1"
+                                   rounded-sm border border-slate-400 px-2 py-1"
                             :title="t('products')"
                         >
                             <svg
-                                class="h-3 w-3 shrink-0
-                                       text-violet-600
-                                       dark:text-violet-300"
+                                class="h-3 w-3 shrink-0 text-violet-600 dark:text-violet-300"
                                 viewBox="0 0 24 24"
                                 fill="currentColor"
                                 aria-hidden="true"
@@ -365,14 +356,11 @@ const getViews = (brand) => {
                         <div
                             v-if="getViews(brand) > 0"
                             class="flex items-center justify-center gap-1
-                                   rounded-sm border border-slate-400
-                                   px-2 py-1"
+                                   rounded-sm border border-slate-400 px-2 py-1"
                             :title="t('views')"
                         >
                             <svg
-                                class="h-3 w-3
-                                       text-blue-600/85
-                                       dark:text-blue-200/85"
+                                class="h-3 w-3 text-blue-600/85 dark:text-blue-200/85"
                                 viewBox="0 0 576 512"
                                 fill="currentColor"
                                 aria-hidden="true"
@@ -390,8 +378,7 @@ const getViews = (brand) => {
                     <Link
                         :href="brandLink(brand)"
                         :title="getBrandTitle(brand)"
-                        class="mt-3 flex w-fit items-center
-                               justify-center gap-2 rounded-sm
+                        class="mt-3 flex w-fit items-center justify-center gap-2 rounded-sm
                                px-3 py-1 btn-default"
                     >
                         <span class="text-sm font-semibold">

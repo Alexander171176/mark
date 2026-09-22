@@ -52,13 +52,10 @@ const hasSvgIcon = (tag) => {
             :key="tag.id"
             :href="tagLink(tag)"
             :title="getTagTitle(tag)"
-            class="flex items-center justify-start gap-1.5
-                   rounded-md border border-gray-400
-                   px-3 py-1 text-xs font-semibold
-                   text-gray-700 transition
-                   hover:bg-slate-200
-                   dark:border-gray-400 dark:text-gray-300
-                   dark:hover:bg-slate-800 dark:hover:text-slate-300"
+            class="flex items-center justify-start gap-1.5 rounded-md border border-gray-400
+                   px-3 py-1 text-xs font-semibold text-gray-700 transition hover:bg-slate-200
+                   dark:border-gray-400 dark:text-gray-300 dark:hover:bg-slate-800
+                   dark:hover:text-slate-300"
         >
             <!-- Иконка -->
             <span

@@ -18,12 +18,16 @@ import Progress from '@/Components/Public/Default/Progress/Progress.vue'
 import LeftSidebarMarket from '@/Components/Public/Default/Partials/LeftSidebarMarket.vue'
 import RightSidebarMarket from '@/Components/Public/Default/Partials/RightSidebarMarket.vue'
 import EntityPageToolbar from '@/Components/Public/Default/PageToolbar/EntityPageToolbar.vue'
-import FrontendEntityPageToolbar from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
-import MarketCategoryGrid from '@/Components/Public/Default/Market/MarketCategory/MarketCategoryGrid.vue'
-import MarketCategoryRows from '@/Components/Public/Default/Market/MarketCategory/MarketCategoryRows.vue'
+import FrontendEntityPageToolbar
+    from '@/Components/Public/Default/PageToolbar/FrontendEntityPageToolbar.vue'
+import MarketCategoryGrid
+    from '@/Components/Public/Default/Market/MarketCategory/MarketCategoryGrid.vue'
+import MarketCategoryRows
+    from '@/Components/Public/Default/Market/MarketCategory/MarketCategoryRows.vue'
 import Pagination from '@/Components/Public/Default/Pagination/Pagination.vue'
 import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendPagination.vue'
-import PublicAdminBottomPanel from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
+import PublicAdminBottomPanel
+    from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
 
 const { t } = useI18n()
 
@@ -718,6 +722,64 @@ const lastPage = computed(() => {
     ) || 1
 })
 
+/* ===================== SEO ===================== */
+
+/** Активная локаль исключительно от backend */
+const contentLocale = computed(() => String(props.locale || ''))
+
+/** SEO title */
+const seoTitle = computed(() => props.seo?.title || t('categories'))
+
+/** SEO keywords */
+const seoKeywords = computed(() => props.seo?.keywords || '')
+
+/** SEO description */
+const seoDescription = computed(() => props.seo?.description || '')
+
+/** Open Graph locale */
+const ogLocale = computed(() => contentLocale.value)
+
+/** Dublin Core subject */
+const dcSubject = computed(() => seoKeywords.value || seoTitle.value)
+
+/**
+ * Канонический URL каталога категорий.
+ *
+ * Server pagination:
+ * /catalog/categories
+ * /catalog/categories?page=2
+ *
+ * Поиск, сортировка и view
+ * в canonical не включаются.
+ */
+const canonicalUrl = computed(() => {
+    const baseUrl = String(route('public.marketCategories.index'))
+
+    if (props.useServerProcessing && currentPage.value > 1) {
+        return `${baseUrl}?page=${currentPage.value}`
+    }
+
+    return baseUrl
+})
+
+/**
+ * Server-поиск и альтернативную сортировку
+ * не индексируем.
+ *
+ * Основной каталог и обычные страницы
+ * пагинации индексируются.
+ */
+const robotsContent = computed(() => {
+    const hasSearch = normalizeText(q.value).trim().length > 0
+    const hasAlternativeSort = String(sort.value || props.defaultSort) !== String(props.defaultSort)
+
+    if (props.useServerProcessing && (hasSearch || hasAlternativeSort)) {
+        return 'noindex, follow, max-image-preview:large'
+    }
+
+    return 'index, follow, max-image-preview:large'
+})
+
 /** Маршрут списка категорий */
 const indexRoute = () => {
     return route(
@@ -853,36 +915,59 @@ const displayedCategories = computed(() => {
         ? categoriesData.value
         : frontendPaginatedCategories.value
 })
+
+/** Полное количество категорий текущего ItemList */
+const categoryListTotalItems = computed(() => {
+    return props.useServerProcessing
+        ? Number(props.categoriesFound ?? 0)
+        : sortedCategories.value.length
+})
+
+/** Начальная позиция категории для Schema.org ItemList */
+const categoryListStartPosition = computed(() => {
+    const pageNumber = props.useServerProcessing
+        ? currentPage.value
+        : frontendCurrentPage.value
+
+    return Math.max(0, (pageNumber - 1) * perPage.value)
+})
 </script>
 
 <template>
     <!-- SEO -->
     <Head>
-        <title>{{ seo?.title || t('categories') }}</title>
+        <!-- Basic SEO -->
+        <title>{{ seoTitle }}</title>
 
-        <meta name="title" :content="seo?.title || t('categories')" />
-        <meta name="keywords" :content="seo?.keywords || ''" />
-        <meta name="description" :content="seo?.description || ''" />
+        <meta name="title" :content="seoTitle" />
+        <meta v-if="seoDescription" name="description" :content="seoDescription" />
+        <meta v-if="seoKeywords" name="keywords" :content="seoKeywords" />
+        <meta v-if="contentLocale" http-equiv="content-language" :content="contentLocale" />
+        <meta name="robots" :content="robotsContent" />
 
-        <meta property="og:title" :content="seo?.title || t('categories')" />
-        <meta property="og:description" :content="seo?.description || ''" />
+        <!-- Canonical -->
+        <link rel="canonical" :href="canonicalUrl" />
+
+        <!-- Open Graph -->
         <meta property="og:type" content="website" />
-        <meta property="og:url" :content="`/${locale}/catalog/categories`" />
-        <meta property="og:image" content="" />
-        <meta
-            property="og:locale"
-            :content="locale"
-        />
+        <meta property="og:title" :content="seoTitle" />
+        <meta v-if="seoDescription" property="og:description" :content="seoDescription" />
+        <meta property="og:url" :content="canonicalUrl" />
+        <meta v-if="ogLocale" property="og:locale" :content="ogLocale" />
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="seo?.title || t('categories')" />
-        <meta name="twitter:description" :content="seo?.description || ''" />
-        <meta name="twitter:image" content="" />
+        <!-- Twitter / X -->
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" :content="seoTitle" />
+        <meta v-if="seoDescription" name="twitter:description" :content="seoDescription" />
 
-        <meta name="DC.title" :content="seo?.title || t('categories')" />
-        <meta name="DC.description" :content="seo?.description || ''" />
-        <meta name="DC.identifier" :content="`/${locale}/catalog/categories`" />
-        <meta name="DC.language" :content="locale" />
+        <!-- Dublin Core -->
+        <meta name="DC.title" :content="seoTitle" />
+        <meta v-if="seoDescription" name="DC.description" :content="seoDescription" />
+        <meta v-if="dcSubject" name="DC.subject" :content="dcSubject" />
+        <meta v-if="contentLocale" name="DC.language" :content="contentLocale" />
+        <meta name="DC.identifier" :content="canonicalUrl" />
+        <meta name="DC.type" content="Collection" />
+        <meta name="DC.format" content="text/html" />
     </Head>
 
     <DefaultLayout :title="title" :can-login="canLogin" :can-register="canRegister">
@@ -890,14 +975,9 @@ const displayedCategories = computed(() => {
         <Navbar />
 
         <main class="min-h-screen px-1 lg:px-6 max-w-full">
-            <div
-                class="mx-auto tracking-wider pt-20 lg:pt-44"
-            >
-                <div
-                    class="ext-color w-full min-w-0 py-3 px-1
-                           flex flex-col lg:flex-row gap-4 rounded-3xl
-                           border-2 border-slate-300 dark:border-slate-500"
-                >
+            <div class="mx-auto tracking-wider pt-20 lg:pt-44">
+                <div class="ext-color w-full min-w-0 py-3 px-1 flex flex-col lg:flex-row gap-4
+                            rounded-3xl border-2 border-slate-300 dark:border-slate-500">
 
                     <!-- Левая колонка -->
                     <aside
@@ -917,123 +997,186 @@ const displayedCategories = computed(() => {
                         <div class="mx-auto max-w-6xl">
 
                             <!-- Хлебные крошки -->
-                            <nav class="text-sm" aria-label="Breadcrumb">
+                            <nav
+                                class="text-sm"
+                                aria-label="Breadcrumb"
+                                itemscope
+                                itemtype="https://schema.org/BreadcrumbList"
+                            >
                                 <ol class="flex flex-wrap items-center font-semibold">
-                                    <li>
+                                    <!-- Главная -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                    >
                                         <Link
+                                            itemprop="item"
                                             :href="route('home')"
                                             class="breadcrumb-link hover:underline"
                                         >
-                                            {{ t('home') }}
+                                            <span itemprop="name">{{ t('home') }}</span>
                                         </Link>
+
+                                        <meta itemprop="position" content="1" />
                                     </li>
 
-                                    <li>
+                                    <!-- Категории -->
+                                    <li
+                                        itemprop="itemListElement"
+                                        itemscope
+                                        itemtype="https://schema.org/ListItem"
+                                        class="flex items-center"
+                                        aria-current="page"
+                                    >
                                         <span class="mx-2 breadcrumbs">/</span>
-                                    </li>
 
-                                    <li class="breadcrumbs">
-                                        {{ t('categories') }}
+                                        <h1 itemprop="name"
+                                            class="breadcrumbs text-sm font-semibold">
+                                            {{ t('categories') }}
+                                        </h1>
+
+                                        <meta itemprop="item" :content="canonicalUrl" />
+                                        <meta itemprop="position" content="2" />
                                     </li>
                                 </ol>
                             </nav>
 
-                            <!-- Заголовок -->
-                            <div class="my-3 flex flex-wrap items-center justify-center gap-3 title">
-                                <svg
-                                    class="h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
-                                    viewBox="0 0 24 24"
-                                    fill="currentColor"
-                                >
-                                    <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z" />
-                                </svg>
+                            <!--
+                                CollectionPage каталога категорий.
 
-                                <h1 class="text-2xl font-bold">
-                                    {{ t('categories') }}
-                                </h1>
-                            </div>
-
-                            <!-- Подзаголовок -->
-                            <div class="my-1 text-sm subtitle text-center">
-                                Выберите категорию товаров и найдите всё необходимое в каталоге
-                            </div>
-
-                            <!-- Server toolbar -->
-                            <EntityPageToolbar
-                                v-if="useServerProcessing"
-                                v-model="q"
-                                :found="categoriesFound"
-                                :view-mode="viewMode"
-                                :sort-value="sort"
-                                :sort-options="categorySortOptions"
-                                :default-sort="defaultSort"
-                                :found-label="t('categories')"
-                                :search-placeholder="t('searchByName')"
-                                @submit="submitSearch"
-                                @reset="resetSearch"
-                                @update:viewMode="updateViewMode"
-                                @update:sortValue="updateSort"
-                            />
-
-                            <!-- Frontend toolbar -->
-                            <FrontendEntityPageToolbar
-                                v-else
-                                v-model="q"
-                                :found="sortedCategories.length"
-                                :view-mode="viewMode"
-                                :sort-value="sort"
-                                :sort-options="categorySortOptions"
-                                :default-sort="defaultSort"
-                                :found-label="t('categories')"
-                                :search-placeholder="t('searchByName')"
-                                @reset="resetSearch"
-                                @update:viewMode="updateViewMode"
-                                @update:sortValue="updateSort"
-                            />
-
-                            <!-- Точка скролла -->
-                            <div ref="scrollTarget"></div>
-
-                            <!-- Нет данных -->
-                            <div
-                                v-if="displayedCategories.length === 0"
-                                class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                                Структура:
+                                CollectionPage
+                                → mainEntity
+                                → ItemList
+                                → ListItem
+                                → CollectionPage категории.
+                            -->
+                            <article
+                                class="mt-3"
+                                itemscope
+                                itemtype="https://schema.org/CollectionPage"
+                                :itemid="canonicalUrl"
                             >
-                                {{ t('noData') }}
-                            </div>
+                                <meta itemprop="url" :content="canonicalUrl" />
+                                <meta itemprop="name" :content="seoTitle" />
+                                <meta
+                                    v-if="seoDescription"
+                                    itemprop="description"
+                                    :content="seoDescription" />
+                                <meta
+                                    v-if="contentLocale"
+                                    itemprop="inLanguage"
+                                    :content="contentLocale" />
 
-                            <!-- Список -->
-                            <div v-else>
-                                <MarketCategoryGrid
-                                    v-if="viewMode === 'grid'"
-                                    :categories="displayedCategories"
-                                    :cols="categoryGridCols"
+                                <!-- Заголовок -->
+                                <div class="my-3 flex flex-wrap
+                                            items-center justify-center gap-3 title">
+                                    <svg
+                                        class="h-5 w-5 text-slate-600/85 dark:text-slate-200/85"
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                    >
+                                        <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z" />
+                                    </svg>
+
+                                    <h2 class="text-2xl font-bold">
+                                        {{ t('categories') }}
+                                    </h2>
+                                </div>
+
+                                <!-- Server toolbar -->
+                                <EntityPageToolbar
+                                    v-if="useServerProcessing"
+                                    v-model="q"
+                                    :found="categoriesFound"
+                                    :view-mode="viewMode"
+                                    :sort-value="sort"
+                                    :sort-options="categorySortOptions"
+                                    :default-sort="defaultSort"
+                                    :found-label="t('categories')"
+                                    :search-placeholder="t('searchByName')"
+                                    @submit="submitSearch"
+                                    @reset="resetSearch"
+                                    @update:viewMode="updateViewMode"
+                                    @update:sortValue="updateSort"
                                 />
 
-                                <MarketCategoryRows
+                                <!-- Frontend toolbar -->
+                                <FrontendEntityPageToolbar
                                     v-else
-                                    :categories="displayedCategories"
+                                    v-model="q"
+                                    :found="sortedCategories.length"
+                                    :view-mode="viewMode"
+                                    :sort-value="sort"
+                                    :sort-options="categorySortOptions"
+                                    :default-sort="defaultSort"
+                                    :found-label="t('categories')"
+                                    :search-placeholder="t('searchByName')"
+                                    @reset="resetSearch"
+                                    @update:viewMode="updateViewMode"
+                                    @update:sortValue="updateSort"
                                 />
-                            </div>
 
-                            <!-- Server-пагинация -->
-                            <Pagination
-                                v-if="useServerProcessing"
-                                :current-page="currentPage"
-                                :last-page="lastPage"
-                                :found="categoriesFound"
-                                @prev="goPrev"
-                                @next="goNext"
-                                @go="goToPage"
-                            />
+                                <!-- Точка скролла -->
+                                <div ref="scrollTarget"></div>
 
-                            <!-- Frontend-пагинация -->
-                            <FrontendPagination
-                                v-else
-                                v-model:currentPage="frontendCurrentPage"
-                                :items-per-page="perPage"
-                                :total-items="sortedCategories.length"
-                            />
+                                <!-- Нет данных -->
+                                <div
+                                    v-if="displayedCategories.length === 0"
+                                    class="mt-6 text-center text-slate-700 dark:text-slate-300"
+                                >
+                                    {{ t('noData') }}
+                                </div>
+
+                                <!--
+                                    MarketCategoryGrid / Rows формируют:
+
+                                    CollectionPage
+                                    → mainEntity
+                                    → ItemList
+                                    → ListItem
+                                    → CollectionPage категории.
+                                -->
+                                <div v-else>
+                                    <MarketCategoryGrid
+                                        v-if="viewMode === 'grid'"
+                                        :categories="displayedCategories"
+                                        :cols="categoryGridCols"
+                                        :start-position="categoryListStartPosition"
+                                        :total-items="categoryListTotalItems"
+                                        schema-property="mainEntity"
+                                    />
+
+                                    <MarketCategoryRows
+                                        v-else
+                                        :categories="displayedCategories"
+                                        :start-position="categoryListStartPosition"
+                                        :total-items="categoryListTotalItems"
+                                        schema-property="mainEntity"
+                                    />
+                                </div>
+
+                                <!-- Server-пагинация -->
+                                <Pagination
+                                    v-if="useServerProcessing"
+                                    :current-page="currentPage"
+                                    :last-page="lastPage"
+                                    :found="categoriesFound"
+                                    @prev="goPrev"
+                                    @next="goNext"
+                                    @go="goToPage"
+                                />
+
+                                <!-- Frontend-пагинация -->
+                                <FrontendPagination
+                                    v-else
+                                    v-model:currentPage="frontendCurrentPage"
+                                    :items-per-page="perPage"
+                                    :total-items="sortedCategories.length"
+                                />
+                            </article>
                         </div>
                     </div>
 

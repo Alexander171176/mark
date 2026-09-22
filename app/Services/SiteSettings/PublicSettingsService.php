@@ -31,9 +31,23 @@ class PublicSettingsService
         return (int) $this->get($key, $default);
     }
 
-    public function bool(string $key, bool $default = false): bool
-    {
-        return (bool) $this->get($key, $default);
+    public function bool(
+        string $key,
+        bool $default = false
+    ): bool {
+        $value = $this->get(
+            $key,
+            $default
+        );
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return filter_var(
+            $value,
+            FILTER_VALIDATE_BOOLEAN
+        );
     }
 
     public function all(): array

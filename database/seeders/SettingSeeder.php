@@ -2455,6 +2455,16 @@ class SettingSeeder extends Seeder
                 'sort' => 0,
             ], // PUBLIC MARKET BRANDS DEFAULT VIEW
             [
+                'type' => 'checkbox',
+                'option' => 'publicMarketBrandCarouselEnabled',
+                'value' => 'true',
+                'constant' => 'PUBLIC_MARKET_BRAND_CAROUSEL_ENABLED',
+                'category' => 'public',
+                'description' => 'Включение/Выключение карусели брендов в публичной части маркетплейса',
+                'activity' => true,
+                'sort' => 0,
+            ], // PUBLIC MARKET BRAND CAROUSEL ON/OFF
+            [
                 'type' => 'string',
                 'option' => 'adminMarketTagsProcessingMode',
                 'value' => 'auto',

@@ -13,6 +13,7 @@ use App\Services\Public\Market\MarketRecentlyViewedProductService;
 use App\Services\SiteSettings\PublicSettingsService;
 use App\Traits\Public\HasPublicIndexFiltersTrait;
 use App\Traits\Public\Market\BuildsMarketCategoryTreeTrait;
+use App\Traits\Public\Market\HasMarketBrandCarouselDataTrait;
 use App\Traits\Public\Market\HasMarketSidebarDataTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,7 @@ class MarketProductController extends Controller
     use HasPublicIndexFiltersTrait;
     use BuildsMarketCategoryTreeTrait;
     use HasMarketSidebarDataTrait;
+    use HasMarketBrandCarouselDataTrait;
 
     /** Конструктор с сервисом просмотренных товаров */
     public function __construct(
@@ -163,6 +165,14 @@ class MarketProductController extends Controller
         );
 
         /**
+         * Карусель брендов маркетплейса.
+         */
+        $brandCarouselData =
+            $this->getMarketBrandCarouselData(
+                $locale
+            );
+
+        /**
          * Недавно просмотренные товары.
          */
         $recentlyViewedProducts =
@@ -213,6 +223,7 @@ class MarketProductController extends Controller
                     $locale,
 
                 ...$sidebarData,
+                ...$brandCarouselData,
             ]
         );
     }

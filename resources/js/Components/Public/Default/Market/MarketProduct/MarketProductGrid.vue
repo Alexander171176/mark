@@ -63,6 +63,15 @@ const getBrandTitle = (product) => {
     return product?.brand?.translation?.title || ''
 }
 
+/** Ссылка на бренд */
+const brandLink = (product) => {
+    return product?.brand?.url
+        ? route('public.marketBrands.show', {
+            url: product.brand.url
+        })
+        : null
+}
+
 /** Цена */
 const getPrice = (product) => {
     const value = Number(product?.price)
@@ -288,6 +297,7 @@ const hasMarketingFlags = (product) => {
                 </div>
 
                 <div class="flex flex-1 flex-col pt-6 pb-1.5 px-1">
+
                     <!-- Бренд -->
                     <div
                         v-if="getBrandTitle(product)"
@@ -296,10 +306,26 @@ const hasMarketingFlags = (product) => {
                         itemscope
                         itemtype="https://schema.org/Brand"
                     >
+                        <Link
+                            v-if="brandLink(product)"
+                            :href="brandLink(product)"
+                            itemprop="url"
+                            class="text-xs font-semibold uppercase tracking-wide
+                                   text-slate-500 transition
+                                   hover:text-blue-600 hover:underline
+                                   dark:text-slate-400
+                                   dark:hover:text-blue-400"
+                        >
+                            <span itemprop="name">
+                                {{ getBrandTitle(product) }}
+                            </span>
+                        </Link>
+
                         <span
+                            v-else
                             itemprop="name"
                             class="text-xs font-semibold uppercase tracking-wide
-                                   text-slate-500 dark:text-slate-400"
+                                    text-slate-500 dark:text-slate-400"
                         >
                             {{ getBrandTitle(product) }}
                         </span>

@@ -37,6 +37,7 @@ import FrontendPagination from '@/Components/Public/Default/Pagination/FrontendP
 
 import PublicAdminBottomPanel
     from '@/Components/Admin/UI/PublicAdminPanel/PublicAdminBottomPanel.vue'
+import MarketBrandCarousel from '@/Components/Public/Default/Market/MarketBrand/MarketBrandCarousel.vue'
 
 const { t } = useI18n()
 
@@ -72,6 +73,12 @@ const props = defineProps({
 
     /** Недавно просмотренные товары */
     recentlyViewedProducts: {
+        type: [Array, Object],
+        default: () => [],
+    },
+
+    /** Карусель брендов */
+    marketBrandCarousel: {
         type: [Array, Object],
         default: () => [],
     },
@@ -124,6 +131,15 @@ const normalizeList = (value) => {
 
     return []
 }
+
+/* ===================== BRAND CAROUSEL ===================== */
+
+/** Бренды для публичной карусели */
+const brandCarousel = computed(() => {
+    return normalizeList(
+        props.marketBrandCarousel
+    )
+})
 
 /* ===================== RECENTLY VIEWED ===================== */
 
@@ -1432,6 +1448,11 @@ const productListStartPosition = computed(() => {
                         />
                     </aside>
                 </div>
+
+                <!-- Карусель брендов -->
+                <MarketBrandCarousel
+                    :brands="brandCarousel"
+                />
 
                 <!-- Недавно просмотренные товары -->
                 <MarketRecentlyViewedProducts

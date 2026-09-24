@@ -64,6 +64,7 @@
         "html2pdf.js": "^0.10.1",
         "jszip": "^3.10.1",
         "roughjs": "^4.6.6",
+        "swiper": "^14.2.0",
         "vue": "^3.4.31",
         "vue-advanced-cropper": "^2.8.9",
         "vue-chartjs": "^5.3.1",

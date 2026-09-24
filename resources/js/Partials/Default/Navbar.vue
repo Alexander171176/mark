@@ -235,7 +235,7 @@ watch(() => page.url, () => closeAllMenus())
                                    rounded-md p-1 text-gray-600
                                    hover:bg-gray-100 hover:text-gray-900
                                    dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white
-                                   focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
+                                   focus:outline-none focus:ring-2 focus:ring-sky-300 transition"
                         >
                             <svg
                                 class="h-5 w-5"
@@ -276,7 +276,7 @@ watch(() => page.url, () => closeAllMenus())
 
                             <span
                                 class="inline-flex font-bold text-xl sm:text-2xl
-                                       text-blue-600 truncate"
+                                       text-sky-600 truncate"
                             >
                                 AGROVENT
                             </span>
@@ -286,8 +286,8 @@ watch(() => page.url, () => closeAllMenus())
                             type="button"
                             @click="toggleCatalog"
                             class="hidden lg:inline-flex items-center gap-2 rounded-lg
-                                   bg-blue-600 px-2.5 py-2.5 text-sm font-bold text-white
-                                   hover:bg-blue-700 active:bg-blue-800 transition"
+                                   bg-sky-600 px-2.5 py-2.5 text-sm font-bold text-white
+                                   hover:bg-sky-700 active:bg-sky-800 transition"
                         >
                             <svg
                                 class="h-4 w-4"
@@ -353,9 +353,9 @@ watch(() => page.url, () => closeAllMenus())
                         :href="getHref(rootPage)"
                         class="flex items-center gap-2 text-sm font-semibold transition
                                text-slate-700 dark:text-slate-200
-                               hover:text-blue-700 dark:hover:text-blue-300"
+                               hover:text-sky-700 dark:hover:text-sky-300"
                         :class="{
-                            'text-blue-700 dark:text-blue-300':
+                            'text-sky-700 dark:text-sky-300':
                                 isPageActive(rootPage)
                         }"
                     >
@@ -394,9 +394,9 @@ watch(() => page.url, () => closeAllMenus())
                                            rounded-lg px-3 py-2
                                            text-sm font-semibold
                                            text-slate-700 dark:text-slate-200
-                                           hover:bg-blue-50 dark:hover:bg-gray-900
-                                           hover:text-blue-700
-                                           dark:hover:text-blue-300"
+                                           hover:bg-sky-50 dark:hover:bg-gray-900
+                                           hover:text-sky-700
+                                           dark:hover:text-sky-300"
                                 >
                                     <div
                                         class="flex items-center
@@ -445,10 +445,10 @@ watch(() => page.url, () => closeAllMenus())
                                                    text-sm font-semibold
                                                    text-slate-600
                                                    dark:text-slate-300
-                                                   hover:bg-blue-50
+                                                   hover:bg-sky-50
                                                    dark:hover:bg-gray-900
-                                                   hover:text-blue-700
-                                                   dark:hover:text-blue-300"
+                                                   hover:text-sky-700
+                                                   dark:hover:text-sky-300"
                                         >
                                             <span
                                                 v-if="subChild.icon"
@@ -524,10 +524,10 @@ watch(() => page.url, () => closeAllMenus())
                             :href="getHref(rootCategory)"
                             class="flex items-center gap-2 font-bold
                                    text-slate-900 dark:text-white
-                                   hover:text-blue-700
-                                   dark:hover:text-blue-300 transition"
+                                   hover:text-sky-700
+                                   dark:hover:text-sky-300 transition"
                             :class="{
-                                'text-blue-700 dark:text-blue-300':
+                                'text-sky-700 dark:text-sky-300':
                                     isCategoryActive(rootCategory)
                             }"
                             @click="closeCatalog"
@@ -558,10 +558,10 @@ watch(() => page.url, () => closeAllMenus())
                                     class="flex items-center gap-2
                                            text-sm font-semibold
                                            text-slate-700 dark:text-slate-300
-                                           hover:text-blue-700
-                                           dark:hover:text-blue-300 transition"
+                                           hover:text-sky-700
+                                           dark:hover:text-sky-300 transition"
                                     :class="{
-                                        'text-blue-700 dark:text-blue-300':
+                                        'text-sky-700 dark:text-sky-300':
                                             isCategoryActive(child)
                                     }"
                                     @click="closeCatalog"
@@ -591,11 +591,11 @@ watch(() => page.url, () => closeAllMenus())
                                             class="flex items-center gap-2 text-xs
                                                    text-slate-500
                                                    dark:text-slate-400
-                                                   hover:text-blue-700
-                                                   dark:hover:text-blue-300
+                                                   hover:text-sky-700
+                                                   dark:hover:text-sky-300
                                                    transition"
                                             :class="{
-                                                'text-blue-700 dark:text-blue-300':
+                                                'text-sky-700 dark:text-sky-300':
                                                     isCategoryActive(subChild)
                                             }"
                                             @click="closeCatalog"
@@ -663,8 +663,8 @@ watch(() => page.url, () => closeAllMenus())
                                        px-3 py-2 text-sm font-bold transition"
                                 :class="
                                     isPageActive(rootPage)
-                                        ? 'bg-blue-100 text-blue-800 ' +
-                                          'dark:bg-blue-900/40 dark:text-blue-300'
+                                        ? 'bg-sky-100 text-sky-800 ' +
+                                          'dark:bg-sky-900/40 dark:text-sky-300'
                                         : 'text-slate-700 hover:bg-slate-100 ' +
                                           'dark:text-slate-200 dark:hover:bg-slate-800'
                                 "
@@ -696,8 +696,8 @@ watch(() => page.url, () => closeAllMenus())
                                                text-sm font-semibold transition"
                                         :class="
                                             isPageActive(child)
-                                                ? 'bg-blue-100 text-blue-800 ' +
-                                                  'dark:bg-blue-900/40 dark:text-blue-300'
+                                                ? 'bg-sky-100 text-sky-800 ' +
+                                                  'dark:bg-sky-900/40 dark:text-sky-300'
                                                 : 'text-slate-600 hover:bg-slate-100 ' +
                                                   'dark:text-slate-300 dark:hover:bg-slate-800'
                                         "
@@ -729,8 +729,8 @@ watch(() => page.url, () => closeAllMenus())
                                                    text-xs font-semibold transition"
                                             :class="
                                                 isPageActive(subChild)
-                                                    ? 'bg-blue-100 text-blue-800 ' +
-                                                      'dark:bg-blue-900/40 dark:text-blue-300'
+                                                    ? 'bg-sky-100 text-sky-800 ' +
+                                                      'dark:bg-sky-900/40 dark:text-sky-300'
                                                     : 'text-slate-500 hover:bg-slate-100 ' +
                                                       'dark:text-slate-400 dark:hover:bg-slate-800'
                                             "

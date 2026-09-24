@@ -41,7 +41,7 @@ const getFooterChildren = (item) => {
                    border-2 border-slate-300 dark:border-slate-500 rounded-t-3xl">
 
         <!-- MAIN CONTENT -->
-        <div class="mx-auto px-3 py-3">
+        <div class="py-6 lg:py-14 px-3 lg:px-12">
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
 
@@ -50,27 +50,34 @@ const getFooterChildren = (item) => {
 
                     <div class="flex items-center gap-3">
                         <div>
-                        <!-- LOGO -->
-                        <Link :href="route('home')"
-                              class="flex items-center justify-center gap-3 logo">
-                            <svg class="h-10 w-10" xmlns="http://www.w3.org/2000/svg"
-                                 fill="currentColor" viewBox="0 0 640 512">
-                                <path d="M622.34 153.2L343.4 67.5c-15.2-4.67-31.6-4.67-46.79 0L17.66 153.2c-23.54 7.23-23.54 38.36 0 45.59l48.63 14.94c-10.67 13.19-17.23 29.28-17.88 46.9C38.78 266.15 32 276.11 32 288c0 10.78 5.68 19.85 13.86 25.65L20.33 428.53C18.11 438.52 25.71 448 35.94 448h56.11c10.24 0 17.84-9.48 15.62-19.47L82.14 313.65C90.32 307.85 96 298.78 96 288c0-11.57-6.47-21.25-15.66-26.87.76-15.02 8.44-28.3 20.69-36.72L296.6 284.5c9.06 2.78 26.44 6.25 46.79 0l278.95-85.7c23.55-7.24 23.55-38.36 0-45.6zM352.79 315.09c-28.53 8.76-52.84 3.92-65.59 0l-145.02-44.55L128 384c0 35.35 85.96 64 192 64s192-28.65 192-64l-14.18-113.47-145.03 44.56z"></path>
-                            </svg>
-                            <span class="font-semibold text-xs md:text-lg">
-                                SW Community
-                            </span>
-                        </Link>
-                        <h3 class="text-center subtitle">
-                            <span class="font-semibold text-gradient">
-                                {{ t('ourCommunityBlog') }}
-                            </span>
-                        </h3>
+                            <!-- LOGO -->
+                            <Link :href="route('home')"
+                                  class="flex items-center justify-center gap-3 logo">
+                                <svg
+                                    class="w-6 h-6 fill-current text-teal-500"
+                                    viewBox="0 0 576 512">
+                                    <path
+                                        d="M546.2 9.7c-5.6-12.5-21.6-13-28.3-1.2C486.9 62.4 431.4 96 368 96h-80C182 96 96 182 96 288c0 7 .8 13.7 1.5 20.5C161.3 262.8 253.4 224 384 224c8.8 0 16 7.2 16 16s-7.2 16-16 16C132.6 256 26 410.1 2.4 468c-6.6 16.3 1.2 34.9 17.5 41.6 16.4 6.8 35-1.1 41.8-17.3 1.5-3.6 20.9-47.9 71.9-90.6 32.4 43.9 94 85.8 174.9 77.2C465.5 467.5 576 326.7 576 154.3c0-50.2-10.8-102.2-29.8-144.6z">
+                                    </path>
+                                </svg>
+                                <span class="inline-flex font-bold text-xl
+                                             sm:text-2xl text-sky-600 truncate">
+                                    AGROVENT
+                                </span>
+                            </Link>
+                            <h3 class="text-center subtitle flex flex-col gap-1">
+                                <span class="font-semibold text-gradient">
+                                    Инженерные системы
+                                </span>
+                                <span class="font-bold text-orange-500 dark:text-yellow-300">
+                                    +7 (701) 111-11-11
+                                </span>
+                            </h3>
                         </div>
                     </div>
 
                     <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                        Изучайте статьи и руководства от экспертов сообщества.
+                        Выбирайте лучшие, инновационные решения для бизнеса.
                     </p>
 
                     <!-- SOCIAL -->

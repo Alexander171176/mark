@@ -80,11 +80,11 @@ html {
 }
 
 .text-gradient {
-    background: linear-gradient(45deg, hsl(268 98% 50%),
-    hsl( 268 98% calc(50% - 12%)),
-    hsl( 268 98% calc(50% - 22%)),
-    hsl( 268 98% calc(50% - 6%)),
-    hsl(268 98% 50%));
+    background: linear-gradient(45deg, hsl(221 83% 53%),
+    hsl( 221 83% calc(53% - 12%)),
+    hsl( 221 83% calc(53% - 22%)),
+    hsl( 221 83% calc(53% - 6%)),
+    hsl(221 83% 53%));
     background-size: 200% auto;
     -webkit-background-clip: text;
     background-clip: text;

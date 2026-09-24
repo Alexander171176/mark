@@ -2,337 +2,331 @@ import { createSSRApp, h as h$1 } from "vue";
 import { renderToString } from "@vue/server-renderer";
 import { createInertiaApp } from "@inertiajs/vue3";
 import createServer from "@inertiajs/vue3/server";
-import { r as resolvePageComponent } from "./assets/vendor-koWuargk.js";
+import { r as resolvePageComponent } from "./assets/vendor-V_Tb0Wa1.js";
 function t() {
-  return t = Object.assign ? Object.assign.bind() : function(t4) {
+  return t = Object.assign ? Object.assign.bind() : function(t3) {
     for (var e2 = 1; e2 < arguments.length; e2++) {
-      var r2 = arguments[e2];
-      for (var n2 in r2)
-        ({}).hasOwnProperty.call(r2, n2) && (t4[n2] = r2[n2]);
+      var o2 = arguments[e2];
+      for (var n2 in o2) ({}).hasOwnProperty.call(o2, n2) && (t3[n2] = o2[n2]);
     }
-    return t4;
+    return t3;
   }, t.apply(null, arguments);
 }
-var e = String.prototype.replace, r = /%20/g, n = "RFC3986", o = { default: n, formatters: { RFC1738: function(t4) {
-  return e.call(t4, r, "+");
-}, RFC3986: function(t4) {
-  return String(t4);
-} }, RFC1738: "RFC1738" }, i = Object.prototype.hasOwnProperty, u = Array.isArray, a = function() {
-  for (var t4 = [], e2 = 0; e2 < 256; ++e2)
-    t4.push("%" + ((e2 < 16 ? "0" : "") + e2.toString(16)).toUpperCase());
-  return t4;
-}(), s = function(t4, e2) {
-  for (var r2 = e2 && e2.plainObjects ? /* @__PURE__ */ Object.create(null) : {}, n2 = 0; n2 < t4.length; ++n2)
-    void 0 !== t4[n2] && (r2[n2] = t4[n2]);
-  return r2;
-}, f = { arrayToObject: s, assign: function(t4, e2) {
-  return Object.keys(e2).reduce(function(t5, r2) {
-    return t5[r2] = e2[r2], t5;
-  }, t4);
-}, combine: function(t4, e2) {
-  return [].concat(t4, e2);
-}, compact: function(t4) {
-  for (var e2 = [{ obj: { o: t4 }, prop: "o" }], r2 = [], n2 = 0; n2 < e2.length; ++n2)
-    for (var o2 = e2[n2], i2 = o2.obj[o2.prop], a2 = Object.keys(i2), s2 = 0; s2 < a2.length; ++s2) {
-      var f2 = a2[s2], c2 = i2[f2];
-      "object" == typeof c2 && null !== c2 && -1 === r2.indexOf(c2) && (e2.push({ obj: i2, prop: f2 }), r2.push(c2));
+const e = String.prototype.replace, o = /%20/g, n = { RFC1738: function(t3) {
+  return e.call(t3, o, "+");
+}, RFC3986: function(t3) {
+  return String(t3);
+} };
+var r = "RFC3986";
+const i = Object.prototype.hasOwnProperty, s = Array.isArray, u = function() {
+  const t3 = [];
+  for (let e2 = 0; e2 < 256; ++e2) t3.push("%" + ((e2 < 16 ? "0" : "") + e2.toString(16)).toUpperCase());
+  return t3;
+}(), l = function t2(e2, o2, n2) {
+  if (!o2) return e2;
+  if ("object" != typeof o2) {
+    if (s(e2)) e2.push(o2);
+    else {
+      if (!e2 || "object" != typeof e2) return [e2, o2];
+      (n2 && (n2.plainObjects || n2.allowPrototypes) || !i.call(Object.prototype, o2)) && (e2[o2] = true);
     }
-  return function(t5) {
-    for (; t5.length > 1; ) {
-      var e3 = t5.pop(), r3 = e3.obj[e3.prop];
-      if (u(r3)) {
-        for (var n3 = [], o3 = 0; o3 < r3.length; ++o3)
-          void 0 !== r3[o3] && n3.push(r3[o3]);
-        e3.obj[e3.prop] = n3;
-      }
-    }
-  }(e2), t4;
-}, decode: function(t4, e2, r2) {
-  var n2 = t4.replace(/\+/g, " ");
-  if ("iso-8859-1" === r2)
-    return n2.replace(/%[0-9a-f]{2}/gi, unescape);
-  try {
-    return decodeURIComponent(n2);
-  } catch (t5) {
-    return n2;
+    return e2;
   }
-}, encode: function(t4, e2, r2, n2, i2) {
-  if (0 === t4.length)
-    return t4;
-  var u2 = t4;
-  if ("symbol" == typeof t4 ? u2 = Symbol.prototype.toString.call(t4) : "string" != typeof t4 && (u2 = String(t4)), "iso-8859-1" === r2)
-    return escape(u2).replace(/%u[0-9a-f]{4}/gi, function(t5) {
-      return "%26%23" + parseInt(t5.slice(2), 16) + "%3B";
-    });
-  for (var s2 = "", f2 = 0; f2 < u2.length; ++f2) {
-    var c2 = u2.charCodeAt(f2);
-    45 === c2 || 46 === c2 || 95 === c2 || 126 === c2 || c2 >= 48 && c2 <= 57 || c2 >= 65 && c2 <= 90 || c2 >= 97 && c2 <= 122 || i2 === o.RFC1738 && (40 === c2 || 41 === c2) ? s2 += u2.charAt(f2) : c2 < 128 ? s2 += a[c2] : c2 < 2048 ? s2 += a[192 | c2 >> 6] + a[128 | 63 & c2] : c2 < 55296 || c2 >= 57344 ? s2 += a[224 | c2 >> 12] + a[128 | c2 >> 6 & 63] + a[128 | 63 & c2] : (c2 = 65536 + ((1023 & c2) << 10 | 1023 & u2.charCodeAt(f2 += 1)), s2 += a[240 | c2 >> 18] + a[128 | c2 >> 12 & 63] + a[128 | c2 >> 6 & 63] + a[128 | 63 & c2]);
+  if (!e2 || "object" != typeof e2) return [e2].concat(o2);
+  let r2 = e2;
+  return s(e2) && !s(o2) && (r2 = function(t3, e3) {
+    const o3 = e3 && e3.plainObjects ? /* @__PURE__ */ Object.create(null) : {};
+    for (let e4 = 0; e4 < t3.length; ++e4) void 0 !== t3[e4] && (o3[e4] = t3[e4]);
+    return o3;
+  }(e2, n2)), s(e2) && s(o2) ? (o2.forEach(function(o3, r3) {
+    if (i.call(e2, r3)) {
+      const i2 = e2[r3];
+      i2 && "object" == typeof i2 && o3 && "object" == typeof o3 ? e2[r3] = t2(i2, o3, n2) : e2.push(o3);
+    } else e2[r3] = o3;
+  }), e2) : Object.keys(o2).reduce(function(e3, r3) {
+    const s2 = o2[r3];
+    return e3[r3] = i.call(e3, r3) ? t2(e3[r3], s2, n2) : s2, e3;
+  }, r2);
+}, c = 1024, a = function(t3, e2) {
+  return [].concat(t3, e2);
+}, f = function(t3, e2) {
+  if (s(t3)) {
+    const o2 = [];
+    for (let n2 = 0; n2 < t3.length; n2 += 1) o2.push(e2(t3[n2]));
+    return o2;
+  }
+  return e2(t3);
+}, p = Object.prototype.hasOwnProperty, y = { brackets: function(t3) {
+  return t3 + "[]";
+}, comma: "comma", indices: function(t3, e2) {
+  return t3 + "[" + e2 + "]";
+}, repeat: function(t3) {
+  return t3;
+} }, d = Array.isArray, h = Array.prototype.push, b = function(t3, e2) {
+  h.apply(t3, d(e2) ? e2 : [e2]);
+}, m = Date.prototype.toISOString, g = { addQueryPrefix: false, allowDots: false, allowEmptyArrays: false, arrayFormat: "indices", charset: "utf-8", charsetSentinel: false, delimiter: "&", encode: true, encodeDotInKeys: false, encoder: function(t3, e2, o2, n2, r2) {
+  if (0 === t3.length) return t3;
+  let i2 = t3;
+  if ("symbol" == typeof t3 ? i2 = Symbol.prototype.toString.call(t3) : "string" != typeof t3 && (i2 = String(t3)), "iso-8859-1" === o2) return escape(i2).replace(/%u[0-9a-f]{4}/gi, function(t4) {
+    return "%26%23" + parseInt(t4.slice(2), 16) + "%3B";
+  });
+  let s2 = "";
+  for (let t4 = 0; t4 < i2.length; t4 += c) {
+    const e3 = i2.length >= c ? i2.slice(t4, t4 + c) : i2, o3 = [];
+    for (let t5 = 0; t5 < e3.length; ++t5) {
+      let n3 = e3.charCodeAt(t5);
+      45 === n3 || 46 === n3 || 95 === n3 || 126 === n3 || n3 >= 48 && n3 <= 57 || n3 >= 65 && n3 <= 90 || n3 >= 97 && n3 <= 122 || "RFC1738" === r2 && (40 === n3 || 41 === n3) ? o3[o3.length] = e3.charAt(t5) : n3 < 128 ? o3[o3.length] = u[n3] : n3 < 2048 ? o3[o3.length] = u[192 | n3 >> 6] + u[128 | 63 & n3] : n3 < 55296 || n3 >= 57344 ? o3[o3.length] = u[224 | n3 >> 12] + u[128 | n3 >> 6 & 63] + u[128 | 63 & n3] : (t5 += 1, n3 = 65536 + ((1023 & n3) << 10 | 1023 & e3.charCodeAt(t5)), o3[o3.length] = u[240 | n3 >> 18] + u[128 | n3 >> 12 & 63] + u[128 | n3 >> 6 & 63] + u[128 | 63 & n3]);
+    }
+    s2 += o3.join("");
   }
   return s2;
-}, isBuffer: function(t4) {
-  return !(!t4 || "object" != typeof t4 || !(t4.constructor && t4.constructor.isBuffer && t4.constructor.isBuffer(t4)));
-}, isRegExp: function(t4) {
-  return "[object RegExp]" === Object.prototype.toString.call(t4);
-}, maybeMap: function(t4, e2) {
-  if (u(t4)) {
-    for (var r2 = [], n2 = 0; n2 < t4.length; n2 += 1)
-      r2.push(e2(t4[n2]));
-    return r2;
-  }
-  return e2(t4);
-}, merge: function t2(e2, r2, n2) {
-  if (!r2)
-    return e2;
-  if ("object" != typeof r2) {
-    if (u(e2))
-      e2.push(r2);
-    else {
-      if (!e2 || "object" != typeof e2)
-        return [e2, r2];
-      (n2 && (n2.plainObjects || n2.allowPrototypes) || !i.call(Object.prototype, r2)) && (e2[r2] = true);
+}, encodeValuesOnly: false, format: r, formatter: n[r], indices: false, serializeDate: function(t3) {
+  return m.call(t3);
+}, skipNulls: false, strictNullHandling: false }, w = {}, v = function(t3, e2, o2, n2, r2, i2, s2, u2, l2, c2, a2, p2, y2, h2, m2, j2, $2, E2) {
+  let O2 = t3, T2 = E2, R2 = 0, S2 = false;
+  for (; void 0 !== (T2 = T2.get(w)) && !S2; ) {
+    const e3 = T2.get(t3);
+    if (R2 += 1, void 0 !== e3) {
+      if (e3 === R2) throw new RangeError("Cyclic object value");
+      S2 = true;
     }
-    return e2;
+    void 0 === T2.get(w) && (R2 = 0);
   }
-  if (!e2 || "object" != typeof e2)
-    return [e2].concat(r2);
-  var o2 = e2;
-  return u(e2) && !u(r2) && (o2 = s(e2, n2)), u(e2) && u(r2) ? (r2.forEach(function(r3, o3) {
-    if (i.call(e2, o3)) {
-      var u2 = e2[o3];
-      u2 && "object" == typeof u2 && r3 && "object" == typeof r3 ? e2[o3] = t2(u2, r3, n2) : e2.push(r3);
-    } else
-      e2[o3] = r3;
-  }), e2) : Object.keys(r2).reduce(function(e3, o3) {
-    var u2 = r2[o3];
-    return e3[o3] = i.call(e3, o3) ? t2(e3[o3], u2, n2) : u2, e3;
-  }, o2);
-} }, c = Object.prototype.hasOwnProperty, l = { brackets: function(t4) {
-  return t4 + "[]";
-}, comma: "comma", indices: function(t4, e2) {
-  return t4 + "[" + e2 + "]";
-}, repeat: function(t4) {
-  return t4;
-} }, p = Array.isArray, h = String.prototype.split, y = Array.prototype.push, d = function(t4, e2) {
-  y.apply(t4, p(e2) ? e2 : [e2]);
-}, g = Date.prototype.toISOString, b = o.default, v = { addQueryPrefix: false, allowDots: false, charset: "utf-8", charsetSentinel: false, delimiter: "&", encode: true, encoder: f.encode, encodeValuesOnly: false, format: b, formatter: o.formatters[b], indices: false, serializeDate: function(t4) {
-  return g.call(t4);
-}, skipNulls: false, strictNullHandling: false }, m = function t3(e2, r2, n2, o2, i2, u2, a2, s2, c2, l2, y2, g2, b2, m2) {
-  var j2, w2 = e2;
-  if ("function" == typeof a2 ? w2 = a2(r2, w2) : w2 instanceof Date ? w2 = l2(w2) : "comma" === n2 && p(w2) && (w2 = f.maybeMap(w2, function(t4) {
-    return t4 instanceof Date ? l2(t4) : t4;
-  })), null === w2) {
-    if (o2)
-      return u2 && !b2 ? u2(r2, v.encoder, m2, "key", y2) : r2;
-    w2 = "";
+  if ("function" == typeof c2 ? O2 = c2(e2, O2) : O2 instanceof Date ? O2 = y2(O2) : "comma" === o2 && d(O2) && (O2 = f(O2, function(t4) {
+    return t4 instanceof Date ? y2(t4) : t4;
+  })), null === O2) {
+    if (i2) return l2 && !j2 ? l2(e2, g.encoder, $2, "key", h2) : e2;
+    O2 = "";
   }
-  if ("string" == typeof (j2 = w2) || "number" == typeof j2 || "boolean" == typeof j2 || "symbol" == typeof j2 || "bigint" == typeof j2 || f.isBuffer(w2)) {
-    if (u2) {
-      var $2 = b2 ? r2 : u2(r2, v.encoder, m2, "key", y2);
-      if ("comma" === n2 && b2) {
-        for (var O2 = h.call(String(w2), ","), E2 = "", R2 = 0; R2 < O2.length; ++R2)
-          E2 += (0 === R2 ? "" : ",") + g2(u2(O2[R2], v.encoder, m2, "value", y2));
-        return [g2($2) + "=" + E2];
-      }
-      return [g2($2) + "=" + g2(u2(w2, v.encoder, m2, "value", y2))];
-    }
-    return [g2(r2) + "=" + g2(String(w2))];
-  }
-  var S2, x2 = [];
-  if (void 0 === w2)
-    return x2;
-  if ("comma" === n2 && p(w2))
-    S2 = [{ value: w2.length > 0 ? w2.join(",") || null : void 0 }];
-  else if (p(a2))
-    S2 = a2;
+  if ("string" == typeof (I2 = O2) || "number" == typeof I2 || "boolean" == typeof I2 || "symbol" == typeof I2 || "bigint" == typeof I2 || function(t4) {
+    return !(!t4 || "object" != typeof t4 || !(t4.constructor && t4.constructor.isBuffer && t4.constructor.isBuffer(t4)));
+  }(O2)) return l2 ? [m2(j2 ? e2 : l2(e2, g.encoder, $2, "key", h2)) + "=" + m2(l2(O2, g.encoder, $2, "value", h2))] : [m2(e2) + "=" + m2(String(O2))];
+  var I2;
+  const A2 = [];
+  if (void 0 === O2) return A2;
+  let D2;
+  if ("comma" === o2 && d(O2)) j2 && l2 && (O2 = f(O2, l2)), D2 = [{ value: O2.length > 0 ? O2.join(",") || null : void 0 }];
+  else if (d(c2)) D2 = c2;
   else {
-    var N2 = Object.keys(w2);
-    S2 = s2 ? N2.sort(s2) : N2;
+    const t4 = Object.keys(O2);
+    D2 = a2 ? t4.sort(a2) : t4;
   }
-  for (var T2 = 0; T2 < S2.length; ++T2) {
-    var k2 = S2[T2], C = "object" == typeof k2 && void 0 !== k2.value ? k2.value : w2[k2];
-    if (!i2 || null !== C) {
-      var _ = p(w2) ? "function" == typeof n2 ? n2(r2, k2) : r2 : r2 + (c2 ? "." + k2 : "[" + k2 + "]");
-      d(x2, t3(C, _, n2, o2, i2, u2, a2, s2, c2, l2, y2, g2, b2, m2));
-    }
+  const _2 = u2 ? e2.replace(/\./g, "%2E") : e2, k = n2 && d(O2) && 1 === O2.length ? _2 + "[]" : _2;
+  if (r2 && d(O2) && 0 === O2.length) return k + "[]";
+  for (let e3 = 0; e3 < D2.length; ++e3) {
+    const f2 = D2[e3], g2 = "object" == typeof f2 && void 0 !== f2.value ? f2.value : O2[f2];
+    if (s2 && null === g2) continue;
+    const T3 = p2 && u2 ? f2.replace(/\./g, "%2E") : f2, S3 = d(O2) ? "function" == typeof o2 ? o2(k, T3) : k : k + (p2 ? "." + T3 : "[" + T3 + "]");
+    E2.set(t3, R2);
+    const I3 = /* @__PURE__ */ new WeakMap();
+    I3.set(w, E2), b(A2, v(g2, S3, o2, n2, r2, i2, s2, u2, "comma" === o2 && j2 && d(O2) ? null : l2, c2, a2, p2, y2, h2, m2, j2, $2, I3));
   }
-  return x2;
-}, j = Object.prototype.hasOwnProperty, w = Array.isArray, $ = { allowDots: false, allowPrototypes: false, arrayLimit: 20, charset: "utf-8", charsetSentinel: false, comma: false, decoder: f.decode, delimiter: "&", depth: 5, ignoreQueryPrefix: false, interpretNumericEntities: false, parameterLimit: 1e3, parseArrays: true, plainObjects: false, strictNullHandling: false }, O = function(t4) {
-  return t4.replace(/&#(\d+);/g, function(t5, e2) {
+  return A2;
+}, j = Object.prototype.hasOwnProperty, $ = Array.isArray, E = { allowDots: false, allowEmptyArrays: false, allowPrototypes: false, allowSparse: false, arrayLimit: 20, charset: "utf-8", charsetSentinel: false, comma: false, decodeDotInKeys: false, decoder: function(t3, e2, o2) {
+  const n2 = t3.replace(/\+/g, " ");
+  if ("iso-8859-1" === o2) return n2.replace(/%[0-9a-f]{2}/gi, unescape);
+  try {
+    return decodeURIComponent(n2);
+  } catch (t4) {
+    return n2;
+  }
+}, delimiter: "&", depth: 5, duplicates: "combine", ignoreQueryPrefix: false, interpretNumericEntities: false, parameterLimit: 1e3, parseArrays: true, plainObjects: false, strictNullHandling: false }, O = function(t3) {
+  return t3.replace(/&#(\d+);/g, function(t4, e2) {
     return String.fromCharCode(parseInt(e2, 10));
   });
-}, E = function(t4, e2) {
-  return t4 && "string" == typeof t4 && e2.comma && t4.indexOf(",") > -1 ? t4.split(",") : t4;
-}, R = function(t4, e2, r2, n2) {
-  if (t4) {
-    var o2 = r2.allowDots ? t4.replace(/\.([^.[]+)/g, "[$1]") : t4, i2 = /(\[[^[\]]*])/g, u2 = r2.depth > 0 && /(\[[^[\]]*])/.exec(o2), a2 = u2 ? o2.slice(0, u2.index) : o2, s2 = [];
-    if (a2) {
-      if (!r2.plainObjects && j.call(Object.prototype, a2) && !r2.allowPrototypes)
-        return;
-      s2.push(a2);
-    }
-    for (var f2 = 0; r2.depth > 0 && null !== (u2 = i2.exec(o2)) && f2 < r2.depth; ) {
-      if (f2 += 1, !r2.plainObjects && j.call(Object.prototype, u2[1].slice(1, -1)) && !r2.allowPrototypes)
-        return;
-      s2.push(u2[1]);
-    }
-    return u2 && s2.push("[" + o2.slice(u2.index) + "]"), function(t5, e3, r3, n3) {
-      for (var o3 = n3 ? e3 : E(e3, r3), i3 = t5.length - 1; i3 >= 0; --i3) {
-        var u3, a3 = t5[i3];
-        if ("[]" === a3 && r3.parseArrays)
-          u3 = [].concat(o3);
-        else {
-          u3 = r3.plainObjects ? /* @__PURE__ */ Object.create(null) : {};
-          var s3 = "[" === a3.charAt(0) && "]" === a3.charAt(a3.length - 1) ? a3.slice(1, -1) : a3, f3 = parseInt(s3, 10);
-          r3.parseArrays || "" !== s3 ? !isNaN(f3) && a3 !== s3 && String(f3) === s3 && f3 >= 0 && r3.parseArrays && f3 <= r3.arrayLimit ? (u3 = [])[f3] = o3 : "__proto__" !== s3 && (u3[s3] = o3) : u3 = { 0: o3 };
-        }
-        o3 = u3;
-      }
-      return o3;
-    }(s2, e2, r2, n2);
+}, T = function(t3, e2) {
+  return t3 && "string" == typeof t3 && e2.comma && t3.indexOf(",") > -1 ? t3.split(",") : t3;
+}, R = function(t3, e2, o2, n2) {
+  if (!t3) return;
+  const r2 = o2.allowDots ? t3.replace(/\.([^.[]+)/g, "[$1]") : t3, i2 = /(\[[^[\]]*])/g;
+  let s2 = o2.depth > 0 && /(\[[^[\]]*])/.exec(r2);
+  const u2 = s2 ? r2.slice(0, s2.index) : r2, l2 = [];
+  if (u2) {
+    if (!o2.plainObjects && j.call(Object.prototype, u2) && !o2.allowPrototypes) return;
+    l2.push(u2);
   }
-}, S = function(t4, e2) {
-  var r2 = /* @__PURE__ */ function(t5) {
-    return $;
-  }();
-  if ("" === t4 || null == t4)
-    return r2.plainObjects ? /* @__PURE__ */ Object.create(null) : {};
-  for (var n2 = "string" == typeof t4 ? function(t5, e3) {
-    var r3, n3 = {}, o3 = (e3.ignoreQueryPrefix ? t5.replace(/^\?/, "") : t5).split(e3.delimiter, Infinity === e3.parameterLimit ? void 0 : e3.parameterLimit), i3 = -1, u3 = e3.charset;
-    if (e3.charsetSentinel)
-      for (r3 = 0; r3 < o3.length; ++r3)
-        0 === o3[r3].indexOf("utf8=") && ("utf8=%E2%9C%93" === o3[r3] ? u3 = "utf-8" : "utf8=%26%2310003%3B" === o3[r3] && (u3 = "iso-8859-1"), i3 = r3, r3 = o3.length);
-    for (r3 = 0; r3 < o3.length; ++r3)
-      if (r3 !== i3) {
-        var a3, s3, c2 = o3[r3], l2 = c2.indexOf("]="), p2 = -1 === l2 ? c2.indexOf("=") : l2 + 1;
-        -1 === p2 ? (a3 = e3.decoder(c2, $.decoder, u3, "key"), s3 = e3.strictNullHandling ? null : "") : (a3 = e3.decoder(c2.slice(0, p2), $.decoder, u3, "key"), s3 = f.maybeMap(E(c2.slice(p2 + 1), e3), function(t6) {
-          return e3.decoder(t6, $.decoder, u3, "value");
-        })), s3 && e3.interpretNumericEntities && "iso-8859-1" === u3 && (s3 = O(s3)), c2.indexOf("[]=") > -1 && (s3 = w(s3) ? [s3] : s3), n3[a3] = j.call(n3, a3) ? f.combine(n3[a3], s3) : s3;
-      }
-    return n3;
-  }(t4, r2) : t4, o2 = r2.plainObjects ? /* @__PURE__ */ Object.create(null) : {}, i2 = Object.keys(n2), u2 = 0; u2 < i2.length; ++u2) {
-    var a2 = i2[u2], s2 = R(a2, n2[a2], r2, "string" == typeof t4);
-    o2 = f.merge(o2, s2, r2);
+  let c2 = 0;
+  for (; o2.depth > 0 && null !== (s2 = i2.exec(r2)) && c2 < o2.depth; ) {
+    if (c2 += 1, !o2.plainObjects && j.call(Object.prototype, s2[1].slice(1, -1)) && !o2.allowPrototypes) return;
+    l2.push(s2[1]);
   }
-  return f.compact(o2);
+  return s2 && l2.push("[" + r2.slice(s2.index) + "]"), function(t4, e3, o3, n3) {
+    let r3 = n3 ? e3 : T(e3, o3);
+    for (let e4 = t4.length - 1; e4 >= 0; --e4) {
+      let n4;
+      const i3 = t4[e4];
+      if ("[]" === i3 && o3.parseArrays) n4 = o3.allowEmptyArrays && "" === r3 ? [] : [].concat(r3);
+      else {
+        n4 = o3.plainObjects ? /* @__PURE__ */ Object.create(null) : {};
+        const t5 = "[" === i3.charAt(0) && "]" === i3.charAt(i3.length - 1) ? i3.slice(1, -1) : i3, e5 = o3.decodeDotInKeys ? t5.replace(/%2E/g, ".") : t5, s3 = parseInt(e5, 10);
+        o3.parseArrays || "" !== e5 ? !isNaN(s3) && i3 !== e5 && String(s3) === e5 && s3 >= 0 && o3.parseArrays && s3 <= o3.arrayLimit ? (n4 = [], n4[s3] = r3) : "__proto__" !== e5 && (n4[e5] = r3) : n4 = { 0: r3 };
+      }
+      r3 = n4;
+    }
+    return r3;
+  }(l2, e2, o2, n2);
 };
-class x {
-  constructor(t4, e2, r2) {
-    var n2, o2;
-    this.name = t4, this.definition = e2, this.bindings = null != (n2 = e2.bindings) ? n2 : {}, this.wheres = null != (o2 = e2.wheres) ? o2 : {}, this.config = r2;
+function S(t3, e2) {
+  const o2 = /* @__PURE__ */ function(t4) {
+    return E;
+  }();
+  if ("" === t3 || null == t3) return o2.plainObjects ? /* @__PURE__ */ Object.create(null) : {};
+  const n2 = "string" == typeof t3 ? function(t4, e3) {
+    const o3 = { __proto__: null }, n3 = (e3.ignoreQueryPrefix ? t4.replace(/^\?/, "") : t4).split(e3.delimiter, Infinity === e3.parameterLimit ? void 0 : e3.parameterLimit);
+    let r3, i3 = -1, s2 = e3.charset;
+    if (e3.charsetSentinel) for (r3 = 0; r3 < n3.length; ++r3) 0 === n3[r3].indexOf("utf8=") && ("utf8=%E2%9C%93" === n3[r3] ? s2 = "utf-8" : "utf8=%26%2310003%3B" === n3[r3] && (s2 = "iso-8859-1"), i3 = r3, r3 = n3.length);
+    for (r3 = 0; r3 < n3.length; ++r3) {
+      if (r3 === i3) continue;
+      const t5 = n3[r3], u2 = t5.indexOf("]="), l2 = -1 === u2 ? t5.indexOf("=") : u2 + 1;
+      let c2, p2;
+      -1 === l2 ? (c2 = e3.decoder(t5, E.decoder, s2, "key"), p2 = e3.strictNullHandling ? null : "") : (c2 = e3.decoder(t5.slice(0, l2), E.decoder, s2, "key"), p2 = f(T(t5.slice(l2 + 1), e3), function(t6) {
+        return e3.decoder(t6, E.decoder, s2, "value");
+      })), p2 && e3.interpretNumericEntities && "iso-8859-1" === s2 && (p2 = O(p2)), t5.indexOf("[]=") > -1 && (p2 = $(p2) ? [p2] : p2);
+      const y2 = j.call(o3, c2);
+      y2 && "combine" === e3.duplicates ? o3[c2] = a(o3[c2], p2) : y2 && "last" !== e3.duplicates || (o3[c2] = p2);
+    }
+    return o3;
+  }(t3, o2) : t3;
+  let r2 = o2.plainObjects ? /* @__PURE__ */ Object.create(null) : {};
+  const i2 = Object.keys(n2);
+  for (let e3 = 0; e3 < i2.length; ++e3) {
+    const s2 = i2[e3], u2 = R(s2, n2[s2], o2, "string" == typeof t3);
+    r2 = l(r2, u2, o2);
+  }
+  return true === o2.allowSparse ? r2 : function(t4) {
+    const e3 = [{ obj: { o: t4 }, prop: "o" }], o3 = [];
+    for (let t5 = 0; t5 < e3.length; ++t5) {
+      const n3 = e3[t5], r3 = n3.obj[n3.prop], i3 = Object.keys(r3);
+      for (let t6 = 0; t6 < i3.length; ++t6) {
+        const n4 = i3[t6], s2 = r3[n4];
+        "object" == typeof s2 && null !== s2 && -1 === o3.indexOf(s2) && (e3.push({ obj: r3, prop: n4 }), o3.push(s2));
+      }
+    }
+    return function(t5) {
+      for (; t5.length > 1; ) {
+        const e4 = t5.pop(), o4 = e4.obj[e4.prop];
+        if (s(o4)) {
+          const t6 = [];
+          for (let e5 = 0; e5 < o4.length; ++e5) void 0 !== o4[e5] && t6.push(o4[e5]);
+          e4.obj[e4.prop] = t6;
+        }
+      }
+    }(e3), t4;
+  }(r2);
+}
+class I {
+  constructor(t3, e2, o2) {
+    var n2, r2;
+    this.name = t3, this.definition = e2, this.bindings = null != (n2 = e2.bindings) ? n2 : {}, this.wheres = null != (r2 = e2.wheres) ? r2 : {}, this.config = o2;
   }
   get template() {
-    const t4 = `${this.origin}/${this.definition.uri}`.replace(/\/+$/, "");
-    return "" === t4 ? "/" : t4;
+    const t3 = `${this.origin}/${this.definition.uri}`.replace(/\/+$/, "");
+    return "" === t3 ? "/" : t3;
   }
   get origin() {
     return this.config.absolute ? this.definition.domain ? `${this.config.url.match(/^\w+:\/\//)[0]}${this.definition.domain}${this.config.port ? `:${this.config.port}` : ""}` : this.config.url : "";
   }
   get parameterSegments() {
-    var t4, e2;
-    return null != (t4 = null == (e2 = this.template.match(/{[^}?]+\??}/g)) ? void 0 : e2.map((t5) => ({ name: t5.replace(/{|\??}/g, ""), required: !/\?}$/.test(t5) }))) ? t4 : [];
+    var t3, e2;
+    return null != (t3 = null == (e2 = this.template.match(/{[^}?]+\??}/g)) ? void 0 : e2.map((t4) => ({ name: t4.replace(/{|\??}/g, ""), required: !/\?}$/.test(t4) }))) ? t3 : [];
   }
-  matchesUrl(t4) {
+  matchesUrl(t3) {
     var e2;
-    if (!this.definition.methods.includes("GET"))
-      return false;
-    const r2 = this.template.replace(/[.*+$()[\]]/g, "\\$&").replace(/(\/?){([^}?]*)(\??)}/g, (t5, e3, r3, n3) => {
-      var o3;
-      const i3 = `(?<${r3}>${(null == (o3 = this.wheres[r3]) ? void 0 : o3.replace(/(^\^)|(\$$)/g, "")) || "[^/?]+"})`;
+    if (!this.definition.methods.includes("GET")) return false;
+    const o2 = this.template.replace(/[.*+$()[\]]/g, "\\$&").replace(/(\/?){([^}?]*)(\??)}/g, (t4, e3, o3, n3) => {
+      var r3;
+      const i3 = `(?<${o3}>${(null == (r3 = this.wheres[o3]) ? void 0 : r3.replace(/(^\^)|(\$$)/g, "")) || "[^/?]+"})`;
       return n3 ? `(${e3}${i3})?` : `${e3}${i3}`;
-    }).replace(/^\w+:\/\//, ""), [n2, o2] = t4.replace(/^\w+:\/\//, "").split("?"), i2 = null != (e2 = new RegExp(`^${r2}/?$`).exec(n2)) ? e2 : new RegExp(`^${r2}/?$`).exec(decodeURI(n2));
+    }).replace(/^\w+:\/\//, ""), [n2, r2] = t3.replace(/^\w+:\/\//, "").split("?"), i2 = null != (e2 = new RegExp(`^${o2}/?$`).exec(n2)) ? e2 : new RegExp(`^${o2}/?$`).exec(decodeURI(n2));
     if (i2) {
-      for (const t5 in i2.groups)
-        i2.groups[t5] = "string" == typeof i2.groups[t5] ? decodeURIComponent(i2.groups[t5]) : i2.groups[t5];
-      return { params: i2.groups, query: S(o2) };
+      for (const t4 in i2.groups) i2.groups[t4] = "string" == typeof i2.groups[t4] ? decodeURIComponent(i2.groups[t4]) : i2.groups[t4];
+      return { params: i2.groups, query: S(r2) };
     }
     return false;
   }
-  compile(t4) {
-    return this.parameterSegments.length ? this.template.replace(/{([^}?]+)(\??)}/g, (e2, r2, n2) => {
-      var o2, i2;
-      if (!n2 && [null, void 0].includes(t4[r2]))
-        throw new Error(`Ziggy error: '${r2}' parameter is required for route '${this.name}'.`);
-      if (this.wheres[r2] && !new RegExp(`^${n2 ? `(${this.wheres[r2]})?` : this.wheres[r2]}$`).test(null != (i2 = t4[r2]) ? i2 : ""))
-        throw new Error(`Ziggy error: '${r2}' parameter '${t4[r2]}' does not match required format '${this.wheres[r2]}' for route '${this.name}'.`);
-      return encodeURI(null != (o2 = t4[r2]) ? o2 : "").replace(/%7C/g, "|").replace(/%25/g, "%").replace(/\$/g, "%24");
+  compile(t3) {
+    return this.parameterSegments.length ? this.template.replace(/{([^}?]+)(\??)}/g, (e2, o2, n2) => {
+      var r2, i2;
+      if (!n2 && [null, void 0].includes(t3[o2])) throw new Error(`Ziggy error: '${o2}' parameter is required for route '${this.name}'.`);
+      if (this.wheres[o2] && !new RegExp(`^${n2 ? `(${this.wheres[o2]})?` : this.wheres[o2]}$`).test(null != (i2 = t3[o2]) ? i2 : "")) throw new Error(`Ziggy error: '${o2}' parameter '${t3[o2]}' does not match required format '${this.wheres[o2]}' for route '${this.name}'.`);
+      return encodeURI(null != (r2 = t3[o2]) ? r2 : "").replace(/%7C/g, "|").replace(/%25/g, "%").replace(/\$/g, "%24");
     }).replace(this.config.absolute ? /(\.[^/]+?)(\/\/)/ : /(^)(\/\/)/, "$1/").replace(/\/+$/, "") : this.template;
   }
 }
-class N extends String {
-  constructor(e2, r2, n2 = true, o2) {
-    if (super(), this.t = null != o2 ? o2 : "undefined" != typeof Ziggy ? Ziggy : null == globalThis ? void 0 : globalThis.Ziggy, this.t = t({}, this.t, { absolute: n2 }), e2) {
-      if (!this.t.routes[e2])
-        throw new Error(`Ziggy error: route '${e2}' is not in the route list.`);
-      this.i = new x(e2, this.t.routes[e2], this.t), this.u = this.l(r2);
+class A extends String {
+  constructor(e2, o2, n2 = true, r2) {
+    if (super(), this.t = null != r2 ? r2 : "undefined" != typeof Ziggy ? Ziggy : null == globalThis ? void 0 : globalThis.Ziggy, !this.t && "undefined" != typeof document && document.getElementById("ziggy-routes-json") && (globalThis.Ziggy = JSON.parse(document.getElementById("ziggy-routes-json").textContent), this.t = globalThis.Ziggy), this.t = t({}, this.t, { absolute: n2 }), e2) {
+      if (!this.t.routes[e2]) throw new Error(`Ziggy error: route '${e2}' is not in the route list.`);
+      this.i = new I(e2, this.t.routes[e2], this.t), this.u = this.l(o2);
     }
   }
   toString() {
-    const e2 = Object.keys(this.u).filter((t4) => !this.i.parameterSegments.some(({ name: e3 }) => e3 === t4)).filter((t4) => "_query" !== t4).reduce((e3, r2) => t({}, e3, { [r2]: this.u[r2] }), {});
-    return this.i.compile(this.u) + function(t4, e3) {
-      var r2, n2 = t4, i2 = function(t5) {
-        if (!t5)
-          return v;
-        if (null != t5.encoder && "function" != typeof t5.encoder)
-          throw new TypeError("Encoder has to be a function.");
-        var e4 = t5.charset || v.charset;
-        if (void 0 !== t5.charset && "utf-8" !== t5.charset && "iso-8859-1" !== t5.charset)
-          throw new TypeError("The charset option must be either utf-8, iso-8859-1, or undefined");
-        var r3 = o.default;
-        if (void 0 !== t5.format) {
-          if (!c.call(o.formatters, t5.format))
-            throw new TypeError("Unknown format option provided.");
-          r3 = t5.format;
+    const e2 = Object.keys(this.u).filter((t3) => !this.i.parameterSegments.some(({ name: e3 }) => e3 === t3)).filter((t3) => "_query" !== t3).reduce((e3, o2) => t({}, e3, { [o2]: this.u[o2] }), {});
+    return this.i.compile(this.u) + function(t3, e3) {
+      let o2 = t3;
+      const i2 = function(t4) {
+        if (!t4) return g;
+        if (void 0 !== t4.allowEmptyArrays && "boolean" != typeof t4.allowEmptyArrays) throw new TypeError("`allowEmptyArrays` option can only be `true` or `false`, when provided");
+        if (void 0 !== t4.encodeDotInKeys && "boolean" != typeof t4.encodeDotInKeys) throw new TypeError("`encodeDotInKeys` option can only be `true` or `false`, when provided");
+        if (null != t4.encoder && "function" != typeof t4.encoder) throw new TypeError("Encoder has to be a function.");
+        const e4 = t4.charset || g.charset;
+        if (void 0 !== t4.charset && "utf-8" !== t4.charset && "iso-8859-1" !== t4.charset) throw new TypeError("The charset option must be either utf-8, iso-8859-1, or undefined");
+        let o3 = r;
+        if (void 0 !== t4.format) {
+          if (!p.call(n, t4.format)) throw new TypeError("Unknown format option provided.");
+          o3 = t4.format;
         }
-        var n3 = o.formatters[r3], i3 = v.filter;
-        return ("function" == typeof t5.filter || p(t5.filter)) && (i3 = t5.filter), { addQueryPrefix: "boolean" == typeof t5.addQueryPrefix ? t5.addQueryPrefix : v.addQueryPrefix, allowDots: void 0 === t5.allowDots ? v.allowDots : !!t5.allowDots, charset: e4, charsetSentinel: "boolean" == typeof t5.charsetSentinel ? t5.charsetSentinel : v.charsetSentinel, delimiter: void 0 === t5.delimiter ? v.delimiter : t5.delimiter, encode: "boolean" == typeof t5.encode ? t5.encode : v.encode, encoder: "function" == typeof t5.encoder ? t5.encoder : v.encoder, encodeValuesOnly: "boolean" == typeof t5.encodeValuesOnly ? t5.encodeValuesOnly : v.encodeValuesOnly, filter: i3, format: r3, formatter: n3, serializeDate: "function" == typeof t5.serializeDate ? t5.serializeDate : v.serializeDate, skipNulls: "boolean" == typeof t5.skipNulls ? t5.skipNulls : v.skipNulls, sort: "function" == typeof t5.sort ? t5.sort : null, strictNullHandling: "boolean" == typeof t5.strictNullHandling ? t5.strictNullHandling : v.strictNullHandling };
+        const i3 = n[o3];
+        let s3, u3 = g.filter;
+        if (("function" == typeof t4.filter || d(t4.filter)) && (u3 = t4.filter), s3 = t4.arrayFormat in y ? t4.arrayFormat : "indices" in t4 ? t4.indices ? "indices" : "repeat" : g.arrayFormat, "commaRoundTrip" in t4 && "boolean" != typeof t4.commaRoundTrip) throw new TypeError("`commaRoundTrip` must be a boolean, or absent");
+        return { addQueryPrefix: "boolean" == typeof t4.addQueryPrefix ? t4.addQueryPrefix : g.addQueryPrefix, allowDots: void 0 === t4.allowDots ? true === t4.encodeDotInKeys || g.allowDots : !!t4.allowDots, allowEmptyArrays: "boolean" == typeof t4.allowEmptyArrays ? !!t4.allowEmptyArrays : g.allowEmptyArrays, arrayFormat: s3, charset: e4, charsetSentinel: "boolean" == typeof t4.charsetSentinel ? t4.charsetSentinel : g.charsetSentinel, commaRoundTrip: t4.commaRoundTrip, delimiter: void 0 === t4.delimiter ? g.delimiter : t4.delimiter, encode: "boolean" == typeof t4.encode ? t4.encode : g.encode, encodeDotInKeys: "boolean" == typeof t4.encodeDotInKeys ? t4.encodeDotInKeys : g.encodeDotInKeys, encoder: "function" == typeof t4.encoder ? t4.encoder : g.encoder, encodeValuesOnly: "boolean" == typeof t4.encodeValuesOnly ? t4.encodeValuesOnly : g.encodeValuesOnly, filter: u3, format: o3, formatter: i3, serializeDate: "function" == typeof t4.serializeDate ? t4.serializeDate : g.serializeDate, skipNulls: "boolean" == typeof t4.skipNulls ? t4.skipNulls : g.skipNulls, sort: "function" == typeof t4.sort ? t4.sort : null, strictNullHandling: "boolean" == typeof t4.strictNullHandling ? t4.strictNullHandling : g.strictNullHandling };
       }(e3);
-      "function" == typeof i2.filter ? n2 = (0, i2.filter)("", n2) : p(i2.filter) && (r2 = i2.filter);
-      var u2 = [];
-      if ("object" != typeof n2 || null === n2)
-        return "";
-      var a2 = l[e3 && e3.arrayFormat in l ? e3.arrayFormat : e3 && "indices" in e3 ? e3.indices ? "indices" : "repeat" : "indices"];
-      r2 || (r2 = Object.keys(n2)), i2.sort && r2.sort(i2.sort);
-      for (var s2 = 0; s2 < r2.length; ++s2) {
-        var f2 = r2[s2];
-        i2.skipNulls && null === n2[f2] || d(u2, m(n2[f2], f2, a2, i2.strictNullHandling, i2.skipNulls, i2.encode ? i2.encoder : null, i2.filter, i2.sort, i2.allowDots, i2.serializeDate, i2.format, i2.formatter, i2.encodeValuesOnly, i2.charset));
+      let s2, u2;
+      "function" == typeof i2.filter ? (u2 = i2.filter, o2 = u2("", o2)) : d(i2.filter) && (u2 = i2.filter, s2 = u2);
+      const l2 = [];
+      if ("object" != typeof o2 || null === o2) return "";
+      const c2 = y[i2.arrayFormat], a2 = "comma" === c2 && i2.commaRoundTrip;
+      s2 || (s2 = Object.keys(o2)), i2.sort && s2.sort(i2.sort);
+      const f2 = /* @__PURE__ */ new WeakMap();
+      for (let t4 = 0; t4 < s2.length; ++t4) {
+        const e4 = s2[t4];
+        i2.skipNulls && null === o2[e4] || b(l2, v(o2[e4], e4, c2, a2, i2.allowEmptyArrays, i2.strictNullHandling, i2.skipNulls, i2.encodeDotInKeys, i2.encode ? i2.encoder : null, i2.filter, i2.sort, i2.allowDots, i2.serializeDate, i2.format, i2.formatter, i2.encodeValuesOnly, i2.charset, f2));
       }
-      var h2 = u2.join(i2.delimiter), y2 = true === i2.addQueryPrefix ? "?" : "";
-      return i2.charsetSentinel && (y2 += "iso-8859-1" === i2.charset ? "utf8=%26%2310003%3B&" : "utf8=%E2%9C%93&"), h2.length > 0 ? y2 + h2 : "";
-    }(t({}, e2, this.u._query), { addQueryPrefix: true, arrayFormat: "indices", encodeValuesOnly: true, skipNulls: true, encoder: (t4, e3) => "boolean" == typeof t4 ? Number(t4) : e3(t4) });
+      const h2 = l2.join(i2.delimiter);
+      let m2 = true === i2.addQueryPrefix ? "?" : "";
+      return i2.charsetSentinel && (m2 += "iso-8859-1" === i2.charset ? "utf8=%26%2310003%3B&" : "utf8=%E2%9C%93&"), h2.length > 0 ? m2 + h2 : "";
+    }(t({}, e2, this.u._query), { addQueryPrefix: true, arrayFormat: "indices", encodeValuesOnly: true, skipNulls: true, encoder: (t3, e3) => "boolean" == typeof t3 ? Number(t3) : e3(t3) });
   }
   p(e2) {
-    e2 ? this.t.absolute && e2.startsWith("/") && (e2 = this.h().host + e2) : e2 = this.v();
-    let r2 = {};
-    const [n2, o2] = Object.entries(this.t.routes).find(([t4, n3]) => r2 = new x(t4, n3, this.t).matchesUrl(e2)) || [void 0, void 0];
-    return t({ name: n2 }, r2, { route: o2 });
+    e2 ? this.t.absolute && e2.startsWith("/") && (e2 = this.h().host + e2) : e2 = this.m();
+    let o2 = {};
+    const [n2, r2] = Object.entries(this.t.routes).find(([t3, n3]) => o2 = new I(t3, n3, this.t).matchesUrl(e2)) || [void 0, void 0];
+    return t({ name: n2 }, o2, { route: r2 });
   }
-  v() {
-    const { host: t4, pathname: e2, search: r2 } = this.h();
-    return (this.t.absolute ? t4 + e2 : e2.replace(this.t.url.replace(/^\w*:\/\/[^/]+/, ""), "").replace(/^\/+/, "/")) + r2;
+  m() {
+    const { host: t3, pathname: e2, search: o2 } = this.h();
+    return (this.t.absolute ? t3 + e2 : e2.replace(this.t.url.replace(/^\w*:\/\/[^/]+/, ""), "").replace(/^\/+/, "/")) + o2;
   }
-  current(e2, r2) {
-    const { name: n2, params: o2, query: i2, route: u2 } = this.p();
-    if (!e2)
-      return n2;
-    const a2 = new RegExp(`^${e2.replace(/\./g, "\\.").replace(/\*/g, ".*")}$`).test(n2);
-    if ([null, void 0].includes(r2) || !a2)
-      return a2;
-    const s2 = new x(n2, u2, this.t);
-    r2 = this.l(r2, s2);
-    const f2 = t({}, o2, i2);
-    if (Object.values(r2).every((t4) => !t4) && !Object.values(f2).some((t4) => void 0 !== t4))
-      return true;
-    const c2 = (t4, e3) => Object.entries(t4).every(([t5, r3]) => Array.isArray(r3) && Array.isArray(e3[t5]) ? r3.every((r4) => e3[t5].includes(r4)) : "object" == typeof r3 && "object" == typeof e3[t5] && null !== r3 && null !== e3[t5] ? c2(r3, e3[t5]) : e3[t5] == r3);
-    return c2(r2, f2);
+  current(e2, o2) {
+    const { name: n2, params: r2, query: i2, route: s2 } = this.p();
+    if (!e2) return n2;
+    const u2 = new RegExp(`^${e2.replace(/\./g, "\\.").replace(/\*/g, ".*")}$`).test(n2);
+    if ([null, void 0].includes(o2) || !u2) return u2;
+    const l2 = new I(n2, s2, this.t);
+    o2 = this.l(o2, l2);
+    const c2 = t({}, r2, i2);
+    if (Object.values(o2).every((t3) => !t3) && !Object.values(c2).some((t3) => void 0 !== t3)) return true;
+    const a2 = (t3, e3) => Object.entries(t3).every(([t4, o3]) => Array.isArray(o3) && Array.isArray(e3[t4]) ? o3.every((o4) => e3[t4].includes(o4) || e3[t4].includes(decodeURIComponent(o4))) : "object" == typeof o3 && "object" == typeof e3[t4] && null !== o3 && null !== e3[t4] ? a2(o3, e3[t4]) : e3[t4] == o3 || e3[t4] == decodeURIComponent(o3));
+    return a2(o2, c2);
   }
   h() {
-    var t4, e2, r2, n2, o2, i2;
-    const { host: u2 = "", pathname: a2 = "", search: s2 = "" } = "undefined" != typeof window ? window.location : {};
-    return { host: null != (t4 = null == (e2 = this.t.location) ? void 0 : e2.host) ? t4 : u2, pathname: null != (r2 = null == (n2 = this.t.location) ? void 0 : n2.pathname) ? r2 : a2, search: null != (o2 = null == (i2 = this.t.location) ? void 0 : i2.search) ? o2 : s2 };
+    var t3, e2, o2, n2, r2, i2;
+    const { host: s2 = "", pathname: u2 = "", search: l2 = "" } = "undefined" != typeof window ? window.location : {};
+    return { host: null != (t3 = null == (e2 = this.t.location) ? void 0 : e2.host) ? t3 : s2, pathname: null != (o2 = null == (n2 = this.t.location) ? void 0 : n2.pathname) ? o2 : u2, search: null != (r2 = null == (i2 = this.t.location) ? void 0 : i2.search) ? r2 : l2 };
   }
   get params() {
-    const { params: e2, query: r2 } = this.p();
-    return t({}, e2, r2);
+    const { params: e2, query: o2 } = this.p();
+    return t({}, e2, o2);
   }
   get routeParams() {
     return this.p().params;
@@ -340,50 +334,48 @@ class N extends String {
   get queryParams() {
     return this.p().query;
   }
-  has(t4) {
-    return this.t.routes.hasOwnProperty(t4);
+  has(t3) {
+    return this.t.routes.hasOwnProperty(t3);
   }
-  l(e2 = {}, r2 = this.i) {
+  l(e2 = {}, o2 = this.i) {
     null != e2 || (e2 = {}), e2 = ["string", "number"].includes(typeof e2) ? [e2] : e2;
-    const n2 = r2.parameterSegments.filter(({ name: t4 }) => !this.t.defaults[t4]);
-    return Array.isArray(e2) ? e2 = e2.reduce((e3, r3, o2) => t({}, e3, n2[o2] ? { [n2[o2].name]: r3 } : "object" == typeof r3 ? r3 : { [r3]: "" }), {}) : 1 !== n2.length || e2[n2[0].name] || !e2.hasOwnProperty(Object.values(r2.bindings)[0]) && !e2.hasOwnProperty("id") || (e2 = { [n2[0].name]: e2 }), t({}, this.m(r2), this.j(e2, r2));
+    const n2 = o2.parameterSegments.filter(({ name: t3 }) => !this.t.defaults[t3]);
+    return Array.isArray(e2) ? e2 = e2.reduce((e3, o3, r2) => t({}, e3, n2[r2] ? { [n2[r2].name]: o3 } : "object" == typeof o3 ? o3 : { [o3]: "" }), {}) : 1 !== n2.length || e2[n2[0].name] || !e2.hasOwnProperty(Object.values(o2.bindings)[0]) && !e2.hasOwnProperty("id") || (e2 = { [n2[0].name]: e2 }), t({}, this.v(o2), this.j(e2, o2));
   }
-  m(e2) {
-    return e2.parameterSegments.filter(({ name: t4 }) => this.t.defaults[t4]).reduce((e3, { name: r2 }, n2) => t({}, e3, { [r2]: this.t.defaults[r2] }), {});
+  v(e2) {
+    return e2.parameterSegments.filter(({ name: t3 }) => this.t.defaults[t3]).reduce((e3, { name: o2 }, n2) => t({}, e3, { [o2]: this.t.defaults[o2] }), {});
   }
-  j(e2, { bindings: r2, parameterSegments: n2 }) {
-    return Object.entries(e2).reduce((e3, [o2, i2]) => {
-      if (!i2 || "object" != typeof i2 || Array.isArray(i2) || !n2.some(({ name: t4 }) => t4 === o2))
-        return t({}, e3, { [o2]: i2 });
-      if (!i2.hasOwnProperty(r2[o2])) {
-        if (!i2.hasOwnProperty("id"))
-          throw new Error(`Ziggy error: object passed as '${o2}' parameter is missing route model binding key '${r2[o2]}'.`);
-        r2[o2] = "id";
+  j(e2, { bindings: o2, parameterSegments: n2 }) {
+    return Object.entries(e2).reduce((e3, [r2, i2]) => {
+      if (!i2 || "object" != typeof i2 || Array.isArray(i2) || !n2.some(({ name: t3 }) => t3 === r2)) return t({}, e3, { [r2]: i2 });
+      if (!i2.hasOwnProperty(o2[r2])) {
+        if (!i2.hasOwnProperty("id")) throw new Error(`Ziggy error: object passed as '${r2}' parameter is missing route model binding key '${o2[r2]}'.`);
+        o2[r2] = "id";
       }
-      return t({}, e3, { [o2]: i2[r2[o2]] });
+      return t({}, e3, { [r2]: i2[o2[r2]] });
     }, {});
   }
   valueOf() {
     return this.toString();
   }
 }
-function T(t4, e2, r2, n2) {
-  const o2 = new N(t4, e2, r2, n2);
-  return t4 ? o2.toString() : o2;
+function D(t3, e2, o2, n2) {
+  const r2 = new A(t3, e2, o2, n2);
+  return t3 ? r2.toString() : r2;
 }
-const k = { install(t4, e2) {
-  const r2 = (t5, r3, n2, o2 = e2) => T(t5, r3, n2, o2);
-  parseInt(t4.version) > 2 ? (t4.config.globalProperties.route = r2, t4.provide("route", r2)) : t4.mixin({ methods: { route: r2 } });
+const _ = { install(t3, e2) {
+  const o2 = (t4, o3, n2, r2 = e2) => D(t4, o3, n2, r2);
+  parseInt(t3.version) > 2 ? (t3.config.globalProperties.route = o2, t3.provide("route", o2)) : t3.mixin({ methods: { route: o2 } });
 } };
-const appName = "Pulsar";
+const appName = "Digital";
 createServer(
   (page) => createInertiaApp({
     page,
     render: renderToString,
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, /* @__PURE__ */ Object.assign({ "./Pages/API/Index.vue": () => import("./assets/Index-BPV8OqQ4.js"), "./Pages/API/Partials/ApiTokenManager.vue": () => import("./assets/ApiTokenManager-BorqtqKD.js"), "./Pages/Admin.vue": () => import("./assets/Admin-DehluWy0.js"), "./Pages/Admin/Articles/Create.vue": () => import("./assets/Create-J1DiAAHN.js"), "./Pages/Admin/Articles/Edit.vue": () => import("./assets/Edit-DHXxI1MY.js"), "./Pages/Admin/Articles/Index.vue": () => import("./assets/Index-B12AhQ3S.js"), "./Pages/Admin/Athletes/Create.vue": () => import("./assets/Create-8Z8rxUnT.js"), "./Pages/Admin/Athletes/Edit.vue": () => import("./assets/Edit-5exwSbtQ.js"), "./Pages/Admin/Athletes/Index.vue": () => import("./assets/Index-DKFQA6py.js"), "./Pages/Admin/Banners/Create.vue": () => import("./assets/Create-BhG_QmPi.js"), "./Pages/Admin/Banners/Edit.vue": () => import("./assets/Edit-BCZQcj59.js"), "./Pages/Admin/Banners/Index.vue": () => import("./assets/Index-_enFITRd.js"), "./Pages/Admin/Categories/Create.vue": () => import("./assets/Create-Dqg9lL5q.js"), "./Pages/Admin/Categories/Edit.vue": () => import("./assets/Edit-CNTyRNSD.js"), "./Pages/Admin/Categories/Index.vue": () => import("./assets/Index-Dcv-7mVr.js"), "./Pages/Admin/Charts/Index.vue": () => import("./assets/Index-D0aEHvjl.js"), "./Pages/Admin/Comments/Index.vue": () => import("./assets/Index-qYQNodrx.js"), "./Pages/Admin/Components/Index.vue": () => import("./assets/Index-CTAqpvt_.js"), "./Pages/Admin/Diagrams/Index.vue": () => import("./assets/Index-CAaSPdZl.js"), "./Pages/Admin/Log/Index.vue": () => import("./assets/Index-C7LzHqBU.js"), "./Pages/Admin/Parameters/Create.vue": () => import("./assets/Create-BZEyj3dx.js"), "./Pages/Admin/Parameters/Edit.vue": () => import("./assets/Edit-PfCeUIwC.js"), "./Pages/Admin/Parameters/Index.vue": () => import("./assets/Index-BoCkrIGy.js"), "./Pages/Admin/Permissions/Create.vue": () => import("./assets/Create-BTPSWS_4.js"), "./Pages/Admin/Permissions/Edit.vue": () => import("./assets/Edit-tSk9GpCq.js"), "./Pages/Admin/Permissions/Index.vue": () => import("./assets/Index-Bm67-Qh6.js"), "./Pages/Admin/Plugins/Create.vue": () => import("./assets/Create-D5_0bkIT.js"), "./Pages/Admin/Plugins/Edit.vue": () => import("./assets/Edit-BpzsErMR.js"), "./Pages/Admin/Plugins/Index.vue": () => import("./assets/Index-DMobb8NM.js"), "./Pages/Admin/Reports/Index.vue": () => import("./assets/Index-28IBSCFf.js"), "./Pages/Admin/Roles/Create.vue": () => import("./assets/Create-CZpV_VF2.js"), "./Pages/Admin/Roles/Edit.vue": () => import("./assets/Edit-gdNibEAq.js"), "./Pages/Admin/Roles/Index.vue": () => import("./assets/Index-D4c-otop.js"), "./Pages/Admin/Rubrics/Create.vue": () => import("./assets/Create-Dblnan4G.js"), "./Pages/Admin/Rubrics/Edit.vue": () => import("./assets/Edit-DwlU9PnP.js"), "./Pages/Admin/Rubrics/Index.vue": () => import("./assets/Index-iNGHnh1i.js"), "./Pages/Admin/Sections/Create.vue": () => import("./assets/Create-CczIjVY7.js"), "./Pages/Admin/Sections/Edit.vue": () => import("./assets/Edit-CddSqv5z.js"), "./Pages/Admin/Sections/Index.vue": () => import("./assets/Index-B0PptS7l.js"), "./Pages/Admin/Settings/Index.vue": () => import("./assets/Index-BwtFPzzR.js"), "./Pages/Admin/Systems/ComposerInfoPage.vue": () => import("./assets/ComposerInfoPage-c4KfpMs9.js"), "./Pages/Admin/Systems/EnvInfoPage.vue": () => import("./assets/EnvInfoPage-N7BuUz1s.js"), "./Pages/Admin/Systems/PackageInfoPage.vue": () => import("./assets/PackageInfoPage-Bgw5Ot8s.js"), "./Pages/Admin/Systems/PhpInfoPage.vue": () => import("./assets/PhpInfoPage-DLwZN-Ny.js"), "./Pages/Admin/Tags/Create.vue": () => import("./assets/Create-DQdIv8EN.js"), "./Pages/Admin/Tags/Edit.vue": () => import("./assets/Edit-CtGS_4xb.js"), "./Pages/Admin/Tags/Index.vue": () => import("./assets/Index-CUfezx3C.js"), "./Pages/Admin/Tournaments/Create.vue": () => import("./assets/Create-CzP1Varj.js"), "./Pages/Admin/Tournaments/Edit.vue": () => import("./assets/Edit-D7PQ5y9l.js"), "./Pages/Admin/Tournaments/Index.vue": () => import("./assets/Index-CBCruy94.js"), "./Pages/Admin/Users/Create.vue": () => import("./assets/Create-BbIEKgLQ.js"), "./Pages/Admin/Users/Edit.vue": () => import("./assets/Edit-CAUrxGzK.js"), "./Pages/Admin/Users/Index.vue": () => import("./assets/Index-vjbNLhoj.js"), "./Pages/Admin/Videos/Create.vue": () => import("./assets/Create-DJQn4tN4.js"), "./Pages/Admin/Videos/Edit.vue": () => import("./assets/Edit-CrQO8QD6.js"), "./Pages/Admin/Videos/Index.vue": () => import("./assets/Index-BaWJRsSC.js"), "./Pages/Auth/ConfirmPassword.vue": () => import("./assets/ConfirmPassword-BvtMYBLt.js"), "./Pages/Auth/ForgotPassword.vue": () => import("./assets/ForgotPassword-CN-SJgtS.js"), "./Pages/Auth/Login.vue": () => import("./assets/Login-DuXahyZJ.js"), "./Pages/Auth/Register.vue": () => import("./assets/Register-BjvnItJD.js"), "./Pages/Auth/ResetPassword.vue": () => import("./assets/ResetPassword-D-pB1tvo.js"), "./Pages/Auth/TwoFactorChallenge.vue": () => import("./assets/TwoFactorChallenge-BBFWJTMn.js"), "./Pages/Auth/VerifyEmail.vue": () => import("./assets/VerifyEmail-D5o87VU9.js"), "./Pages/Dashboard.vue": () => import("./assets/Dashboard-CcS5hUzP.js"), "./Pages/Index.vue": () => import("./assets/Index-ITqovd0E.js"), "./Pages/Maintenance.vue": () => import("./assets/Maintenance-Clt42Tgk.js"), "./Pages/NotFound.vue": () => import("./assets/NotFound-CE-61qEH.js"), "./Pages/Plugins/SamplePlugin/Index.vue": () => import("./assets/Index-BAYYPyVu.js"), "./Pages/Plugins/SamplePlugin/Part/ActionButton.vue": () => import("./assets/ActionButton-BnhQ37wS.js"), "./Pages/Plugins/SamplePlugin/Part/ActivityCheckbox.vue": () => import("./assets/ActivityCheckbox-g5mMgvhJ.js"), "./Pages/Plugins/SamplePlugin/Part/ActivityToggle.vue": () => import("./assets/ActivityToggle-DUJuDzzF.js"), "./Pages/Plugins/SamplePlugin/Part/CancelButton.vue": () => import("./assets/CancelButton-NNew7dhD.js"), "./Pages/Plugins/SamplePlugin/Part/CloseIconButton.vue": () => import("./assets/CloseIconButton-BYqsdd_Q.js"), "./Pages/Plugins/SamplePlugin/Part/CountTable.vue": () => import("./assets/CountTable-DeGQ-zYO.js"), "./Pages/Plugins/SamplePlugin/Part/DescriptionTextarea.vue": () => import("./assets/DescriptionTextarea-CkxBdvIU.js"), "./Pages/Plugins/SamplePlugin/Part/EditBlockModal.vue": () => import("./assets/EditBlockModal-DYdP4LkV.js"), "./Pages/Plugins/SamplePlugin/Part/InputNumber.vue": () => import("./assets/InputNumber-CoBO-NzH.js"), "./Pages/Plugins/SamplePlugin/Part/InputText.vue": () => import("./assets/InputText-C0W1G6RK.js"), "./Pages/Plugins/SamplePlugin/Part/ItemsPerPageSelect.vue": () => import("./assets/ItemsPerPageSelect-DgrzqqaC.js"), "./Pages/Plugins/SamplePlugin/Part/LabelCheckbox.vue": () => import("./assets/LabelCheckbox-CbOmZm7Q.js"), "./Pages/Plugins/SamplePlugin/Part/LabelInput.vue": () => import("./assets/LabelInput-BaQuE6Kg.js"), "./Pages/Plugins/SamplePlugin/Part/Pagination.vue": () => import("./assets/Pagination-DympfoKo.js"), "./Pages/Plugins/SamplePlugin/Part/PrimaryButton.vue": () => import("./assets/PrimaryButton-ILA-nA-V.js"), "./Pages/Plugins/SamplePlugin/Part/SaveButton.vue": () => import("./assets/SaveButton-B8fdZV13.js"), "./Pages/Plugins/SamplePlugin/Part/SearchInput.vue": () => import("./assets/SearchInput-D_wKasxG.js"), "./Pages/Plugins/SamplePlugin/Part/SortSelect.vue": () => import("./assets/SortSelect-BLWt2BOe.js"), "./Pages/Plugins/SamplePlugin/Part/TitlePage.vue": () => import("./assets/TitlePage-ILwiTLty.js"), "./Pages/Plugins/SamplePlugin/Public/SamplePlugin.vue": () => import("./assets/SamplePlugin-DhAM7sVc.js"), "./Pages/PrivacyPolicy.vue": () => import("./assets/PrivacyPolicy-CUD1Iko-.js"), "./Pages/Profile/Partials/DeleteUserForm.vue": () => import("./assets/DeleteUserForm-DJxNQ8me.js"), "./Pages/Profile/Partials/LogoutOtherBrowserSessionsForm.vue": () => import("./assets/LogoutOtherBrowserSessionsForm-dv8OzN7m.js"), "./Pages/Profile/Partials/TwoFactorAuthenticationForm.vue": () => import("./assets/TwoFactorAuthenticationForm-1hMgssiM.js"), "./Pages/Profile/Partials/UpdatePasswordForm.vue": () => import("./assets/UpdatePasswordForm-DtbGtNnp.js"), "./Pages/Profile/Partials/UpdateProfileInformationForm.vue": () => import("./assets/UpdateProfileInformationForm-CW7JVM9A.js"), "./Pages/Profile/Show.vue": () => import("./assets/Show-BAdg7bpA.js"), "./Pages/Public/Default/Articles/Show.vue": () => import("./assets/Show-CvRRugz2.js"), "./Pages/Public/Default/Index.vue": () => import("./assets/Index-DSXuip9r.js"), "./Pages/Public/Default/Rubrics/Show.vue": () => import("./assets/Show-DXy1tJ58.js"), "./Pages/Public/Default/Tags/Show.vue": () => import("./assets/Show-BaAVbc2f.js"), "./Pages/Public/Pulsar/Index.vue": () => import("./assets/Index-DEoEZ5eD.js"), "./Pages/Teams/Abouts.vue": () => import("./assets/Abouts-zv1QonBF.js"), "./Pages/Teams/Create.vue": () => import("./assets/Create-BniOvQBN.js"), "./Pages/Teams/Partials/CreateTeamForm.vue": () => import("./assets/CreateTeamForm-CLPvR02U.js"), "./Pages/Teams/Partials/DeleteTeamForm.vue": () => import("./assets/DeleteTeamForm-BJ8NggGt.js"), "./Pages/Teams/Partials/TeamMemberManager.vue": () => import("./assets/TeamMemberManager-D4AIlRU3.js"), "./Pages/Teams/Partials/UpdateTeamNameForm.vue": () => import("./assets/UpdateTeamNameForm-Ba-U15Tk.js"), "./Pages/Teams/Show.vue": () => import("./assets/Show-jE2ScRbq.js"), "./Pages/TermsOfService.vue": () => import("./assets/TermsOfService-DN_c25N7.js") })),
+    resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, /* @__PURE__ */ Object.assign({ "./Pages/API/Index.vue": () => import("./assets/Index-Dr2bXQEE.js"), "./Pages/API/Partials/ApiTokenManager.vue": () => import("./assets/ApiTokenManager-CKDgJx8c.js"), "./Pages/Admin.vue": () => import("./assets/Admin-CZ5D09VB.js"), "./Pages/Admin/Analytics/AnalyticsVisitorLog/Index.vue": () => import("./assets/Index-CRw3Gsue.js"), "./Pages/Admin/Analytics/AnalyticsVisitorLog/Show.vue": () => import("./assets/Show-CxufA9l3.js"), "./Pages/Admin/Blog/BlogArticles/Create.vue": () => import("./assets/Create-C1n4IeeW.js"), "./Pages/Admin/Blog/BlogArticles/Edit.vue": () => import("./assets/Edit-BUOpMcrx.js"), "./Pages/Admin/Blog/BlogArticles/Index.vue": () => import("./assets/Index-Bz-WVc6W.js"), "./Pages/Admin/Blog/BlogBanners/Create.vue": () => import("./assets/Create-CwGBYwBY.js"), "./Pages/Admin/Blog/BlogBanners/Edit.vue": () => import("./assets/Edit-Dc1tIIRM.js"), "./Pages/Admin/Blog/BlogBanners/Index.vue": () => import("./assets/Index-CovAiUCC.js"), "./Pages/Admin/Blog/BlogRubrics/Create.vue": () => import("./assets/Create-BC4zL2Pt.js"), "./Pages/Admin/Blog/BlogRubrics/Edit.vue": () => import("./assets/Edit-D4YUlTrN.js"), "./Pages/Admin/Blog/BlogRubrics/Index.vue": () => import("./assets/Index-CdSJ5ZfM.js"), "./Pages/Admin/Blog/BlogTags/Create.vue": () => import("./assets/Create-Bofv33Un.js"), "./Pages/Admin/Blog/BlogTags/Edit.vue": () => import("./assets/Edit-9lyo98Bs.js"), "./Pages/Admin/Blog/BlogTags/Index.vue": () => import("./assets/Index-C2tAAskw.js"), "./Pages/Admin/Blog/BlogVideos/Create.vue": () => import("./assets/Create-CeoluzQx.js"), "./Pages/Admin/Blog/BlogVideos/Edit.vue": () => import("./assets/Edit-CL9cM7gM.js"), "./Pages/Admin/Blog/BlogVideos/Index.vue": () => import("./assets/Index-CpAdEyc2.js"), "./Pages/Admin/Blog/Comments/Index.vue": () => import("./assets/Index-Bcde7WuW.js"), "./Pages/Admin/Cms/CmsPages/Create.vue": () => import("./assets/Create-D2PiV82c.js"), "./Pages/Admin/Cms/CmsPages/Edit.vue": () => import("./assets/Edit-BYNTqhVI.js"), "./Pages/Admin/Cms/CmsPages/Index.vue": () => import("./assets/Index-CelJgkEU.js"), "./Pages/Admin/Finance/Currencies/Create.vue": () => import("./assets/Create-Yjco2mqI.js"), "./Pages/Admin/Finance/Currencies/Edit.vue": () => import("./assets/Edit-C9LSzcoK.js"), "./Pages/Admin/Finance/Currencies/Index.vue": () => import("./assets/Index-H2Tt-FO2.js"), "./Pages/Admin/Finance/CurrencyRates/Index.vue": () => import("./assets/Index-kyvRNsi3.js"), "./Pages/Admin/Market/MarketAttributeGroups/Create.vue": () => import("./assets/Create-Cnj5m8K7.js"), "./Pages/Admin/Market/MarketAttributeGroups/Edit.vue": () => import("./assets/Edit-MYIDqG_Z.js"), "./Pages/Admin/Market/MarketAttributeGroups/Index.vue": () => import("./assets/Index-CLvOZkhh.js"), "./Pages/Admin/Market/MarketAttributeValues/Create.vue": () => import("./assets/Create-F5HTrGpv.js"), "./Pages/Admin/Market/MarketAttributeValues/Edit.vue": () => import("./assets/Edit-CHFlYBBd.js"), "./Pages/Admin/Market/MarketAttributeValues/Index.vue": () => import("./assets/Index-D6KwZe0X.js"), "./Pages/Admin/Market/MarketAttributes/Create.vue": () => import("./assets/Create-BQKgJAiX.js"), "./Pages/Admin/Market/MarketAttributes/Edit.vue": () => import("./assets/Edit-DAh5UiGo.js"), "./Pages/Admin/Market/MarketAttributes/Index.vue": () => import("./assets/Index-B5gqexWN.js"), "./Pages/Admin/Market/MarketBrands/Create.vue": () => import("./assets/Create-4aroVJ5O.js"), "./Pages/Admin/Market/MarketBrands/Edit.vue": () => import("./assets/Edit-C6H7Ctxp.js"), "./Pages/Admin/Market/MarketBrands/Index.vue": () => import("./assets/Index-C0wlqgyP.js"), "./Pages/Admin/Market/MarketCategories/Create.vue": () => import("./assets/Create-0NEw9SPq.js"), "./Pages/Admin/Market/MarketCategories/Edit.vue": () => import("./assets/Edit-BD8aYwen.js"), "./Pages/Admin/Market/MarketCategories/Index.vue": () => import("./assets/Index-Be6mxgsd.js"), "./Pages/Admin/Market/MarketCompanies/Create.vue": () => import("./assets/Create-D4gMlmn0.js"), "./Pages/Admin/Market/MarketCompanies/Edit.vue": () => import("./assets/Edit-C8e7mUUd.js"), "./Pages/Admin/Market/MarketCompanies/Index.vue": () => import("./assets/Index-DuhDciWm.js"), "./Pages/Admin/Market/MarketProductBundles/Create.vue": () => import("./assets/Create-BryKliYm.js"), "./Pages/Admin/Market/MarketProductBundles/Edit.vue": () => import("./assets/Edit-C6b_C0Hp.js"), "./Pages/Admin/Market/MarketProductBundles/Index.vue": () => import("./assets/Index-zZfjRCGk.js"), "./Pages/Admin/Market/MarketProductVariants/Create.vue": () => import("./assets/Create-BIfwqN7_.js"), "./Pages/Admin/Market/MarketProductVariants/Edit.vue": () => import("./assets/Edit-C9CXUfGZ.js"), "./Pages/Admin/Market/MarketProductVariants/Index.vue": () => import("./assets/Index-BPImB6DN.js"), "./Pages/Admin/Market/MarketProducts/Create.vue": () => import("./assets/Create-D8EtFApz.js"), "./Pages/Admin/Market/MarketProducts/Edit.vue": () => import("./assets/Edit-DqwpUvIj.js"), "./Pages/Admin/Market/MarketProducts/Index.vue": () => import("./assets/Index-D65GR93r.js"), "./Pages/Admin/Market/MarketRecentlyViewedProducts/Index.vue": () => import("./assets/Index-CMwPyrkR.js"), "./Pages/Admin/Market/MarketRecentlyViewedProducts/Show.vue": () => import("./assets/Show-DSezwXi4.js"), "./Pages/Admin/Market/MarketShops/Create.vue": () => import("./assets/Create-ib0FaKyN.js"), "./Pages/Admin/Market/MarketShops/Edit.vue": () => import("./assets/Edit-Dx3zG_fq.js"), "./Pages/Admin/Market/MarketShops/Index.vue": () => import("./assets/Index-BLM3R_Ov.js"), "./Pages/Admin/Market/MarketTags/Create.vue": () => import("./assets/Create-M8bSL03f.js"), "./Pages/Admin/Market/MarketTags/Edit.vue": () => import("./assets/Edit-DLYtlm9A.js"), "./Pages/Admin/Market/MarketTags/Index.vue": () => import("./assets/Index-CLXC7f27.js"), "./Pages/Admin/Reviews/Index.vue": () => import("./assets/Index-DFzpXWSZ.js"), "./Pages/Admin/School/SchoolAssignments/Create.vue": () => import("./assets/Create-CkcxeePd.js"), "./Pages/Admin/School/SchoolAssignments/Edit.vue": () => import("./assets/Edit-B9-CPjoD.js"), "./Pages/Admin/School/SchoolAssignments/Index.vue": () => import("./assets/Index-Brwyc4hm.js"), "./Pages/Admin/School/SchoolBundlePrices/Create.vue": () => import("./assets/Create-C7aIeA2m.js"), "./Pages/Admin/School/SchoolBundlePrices/Edit.vue": () => import("./assets/Edit-DBOi3nbV.js"), "./Pages/Admin/School/SchoolBundlePrices/Index.vue": () => import("./assets/Index-FWdbE6fp.js"), "./Pages/Admin/School/SchoolBundles/Create.vue": () => import("./assets/Create-CQ2VmF1J.js"), "./Pages/Admin/School/SchoolBundles/Edit.vue": () => import("./assets/Edit-C5F7k08W.js"), "./Pages/Admin/School/SchoolBundles/Index.vue": () => import("./assets/Index-Bb3i-CJR.js"), "./Pages/Admin/School/SchoolCohortEnrollments/Index.vue": () => import("./assets/Index-B4gaok04.js"), "./Pages/Admin/School/SchoolCoursePrices/Create.vue": () => import("./assets/Create-CmjJsh08.js"), "./Pages/Admin/School/SchoolCoursePrices/Edit.vue": () => import("./assets/Edit-CZkGwFTB.js"), "./Pages/Admin/School/SchoolCoursePrices/Index.vue": () => import("./assets/Index-d0V9y6md.js"), "./Pages/Admin/School/SchoolCourseSchedules/Create.vue": () => import("./assets/Create-ll4z5IVU.js"), "./Pages/Admin/School/SchoolCourseSchedules/Edit.vue": () => import("./assets/Edit-DNiZfpZF.js"), "./Pages/Admin/School/SchoolCourseSchedules/Index.vue": () => import("./assets/Index-CF_Q7ZQ9.js"), "./Pages/Admin/School/SchoolCourses/Create.vue": () => import("./assets/Create-CX9tuTP7.js"), "./Pages/Admin/School/SchoolCourses/Edit.vue": () => import("./assets/Edit-Cf6l-vyJ.js"), "./Pages/Admin/School/SchoolCourses/Index.vue": () => import("./assets/Index-Dti5mhzV.js"), "./Pages/Admin/School/SchoolEnrollments/Create.vue": () => import("./assets/Create-AzqBZgh4.js"), "./Pages/Admin/School/SchoolEnrollments/Edit.vue": () => import("./assets/Edit-vL8HJqDD.js"), "./Pages/Admin/School/SchoolEnrollments/Index.vue": () => import("./assets/Index-D5esAigC.js"), "./Pages/Admin/School/SchoolHashtags/Create.vue": () => import("./assets/Create-ntpuI9Uy.js"), "./Pages/Admin/School/SchoolHashtags/Edit.vue": () => import("./assets/Edit-PhrGGMKq.js"), "./Pages/Admin/School/SchoolHashtags/Index.vue": () => import("./assets/Index-yN7ltGHz.js"), "./Pages/Admin/School/SchoolInstructorProfiles/Create.vue": () => import("./assets/Create-GxTwt1te.js"), "./Pages/Admin/School/SchoolInstructorProfiles/Edit.vue": () => import("./assets/Edit-B_W5du5m.js"), "./Pages/Admin/School/SchoolInstructorProfiles/Index.vue": () => import("./assets/Index-ScVpX1ER.js"), "./Pages/Admin/School/SchoolLessons/Create.vue": () => import("./assets/Create-BVP6WX4m.js"), "./Pages/Admin/School/SchoolLessons/Edit.vue": () => import("./assets/Edit-BaqaSNrQ.js"), "./Pages/Admin/School/SchoolLessons/Index.vue": () => import("./assets/Index-xWQNFGBh.js"), "./Pages/Admin/School/SchoolModules/Create.vue": () => import("./assets/Create-Cp6GZIDS.js"), "./Pages/Admin/School/SchoolModules/Edit.vue": () => import("./assets/Edit-D2esg4oc.js"), "./Pages/Admin/School/SchoolModules/Index.vue": () => import("./assets/Index-CtYpagqv.js"), "./Pages/Admin/School/SchoolOrders/Create.vue": () => import("./assets/Create-ChkkokbW.js"), "./Pages/Admin/School/SchoolOrders/Edit.vue": () => import("./assets/Edit-8vtHsoti.js"), "./Pages/Admin/School/SchoolOrders/Index.vue": () => import("./assets/Index-9-yWJlET.js"), "./Pages/Admin/School/SchoolQuizAnswers/Create.vue": () => import("./assets/Create-BfGcBURG.js"), "./Pages/Admin/School/SchoolQuizAnswers/Edit.vue": () => import("./assets/Edit-3wXcWRRS.js"), "./Pages/Admin/School/SchoolQuizAnswers/Index.vue": () => import("./assets/Index-64Qas9Ua.js"), "./Pages/Admin/School/SchoolQuizAttemptItems/Create.vue": () => import("./assets/Create-DfuAJRqc.js"), "./Pages/Admin/School/SchoolQuizAttemptItems/Edit.vue": () => import("./assets/Edit-CVFjrt4H.js"), "./Pages/Admin/School/SchoolQuizAttemptItems/Index.vue": () => import("./assets/Index-Bhzb957j.js"), "./Pages/Admin/School/SchoolQuizAttempts/Create.vue": () => import("./assets/Create-uyG-Wu3r.js"), "./Pages/Admin/School/SchoolQuizAttempts/Edit.vue": () => import("./assets/Edit-clVC2p13.js"), "./Pages/Admin/School/SchoolQuizAttempts/Index.vue": () => import("./assets/Index-Bwfz87jN.js"), "./Pages/Admin/School/SchoolQuizQuestions/Create.vue": () => import("./assets/Create-XNqgDLkF.js"), "./Pages/Admin/School/SchoolQuizQuestions/Edit.vue": () => import("./assets/Edit-BCLFaeWP.js"), "./Pages/Admin/School/SchoolQuizQuestions/Index.vue": () => import("./assets/Index-DOcrJkm6.js"), "./Pages/Admin/School/SchoolQuizzes/Create.vue": () => import("./assets/Create-CrR5m3CN.js"), "./Pages/Admin/School/SchoolQuizzes/Edit.vue": () => import("./assets/Edit-xXzIewcW.js"), "./Pages/Admin/School/SchoolQuizzes/Index.vue": () => import("./assets/Index-BsXyYvb-.js"), "./Pages/Admin/School/SchoolSubscriptionPlans/Create.vue": () => import("./assets/Create-DhprwzxB.js"), "./Pages/Admin/School/SchoolSubscriptionPlans/Edit.vue": () => import("./assets/Edit-DEFxl1ds.js"), "./Pages/Admin/School/SchoolSubscriptionPlans/Index.vue": () => import("./assets/Index-OQ0wYLmN.js"), "./Pages/Admin/School/SchoolTracks/Create.vue": () => import("./assets/Create-CE6SKtl2.js"), "./Pages/Admin/School/SchoolTracks/Edit.vue": () => import("./assets/Edit-DPyZ1nvx.js"), "./Pages/Admin/School/SchoolTracks/Index.vue": () => import("./assets/Index-gYhCLK9o.js"), "./Pages/Admin/Statistics/Charts/Index.vue": () => import("./assets/Index-DGjelD-0.js"), "./Pages/Admin/System/Components/Index.vue": () => import("./assets/Index-DJh2iTsZ.js"), "./Pages/Admin/System/ComposerInfoPage.vue": () => import("./assets/ComposerInfoPage-DJmjArIl.js"), "./Pages/Admin/System/DatabaseBackup.vue": () => import("./assets/DatabaseBackup-Dl2GYeB5.js"), "./Pages/Admin/System/EnvInfoPage.vue": () => import("./assets/EnvInfoPage-DVYDNlpl.js"), "./Pages/Admin/System/FileBackup.vue": () => import("./assets/FileBackup-TaJWASrr.js"), "./Pages/Admin/System/ImagePresets/Edit.vue": () => import("./assets/Edit-I58Zn75n.js"), "./Pages/Admin/System/ImagePresets/Index.vue": () => import("./assets/Index-BXJW_80I.js"), "./Pages/Admin/System/Localization/Index.vue": () => import("./assets/Index-C6NSqL_x.js"), "./Pages/Admin/System/Locations/Create.vue": () => import("./assets/Create-D2Go9v4r.js"), "./Pages/Admin/System/Locations/Edit.vue": () => import("./assets/Edit-Dl67nlce.js"), "./Pages/Admin/System/Locations/Index.vue": () => import("./assets/Index-ByKNHQ3l.js"), "./Pages/Admin/System/Log/Index.vue": () => import("./assets/Index-UPiEV29A.js"), "./Pages/Admin/System/PackageInfoPage.vue": () => import("./assets/PackageInfoPage-C7Yy1QGp.js"), "./Pages/Admin/System/Parameters/Create.vue": () => import("./assets/Create-tb1Ttr9J.js"), "./Pages/Admin/System/Parameters/Edit.vue": () => import("./assets/Edit-Blew_1q7.js"), "./Pages/Admin/System/Parameters/Index.vue": () => import("./assets/Index-LpV9x1EG.js"), "./Pages/Admin/System/Permissions/Create.vue": () => import("./assets/Create-BVlpMIRw.js"), "./Pages/Admin/System/Permissions/Edit.vue": () => import("./assets/Edit-CuN42GBq.js"), "./Pages/Admin/System/Permissions/Index.vue": () => import("./assets/Index-CvLDEIRJ.js"), "./Pages/Admin/System/PhpInfoPage.vue": () => import("./assets/PhpInfoPage-BXkcG1bd.js"), "./Pages/Admin/System/Reports/Index.vue": () => import("./assets/Index-cB7qD7cF.js"), "./Pages/Admin/System/RobotEditPage.vue": () => import("./assets/RobotEditPage-DAD5nhp1.js"), "./Pages/Admin/System/Roles/Create.vue": () => import("./assets/Create-nBoxQRWj.js"), "./Pages/Admin/System/Roles/Edit.vue": () => import("./assets/Edit-CFaKHiQ4.js"), "./Pages/Admin/System/Roles/Index.vue": () => import("./assets/Index-tNd3GqJ3.js"), "./Pages/Admin/System/Settings/Index.vue": () => import("./assets/Index-BJPEz5BG.js"), "./Pages/Admin/System/SitemapPage.vue": () => import("./assets/SitemapPage-78DJqm78.js"), "./Pages/Admin/System/Users/Create.vue": () => import("./assets/Create-pkJpFmqO.js"), "./Pages/Admin/System/Users/Edit.vue": () => import("./assets/Edit-DoKqNAZE.js"), "./Pages/Admin/System/Users/Index.vue": () => import("./assets/Index-DsxaDED3.js"), "./Pages/Auth/ConfirmPassword.vue": () => import("./assets/ConfirmPassword-BXtfYkxq.js"), "./Pages/Auth/ForgotPassword.vue": () => import("./assets/ForgotPassword-BHPNygoO.js"), "./Pages/Auth/Login.vue": () => import("./assets/Login-DyMoZs_K.js"), "./Pages/Auth/Register.vue": () => import("./assets/Register-C0OczhdV.js"), "./Pages/Auth/ResetPassword.vue": () => import("./assets/ResetPassword-BWjPIAd8.js"), "./Pages/Auth/TwoFactorChallenge.vue": () => import("./assets/TwoFactorChallenge-CrGev3tZ.js"), "./Pages/Auth/VerifyEmail.vue": () => import("./assets/VerifyEmail-DYlxeo8x.js"), "./Pages/Dashboard.vue": () => import("./assets/Dashboard-CP3EApMk.js"), "./Pages/Index.vue": () => import("./assets/Index-DF-uCGv7.js"), "./Pages/Maintenance.vue": () => import("./assets/Maintenance-Clt42Tgk.js"), "./Pages/NotFound.vue": () => import("./assets/NotFound-CE-61qEH.js"), "./Pages/PrivacyPolicy.vue": () => import("./assets/PrivacyPolicy-CUYVAPzr.js"), "./Pages/Profile/Partials/DeleteUserForm.vue": () => import("./assets/DeleteUserForm-VTR9Hbtb.js"), "./Pages/Profile/Partials/LogoutOtherBrowserSessionsForm.vue": () => import("./assets/LogoutOtherBrowserSessionsForm-Dkeuavz9.js"), "./Pages/Profile/Partials/TwoFactorAuthenticationForm.vue": () => import("./assets/TwoFactorAuthenticationForm-DHeRV9SO.js"), "./Pages/Profile/Partials/UpdatePasswordForm.vue": () => import("./assets/UpdatePasswordForm-BOBhCuAp.js"), "./Pages/Profile/Partials/UpdateProfileInformationForm.vue": () => import("./assets/UpdateProfileInformationForm-IFrAn58r.js"), "./Pages/Profile/Show.vue": () => import("./assets/Show-DLsfmy4c.js"), "./Pages/Public/Default/Blog/BlogArticles/Index.vue": () => import("./assets/Index-DYutAGhv.js"), "./Pages/Public/Default/Blog/BlogArticles/Show.vue": () => import("./assets/Show-Dhcm81KV.js"), "./Pages/Public/Default/Blog/BlogRubrics/Index.vue": () => import("./assets/Index-D9m1EP5o.js"), "./Pages/Public/Default/Blog/BlogRubrics/Show.vue": () => import("./assets/Show-29LcFPrv.js"), "./Pages/Public/Default/Blog/BlogTags/Show.vue": () => import("./assets/Show-DBMORiKp.js"), "./Pages/Public/Default/Blog/BlogVideos/Index.vue": () => import("./assets/Index-oxL8puat.js"), "./Pages/Public/Default/Blog/BlogVideos/Show.vue": () => import("./assets/Show-DXsQSbE6.js"), "./Pages/Public/Default/Cms/Show.vue": () => import("./assets/Show-BigRuwr1.js"), "./Pages/Public/Default/Index.vue": () => import("./assets/Index-BabLmptg.js"), "./Pages/Public/Default/Market/MarketBrands/Index.vue": () => import("./assets/Index-lzR9rYy9.js"), "./Pages/Public/Default/Market/MarketBrands/Show.vue": () => import("./assets/Show-BH0HbUyg.js"), "./Pages/Public/Default/Market/MarketCategories/Index.vue": () => import("./assets/Index-imI25HVo.js"), "./Pages/Public/Default/Market/MarketCategories/Show.vue": () => import("./assets/Show-2bIIB91-.js"), "./Pages/Public/Default/Market/MarketProducts/Index.vue": () => import("./assets/Index-DxCK-E5c.js"), "./Pages/Public/Default/Market/MarketProducts/Show.vue": () => import("./assets/Show-BvX3C9Jn.js"), "./Pages/Public/Default/Market/MarketTags/Show.vue": () => import("./assets/Show-ixAfmKPE.js"), "./Pages/Public/Default/School/SchoolAssignments/Index.vue": () => import("./assets/Index-Cw2oZ5b-.js"), "./Pages/Public/Default/School/SchoolAssignments/Show.vue": () => import("./assets/Show-Dgb9c9lL.js"), "./Pages/Public/Default/School/SchoolCourses/Index.vue": () => import("./assets/Index-CypfgTUs.js"), "./Pages/Public/Default/School/SchoolCourses/Show.vue": () => import("./assets/Show-DHVnvv4V.js"), "./Pages/Public/Default/School/SchoolHashtags/Show.vue": () => import("./assets/Show-Da09uAvt.js"), "./Pages/Public/Default/School/SchoolInstructors/Index.vue": () => import("./assets/Index-DApipHub.js"), "./Pages/Public/Default/School/SchoolInstructors/Show.vue": () => import("./assets/Show-D0i6u9CX.js"), "./Pages/Public/Default/School/SchoolLessons/Index.vue": () => import("./assets/Index-DQUiVtuf.js"), "./Pages/Public/Default/School/SchoolLessons/Show.vue": () => import("./assets/Show-jyxNvCmA.js"), "./Pages/Public/Default/School/SchoolModules/Index.vue": () => import("./assets/Index-C2U_Fh6Q.js"), "./Pages/Public/Default/School/SchoolModules/Show.vue": () => import("./assets/Show-CQcElHVd.js"), "./Pages/Public/Default/School/SchoolTracks/Index.vue": () => import("./assets/Index-CLJcjbDb.js"), "./Pages/Public/Default/School/SchoolTracks/Show.vue": () => import("./assets/Show-CZDhpZwB.js"), "./Pages/Public/Privacy/Index.vue": () => import("./assets/Index-zs26gNYf.js"), "./Pages/Public/Pulsar/Index.vue": () => import("./assets/Index-Ds58mbtS.js"), "./Pages/Teams/Abouts.vue": () => import("./assets/Abouts-BApMomtx.js"), "./Pages/Teams/Create.vue": () => import("./assets/Create-DPfSvoil.js"), "./Pages/Teams/Partials/CreateTeamForm.vue": () => import("./assets/CreateTeamForm-9MMgz8YU.js"), "./Pages/Teams/Partials/DeleteTeamForm.vue": () => import("./assets/DeleteTeamForm-ky1cpTMd.js"), "./Pages/Teams/Partials/TeamMemberManager.vue": () => import("./assets/TeamMemberManager-DCdAifCc.js"), "./Pages/Teams/Partials/UpdateTeamNameForm.vue": () => import("./assets/UpdateTeamNameForm-lq_m1IXC.js"), "./Pages/Teams/Show.vue": () => import("./assets/Show-DcIBDaXs.js"), "./Pages/TermsOfService.vue": () => import("./assets/TermsOfService-BUHyJakr.js") })),
     setup({ App, props, plugin }) {
-      return createSSRApp({ render: () => h$1(App, props) }).use(plugin).use(k, {
+      return createSSRApp({ render: () => h$1(App, props) }).use(plugin).use(_, {
         ...page.props.ziggy,
         location: new URL(page.props.ziggy.location)
       });

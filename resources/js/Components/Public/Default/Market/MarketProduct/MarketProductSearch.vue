@@ -104,7 +104,7 @@ const resetSearch = () => {
         @submit.prevent="submitSearch"
     >
         <div
-            class="flex overflow-hidden rounded-lg border-2 border-blue-600"
+            class="flex overflow-hidden rounded-lg border-2 border-sky-600"
         >
             <div class="relative min-w-0 flex-1">
                 <input
@@ -122,8 +122,8 @@ const resetSearch = () => {
                     type="button"
                     class="absolute right-2 top-1/2 z-20 -translate-y-1/2
                            flex h-7 w-7 items-center justify-center rounded-full
-                           text-slate-400 transition hover:bg-slate-100 hover:text-blue-600
-                           dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-blue-400"
+                           text-slate-400 transition hover:bg-slate-100 hover:text-sky-600
+                           dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-sky-400"
                     :title="t('reset')"
                     @click="resetSearch"
                 >
@@ -142,8 +142,8 @@ const resetSearch = () => {
 
             <button
                 type="submit"
-                class="shrink-0 bg-blue-600 px-4 text-sm font-bold text-white
-                       transition hover:bg-blue-700"
+                class="shrink-0 bg-sky-600 px-4 text-sm font-bold text-white
+                       transition hover:bg-sky-700"
             >
                 {{ t('find') }}
             </button>
@@ -171,10 +171,10 @@ const resetSearch = () => {
                     v-model="searchQuery"
                     type="text"
                     class="relative z-10 block h-full w-full rounded-xl
-                           border-2 border-blue-600 bg-white dark:bg-gray-900
+                           border-2 border-sky-600 bg-white dark:bg-gray-900
                            px-4 py-2 pr-12 text-sm text-slate-800 dark:text-slate-100
                            placeholder:text-slate-400 outline-none
-                           focus:border-blue-600 focus:ring-0"
+                           focus:border-sky-600 focus:ring-0"
                     :placeholder="t('search')"
                 />
 
@@ -185,8 +185,8 @@ const resetSearch = () => {
                     class="absolute right-4 top-1/2 z-20 -translate-y-1/2
                            flex h-7 w-7 items-center justify-center
                            rounded-full text-slate-600 transition
-                           hover:bg-slate-100 hover:text-blue-600
-                           dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-400"
+                           hover:bg-slate-100 hover:text-sky-600
+                           dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-sky-400"
                     :title="t('reset')"
                     @click="resetSearch"
                 >
@@ -210,8 +210,8 @@ const resetSearch = () => {
             -->
             <button
                 type="submit"
-                class="relative z-10 shrink-0 rounded-r-xl bg-blue-600 pl-9 pr-6
-                       text-sm font-bold text-white transition hover:bg-blue-700"
+                class="relative z-10 shrink-0 rounded-r-xl bg-sky-600 pl-9 pr-6
+                       text-sm font-bold text-white transition hover:bg-sky-700"
                 :title="t('search')"
             >
                 <svg

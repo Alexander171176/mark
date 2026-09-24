@@ -37,7 +37,7 @@ class AppServiceProvider extends ServiceProvider
         $this->bootLocale();
         $this->bootInertiaSharedData();
         $this->bootMorphMap();
-        $this->bootDatabaseQueryLogging();
+        //$this->bootDatabaseQueryLogging();
     }
 
     /**

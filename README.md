@@ -71,6 +71,7 @@
     `npm install highlight.js` <br>
     `npm install vue-toastification@next` <br>
     `npm install @popperjs/core` <br>
+    `npm install swiper` <br>
      `npm i ` <br>
 
 -------------------------------------------------------------------------------------

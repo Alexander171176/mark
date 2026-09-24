@@ -39,7 +39,8 @@ onBeforeUnmount(() => {
         role="button" tabindex="0" aria-label="Прокрутить вверх"
         @click="scrollToTop" @keydown="onKeydown"
     >
-        <svg class="progress-circle" width="100%" height="100%" viewBox="-1 -1 102 102" aria-hidden="true">
+        <svg class="progress-circle" width="100%" height="100%"
+             viewBox="-1 -1 102 102" aria-hidden="true">
             <!-- трек (по желанию можно удалить) -->
             <path class="track" d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98"></path>
             <!-- прогресс по контуру -->
@@ -61,8 +62,8 @@ onBeforeUnmount(() => {
 /* БАЗА */
 .progress-wrap {
     position: fixed;
-    right: 10px;
-    bottom: 10px;
+    right: 5px;
+    bottom: 5px;
     height: 40px;
     width: 40px;
     cursor: pointer;
@@ -92,7 +93,7 @@ onBeforeUnmount(() => {
 .arrow-icon {
     position: absolute; inset: 0; margin: auto;
     width: 20px; height: 20px;
-    color: hsl(268 98% 50%);
+    color: hsl(221 83% 53%);
     pointer-events: none;
     z-index: 2;
     transform: none;
@@ -112,7 +113,7 @@ onBeforeUnmount(() => {
     stroke: rgba(0,0,0,0.12);
 }
 .progress-circle .bar {
-    stroke: hsl(268 98% 50%);
+    stroke: hsl(221 83% 53%);
     stroke-linecap: round;
     transition: stroke-dashoffset 60ms linear;
 }

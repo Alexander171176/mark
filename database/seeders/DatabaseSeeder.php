@@ -114,6 +114,11 @@ class DatabaseSeeder extends Seeder
             // Конструктор страниц
             CmsPageSeeder::class,
 
+            // Конструктор форм
+            FormSeeder::class,
+            FormFieldSeeder::class,
+            FormFieldOptionSeeder::class,
+
             //  Маркет
             MarketCompanySeeder::class, // Фирмы
             MarketShopSeeder::class,    // Магазины

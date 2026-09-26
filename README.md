@@ -930,6 +930,40 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolFaq/SchoolFaqTranslationResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolFaq/SchoolFaqController --resource` <br>
 -------------------------------------------------------------------------------------
+1) Конструктор форм обратной связи.
+`docker exec mark-php-app php artisan make:model Admin/Form/Form/Form -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Form/Form/FormTranslation -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Form/FormField/FormField -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Form/FormField/FormFieldTranslation -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Form/FormFieldOption/FormFieldOption -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Form/FormFieldOption/FormFieldOptionTranslation -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Form/FormSubmission/FormSubmission -mfs` <br>
+`docker exec mark-php-app php artisan make:model Admin/Form/FormSubmissionValue/FormSubmissionValue -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Form/FormSubmissionFile/FormSubmissionFile -m` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan migrate:rollback` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/Form/FormResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/Form/FormSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/Form/FormTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormField/FormFieldResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormField/FormFieldSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormField/FormFieldTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormFieldOption/FormFieldOptionResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormFieldOption/FormFieldOptionSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormFieldOption/FormFieldOptionTranslationResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormSubmission/FormSubmissionResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormSubmission/FormSubmissionSharedResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormSubmissionValue/FormSubmissionValueResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormSubmissionFile/FormSubmissionFileResource` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Form/FormSubmissionFile/FormSubmissionFileSharedResource` <br>
+`docker exec mark-php-app php artisan make:request Admin/Form/Form/FormRequest` <br>
+`docker exec mark-php-app php artisan make:request Admin/Form/FormField/FormFieldRequest` <br>
+`docker exec mark-php-app php artisan make:request Admin/Form/FormFieldOption/FormFieldOptionRequest` <br>
+`docker exec mark-php-app php artisan make:request Admin/Form/FormSubmission/FormSubmissionRequest` <br>
+`docker exec mark-php-app php artisan db:seed --class=FormSeeder` <br>
+`docker exec mark-php-app php artisan db:seed --class=FormFieldSeeder` <br>
+`docker exec mark-php-app php artisan db:seed --class=FormFieldOptionSeeder` <br>
+-------------------------------------------------------------------------------------
 
 1) Группы характеристик
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeGroup/MarketAttributeGroup -mfs` <br>

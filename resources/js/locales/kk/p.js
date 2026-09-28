@@ -39,6 +39,7 @@ export default {
     pendingInvitations: 'Топқа күтілетін шақырулар',
     pendingInvitationsDescription: 'Бұл адамдар сіздің тобыңызға шақырылды және олар электрондық пошта арқылы шақыру алды. Олар шақыруды қабылдау арқылы топқа қосыла алады.',
     period: 'Кезең',
+    periodMinutes: 'Кезең, минут',
     periodValidityPrice: 'Бағаның жарамдылық мерзімі',
     permissions: 'Рұқсаттар',
     permissionName: 'Рұқсат атауы *',

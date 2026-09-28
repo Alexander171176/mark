@@ -16,6 +16,12 @@ class FormSubmissionFile extends Model
 
     protected $table = 'form_submission_files';
 
+    /*
+    |--------------------------------------------------------------------------
+    | Mass assignment
+    |--------------------------------------------------------------------------
+    */
+
     protected $fillable = [
         'form_submission_id',
         'form_field_id',
@@ -38,6 +44,12 @@ class FormSubmissionFile extends Model
         'metadata',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Casts
+    |--------------------------------------------------------------------------
+    */
+
     protected $casts = [
         'form_submission_id' => 'integer',
         'form_field_id' => 'integer',
@@ -46,6 +58,9 @@ class FormSubmissionFile extends Model
         'sort' => 'integer',
 
         'metadata' => 'array',
+
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /*
@@ -70,6 +85,9 @@ class FormSubmissionFile extends Model
      *
      * Может вернуть null, если поле формы
      * впоследствии было удалено.
+     *
+     * Историческая информация при этом
+     * остаётся в snapshot-полях файла.
      */
     public function field(): BelongsTo
     {
@@ -90,20 +108,32 @@ class FormSubmissionFile extends Model
      */
     public function existsOnDisk(): bool
     {
-        if (!$this->path || !$this->disk) {
+        if (
+            !$this->path
+            || !$this->disk
+        ) {
             return false;
         }
 
-        return Storage::disk($this->disk)
-            ->exists($this->path);
+        return Storage::disk(
+            $this->disk
+        )->exists(
+            $this->path
+        );
     }
 
     /**
      * Удалить физический файл из хранилища.
+     *
+     * Если файл уже отсутствует физически,
+     * считаем операцию успешной.
      */
     public function deleteFromDisk(): bool
     {
-        if (!$this->path || !$this->disk) {
+        if (
+            !$this->path
+            || !$this->disk
+        ) {
             return false;
         }
 
@@ -111,8 +141,11 @@ class FormSubmissionFile extends Model
             return true;
         }
 
-        return Storage::disk($this->disk)
-            ->delete($this->path);
+        return Storage::disk(
+            $this->disk
+        )->delete(
+            $this->path
+        );
     }
 
     /**
@@ -168,14 +201,28 @@ class FormSubmissionFile extends Model
     */
 
     /**
-     * Файлы конкретного поля по snapshot field_name.
+     * Файлы конкретной заявки.
+     */
+    public function scopeForSubmission(
+        Builder $query,
+        int $submissionId
+    ): Builder {
+        return $query->where(
+            'form_submission_files.form_submission_id',
+            $submissionId
+        );
+    }
+
+    /**
+     * Файлы конкретного поля
+     * по snapshot field_name.
      */
     public function scopeForFieldName(
         Builder $query,
         string $fieldName
     ): Builder {
         return $query->where(
-            'field_name',
+            'form_submission_files.field_name',
             $fieldName
         );
     }
@@ -188,7 +235,7 @@ class FormSubmissionFile extends Model
         int $fieldId
     ): Builder {
         return $query->where(
-            'form_field_id',
+            'form_submission_files.form_field_id',
             $fieldId
         );
     }
@@ -201,18 +248,39 @@ class FormSubmissionFile extends Model
         string $extension
     ): Builder {
         return $query->where(
-            'extension',
+            'form_submission_files.extension',
             strtolower($extension)
         );
     }
 
     /**
-     * Сортировка файлов.
+     * Основной порядок файлов.
      */
-    public function scopeSorted(Builder $query): Builder
-    {
+    public function scopeOrdered(
+        Builder $query
+    ): Builder {
         return $query
-            ->orderBy('sort')
-            ->orderBy('id');
+            ->orderBy(
+                'form_submission_files.field_name',
+                'asc'
+            )
+            ->orderBy(
+                'form_submission_files.sort',
+                'asc'
+            )
+            ->orderBy(
+                'form_submission_files.id',
+                'asc'
+            );
+    }
+
+    /**
+     * Обратная совместимость
+     * со старым названием scope.
+     */
+    public function scopeSorted(
+        Builder $query
+    ): Builder {
+        return $query->ordered();
     }
 }

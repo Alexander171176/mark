@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources\Admin\Form\Form;
 
-use App\Http\Resources\Admin\System\User\UserSharedResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,47 +16,78 @@ class FormSharedResource extends JsonResource
      * - связанные сущности;
      * - заявки формы.
      *
-     * Resource читает только заранее загруженные
-     * relations/counts и не должен создавать
-     * дополнительные SQL-запросы.
-     *
-     * @return array<string, mixed>
+     * Resource работает только с заранее
+     * загруженными relations/counts и не должен
+     * выполнять дополнительные SQL-запросы.
      */
     public function toArray(Request $request): array
     {
-        $translation = $this->loadedTranslationOrFallback();
+        $translation = $this->currentTranslation();
 
         return [
+            'id' => $this->id,
+            'user_id' => $this->user_id,
+
             /** Основные данные */
-            'id' => (int) $this->id,
-
-            'user_id' => $this->user_id !== null
-                ? (int) $this->user_id
-                : null,
-
             'code' => $this->code,
+
+            /** Отображение / сортировка / активность */
+            'sort' => (int) $this->sort,
+            'activity' => (bool) $this->activity,
+
+            /** Статус */
             'status' => $this->status,
 
-            'activity' => (bool) $this->activity,
-            'sort' => (int) $this->sort,
+            /** Счётчики */
+            'fields_count' => $this->when(
+                isset($this->fields_count),
+                fn () => (int) $this->fields_count
+            ),
 
-            /** Владелец */
-            'owner' => new UserSharedResource(
-                $this->whenLoaded('user')
+            'submissions_count' => $this->when(
+                isset($this->submissions_count),
+                fn () => (int) $this->submissions_count
             ),
 
             /** Перевод текущей локали с fallback */
             'translation' => $translation
-                ? new FormTranslationResource($translation)
+                ? new FormTranslationResource(
+                    $translation
+                )
                 : null,
 
-            /** Счётчики */
-            'fields_count' => $this->whenCounted('fields'),
-            'submissions_count' => $this->whenCounted('submissions'),
+            /** Владелец */
+            'owner' => $this->whenLoaded(
+                'user',
+                function () {
+                    return [
+                        'id' => $this->user?->id,
+                        'name' => $this->user?->name,
+                        'email' => $this->user?->email,
+                        'profile_photo_url' => $this->user?->profile_photo_url,
+                    ];
+                }
+            ),
 
-            /** Даты */
+            /** Timestamps */
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    /**
+     * Получение перевода только из уже
+     * загруженной relation translations.
+     *
+     * Для Admin Index Controller загружает:
+     * - текущую локаль;
+     * - fallback локаль.
+     *
+     * Дополнительные SQL-запросы
+     * здесь не выполняются.
+     */
+    private function currentTranslation()
+    {
+        return $this->loadedTranslationOrFallback();
     }
 }

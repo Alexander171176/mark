@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Form\Form;
 
+use App\Models\Admin\Form\Form\Form;
 use Illuminate\Foundation\Http\FormRequest as BaseFormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -78,10 +79,47 @@ class FormRequest extends BaseFormRequest
             ];
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Владелец
+        |--------------------------------------------------------------------------
+        |
+        | user_id может быть null.
+        |
+        | null означает системную форму, которая не принадлежит
+        | конкретному пользователю.
+        |
+        */
+
+        $userId = $this->input('user_id');
+
+        if (
+            $userId === ''
+            || $userId === null
+        ) {
+            $userId = null;
+        } elseif (
+            is_int($userId)
+            || (
+                is_string($userId)
+                && ctype_digit($userId)
+            )
+        ) {
+            $userId = (int) $userId;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Дополнительные настройки
+        |--------------------------------------------------------------------------
+        */
+
+        $settings = $this->prepareSettings(
+            $this->input('settings')
+        );
+
         $this->merge([
-            'user_id' => $this->filled('user_id')
-                ? (int) $this->input('user_id')
-                : $this->user()?->id,
+            'user_id' => $userId,
 
             'code' => $this->normalizeNullableCode(
                 $this->input('code')
@@ -89,7 +127,7 @@ class FormRequest extends BaseFormRequest
 
             'status' => $this->normalizeNullableString(
                 $this->input('status')
-            ) ?: 'draft',
+            ) ?: Form::STATUS_DRAFT,
 
             'activity' => $this->toBoolean(
                 $this->input('activity', true),
@@ -159,9 +197,7 @@ class FormRequest extends BaseFormRequest
             |--------------------------------------------------------------------------
             */
 
-            'settings' => $this->prepareSettings(
-                $this->input('settings')
-            ),
+            'settings' => $settings,
 
             /*
             |--------------------------------------------------------------------------
@@ -178,9 +214,7 @@ class FormRequest extends BaseFormRequest
      */
     public function rules(): array
     {
-        $formId = $this->route('form')?->id
-            ?? $this->route('form')
-            ?? $this->route('id');
+        $formId = $this->resolveFormId();
 
         $availableLocales = config(
             'app.available_locales',
@@ -195,7 +229,7 @@ class FormRequest extends BaseFormRequest
                 */
 
                 'user_id' => [
-                    'required',
+                    'nullable',
                     'integer',
                     'exists:users,id',
                 ],
@@ -205,6 +239,7 @@ class FormRequest extends BaseFormRequest
                     'string',
                     'max:100',
                     'regex:/^[a-z0-9]+(?:_[a-z0-9]+)*$/',
+
                     Rule::unique(
                         'forms',
                         'code'
@@ -215,9 +250,13 @@ class FormRequest extends BaseFormRequest
                     'required',
                     'string',
                     'max:50',
+
                     Rule::in(
                         array_keys(
-                            config('forms.statuses', [])
+                            config(
+                                'forms.statuses',
+                                []
+                            )
                         )
                     ),
                 ],
@@ -253,18 +292,21 @@ class FormRequest extends BaseFormRequest
                     'required',
                     'integer',
                     'min:0',
+                    'max:65535',
                 ],
 
                 'rate_limit' => [
                     'required',
                     'integer',
                     'min:1',
+                    'max:65535',
                 ],
 
                 'rate_limit_minutes' => [
                     'required',
                     'integer',
                     'min:1',
+                    'max:65535',
                 ],
 
                 'captcha_enabled' => [
@@ -360,9 +402,6 @@ class FormRequest extends BaseFormRequest
             |--------------------------------------------------------------------------
             */
 
-            'user_id.required' =>
-                'Необходимо указать владельца формы.',
-
             'user_id.integer' =>
                 'ID владельца формы должен быть числом.',
 
@@ -417,17 +456,26 @@ class FormRequest extends BaseFormRequest
             'min_submit_seconds.min' =>
                 'Минимальное время заполнения не может быть меньше 0 секунд.',
 
+            'min_submit_seconds.max' =>
+                'Минимальное время заполнения не может превышать 65535 секунд.',
+
             'rate_limit.integer' =>
                 'Лимит отправок должен быть числом.',
 
             'rate_limit.min' =>
                 'Лимит отправок должен быть не меньше 1.',
 
+            'rate_limit.max' =>
+                'Лимит отправок не может превышать 65535.',
+
             'rate_limit_minutes.integer' =>
                 'Период ограничения должен быть числом.',
 
             'rate_limit_minutes.min' =>
                 'Период ограничения должен быть не меньше 1 минуты.',
+
+            'rate_limit_minutes.max' =>
+                'Период ограничения не может превышать 65535 минут.',
 
             'captcha_enabled.boolean' =>
                 'Настройка CAPTCHA должна быть логическим значением.',
@@ -448,7 +496,7 @@ class FormRequest extends BaseFormRequest
             */
 
             'settings.array' =>
-                'Дополнительные настройки формы должны быть массивом.',
+                'Дополнительные настройки формы должны быть массивом или корректным JSON-объектом.',
 
             /*
             |--------------------------------------------------------------------------
@@ -498,6 +546,48 @@ class FormRequest extends BaseFormRequest
         }
 
         return $rules;
+    }
+
+    /**
+     * Получить ID редактируемой формы
+     * из параметров текущего маршрута.
+     *
+     * Поддерживает:
+     * - route model binding: Form $form;
+     * - числовой параметр {form};
+     * - резервный параметр {id}.
+     */
+    protected function resolveFormId(): ?int
+    {
+        $routeForm = $this->route('form');
+
+        if ($routeForm instanceof Form) {
+            return (int) $routeForm->id;
+        }
+
+        if (
+            is_int($routeForm)
+            || (
+                is_string($routeForm)
+                && ctype_digit($routeForm)
+            )
+        ) {
+            return (int) $routeForm;
+        }
+
+        $routeId = $this->route('id');
+
+        if (
+            is_int($routeId)
+            || (
+                is_string($routeId)
+                && ctype_digit($routeId)
+            )
+        ) {
+            return (int) $routeId;
+        }
+
+        return null;
     }
 
     /**
@@ -593,11 +683,21 @@ class FormRequest extends BaseFormRequest
 
     /**
      * Подготовка JSON-настроек формы.
+     *
+     * Важно:
+     * - null / пустая строка -> null;
+     * - массив -> массив;
+     * - корректный JSON-объект -> массив;
+     * - некорректный JSON сохраняется как исходная строка,
+     *   чтобы правило "array" вернуло ошибку валидации.
      */
     protected function prepareSettings(
         mixed $settings
-    ): ?array {
-        if (is_null($settings) || $settings === '') {
+    ): mixed {
+        if (
+            is_null($settings)
+            || $settings === ''
+        ) {
             return null;
         }
 
@@ -611,11 +711,30 @@ class FormRequest extends BaseFormRequest
                 true
             );
 
-            return is_array($decoded)
-                ? $decoded
-                : null;
+            if (
+                json_last_error() === JSON_ERROR_NONE
+                && is_array($decoded)
+            ) {
+                return $decoded;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Не превращаем ошибочный JSON в null
+            |--------------------------------------------------------------------------
+            |
+            | Оставляем исходную строку.
+            | Тогда правило:
+            |
+            | settings => nullable|array
+            |
+            | корректно сообщит пользователю об ошибке.
+            |
+            */
+
+            return $settings;
         }
 
-        return null;
+        return $settings;
     }
 }

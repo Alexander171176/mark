@@ -151,6 +151,11 @@ Route::put('/update-count/cms-pages',
     [SettingController::class, 'updateAdminCountCmsPages'])
     ->name('updateAdminCountCmsPages');
 
+// формы
+Route::put('/update-count/forms',
+    [SettingController::class, 'updateAdminCountForms'])
+    ->name('updateAdminCountForms');
+
 // маркет
 Route::put('/update-count/market-companies',
     [SettingController::class, 'updateAdminCountMarketCompanies'])

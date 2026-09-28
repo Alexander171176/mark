@@ -12,34 +12,34 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class FormSubmissionResource extends JsonResource
 {
     /**
-     * Полное административное представление заявки формы.
+     * Полное административное представление
+     * заявки формы.
      *
      * Основное назначение:
      * - Show;
      * - Edit;
-     * - обработка заявки в административной панели / CRM.
+     * - обработка заявки в Admin / CRM.
      *
-     * Resource читает только заранее загруженные
-     * relations/counts и не должен создавать
-     * дополнительные SQL-запросы.
+     * Resource работает только с заранее
+     * загруженными relations/counts и не должен
+     * выполнять дополнительные SQL-запросы.
      *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         return [
-            /** Основные данные */
             'id' => (int) $this->id,
-
             'form_id' => (int) $this->form_id,
 
             'user_id' => $this->user_id !== null
                 ? (int) $this->user_id
                 : null,
 
-            'assigned_user_id' => $this->assigned_user_id !== null
-                ? (int) $this->assigned_user_id
-                : null,
+            'assigned_user_id' =>
+                $this->assigned_user_id !== null
+                    ? (int) $this->assigned_user_id
+                    : null,
 
             /** Состояние */
             'status' => $this->status,
@@ -64,45 +64,86 @@ class FormSubmissionResource extends JsonResource
             'user_agent' => $this->user_agent,
             'session_id' => $this->session_id,
 
-            /** Форма */
-            'form' => new FormSharedResource(
-                $this->whenLoaded('form')
+            /** Родительская форма */
+            'form' => $this->whenLoaded(
+                'form',
+                function () {
+                    return $this->form
+                        ? new FormSharedResource(
+                            $this->form
+                        )
+                        : null;
+                }
             ),
 
             /** Авторизованный отправитель */
-            'user' => new UserSharedResource(
-                $this->whenLoaded('user')
+            'user' => $this->whenLoaded(
+                'user',
+                function () {
+                    return $this->user
+                        ? new UserSharedResource(
+                            $this->user
+                        )
+                        : null;
+                }
             ),
 
             /** Ответственный сотрудник */
-            'assigned_user' => new UserSharedResource(
-                $this->whenLoaded('assignedUser')
+            'assigned_user' => $this->whenLoaded(
+                'assignedUser',
+                function () {
+                    return $this->assignedUser
+                        ? new UserSharedResource(
+                            $this->assignedUser
+                        )
+                        : null;
+                }
             ),
 
-            /** Значения полей */
-            'values' => FormSubmissionValueResource::collection(
-                $this->whenLoaded('values')
-            ),
+            /** Snapshot-значения полей */
+            'values' =>
+                FormSubmissionValueResource::collection(
+                    $this->whenLoaded(
+                        'values'
+                    )
+                ),
 
-            /** Файлы */
-            'files' => FormSubmissionFileResource::collection(
-                $this->whenLoaded('files')
-            ),
+            /** Прикреплённые файлы */
+            'files' =>
+                FormSubmissionFileResource::collection(
+                    $this->whenLoaded(
+                        'files'
+                    )
+                ),
 
             /** Счётчики */
-            'values_count' => $this->whenCounted('values'),
-            'files_count' => $this->whenCounted('files'),
+            'values_count' => $this->when(
+                isset($this->values_count),
+                fn () => (int) $this->values_count
+            ),
+
+            'files_count' => $this->when(
+                isset($this->files_count),
+                fn () => (int) $this->files_count
+            ),
 
             /** Обработка */
-            'processed_at' => $this->processed_at?->toISOString(),
-            'completed_at' => $this->completed_at?->toISOString(),
+            'processed_at' =>
+                $this->processed_at?->toISOString(),
+
+            'completed_at' =>
+                $this->completed_at?->toISOString(),
 
             /** Время отправки */
-            'submitted_at' => $this->submitted_at?->toISOString(),
+            'submitted_at' =>
+                $this->submitted_at?->toISOString(),
 
-            /** Технические даты */
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            /** Timestamps */
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

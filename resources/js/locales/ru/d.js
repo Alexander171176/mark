@@ -67,4 +67,5 @@ export default {
     dueAt: 'Дедлайн',
     duplicates: 'Дубликаты',
     duration: 'Продолжительность',
+    dynamicContactForms: 'Динамические формы обратной связи',
 }

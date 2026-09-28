@@ -151,6 +151,11 @@ Route::put('/update-sort/cms-pages',
     [SettingController::class, 'updateAdminSortCmsPages'])
     ->name('updateAdminSortCmsPages');
 
+// формы
+Route::put('/update-sort/forms',
+    [SettingController::class, 'updateAdminSortForms'])
+    ->name('updateAdminSortForms');
+
 // маркет
 Route::put('/update-sort/market-companies',
     [SettingController::class, 'updateAdminSortMarketCompanies'])

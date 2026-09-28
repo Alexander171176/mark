@@ -44,5 +44,6 @@ export default {
     notShowSeo: 'SEO өрістеріңізді көрсетпеңіз',
     notVerified: 'Расталмаған',
     number: 'Саны',
+    numberOfShipments: 'Жеткізілімдер саны',
     numberOrder: 'Тапсырыс нөмірі',
 }

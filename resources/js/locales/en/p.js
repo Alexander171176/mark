@@ -39,6 +39,7 @@ export default {
     pendingInvitations: 'Pending Team Invitations',
     pendingInvitationsDescription: 'These people have been invited to your team and have been sent an invitation email. They may join the team by accepting the email invitation.',
     period: 'Period',
+    periodMinutes: 'Period, minutes',
     periodValidityPrice: 'Price validity period',
     permissions: 'Permissions',
     permissionName: 'Permission Name *',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Form\FormSubmission;
 
+use App\Models\Admin\Form\FormSubmission\FormSubmission;
 use Illuminate\Foundation\Http\FormRequest as BaseFormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,25 +27,38 @@ class FormSubmissionRequest extends BaseFormRequest
             |--------------------------------------------------------------------------
             | Статус заявки
             |--------------------------------------------------------------------------
+            |
+            | Не подставляем STATUS_NEW автоматически.
+            |
+            | Административный Request используется для обновления
+            | существующей заявки, поэтому отсутствие status должно
+            | приводить к ошибке валидации, а не к неожиданному
+            | сбросу текущего статуса в "new".
+            |
             */
 
             'status' => $this->normalizeNullableString(
                 $this->input('status')
-            ) ?: 'new',
+            ),
 
             /*
             |--------------------------------------------------------------------------
             | Ответственный сотрудник
             |--------------------------------------------------------------------------
+            |
+            | null означает, что заявка не назначена сотруднику.
+            |
+            | Некорректное значение специально не приводим к 0,
+            | чтобы Laravel корректно вернул ошибку правила integer.
+            |
             */
 
-            'assigned_user_id' => $this->filled(
-                'assigned_user_id'
-            )
-                ? (int) $this->input(
-                    'assigned_user_id'
-                )
-                : null,
+            'assigned_user_id' =>
+                $this->normalizeNullableInteger(
+                    $this->input(
+                        'assigned_user_id'
+                    )
+                ),
         ]);
     }
 
@@ -66,12 +80,7 @@ class FormSubmissionRequest extends BaseFormRequest
                 'max:50',
 
                 Rule::in(
-                    array_keys(
-                        config(
-                            'forms.submission_statuses',
-                            []
-                        )
-                    )
+                    $this->allowedStatuses()
                 ),
             ],
 
@@ -84,6 +93,7 @@ class FormSubmissionRequest extends BaseFormRequest
             'assigned_user_id' => [
                 'nullable',
                 'integer',
+
                 Rule::exists(
                     'users',
                     'id'
@@ -130,6 +140,50 @@ class FormSubmissionRequest extends BaseFormRequest
         ];
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Status helpers
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Получить список допустимых статусов заявки.
+     *
+     * Основным источником является config/forms.php.
+     *
+     * Константы модели используются как безопасный fallback,
+     * если конфигурация по какой-либо причине отсутствует.
+     *
+     * @return array<int, string>
+     */
+    protected function allowedStatuses(): array
+    {
+        $statuses = array_keys(
+            config(
+                'forms.submission_statuses',
+                []
+            )
+        );
+
+        if ($statuses !== []) {
+            return $statuses;
+        }
+
+        return [
+            FormSubmission::STATUS_NEW,
+            FormSubmission::STATUS_PROCESSING,
+            FormSubmission::STATUS_COMPLETED,
+            FormSubmission::STATUS_CANCELLED,
+            FormSubmission::STATUS_SPAM,
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize helpers
+    |--------------------------------------------------------------------------
+    */
+
     /**
      * Нормализация nullable строки.
      */
@@ -147,5 +201,43 @@ class FormSubmissionRequest extends BaseFormRequest
         return $value === ''
             ? null
             : $value;
+    }
+
+    /**
+     * Нормализация nullable integer.
+     *
+     * Важно:
+     *
+     * null / ""  -> null
+     * 15         -> 15
+     * "15"       -> 15
+     * "abc"      -> "abc"
+     *
+     * Некорректное значение оставляем как есть,
+     * чтобы Laravel вернул ошибку правила integer,
+     * а не преобразовал его в 0.
+     */
+    protected function normalizeNullableInteger(
+        mixed $value
+    ): mixed {
+        if (
+            is_null($value)
+            || $value === ''
+        ) {
+            return null;
+        }
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (
+            is_string($value)
+            && ctype_digit($value)
+        ) {
+            return (int) $value;
+        }
+
+        return $value;
     }
 }

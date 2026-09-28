@@ -10,22 +10,31 @@ class FormSubmissionFileSharedResource extends JsonResource
     /**
      * Компактное представление файла заявки.
      *
-     * Resource не раскрывает физический путь
-     * или Laravel filesystem disk.
+     * Resource не раскрывает:
+     * - физический путь;
+     * - Laravel filesystem disk;
+     * - внутреннее имя файла;
+     * - metadata.
+     *
+     * Основное назначение:
+     * - компактные списки файлов;
+     * - связанные сущности;
+     * - административные preview-блоки.
      *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         return [
-            /** Основные данные */
             'id' => (int) $this->id,
 
-            'form_submission_id' => (int) $this->form_submission_id,
+            'form_submission_id' =>
+                (int) $this->form_submission_id,
 
-            'form_field_id' => $this->form_field_id !== null
-                ? (int) $this->form_field_id
-                : null,
+            'form_field_id' =>
+                $this->form_field_id !== null
+                    ? (int) $this->form_field_id
+                    : null,
 
             /** Snapshot поля */
             'field_name' => $this->field_name,
@@ -47,9 +56,12 @@ class FormSubmissionFileSharedResource extends JsonResource
             /** Порядок */
             'sort' => (int) $this->sort,
 
-            /** Даты */
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            /** Timestamps */
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

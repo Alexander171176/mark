@@ -67,4 +67,5 @@ export default {
     dueAt: 'Мерзімі',
     duplicates: 'Көшірмелер',
     duration: 'Ұзақтығы',
+    dynamicContactForms: 'Динамикалық кері байланыс формалары',
 }

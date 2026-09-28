@@ -11,6 +11,10 @@ use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Form\Form\FormController;
+use App\Http\Controllers\Admin\Form\FormField\FormFieldController;
+use App\Http\Controllers\Admin\Form\FormFieldOption\FormFieldOptionController;
+use App\Http\Controllers\Admin\Form\FormSubmission\FormSubmissionController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
@@ -54,6 +58,12 @@ use App\Http\Controllers\Admin\System\Setting\SettingController;
 use App\Http\Controllers\Admin\System\User\UserController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Системные маршруты
+|--------------------------------------------------------------------------
+*/
+
 // системные
 Route::resource('/settings', SettingController::class);
 Route::resource('/parameters', ParameterController::class);
@@ -61,19 +71,43 @@ Route::resource('/users', UserController::class);
 Route::resource('/roles', RoleController::class);
 Route::resource('/permissions', PermissionController::class);
 
+/*
+|--------------------------------------------------------------------------
+| Маршруты локации
+|--------------------------------------------------------------------------
+*/
+
 Route::resource('/locations', LocationController::class)
     ->parameters(['locations' => 'location'])
     ->names('locations');
+
+/*
+|--------------------------------------------------------------------------
+| Маршруты редактора компонентов в админке
+|--------------------------------------------------------------------------
+*/
 
 // редактор компонентов в админке
 Route::resource('/components', ComponentController::class);
 Route::post('/components/save', [ComponentController::class, 'save'])
     ->name('components.save');
 
+/*
+|--------------------------------------------------------------------------
+| Маршруты отчётов по таблицам БД
+|--------------------------------------------------------------------------
+*/
+
 // отчёты по таблицам БД
 Route::resource('/reports', ReportController::class)->only(['index']);
 Route::get('/reports/download', [ReportController::class, 'download'])
     ->name('reports.download');
+
+/*
+|--------------------------------------------------------------------------
+| Маршруты графиков
+|--------------------------------------------------------------------------
+*/
 
 // графики
 Route::resource('/charts', ChartController::class)->except(['show']);
@@ -89,11 +123,29 @@ Route::resource('/analytics-visitor-logs', AdminAnalyticsVisitorLogController::c
     ->only(['index', 'show'])
     ->names('analyticsVisitorLogs');
 
+/*
+|--------------------------------------------------------------------------
+| Маршруты валют
+|--------------------------------------------------------------------------
+*/
+
 // валюты
 Route::resource('/currencies', CurrencyController::class);
 
+/*
+|--------------------------------------------------------------------------
+| Маршруты комментариев
+|--------------------------------------------------------------------------
+*/
+
 // комментарии
 Route::resource('/comments', CommentController::class)->except(['create', 'store', 'show']);
+
+/*
+|--------------------------------------------------------------------------
+| Маршруты отзывов
+|--------------------------------------------------------------------------
+*/
 
 // отзывы
 Route::resource('/reviews', ReviewController::class)
@@ -101,7 +153,13 @@ Route::resource('/reviews', ReviewController::class)
     ->parameters(['reviews' => 'review',])
     ->names('reviews');
 
-// маршруты блога
+/*
+|--------------------------------------------------------------------------
+| Маршруты блога
+|--------------------------------------------------------------------------
+*/
+
+// рубрики
 Route::resource('/blog-rubrics', BlogRubricController::class)
     ->parameters(['blog-rubrics' => 'blogRubric'])
     ->names('blogRubrics');
@@ -122,7 +180,12 @@ Route::resource('/blog-videos', BlogVideoController::class)
     ->parameters(['blog-videos' => 'blogVideo'])
     ->names('blogVideos');
 
-// маршруты онлайн школы
+/*
+|--------------------------------------------------------------------------
+| Маршруты онлайн школы
+|--------------------------------------------------------------------------
+*/
+
 Route::resource('/school-instructor-profiles',
     SchoolInstructorProfileController::class)
     ->parameters(['school-instructor-profiles' => 'schoolInstructorProfile'])
@@ -223,12 +286,56 @@ Route::resource('/school-orders',
     ->parameters(['school-orders' => 'schoolOrder'])
     ->names('schoolOrders');
 
-// маршруты конструктора страниц
+/*
+|--------------------------------------------------------------------------
+| Конструктор страниц
+|--------------------------------------------------------------------------
+*/
+
 Route::resource('/cms-pages', CmsPageController::class)
     ->parameters(['cms-pages' => 'cmsPage'])
     ->names('cmsPages');
 
-// маршруты маркетплейса
+/*
+|--------------------------------------------------------------------------
+| Конструктор форм
+|--------------------------------------------------------------------------
+*/
+
+// Формы
+Route::resource('/forms', FormController::class)
+    ->parameters(['forms' => 'form'])
+    ->names('forms');
+
+// Поля форм
+Route::resource('/form-fields', FormFieldController::class)
+    ->parameters(['form-fields' => 'formField'])
+    ->names('formFields');
+
+// Варианты значений полей
+Route::resource('/form-field-options', FormFieldOptionController::class)
+    ->parameters(['form-field-options' => 'formFieldOption'])
+    ->names('formFieldOptions');
+
+// Заявки форм
+Route::resource('/form-submissions', FormSubmissionController::class)
+    ->parameters(['form-submissions' => 'formSubmission'])
+    ->only([
+        'index',
+        'show',
+        'edit',
+        'update',
+        'destroy',
+    ])
+    ->names('formSubmissions');
+
+/*
+|--------------------------------------------------------------------------
+| Маршруты маркетплейса
+|--------------------------------------------------------------------------
+*/
+
+// компании
 Route::resource('/market-companies', MarketCompanyController::class)
     ->parameters(['market-companies' => 'marketCompany'])
     ->names('marketCompanies');

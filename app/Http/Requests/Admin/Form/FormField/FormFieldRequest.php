@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Form\FormField;
 
+use App\Models\Admin\Form\FormField\FormField;
 use Illuminate\Foundation\Http\FormRequest as BaseFormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -165,9 +166,7 @@ class FormFieldRequest extends BaseFormRequest
      */
     public function rules(): array
     {
-        $fieldId = $this->route('formField')?->id
-            ?? $this->route('formField')
-            ?? $this->route('id');
+        $fieldId = $this->resolveFieldId();
 
         $availableLocales = config(
             'app.available_locales',
@@ -184,7 +183,10 @@ class FormFieldRequest extends BaseFormRequest
                 'form_id' => [
                     'required',
                     'integer',
-                    Rule::exists('forms', 'id'),
+                    Rule::exists(
+                        'forms',
+                        'id'
+                    ),
                 ],
 
                 'name' => [
@@ -210,9 +212,13 @@ class FormFieldRequest extends BaseFormRequest
                     'required',
                     'string',
                     'max:50',
+
                     Rule::in(
                         array_keys(
-                            config('forms.field_types', [])
+                            config(
+                                'forms.field_types',
+                                []
+                            )
                         )
                     ),
                 ],
@@ -279,9 +285,13 @@ class FormFieldRequest extends BaseFormRequest
                     'required',
                     'string',
                     'max:20',
+
                     Rule::in(
                         array_keys(
-                            config('forms.field_widths', [])
+                            config(
+                                'forms.field_widths',
+                                []
+                            )
                         )
                     ),
                 ],
@@ -314,8 +324,24 @@ class FormFieldRequest extends BaseFormRequest
                     'array',
                 ],
 
+                /*
+                |--------------------------------------------------------------------------
+                | Label
+                |--------------------------------------------------------------------------
+                |
+                | Для визуальных полей label обязателен.
+                |
+                | Для hidden-поля label не требуется,
+                | поскольку оно не отображается пользователю.
+                |
+                */
+
                 'translations.*.label' => [
-                    'required',
+                    Rule::requiredIf(
+                        fn () => $this->input('type') !== 'hidden'
+                    ),
+
+                    'nullable',
                     'string',
                     'max:255',
                 ],
@@ -338,18 +364,32 @@ class FormFieldRequest extends BaseFormRequest
     /**
      * Дополнительная проверка данных.
      *
-     * Здесь проверяются динамические правила
-     * валидации конструктора формы.
+     * Здесь проверяются:
+     * - динамические Laravel validation rules;
+     * - настройки конкретных типов полей;
+     * - логическая совместимость параметров поля.
      */
     public function after(): array
     {
         return [
             function (Validator $validator) {
+                /*
+                |--------------------------------------------------------------------------
+                | Если базовая структура данных уже невалидна,
+                | дополнительные проверки всё равно безопасны:
+                | каждый validator ниже проверяет тип входных данных.
+                |--------------------------------------------------------------------------
+                */
+
                 $this->validateDynamicRules(
                     $validator
                 );
 
                 $this->validateFieldSettings(
+                    $validator
+                );
+
+                $this->validateFieldBehavior(
                     $validator
                 );
             },
@@ -395,6 +435,12 @@ class FormFieldRequest extends BaseFormRequest
             'type.required' =>
                 'Необходимо указать тип поля.',
 
+            'type.string' =>
+                'Тип поля должен быть строкой.',
+
+            'type.max' =>
+                'Тип поля не должен превышать 50 символов.',
+
             'type.in' =>
                 'Указан недопустимый тип поля.',
 
@@ -432,7 +478,7 @@ class FormFieldRequest extends BaseFormRequest
                 'Значение по умолчанию должно быть строкой.',
 
             'validation.array' =>
-                'Правила валидации должны быть массивом.',
+                'Правила валидации должны быть массивом или корректным JSON-массивом.',
 
             /*
             |--------------------------------------------------------------------------
@@ -442,6 +488,12 @@ class FormFieldRequest extends BaseFormRequest
 
             'width.required' =>
                 'Необходимо указать ширину поля.',
+
+            'width.string' =>
+                'Ширина поля должна быть строкой.',
+
+            'width.max' =>
+                'Значение ширины поля слишком длинное.',
 
             'width.in' =>
                 'Указано недопустимое значение ширины поля.',
@@ -453,7 +505,7 @@ class FormFieldRequest extends BaseFormRequest
             */
 
             'settings.array' =>
-                'Дополнительные настройки поля должны быть массивом.',
+                'Дополнительные настройки поля должны быть массивом или корректным JSON-объектом.',
 
             /*
             |--------------------------------------------------------------------------
@@ -479,10 +531,22 @@ class FormFieldRequest extends BaseFormRequest
             'translations.*.label.max' =>
                 'Название поля не должно превышать 255 символов.',
 
+            'translations.*.placeholder.string' =>
+                'Placeholder поля должен быть строкой.',
+
             'translations.*.placeholder.max' =>
                 'Placeholder поля не должен превышать 255 символов.',
+
+            'translations.*.description.string' =>
+                'Описание поля должно быть строкой.',
         ];
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic validation
+    |--------------------------------------------------------------------------
+    */
 
     /**
      * Проверить динамические правила валидации.
@@ -525,10 +589,15 @@ class FormFieldRequest extends BaseFormRequest
         foreach ($validation as $key => $value) {
             $ruleName = is_int($key)
                 ? $this->extractRuleName($value)
-                : (string) $key;
+                : strtolower(
+                    trim(
+                        (string) $key
+                    )
+                );
 
             if (
                 $ruleName === null
+                || $ruleName === ''
                 || !in_array(
                     $ruleName,
                     $allowedRules,
@@ -541,12 +610,23 @@ class FormFieldRequest extends BaseFormRequest
                         'validation',
                         sprintf(
                             'Правило валидации "%s" не разрешено.',
-                            $ruleName ?? (string) $value
+                            $ruleName
+                                ?: (
+                            is_scalar($value)
+                                ? (string) $value
+                                : ''
+                            )
                         )
                     );
             }
         }
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Field settings
+    |--------------------------------------------------------------------------
+    */
 
     /**
      * Дополнительная проверка настроек поля.
@@ -585,9 +665,20 @@ class FormFieldRequest extends BaseFormRequest
         Validator $validator,
         array $settings
     ): void {
+        /*
+        |--------------------------------------------------------------------------
+        | multiple
+        |--------------------------------------------------------------------------
+        */
+
         if (
-            array_key_exists('multiple', $settings)
-            && !is_bool($settings['multiple'])
+            array_key_exists(
+                'multiple',
+                $settings
+            )
+            && !is_bool(
+                $settings['multiple']
+            )
         ) {
             $validator
                 ->errors()
@@ -597,10 +688,21 @@ class FormFieldRequest extends BaseFormRequest
                 );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | max_files
+        |--------------------------------------------------------------------------
+        */
+
         if (
-            isset($settings['max_files'])
+            array_key_exists(
+                'max_files',
+                $settings
+            )
             && (
-                !is_numeric($settings['max_files'])
+                !is_numeric(
+                    $settings['max_files']
+                )
                 || (int) $settings['max_files'] < 1
                 || (int) $settings['max_files']
                 > (int) config(
@@ -617,10 +719,21 @@ class FormFieldRequest extends BaseFormRequest
                 );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | max_size
+        |--------------------------------------------------------------------------
+        */
+
         if (
-            isset($settings['max_size'])
+            array_key_exists(
+                'max_size',
+                $settings
+            )
             && (
-                !is_numeric($settings['max_size'])
+                !is_numeric(
+                    $settings['max_size']
+                )
                 || (int) $settings['max_size'] < 1
                 || (int) $settings['max_size']
                 > (int) config(
@@ -637,9 +750,20 @@ class FormFieldRequest extends BaseFormRequest
                 );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | extensions
+        |--------------------------------------------------------------------------
+        */
+
         if (
-            isset($settings['extensions'])
-            && !is_array($settings['extensions'])
+            array_key_exists(
+                'extensions',
+                $settings
+            )
+            && !is_array(
+                $settings['extensions']
+            )
         ) {
             $validator
                 ->errors()
@@ -651,20 +775,31 @@ class FormFieldRequest extends BaseFormRequest
             return;
         }
 
-        if (!isset($settings['extensions'])) {
+        if (!array_key_exists(
+            'extensions',
+            $settings
+        )) {
             return;
         }
 
-        $allowedExtensions = config(
-            'forms.files.extensions',
-            []
+        $allowedExtensions = array_map(
+            'strtolower',
+            config(
+                'forms.files.extensions',
+                []
+            )
         );
 
-        foreach ($settings['extensions'] as $extension) {
+        foreach (
+            $settings['extensions']
+            as $extension
+        ) {
             if (
                 !is_string($extension)
                 || !in_array(
-                    strtolower($extension),
+                    strtolower(
+                        trim($extension)
+                    ),
                     $allowedExtensions,
                     true
                 )
@@ -684,31 +819,154 @@ class FormFieldRequest extends BaseFormRequest
         }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Field behavior
+    |--------------------------------------------------------------------------
+    */
+
     /**
-     * Получить имя Laravel validation rule
-     * из строки вида "max:255".
+     * Проверить логическую совместимость
+     * отдельных настроек поля.
      */
-    protected function extractRuleName(
-        mixed $rule
-    ): ?string {
-        if (!is_string($rule)) {
-            return null;
+    protected function validateFieldBehavior(
+        Validator $validator
+    ): void {
+        $type = $this->input('type');
+
+        /*
+        |--------------------------------------------------------------------------
+        | File
+        |--------------------------------------------------------------------------
+        |
+        | Значение файла по умолчанию не имеет смысла.
+        | Файл должен быть загружен пользователем.
+        |
+        */
+
+        if (
+            $type === 'file'
+            && $this->input('default_value') !== null
+        ) {
+            $validator
+                ->errors()
+                ->add(
+                    'default_value',
+                    'Для файлового поля нельзя задавать значение по умолчанию.'
+                );
         }
 
-        $rule = trim($rule);
+        /*
+        |--------------------------------------------------------------------------
+        | Checkbox group
+        |--------------------------------------------------------------------------
+        |
+        | checkbox_group поддерживает несколько значений.
+        | В текущей структуре default_value является строкой,
+        | поэтому множественные значения по умолчанию
+        | должны задаваться через is_default у options.
+        |
+        */
 
-        if ($rule === '') {
-            return null;
+        if (
+            $type === 'checkbox_group'
+            && $this->input('default_value') !== null
+        ) {
+            $validator
+                ->errors()
+                ->add(
+                    'default_value',
+                    'Для группы checkbox значения по умолчанию задаются через варианты выбора.'
+                );
         }
 
-        return strtolower(
-            explode(
-                ':',
-                $rule,
-                2
-            )[0]
-        );
+        /*
+        |--------------------------------------------------------------------------
+        | Select / Radio
+        |--------------------------------------------------------------------------
+        |
+        | Для полей с вариантами выбора значение по умолчанию
+        | также должно задаваться через is_default у option.
+        |
+        */
+
+        if (
+            in_array(
+                $type,
+                [
+                    'select',
+                    'radio',
+                ],
+                true
+            )
+            && $this->input('default_value') !== null
+        ) {
+            $validator
+                ->errors()
+                ->add(
+                    'default_value',
+                    'Для поля с вариантами выбора значение по умолчанию задаётся через вариант выбора.'
+                );
+        }
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Route helpers
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Получить ID редактируемого поля
+     * из параметров текущего маршрута.
+     *
+     * Поддерживает:
+     * - route model binding: FormField $formField;
+     * - числовой параметр {formField};
+     * - резервный параметр {id}.
+     */
+    protected function resolveFieldId(): ?int
+    {
+        $routeField = $this->route(
+            'formField'
+        );
+
+        if ($routeField instanceof FormField) {
+            return (int) $routeField->id;
+        }
+
+        if (
+            is_int($routeField)
+            || (
+                is_string($routeField)
+                && ctype_digit($routeField)
+            )
+        ) {
+            return (int) $routeField;
+        }
+
+        $routeId = $this->route(
+            'id'
+        );
+
+        if (
+            is_int($routeId)
+            || (
+                is_string($routeId)
+                && ctype_digit($routeId)
+            )
+        ) {
+            return (int) $routeId;
+        }
+
+        return null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Locale helpers
+    |--------------------------------------------------------------------------
+    */
 
     /**
      * Правила для разрешённых локалей приложения.
@@ -727,6 +985,12 @@ class FormFieldRequest extends BaseFormRequest
 
         return $rules;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize helpers
+    |--------------------------------------------------------------------------
+    */
 
     /**
      * Нормализация nullable строки.
@@ -770,8 +1034,11 @@ class FormFieldRequest extends BaseFormRequest
      * Нормализация системного имени поля.
      *
      * Например:
+     *
      * Customer Phone
+     *
      * ->
+     *
      * customer_phone
      */
     protected function normalizeNullableName(
@@ -785,7 +1052,9 @@ class FormFieldRequest extends BaseFormRequest
             return null;
         }
 
-        $value = strtolower($value);
+        $value = strtolower(
+            $value
+        );
 
         $value = preg_replace(
             '/[^a-z0-9]+/',
@@ -820,14 +1089,22 @@ class FormFieldRequest extends BaseFormRequest
     }
 
     /**
-     * Подготовить JSON-массив.
+     * Подготовить массив из массива или JSON-строки.
      *
-     * Принимает как массив, так и JSON-строку.
+     * Важно:
+     * - null / пустая строка -> null;
+     * - массив -> массив;
+     * - корректный JSON-массив/объект -> массив;
+     * - некорректный JSON остаётся исходным значением,
+     *   чтобы правило "array" вернуло ошибку валидации.
      */
     protected function prepareArrayValue(
         mixed $value
-    ): ?array {
-        if (is_null($value) || $value === '') {
+    ): mixed {
+        if (
+            is_null($value)
+            || $value === ''
+        ) {
             return null;
         }
 
@@ -841,11 +1118,66 @@ class FormFieldRequest extends BaseFormRequest
                 true
             );
 
-            return is_array($decoded)
-                ? $decoded
-                : null;
+            if (
+                json_last_error() === JSON_ERROR_NONE
+                && is_array($decoded)
+            ) {
+                return $decoded;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Некорректный JSON
+            |--------------------------------------------------------------------------
+            |
+            | Не превращаем его в null.
+            |
+            | Оставляем исходную строку, чтобы:
+            |
+            | validation => nullable|array
+            | settings   => nullable|array
+            |
+            | вернули нормальную ошибку валидации.
+            |
+            */
+
+            return $value;
         }
 
-        return null;
+        return $value;
+    }
+
+    /**
+     * Получить имя Laravel validation rule
+     * из строки вида:
+     *
+     * max:255
+     *
+     * ->
+     *
+     * max
+     */
+    protected function extractRuleName(
+        mixed $rule
+    ): ?string {
+        if (!is_string($rule)) {
+            return null;
+        }
+
+        $rule = trim(
+            $rule
+        );
+
+        if ($rule === '') {
+            return null;
+        }
+
+        return strtolower(
+            explode(
+                ':',
+                $rule,
+                2
+            )[0]
+        );
     }
 }

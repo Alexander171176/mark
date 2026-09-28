@@ -3,6 +3,7 @@ export default {
     failureReason: 'Сәтсіздіктің себебі',
     false: 'жоқ',
     feedback: 'Кері байланыс',
+    fields: 'Өрістер',
     fighterBlue: 'Көк бұрыштағы спортшы',
     fighterRed: 'Қызыл бұрыштағы спортшы',
     file: 'Файл',

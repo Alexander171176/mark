@@ -44,5 +44,6 @@ export default {
     notShowSeo: 'Don\'t show your SEO fields',
     notVerified: 'Not confirmed',
     number: 'Number',
+    numberOfShipments: 'Number of shipments',
     numberOrder: 'Order number',
 }

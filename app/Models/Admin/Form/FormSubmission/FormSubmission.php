@@ -7,11 +7,11 @@ use App\Models\Admin\Form\FormSubmissionFile\FormSubmissionFile;
 use App\Models\Admin\Form\FormSubmissionValue\FormSubmissionValue;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Collection;
 
 class FormSubmission extends Model
 {
@@ -30,6 +30,12 @@ class FormSubmission extends Model
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_SPAM = 'spam';
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mass assignment
+    |--------------------------------------------------------------------------
+    */
 
     protected $fillable = [
         'form_id',
@@ -59,6 +65,12 @@ class FormSubmission extends Model
         'submitted_at',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Casts
+    |--------------------------------------------------------------------------
+    */
+
     protected $casts = [
         'form_id' => 'integer',
         'user_id' => 'integer',
@@ -69,6 +81,9 @@ class FormSubmission extends Model
         'processed_at' => 'datetime',
         'completed_at' => 'datetime',
         'submitted_at' => 'datetime',
+
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /*
@@ -82,7 +97,10 @@ class FormSubmission extends Model
      */
     public function form(): BelongsTo
     {
-        return $this->belongsTo(Form::class);
+        return $this->belongsTo(
+            Form::class,
+            'form_id'
+        );
     }
 
     /**
@@ -93,11 +111,14 @@ class FormSubmission extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
 
     /**
-     * Пользователь админки/CRM,
+     * Пользователь админки / CRM,
      * которому назначена заявка.
      */
     public function assignedUser(): BelongsTo
@@ -110,11 +131,16 @@ class FormSubmission extends Model
 
     /**
      * Значения полей заявки.
+     *
+     * Значения являются snapshot-данными
+     * и сохраняют содержимое формы
+     * на момент отправки.
      */
     public function values(): HasMany
     {
         return $this->hasMany(
-            FormSubmissionValue::class
+            FormSubmissionValue::class,
+            'form_submission_id'
         );
     }
 
@@ -124,11 +150,21 @@ class FormSubmission extends Model
     public function files(): HasMany
     {
         return $this->hasMany(
-            FormSubmissionFile::class
+            FormSubmissionFile::class,
+            'form_submission_id'
         )
-            ->orderBy('field_name')
-            ->orderBy('sort')
-            ->orderBy('id');
+            ->orderBy(
+                'field_name',
+                'asc'
+            )
+            ->orderBy(
+                'sort',
+                'asc'
+            )
+            ->orderBy(
+                'id',
+                'asc'
+            );
     }
 
     /*
@@ -137,29 +173,49 @@ class FormSubmission extends Model
     |--------------------------------------------------------------------------
     */
 
+    /**
+     * Новая заявка.
+     */
     public function isNew(): bool
     {
-        return $this->status === self::STATUS_NEW;
+        return $this->status
+            === self::STATUS_NEW;
     }
 
+    /**
+     * Заявка находится в обработке.
+     */
     public function isProcessing(): bool
     {
-        return $this->status === self::STATUS_PROCESSING;
+        return $this->status
+            === self::STATUS_PROCESSING;
     }
 
+    /**
+     * Заявка завершена.
+     */
     public function isCompleted(): bool
     {
-        return $this->status === self::STATUS_COMPLETED;
+        return $this->status
+            === self::STATUS_COMPLETED;
     }
 
+    /**
+     * Заявка отменена.
+     */
     public function isCancelled(): bool
     {
-        return $this->status === self::STATUS_CANCELLED;
+        return $this->status
+            === self::STATUS_CANCELLED;
     }
 
+    /**
+     * Заявка отмечена как spam.
+     */
     public function isSpam(): bool
     {
-        return $this->status === self::STATUS_SPAM;
+        return $this->status
+            === self::STATUS_SPAM;
     }
 
     /**
@@ -188,8 +244,10 @@ class FormSubmission extends Model
      * Получить значение из контекста заявки.
      *
      * Поддерживает dot notation:
+     *
      * product.id
      * category.id
+     * order.id
      */
     public function getContext(
         string $key,
@@ -219,26 +277,35 @@ class FormSubmission extends Model
     public function valueByFieldName(
         string $fieldName
     ): ?FormSubmissionValue {
-        if ($this->relationLoaded('values')) {
+        if (
+            $this->relationLoaded(
+                'values'
+            )
+        ) {
             /** @var FormSubmissionValue|null $value */
-            $value = $this->values->firstWhere(
-                'field_name',
-                $fieldName
-            );
+            $value = $this->values
+                ->firstWhere(
+                    'field_name',
+                    $fieldName
+                );
 
             return $value;
         }
 
         /** @var FormSubmissionValue|null $value */
         $value = $this->values()
-            ->where('field_name', $fieldName)
+            ->where(
+                'field_name',
+                $fieldName
+            )
             ->first();
 
         return $value;
     }
 
     /**
-     * Получить файлы поля по его системному имени.
+     * Получить файлы поля
+     * по его системному имени.
      *
      * Метод использует snapshot field_name,
      * поэтому продолжит работать даже после
@@ -249,15 +316,25 @@ class FormSubmission extends Model
     public function filesByFieldName(
         string $fieldName
     ): Collection {
-        if ($this->relationLoaded('files')) {
+        if (
+            $this->relationLoaded(
+                'files'
+            )
+        ) {
             return $this->files
-                ->where('field_name', $fieldName)
+                ->where(
+                    'field_name',
+                    $fieldName
+                )
                 ->values();
         }
 
         /** @var Collection<int, FormSubmissionFile> $files */
         $files = $this->files()
-            ->where('field_name', $fieldName)
+            ->where(
+                'field_name',
+                $fieldName
+            )
             ->get();
 
         return $files;
@@ -269,42 +346,62 @@ class FormSubmission extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function scopeNew(Builder $query): Builder
-    {
+    /**
+     * Только новые заявки.
+     */
+    public function scopeNew(
+        Builder $query
+    ): Builder {
         return $query->where(
-            'status',
+            'form_submissions.status',
             self::STATUS_NEW
         );
     }
 
-    public function scopeProcessing(Builder $query): Builder
-    {
+    /**
+     * Только заявки в обработке.
+     */
+    public function scopeProcessing(
+        Builder $query
+    ): Builder {
         return $query->where(
-            'status',
+            'form_submissions.status',
             self::STATUS_PROCESSING
         );
     }
 
-    public function scopeCompleted(Builder $query): Builder
-    {
+    /**
+     * Только завершённые заявки.
+     */
+    public function scopeCompleted(
+        Builder $query
+    ): Builder {
         return $query->where(
-            'status',
+            'form_submissions.status',
             self::STATUS_COMPLETED
         );
     }
 
-    public function scopeCancelled(Builder $query): Builder
-    {
+    /**
+     * Только отменённые заявки.
+     */
+    public function scopeCancelled(
+        Builder $query
+    ): Builder {
         return $query->where(
-            'status',
+            'form_submissions.status',
             self::STATUS_CANCELLED
         );
     }
 
-    public function scopeSpam(Builder $query): Builder
-    {
+    /**
+     * Только spam-заявки.
+     */
+    public function scopeSpam(
+        Builder $query
+    ): Builder {
         return $query->where(
-            'status',
+            'form_submissions.status',
             self::STATUS_SPAM
         );
     }
@@ -323,7 +420,7 @@ class FormSubmission extends Model
         int $formId
     ): Builder {
         return $query->where(
-            'form_id',
+            'form_submissions.form_id',
             $formId
         );
     }
@@ -337,8 +434,11 @@ class FormSubmission extends Model
     ): Builder {
         return $query->whereHas(
             'form',
-            fn (Builder $formQuery) => $formQuery
-                ->where('code', $code)
+            fn (Builder $formQuery) =>
+            $formQuery->where(
+                'forms.code',
+                $code
+            )
         );
     }
 
@@ -350,20 +450,20 @@ class FormSubmission extends Model
         string $source
     ): Builder {
         return $query->where(
-            'source',
+            'form_submissions.source',
             $source
         );
     }
 
     /**
-     * Заявки авторизованного пользователя.
+     * Заявки авторизованного отправителя.
      */
     public function scopeForUser(
         Builder $query,
         int $userId
     ): Builder {
         return $query->where(
-            'user_id',
+            'form_submissions.user_id',
             $userId
         );
     }
@@ -376,8 +476,19 @@ class FormSubmission extends Model
         int $userId
     ): Builder {
         return $query->where(
-            'assigned_user_id',
+            'form_submissions.assigned_user_id',
             $userId
+        );
+    }
+
+    /**
+     * Все назначенные заявки.
+     */
+    public function scopeAssigned(
+        Builder $query
+    ): Builder {
+        return $query->whereNotNull(
+            'form_submissions.assigned_user_id'
         );
     }
 
@@ -388,7 +499,7 @@ class FormSubmission extends Model
         Builder $query
     ): Builder {
         return $query->whereNull(
-            'assigned_user_id'
+            'form_submissions.assigned_user_id'
         );
     }
 
@@ -400,7 +511,7 @@ class FormSubmission extends Model
         string $locale
     ): Builder {
         return $query->where(
-            'locale',
+            'form_submissions.locale',
             $locale
         );
     }
@@ -416,21 +527,21 @@ class FormSubmission extends Model
         return $query
             ->when(
                 $from,
-                fn (Builder $query) => $query
-                    ->where(
-                        'submitted_at',
-                        '>=',
-                        $from
-                    )
+                fn (Builder $builder) =>
+                $builder->where(
+                    'form_submissions.submitted_at',
+                    '>=',
+                    $from
+                )
             )
             ->when(
                 $to,
-                fn (Builder $query) => $query
-                    ->where(
-                        'submitted_at',
-                        '<=',
-                        $to
-                    )
+                fn (Builder $builder) =>
+                $builder->where(
+                    'form_submissions.submitted_at',
+                    '<=',
+                    $to
+                )
             );
     }
 
@@ -448,7 +559,7 @@ class FormSubmission extends Model
         string $source
     ): Builder {
         return $query->where(
-            'utm_source',
+            'form_submissions.utm_source',
             $source
         );
     }
@@ -461,100 +572,32 @@ class FormSubmission extends Model
         string $campaign
     ): Builder {
         return $query->where(
-            'utm_campaign',
+            'form_submissions.utm_campaign',
             $campaign
         );
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Scopes: search
+    | Scopes: ordering
     |--------------------------------------------------------------------------
     */
 
     /**
-     * Поиск заявки.
+     * Сортировка заявок по умолчанию.
      *
-     * Ищем:
-     * - ID заявки
-     * - source
-     * - page_url
-     * - session_id
-     * - UTM
-     * - системные имена полей
-     * - сохранённые значения полей
-     * - отображаемые значения
+     * Сначала самые свежие отправленные заявки.
      */
-    public function scopeSearch(
-        Builder $query,
-        ?string $search
+    public function scopeOrdered(
+        Builder $query
     ): Builder {
-        $search = trim((string) $search);
-
-        if ($search === '') {
-            return $query;
-        }
-
-        return $query->where(
-            function (Builder $query) use ($search) {
-                if (ctype_digit($search)) {
-                    $query->orWhere(
-                        'form_submissions.id',
-                        (int) $search
-                    );
-                }
-
-                $query
-                    ->orWhere(
-                        'form_submissions.source',
-                        'like',
-                        "%{$search}%"
-                    )
-                    ->orWhere(
-                        'form_submissions.page_url',
-                        'like',
-                        "%{$search}%"
-                    )
-                    ->orWhere(
-                        'form_submissions.session_id',
-                        'like',
-                        "%{$search}%"
-                    )
-                    ->orWhere(
-                        'form_submissions.utm_source',
-                        'like',
-                        "%{$search}%"
-                    )
-                    ->orWhere(
-                        'form_submissions.utm_campaign',
-                        'like',
-                        "%{$search}%"
-                    )
-                    ->orWhereHas(
-                        'values',
-                        function (Builder $valueQuery) use (
-                            $search
-                        ) {
-                            $valueQuery
-                                ->where(
-                                    'field_name',
-                                    'like',
-                                    "%{$search}%"
-                                )
-                                ->orWhere(
-                                    'value',
-                                    'like',
-                                    "%{$search}%"
-                                )
-                                ->orWhere(
-                                    'display_value',
-                                    'like',
-                                    "%{$search}%"
-                                );
-                        }
-                    );
-            }
-        );
+        return $query
+            ->orderByDesc(
+                'form_submissions.submitted_at'
+            )
+            ->orderByDesc(
+                'form_submissions.id'
+            );
     }
 
     /*
@@ -564,60 +607,828 @@ class FormSubmission extends Model
     */
 
     /**
-     * Сортировка заявок.
+     * Сортировка и простая фильтрация
+     * по единому параметру Admin Index.
+     *
+     * Контракт:
+     *
+     * idAsc / idDesc
+     *
+     * submittedAtAsc / submittedAtDesc
+     * createdAtAsc / createdAtDesc
+     * dateAsc / dateDesc
+     * updatedAtAsc / updatedAtDesc
+     *
+     * statusAsc / statusDesc
+     * statusNew
+     * statusProcessing
+     * statusCompleted
+     * statusCancelled
+     * statusSpam
+     *
+     * sourceAsc / sourceDesc
+     * localeAsc / localeDesc
+     *
+     * formIdAsc / formIdDesc
+     * formTitleAsc / formTitleDesc
+     *
+     * userNameAsc / userNameDesc
+     * assignedUserNameAsc / assignedUserNameDesc
+     *
+     * assigned / unassigned
+     *
+     * valuesAsc / valuesDesc
+     * filesAsc / filesDesc
+     *
+     * processedAtAsc / processedAtDesc
+     * completedAtAsc / completedAtDesc
      */
     public function scopeSortByParam(
         Builder $query,
-        ?string $sortBy = null,
-        string $direction = 'desc'
+        ?string $sort,
+        ?string $locale = null
     ): Builder {
-        $direction = strtolower($direction) === 'asc'
-            ? 'asc'
-            : 'desc';
+        $locale = $locale
+            ?: app()->getLocale();
 
-        return match ($sortBy) {
-            'id' => $query->orderBy(
-                'form_submissions.id',
-                $direction
-            ),
+        return match ($sort) {
+            /*
+            |--------------------------------------------------------------------------
+            | ID
+            |--------------------------------------------------------------------------
+            */
 
-            'status' => $query->orderBy(
-                'form_submissions.status',
-                $direction
-            ),
+            'idAsc' => $query
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
 
-            'source' => $query->orderBy(
-                'form_submissions.source',
-                $direction
-            ),
+            'idDesc' => $query
+                ->orderBy(
+                    'form_submissions.id',
+                    'desc'
+                ),
 
-            'processed_at' => $query->orderBy(
-                'form_submissions.processed_at',
-                $direction
-            ),
+            /*
+            |--------------------------------------------------------------------------
+            | Время отправки
+            |--------------------------------------------------------------------------
+            */
 
-            'completed_at' => $query->orderBy(
-                'form_submissions.completed_at',
-                $direction
-            ),
+            'submittedAtAsc' => $query
+                ->orderBy(
+                    'form_submissions.submitted_at',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
 
-            'created_at' => $query->orderBy(
-                'form_submissions.created_at',
-                $direction
-            ),
-
-            'submitted_at' => $query->orderBy(
-                'form_submissions.submitted_at',
-                $direction
-            ),
-
-            default => $query
-                ->orderByDesc(
-                    'form_submissions.submitted_at'
+            'submittedAtDesc' => $query
+                ->orderBy(
+                    'form_submissions.submitted_at',
+                    'desc'
                 )
                 ->orderByDesc(
                     'form_submissions.id'
                 ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Статус
+            |--------------------------------------------------------------------------
+            */
+
+            'statusAsc' => $query
+                ->orderBy(
+                    'form_submissions.status',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'statusDesc' => $query
+                ->orderBy(
+                    'form_submissions.status',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            'statusNew' => $query
+                ->new()
+                ->ordered(),
+
+            'statusProcessing' => $query
+                ->processing()
+                ->ordered(),
+
+            'statusCompleted' => $query
+                ->completed()
+                ->ordered(),
+
+            'statusCancelled' => $query
+                ->cancelled()
+                ->ordered(),
+
+            'statusSpam' => $query
+                ->spam()
+                ->ordered(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Источник
+            |--------------------------------------------------------------------------
+            */
+
+            'sourceAsc' => $query
+                ->orderBy(
+                    'form_submissions.source',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'sourceDesc' => $query
+                ->orderBy(
+                    'form_submissions.source',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Локаль заявки
+            |--------------------------------------------------------------------------
+            */
+
+            'localeAsc' => $query
+                ->orderBy(
+                    'form_submissions.locale',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'localeDesc' => $query
+                ->orderBy(
+                    'form_submissions.locale',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Родительская форма: ID
+            |--------------------------------------------------------------------------
+            */
+
+            'formIdAsc' => $query
+                ->orderBy(
+                    'form_submissions.form_id',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'formIdDesc' => $query
+                ->orderBy(
+                    'form_submissions.form_id',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Родительская форма: название
+            |--------------------------------------------------------------------------
+            */
+
+            'formTitleAsc' => $query
+                ->leftJoin(
+                    'forms as sort_forms',
+                    'form_submissions.form_id',
+                    '=',
+                    'sort_forms.id'
+                )
+                ->leftJoin(
+                    'form_translations as sort_form_translations',
+                    function ($join) use ($locale) {
+                        $join->on(
+                            'sort_forms.id',
+                            '=',
+                            'sort_form_translations.form_id'
+                        )->where(
+                            'sort_form_translations.locale',
+                            '=',
+                            $locale
+                        );
+                    }
+                )
+                ->addSelect(
+                    'form_submissions.*'
+                )
+                ->orderBy(
+                    'sort_form_translations.title',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'formTitleDesc' => $query
+                ->leftJoin(
+                    'forms as sort_forms',
+                    'form_submissions.form_id',
+                    '=',
+                    'sort_forms.id'
+                )
+                ->leftJoin(
+                    'form_translations as sort_form_translations',
+                    function ($join) use ($locale) {
+                        $join->on(
+                            'sort_forms.id',
+                            '=',
+                            'sort_form_translations.form_id'
+                        )->where(
+                            'sort_form_translations.locale',
+                            '=',
+                            $locale
+                        );
+                    }
+                )
+                ->addSelect(
+                    'form_submissions.*'
+                )
+                ->orderBy(
+                    'sort_form_translations.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Отправитель
+            |--------------------------------------------------------------------------
+            */
+
+            'userNameAsc' => $query
+                ->leftJoin(
+                    'users as sort_users',
+                    'form_submissions.user_id',
+                    '=',
+                    'sort_users.id'
+                )
+                ->addSelect(
+                    'form_submissions.*'
+                )
+                ->orderBy(
+                    'sort_users.name',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'userNameDesc' => $query
+                ->leftJoin(
+                    'users as sort_users',
+                    'form_submissions.user_id',
+                    '=',
+                    'sort_users.id'
+                )
+                ->addSelect(
+                    'form_submissions.*'
+                )
+                ->orderBy(
+                    'sort_users.name',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Ответственный сотрудник
+            |--------------------------------------------------------------------------
+            */
+
+            'assignedUserNameAsc' => $query
+                ->leftJoin(
+                    'users as sort_assigned_users',
+                    'form_submissions.assigned_user_id',
+                    '=',
+                    'sort_assigned_users.id'
+                )
+                ->addSelect(
+                    'form_submissions.*'
+                )
+                ->orderBy(
+                    'sort_assigned_users.name',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'assignedUserNameDesc' => $query
+                ->leftJoin(
+                    'users as sort_assigned_users',
+                    'form_submissions.assigned_user_id',
+                    '=',
+                    'sort_assigned_users.id'
+                )
+                ->addSelect(
+                    'form_submissions.*'
+                )
+                ->orderBy(
+                    'sort_assigned_users.name',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Назначение
+            |--------------------------------------------------------------------------
+            */
+
+            'assigned' => $query
+                ->assigned()
+                ->ordered(),
+
+            'unassigned' => $query
+                ->unassigned()
+                ->ordered(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Количество значений
+            |--------------------------------------------------------------------------
+            |
+            | indexQuery() уже загружает values_count.
+            |
+            */
+
+            'valuesAsc' => $query
+                ->orderBy(
+                    'values_count',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'valuesDesc' => $query
+                ->orderBy(
+                    'values_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Количество файлов
+            |--------------------------------------------------------------------------
+            |
+            | indexQuery() уже загружает files_count.
+            |
+            */
+
+            'filesAsc' => $query
+                ->orderBy(
+                    'files_count',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'filesDesc' => $query
+                ->orderBy(
+                    'files_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Начало обработки
+            |--------------------------------------------------------------------------
+            */
+
+            'processedAtAsc' => $query
+                ->orderBy(
+                    'form_submissions.processed_at',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'processedAtDesc' => $query
+                ->orderBy(
+                    'form_submissions.processed_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Завершение
+            |--------------------------------------------------------------------------
+            */
+
+            'completedAtAsc' => $query
+                ->orderBy(
+                    'form_submissions.completed_at',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'completedAtDesc' => $query
+                ->orderBy(
+                    'form_submissions.completed_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Дата создания
+            |--------------------------------------------------------------------------
+            */
+
+            'createdAtAsc',
+            'dateAsc' => $query
+                ->orderBy(
+                    'form_submissions.created_at',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'createdAtDesc',
+            'dateDesc' => $query
+                ->orderBy(
+                    'form_submissions.created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Дата обновления
+            |--------------------------------------------------------------------------
+            */
+
+            'updatedAtAsc' => $query
+                ->orderBy(
+                    'form_submissions.updated_at',
+                    'asc'
+                )
+                ->orderBy(
+                    'form_submissions.id',
+                    'asc'
+                ),
+
+            'updatedAtDesc' => $query
+                ->orderBy(
+                    'form_submissions.updated_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'form_submissions.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Сортировка по умолчанию
+            |--------------------------------------------------------------------------
+            */
+
+            default => $query->ordered(),
         };
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scopes: search
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Поиск для Admin Index.
+     *
+     * Поиск выполняется:
+     *
+     * - по ID заявки;
+     * - по source;
+     * - по page_url;
+     * - по session_id;
+     * - по IP;
+     * - по UTM;
+     * - по коду формы;
+     * - по названию формы текущей локали;
+     * - по имени / email отправителя;
+     * - по имени / email ответственного;
+     * - по snapshot field_name;
+     * - по snapshot value;
+     * - по snapshot display_value.
+     */
+    public function scopeSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        $term = trim(
+            (string) $term
+        );
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $locale = $locale
+            ?: app()->getLocale();
+
+        return $query->where(
+            function (Builder $q) use (
+                $term,
+                $locale
+            ) {
+                /*
+                |--------------------------------------------------------------------------
+                | ID
+                |--------------------------------------------------------------------------
+                */
+
+                if (ctype_digit($term)) {
+                    $q->orWhere(
+                        'form_submissions.id',
+                        (int) $term
+                    );
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Собственные поля заявки
+                |--------------------------------------------------------------------------
+                */
+
+                $q->orWhere(
+                    'form_submissions.source',
+                    'like',
+                    "%{$term}%"
+                )
+                    ->orWhere(
+                        'form_submissions.page_url',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'form_submissions.session_id',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'form_submissions.ip',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'form_submissions.locale',
+                        'like',
+                        "%{$term}%"
+                    )
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | UTM
+                    |--------------------------------------------------------------------------
+                    */
+
+                    ->orWhere(
+                        'form_submissions.utm_source',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'form_submissions.utm_medium',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'form_submissions.utm_campaign',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'form_submissions.utm_content',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhere(
+                        'form_submissions.utm_term',
+                        'like',
+                        "%{$term}%"
+                    )
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Родительская форма
+                    |--------------------------------------------------------------------------
+                    */
+
+                    ->orWhereHas(
+                        'form',
+                        function (
+                            Builder $formQuery
+                        ) use (
+                            $term,
+                            $locale
+                        ) {
+                            $formQuery
+                                ->where(
+                                    'forms.code',
+                                    'like',
+                                    "%{$term}%"
+                                )
+                                ->orWhereHas(
+                                    'translations',
+                                    function (
+                                        Builder $translationQuery
+                                    ) use (
+                                        $term,
+                                        $locale
+                                    ) {
+                                        $translationQuery
+                                            ->where(
+                                                'locale',
+                                                $locale
+                                            )
+                                            ->where(
+                                                function (
+                                                    Builder $searchQuery
+                                                ) use ($term) {
+                                                    $searchQuery
+                                                        ->where(
+                                                            'title',
+                                                            'like',
+                                                            "%{$term}%"
+                                                        )
+                                                        ->orWhere(
+                                                            'subtitle',
+                                                            'like',
+                                                            "%{$term}%"
+                                                        );
+                                                }
+                                            );
+                                    }
+                                );
+                        }
+                    )
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Авторизованный отправитель
+                    |--------------------------------------------------------------------------
+                    */
+
+                    ->orWhereHas(
+                        'user',
+                        function (
+                            Builder $userQuery
+                        ) use ($term) {
+                            $userQuery->where(
+                                function (
+                                    Builder $searchQuery
+                                ) use ($term) {
+                                    $searchQuery
+                                        ->where(
+                                            'name',
+                                            'like',
+                                            "%{$term}%"
+                                        )
+                                        ->orWhere(
+                                            'email',
+                                            'like',
+                                            "%{$term}%"
+                                        );
+                                }
+                            );
+                        }
+                    )
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Ответственный сотрудник
+                    |--------------------------------------------------------------------------
+                    */
+
+                    ->orWhereHas(
+                        'assignedUser',
+                        function (
+                            Builder $userQuery
+                        ) use ($term) {
+                            $userQuery->where(
+                                function (
+                                    Builder $searchQuery
+                                ) use ($term) {
+                                    $searchQuery
+                                        ->where(
+                                            'name',
+                                            'like',
+                                            "%{$term}%"
+                                        )
+                                        ->orWhere(
+                                            'email',
+                                            'like',
+                                            "%{$term}%"
+                                        );
+                                }
+                            );
+                        }
+                    )
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Snapshot-значения полей
+                    |--------------------------------------------------------------------------
+                    */
+
+                    ->orWhereHas(
+                        'values',
+                        function (
+                            Builder $valueQuery
+                        ) use ($term) {
+                            $valueQuery
+                                ->where(
+                                    'field_name',
+                                    'like',
+                                    "%{$term}%"
+                                )
+                                ->orWhere(
+                                    'field_label',
+                                    'like',
+                                    "%{$term}%"
+                                )
+                                ->orWhere(
+                                    'value',
+                                    'like',
+                                    "%{$term}%"
+                                )
+                                ->orWhere(
+                                    'display_value',
+                                    'like',
+                                    "%{$term}%"
+                                );
+                        }
+                    );
+            }
+        );
     }
 }

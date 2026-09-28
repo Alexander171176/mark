@@ -15,6 +15,12 @@ class FormSubmissionValue extends Model
 
     protected $table = 'form_submission_values';
 
+    /*
+    |--------------------------------------------------------------------------
+    | Mass assignment
+    |--------------------------------------------------------------------------
+    */
+
     protected $fillable = [
         'form_submission_id',
         'form_field_id',
@@ -30,11 +36,20 @@ class FormSubmissionValue extends Model
         'display_value',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Casts
+    |--------------------------------------------------------------------------
+    */
+
     protected $casts = [
         'form_submission_id' => 'integer',
         'form_field_id' => 'integer',
 
         'value_json' => 'array',
+
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /*
@@ -106,7 +121,10 @@ class FormSubmissionValue extends Model
      * Если при отправке был сохранён display_value,
      * используем его.
      *
-     * Иначе возвращаем обычное значение.
+     * Для структурированного значения возвращаем
+     * сохранённый value_json.
+     *
+     * Иначе возвращаем обычное value.
      */
     public function getDisplayValue(): mixed
     {
@@ -122,28 +140,44 @@ class FormSubmissionValue extends Model
     }
 
     /**
-     * Является ли значение массивом.
+     * Является ли значение множественным.
      */
     public function isMultiple(): bool
     {
-        return is_array($this->value_json);
+        return is_array(
+            $this->value_json
+        );
     }
 
     /*
-|--------------------------------------------------------------------------
-| Scopes
-|--------------------------------------------------------------------------
-*/
+    |--------------------------------------------------------------------------
+    | Scopes
+    |--------------------------------------------------------------------------
+    */
 
     /**
-     * Значения конкретного поля по snapshot field_name.
+     * Значения конкретной заявки.
+     */
+    public function scopeForSubmission(
+        Builder $query,
+        int $submissionId
+    ): Builder {
+        return $query->where(
+            'form_submission_values.form_submission_id',
+            $submissionId
+        );
+    }
+
+    /**
+     * Значения конкретного поля
+     * по snapshot field_name.
      */
     public function scopeForFieldName(
         Builder $query,
         string $fieldName
     ): Builder {
         return $query->where(
-            'field_name',
+            'form_submission_values.field_name',
             $fieldName
         );
     }
@@ -156,7 +190,7 @@ class FormSubmissionValue extends Model
         int $fieldId
     ): Builder {
         return $query->where(
-            'form_field_id',
+            'form_submission_values.form_field_id',
             $fieldId
         );
     }
@@ -169,8 +203,23 @@ class FormSubmissionValue extends Model
         string $fieldType
     ): Builder {
         return $query->where(
-            'field_type',
+            'form_submission_values.field_type',
             $fieldType
+        );
+    }
+
+    /**
+     * Стабильный порядок значений заявки.
+     *
+     * Отдельного sort в таблице значений нет,
+     * поэтому используем порядок создания записей.
+     */
+    public function scopeOrdered(
+        Builder $query
+    ): Builder {
+        return $query->orderBy(
+            'form_submission_values.id',
+            'asc'
         );
     }
 }

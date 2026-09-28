@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Form\Form\FormController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
@@ -146,6 +147,11 @@ Route::put('/school-subscription-plans/bulk-activity',
 Route::put('/cms-pages/bulk-activity',
     [CmsPageController::class, 'bulkUpdateActivity'])
     ->name('cmsPages.bulkUpdateActivity');
+
+// конструктор форм
+Route::put('/forms/bulk-activity',
+    [FormController::class, 'bulkUpdateActivity'])
+    ->name('forms.bulkUpdateActivity');
 
 // маркет
 Route::put('/market-companies/bulk-activity',

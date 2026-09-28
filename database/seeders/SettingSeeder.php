@@ -2136,6 +2136,46 @@ class SettingSeeder extends Seeder
             ], // ADMIN CMS PAGES DEFAULT VIEW
             [
                 'type' => 'string',
+                'option' => 'adminFormsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_FORMS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных форм в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORMS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminFormsPerPage',
+                'value' => '12',
+                'constant' => 'ADMIN_FORMS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество форм в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORMS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminFormsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_FORMS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка форм по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORMS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminFormsDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_FORMS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка форм в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORMS DEFAULT VIEW
+            [
+                'type' => 'string',
                 'option' => 'adminMarketCompaniesProcessingMode',
                 'value' => 'auto',
                 'constant' => 'ADMIN_MARKET_COMPANIES_PROCESSING_MODE',

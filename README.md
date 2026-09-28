@@ -963,6 +963,10 @@ Analytics
 `docker exec mark-php-app php artisan db:seed --class=FormSeeder` <br>
 `docker exec mark-php-app php artisan db:seed --class=FormFieldSeeder` <br>
 `docker exec mark-php-app php artisan db:seed --class=FormFieldOptionSeeder` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Form/Form/FormController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Form/FormField/FormFieldController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Form/FormFieldOption/FormFieldOptionController --resource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Form/FormSubmission/FormSubmissionController --resource` <br>
 -------------------------------------------------------------------------------------
 
 1) Группы характеристик

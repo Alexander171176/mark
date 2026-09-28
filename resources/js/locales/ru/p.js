@@ -39,6 +39,7 @@ export default {
     pendingInvitations: 'Ожидающие приглашения в группу',
     pendingInvitationsDescription: 'Эти люди были приглашены в вашу группу, и им было отправлено электронное письмо с приглашением. Они могут присоединиться к команде, приняв приглашение по электронной почте.',
     period: 'Период',
+    periodMinutes: 'Период, минут',
     periodValidityPrice: 'Период действия цены',
     permissions: 'Разрешения',
     permissionName: 'Имя Разрешения *',

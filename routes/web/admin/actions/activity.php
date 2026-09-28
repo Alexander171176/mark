@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Form\Form\FormController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
@@ -164,6 +165,12 @@ Route::put('/cms-pages/{cmsPage}/activity',
     [CmsPageController::class, 'updateActivity'])
     ->whereNumber('cmsPage')
     ->name('cmsPages.updateActivity');
+
+// конструктор форм
+Route::put('/forms/{form}/activity',
+    [FormController::class, 'updateActivity'])
+    ->whereNumber('form')
+    ->name('forms.updateActivity');
 
 // маркет
 Route::put('/market-companies/{marketCompany}/activity',

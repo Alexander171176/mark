@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Form\Form\FormController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
@@ -112,6 +113,11 @@ Route::delete('/school-bundle-prices/bulk-delete',
 Route::delete('/cms-pages/bulk-delete',
     [CmsPageController::class, 'bulkDestroy'])
     ->name('cmsPages.bulkDestroy');
+
+// конструктор форм
+Route::delete('/forms/bulk-delete',
+    [FormController::class, 'bulkDestroy'])
+    ->name('forms.bulkDestroy');
 
 // маркет
 Route::delete('/market-companies/bulk-delete',

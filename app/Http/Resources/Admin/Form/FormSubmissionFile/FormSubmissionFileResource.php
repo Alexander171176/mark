@@ -9,25 +9,33 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class FormSubmissionFileResource extends JsonResource
 {
     /**
-     * Полное административное представление файла заявки.
+     * Полное административное представление
+     * файла заявки.
      *
      * Resource не создаёт публичный URL файла.
-     * Доступ к файлу должен выполняться через
-     * защищённый download endpoint.
+     *
+     * Доступ к физическому файлу должен
+     * выполняться через отдельный защищённый
+     * download endpoint с проверкой прав.
+     *
+     * Resource работает только с заранее
+     * загруженными relations и не должен
+     * выполнять дополнительные SQL-запросы.
      *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         return [
-            /** Основные данные */
             'id' => (int) $this->id,
 
-            'form_submission_id' => (int) $this->form_submission_id,
+            'form_submission_id' =>
+                (int) $this->form_submission_id,
 
-            'form_field_id' => $this->form_field_id !== null
-                ? (int) $this->form_field_id
-                : null,
+            'form_field_id' =>
+                $this->form_field_id !== null
+                    ? (int) $this->form_field_id
+                    : null,
 
             /** Snapshot поля */
             'field_name' => $this->field_name,
@@ -52,18 +60,35 @@ class FormSubmissionFileResource extends JsonResource
             'size_kb' => $this->getSizeInKb(),
             'size_mb' => $this->getSizeInMb(),
 
+            /** Порядок */
             'sort' => (int) $this->sort,
 
+            /** Дополнительные метаданные */
             'metadata' => $this->metadata,
 
-            /** Исходное поле конструктора */
-            'field' => new FormFieldSharedResource(
-                $this->whenLoaded('field')
+            /**
+             * Исходное поле конструктора.
+             *
+             * Может быть null, если исходное
+             * поле было удалено после отправки.
+             */
+            'field' => $this->whenLoaded(
+                'field',
+                function () {
+                    return $this->field
+                        ? new FormFieldSharedResource(
+                            $this->field
+                        )
+                        : null;
+                }
             ),
 
-            /** Даты */
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            /** Timestamps */
+            'created_at' =>
+                $this->created_at?->toISOString(),
+
+            'updated_at' =>
+                $this->updated_at?->toISOString(),
         ];
     }
 }

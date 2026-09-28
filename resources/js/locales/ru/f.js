@@ -3,6 +3,7 @@ export default {
     failureReason: 'Причина не удачи',
     false: 'нет',
     feedback: 'Обратная связь',
+    fields: 'Поля',
     fighterBlue: 'Спортсмен в синем углу',
     fighterRed: 'Спортсмен в красном углу',
     file: 'Файл',

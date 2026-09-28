@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Form\FormFieldOption;
 
 use App\Models\Admin\Form\FormField\FormField;
+use App\Models\Admin\Form\FormFieldOption\FormFieldOption;
 use Illuminate\Foundation\Http\FormRequest as BaseFormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -55,11 +56,17 @@ class FormFieldOptionRequest extends BaseFormRequest
 
             $preparedTranslations[$locale] = [
                 'label' => $this->normalizeNullableString(
-                    Arr::get($translation, 'label')
+                    Arr::get(
+                        $translation,
+                        'label'
+                    )
                 ),
 
                 'description' => $this->normalizeNullableText(
-                    Arr::get($translation, 'description')
+                    Arr::get(
+                        $translation,
+                        'description'
+                    )
                 ),
             ];
         }
@@ -71,9 +78,9 @@ class FormFieldOptionRequest extends BaseFormRequest
             |--------------------------------------------------------------------------
             */
 
-            'form_field_id' => $this->filled('form_field_id')
-                ? (int) $this->input('form_field_id')
-                : null,
+            'form_field_id' => $this->normalizeNullableInteger(
+                $this->input('form_field_id')
+            ),
 
             'value' => $this->normalizeNullableString(
                 $this->input('value')
@@ -86,12 +93,18 @@ class FormFieldOptionRequest extends BaseFormRequest
             */
 
             'activity' => $this->toBoolean(
-                $this->input('activity', true),
+                $this->input(
+                    'activity',
+                    true
+                ),
                 true
             ),
 
             'is_default' => $this->toBoolean(
-                $this->input('is_default', false),
+                $this->input(
+                    'is_default',
+                    false
+                ),
                 false
             ),
 
@@ -124,9 +137,7 @@ class FormFieldOptionRequest extends BaseFormRequest
      */
     public function rules(): array
     {
-        $optionId = $this->route('formFieldOption')?->id
-            ?? $this->route('formFieldOption')
-            ?? $this->route('id');
+        $optionId = $this->resolveOptionId();
 
         $availableLocales = config(
             'app.available_locales',
@@ -143,6 +154,7 @@ class FormFieldOptionRequest extends BaseFormRequest
                 'form_field_id' => [
                     'required',
                     'integer',
+
                     Rule::exists(
                         'form_fields',
                         'id'
@@ -164,7 +176,9 @@ class FormFieldOptionRequest extends BaseFormRequest
                                 $this->input('form_field_id')
                             )
                         )
-                        ->ignore($optionId),
+                        ->ignore(
+                            $optionId
+                        ),
                 ],
 
                 /*
@@ -239,7 +253,18 @@ class FormFieldOptionRequest extends BaseFormRequest
     {
         return [
             function (Validator $validator) {
-                if ($validator->errors()->has('form_field_id')) {
+                /*
+                |--------------------------------------------------------------------------
+                | Если form_field_id уже не прошёл базовую валидацию,
+                | выполнять дополнительный запрос к БД нет необходимости.
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $validator
+                        ->errors()
+                        ->has('form_field_id')
+                ) {
                     return;
                 }
 
@@ -308,7 +333,7 @@ class FormFieldOptionRequest extends BaseFormRequest
             */
 
             'settings.array' =>
-                'Дополнительные настройки варианта должны быть массивом.',
+                'Дополнительные настройки варианта должны быть массивом или корректным JSON-объектом.',
 
             /*
             |--------------------------------------------------------------------------
@@ -339,12 +364,20 @@ class FormFieldOptionRequest extends BaseFormRequest
         ];
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Business validation
+    |--------------------------------------------------------------------------
+    */
+
     /**
      * Проверить, поддерживает ли выбранное поле
      * варианты значений.
      *
      * Варианты разрешены только для типов,
-     * у которых has_options = true.
+     * у которых:
+     *
+     * has_options = true
      */
     protected function validateFieldSupportsOptions(
         Validator $validator
@@ -353,7 +386,13 @@ class FormFieldOptionRequest extends BaseFormRequest
             'form_field_id'
         );
 
-        if (!$fieldId) {
+        if (
+            !is_int($fieldId)
+            && !(
+                is_string($fieldId)
+                && ctype_digit($fieldId)
+            )
+        ) {
             return;
         }
 
@@ -362,7 +401,9 @@ class FormFieldOptionRequest extends BaseFormRequest
                 'id',
                 'type',
             ])
-            ->find($fieldId);
+            ->find(
+                (int) $fieldId
+            );
 
         if (!$field) {
             return;
@@ -374,7 +415,10 @@ class FormFieldOptionRequest extends BaseFormRequest
 
         if (
             !is_array($typeConfig)
-            || !($typeConfig['has_options'] ?? false)
+            || !(
+                $typeConfig['has_options']
+                ?? false
+            )
         ) {
             $validator
                 ->errors()
@@ -384,6 +428,66 @@ class FormFieldOptionRequest extends BaseFormRequest
                 );
         }
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Route helpers
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Получить ID редактируемого варианта
+     * из параметров текущего маршрута.
+     *
+     * Поддерживает:
+     * - route model binding: FormFieldOption $formFieldOption;
+     * - числовой параметр {formFieldOption};
+     * - резервный параметр {id}.
+     */
+    protected function resolveOptionId(): ?int
+    {
+        $routeOption = $this->route(
+            'formFieldOption'
+        );
+
+        if (
+            $routeOption instanceof FormFieldOption
+        ) {
+            return (int) $routeOption->id;
+        }
+
+        if (
+            is_int($routeOption)
+            || (
+                is_string($routeOption)
+                && ctype_digit($routeOption)
+            )
+        ) {
+            return (int) $routeOption;
+        }
+
+        $routeId = $this->route(
+            'id'
+        );
+
+        if (
+            is_int($routeId)
+            || (
+                is_string($routeId)
+                && ctype_digit($routeId)
+            )
+        ) {
+            return (int) $routeId;
+        }
+
+        return null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Locale helpers
+    |--------------------------------------------------------------------------
+    */
 
     /**
      * Правила для разрешённых локалей приложения.
@@ -402,6 +506,12 @@ class FormFieldOptionRequest extends BaseFormRequest
 
         return $rules;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize helpers
+    |--------------------------------------------------------------------------
+    */
 
     /**
      * Нормализация nullable строки.
@@ -442,6 +552,39 @@ class FormFieldOptionRequest extends BaseFormRequest
     }
 
     /**
+     * Нормализация nullable integer.
+     *
+     * Важно:
+     * - null / пустая строка -> null;
+     * - корректное целое число -> int;
+     * - некорректное значение остаётся как есть,
+     *   чтобы Laravel вернул ошибку правила integer.
+     */
+    protected function normalizeNullableInteger(
+        mixed $value
+    ): mixed {
+        if (
+            is_null($value)
+            || $value === ''
+        ) {
+            return null;
+        }
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (
+            is_string($value)
+            && ctype_digit($value)
+        ) {
+            return (int) $value;
+        }
+
+        return $value;
+    }
+
+    /**
      * Приведение значения к boolean.
      */
     protected function toBoolean(
@@ -458,14 +601,22 @@ class FormFieldOptionRequest extends BaseFormRequest
     }
 
     /**
-     * Подготовить JSON-массив.
+     * Подготовить массив из массива или JSON-строки.
      *
-     * Принимает как массив, так и JSON-строку.
+     * Важно:
+     * - null / пустая строка -> null;
+     * - массив -> массив;
+     * - корректный JSON-массив/объект -> массив;
+     * - некорректный JSON остаётся исходным значением,
+     *   чтобы правило "array" вернуло ошибку валидации.
      */
     protected function prepareArrayValue(
         mixed $value
-    ): ?array {
-        if (is_null($value) || $value === '') {
+    ): mixed {
+        if (
+            is_null($value)
+            || $value === ''
+        ) {
             return null;
         }
 
@@ -479,11 +630,32 @@ class FormFieldOptionRequest extends BaseFormRequest
                 true
             );
 
-            return is_array($decoded)
-                ? $decoded
-                : null;
+            if (
+                json_last_error()
+                === JSON_ERROR_NONE
+                && is_array($decoded)
+            ) {
+                return $decoded;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Некорректный JSON
+            |--------------------------------------------------------------------------
+            |
+            | Не превращаем значение в null.
+            |
+            | Оставляем исходную строку, чтобы правило:
+            |
+            | settings => nullable|array
+            |
+            | вернуло ошибку валидации.
+            |
+            */
+
+            return $value;
         }
 
-        return null;
+        return $value;
     }
 }

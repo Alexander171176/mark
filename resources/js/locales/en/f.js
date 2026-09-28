@@ -3,6 +3,7 @@ export default {
     failureReason: 'The reason for failure',
     false: 'no',
     feedback: 'Feedback',
+    fields: 'Fields',
     fighterBlue: 'The athlete in the blue corner',
     fighterRed: 'The athlete in the red corner',
     file: 'File',

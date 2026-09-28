@@ -44,5 +44,6 @@ export default {
     notShowSeo: 'Не показывать свои поля SEO',
     notVerified: 'Не подтверждён',
     number: 'Число',
+    numberOfShipments: 'Количество отправок',
     numberOrder: 'Номер заказа',
 }

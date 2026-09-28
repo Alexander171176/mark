@@ -78,6 +78,9 @@ class Form extends Model
         'auth_required' => 'boolean',
 
         'settings' => 'array',
+
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /*
@@ -91,7 +94,10 @@ class Form extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
 
     /**
@@ -99,19 +105,30 @@ class Form extends Model
      */
     public function translations(): HasMany
     {
-        return $this->hasMany(FormTranslation::class);
+        return $this->hasMany(
+            FormTranslation::class,
+            'form_id'
+        );
     }
 
     /**
      * Перевод для текущей локали приложения.
      *
-     * В отличие от translationOrFallback(),
-     * fallback здесь намеренно не применяется.
+     * Relation оставляем для публичных
+     * и внешних сценариев.
+     *
+     * Admin Index использует translations
+     * с заранее ограниченным набором локалей.
      */
     public function translation(): HasOne
     {
-        return $this->hasOne(FormTranslation::class)
-            ->where('locale', app()->getLocale());
+        return $this->hasOne(
+            FormTranslation::class,
+            'form_id'
+        )->where(
+            'locale',
+            app()->getLocale()
+        );
     }
 
     /**
@@ -119,9 +136,18 @@ class Form extends Model
      */
     public function fields(): HasMany
     {
-        return $this->hasMany(FormField::class)
-            ->orderBy('sort')
-            ->orderBy('id');
+        return $this->hasMany(
+            FormField::class,
+            'form_id'
+        )
+            ->orderBy(
+                'sort',
+                'asc'
+            )
+            ->orderBy(
+                'id',
+                'asc'
+            );
     }
 
     /**
@@ -129,10 +155,22 @@ class Form extends Model
      */
     public function activeFields(): HasMany
     {
-        return $this->hasMany(FormField::class)
-            ->where('activity', true)
-            ->orderBy('sort')
-            ->orderBy('id');
+        return $this->hasMany(
+            FormField::class,
+            'form_id'
+        )
+            ->where(
+                'activity',
+                true
+            )
+            ->orderBy(
+                'sort',
+                'asc'
+            )
+            ->orderBy(
+                'id',
+                'asc'
+            );
     }
 
     /**
@@ -140,7 +178,10 @@ class Form extends Model
      */
     public function submissions(): HasMany
     {
-        return $this->hasMany(FormSubmission::class);
+        return $this->hasMany(
+            FormSubmission::class,
+            'form_id'
+        );
     }
 
     /*
@@ -165,12 +206,15 @@ class Form extends Model
         ?string $fallbackLocale = null
     ): ?FormTranslation {
         $locale ??= app()->getLocale();
+
         $fallbackLocale ??= config(
             'app.fallback_locale',
             'ru'
         );
 
-        $translations = $this->relationLoaded('translations')
+        $translations = $this->relationLoaded(
+            'translations'
+        )
             ? $this->translations
             : $this->translations()->get();
 
@@ -212,7 +256,11 @@ class Form extends Model
         ?string $locale = null,
         ?string $fallbackLocale = null
     ): ?FormTranslation {
-        if (!$this->relationLoaded('translations')) {
+        if (
+            !$this->relationLoaded(
+                'translations'
+            )
+        ) {
             return null;
         }
 
@@ -223,20 +271,22 @@ class Form extends Model
             'ru'
         );
 
-        $translation = $this->translations->firstWhere(
-            'locale',
-            $locale
-        );
+        $translation = $this->translations
+            ->firstWhere(
+                'locale',
+                $locale
+            );
 
         if ($translation) {
             return $translation;
         }
 
         if ($fallbackLocale !== $locale) {
-            $fallback = $this->translations->firstWhere(
-                'locale',
-                $fallbackLocale
-            );
+            $fallback = $this->translations
+                ->firstWhere(
+                    'locale',
+                    $fallbackLocale
+                );
 
             if ($fallback) {
                 return $fallback;
@@ -269,17 +319,20 @@ class Form extends Model
 
     public function isDraft(): bool
     {
-        return $this->status === self::STATUS_DRAFT;
+        return $this->status ===
+            self::STATUS_DRAFT;
     }
 
     public function isPublished(): bool
     {
-        return $this->status === self::STATUS_PUBLISHED;
+        return $this->status ===
+            self::STATUS_PUBLISHED;
     }
 
     public function isArchived(): bool
     {
-        return $this->status === self::STATUS_ARCHIVED;
+        return $this->status ===
+            self::STATUS_ARCHIVED;
     }
 
     /*
@@ -291,10 +344,11 @@ class Form extends Model
     /**
      * Только активные формы.
      */
-    public function scopeActive(Builder $query): Builder
-    {
+    public function scopeActive(
+        Builder $query
+    ): Builder {
         return $query->where(
-            'activity',
+            'forms.activity',
             true
         );
     }
@@ -302,10 +356,11 @@ class Form extends Model
     /**
      * Только опубликованные формы.
      */
-    public function scopePublished(Builder $query): Builder
-    {
+    public function scopePublished(
+        Builder $query
+    ): Builder {
         return $query->where(
-            'status',
+            'forms.status',
             self::STATUS_PUBLISHED
         );
     }
@@ -313,10 +368,11 @@ class Form extends Model
     /**
      * Только черновики.
      */
-    public function scopeDraft(Builder $query): Builder
-    {
+    public function scopeDraft(
+        Builder $query
+    ): Builder {
         return $query->where(
-            'status',
+            'forms.status',
             self::STATUS_DRAFT
         );
     }
@@ -324,19 +380,22 @@ class Form extends Model
     /**
      * Только архивные формы.
      */
-    public function scopeArchived(Builder $query): Builder
-    {
+    public function scopeArchived(
+        Builder $query
+    ): Builder {
         return $query->where(
-            'status',
+            'forms.status',
             self::STATUS_ARCHIVED
         );
     }
 
     /**
-     * Формы, доступные в публичной части приложения.
+     * Формы, доступные
+     * в публичной части приложения.
      */
-    public function scopeForPublic(Builder $query): Builder
-    {
+    public function scopeForPublic(
+        Builder $query
+    ): Builder {
         return $query
             ->active()
             ->published();
@@ -350,7 +409,7 @@ class Form extends Model
         string $code
     ): Builder {
         return $query->where(
-            'code',
+            'forms.code',
             $code
         );
     }
@@ -363,152 +422,557 @@ class Form extends Model
         int $userId
     ): Builder {
         return $query->where(
-            'user_id',
+            'forms.user_id',
             $userId
         );
     }
 
     /**
-     * Поиск по системному коду и переводимым полям.
+     * Сортировка по умолчанию.
      */
-    public function scopeSearch(
-        Builder $query,
-        ?string $search,
-        ?string $locale = null
+    public function scopeOrdered(
+        Builder $query
     ): Builder {
-        $search = trim((string) $search);
-
-        if ($search === '') {
-            return $query;
-        }
-
-        $locale ??= app()->getLocale();
-
-        return $query->where(function (Builder $query) use (
-            $search,
-            $locale
-        ) {
-            $query
-                ->where(
-                    'code',
-                    'like',
-                    "%{$search}%"
-                )
-                ->orWhereHas(
-                    'translations',
-                    function (Builder $translationQuery) use (
-                        $search,
-                        $locale
-                    ) {
-                        $translationQuery
-                            ->where(
-                                'locale',
-                                $locale
-                            )
-                            ->where(
-                                function (Builder $query) use (
-                                    $search
-                                ) {
-                                    $query
-                                        ->where(
-                                            'title',
-                                            'like',
-                                            "%{$search}%"
-                                        )
-                                        ->orWhere(
-                                            'subtitle',
-                                            'like',
-                                            "%{$search}%"
-                                        )
-                                        ->orWhere(
-                                            'description',
-                                            'like',
-                                            "%{$search}%"
-                                        );
-                                }
-                            );
-                    }
-                );
-        });
+        return $query
+            ->orderBy(
+                'forms.sort',
+                'asc'
+            )
+            ->orderByDesc(
+                'forms.id'
+            );
     }
 
     /**
-     * Сортировка форм.
+     * Сортировка и фильтрация
+     * по параметру списка.
+     *
+     * Контракт совпадает с остальными
+     * административными сущностями:
+     *
+     * idAsc / idDesc
+     * sortAsc / sortDesc
+     * titleAsc / titleDesc
+     * codeAsc / codeDesc
+     * activityAsc / activityDesc
+     * activity / inactive
+     * statusAsc / statusDesc
+     * statusDraft / statusPublished / statusArchived
+     * fieldsAsc / fieldsDesc
+     * submissionsAsc / submissionsDesc
+     * ownerNameAsc / ownerNameDesc
+     * ownerEmailAsc / ownerEmailDesc
+     * createdAtAsc / createdAtDesc
+     * dateAsc / dateDesc
+     * updatedAtAsc / updatedAtDesc
      */
     public function scopeSortByParam(
         Builder $query,
-        ?string $sortBy = null,
-        string $direction = 'asc',
+        ?string $sort,
         ?string $locale = null
     ): Builder {
-        $direction = strtolower($direction) === 'desc'
-            ? 'desc'
-            : 'asc';
+        $locale = $locale
+            ?: app()->getLocale();
 
-        $locale ??= app()->getLocale();
+        return match ($sort) {
+            /*
+            |--------------------------------------------------------------------------
+            | ID
+            |--------------------------------------------------------------------------
+            */
 
-        return match ($sortBy) {
-            'id' => $query->orderBy(
+            'idAsc' => $query->orderBy(
                 'forms.id',
-                $direction
+                'asc'
             ),
 
-            'code' => $query->orderBy(
-                'forms.code',
-                $direction
+            'idDesc' => $query->orderBy(
+                'forms.id',
+                'desc'
             ),
 
-            'status' => $query->orderBy(
-                'forms.status',
-                $direction
-            ),
+            /*
+            |--------------------------------------------------------------------------
+            | Sort
+            |--------------------------------------------------------------------------
+            */
 
-            'activity' => $query->orderBy(
-                'forms.activity',
-                $direction
-            ),
-
-            'sort' => $query->orderBy(
-                'forms.sort',
-                $direction
-            ),
-
-            'created_at' => $query->orderBy(
-                'forms.created_at',
-                $direction
-            ),
-
-            'updated_at' => $query->orderBy(
-                'forms.updated_at',
-                $direction
-            ),
-
-            'title' => $query
-                ->leftJoin(
-                    'form_translations as ft_sort',
-                    function ($join) use ($locale) {
-                        $join
-                            ->on(
-                                'ft_sort.form_id',
-                                '=',
-                                'forms.id'
-                            )
-                            ->where(
-                                'ft_sort.locale',
-                                '=',
-                                $locale
-                            );
-                    }
-                )
-                ->select('forms.*')
+            'sortAsc' => $query
                 ->orderBy(
-                    'ft_sort.title',
-                    $direction
+                    'forms.sort',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
                 ),
 
-            default => $query
-                ->orderBy('forms.sort')
-                ->orderBy('forms.id'),
+            'sortDesc' => $query
+                ->orderBy(
+                    'forms.sort',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Название
+            |--------------------------------------------------------------------------
+            */
+
+            'titleAsc' => $query
+                ->leftJoin(
+                    'form_translations as sort_translations',
+                    function ($join) use ($locale) {
+                        $join->on(
+                            'forms.id',
+                            '=',
+                            'sort_translations.form_id'
+                        )->where(
+                            'sort_translations.locale',
+                            '=',
+                            $locale
+                        );
+                    }
+                )
+                ->addSelect(
+                    'forms.*'
+                )
+                ->orderBy(
+                    'sort_translations.title',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'titleDesc' => $query
+                ->leftJoin(
+                    'form_translations as sort_translations',
+                    function ($join) use ($locale) {
+                        $join->on(
+                            'forms.id',
+                            '=',
+                            'sort_translations.form_id'
+                        )->where(
+                            'sort_translations.locale',
+                            '=',
+                            $locale
+                        );
+                    }
+                )
+                ->addSelect(
+                    'forms.*'
+                )
+                ->orderBy(
+                    'sort_translations.title',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Системный код
+            |--------------------------------------------------------------------------
+            */
+
+            'codeAsc' => $query
+                ->orderBy(
+                    'forms.code',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'codeDesc' => $query
+                ->orderBy(
+                    'forms.code',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Активность
+            |--------------------------------------------------------------------------
+            */
+
+            'activityAsc' => $query
+                ->orderBy(
+                    'forms.activity',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'activityDesc' => $query
+                ->orderBy(
+                    'forms.activity',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'activity' => $query
+                ->where(
+                    'forms.activity',
+                    true
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'inactive' => $query
+                ->where(
+                    'forms.activity',
+                    false
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Статус
+            |--------------------------------------------------------------------------
+            */
+
+            'statusAsc' => $query
+                ->orderBy(
+                    'forms.status',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'statusDesc' => $query
+                ->orderBy(
+                    'forms.status',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'statusDraft' => $query
+                ->where(
+                    'forms.status',
+                    self::STATUS_DRAFT
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'statusPublished' => $query
+                ->where(
+                    'forms.status',
+                    self::STATUS_PUBLISHED
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'statusArchived' => $query
+                ->where(
+                    'forms.status',
+                    self::STATUS_ARCHIVED
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Количество полей
+            |--------------------------------------------------------------------------
+            */
+
+            'fieldsAsc' => $query
+                ->withCount('fields')
+                ->orderBy(
+                    'fields_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'fieldsDesc' => $query
+                ->withCount('fields')
+                ->orderBy(
+                    'fields_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Количество заявок
+            |--------------------------------------------------------------------------
+            */
+
+            'submissionsAsc' => $query
+                ->withCount('submissions')
+                ->orderBy(
+                    'submissions_count',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'submissionsDesc' => $query
+                ->withCount('submissions')
+                ->orderBy(
+                    'submissions_count',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Владелец
+            |--------------------------------------------------------------------------
+            */
+
+            'ownerNameAsc' => $query
+                ->leftJoin(
+                    'users as sort_users',
+                    'forms.user_id',
+                    '=',
+                    'sort_users.id'
+                )
+                ->addSelect(
+                    'forms.*'
+                )
+                ->orderBy(
+                    'sort_users.name',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'ownerNameDesc' => $query
+                ->leftJoin(
+                    'users as sort_users',
+                    'forms.user_id',
+                    '=',
+                    'sort_users.id'
+                )
+                ->addSelect(
+                    'forms.*'
+                )
+                ->orderBy(
+                    'sort_users.name',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'ownerEmailAsc' => $query
+                ->leftJoin(
+                    'users as sort_users',
+                    'forms.user_id',
+                    '=',
+                    'sort_users.id'
+                )
+                ->addSelect(
+                    'forms.*'
+                )
+                ->orderBy(
+                    'sort_users.email',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'ownerEmailDesc' => $query
+                ->leftJoin(
+                    'users as sort_users',
+                    'forms.user_id',
+                    '=',
+                    'sort_users.id'
+                )
+                ->addSelect(
+                    'forms.*'
+                )
+                ->orderBy(
+                    'sort_users.email',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Дата создания
+            |--------------------------------------------------------------------------
+            */
+
+            'createdAtAsc',
+            'dateAsc' => $query
+                ->orderBy(
+                    'forms.created_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'createdAtDesc',
+            'dateDesc' => $query
+                ->orderBy(
+                    'forms.created_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Дата обновления
+            |--------------------------------------------------------------------------
+            */
+
+            'updatedAtAsc' => $query
+                ->orderBy(
+                    'forms.updated_at',
+                    'asc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            'updatedAtDesc' => $query
+                ->orderBy(
+                    'forms.updated_at',
+                    'desc'
+                )
+                ->orderByDesc(
+                    'forms.id'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Сортировка по умолчанию
+            |--------------------------------------------------------------------------
+            */
+
+            default => $query->ordered(),
         };
+    }
+
+    /**
+     * Поиск для Admin Index.
+     *
+     * Семантика должна совпадать
+     * с локальным поиском Index.vue.
+     */
+    public function scopeSearch(
+        Builder $query,
+        ?string $term,
+        ?string $locale = null
+    ): Builder {
+        $term = trim(
+            (string) $term
+        );
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $locale = $locale
+            ?: app()->getLocale();
+
+        return $query->where(
+            function (Builder $q) use (
+                $term,
+                $locale
+            ) {
+                $q->where(
+                    'forms.code',
+                    'like',
+                    "%{$term}%"
+                )
+                    ->orWhere(
+                        'forms.status',
+                        'like',
+                        "%{$term}%"
+                    )
+                    ->orWhereHas(
+                        'translations',
+                        function (
+                            Builder $translationQuery
+                        ) use (
+                            $term,
+                            $locale
+                        ) {
+                            $translationQuery
+                                ->where(
+                                    'locale',
+                                    $locale
+                                )
+                                ->where(
+                                    function (
+                                        Builder $searchQuery
+                                    ) use ($term) {
+                                        $searchQuery
+                                            ->where(
+                                                'title',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'subtitle',
+                                                'like',
+                                                "%{$term}%"
+                                            )
+                                            ->orWhere(
+                                                'description',
+                                                'like',
+                                                "%{$term}%"
+                                            );
+                                    }
+                                );
+                        }
+                    )
+                    ->orWhereHas(
+                        'user',
+                        function (
+                            Builder $userQuery
+                        ) use ($term) {
+                            $userQuery
+                                ->where(
+                                    'name',
+                                    'like',
+                                    "%{$term}%"
+                                )
+                                ->orWhere(
+                                    'email',
+                                    'like',
+                                    "%{$term}%"
+                                );
+                        }
+                    );
+            }
+        );
     }
 }

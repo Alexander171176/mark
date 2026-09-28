@@ -67,4 +67,5 @@ export default {
     dueAt: 'Deadline',
     duplicates: 'Duplicates',
     duration: 'Duration',
+    dynamicContactForms: 'Dynamic contact forms',
 }

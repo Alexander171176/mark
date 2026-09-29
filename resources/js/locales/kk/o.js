@@ -5,6 +5,7 @@ export default {
     online: 'онлайн',
     onlyText: 'Тек латын әріптері, сандар және астын сызу сызықтары',
     openLink: 'Сілтемені ашу',
+    optional: 'Қосымша',
     options: 'Опциялары',
     optionsOptions: 'Опциялар',
     optionPrices: 'Опцион бағалары',

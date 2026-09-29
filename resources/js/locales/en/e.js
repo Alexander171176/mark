@@ -1,5 +1,6 @@
 export default {
     edit: 'Edit',
+    editable: 'Editable',
     editingFile: 'Editing a file: ',
     editArticle: 'Edit the Article',
     editAssignment: 'Edit Task',

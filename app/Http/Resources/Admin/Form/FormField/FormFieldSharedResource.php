@@ -51,6 +51,16 @@ class FormFieldSharedResource extends JsonResource
                 fn () => (int) $this->options_count
             ),
 
+            'submission_values_count' => $this->when(
+                isset($this->submission_values_count),
+                fn () => (int) $this->submission_values_count
+            ),
+
+            'submission_files_count' => $this->when(
+                isset($this->submission_files_count),
+                fn () => (int) $this->submission_files_count
+            ),
+
             /** Перевод текущей локали с fallback */
             'translation' => $translation
                 ? new FormFieldTranslationResource(

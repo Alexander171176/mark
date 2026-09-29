@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Form\Form\FormController;
+use App\Http\Controllers\Admin\Form\FormField\FormFieldController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
@@ -143,6 +145,15 @@ Route::put('/school-subscription-plans/update-sort-bulk',
 Route::put('/cms-pages/update-sort-bulk',
     [CmsPageController::class, 'updateSortBulk'])
     ->name('cmsPages.updateSortBulk');
+
+// конструктор форм
+Route::put('/forms/update-sort-bulk',
+    [FormController::class, 'updateSortBulk'])
+    ->name('forms.updateSortBulk');
+
+Route::put('/form-fields/update-sort-bulk',
+    [FormFieldController::class, 'updateSortBulk'])
+    ->name('formFields.updateSortBulk');
 
 // маркет
 Route::put('/market-companies/update-sort-bulk',

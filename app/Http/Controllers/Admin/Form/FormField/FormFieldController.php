@@ -28,6 +28,7 @@ class FormFieldController extends BaseFormAdminController
     use HasFormTranslationsTrait;
     use HasFormActivityTrait;
     use HasFormSortingTrait;
+
     /**
      * Основная модель контроллера.
      */
@@ -64,6 +65,11 @@ class FormFieldController extends BaseFormAdminController
      * - frontend;
      * - server;
      * - auto.
+     *
+     * Дополнительно поддерживается фильтрация
+     * по конкретной форме:
+     *
+     * /admin/form-fields?form_id=5
      */
     public function index(
         Request $request
@@ -111,12 +117,51 @@ class FormFieldController extends BaseFormAdminController
 
         /*
         |--------------------------------------------------------------------------
-        | Определение режима обработки
+        | Фильтр по форме
         |--------------------------------------------------------------------------
         */
 
-        $fieldsCount = $this->baseQuery()
-            ->count();
+        $formId = $request->filled('form_id')
+            ? (int) $request->query('form_id')
+            : null;
+
+        $form = null;
+
+        /*
+         * Если передан form_id, сразу проверяем:
+         * - существует ли форма;
+         * - доступна ли она текущему пользователю.
+         *
+         * Одновременно подготавливаем данные формы
+         * для FormSharedResource.
+         */
+        if ($formId) {
+            $form = $this->formQuery(
+                $currentLocale
+            )
+                ->withCount([
+                    'fields',
+                    'submissions',
+                ])
+                ->findOrFail(
+                    $formId
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Определение режима обработки
+        |--------------------------------------------------------------------------
+        |
+        | При наличии form_id считаем только поля
+        | выбранной формы.
+        |
+        */
+
+        $fieldsCount = $this->applyFormFilter(
+            $this->baseQuery(),
+            $formId
+        )->count();
 
         $useServerProcessing = app(
             ProcessingModeService::class
@@ -132,11 +177,12 @@ class FormFieldController extends BaseFormAdminController
                 useServerProcessing: $useServerProcessing,
                 perPage: $perPage,
                 sort: $sortParam,
-                search: $search
+                search: $search,
+                formId: $formId
             );
 
             return Inertia::render(
-                'Admin/Form/FormField/Index',
+                'Admin/Form/FormFields/Index',
                 [
                     'currentLocale' =>
                         $currentLocale,
@@ -177,6 +223,21 @@ class FormFieldController extends BaseFormAdminController
 
                     /*
                     |--------------------------------------------------------------------------
+                    | Родительская форма
+                    |--------------------------------------------------------------------------
+                    */
+
+                    'form' => $form
+                        ? new FormSharedResource(
+                            $form
+                        )
+                        : null,
+
+                    'formId' =>
+                        $formId,
+
+                    /*
+                    |--------------------------------------------------------------------------
                     | Текущее состояние списка
                     |--------------------------------------------------------------------------
                     */
@@ -204,12 +265,16 @@ class FormFieldController extends BaseFormAdminController
                 'Ошибка загрузки списка полей форм: '
                 . $e->getMessage(),
                 [
-                    'exception' => $e,
+                    'form_id' =>
+                        $formId,
+
+                    'exception' =>
+                        $e,
                 ]
             );
 
             return Inertia::render(
-                'Admin/Form/FormField/Index',
+                'Admin/Form/FormFields/Index',
                 [
                     'currentLocale' =>
                         $currentLocale,
@@ -231,6 +296,15 @@ class FormFieldController extends BaseFormAdminController
 
                     'fields' => [],
                     'fieldsCount' => 0,
+
+                    'form' => $form
+                        ? new FormSharedResource(
+                            $form
+                        )
+                        : null,
+
+                    'formId' =>
+                        $formId,
 
                     'sortParam' =>
                         $sortParam,
@@ -288,14 +362,32 @@ class FormFieldController extends BaseFormAdminController
                 );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Доступные формы
+        |--------------------------------------------------------------------------
+        |
+        | Нужны также в случае, если Create открыт
+        | без предварительно выбранного form_id.
+        |
+        */
+
+        $forms = $this->formsForSelect(
+            $currentLocale
+        );
+
         return Inertia::render(
-            'Admin/Form/FormField/Create',
+            'Admin/Form/FormFields/Create',
             [
                 'form' => $form
                     ? new FormSharedResource(
                         $form
                     )
                     : null,
+
+                'forms' => FormSharedResource::collection(
+                    $forms
+                ),
 
                 'currentLocale' =>
                     $currentLocale,
@@ -476,7 +568,7 @@ class FormFieldController extends BaseFormAdminController
             );
 
         return Inertia::render(
-            'Admin/Form/FormField/Show',
+            'Admin/Form/FormFields/Show',
             [
                 'field' => new FormFieldResource(
                     $formField
@@ -533,8 +625,24 @@ class FormFieldController extends BaseFormAdminController
                 $formField
             );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Доступные формы
+        |--------------------------------------------------------------------------
+        |
+        | Backend допускает изменение form_id,
+        | поэтому Edit должен получить список форм,
+        | в которые пользователь имеет право
+        | переместить поле.
+        |
+        */
+
+        $forms = $this->formsForSelect(
+            $currentLocale
+        );
+
         return Inertia::render(
-            'Admin/Form/FormField/Edit',
+            'Admin/Form/FormFields/Edit',
             [
                 'field' => new FormFieldResource(
                     $formField
@@ -545,6 +653,10 @@ class FormFieldController extends BaseFormAdminController
                         $formField->form
                     )
                     : null,
+
+                'forms' => FormSharedResource::collection(
+                    $forms
+                ),
 
                 'currentLocale' =>
                     $currentLocale,
@@ -661,7 +773,8 @@ class FormFieldController extends BaseFormAdminController
                 . ': '
                 . $e->getMessage(),
                 [
-                    'exception' => $e,
+                    'exception' =>
+                        $e,
                 ]
             );
 
@@ -704,9 +817,13 @@ class FormFieldController extends BaseFormAdminController
                     | Исторические значения и файлы заявок
                     | сохраняются.
                     |
-                    | Их field_id становится NULL согласно
-                    | внешним ключам БД, а snapshot-поля
-                    | field_name / field_type / field_label
+                    | Их form_field_id становится NULL согласно
+                    | внешним ключам БД, а snapshot-поля:
+                    |
+                    | field_name
+                    | field_type
+                    | field_label
+                    |
                     | продолжают хранить исторические данные.
                     |
                     */
@@ -734,7 +851,8 @@ class FormFieldController extends BaseFormAdminController
                 . ': '
                 . $e->getMessage(),
                 [
-                    'exception' => $e,
+                    'exception' =>
+                        $e,
                 ]
             );
 
@@ -805,7 +923,7 @@ class FormFieldController extends BaseFormAdminController
                     | на удаление при наличии исторических
                     | submission values/files.
                     |
-                    | Их field_id становится NULL,
+                    | Их form_field_id становится NULL,
                     | snapshot-данные сохраняются.
                     |
                     */
@@ -890,8 +1008,10 @@ class FormFieldController extends BaseFormAdminController
      * Формы, доступные текущему пользователю.
      *
      * Используется при:
+     * - Index;
      * - Create;
      * - Store;
+     * - Edit;
      * - Update;
      * - смене form_id.
      */
@@ -932,19 +1052,22 @@ class FormFieldController extends BaseFormAdminController
      * - родительская форма;
      * - current + fallback переводы формы;
      * - владелец формы;
-     * - количество вариантов поля.
+     * - количество вариантов поля;
+     * - количество исторических значений;
+     * - количество исторических файлов.
      *
      * Resource не должен выполнять
      * дополнительные SQL-запросы.
      */
     private function indexQuery(
-        string $locale
+        string $locale,
+        ?int $formId = null
     ): Builder {
         $locales = $this->resourceLocales(
             $locale
         );
 
-        return $this->baseQuery()
+        $query = $this->baseQuery()
             ->with([
                 'translations' => fn ($query) => $query
                     ->whereIn(
@@ -966,7 +1089,34 @@ class FormFieldController extends BaseFormAdminController
             ])
             ->withCount([
                 'options',
+                'submissionValues',
+                'submissionFiles',
             ]);
+
+        return $this->applyFormFilter(
+            $query,
+            $formId
+        );
+    }
+
+    /**
+     * Применить фильтр по родительской форме.
+     *
+     * Если formId не передан, запрос
+     * остаётся без дополнительного ограничения.
+     */
+    private function applyFormFilter(
+        Builder $query,
+        ?int $formId
+    ): Builder {
+        if ($formId) {
+            $query->where(
+                'form_fields.form_id',
+                $formId
+            );
+        }
+
+        return $query;
     }
 
     /**
@@ -978,7 +1128,7 @@ class FormFieldController extends BaseFormAdminController
      * - используется серверная пагинация.
      *
      * Frontend:
-     * - сервер отдаёт весь список;
+     * - сервер отдаёт весь отфильтрованный список;
      * - поиск, сортировка, фильтрация
      *   и пагинация выполняются Vue.
      */
@@ -987,10 +1137,12 @@ class FormFieldController extends BaseFormAdminController
         bool $useServerProcessing,
         int $perPage,
         string $sort,
-        string $search = ''
+        string $search = '',
+        ?int $formId = null
     ) {
         $query = $this->indexQuery(
-            $locale
+            $locale,
+            $formId
         );
 
         if ($useServerProcessing) {
@@ -1070,10 +1222,12 @@ class FormFieldController extends BaseFormAdminController
     }
 
     /**
-     * Подготовить родительскую форму
+     * Подготовить конкретную родительскую форму
      * для FormSharedResource.
      *
-     * Используется на Create.
+     * Используется:
+     * - Index с form_id;
+     * - Create с form_id.
      */
     private function formQuery(
         string $locale
@@ -1092,6 +1246,42 @@ class FormFieldController extends BaseFormAdminController
 
                 'user:id,name,email,profile_photo_path',
             ]);
+    }
+
+    /**
+     * Получить доступные формы
+     * для выбора родительской формы.
+     *
+     * Используется:
+     * - Create;
+     * - Edit.
+     *
+     * Загружаются только данные,
+     * необходимые FormSharedResource.
+     */
+    private function formsForSelect(
+        string $locale
+    ) {
+        $locales = $this->resourceLocales(
+            $locale
+        );
+
+        return $this->accessibleFormsQuery()
+            ->with([
+                'translations' => fn ($query) => $query
+                    ->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                'user:id,name,email,profile_photo_path',
+            ])
+            ->withCount([
+                'fields',
+                'submissions',
+            ])
+            ->ordered()
+            ->get();
     }
 
     /*

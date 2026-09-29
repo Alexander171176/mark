@@ -1,5 +1,6 @@
 export default {
     edit: 'Өңдеу',
+    editable: 'Өңдеуге болады',
     editingFile: 'Файлды өңдеу: ',
     editArticle: 'Мақаланы өңдеу',
     editAssignment: 'Тапсырманы өңдеу',

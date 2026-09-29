@@ -89,11 +89,11 @@ const updateSort = (event) => {
 
             <!-- Код -->
             <option value="codeAsc">
-                Code A→Z
+                {{ t('code') }} A→Z
             </option>
 
             <option value="codeDesc">
-                Code Z→A
+                {{ t('code') }} Z→A
             </option>
 
             <option disabled>
@@ -148,20 +148,20 @@ const updateSort = (event) => {
 
             <!-- Количество полей -->
             <option value="fieldsCountDesc">
-                Поля 9→0
+                {{ t('fields') }} 9→0
             </option>
 
             <option value="fieldsCountAsc">
-                Поля 0→9
+                {{ t('fields') }} 0→9
             </option>
 
             <!-- Количество заявок -->
             <option value="submissionsCountDesc">
-                Заявки 9→0
+                {{ t('submissions') }} 9→0
             </option>
 
             <option value="submissionsCountAsc">
-                Заявки 0→9
+                {{ t('submissions') }} 0→9
             </option>
 
             <option disabled>

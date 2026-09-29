@@ -9,6 +9,7 @@ export default {
     ratio: 'Қатынас',
     readme: 'Нұсқаулық',
     readMore: 'Толығырақ оқу',
+    readOnly: 'Тек оқуға',
     recentlyViewedProducts: 'Қаралған өнімдер',
     recommended: 'Ұсынылған',
     recover: 'Қалпына келтіру',

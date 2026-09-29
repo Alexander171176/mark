@@ -24,6 +24,17 @@ const { t } = useI18n();
             :active="route().current('admin.cmsPages.*')">
             {{ t('pages') }}
         </ResponsiveNavLink>
+        <!-- Админские маршруты Конструктора форм -->
+        <ResponsiveNavLink
+            :href="route('admin.forms.index')"
+            :active="route().current('admin.forms.*')">
+            {{ t('forms') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
+            :href="route('admin.formFields.index')"
+            :active="route().current('admin.formFields.*')">
+            {{ t('formFields') }}
+        </ResponsiveNavLink>
         <!-- Админские маршруты магазина -->
         <ResponsiveNavLink
             :href="route('admin.marketCompanies.index')"

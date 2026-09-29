@@ -5,6 +5,7 @@ export default {
     online: 'онлайн',
     onlyText: 'Только латинские буквы, цифры и нижнее подчёркивание',
     openLink: 'Открыть ссылку',
+    optional: 'Необязательные',
     options: 'Опции',
     optionsOptions: 'Варианты опций',
     optionPrices: 'Цены варианта',

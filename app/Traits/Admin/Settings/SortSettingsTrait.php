@@ -411,6 +411,16 @@ trait SortSettingsTrait
         );
     }
 
+    /** Обновляет сортировку элементов в полях форм */
+    public function updateAdminSortFormFields(
+        UpdateSortRequest $request
+    ): RedirectResponse {
+        return $this->sortSetting(
+            $request,
+            'adminFormFieldsDefaultSort'
+        );
+    }
+
     /** Обновляет сортировку элементов в компаниях */
     public function updateAdminSortMarketCompanies(
         UpdateSortRequest $request

@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Form\Form\FormController;
+use App\Http\Controllers\Admin\Form\FormField\FormFieldController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
@@ -152,6 +153,10 @@ Route::put('/cms-pages/bulk-activity',
 Route::put('/forms/bulk-activity',
     [FormController::class, 'bulkUpdateActivity'])
     ->name('forms.bulkUpdateActivity');
+
+Route::put('/form-fields/bulk-activity',
+    [FormFieldController::class, 'bulkUpdateActivity'])
+    ->name('formFields.bulkUpdateActivity');
 
 // маркет
 Route::put('/market-companies/bulk-activity',

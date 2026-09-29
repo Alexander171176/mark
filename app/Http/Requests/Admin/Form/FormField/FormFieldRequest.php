@@ -340,8 +340,6 @@ class FormFieldRequest extends BaseFormRequest
                     Rule::requiredIf(
                         fn () => $this->input('type') !== 'hidden'
                     ),
-
-                    'nullable',
                     'string',
                     'max:255',
                 ],

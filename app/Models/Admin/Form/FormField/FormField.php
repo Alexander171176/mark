@@ -512,6 +512,9 @@ class FormField extends Model
     /**
      * Сортировка по умолчанию.
      */
+    /**
+     * Сортировка по умолчанию.
+     */
     public function scopeOrdered(
         Builder $query
     ): Builder {
@@ -520,9 +523,8 @@ class FormField extends Model
                 'form_fields.sort',
                 'asc'
             )
-            ->orderBy(
-                'form_fields.id',
-                'asc'
+            ->orderByDesc(
+                'form_fields.id'
             );
     }
 
@@ -609,9 +611,8 @@ class FormField extends Model
                     'form_fields.sort',
                     'asc'
                 )
-                ->orderBy(
-                    'form_fields.id',
-                    'asc'
+                ->orderByDesc(
+                    'form_fields.id'
                 ),
 
             'sortDesc' => $query

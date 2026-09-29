@@ -32,6 +32,7 @@ export default {
     addData: 'Add data',
     addEnrollment: 'Enroll',
     addForm: 'Add form',
+    addFormField: 'Add a form field',
     addImage: 'Add an image',
     addInstructor: 'Add an instructor',
     addLearningCategory: 'Add a Training Category',

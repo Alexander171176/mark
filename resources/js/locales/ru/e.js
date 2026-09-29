@@ -1,5 +1,6 @@
 export default {
     edit: 'Редактировать',
+    editable: 'Редактируемые',
     editingFile: 'Редактирование файла: ',
     editArticle: 'Редактировать Статью',
     editAssignment: 'Редактировать Задание',

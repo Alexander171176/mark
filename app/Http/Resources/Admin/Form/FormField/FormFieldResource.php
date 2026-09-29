@@ -59,16 +59,19 @@ class FormFieldResource extends JsonResource
             'supports_multiple' => $this->supportsMultiple(),
 
             /** Счётчики */
-            'options_count' => $this->whenCounted(
-                'options'
+            'options_count' => $this->when(
+                isset($this->options_count),
+                fn () => (int) $this->options_count
             ),
 
-            'submission_values_count' => $this->whenCounted(
-                'submissionValues'
+            'submission_values_count' => $this->when(
+                isset($this->submission_values_count),
+                fn () => (int) $this->submission_values_count
             ),
 
-            'submission_files_count' => $this->whenCounted(
-                'submissionFiles'
+            'submission_files_count' => $this->when(
+                isset($this->submission_files_count),
+                fn () => (int) $this->submission_files_count
             ),
 
             /** Текущий перевод */

@@ -32,6 +32,7 @@ export default {
     addData: 'Деректерді қосу',
     addEnrollment: 'Тіркелу',
     addForm: 'Форма қосу',
+    addFormField: 'Форма өрісін қосу',
     addImage: 'Сурет қосу',
     addInstructor: 'Нұсқаушы қосу',
     addLearningCategory: 'Оқыту санатын қосу',

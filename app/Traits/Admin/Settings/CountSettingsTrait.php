@@ -408,6 +408,16 @@ trait CountSettingsTrait
         );
     }
 
+    /** Обновление количества элементов в полях форм */
+    public function updateAdminCountFormFields(
+        UpdateCountSettingRequest $request
+    ): RedirectResponse {
+        return $this->countSetting(
+            $request,
+            'adminFormFieldsPerPage'
+        );
+    }
+
     /** Обновление количества элементов в компаниях */
     public function updateAdminCountMarketCompanies(
         UpdateCountSettingRequest $request

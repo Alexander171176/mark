@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\Blog\BlogTag\BlogTagController;
 use App\Http\Controllers\Admin\Blog\BlogVideo\BlogVideoController;
 use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
+use App\Http\Controllers\Admin\Form\Form\FormController;
+use App\Http\Controllers\Admin\Form\FormField\FormFieldController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
@@ -164,6 +166,17 @@ Route::put('/cms-pages/{cmsPage}/sort',
     [CmsPageController::class, 'updateSort'])
     ->whereNumber('cmsPage')
     ->name('cmsPages.updateSort');
+
+// конструктор форм
+Route::put('/forms/{form}/sort',
+    [FormController::class, 'updateSort'])
+    ->whereNumber('form')
+    ->name('forms.updateSort');
+
+Route::put('/form-fields/{formField}/sort',
+    [FormFieldController::class, 'updateSort'])
+    ->whereNumber('formField')
+    ->name('formFields.updateSort');
 
 // маркет
 Route::put('/market-companies/{marketCompany}/sort',

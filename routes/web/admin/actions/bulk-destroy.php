@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Form\Form\FormController;
+use App\Http\Controllers\Admin\Form\FormField\FormFieldController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
@@ -118,6 +119,10 @@ Route::delete('/cms-pages/bulk-delete',
 Route::delete('/forms/bulk-delete',
     [FormController::class, 'bulkDestroy'])
     ->name('forms.bulkDestroy');
+
+Route::delete('/form-fields/bulk-delete',
+    [FormFieldController::class, 'bulkDestroy'])
+    ->name('formFields.bulkDestroy');
 
 // маркет
 Route::delete('/market-companies/bulk-delete',

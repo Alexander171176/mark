@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Blog\Comment\CommentController;
 use App\Http\Controllers\Admin\Cms\CmsPage\CmsPageController;
 use App\Http\Controllers\Admin\Finance\Currency\CurrencyController;
 use App\Http\Controllers\Admin\Form\Form\FormController;
+use App\Http\Controllers\Admin\Form\FormField\FormFieldController;
 use App\Http\Controllers\Admin\Market\MarketAttribute\MarketAttributeController;
 use App\Http\Controllers\Admin\Market\MarketAttributeGroup\MarketAttributeGroupController;
 use App\Http\Controllers\Admin\Market\MarketAttributeValue\MarketAttributeValueController;
@@ -171,6 +172,11 @@ Route::put('/forms/{form}/activity',
     [FormController::class, 'updateActivity'])
     ->whereNumber('form')
     ->name('forms.updateActivity');
+
+Route::put('/form-fields/{formField}/activity',
+    [FormFieldController::class, 'updateActivity'])
+    ->whereNumber('formField')
+    ->name('formFields.updateActivity');
 
 // маркет
 Route::put('/market-companies/{marketCompany}/activity',

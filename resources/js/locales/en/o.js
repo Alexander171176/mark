@@ -5,6 +5,7 @@ export default {
     online: 'online',
     onlyText: 'Only Latin letters, numbers and underscores',
     openLink: 'Open link',
+    optional: 'Optional',
     options: 'Options',
     optionsOptions: 'Options options',
     optionPrices: 'Option prices',

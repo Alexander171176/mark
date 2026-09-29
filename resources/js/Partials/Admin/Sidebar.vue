@@ -6,6 +6,7 @@ import {Link, usePage} from '@inertiajs/vue3'
 import ApplicationMark from '@/Components/Base/ApplicationMark.vue'
 import SidebarMain from '@/Components/Admin/UI/Links/SidebarMain.vue'
 import SidebarCms from '@/Components/Admin/UI/Links/SidebarCms.vue'
+import SidebarForms from '@/Components/Admin/UI/Links/SidebarForms.vue'
 import SidebarMarket from '@/Components/Admin/UI/Links/SidebarMarket.vue'
 import SidebarFinance from '@/Components/Admin/UI/Links/SidebarFinance.vue'
 import SidebarSchool from '@/Components/Admin/UI/Links/SidebarSchool.vue'
@@ -98,6 +99,7 @@ watch(sidebarExpanded, (newVal) => {
 const sidebarGroups = ref({
     pages: localStorage.getItem('sidebar-group-pages') !== 'false',
     cms: localStorage.getItem('sidebar-group-cms') !== 'false',
+    forms: localStorage.getItem('sidebar-group-forms') !== 'false',
     finance: localStorage.getItem('sidebar-group-finance') !== 'false',
     market: localStorage.getItem('sidebar-group-market') !== 'false',
     school: localStorage.getItem('sidebar-group-school') !== 'false',
@@ -199,6 +201,28 @@ const toggleSidebarGroup = (key) => {
                 </span>
                 <SidebarCms
                     v-show="!sidebarExpanded || sidebarGroups.cms"
+                    :expanded="sidebarExpanded"
+                />
+
+                <!-- Ссылки Конструктора форм -->
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('forms')"
+                >
+                    {{ t('forms') }}
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.market }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
+                </span>
+                <SidebarForms
+                    v-show="!sidebarExpanded || sidebarGroups.forms"
                     :expanded="sidebarExpanded"
                 />
 

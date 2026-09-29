@@ -2176,6 +2176,46 @@ class SettingSeeder extends Seeder
             ], // ADMIN FORMS DEFAULT VIEW
             [
                 'type' => 'string',
+                'option' => 'adminFormFieldsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_FORM_FIELDS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных полей форм в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORM FIELDS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminFormFieldsPerPage',
+                'value' => '12',
+                'constant' => 'ADMIN_FORM_FIELDS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество полей форм в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORM FIELDS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminFormFieldsDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_FORM_FIELDS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка полей форм по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORM FIELDS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminFormFieldsDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_FORM_FIELDS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка полей форм в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORM FIELDS DEFAULT VIEW
+            [
+                'type' => 'string',
                 'option' => 'adminMarketCompaniesProcessingMode',
                 'value' => 'auto',
                 'constant' => 'ADMIN_MARKET_COMPANIES_PROCESSING_MODE',

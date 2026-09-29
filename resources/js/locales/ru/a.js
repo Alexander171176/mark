@@ -32,6 +32,7 @@ export default {
     addData: 'Добавить данные',
     addEnrollment: 'Зачислить',
     addForm: 'Добавить форму',
+    addFormField: 'Добавить поле для форм',
     addImage: 'Добавить изображение',
     addInstructor: 'Добавить инструктора',
     addLearningCategory: 'Добавить Категорию обучения',

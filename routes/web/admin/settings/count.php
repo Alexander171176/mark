@@ -39,7 +39,7 @@ Route::put('/update-count/comments',
     [SettingController::class, 'updateAdminCountComments'])
     ->name('updateAdminCountComments');
 
-// отзывыs
+// отзывы
 Route::put('/update-count/reviews',
     [SettingController::class, 'updateAdminCountReviews'])
     ->name('updateAdminCountReviews');
@@ -155,6 +155,10 @@ Route::put('/update-count/cms-pages',
 Route::put('/update-count/forms',
     [SettingController::class, 'updateAdminCountForms'])
     ->name('updateAdminCountForms');
+
+Route::put('/update-count/form-fields',
+    [SettingController::class, 'updateAdminCountFormFields'])
+    ->name('updateAdminCountFormFields');
 
 // маркет
 Route::put('/update-count/market-companies',

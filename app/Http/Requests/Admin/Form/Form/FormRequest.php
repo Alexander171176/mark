@@ -4,7 +4,9 @@ namespace App\Http\Requests\Admin\Form\Form;
 
 use App\Models\Admin\Form\Form\Form;
 use App\Models\Admin\Form\FormField\FormField;
+use App\Models\Admin\Form\FormFieldOption\FormFieldOption;
 use App\Support\Admin\Form\FormFieldData;
+use App\Support\Admin\Form\FormFieldOptionData;
 use Illuminate\Foundation\Http\FormRequest as BaseFormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -152,6 +154,50 @@ class FormRequest extends BaseFormRequest
                 Arr::get($field, '_delete', false),
                 false
             );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Явное удаление вариантов поля
+            |--------------------------------------------------------------------------
+            |
+            | FormFieldData подготавливает сами options через
+            | FormFieldOptionData, но служебный _delete
+            | принадлежит только конструктору формы.
+            |
+            */
+
+            $originalOptions = Arr::get(
+                $field,
+                'options',
+                []
+            );
+
+            if (!is_array($originalOptions)) {
+                $originalOptions = [];
+            }
+
+            $preparedOptions = $preparedField['options'] ?? [];
+
+            foreach ($preparedOptions as $optionIndex => $preparedOption) {
+                $originalOption = $originalOptions[$optionIndex] ?? [];
+
+                if (!is_array($originalOption)) {
+                    $originalOption = [];
+                }
+
+                $preparedOption['_delete'] = $this->toBoolean(
+                    Arr::get(
+                        $originalOption,
+                        '_delete',
+                        false
+                    ),
+                    false
+                );
+
+                $preparedOptions[$optionIndex] = $preparedOption;
+            }
+
+            $preparedField['options'] = $preparedOptions;
 
             $preparedFields[] = $preparedField;
         }
@@ -496,8 +542,8 @@ class FormRequest extends BaseFormRequest
                 | Удаляемое поле
                 |--------------------------------------------------------------------------
                 |
-                | Для удаления нам нужен только ID существующего поля.
-                | Остальные данные поля больше не валидируем.
+                | Для удаления нужен только ID существующего поля.
+                | Options удалятся каскадно вместе с FormField.
                 |
                 */
 
@@ -523,6 +569,86 @@ class FormRequest extends BaseFormRequest
                     fieldId: $fieldId,
                     type: $field['type'] ?? null
                 );
+
+                /*
+                |--------------------------------------------------------------------------
+                | Варианты значения поля
+                |--------------------------------------------------------------------------
+                */
+
+                $rules["fields.$index.options"] = [
+                    'nullable',
+                    'array',
+                ];
+
+                $rules["fields.$index.options.*"] = [
+                    'required',
+                    'array',
+                ];
+
+                $options = $field['options'] ?? [];
+
+                if (!is_array($options)) {
+                    continue;
+                }
+
+                foreach ($options as $optionIndex => $option) {
+                    if (!is_array($option)) {
+                        continue;
+                    }
+
+                    $optionId = isset($option['id'])
+                    && is_numeric($option['id'])
+                        ? (int) $option['id']
+                        : null;
+
+                    $optionDelete = (bool) (
+                        $option['_delete']
+                        ?? false
+                    );
+
+                    $optionPrefix =
+                        "fields.$index.options.$optionIndex";
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Служебный флаг варианта
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $rules["$optionPrefix._delete"] = [
+                        'required',
+                        'boolean',
+                    ];
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Удаляемый вариант
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($optionDelete) {
+                        $rules["$optionPrefix.id"] = [
+                            'required',
+                            'integer',
+                            'exists:form_field_options,id',
+                        ];
+
+                        continue;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Создание / обновление варианта
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $rules += FormFieldOptionData::rules(
+                        prefix: $optionPrefix,
+                        formFieldId: $fieldId,
+                        optionId: $optionId
+                    );
+                }
             }
         }
 
@@ -532,7 +658,8 @@ class FormRequest extends BaseFormRequest
     }
 
     /**
-     * Дополнительная проверка вложенных полей.
+     * Дополнительная проверка вложенных
+     * полей и вариантов значений.
      */
     public function after(): array
     {
@@ -547,6 +674,12 @@ class FormRequest extends BaseFormRequest
                     return;
                 }
 
+                /*
+                |--------------------------------------------------------------------------
+                | Бизнес-валидация полей и options
+                |--------------------------------------------------------------------------
+                */
+
                 foreach ($fields as $index => $field) {
                     if (
                         !is_array($field)
@@ -559,6 +692,12 @@ class FormRequest extends BaseFormRequest
                         $validator,
                         $field,
                         "fields.$index"
+                    );
+
+                    $this->validateFieldOptions(
+                        $validator,
+                        $field,
+                        $index
                     );
                 }
 
@@ -751,11 +890,38 @@ class FormRequest extends BaseFormRequest
 
             'fields.*.id.exists' =>
                 'Указанное поле формы не найдено.',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Варианты значений
+            |--------------------------------------------------------------------------
+            */
+
+            'fields.*.options.array' =>
+                'Варианты поля должны быть массивом.',
+
+            'fields.*.options.*.array' =>
+                'Некорректная структура варианта поля.',
+
+            'fields.*.options.*._delete.required' =>
+                'Не удалось определить состояние варианта поля.',
+
+            'fields.*.options.*._delete.boolean' =>
+                'Некорректное значение признака удаления варианта.',
+
+            'fields.*.options.*.id.required' =>
+                'Для удаления варианта необходимо указать его ID.',
+
+            'fields.*.options.*.id.integer' =>
+                'ID варианта поля должен быть числом.',
+
+            'fields.*.options.*.id.exists' =>
+                'Указанный вариант поля не найден.',
         ];
 
         /*
         |--------------------------------------------------------------------------
-        | Сообщения вложенных полей
+        | Сообщения вложенных полей и options
         |--------------------------------------------------------------------------
         */
 
@@ -765,10 +931,26 @@ class FormRequest extends BaseFormRequest
         );
 
         if (is_array($fields)) {
-            foreach (array_keys($fields) as $index) {
+            foreach ($fields as $index => $field) {
                 $messages += FormFieldData::messages(
                     "fields.$index"
                 );
+
+                if (!is_array($field)) {
+                    continue;
+                }
+
+                $options = $field['options'] ?? [];
+
+                if (!is_array($options)) {
+                    continue;
+                }
+
+                foreach (array_keys($options) as $optionIndex) {
+                    $messages += FormFieldOptionData::messages(
+                        "fields.$index.options.$optionIndex"
+                    );
+                }
             }
         }
 
@@ -898,6 +1080,319 @@ class FormRequest extends BaseFormRequest
                 $validator->errors()->add(
                     "fields.$index.id",
                     'Указанное поле не принадлежит редактируемой форме.'
+                );
+            }
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Option validation helpers
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Проверить options одного поля.
+     */
+    protected function validateFieldOptions(
+        Validator $validator,
+        array $field,
+        int|string $fieldIndex
+    ): void {
+        $options = $field['options'] ?? [];
+
+        if (!is_array($options)) {
+            return;
+        }
+
+        $type = $field['type'] ?? null;
+
+        $typeConfig = is_string($type)
+            ? config(
+                "forms.field_types.$type",
+                []
+            )
+            : [];
+
+        $supportsOptions = is_array($typeConfig)
+            && (bool) (
+                $typeConfig['has_options']
+                ?? false
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Тип поля не поддерживает options
+        |--------------------------------------------------------------------------
+        |
+        | Удаляемые существующие options разрешаем передать:
+        | они являются командой удаления, а не актуальным вариантом поля.
+        |
+        */
+
+        $hasActualOptions = false;
+
+        foreach ($options as $option) {
+            if (
+                is_array($option)
+                && empty($option['_delete'])
+            ) {
+                $hasActualOptions = true;
+
+                break;
+            }
+        }
+
+        if (
+            !$supportsOptions
+            && $hasActualOptions
+        ) {
+            $validator->errors()->add(
+                "fields.$fieldIndex.options",
+                'Выбранный тип поля не поддерживает варианты значений.'
+            );
+
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Бизнес-валидация каждого option
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($options as $optionIndex => $option) {
+            if (
+                !is_array($option)
+                || !empty($option['_delete'])
+            ) {
+                continue;
+            }
+
+            FormFieldOptionData::validate(
+                $validator,
+                $option,
+                "fields.$fieldIndex.options.$optionIndex"
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Коллекционные проверки
+        |--------------------------------------------------------------------------
+        */
+
+        $this->validateUniqueOptionValues(
+            $validator,
+            $options,
+            $fieldIndex
+        );
+
+        $this->validateDefaultOptions(
+            $validator,
+            $field,
+            $options,
+            $fieldIndex
+        );
+
+        $this->validateOptionOwnership(
+            $validator,
+            $field,
+            $options,
+            $fieldIndex
+        );
+    }
+
+    /**
+     * Проверить уникальность value
+     * непосредственно внутри options одного поля.
+     *
+     * SQL unique не может обнаружить два одинаковых
+     * новых варианта до их сохранения в БД.
+     */
+    protected function validateUniqueOptionValues(
+        Validator $validator,
+        array $options,
+        int|string $fieldIndex
+    ): void {
+        $values = [];
+
+        foreach ($options as $optionIndex => $option) {
+            if (
+                !is_array($option)
+                || !empty($option['_delete'])
+            ) {
+                continue;
+            }
+
+            $value = $option['value'] ?? null;
+
+            if (
+                !is_string($value)
+                || $value === ''
+            ) {
+                continue;
+            }
+
+            if (isset($values[$value])) {
+                $validator->errors()->add(
+                    "fields.$fieldIndex.options.$optionIndex.value",
+                    'Вариант с таким системным значением уже добавлен в это поле.'
+                );
+
+                continue;
+            }
+
+            $values[$value] = $optionIndex;
+        }
+    }
+
+    /**
+     * Проверить количество вариантов,
+     * выбранных по умолчанию.
+     *
+     * Для типов с supports_multiple=true
+     * допускается несколько вариантов по умолчанию.
+     *
+     * Для остальных option-полей допускается
+     * только один вариант по умолчанию.
+     */
+    protected function validateDefaultOptions(
+        Validator $validator,
+        array $field,
+        array $options,
+        int|string $fieldIndex
+    ): void {
+        $type = $field['type'] ?? null;
+
+        if (!is_string($type)) {
+            return;
+        }
+
+        $typeConfig = config(
+            "forms.field_types.$type",
+            []
+        );
+
+        if (
+            !is_array($typeConfig)
+            || !(
+                $typeConfig['has_options']
+                ?? false
+            )
+        ) {
+            return;
+        }
+
+        if (
+            (bool) (
+                $typeConfig['supports_multiple']
+                ?? false
+            )
+        ) {
+            return;
+        }
+
+        $defaultFound = false;
+
+        foreach ($options as $optionIndex => $option) {
+            if (
+                !is_array($option)
+                || !empty($option['_delete'])
+                || empty($option['is_default'])
+            ) {
+                continue;
+            }
+
+            if ($defaultFound) {
+                $validator->errors()->add(
+                    "fields.$fieldIndex.options.$optionIndex.is_default",
+                    'Для этого типа поля можно выбрать только один вариант по умолчанию.'
+                );
+
+                continue;
+            }
+
+            $defaultFound = true;
+        }
+    }
+
+    /**
+     * Проверить принадлежность существующих options
+     * текущему FormField.
+     *
+     * Новое поле не может использовать существующие
+     * варианты из базы данных.
+     */
+    protected function validateOptionOwnership(
+        Validator $validator,
+        array $field,
+        array $options,
+        int|string $fieldIndex
+    ): void {
+        $fieldId = isset($field['id'])
+        && is_numeric($field['id'])
+            ? (int) $field['id']
+            : null;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Новое поле
+        |--------------------------------------------------------------------------
+        */
+
+        if ($fieldId === null) {
+            foreach ($options as $optionIndex => $option) {
+                if (!is_array($option)) {
+                    continue;
+                }
+
+                if (!empty($option['id'])) {
+                    $validator->errors()->add(
+                        "fields.$fieldIndex.options.$optionIndex.id",
+                        'Для нового поля нельзя использовать существующий вариант.'
+                    );
+                }
+
+                if (!empty($option['_delete'])) {
+                    $validator->errors()->add(
+                        "fields.$fieldIndex.options.$optionIndex._delete",
+                        'Для нового поля нельзя удалять существующие варианты.'
+                    );
+                }
+            }
+
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Существующее поле
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($options as $optionIndex => $option) {
+            if (
+                !is_array($option)
+                || empty($option['id'])
+            ) {
+                continue;
+            }
+
+            $optionId = (int) $option['id'];
+
+            $belongsToField = FormFieldOption::query()
+                ->whereKey($optionId)
+                ->where(
+                    'form_field_id',
+                    $fieldId
+                )
+                ->exists();
+
+            if (!$belongsToField) {
+                $validator->errors()->add(
+                    "fields.$fieldIndex.options.$optionIndex.id",
+                    'Указанный вариант не принадлежит редактируемому полю.'
                 );
             }
         }

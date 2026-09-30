@@ -3,6 +3,7 @@ export default {
     nameModule: 'Module name',
     newField: 'New field',
     newImages: 'New images',
+    newOption: 'New variant',
     newPassword: 'New Password',
     next: 'Next',
     nickname: 'Nickname',

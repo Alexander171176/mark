@@ -3,6 +3,7 @@ export default {
     nameModule: 'Название модуля',
     newField: 'Новое поле',
     newImages: 'Новые изображения',
+    newOption: 'Новый вариант',
     newPassword: 'Новый пароль',
     next: 'Следующая',
     nickname: 'Псевдоним',

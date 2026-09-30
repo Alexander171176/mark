@@ -15,6 +15,7 @@ import InputText from '@/Components/Admin/UI/Input/InputText.vue'
 import InputNumber from '@/Components/Admin/UI/Input/InputNumber.vue'
 import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
+import FormFieldOptionsBuilder from '@/Components/Admin/Form/FormBuilder/FormFieldOptionsBuilder.vue'
 
 const { t } = useI18n()
 
@@ -83,7 +84,8 @@ const makeField = () => ({
     settings: '',
     translations: {
         [props.activeLocale || 'ru']: makeFieldTranslation()
-    }
+    },
+    options: []
 })
 
 const ensureFieldTranslation = (field, localeCode) => {
@@ -98,10 +100,29 @@ const ensureFieldTranslation = (field, localeCode) => {
     }
 }
 
+const ensureFieldOptions = (field) => {
+    if (!Array.isArray(field.options)) {
+        field.options = []
+    }
+}
+
+watch(
+    () => props.modelValue,
+    (fields) => {
+        fields.forEach(field => {
+            ensureFieldTranslation(field, props.activeLocale)
+            ensureFieldOptions(field)
+        })
+    },
+    { immediate: true }
+)
+
 watch(
     () => props.activeLocale,
     (localeCode) => {
-        props.modelValue.forEach(field => ensureFieldTranslation(field, localeCode))
+        props.modelValue.forEach(field => {
+            ensureFieldTranslation(field, localeCode)
+        })
     },
     { immediate: true }
 )
@@ -202,8 +223,12 @@ const fieldWidthLabel = (width, config) => {
     return config?.label || config?.name || width
 }
 
+const supportsOptions = (field) => {
+    return Boolean(props.fieldTypes?.[field.type]?.has_options)
+}
+
 const supportsDefaultValue = (field) => {
-    return !['file', 'select', 'radio', 'checkbox_group'].includes(field.type)
+    return field.type !== 'file' && !supportsOptions(field)
 }
 </script>
 
@@ -585,6 +610,18 @@ const supportsDefaultValue = (field) => {
                             />
                         </div>
                     </div>
+
+                    <!-- Варианты значений поля -->
+                    <FormFieldOptionsBuilder
+                        v-if="supportsOptions(field)"
+                        v-model="field.options"
+                        :field-index="index"
+                        :field-type="field.type"
+                        :field-type-config="fieldTypes[field.type] || {}"
+                        :active-locale="activeLocale"
+                        :locales="locales"
+                        :errors="errors"
+                    />
 
                     <!-- Значение по умолчанию -->
                     <div

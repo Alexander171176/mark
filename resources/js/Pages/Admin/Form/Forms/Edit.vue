@@ -109,6 +109,7 @@ const makeFieldTranslations = (field) => {
 
     resourceList(field?.translations).forEach((translation) => {
         if (!translation?.locale) return
+
         result[translation.locale] = {
             label: translation.label || '',
             placeholder: translation.placeholder || '',
@@ -116,35 +117,93 @@ const makeFieldTranslations = (field) => {
         }
     })
 
-    const localeCode = props.currentLocale || field?.translation?.locale || defaultLocale
-    if (!result[localeCode]) result[localeCode] = { label: '', placeholder: '', description: '' }
+    const localeCode = props.currentLocale
+        || field?.translation?.locale
+        || defaultLocale
+
+    if (!result[localeCode]) {
+        result[localeCode] = {
+            label: '',
+            placeholder: '',
+            description: '',
+        }
+    }
+
+    return result
+}
+
+const makeOptionTranslations = (option) => {
+    const result = {}
+
+    resourceList(option?.translations).forEach((translation) => {
+        if (!translation?.locale) return
+
+        result[translation.locale] = {
+            label: translation.label || '',
+            description: translation.description || '',
+        }
+    })
+
+    const localeCode = props.currentLocale
+        || option?.translation?.locale
+        || defaultLocale
+
+    if (!result[localeCode]) {
+        result[localeCode] = {
+            label: '',
+            description: '',
+        }
+    }
+
     return result
 }
 
 const jsonValue = (value) => {
     if (value === null || value === undefined || value === '') return ''
-    return typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+    return typeof value === 'string'
+        ? value
+        : JSON.stringify(value, null, 2)
 }
 
-const makeFields = () => resourceList(formData.value?.fields).map((field) => ({
-    id: Number(field.id),
-    _delete: false,
-    name: field.name || '',
-    type: field.type || 'text',
-    activity: Boolean(field.activity),
-    required: Boolean(field.required),
-    readonly: Boolean(field.readonly),
-    disabled: Boolean(field.disabled),
-    sort: Number(field.sort ?? 100),
-    default_value: field.default_value ?? '',
-    validation: jsonValue(field.validation),
-    width: field.width || 'full',
-    settings: jsonValue(field.settings),
-    translations: makeFieldTranslations(field),
-}))
+const makeOptions = (field) => {
+    return resourceList(field?.options).map((option) => ({
+        id: Number(option.id),
+        _delete: false,
+        value: option.value || '',
+        activity: Boolean(option.activity),
+        is_default: Boolean(option.is_default),
+        sort: Number(option.sort ?? 100),
+        settings: jsonValue(option.settings),
+        translations: makeOptionTranslations(option),
+    }))
+}
+
+const makeFields = () => {
+    return resourceList(formData.value?.fields).map((field) => ({
+        id: Number(field.id),
+        _delete: false,
+        name: field.name || '',
+        type: field.type || 'text',
+        activity: Boolean(field.activity),
+        required: Boolean(field.required),
+        readonly: Boolean(field.readonly),
+        disabled: Boolean(field.disabled),
+        sort: Number(field.sort ?? 100),
+        default_value: field.default_value ?? '',
+        validation: jsonValue(field.validation),
+        width: field.width || 'full',
+        settings: jsonValue(field.settings),
+        translations: makeFieldTranslations(field),
+        options: makeOptions(field),
+    }))
+}
+
+const supportsOptions = (field) => {
+    return Boolean(props.fieldTypes?.[field.type]?.has_options)
+}
 
 const supportsDefaultValue = (field) => {
-    return !['file', 'select', 'radio', 'checkbox_group'].includes(field.type)
+    return field.type !== 'file' && !supportsOptions(field)
 }
 
 /* ===================== Form ===================== */
@@ -228,6 +287,50 @@ const statusLabel = (status) => {
     return status
 }
 
+const prepareOption = (option) => {
+    if (option.id && option._delete) {
+        return {
+            id: Number(option.id),
+            _delete: true,
+        }
+    }
+
+    return {
+        ...option,
+        id: option.id ? Number(option.id) : null,
+        _delete: false,
+        sort: Number(option.sort ?? 0),
+        activity: option.activity ? 1 : 0,
+        is_default: option.is_default ? 1 : 0,
+    }
+}
+
+const prepareField = (field) => {
+    if (field.id && field._delete) {
+        return {
+            id: Number(field.id),
+            _delete: true,
+        }
+    }
+
+    return {
+        ...field,
+        id: field.id ? Number(field.id) : null,
+        _delete: false,
+        sort: Number(field.sort ?? 0),
+        activity: field.activity ? 1 : 0,
+        required: field.required ? 1 : 0,
+        readonly: field.readonly ? 1 : 0,
+        disabled: field.disabled ? 1 : 0,
+        default_value: supportsDefaultValue(field)
+            ? (field.default_value || null)
+            : null,
+        options: Array.isArray(field.options)
+            ? field.options.map(prepareOption)
+            : [],
+    }
+}
+
 /* ===================== Submit ===================== */
 
 const submitForm = () => {
@@ -246,25 +349,7 @@ const submitForm = () => {
         rate_limit: Number(data.rate_limit ?? 1),
         rate_limit_minutes: Number(data.rate_limit_minutes ?? 1),
 
-        fields: data.fields.map((field) => {
-            if (field.id && field._delete) {
-                return { id: Number(field.id), _delete: true }
-            }
-
-            return {
-                ...field,
-                id: field.id ? Number(field.id) : null,
-                _delete: false,
-                sort: Number(field.sort ?? 0),
-                activity: field.activity ? 1 : 0,
-                required: field.required ? 1 : 0,
-                readonly: field.readonly ? 1 : 0,
-                disabled: field.disabled ? 1 : 0,
-                default_value: supportsDefaultValue(field)
-                    ? (field.default_value || null)
-                    : null,
-            }
-        }),
+        fields: data.fields.map(prepareField),
     }))
 
     form.post(

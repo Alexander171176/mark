@@ -19,6 +19,7 @@ export default {
     addressLegal: 'Company registration address',
     addArticle: 'Add an Article',
     addAssignment: 'Add Task',
+    addFieldOption: 'Add an option',
     addMarketAttributeGroup: 'Add Attribute Group',
     addMarketAttributeValue: 'Add Value of the characteristic',
     addMarketProductBundle: 'Add a set of products',

@@ -5,6 +5,7 @@ export default {
     online: 'online',
     onlyText: 'Only Latin letters, numbers and underscores',
     openLink: 'Open link',
+    optionTranslation: 'Translation of the variant',
     optional: 'Optional',
     options: 'Options',
     optionsOptions: 'Options options',

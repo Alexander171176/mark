@@ -99,9 +99,41 @@ const getError = (key) => {
 
 /* ===================== Fields ===================== */
 
-const supportsDefaultValue = (field) => {
-    return !['file', 'select', 'radio', 'checkbox_group'].includes(field.type)
+const supportsOptions = (field) => {
+    return Boolean(props.fieldTypes?.[field.type]?.has_options)
 }
+
+const supportsDefaultValue = (field) => {
+    return field.type !== 'file' && !supportsOptions(field)
+}
+
+const prepareOption = (option) => ({
+    ...option,
+    id: null,
+    _delete: false,
+    sort: Number(option.sort ?? 0),
+    activity: option.activity ? 1 : 0,
+    is_default: option.is_default ? 1 : 0,
+})
+
+const prepareField = (field) => ({
+    ...field,
+    id: null,
+    _delete: false,
+    sort: Number(field.sort ?? 0),
+    activity: field.activity ? 1 : 0,
+    required: field.required ? 1 : 0,
+    readonly: field.readonly ? 1 : 0,
+    disabled: field.disabled ? 1 : 0,
+    default_value: supportsDefaultValue(field)
+        ? (field.default_value || null)
+        : null,
+    options: supportsOptions(field)
+        ? (Array.isArray(field.options)
+            ? field.options.map(prepareOption)
+            : [])
+        : [],
+})
 
 /* ===================== Status ===================== */
 
@@ -134,19 +166,7 @@ const submitForm = () => {
         rate_limit: Number(data.rate_limit ?? 1),
         rate_limit_minutes: Number(data.rate_limit_minutes ?? 1),
 
-        fields: data.fields.map((field) => ({
-            ...field,
-            id: null,
-            _delete: false,
-            sort: Number(field.sort ?? 0),
-            activity: field.activity ? 1 : 0,
-            required: field.required ? 1 : 0,
-            readonly: field.readonly ? 1 : 0,
-            disabled: field.disabled ? 1 : 0,
-            default_value: supportsDefaultValue(field)
-                ? (field.default_value || null)
-                : null,
-        })),
+        fields: data.fields.map(prepareField),
     }))
 
     form.post(route('admin.forms.store'), {

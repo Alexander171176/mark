@@ -14,11 +14,20 @@ class FormFieldData
      * Используется:
      * - FormFieldRequest для самостоятельного CRUD поля;
      * - FormRequest для вложенных fields.* конструктора формы.
+     *
+     * Варианты значения options также подготавливаются здесь,
+     * но служебный флаг _delete относится только к FormRequest.
      */
     public static function prepare(
         array $data,
         array $supportedLocales
     ): array {
+        /*
+        |--------------------------------------------------------------------------
+        | Переводы
+        |--------------------------------------------------------------------------
+        */
+
         $translations = Arr::get($data, 'translations', []);
 
         if (!is_array($translations)) {
@@ -50,6 +59,37 @@ class FormFieldData
                 ),
             ];
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Варианты значений
+        |--------------------------------------------------------------------------
+        */
+
+        $options = Arr::get($data, 'options', []);
+
+        if (!is_array($options)) {
+            $options = [];
+        }
+
+        $preparedOptions = [];
+
+        foreach ($options as $option) {
+            if (!is_array($option)) {
+                continue;
+            }
+
+            $preparedOptions[] = FormFieldOptionData::prepare(
+                $option,
+                $supportedLocales
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Результат
+        |--------------------------------------------------------------------------
+        */
 
         return [
             /*
@@ -152,6 +192,14 @@ class FormFieldData
             */
 
             'translations' => $preparedTranslations,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Варианты значений
+            |--------------------------------------------------------------------------
+            */
+
+            'options' => $preparedOptions,
         ];
     }
 
@@ -161,6 +209,10 @@ class FormFieldData
      * $prefix:
      * - пустой для FormFieldRequest;
      * - fields.0 / fields.1 / ... для FormRequest.
+     *
+     * Options здесь не валидируются:
+     * коллекцией fields.*.options.* управляет FormRequest,
+     * используя FormFieldOptionData.
      */
     public static function rules(
         string $prefix = '',
@@ -189,11 +241,23 @@ class FormFieldData
         }
 
         return [
+            /*
+            |--------------------------------------------------------------------------
+            | ID
+            |--------------------------------------------------------------------------
+            */
+
             $key('id') => [
                 'nullable',
                 'integer',
                 'exists:form_fields,id',
             ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Основные данные
+            |--------------------------------------------------------------------------
+            */
 
             $key('name') => [
                 'required',
@@ -351,6 +415,9 @@ class FormFieldData
      * - динамические Laravel validation rules;
      * - настройки конкретных типов;
      * - логическая совместимость параметров.
+     *
+     * Options отдельно валидируются через
+     * FormFieldOptionData в FormRequest.
      */
     public static function validate(
         Validator $validator,
@@ -902,10 +969,14 @@ class FormFieldData
 
     /**
      * Нормализация nullable ID.
+     *
+     * Некорректное значение сохраняется как есть,
+     * чтобы Laravel validation смог вернуть
+     * корректную ошибку integer.
      */
     private static function normalizeNullableInteger(
         mixed $value
-    ): ?int {
+    ): mixed {
         if (
             $value === ''
             || $value === null
@@ -913,17 +984,18 @@ class FormFieldData
             return null;
         }
 
+        if (is_int($value)) {
+            return $value;
+        }
+
         if (
-            is_int($value)
-            || (
-                is_string($value)
-                && ctype_digit($value)
-            )
+            is_string($value)
+            && ctype_digit($value)
         ) {
             return (int) $value;
         }
 
-        return null;
+        return $value;
     }
 
     /**

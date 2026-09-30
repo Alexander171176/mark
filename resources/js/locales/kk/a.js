@@ -19,6 +19,7 @@ export default {
     addressLegal: 'Компанияның тіркеу мекенжайы',
     addArticle: 'Мақала қосу',
     addAssignment: 'Тапсырма қосу',
+    addFieldOption: 'Опция қосу',
     addMarketAttributeGroup: 'Функциялар тобын қосу',
     addMarketAttributeValue: 'Сипаттаманың қосу мәні',
     addMarketProductBundle: 'Өнімдер жиынтығын қосыңыз',

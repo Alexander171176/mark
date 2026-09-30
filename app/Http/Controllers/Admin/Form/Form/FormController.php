@@ -970,10 +970,10 @@ class FormController extends BaseFormAdminController
     }
 
     /*
-    |--------------------------------------------------------------------------
-    | Form fields helpers
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Form fields helpers
+|--------------------------------------------------------------------------
+*/
 
     /**
      * Создание вложенных полей новой формы.
@@ -983,7 +983,10 @@ class FormController extends BaseFormAdminController
         array $fields
     ): void {
         foreach ($fields as $fieldData) {
-            if (!is_array($fieldData)) {
+            if (
+                !is_array($fieldData)
+                || !empty($fieldData['_delete'])
+            ) {
                 continue;
             }
 
@@ -996,10 +999,14 @@ class FormController extends BaseFormAdminController
             $translations = $fieldData['translations']
                 ?? [];
 
+            $options = $fieldData['options']
+                ?? [];
+
             unset(
                 $fieldData['id'],
                 $fieldData['_delete'],
-                $fieldData['translations']
+                $fieldData['translations'],
+                $fieldData['options']
             );
 
             /*
@@ -1032,6 +1039,17 @@ class FormController extends BaseFormAdminController
                     'placeholder',
                     'description',
                 ]
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Варианты значений поля
+            |--------------------------------------------------------------------------
+            */
+
+            $this->createFormFieldOptions(
+                $field,
+                $options
             );
         }
     }
@@ -1109,14 +1127,30 @@ class FormController extends BaseFormAdminController
                 continue;
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | Вложенные данные поля
+            |--------------------------------------------------------------------------
+            */
+
             $translations = $fieldData['translations']
+                ?? [];
+
+            $options = $fieldData['options']
                 ?? [];
 
             unset(
                 $fieldData['id'],
                 $fieldData['_delete'],
-                $fieldData['translations']
+                $fieldData['translations'],
+                $fieldData['options']
             );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Поле
+            |--------------------------------------------------------------------------
+            */
 
             $field = $form
                 ->fields()
@@ -1127,6 +1161,12 @@ class FormController extends BaseFormAdminController
                 $fieldData
             );
 
+            /*
+            |--------------------------------------------------------------------------
+            | Переводы поля
+            |--------------------------------------------------------------------------
+            */
+
             $this->syncTranslations(
                 $field,
                 $translations,
@@ -1135,6 +1175,17 @@ class FormController extends BaseFormAdminController
                     'placeholder',
                     'description',
                 ]
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Варианты значений поля
+            |--------------------------------------------------------------------------
+            */
+
+            $this->syncFormFieldOptions(
+                $field,
+                $options
             );
         }
 
@@ -1161,20 +1212,42 @@ class FormController extends BaseFormAdminController
                 continue;
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | Вложенные данные поля
+            |--------------------------------------------------------------------------
+            */
+
             $translations = $fieldData['translations']
+                ?? [];
+
+            $options = $fieldData['options']
                 ?? [];
 
             unset(
                 $fieldData['id'],
                 $fieldData['_delete'],
-                $fieldData['translations']
+                $fieldData['translations'],
+                $fieldData['options']
             );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Поле
+            |--------------------------------------------------------------------------
+            */
 
             $field = $form
                 ->fields()
                 ->create(
                     $fieldData
                 );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Переводы поля
+            |--------------------------------------------------------------------------
+            */
 
             $this->syncTranslations(
                 $field,
@@ -1185,7 +1258,385 @@ class FormController extends BaseFormAdminController
                     'description',
                 ]
             );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Варианты значений поля
+            |--------------------------------------------------------------------------
+            */
+
+            $this->createFormFieldOptions(
+                $field,
+                $options
+            );
         }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Form field options helpers
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Создание вариантов значений нового поля.
+     *
+     * form_field_id вручную не передаётся:
+     * связь устанавливается через relation options().
+     */
+    private function createFormFieldOptions(
+        $field,
+        array $options
+    ): void {
+        foreach ($options as $optionData) {
+            if (
+                !is_array($optionData)
+                || !empty($optionData['_delete'])
+            ) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Вложенные данные варианта
+            |--------------------------------------------------------------------------
+            */
+
+            $translations = $optionData['translations']
+                ?? [];
+
+            unset(
+                $optionData['id'],
+                $optionData['_delete'],
+                $optionData['translations']
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Значение по умолчанию
+            |--------------------------------------------------------------------------
+            */
+
+            $this->prepareDefaultFieldOption(
+                $field,
+                !empty($optionData['is_default'])
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Вариант
+            |--------------------------------------------------------------------------
+            */
+
+            $option = $field
+                ->options()
+                ->create(
+                    $optionData
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Переводы варианта
+            |--------------------------------------------------------------------------
+            */
+
+            $this->syncTranslations(
+                $option,
+                $translations,
+                [
+                    'label',
+                    'description',
+                ]
+            );
+        }
+    }
+
+    /**
+     * Синхронизация вариантов значений существующего поля.
+     *
+     * Порядок операций:
+     * 1. DELETE;
+     * 2. UPDATE;
+     * 3. CREATE.
+     *
+     * Отсутствие существующего option в массиве
+     * не считается командой удаления.
+     */
+    private function syncFormFieldOptions(
+        $field,
+        array $options
+    ): void {
+        /*
+        |--------------------------------------------------------------------------
+        | DELETE
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($options as $optionData) {
+            if (
+                !is_array($optionData)
+                || empty($optionData['_delete'])
+            ) {
+                continue;
+            }
+
+            $optionId = isset($optionData['id'])
+            && is_numeric($optionData['id'])
+                ? (int) $optionData['id']
+                : null;
+
+            if ($optionId === null) {
+                continue;
+            }
+
+            /*
+             * Ищем option строго внутри текущего поля.
+             * Это дополнительная защита persistence-уровня.
+             */
+            $option = $field
+                ->options()
+                ->whereKey($optionId)
+                ->firstOrFail();
+
+            $option->delete();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($options as $optionData) {
+            if (
+                !is_array($optionData)
+                || !empty($optionData['_delete'])
+            ) {
+                continue;
+            }
+
+            $optionId = isset($optionData['id'])
+            && is_numeric($optionData['id'])
+                ? (int) $optionData['id']
+                : null;
+
+            if ($optionId === null) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Вложенные данные варианта
+            |--------------------------------------------------------------------------
+            */
+
+            $translations = $optionData['translations']
+                ?? [];
+
+            unset(
+                $optionData['id'],
+                $optionData['_delete'],
+                $optionData['translations']
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Вариант
+            |--------------------------------------------------------------------------
+            */
+
+            $option = $field
+                ->options()
+                ->whereKey($optionId)
+                ->firstOrFail();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Значение по умолчанию
+            |--------------------------------------------------------------------------
+            */
+
+            $this->prepareDefaultFieldOption(
+                $field,
+                !empty($optionData['is_default']),
+                $option->id
+            );
+
+            $option->update(
+                $optionData
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Переводы варианта
+            |--------------------------------------------------------------------------
+            */
+
+            $this->syncTranslations(
+                $option,
+                $translations,
+                [
+                    'label',
+                    'description',
+                ]
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($options as $optionData) {
+            if (
+                !is_array($optionData)
+                || !empty($optionData['_delete'])
+            ) {
+                continue;
+            }
+
+            $optionId = isset($optionData['id'])
+            && is_numeric($optionData['id'])
+                ? (int) $optionData['id']
+                : null;
+
+            if ($optionId !== null) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Вложенные данные варианта
+            |--------------------------------------------------------------------------
+            */
+
+            $translations = $optionData['translations']
+                ?? [];
+
+            unset(
+                $optionData['id'],
+                $optionData['_delete'],
+                $optionData['translations']
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Значение по умолчанию
+            |--------------------------------------------------------------------------
+            */
+
+            $this->prepareDefaultFieldOption(
+                $field,
+                !empty($optionData['is_default'])
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Вариант
+            |--------------------------------------------------------------------------
+            */
+
+            $option = $field
+                ->options()
+                ->create(
+                    $optionData
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Переводы варианта
+            |--------------------------------------------------------------------------
+            */
+
+            $this->syncTranslations(
+                $option,
+                $translations,
+                [
+                    'label',
+                    'description',
+                ]
+            );
+        }
+    }
+
+    /**
+     * Подготовка варианта, выбранного по умолчанию.
+     *
+     * Для типов, поддерживающих несколько значений,
+     * допускается несколько is_default=true.
+     *
+     * Для остальных типов с options перед установкой
+     * нового default сбрасываем предыдущий.
+     */
+    private function prepareDefaultFieldOption(
+        $field,
+        bool $isDefault,
+        ?int $exceptOptionId = null
+    ): void {
+        if (!$isDefault) {
+            return;
+        }
+
+        $typeConfig = config(
+            "forms.field_types.{$field->type}",
+            []
+        );
+
+        if (!is_array($typeConfig)) {
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Поле должно поддерживать варианты
+        |--------------------------------------------------------------------------
+        */
+
+        if (!(
+            $typeConfig['has_options']
+            ?? false
+        )) {
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Несколько значений по умолчанию разрешены
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            (bool) (
+                $typeConfig['supports_multiple']
+                ?? false
+            )
+        ) {
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Сбрасываем предыдущий default
+        |--------------------------------------------------------------------------
+        */
+
+        $query = $field
+            ->options()
+            ->where(
+                'is_default',
+                true
+            );
+
+        if ($exceptOptionId !== null) {
+            $query->whereKeyNot(
+                $exceptOptionId
+            );
+        }
+
+        $query->update([
+            'is_default' => false,
+        ]);
     }
 
     /*

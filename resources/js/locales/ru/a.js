@@ -19,6 +19,7 @@ export default {
     addressLegal: 'Адрес регистрации компании',
     addArticle: 'Добавить Статью',
     addAssignment: 'Добавить Задание',
+    addFieldOption: 'Добавить вариант',
     addMarketAttributeGroup: 'Добавить Группу характеристик',
     addMarketAttributeValue: 'Добавить Значение характеристики',
     addMarketProductBundle: 'Добавить комплект товаров',

@@ -231,5 +231,6 @@ export default {
     systemCode: 'Жүйелік код',
     systemCodeText: 'Латын әріптерінің кіші әріптері, сандары және астын сызулары.',
     systemName: 'Жүйе атауы',
+    systemValue: 'Жүйелік маңызы',
     systems: 'Жүйелік',
 }

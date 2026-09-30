@@ -3,6 +3,7 @@ export default {
     nameModule: 'Модуль атауы',
     newField: 'Жаңа өріс',
     newImages: 'Жаңа суреттер',
+    newOption: 'Жаңа опция',
     newPassword: 'Жаңа құпия сөз',
     next: 'Келесі',
     nickname: 'Бүркеншік ат',

@@ -25,6 +25,7 @@ import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
 import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
 import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
+import FormFieldsBuilder from '@/Components/Admin/Form/FormBuilder/FormFieldsBuilder.vue'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -96,6 +97,56 @@ const defaultLocale = props.currentLocale
 
 const activeLocale = ref(defaultLocale)
 
+/* ===================== Fields ===================== */
+
+const resourceList = (value) => {
+    if (Array.isArray(value?.data)) return value.data
+    return Array.isArray(value) ? value : []
+}
+
+const makeFieldTranslations = (field) => {
+    const result = {}
+
+    resourceList(field?.translations).forEach((translation) => {
+        if (!translation?.locale) return
+        result[translation.locale] = {
+            label: translation.label || '',
+            placeholder: translation.placeholder || '',
+            description: translation.description || '',
+        }
+    })
+
+    const localeCode = props.currentLocale || field?.translation?.locale || defaultLocale
+    if (!result[localeCode]) result[localeCode] = { label: '', placeholder: '', description: '' }
+    return result
+}
+
+const jsonValue = (value) => {
+    if (value === null || value === undefined || value === '') return ''
+    return typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+}
+
+const makeFields = () => resourceList(formData.value?.fields).map((field) => ({
+    id: Number(field.id),
+    _delete: false,
+    name: field.name || '',
+    type: field.type || 'text',
+    activity: Boolean(field.activity),
+    required: Boolean(field.required),
+    readonly: Boolean(field.readonly),
+    disabled: Boolean(field.disabled),
+    sort: Number(field.sort ?? 100),
+    default_value: field.default_value ?? '',
+    validation: jsonValue(field.validation),
+    width: field.width || 'full',
+    settings: jsonValue(field.settings),
+    translations: makeFieldTranslations(field),
+}))
+
+const supportsDefaultValue = (field) => {
+    return !['file', 'select', 'radio', 'checkbox_group'].includes(field.type)
+}
+
 /* ===================== Form ===================== */
 
 const form = useForm({
@@ -118,6 +169,7 @@ const form = useForm({
     settings: formData.value.settings ?? null,
 
     translations: makeTranslations(),
+    fields: makeFields(),
 })
 
 const ensureTranslation = (localeCode) => {
@@ -193,6 +245,26 @@ const submitForm = () => {
         min_submit_seconds: Number(data.min_submit_seconds ?? 0),
         rate_limit: Number(data.rate_limit ?? 1),
         rate_limit_minutes: Number(data.rate_limit_minutes ?? 1),
+
+        fields: data.fields.map((field) => {
+            if (field.id && field._delete) {
+                return { id: Number(field.id), _delete: true }
+            }
+
+            return {
+                ...field,
+                id: field.id ? Number(field.id) : null,
+                _delete: false,
+                sort: Number(field.sort ?? 0),
+                activity: field.activity ? 1 : 0,
+                required: field.required ? 1 : 0,
+                readonly: field.readonly ? 1 : 0,
+                disabled: field.disabled ? 1 : 0,
+                default_value: supportsDefaultValue(field)
+                    ? (field.default_value || null)
+                    : null,
+            }
+        }),
     }))
 
     form.post(
@@ -407,6 +479,16 @@ const submitForm = () => {
                             </div>
                         </div>
                     </div>
+
+                    <!-- Form fields -->
+                    <FormFieldsBuilder
+                        v-model="form.fields"
+                        :active-locale="activeLocale"
+                        :locales="Object.keys(form.translations)"
+                        :field-types="fieldTypes"
+                        :field-widths="fieldWidths"
+                        :errors="form.errors"
+                    />
 
                     <!-- Spam protection -->
                     <div class="my-5 p-3 border border-slate-300 dark:border-slate-500

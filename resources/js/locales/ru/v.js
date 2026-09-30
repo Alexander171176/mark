@@ -1,4 +1,5 @@
 export default {
+    validationRulesJSON: 'Правила валидации (JSON)',
     value: 'Значение',
     values: 'Значения',
     variants: 'Варианты',

@@ -30,6 +30,7 @@ export default {
     code: 'Код',
     cohortEnrollments: 'Ағындарға арналған жазбалар',
     collapse: 'орау',
+    collapseAll: 'Барлығын жию',
     colorLabelTag: 'Белгі түсінің тегі',
     comment: 'Пікір',
     comments: 'Пікірлер',

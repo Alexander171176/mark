@@ -230,5 +230,6 @@ export default {
     system: 'Система',
     systemCode: 'Системный код',
     systemCodeText: 'Строчные латинские буквы, цифры и символ подчёркивания.',
+    systemName: 'Системное имя',
     systems: 'Системные',
 }

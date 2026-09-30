@@ -1,6 +1,7 @@
 export default {
     name: 'Аты',
     nameModule: 'Модуль атауы',
+    newField: 'Жаңа өріс',
     newImages: 'Жаңа суреттер',
     newPassword: 'Жаңа құпия сөз',
     next: 'Келесі',

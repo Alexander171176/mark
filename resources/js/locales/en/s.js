@@ -230,5 +230,6 @@ export default {
     system: 'System',
     systemCode: 'System code',
     systemCodeText: 'Lowercase Latin letters, numbers and underscores.',
+    systemName: 'System name',
     systems: 'Systems',
 }

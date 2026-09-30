@@ -19,11 +19,7 @@ class FormFieldData
         array $data,
         array $supportedLocales
     ): array {
-        $translations = Arr::get(
-            $data,
-            'translations',
-            []
-        );
+        $translations = Arr::get($data, 'translations', []);
 
         if (!is_array($translations)) {
             $translations = [];
@@ -32,11 +28,7 @@ class FormFieldData
         $preparedTranslations = [];
 
         foreach ($translations as $locale => $translation) {
-            if (!in_array(
-                $locale,
-                $supportedLocales,
-                true
-            )) {
+            if (!in_array($locale, $supportedLocales, true)) {
                 continue;
             }
 
@@ -65,7 +57,7 @@ class FormFieldData
             | ID
             |--------------------------------------------------------------------------
             |
-            | Используется только конструктором формы при Edit.
+            | Используется конструктором формы при Edit.
             | Для нового поля значение null.
             |
             */
@@ -169,28 +161,21 @@ class FormFieldData
      * $prefix:
      * - пустой для FormFieldRequest;
      * - fields.0 / fields.1 / ... для FormRequest.
-     *
-     * $formId необходим для проверки уникальности name
-     * внутри существующей формы.
-     *
-     * $fieldId необходим при обновлении существующего поля.
      */
     public static function rules(
         string $prefix = '',
         ?int $formId = null,
-        ?int $fieldId = null
+        ?int $fieldId = null,
+        ?string $type = null
     ): array {
-        $key = static fn (string $name): string =>
-        $prefix !== ''
-            ? "{$prefix}.{$name}"
-            : $name;
+        $key = self::keyResolver($prefix);
 
         $nameRule = Rule::unique(
             'form_fields',
             'name'
         );
 
-        if ($formId) {
+        if ($formId !== null) {
             $nameRule->where(
                 fn ($query) => $query->where(
                     'form_id',
@@ -199,10 +184,8 @@ class FormFieldData
             );
         }
 
-        if ($fieldId) {
-            $nameRule->ignore(
-                $fieldId
-            );
+        if ($fieldId !== null) {
+            $nameRule->ignore($fieldId);
         }
 
         return [
@@ -216,22 +199,27 @@ class FormFieldData
                 'required',
                 'string',
                 'max:100',
-                'regex:/^[a-z0-9]+(?:_[a-z0-9]+)*$/',
+                'regex:/^[a-z][a-z0-9_]*$/',
                 $nameRule,
             ],
 
             $key('type') => [
                 'required',
                 'string',
+                'max:50',
+
                 Rule::in(
                     array_keys(
-                        config(
-                            'forms.field_types',
-                            []
-                        )
+                        config('forms.field_types', [])
                     )
                 ),
             ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Состояние поля
+            |--------------------------------------------------------------------------
+            */
 
             $key('activity') => [
                 'required',
@@ -259,6 +247,12 @@ class FormFieldData
                 'min:0',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Значение и валидация
+            |--------------------------------------------------------------------------
+            */
+
             $key('default_value') => [
                 'nullable',
                 'string',
@@ -269,23 +263,44 @@ class FormFieldData
                 'array',
             ],
 
+            $key('validation.*') => [
+                'nullable',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Отображение
+            |--------------------------------------------------------------------------
+            */
+
             $key('width') => [
                 'required',
                 'string',
+                'max:20',
+
                 Rule::in(
                     array_keys(
-                        config(
-                            'forms.field_widths',
-                            []
-                        )
+                        config('forms.field_widths', [])
                     )
                 ),
             ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Дополнительные настройки
+            |--------------------------------------------------------------------------
+            */
 
             $key('settings') => [
                 'nullable',
                 'array',
             ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Переводы
+            |--------------------------------------------------------------------------
+            */
 
             $key('translations') => [
                 'required',
@@ -298,8 +313,20 @@ class FormFieldData
                 'array',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Label
+            |--------------------------------------------------------------------------
+            |
+            | Для hidden-поля label не требуется.
+            |
+            */
+
             $key('translations.*.label') => [
-                'required',
+                Rule::requiredIf(
+                    $type !== 'hidden'
+                ),
+                'nullable',
                 'string',
                 'max:255',
             ],
@@ -318,75 +345,44 @@ class FormFieldData
     }
 
     /**
-     * Дополнительная проверка логики поля.
+     * Дополнительная проверка данных поля.
      *
-     * Здесь размещаются правила, которые зависят
-     * одновременно от нескольких значений поля.
+     * Проверяются:
+     * - динамические Laravel validation rules;
+     * - настройки конкретных типов;
+     * - логическая совместимость параметров.
      */
     public static function validate(
         Validator $validator,
         array $field,
         string $prefix = ''
     ): void {
-        $key = static fn (string $name): string =>
-        $prefix !== ''
-            ? "{$prefix}.{$name}"
-            : $name;
-
-        $type = $field['type'] ?? null;
-
-        if (!$type) {
-            return;
-        }
-
-        $fieldTypes = config(
-            'forms.field_types',
-            []
+        self::validateDynamicRules(
+            $validator,
+            $field,
+            $prefix
         );
 
-        $typeConfig = $fieldTypes[$type]
-            ?? [];
-
-        /*
-        |--------------------------------------------------------------------------
-        | Multiple
-        |--------------------------------------------------------------------------
-        */
-
-        $supportsMultiple = (bool) (
-            $typeConfig['supports_multiple']
-            ?? false
+        self::validateFieldSettings(
+            $validator,
+            $field,
+            $prefix
         );
 
-        $multiple = (bool) (
-            $field['settings']['multiple']
-            ?? false
+        self::validateFieldBehavior(
+            $validator,
+            $field,
+            $prefix
         );
-
-        if (
-            $multiple
-            && !$supportsMultiple
-        ) {
-            $validator->errors()->add(
-                $key('settings.multiple'),
-                'Выбранный тип поля не поддерживает множественный выбор.'
-            );
-        }
     }
 
     /**
      * Сообщения валидации поля.
-     *
-     * Используем wildcard, поэтому сообщения подходят
-     * как для самостоятельного CRUD, так и для fields.*.
      */
     public static function messages(
         string $prefix = ''
     ): array {
-        $key = static fn (string $name): string =>
-        $prefix !== ''
-            ? "{$prefix}.{$name}"
-            : $name;
+        $key = self::keyResolver($prefix);
 
         return [
             $key('id.integer') =>
@@ -405,22 +401,28 @@ class FormFieldData
                 'Системное имя поля не должно превышать 100 символов.',
 
             $key('name.regex') =>
-                'Системное имя может содержать только строчные латинские буквы, цифры и символ подчёркивания.',
+                'Системное имя поля должно начинаться с латинской буквы и может содержать только строчные латинские буквы, цифры и символ подчёркивания.',
 
             $key('name.unique') =>
-                'Поле с таким системным именем уже существует в форме.',
+                'Поле с таким системным именем уже существует в этой форме.',
 
             $key('type.required') =>
-                'Необходимо выбрать тип поля.',
+                'Необходимо указать тип поля.',
+
+            $key('type.string') =>
+                'Тип поля должен быть строкой.',
+
+            $key('type.max') =>
+                'Тип поля не должен превышать 50 символов.',
 
             $key('type.in') =>
-                'Выбран недопустимый тип поля.',
+                'Указан недопустимый тип поля.',
 
             $key('activity.boolean') =>
-                'Активность поля должна быть логическим значением.',
+                'Поле активности должно быть логическим значением.',
 
             $key('required.boolean') =>
-                'Настройка обязательности поля должна быть логическим значением.',
+                'Настройка обязательности должна быть логическим значением.',
 
             $key('readonly.boolean') =>
                 'Настройка только для чтения должна быть логическим значением.',
@@ -429,31 +431,37 @@ class FormFieldData
                 'Настройка отключения поля должна быть логическим значением.',
 
             $key('sort.integer') =>
-                'Сортировка поля должна быть числом.',
+                'Поле сортировки должно быть числом.',
 
             $key('sort.min') =>
-                'Сортировка поля не может быть меньше 0.',
+                'Поле сортировки не может быть меньше 0.',
 
             $key('default_value.string') =>
                 'Значение по умолчанию должно быть строкой.',
 
             $key('validation.array') =>
-                'Настройки валидации поля должны быть массивом.',
+                'Правила валидации должны быть массивом или корректным JSON-массивом.',
 
             $key('width.required') =>
                 'Необходимо указать ширину поля.',
 
+            $key('width.string') =>
+                'Ширина поля должна быть строкой.',
+
+            $key('width.max') =>
+                'Значение ширины поля не должно превышать 20 символов.',
+
             $key('width.in') =>
-                'Выбрана недопустимая ширина поля.',
+                'Указано недопустимое значение ширины поля.',
 
             $key('settings.array') =>
-                'Дополнительные настройки поля должны быть массивом.',
+                'Дополнительные настройки поля должны быть массивом или корректным JSON-объектом.',
 
             $key('translations.required') =>
                 'Необходимо добавить хотя бы один перевод поля.',
 
             $key('translations.array') =>
-                'Переводы поля должны быть массивом.',
+                'Поле переводов должно быть массивом.',
 
             $key('translations.min') =>
                 'Необходимо добавить хотя бы одну локаль перевода.',
@@ -467,9 +475,367 @@ class FormFieldData
             $key('translations.*.label.max') =>
                 'Название поля не должно превышать 255 символов.',
 
+            $key('translations.*.placeholder.string') =>
+                'Placeholder поля должен быть строкой.',
+
             $key('translations.*.placeholder.max') =>
                 'Placeholder поля не должен превышать 255 символов.',
+
+            $key('translations.*.description.string') =>
+                'Описание поля должно быть строкой.',
         ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic validation
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Проверить динамические Laravel validation rules.
+     *
+     * Поддерживаются форматы:
+     *
+     * [
+     *     'string',
+     *     'max:255',
+     *     'min:3',
+     * ]
+     *
+     * и:
+     *
+     * [
+     *     'string' => true,
+     *     'max' => 255,
+     *     'min' => 3,
+     * ]
+     */
+    private static function validateDynamicRules(
+        Validator $validator,
+        array $field,
+        string $prefix
+    ): void {
+        $validation = $field['validation'] ?? null;
+
+        if (!is_array($validation)) {
+            return;
+        }
+
+        $allowedRules = config(
+            'forms.validation_rules',
+            []
+        );
+
+        foreach ($validation as $key => $value) {
+            $ruleName = is_int($key)
+                ? self::extractRuleName($value)
+                : strtolower(
+                    trim((string) $key)
+                );
+
+            if (
+                $ruleName === null
+                || $ruleName === ''
+                || !in_array(
+                    $ruleName,
+                    $allowedRules,
+                    true
+                )
+            ) {
+                $validator->errors()->add(
+                    self::key($prefix, 'validation'),
+                    sprintf(
+                        'Правило валидации "%s" не разрешено.',
+                        $ruleName
+                            ?: (
+                        is_scalar($value)
+                            ? (string) $value
+                            : ''
+                        )
+                    )
+                );
+            }
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Field settings
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Дополнительная проверка настроек поля.
+     */
+    private static function validateFieldSettings(
+        Validator $validator,
+        array $field,
+        string $prefix
+    ): void {
+        $settings = $field['settings'] ?? null;
+
+        if (!is_array($settings)) {
+            return;
+        }
+
+        if (($field['type'] ?? null) === 'file') {
+            self::validateFileSettings(
+                $validator,
+                $settings,
+                $prefix
+            );
+        }
+    }
+
+    /**
+     * Проверить настройки файлового поля.
+     */
+    private static function validateFileSettings(
+        Validator $validator,
+        array $settings,
+        string $prefix
+    ): void {
+        /*
+        |--------------------------------------------------------------------------
+        | multiple
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            array_key_exists('multiple', $settings)
+            && !is_bool($settings['multiple'])
+        ) {
+            $validator->errors()->add(
+                self::key($prefix, 'settings.multiple'),
+                'Настройка multiple должна быть логическим значением.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | max_files
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            array_key_exists('max_files', $settings)
+            && (
+                !is_numeric($settings['max_files'])
+                || (int) $settings['max_files'] < 1
+                || (int) $settings['max_files'] > (int) config(
+                    'forms.files.max_files',
+                    10
+                )
+            )
+        ) {
+            $validator->errors()->add(
+                self::key($prefix, 'settings.max_files'),
+                'Недопустимое максимальное количество файлов.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | max_size
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            array_key_exists('max_size', $settings)
+            && (
+                !is_numeric($settings['max_size'])
+                || (int) $settings['max_size'] < 1
+                || (int) $settings['max_size'] > (int) config(
+                    'forms.files.max_size',
+                    10 * 1024 * 1024
+                )
+            )
+        ) {
+            $validator->errors()->add(
+                self::key($prefix, 'settings.max_size'),
+                'Недопустимый максимальный размер файла.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | extensions
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            array_key_exists('extensions', $settings)
+            && !is_array($settings['extensions'])
+        ) {
+            $validator->errors()->add(
+                self::key($prefix, 'settings.extensions'),
+                'Список расширений файлов должен быть массивом.'
+            );
+
+            return;
+        }
+
+        if (!array_key_exists('extensions', $settings)) {
+            return;
+        }
+
+        $allowedExtensions = array_map(
+            'strtolower',
+            config('forms.files.extensions', [])
+        );
+
+        foreach ($settings['extensions'] as $extension) {
+            if (
+                !is_string($extension)
+                || !in_array(
+                    strtolower(trim($extension)),
+                    $allowedExtensions,
+                    true
+                )
+            ) {
+                $validator->errors()->add(
+                    self::key($prefix, 'settings.extensions'),
+                    sprintf(
+                        'Расширение файла "%s" не разрешено.',
+                        is_scalar($extension)
+                            ? (string) $extension
+                            : ''
+                    )
+                );
+            }
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Field behavior
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Проверить логическую совместимость
+     * отдельных настроек поля.
+     */
+    private static function validateFieldBehavior(
+        Validator $validator,
+        array $field,
+        string $prefix
+    ): void {
+        $type = $field['type'] ?? null;
+        $defaultValue = $field['default_value'] ?? null;
+
+        /*
+        |--------------------------------------------------------------------------
+        | File
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $type === 'file'
+            && $defaultValue !== null
+        ) {
+            $validator->errors()->add(
+                self::key($prefix, 'default_value'),
+                'Для файлового поля нельзя задавать значение по умолчанию.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Checkbox group
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $type === 'checkbox_group'
+            && $defaultValue !== null
+        ) {
+            $validator->errors()->add(
+                self::key($prefix, 'default_value'),
+                'Для группы checkbox значения по умолчанию задаются через варианты выбора.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Select / Radio
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            in_array(
+                $type,
+                [
+                    'select',
+                    'radio',
+                ],
+                true
+            )
+            && $defaultValue !== null
+        ) {
+            $validator->errors()->add(
+                self::key($prefix, 'default_value'),
+                'Для поля с вариантами выбора значение по умолчанию задаётся через вариант выбора.'
+            );
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Получить полный ключ поля.
+     */
+    private static function key(
+        string $prefix,
+        string $name
+    ): string {
+        return $prefix !== ''
+            ? "{$prefix}.{$name}"
+            : $name;
+    }
+
+    /**
+     * Resolver ключей для rules/messages.
+     */
+    private static function keyResolver(
+        string $prefix
+    ): callable {
+        return static fn (string $name): string =>
+        self::key(
+            $prefix,
+            $name
+        );
+    }
+
+    /**
+     * Получить имя Laravel validation rule
+     * из строки вида "max:255".
+     */
+    private static function extractRuleName(
+        mixed $rule
+    ): ?string {
+        if (!is_string($rule)) {
+            return null;
+        }
+
+        $rule = trim($rule);
+
+        if ($rule === '') {
+            return null;
+        }
+
+        return strtolower(
+            explode(
+                ':',
+                $rule,
+                2
+            )[0]
+        );
     }
 
     /**
@@ -562,10 +928,14 @@ class FormFieldData
 
     /**
      * Подготовка array / JSON значения.
+     *
+     * Важно:
+     * некорректное значение не превращаем в null,
+     * иначе правило array не сможет вернуть ошибку.
      */
     private static function prepareArrayValue(
         mixed $value
-    ): ?array {
+    ): mixed {
         if (
             $value === null
             || $value === ''
@@ -583,12 +953,17 @@ class FormFieldData
                 true
             );
 
-            return is_array($decoded)
-                ? $decoded
-                : null;
+            if (
+                json_last_error() === JSON_ERROR_NONE
+                && is_array($decoded)
+            ) {
+                return $decoded;
+            }
+
+            return $value;
         }
 
-        return null;
+        return $value;
     }
 
     /**
@@ -598,44 +973,12 @@ class FormFieldData
         mixed $value,
         bool $default = false
     ): bool {
-        if (
-            $value === null
-            || $value === ''
-        ) {
-            return $default;
-        }
+        $result = filter_var(
+            $value,
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
+        );
 
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        if (
-            is_int($value)
-            || is_float($value)
-        ) {
-            return (bool) $value;
-        }
-
-        if (is_string($value)) {
-            return match (
-            strtolower(
-                trim($value)
-            )
-            ) {
-                '1',
-                'true',
-                'yes',
-                'on' => true,
-
-                '0',
-                'false',
-                'no',
-                'off' => false,
-
-                default => $default,
-            };
-        }
-
-        return $default;
+        return $result ?? $default;
     }
 }

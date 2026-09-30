@@ -30,6 +30,7 @@ export default {
     code: 'Код',
     cohortEnrollments: 'Записи на потоки',
     collapse: 'свернуть',
+    collapseAll: 'Свернуть все',
     colorLabelTag: 'Цвет лейбла Тега',
     comment: 'Комментарий',
     comments: 'Комментарии',

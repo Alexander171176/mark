@@ -16,6 +16,7 @@ export default {
     default: 'Default',
     defaultImageAlt: 'Default Image',
     defaultImageTitle: 'Image Not Set',
+    defaultValue: 'Default value',
     defaultVariant: 'Default Variant',
     delete: 'Delete',
     deleteAccountButton: 'Delete Account',

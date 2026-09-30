@@ -25,6 +25,7 @@ import InputError from '@/Components/Admin/UI/Input/InputError.vue'
 import MetaDescTextarea from '@/Components/Admin/UI/Textarea/MetaDescTextarea.vue'
 import TinyEditor from '@/Components/Admin/UI/TinyEditor/TinyEditor.vue'
 import TranslationTabs from '@/Components/Admin/UI/Locale/TranslationTabs.vue'
+import FormFieldsBuilder from '@/Components/Admin/Form/FormBuilder/FormFieldsBuilder.vue'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -67,12 +68,13 @@ const form = useForm({
     captcha_enabled: Boolean(props.defaults?.captcha_enabled ?? false),
 
     auth_required: Boolean(props.defaults?.auth_required ?? false),
-
     settings: props.defaults?.settings ?? null,
 
     translations: {
         [defaultLocale]: makeTranslation(),
     },
+
+    fields: [],
 })
 
 const ensureTranslation = (localeCode) => {
@@ -89,39 +91,29 @@ watch(
     { immediate: true }
 )
 
-const currentTranslation = computed(() => {
-    return form.translations[activeLocale.value]
-})
+const currentTranslation = computed(() => form.translations[activeLocale.value])
 
 const getError = (key) => {
     return form.errors[`translations.${activeLocale.value}.${key}`]
 }
 
-/**
- * Карта переводов статусов формы.
- *
- * Ключ остаётся системным значением,
- * которое хранится в БД.
- *
- * Значение — ключ vue-i18n.
- */
+/* ===================== Fields ===================== */
+
+const supportsDefaultValue = (field) => {
+    return !['file', 'select', 'radio', 'checkbox_group'].includes(field.type)
+}
+
+/* ===================== Status ===================== */
+
 const statusTranslationMap = {
     draft: 'statusDraft',
     published: 'statusPublished',
     archived: 'statusArchived',
 }
 
-/**
- * Перевод статуса формы.
- */
 const statusLabel = (status) => {
     const translationKey = statusTranslationMap[status]
-
-    if (translationKey) {
-        return t(translationKey)
-    }
-
-    return status
+    return translationKey ? t(translationKey) : status
 }
 
 /* ===================== Submit ===================== */
@@ -141,6 +133,20 @@ const submitForm = () => {
         min_submit_seconds: Number(data.min_submit_seconds ?? 0),
         rate_limit: Number(data.rate_limit ?? 1),
         rate_limit_minutes: Number(data.rate_limit_minutes ?? 1),
+
+        fields: data.fields.map((field) => ({
+            ...field,
+            id: null,
+            _delete: false,
+            sort: Number(field.sort ?? 0),
+            activity: field.activity ? 1 : 0,
+            required: field.required ? 1 : 0,
+            readonly: field.readonly ? 1 : 0,
+            disabled: field.disabled ? 1 : 0,
+            default_value: supportsDefaultValue(field)
+                ? (field.default_value || null)
+                : null,
+        })),
     }))
 
     form.post(route('admin.forms.store'), {
@@ -232,11 +238,8 @@ const submitForm = () => {
                                     class="w-full px-2 py-0.5 form-select bg-white text-gray-600
                                            border border-slate-400 dark:border-slate-600 rounded-sm
                                            shadow-sm dark:bg-cyan-800 dark:text-slate-100">
-                                <option
-                                    v-for="(label, value) in statuses"
-                                    :key="value"
-                                    :value="value"
-                                >
+                                <option v-for="(label, value) in statuses"
+                                        :key="value" :value="value">
                                     {{ statusLabel(value) }}
                                 </option>
                             </select>
@@ -273,9 +276,8 @@ const submitForm = () => {
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
-                            <LabelInput
-                                for="subtitle"
-                                :value="`${t('subtitle')} [${activeLocale.toUpperCase()}]`" />
+                            <LabelInput for="subtitle"
+                                        :value="`${t('subtitle')} [${activeLocale.toUpperCase()}]`" />
 
                             <InputText id="subtitle" type="text"
                                        v-model="currentTranslation.subtitle"
@@ -285,9 +287,8 @@ const submitForm = () => {
                         </div>
 
                         <div class="mb-3 flex flex-col items-start">
-                            <LabelInput
-                                for="description"
-                                :value="`${t('description')} [${activeLocale.toUpperCase()}]`" />
+                            <LabelInput for="description"
+                                        :value="`${t('description')} [${activeLocale.toUpperCase()}]`" />
 
                             <TinyEditor v-model="currentTranslation.description" :height="350" />
                             <InputError class="mt-2" :message="getError('description')" />
@@ -313,14 +314,12 @@ const submitForm = () => {
                                     [{{ activeLocale.toUpperCase() }}]
                                 </LabelInput>
 
-                                <MetaDescTextarea
-                                    id="success_message"
-                                    v-model="currentTranslation.success_message"
-                                    class="w-full"
-                                />
+                                <MetaDescTextarea id="success_message"
+                                                  v-model="currentTranslation.success_message"
+                                                  class="w-full" />
 
-                                <InputError
-                                    class="mt-2" :message="getError('success_message')" />
+                                <InputError class="mt-2"
+                                            :message="getError('success_message')" />
                             </div>
 
                             <div class="flex flex-col items-start">
@@ -329,17 +328,25 @@ const submitForm = () => {
                                     [{{ activeLocale.toUpperCase() }}]
                                 </LabelInput>
 
-                                <MetaDescTextarea
-                                    id="error_message"
-                                    v-model="currentTranslation.error_message"
-                                    class="w-full"
-                                />
+                                <MetaDescTextarea id="error_message"
+                                                  v-model="currentTranslation.error_message"
+                                                  class="w-full" />
 
-                                <InputError
-                                    class="mt-2" :message="getError('error_message')" />
+                                <InputError class="mt-2"
+                                            :message="getError('error_message')" />
                             </div>
                         </div>
                     </div>
+
+                    <!-- Form fields -->
+                    <FormFieldsBuilder
+                        v-model="form.fields"
+                        :active-locale="activeLocale"
+                        :locales="Object.keys(form.translations)"
+                        :field-types="fieldTypes"
+                        :field-widths="fieldWidths"
+                        :errors="form.errors"
+                    />
 
                     <!-- Spam protection -->
                     <div class="my-5 p-3 border border-slate-300 dark:border-slate-500
@@ -389,14 +396,17 @@ const submitForm = () => {
                             </div>
 
                             <div class="flex flex-col items-start">
-                                <LabelInput for="rate_limit" :value="t('numberOfShipments')" />
+                                <LabelInput for="rate_limit"
+                                            :value="t('numberOfShipments')" />
                                 <InputNumber id="rate_limit" type="number" min="1"
                                              v-model.number="form.rate_limit" />
-                                <InputError class="mt-2" :message="form.errors.rate_limit" />
+                                <InputError class="mt-2"
+                                            :message="form.errors.rate_limit" />
                             </div>
 
                             <div class="flex flex-col items-start">
-                                <LabelInput for="rate_limit_minutes" :value="t('periodMinutes')" />
+                                <LabelInput for="rate_limit_minutes"
+                                            :value="t('periodMinutes')" />
                                 <InputNumber id="rate_limit_minutes" type="number" min="1"
                                              v-model.number="form.rate_limit_minutes" />
                                 <InputError class="mt-2"
@@ -423,11 +433,9 @@ const submitForm = () => {
                             {{ t('back') }}
                         </DefaultButton>
 
-                        <PrimaryButton
-                            type="submit"
-                            :disabled="form.processing"
-                            :class="{ 'opacity-25': form.processing }"
-                        >
+                        <PrimaryButton type="submit"
+                                       :disabled="form.processing"
+                                       :class="{ 'opacity-25': form.processing }">
                             {{ t('save') }}
                         </PrimaryButton>
                     </div>

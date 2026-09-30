@@ -9,55 +9,37 @@ trait HasFormTranslationsTrait
     /**
      * Синхронизация переводов сущности.
      *
-     * Список полей переводов определяется
-     * конкретным Controller через свойство:
+     * По умолчанию используются поля переводов
+     * текущего Controller из $translationFields.
      *
-     * protected array $translationFields = [...];
-     *
-     * - существующие переводы обновляются;
-     * - новые создаются;
-     * - отсутствующие в запросе удаляются.
+     * Для вложенных сущностей можно передать
+     * собственный список полей переводов.
      */
     protected function syncTranslations(
         Model $model,
-        array $translations
+        array $translations,
+        ?array $translationFields = null
     ): void {
+        $fields = $translationFields ?? $this->translationFields;
         $locales = [];
 
-        foreach (
-            $translations
-            as $locale => $translationData
-        ) {
+        foreach ($translations as $locale => $translationData) {
             $locale = (string) $locale;
 
-            if (
-                !in_array(
-                    $locale,
-                    $this->availableLocales(),
-                    true
-                )
-            ) {
+            if (!in_array($locale, $this->availableLocales(), true)) {
                 continue;
             }
 
             $data = [];
 
-            foreach (
-                $this->translationFields
-                as $field
-            ) {
-                $data[$field] =
-                    $translationData[$field]
-                    ?? null;
+            foreach ($fields as $field) {
+                $data[$field] = $translationData[$field] ?? null;
             }
 
-            $model->translations()
-                ->updateOrCreate(
-                    [
-                        'locale' => $locale,
-                    ],
-                    $data
-                );
+            $model->translations()->updateOrCreate(
+                ['locale' => $locale],
+                $data
+            );
 
             $locales[] = $locale;
         }
@@ -69,17 +51,12 @@ trait HasFormTranslationsTrait
         */
 
         if ($locales === []) {
-            $model->translations()
-                ->delete();
-
+            $model->translations()->delete();
             return;
         }
 
         $model->translations()
-            ->whereNotIn(
-                'locale',
-                $locales
-            )
+            ->whereNotIn('locale', $locales)
             ->delete();
     }
 }

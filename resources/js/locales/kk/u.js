@@ -1,5 +1,6 @@
 export default {
     underModeration: 'Модерацияда',
+    undoDeletion: 'Жоюды болдырмау',
     unit: 'Өлшем бірлігі',
     unitProperty: 'Тұрақты өлшем бірлігі',
     unknown: 'Белгісіз',

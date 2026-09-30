@@ -230,5 +230,6 @@ export default {
     system: 'Жүйе',
     systemCode: 'Жүйелік код',
     systemCodeText: 'Латын әріптерінің кіші әріптері, сандары және астын сызулары.',
+    systemName: 'Жүйе атауы',
     systems: 'Жүйелік',
 }

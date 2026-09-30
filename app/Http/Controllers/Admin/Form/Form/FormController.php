@@ -351,11 +351,21 @@ class FormController extends BaseFormAdminController
     ): RedirectResponse {
         $data = $request->validated();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Вложенные данные
+        |--------------------------------------------------------------------------
+        */
+
         $translations = $data['translations']
             ?? [];
 
+        $fields = $data['fields']
+            ?? [];
+
         unset(
-            $data['translations']
+            $data['translations'],
+            $data['fields']
         );
 
         /*
@@ -387,7 +397,8 @@ class FormController extends BaseFormAdminController
                 function () use (
                     &$form,
                     $data,
-                    $translations
+                    $translations,
+                    $fields
                 ) {
                     /*
                     |--------------------------------------------------------------------------
@@ -423,13 +434,24 @@ class FormController extends BaseFormAdminController
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Переводы
+                    | Переводы формы
                     |--------------------------------------------------------------------------
                     */
 
                     $this->syncTranslations(
                         $form,
                         $translations
+                    );
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Поля формы
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $this->createFormFields(
+                        $form,
+                        $fields
                     );
                 }
             );
@@ -623,11 +645,21 @@ class FormController extends BaseFormAdminController
 
         $data = $request->validated();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Вложенные данные
+        |--------------------------------------------------------------------------
+        */
+
         $translations = $data['translations']
+            ?? [];
+
+        $fields = $data['fields']
             ?? [];
 
         unset(
             $data['translations'],
+            $data['fields'],
             $data['_method']
         );
 
@@ -660,7 +692,8 @@ class FormController extends BaseFormAdminController
                 function () use (
                     $form,
                     $data,
-                    $translations
+                    $translations,
+                    $fields
                 ) {
                     /*
                     |--------------------------------------------------------------------------
@@ -674,13 +707,24 @@ class FormController extends BaseFormAdminController
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Переводы
+                    | Переводы формы
                     |--------------------------------------------------------------------------
                     */
 
                     $this->syncTranslations(
                         $form,
                         $translations
+                    );
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Поля формы
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $this->syncFormFields(
+                        $form,
+                        $fields
                     );
                 }
             );
@@ -921,6 +965,225 @@ class FormController extends BaseFormAdminController
             return back()->with(
                 'error',
                 'Ошибка при массовом удалении форм.'
+            );
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Form fields helpers
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Создание вложенных полей новой формы.
+     */
+    private function createFormFields(
+        Form $form,
+        array $fields
+    ): void {
+        foreach ($fields as $fieldData) {
+            if (!is_array($fieldData)) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Вложенные данные поля
+            |--------------------------------------------------------------------------
+            */
+
+            $translations = $fieldData['translations']
+                ?? [];
+
+            unset(
+                $fieldData['id'],
+                $fieldData['_delete'],
+                $fieldData['translations']
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Поле
+            |--------------------------------------------------------------------------
+            |
+            | form_id вручную не передаём.
+            | Связь устанавливается через hasMany relation.
+            |
+            */
+
+            $field = $form
+                ->fields()
+                ->create(
+                    $fieldData
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Переводы поля
+            |--------------------------------------------------------------------------
+            */
+
+            $this->syncTranslations(
+                $field,
+                $translations,
+                [
+                    'label',
+                    'placeholder',
+                    'description',
+                ]
+            );
+        }
+    }
+
+    /**
+     * Синхронизация вложенных полей формы.
+     *
+     * Порядок операций:
+     * 1. DELETE;
+     * 2. UPDATE;
+     * 3. CREATE.
+     *
+     * Отсутствие существующего поля в массиве
+     * не считается командой удаления.
+     */
+    private function syncFormFields(
+        Form $form,
+        array $fields
+    ): void {
+        /*
+        |--------------------------------------------------------------------------
+        | DELETE
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($fields as $fieldData) {
+            if (
+                !is_array($fieldData)
+                || empty($fieldData['_delete'])
+            ) {
+                continue;
+            }
+
+            $fieldId = isset($fieldData['id'])
+            && is_numeric($fieldData['id'])
+                ? (int) $fieldData['id']
+                : null;
+
+            if ($fieldId === null) {
+                continue;
+            }
+
+            /*
+             * Ищем поле строго внутри текущей формы.
+             * Это дополнительная защита persistence-уровня.
+             */
+            $field = $form
+                ->fields()
+                ->whereKey($fieldId)
+                ->firstOrFail();
+
+            $field->delete();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($fields as $fieldData) {
+            if (
+                !is_array($fieldData)
+                || !empty($fieldData['_delete'])
+            ) {
+                continue;
+            }
+
+            $fieldId = isset($fieldData['id'])
+            && is_numeric($fieldData['id'])
+                ? (int) $fieldData['id']
+                : null;
+
+            if ($fieldId === null) {
+                continue;
+            }
+
+            $translations = $fieldData['translations']
+                ?? [];
+
+            unset(
+                $fieldData['id'],
+                $fieldData['_delete'],
+                $fieldData['translations']
+            );
+
+            $field = $form
+                ->fields()
+                ->whereKey($fieldId)
+                ->firstOrFail();
+
+            $field->update(
+                $fieldData
+            );
+
+            $this->syncTranslations(
+                $field,
+                $translations,
+                [
+                    'label',
+                    'placeholder',
+                    'description',
+                ]
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($fields as $fieldData) {
+            if (
+                !is_array($fieldData)
+                || !empty($fieldData['_delete'])
+            ) {
+                continue;
+            }
+
+            $fieldId = isset($fieldData['id'])
+            && is_numeric($fieldData['id'])
+                ? (int) $fieldData['id']
+                : null;
+
+            if ($fieldId !== null) {
+                continue;
+            }
+
+            $translations = $fieldData['translations']
+                ?? [];
+
+            unset(
+                $fieldData['id'],
+                $fieldData['_delete'],
+                $fieldData['translations']
+            );
+
+            $field = $form
+                ->fields()
+                ->create(
+                    $fieldData
+                );
+
+            $this->syncTranslations(
+                $field,
+                $translations,
+                [
+                    'label',
+                    'placeholder',
+                    'description',
+                ]
             );
         }
     }

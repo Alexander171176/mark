@@ -1,6 +1,7 @@
 export default {
     name: 'Имя',
     nameModule: 'Название модуля',
+    newField: 'Новое поле',
     newImages: 'Новые изображения',
     newPassword: 'Новый пароль',
     next: 'Следующая',

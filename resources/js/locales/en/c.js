@@ -30,6 +30,7 @@ export default {
     code: 'Code',
     cohortEnrollments: 'Records to streams',
     collapse: 'collapse',
+    collapseAll: 'Collapse all',
     colorLabelTag: 'Label Color Tag',
     comment: 'Comment',
     comments: 'Comments',

@@ -1,5 +1,6 @@
 export default {
     underModeration: 'На модерации',
+    undoDeletion: 'Отменить удаление',
     unit: 'Единица Измерения',
     unitProperty: 'Статичная единица измерения',
     unknown: 'Неизвестно',

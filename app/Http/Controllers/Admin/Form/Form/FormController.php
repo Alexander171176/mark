@@ -529,7 +529,7 @@ class FormController extends BaseFormAdminController
             );
 
         return Inertia::render(
-            'Admin/Form/Form/Show',
+            'Admin/Form/Forms/Show',
             [
                 'form' => new FormResource(
                     $form

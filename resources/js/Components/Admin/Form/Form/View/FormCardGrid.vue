@@ -12,6 +12,7 @@ import draggable from 'vuedraggable'
 
 import ActivityToggle from '@/Components/Admin/UI/Buttons/ActivityToggle.vue'
 import IconEdit from '@/Components/Admin/UI/Buttons/IconEdit.vue'
+import IconShow from '@/Components/Admin/UI/Buttons/IconShow.vue'
 import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue'
 
 const { t, locale } = useI18n()
@@ -432,6 +433,10 @@ const truncateText = (text, maxLength = 80) => {
                                     :isActive="form.activity"
                                     :title="form.activity ? t('enabled') : t('disabled')"
                                     @toggle-activity="emit('toggle-activity', form)"
+                                />
+
+                                <IconShow
+                                    :href="route('admin.forms.show', { form: form.id })"
                                 />
 
                                 <IconEdit

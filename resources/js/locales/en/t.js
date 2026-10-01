@@ -37,6 +37,7 @@ export default {
     totals: 'Sum',
     tracks: 'Tracks',
     translate: 'Translate',
+    translations: 'Translations',
     translator: 'Translator',
     translationRemoved: 'Translation removed',
     translationWillAppearHere: 'Translation will appear here...',

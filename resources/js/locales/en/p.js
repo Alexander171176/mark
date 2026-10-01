@@ -83,6 +83,7 @@ export default {
     profileInformation: 'Profile Information',
     profileInformationDescription: 'Update your account\'s profile information and email address.',
     progress: 'Progress',
+    protectionEnabled: 'Protection enabled',
     provider: 'Provider',
     providerPayload: 'Data provider',
     providerRef: 'Identifier from the provider',

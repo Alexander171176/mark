@@ -37,6 +37,7 @@ export default {
     totals: 'Қосынды',
     tracks: 'Жолдар',
     translate: 'Аударма',
+    translations: 'Аудармалар',
     translator: 'Аудармашы',
     translationRemoved: 'Аударма жойылды',
     translationWillAppearHere: 'Аударма осында пайда болады...',

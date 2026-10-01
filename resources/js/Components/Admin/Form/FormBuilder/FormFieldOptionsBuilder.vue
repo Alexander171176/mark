@@ -124,10 +124,6 @@ const addOption = () => {
     const options = [...props.modelValue]
     const option = makeOption()
 
-    props.locales.forEach(localeCode => {
-        ensureOptionTranslation(option, localeCode)
-    })
-
     option.sort = options.length
         ? Math.max(...options.map(item => Number(item.sort || 0))) + 100
         : 100

@@ -37,6 +37,7 @@ export default {
     totals: 'Сумма',
     tracks: 'Треки',
     translate: 'Перевести',
+    translations: 'Переводы',
     translator: 'Переводчик',
     translationRemoved: 'Перевод удалён',
     translationWillAppearHere: 'Здесь появится перевод...',

@@ -83,6 +83,7 @@ export default {
     profileInformation: 'Профиль туралы ақпарат',
     profileInformationDescription: 'Тіркелгіңіздің профиль ақпаратын және электрондық поштасын жаңартыңыз.',
     progress: 'Прогресс',
+    protectionEnabled: 'Қорғау қосылды',
     provider: 'Провайдер',
     providerPayload: 'Деректер провайдері',
     providerRef: 'Провайдерден алынған идентификатор',

@@ -31,6 +31,7 @@ export default {
     inTemplates: 'Which templates are used in (separated by commas, without spaces)',
     ipAddress: 'IP Address',
     irreversibleOperation: 'This operation is irreversible and will permanently delete the data!',
+    isNoTranslation: 'There is no translation available for this locale.',
     isCorrect: 'Correctly',
     isDark: 'Option for dark theme',
     isLeft: 'left',

@@ -83,6 +83,7 @@ export default {
     profileInformation: 'Информация профиля',
     profileInformationDescription: 'Обновите информацию профиля вашей учетной записи и адрес электронной почты.',
     progress: 'Прогресс',
+    protectionEnabled: 'Защита включена',
     provider: 'Провайдер',
     providerPayload: 'Провайдер-данные',
     providerRef: 'Идентификатор у провайдера',

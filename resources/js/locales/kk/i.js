@@ -31,6 +31,7 @@ export default {
     inTemplates: 'Қандай үлгілерде қолданылады (үтір арқылы, бос орынсыз)',
     ipAddress: 'IP мекенжайы',
     irreversibleOperation: 'Бұл әрекет қайтымсыз және деректерді түпкілікті жояды!',
+    isNoTranslation: 'Бұл тіл үшін қол жетімді аударма жоқ.',
     isCorrect: 'Дұрыс',
     isDark: 'Қараңғы тақырып опциясы',
     isLeft: 'қалды',

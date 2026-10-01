@@ -248,9 +248,11 @@ const closeModal = () => {
             </TitlePage>
         </template>
 
-        <div class="w-full max-w-12xl mx-auto px-2 sm:px-4 lg:px-6 py-3">
+        <div
+            class="px-2 py-2 w-full max-w-12xl mx-auto"
+        >
             <div
-                class="p-3 sm:p-4 lg:p-6 bg-slate-50 dark:bg-slate-700
+                class="p-4 bg-slate-50 dark:bg-slate-700
                        border border-blue-400 dark:border-blue-200
                        overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
                        bg-opacity-95 dark:bg-opacity-95"

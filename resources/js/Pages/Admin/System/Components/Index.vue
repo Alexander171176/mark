@@ -118,11 +118,14 @@ const toggleAside = () => {
             </TitlePage>
         </template>
 
-        <div class="w-full px-2 py-3 sm:px-4 lg:px-6">
+        <div
+            class="px-2 py-2 w-full max-w-12xl mx-auto"
+        >
             <div
-                class="mx-auto w-full max-w-7xl overflow-hidden rounded-xl
-                       border border-blue-300 bg-slate-50 shadow-md
-                       dark:border-blue-200 dark:bg-slate-800"
+                class="p-4 bg-slate-50 dark:bg-slate-700
+                       border border-blue-400 dark:border-blue-200
+                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                       bg-opacity-95 dark:bg-opacity-95"
             >
                 <div
                     class="border-b border-rose-200 bg-amber-50 px-3 py-2

@@ -1413,7 +1413,9 @@ const handleSortOrderUpdate = (newOrderIds) => {
             <TitlePage>{{ t('marketCompanies') }}</TitlePage>
         </template>
 
-        <div class="px-2 py-2 w-full max-w-12xl mx-auto">
+        <div
+            class="px-2 py-2 w-full max-w-12xl mx-auto"
+        >
             <div
                 class="p-4 bg-slate-50 dark:bg-slate-700
                        border border-blue-400 dark:border-blue-200

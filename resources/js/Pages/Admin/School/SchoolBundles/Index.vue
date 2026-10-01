@@ -796,12 +796,14 @@ const toggleActivity = (bundle) => {
             </TitlePage>
         </template>
 
-        <div class="px-2 py-2 w-full max-w-12xl mx-auto">
+        <div
+            class="px-2 py-2 w-full max-w-12xl mx-auto"
+        >
             <div
                 class="p-4 bg-slate-50 dark:bg-slate-700
                        border border-blue-400 dark:border-blue-200
-                       overflow-hidden shadow-md shadow-gray-500
-                       dark:shadow-slate-400 bg-opacity-95 dark:bg-opacity-95"
+                       overflow-hidden shadow-md shadow-gray-500 dark:shadow-slate-400
+                       bg-opacity-95 dark:bg-opacity-95"
             >
                 <!-- Header -->
                 <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">

@@ -71,19 +71,9 @@ const getShopTitle = (shop) => getShopTranslation(shop)?.title || `ID: ${shop?.i
 
 /** Поля перевода магазина для поиска/сортировки */
 const getShopTranslationTitle = (shop) => getShopTranslation(shop)?.title || ''
-const getShopSubtitle = (shop) => getShopTranslation(shop)?.subtitle || ''
-const getShopShort = (shop) => getShopTranslation(shop)?.short || ''
-const getShopDescription = (shop) => getShopTranslation(shop)?.description || ''
 
 /** Перевод компании */
 const getCompanyTranslation = (shop) => shop?.company?.translation || {}
-
-/** Название компании для отображения */
-const getCompanyTitle = (shop) => {
-    return getCompanyTranslation(shop)?.title
-        || shop?.company?.legal_name
-        || `Company ID: ${shop?.market_company_id}`
-}
 
 /** Название компании текущей локали для поиска */
 const getCompanyTranslationTitle = (shop) => getCompanyTranslation(shop)?.title || ''
@@ -1179,7 +1169,9 @@ const handleSortOrderUpdate = (newOrderIds) => {
             <TitlePage>{{ t('marketShops') }}</TitlePage>
         </template>
 
-        <div class="px-2 py-2 w-full max-w-12xl mx-auto">
+        <div
+            class="px-2 py-2 w-full max-w-12xl mx-auto"
+        >
             <div
                 class="p-4 bg-slate-50 dark:bg-slate-700
                        border border-blue-400 dark:border-blue-200

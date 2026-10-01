@@ -58,29 +58,29 @@ class FormFieldController extends BaseFormAdminController
         'description',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | CRUD
+    |--------------------------------------------------------------------------
+    */
+
     /**
      * Список полей форм.
      *
-     * Поддерживаемые режимы обработки:
+     * Поддерживаются режимы:
      * - frontend;
      * - server;
      * - auto.
      *
-     * Дополнительно поддерживается фильтрация
-     * по конкретной форме:
+     * Также поддерживается фильтрация:
      *
      * /admin/form-fields?form_id=5
      */
-    public function index(
-        Request $request
-    ): Response {
-        $currentLocale = $this->resolveLocale(
-            $request
-        );
+    public function index(Request $request): Response
+    {
+        $currentLocale = $this->resolveLocale($request);
 
-        $settings = app(
-            AdminSettingsService::class
-        );
+        $settings = app(AdminSettingsService::class);
 
         /*
         |--------------------------------------------------------------------------
@@ -128,34 +128,23 @@ class FormFieldController extends BaseFormAdminController
         $form = null;
 
         /*
-         * Если передан form_id, сразу проверяем:
+         * Если передан form_id, проверяем:
          * - существует ли форма;
          * - доступна ли она текущему пользователю.
-         *
-         * Одновременно подготавливаем данные формы
-         * для FormSharedResource.
          */
         if ($formId) {
-            $form = $this->formQuery(
-                $currentLocale
-            )
+            $form = $this->formQuery($currentLocale)
                 ->withCount([
                     'fields',
                     'submissions',
                 ])
-                ->findOrFail(
-                    $formId
-                );
+                ->findOrFail($formId);
         }
 
         /*
         |--------------------------------------------------------------------------
         | Определение режима обработки
         |--------------------------------------------------------------------------
-        |
-        | При наличии form_id считаем только поля
-        | выбранной формы.
-        |
         */
 
         $fieldsCount = $this->applyFormFilter(
@@ -228,9 +217,7 @@ class FormFieldController extends BaseFormAdminController
                     */
 
                     'form' => $form
-                        ? new FormSharedResource(
-                            $form
-                        )
+                        ? new FormSharedResource($form)
                         : null,
 
                     'formId' =>
@@ -295,12 +282,11 @@ class FormFieldController extends BaseFormAdminController
                         $processingMode,
 
                     'fields' => [],
+
                     'fieldsCount' => 0,
 
                     'form' => $form
-                        ? new FormSharedResource(
-                            $form
-                        )
+                        ? new FormSharedResource($form)
                         : null,
 
                     'formId' =>
@@ -324,316 +310,39 @@ class FormFieldController extends BaseFormAdminController
         }
     }
 
-    /**
-     * Страница создания поля формы.
-     */
-    public function create(
-        Request $request
-    ): Response {
-        $currentLocale = $this->resolveLocale(
-            $request
-        );
-
-        $form = null;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Предварительно выбранная форма
-        |--------------------------------------------------------------------------
-        |
-        | Позволяет открыть создание поля:
-        |
-        | /admin/form-fields/create?form_id=5
-        |
-        */
-
-        if ($request->filled('form_id')) {
-            $form = $this->formQuery(
-                $currentLocale
-            )
-                ->withCount([
-                    'fields',
-                    'submissions',
-                ])
-                ->findOrFail(
-                    (int) $request->query(
-                        'form_id'
-                    )
-                );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Доступные формы
-        |--------------------------------------------------------------------------
-        |
-        | Нужны также в случае, если Create открыт
-        | без предварительно выбранного form_id.
-        |
-        */
-
-        $forms = $this->formsForSelect(
-            $currentLocale
-        );
-
-        return Inertia::render(
-            'Admin/Form/FormFields/Create',
-            [
-                'form' => $form
-                    ? new FormSharedResource(
-                        $form
-                    )
-                    : null,
-
-                'forms' => FormSharedResource::collection(
-                    $forms
-                ),
-
-                'currentLocale' =>
-                    $currentLocale,
-
-                'availableLocales' =>
-                    $this->availableLocales(),
-
-                'fieldTypes' => config(
-                    'forms.field_types',
-                    []
-                ),
-
-                'fieldWidths' => config(
-                    'forms.field_widths',
-                    []
-                ),
-
-                'validationRules' => config(
-                    'forms.validation_rules',
-                    []
-                ),
-
-                'fileSettings' => config(
-                    'forms.files',
-                    []
-                ),
-
-                'defaults' => [
-                    'form_id' =>
-                        $form?->id,
-
-                    'type' =>
-                        'text',
-
-                    'activity' =>
-                        true,
-
-                    'required' =>
-                        false,
-
-                    'readonly' =>
-                        false,
-
-                    'disabled' =>
-                        false,
-
-                    'sort' =>
-                        100,
-
-                    'default_value' =>
-                        null,
-
-                    'validation' =>
-                        null,
-
-                    'width' =>
-                        'full',
-
-                    'settings' =>
-                        null,
-                ],
-            ]
-        );
+    /** Редирект на страницу редактирования */
+    public function show(string $id): RedirectResponse
+    {
+        return redirect()->route('admin.formFields.edit', $id);
     }
 
     /**
-     * Создание поля формы.
-     */
-    public function store(
-        FormFieldRequest $request
-    ): RedirectResponse {
-        $validated = $request->validated();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Проверяем доступ к родительской форме
-        |--------------------------------------------------------------------------
-        |
-        | Нельзя создать поле в форме другого пользователя,
-        | даже если form_id прошёл обычную exists-валидацию.
-        |
-        */
-
-        $this->accessibleFormsQuery()
-            ->findOrFail(
-                (int) $validated['form_id']
-            );
-
-        try {
-            $field = DB::transaction(
-                function () use ($validated) {
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Поле
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $field = FormField::query()
-                        ->create(
-                            $this->fieldData(
-                                $validated
-                            )
-                        );
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Переводы
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $this->syncTranslations(
-                        $field,
-                        $validated['translations']
-                    );
-
-                    return $field;
-                }
-            );
-
-            return redirect()
-                ->route(
-                    'admin.formFields.edit',
-                    [
-                        'formField' =>
-                            $field->id,
-                    ]
-                )
-                ->with(
-                    'success',
-                    'Поле формы успешно создано.'
-                );
-        } catch (Throwable $e) {
-            Log::error(
-                'Ошибка при создании поля формы: '
-                . $e->getMessage(),
-                [
-                    'form_id' =>
-                        $validated['form_id'] ?? null,
-
-                    'exception' =>
-                        $e,
-                ]
-            );
-
-            return back()
-                ->withInput()
-                ->with(
-                    'error',
-                    'Ошибка при создании поля формы.'
-                );
-        }
-    }
-
-    /**
-     * Просмотр поля формы.
-     */
-    public function show(
-        int $formField,
-        Request $request
-    ): Response {
-        $currentLocale = $this->resolveLocale(
-            $request
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Полный набор данных
-        |--------------------------------------------------------------------------
-        |
-        | Доступ к полю проверяется через baseQuery(),
-        | который учитывает владельца родительской формы.
-        |
-        */
-
-        $formField = $this->fullFieldQuery()
-            ->findOrFail(
-                $formField
-            );
-
-        return Inertia::render(
-            'Admin/Form/FormFields/Show',
-            [
-                'field' => new FormFieldResource(
-                    $formField
-                ),
-
-                'form' => $formField->form
-                    ? new FormSharedResource(
-                        $formField->form
-                    )
-                    : null,
-
-                'currentLocale' =>
-                    $currentLocale,
-
-                'availableLocales' =>
-                    $this->availableLocales(),
-
-                'fieldTypes' => config(
-                    'forms.field_types',
-                    []
-                ),
-
-                'fieldWidths' => config(
-                    'forms.field_widths',
-                    []
-                ),
-
-                'validationRules' => config(
-                    'forms.validation_rules',
-                    []
-                ),
-
-                'fileSettings' => config(
-                    'forms.files',
-                    []
-                ),
-            ]
-        );
-    }
-
-    /**
-     * Страница редактирования поля формы.
+     * Страница редактирования отдельного поля формы.
+     *
+     * Это упрощённый интерфейс для работы
+     * с одним конкретным полем:
+     * - основные настройки;
+     * - переводы;
+     * - варианты значений;
+     * - переводы вариантов.
      */
     public function edit(
         int $formField,
         Request $request
     ): Response {
-        $currentLocale = $this->resolveLocale(
-            $request
-        );
+        $currentLocale = $this->resolveLocale($request);
 
         $formField = $this->fullFieldQuery()
-            ->findOrFail(
-                $formField
-            );
+            ->findOrFail($formField);
 
         /*
         |--------------------------------------------------------------------------
         | Доступные формы
         |--------------------------------------------------------------------------
         |
-        | Backend допускает изменение form_id,
-        | поэтому Edit должен получить список форм,
-        | в которые пользователь имеет право
-        | переместить поле.
+        | Backend допускает изменение form_id.
+        | Поэтому Edit получает только те формы,
+        | к которым текущий пользователь имеет доступ.
         |
         */
 
@@ -688,7 +397,13 @@ class FormFieldController extends BaseFormAdminController
     }
 
     /**
-     * Обновление поля формы.
+     * Обновление отдельного поля формы.
+     *
+     * В одной транзакции обновляются:
+     * - основные данные поля;
+     * - переводы поля;
+     * - варианты значений;
+     * - переводы вариантов.
      */
     public function update(
         FormFieldRequest $request,
@@ -701,20 +416,18 @@ class FormFieldController extends BaseFormAdminController
         */
 
         $formField = $this->baseQuery()
-            ->findOrFail(
-                $formField
-            );
+            ->findOrFail($formField);
 
         $validated = $request->validated();
 
         /*
         |--------------------------------------------------------------------------
-        | Проверяем доступ к новой родительской форме
+        | Проверяем доступ к родительской форме
         |--------------------------------------------------------------------------
         |
-        | form_id может быть изменён при редактировании.
-        | Поэтому проверяем не только текущего владельца
-        | поля, но и форму, в которую поле переносится.
+        | form_id может быть изменён.
+        | Поэтому необходимо проверить форму,
+        | в которую переносится поле.
         |
         */
 
@@ -731,7 +444,19 @@ class FormFieldController extends BaseFormAdminController
                 ) {
                     /*
                     |--------------------------------------------------------------------------
-                    | Поле
+                    | Вложенные данные
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $translations = $validated['translations']
+                        ?? [];
+
+                    $options = $validated['options']
+                        ?? [];
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Основные данные поля
                     |--------------------------------------------------------------------------
                     */
 
@@ -743,20 +468,36 @@ class FormFieldController extends BaseFormAdminController
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Переводы
+                    | Переводы поля
                     |--------------------------------------------------------------------------
                     */
 
                     $this->syncTranslations(
                         $formField,
-                        $validated['translations']
+                        $translations,
+                        [
+                            'label',
+                            'placeholder',
+                            'description',
+                        ]
+                    );
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Варианты значений
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $this->syncFormFieldOptions(
+                        $formField,
+                        $options
                     );
                 }
             );
 
             return redirect()
                 ->route(
-                    'admin.formFields.edit',
+                    'admin.formFields.index',
                     [
                         'formField' =>
                             $formField->id,
@@ -800,9 +541,7 @@ class FormFieldController extends BaseFormAdminController
         */
 
         $formField = $this->baseQuery()
-            ->findOrFail(
-                $formField
-            );
+            ->findOrFail($formField);
 
         $formId = (int) $formField->form_id;
 
@@ -919,9 +658,8 @@ class FormFieldController extends BaseFormAdminController
                     | Массовое удаление
                     |--------------------------------------------------------------------------
                     |
-                    | В отличие от Form здесь нет запрета
-                    | на удаление при наличии исторических
-                    | submission values/files.
+                    | Исторические submission values/files
+                    | не удаляются.
                     |
                     | Их form_field_id становится NULL,
                     | snapshot-данные сохраняются.
@@ -1009,8 +747,6 @@ class FormFieldController extends BaseFormAdminController
      *
      * Используется при:
      * - Index;
-     * - Create;
-     * - Store;
      * - Edit;
      * - Update;
      * - смене form_id.
@@ -1101,9 +837,6 @@ class FormFieldController extends BaseFormAdminController
 
     /**
      * Применить фильтр по родительской форме.
-     *
-     * Если formId не передан, запрос
-     * остаётся без дополнительного ограничения.
      */
     private function applyFormFilter(
         Builder $query,
@@ -1124,13 +857,13 @@ class FormFieldController extends BaseFormAdminController
      *
      * Server:
      * - поиск выполняется в БД;
-     * - сортировка / фильтрация выполняется в БД;
+     * - сортировка выполняется в БД;
      * - используется серверная пагинация.
      *
      * Frontend:
-     * - сервер отдаёт весь отфильтрованный список;
-     * - поиск, сортировка, фильтрация
-     *   и пагинация выполняются Vue.
+     * - сервер отдаёт весь список;
+     * - поиск, сортировка и пагинация
+     *   выполняются Vue.
      */
     private function getIndexFields(
         string $locale,
@@ -1192,10 +925,6 @@ class FormFieldController extends BaseFormAdminController
                 |--------------------------------------------------------------------------
                 | Родительская форма
                 |--------------------------------------------------------------------------
-                |
-                | FormSharedResource использует уже
-                | загруженные translations и user.
-                |
                 */
 
                 'form.translations',
@@ -1204,7 +933,7 @@ class FormFieldController extends BaseFormAdminController
 
                 /*
                 |--------------------------------------------------------------------------
-                | Варианты выбора
+                | Варианты значений
                 |--------------------------------------------------------------------------
                 |
                 | Полный FormFieldResource отдаёт
@@ -1225,9 +954,8 @@ class FormFieldController extends BaseFormAdminController
      * Подготовить конкретную родительскую форму
      * для FormSharedResource.
      *
-     * Используется:
-     * - Index с form_id;
-     * - Create с form_id.
+     * Используется в Index
+     * при фильтрации по form_id.
      */
     private function formQuery(
         string $locale
@@ -1250,11 +978,7 @@ class FormFieldController extends BaseFormAdminController
 
     /**
      * Получить доступные формы
-     * для выбора родительской формы.
-     *
-     * Используется:
-     * - Create;
-     * - Edit.
+     * для выбора родительской формы в Edit.
      *
      * Загружаются только данные,
      * необходимые FormSharedResource.
@@ -1286,13 +1010,318 @@ class FormFieldController extends BaseFormAdminController
 
     /*
     |--------------------------------------------------------------------------
+    | Form field options helpers
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Синхронизация вариантов значений поля.
+     *
+     * Порядок:
+     * 1. DELETE;
+     * 2. UPDATE;
+     * 3. CREATE.
+     *
+     * Отсутствие существующего варианта
+     * в массиве options не считается удалением.
+     *
+     * Для удаления используется _delete=true.
+     */
+    private function syncFormFieldOptions(
+        FormField $field,
+        array $options
+    ): void {
+        /*
+        |--------------------------------------------------------------------------
+        | DELETE
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($options as $optionData) {
+            if (
+                !is_array($optionData)
+                || empty($optionData['_delete'])
+            ) {
+                continue;
+            }
+
+            $optionId = isset($optionData['id'])
+            && is_numeric($optionData['id'])
+                ? (int) $optionData['id']
+                : null;
+
+            if ($optionId === null) {
+                continue;
+            }
+
+            /*
+             * Вариант ищется строго внутри
+             * текущего поля.
+             */
+            $option = $field
+                ->options()
+                ->whereKey($optionId)
+                ->firstOrFail();
+
+            $option->delete();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($options as $optionData) {
+            if (
+                !is_array($optionData)
+                || !empty($optionData['_delete'])
+            ) {
+                continue;
+            }
+
+            $optionId = isset($optionData['id'])
+            && is_numeric($optionData['id'])
+                ? (int) $optionData['id']
+                : null;
+
+            if ($optionId === null) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Вложенные данные
+            |--------------------------------------------------------------------------
+            */
+
+            $translations = $optionData['translations']
+                ?? [];
+
+            unset(
+                $optionData['id'],
+                $optionData['_delete'],
+                $optionData['translations']
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Существующий вариант
+            |--------------------------------------------------------------------------
+            */
+
+            $option = $field
+                ->options()
+                ->whereKey($optionId)
+                ->firstOrFail();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Значение по умолчанию
+            |--------------------------------------------------------------------------
+            */
+
+            $this->prepareDefaultFieldOption(
+                $field,
+                !empty($optionData['is_default']),
+                $option->id
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Обновление
+            |--------------------------------------------------------------------------
+            */
+
+            $option->update(
+                $optionData
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Переводы
+            |--------------------------------------------------------------------------
+            */
+
+            $this->syncTranslations(
+                $option,
+                $translations,
+                [
+                    'label',
+                    'description',
+                ]
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($options as $optionData) {
+            if (
+                !is_array($optionData)
+                || !empty($optionData['_delete'])
+            ) {
+                continue;
+            }
+
+            $optionId = isset($optionData['id'])
+            && is_numeric($optionData['id'])
+                ? (int) $optionData['id']
+                : null;
+
+            if ($optionId !== null) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Вложенные данные
+            |--------------------------------------------------------------------------
+            */
+
+            $translations = $optionData['translations']
+                ?? [];
+
+            unset(
+                $optionData['id'],
+                $optionData['_delete'],
+                $optionData['translations']
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Значение по умолчанию
+            |--------------------------------------------------------------------------
+            */
+
+            $this->prepareDefaultFieldOption(
+                $field,
+                !empty($optionData['is_default'])
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Создание варианта
+            |--------------------------------------------------------------------------
+            */
+
+            $option = $field
+                ->options()
+                ->create(
+                    $optionData
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Переводы
+            |--------------------------------------------------------------------------
+            */
+
+            $this->syncTranslations(
+                $option,
+                $translations,
+                [
+                    'label',
+                    'description',
+                ]
+            );
+        }
+    }
+
+    /**
+     * Подготовка варианта,
+     * выбранного по умолчанию.
+     *
+     * Для supports_multiple=true
+     * допускается несколько is_default=true.
+     *
+     * Для остальных типов предыдущий
+     * вариант по умолчанию сбрасывается.
+     */
+    private function prepareDefaultFieldOption(
+        FormField $field,
+        bool $isDefault,
+        ?int $exceptOptionId = null
+    ): void {
+        if (!$isDefault) {
+            return;
+        }
+
+        $typeConfig = config(
+            "forms.field_types.{$field->type}",
+            []
+        );
+
+        if (!is_array($typeConfig)) {
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Поле должно поддерживать варианты
+        |--------------------------------------------------------------------------
+        */
+
+        if (!(
+            $typeConfig['has_options']
+            ?? false
+        )) {
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Несколько значений по умолчанию разрешены
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            (bool) (
+                $typeConfig['supports_multiple']
+                ?? false
+            )
+        ) {
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Сбрасываем предыдущий default
+        |--------------------------------------------------------------------------
+        */
+
+        $query = $field
+            ->options()
+            ->where(
+                'is_default',
+                true
+            );
+
+        if ($exceptOptionId !== null) {
+            $query->where(
+                'id',
+                '!=',
+                $exceptOptionId
+            );
+        }
+
+        $query->update([
+            'is_default' => false,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Data helpers
     |--------------------------------------------------------------------------
     */
 
     /**
      * Подготовить основные данные поля
-     * без массива переводов.
+     * без переводов и вариантов.
      */
     protected function fieldData(
         array $validated

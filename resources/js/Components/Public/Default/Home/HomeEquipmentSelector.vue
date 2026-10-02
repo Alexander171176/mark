@@ -1,4 +1,8 @@
 <script setup>
+const emit = defineEmits([
+    'open-form',
+])
+
 const steps = [
     {
         number: '01',
@@ -16,6 +20,17 @@ const steps = [
         text: 'Предлагаем оборудование, комплектацию и варианты поставки под задачу проекта.',
     },
 ]
+
+/**
+ * Открытие публичной формы.
+ */
+const openForm = (formCode) => {
+    if (!formCode) {
+        return
+    }
+
+    emit('open-form', formCode)
+}
 </script>
 
 <template>
@@ -47,26 +62,34 @@ const steps = [
 
                     <!-- CTA -->
                     <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                        <a
-                            href="#consultation"
+                        <button
+                            type="button"
                             class="inline-flex items-center justify-center gap-2 rounded-xl
                                    bg-sky-600 px-6 py-3.5 text-sm font-semibold text-white
                                    shadow-lg shadow-sky-900/10 transition
                                    hover:bg-sky-500 sm:text-base"
+                            @click="openForm('selection')"
                         >
                             Подобрать оборудование
 
                             <svg
-                                class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                class="h-4 w-4"
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                aria-hidden="true"
+                            >
                                 <path
                                     d="M4 10h12M11 5l5 5-5 5"
-                                    stroke="currentColor" stroke-width="1.8"
-                                    stroke-linecap="round" stroke-linejoin="round" />
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
                             </svg>
-                        </a>
+                        </button>
 
-                        <a
-                            href="#specification"
+                        <button
+                            type="button"
                             class="inline-flex items-center justify-center rounded-xl
                                    border border-slate-300 bg-slate-100 px-6 py-3.5 text-sm
                                    font-semibold text-slate-800 transition
@@ -74,9 +97,10 @@ const steps = [
                                    dark:border-slate-700 dark:bg-slate-800
                                    dark:text-white dark:hover:border-sky-600
                                    dark:hover:text-sky-400 sm:text-base"
+                            @click="openForm('specification')"
                         >
                             Отправить спецификацию
-                        </a>
+                        </button>
                     </div>
 
                     <!-- Подсказка -->

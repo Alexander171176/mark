@@ -230,19 +230,26 @@ class HomeController extends Controller
             ->limit(3)
             ->get();
 
-        /* ======================== Form ======================== */
+        /* ======================== Forms ======================== */
 
         /**
-         * Публичная форма отправки спецификации
+         * Публичные формы
          * для главной страницы.
          *
          * Загружаем только current + fallback
-         * переводы формы, её активных полей
+         * переводы форм, их активных полей
          * и активных вариантов выбора.
          */
-        $specificationForm = Form::query()
+        $forms = Form::query()
             ->forPublic()
-            ->byCode('specification')
+            ->whereIn(
+                'code',
+                [
+                    'consultation',
+                    'selection',
+                    'specification',
+                ]
+            )
             ->with([
                 'translations' =>
                     fn ($query) =>
@@ -265,7 +272,8 @@ class HomeController extends Controller
                         $locales
                     ),
             ])
-            ->first();
+            ->ordered()
+            ->get();
 
         /* ======================== Response ======================== */
 
@@ -287,12 +295,17 @@ class HomeController extends Controller
                         $blogArticles
                     ),
 
-                'specificationForm' =>
-                    $specificationForm
-                        ? new FormResource(
-                        $specificationForm
-                    )
-                        : null,
+                /**
+                 * Формы главной страницы,
+                 * индексированные по системному коду.
+                 */
+                'forms' =>
+                    $forms->mapWithKeys(
+                        fn (Form $form) => [
+                            $form->code =>
+                                new FormResource($form),
+                        ]
+                    ),
 
                 ...$brandCarouselData,
             ]

@@ -1,11 +1,17 @@
 <script setup>
-const scrollToSection = (id) => {
-    if (typeof document === 'undefined') return
+const emit = defineEmits([
+    'open-form',
+])
 
-    document.getElementById(id)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-    })
+/**
+ * Открытие публичной формы.
+ */
+const openForm = (formCode) => {
+    if (!formCode) {
+        return
+    }
+
+    emit('open-form', formCode)
 }
 </script>
 
@@ -55,17 +61,23 @@ const scrollToSection = (id) => {
                             class="group inline-flex items-center justify-center gap-2 rounded-xl
                                    bg-sky-500 px-6 py-3 text-sm font-semibold text-white shadow-lg
                                    shadow-sky-950/30 transition hover:bg-sky-400 sm:text-base"
-                            @click="scrollToSection('send-specification')"
+                            @click="openForm('specification')"
                         >
                             Отправить спецификацию
 
                             <svg
                                 class="h-4 w-4 transition-transform group-hover:translate-x-1"
-                                viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                aria-hidden="true"
+                            >
                                 <path
                                     d="M4 10h12M11 5l5 5-5 5"
-                                    stroke="currentColor" stroke-width="1.8"
-                                    stroke-linecap="round" stroke-linejoin="round" />
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
                             </svg>
                         </button>
 
@@ -75,7 +87,7 @@ const scrollToSection = (id) => {
                                    border border-white/20 bg-white/5 px-6 py-3 text-sm
                                    font-semibold text-white backdrop-blur-sm transition
                                    hover:border-white/40 hover:bg-white/10 sm:text-base"
-                            @click="scrollToSection('equipment-selection')"
+                            @click="openForm('selection')"
                         >
                             Нужна помощь с подбором
                         </button>
@@ -146,7 +158,7 @@ const scrollToSection = (id) => {
                             class="group flex w-full items-center gap-4 rounded-2xl
                                    border border-white/10 bg-white/[0.04] p-4 text-left
                                    transition hover:border-sky-400/40 hover:bg-white/[0.08]"
-                            @click="scrollToSection('send-specification')"
+                            @click="openForm('specification')"
                         >
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center
                                          rounded-xl bg-sky-500/15 text-sky-400">
@@ -186,7 +198,7 @@ const scrollToSection = (id) => {
                             class="group flex w-full items-center gap-4 rounded-2xl
                                    border border-white/10 bg-white/[0.04] p-4 text-left
                                    transition hover:border-sky-400/40 hover:bg-white/[0.08]"
-                            @click="scrollToSection('equipment-selection')"
+                            @click="openForm('selection')"
                         >
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center
                                          rounded-xl bg-sky-500/15 text-sky-400">
@@ -220,17 +232,29 @@ const scrollToSection = (id) => {
                         </button>
 
                         <!-- Консультация -->
-                        <div class="flex items-center gap-4 rounded-2xl
-                                    border border-white/10 bg-white/[0.04] p-4">
+                        <button
+                            type="button"
+                            class="group flex w-full items-center gap-4 rounded-2xl
+                                   border border-white/10 bg-white/[0.04] p-4 text-left
+                                   transition hover:border-sky-400/40 hover:bg-white/[0.08]"
+                            @click="openForm('consultation')"
+                        >
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center
                                          rounded-xl bg-sky-500/15 text-sky-400">
                                 <svg
-                                    class="h-5 w-5"
-                                    viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    class="h-5 w-5 shrink-0 text-slate-500 transition
+                                           group-hover:translate-x-1 group-hover:text-sky-400"
+                                    viewBox="0 0 20 20"
+                                    fill="none"
+                                    aria-hidden="true"
+                                >
                                     <path
-                                        d="M8 10h8M8 14h5m8-2a9 9 0 1 1-4.22-7.63A9 9 0 0 1 21 12Z"
-                                        stroke="currentColor" stroke-width="1.7"
-                                        stroke-linecap="round" stroke-linejoin="round" />
+                                        d="M4 10h12M11 5l5 5-5 5"
+                                        stroke="currentColor"
+                                        stroke-width="1.7"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    />
                                 </svg>
                             </span>
 
@@ -243,7 +267,16 @@ const scrollToSection = (id) => {
                                     Обсудим задачу и определим следующий шаг
                                 </span>
                             </span>
-                        </div>
+
+                            <svg class="h-5 w-5 shrink-0 text-slate-500 transition
+                                        group-hover:translate-x-1 group-hover:text-sky-400"
+                                 viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                <path
+                                    d="M4 10h12M11 5l5 5-5 5"
+                                    stroke="currentColor" stroke-width="1.7"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </button>
                     </div>
 
                     <div class="mt-5 border-t border-white/10 pt-5

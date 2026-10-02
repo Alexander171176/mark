@@ -64,7 +64,7 @@ const slides = [
             },
             {
                 label: 'Получить консультацию',
-                href: '#consultation',
+                form: 'consultation',
             },
             {
                 label: 'Отправить спецификацию',

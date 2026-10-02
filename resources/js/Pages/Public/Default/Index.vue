@@ -26,20 +26,26 @@ const props = defineProps({
     marketProducts: { type: [Array, Object], default: () => [] },
     marketBrandCarousel: { type: [Array, Object], default: () => [] },
     blogArticles: { type: [Array, Object], default: () => [] },
-    specificationForm: { type: [Object, null], default: null },
+    forms: { type: Object, default: () => ({}) },
 })
 
+/**
+ * Активная публичная форма.
+ */
 const activeForm = ref(null)
 
+/**
+ * Открытие публичной формы
+ * по её системному коду.
+ */
 const openForm = (formCode) => {
-    if (
-        formCode === 'specification' &&
-        props.specificationForm
-    ) {
-        activeForm.value = props.specificationForm
-    }
+    activeForm.value =
+        props.forms?.[formCode] ?? null
 }
 
+/**
+ * Закрытие публичной формы.
+ */
 const closeForm = () => {
     activeForm.value = null
 }
@@ -69,22 +75,45 @@ const closeForm = () => {
 
         <!-- Главная -->
         <main class="min-h-screen">
+
             <!-- Первый экран -->
             <HomeHero @open-form="openForm" />
+
             <HomeSolutions />
-            <HomeMarketCategories :categories="marketCategories" />
-            <HomeMarketProducts :products="marketProducts" />
-            <HomeEquipmentSelector />
-            <HomeSupplier />
+
+            <HomeMarketCategories
+                :categories="marketCategories"
+            />
+
+            <HomeMarketProducts
+                :products="marketProducts"
+            />
+
+            <HomeEquipmentSelector
+                @open-form="openForm"
+            />
+
+            <HomeSupplier
+                @open-form="openForm"
+            />
+
             <HomeAdvantages />
-            <HomeMarketBrands :brands="marketBrandCarousel" />
-            <HomeArticles :articles="blogArticles" />
+
+            <HomeMarketBrands
+                :brands="marketBrandCarousel"
+            />
+
+            <HomeArticles
+                :articles="blogArticles"
+            />
+
             <HomeSchool />
-            <HomeContactCta />
 
-            <!-- Следующие экраны будут подключаться здесь -->
+            <HomeContactCta
+                @open-form="openForm"
+            />
 
-            <!-- Модальное окно Форма -->
+            <!-- Модальное окно формы -->
             <HomeForm
                 :show="Boolean(activeForm)"
                 :form="activeForm"

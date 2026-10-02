@@ -38,6 +38,8 @@ export default {
     marketStorefronts: 'Витрины',
     marketTags: 'Теги товаров',
     maxFileSizeKb: 'Макс.размер файла',
+    maxNumberFiles: 'Максимум файлов',
+    maxNumberFilesText: 'Достигнуто максимальное количество файлов.',
     maxScore: 'Максимальный балл',
     meetingUrl: 'URL встречи',
     menu: 'Меню',

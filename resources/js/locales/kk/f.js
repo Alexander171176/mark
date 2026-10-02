@@ -16,6 +16,7 @@ export default {
     file: 'Файл',
     fileBackup: 'Сайтты мұрағаттау және қалпына келтіру',
     fileSize: 'Файл өлшемі',
+    filesSelected: 'Таңдалған файлдар',
     fillAllFields: 'Барлық өрістерді толтыру қажет',
     filter: 'Сүзгі',
     finance: 'Қаржы',

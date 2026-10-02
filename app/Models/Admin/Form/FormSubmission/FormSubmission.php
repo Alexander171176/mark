@@ -4,6 +4,7 @@ namespace App\Models\Admin\Form\FormSubmission;
 
 use App\Models\Admin\Form\Form\Form;
 use App\Models\Admin\Form\FormSubmissionFile\FormSubmissionFile;
+use App\Models\Admin\Form\FormSubmissionStatusHistory\FormSubmissionStatusHistory;
 use App\Models\Admin\Form\FormSubmissionValue\FormSubmissionValue;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -159,6 +160,25 @@ class FormSubmission extends Model
             )
             ->orderBy(
                 'sort',
+                'asc'
+            )
+            ->orderBy(
+                'id',
+                'asc'
+            );
+    }
+
+    /**
+     * История изменения статуса заявки.
+     */
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(
+            FormSubmissionStatusHistory::class,
+            'form_submission_id'
+        )
+            ->orderBy(
+                'changed_at',
                 'asc'
             )
             ->orderBy(

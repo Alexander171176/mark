@@ -16,6 +16,7 @@ export default {
     file: 'Файл',
     fileBackup: 'Архивация и Восстановление сайта',
     fileSize: 'Размер файла',
+    filesSelected: 'Выбрано файлов',
     fillAllFields: 'Необходимо заполнить все поля',
     filter: 'Фильтр',
     finance: 'Финансы',

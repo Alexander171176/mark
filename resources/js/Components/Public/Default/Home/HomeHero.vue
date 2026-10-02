@@ -4,6 +4,10 @@ import SliderNavigation from '@/Components/Public/Default/UI/Slider/SliderNaviga
 import SliderPagination from '@/Components/Public/Default/UI/Slider/SliderPagination.vue'
 import HomeHeroSlide from '@/Components/Public/Default/Home/HomeHeroSlide.vue'
 
+const emit = defineEmits([
+    'open-form',
+])
+
 const slides = [
     {
         id: 1,
@@ -26,7 +30,7 @@ const slides = [
             },
             {
                 label: 'Отправить спецификацию',
-                href: '#specification',
+                form: 'specification',
             },
         ],
         advantages: [
@@ -64,7 +68,7 @@ const slides = [
             },
             {
                 label: 'Отправить спецификацию',
-                href: '#specification',
+                form: 'specification',
             },
         ],
         advantages: [
@@ -102,7 +106,7 @@ const slides = [
             },
             {
                 label: 'Отправить спецификацию',
-                href: '#specification',
+                form: 'specification',
             },
         ],
         advantages: [
@@ -134,7 +138,11 @@ const slides = [
             :pause-on-hover="true"
         >
             <template #default="{ item, active }">
-                <HomeHeroSlide :slide="item" :active="active" />
+                <HomeHeroSlide
+                    :slide="item"
+                    :active="active"
+                    @open-form="emit('open-form', $event)"
+                />
             </template>
 
             <!-- Стрелки -->
@@ -163,7 +171,6 @@ const slides = [
                     </div>
                 </div>
             </template>
-
         </BaseSlider>
     </section>
 </template>

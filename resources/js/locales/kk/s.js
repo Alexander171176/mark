@@ -52,6 +52,7 @@ export default {
     selectedSeveralAnswers: 'Бірнеше жауап',
     selectedTextAnswer: 'Мәтіндік жауап',
     send: 'Жіберу',
+    sending: 'Жіберілуде...',
     sendingLimit: 'Жіберу шегі',
     seo: 'SEO',
     seoAlt: 'SEO alt - суреттің балама атауы',

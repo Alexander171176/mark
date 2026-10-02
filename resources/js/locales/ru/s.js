@@ -52,6 +52,7 @@ export default {
     selectedSeveralAnswers: 'Несколько ответов',
     selectedTextAnswer: 'Текстовый ответ',
     send: 'Отправить',
+    sending: 'Отправка...',
     sendingLimit: 'Лимит отправок',
     seo: 'seo',
     seoAlt: 'SEO alt - альтернативное наименование изображения',

@@ -5,6 +5,21 @@ defineProps({
     slide: { type: Object, required: true },
     active: { type: Boolean, default: false },
 })
+
+const emit = defineEmits([
+    'open-form',
+])
+
+/**
+ * Открытие формы.
+ */
+const openForm = (formCode) => {
+    if (!formCode) {
+        return
+    }
+
+    emit('open-form', formCode)
+}
 </script>
 
 <template>
@@ -47,36 +62,54 @@ defineProps({
                 </div>
 
                 <!-- Заголовок -->
-                <h1 v-if="slide.isMain"
+                <h1
+                    v-if="slide.isMain"
                     class="max-w-4xl text-3xl font-bold leading-[1.08] tracking-tight
-                           text-white sm:text-4xl lg:text-5xl xl:text-5xl">
+                           text-white sm:text-4xl lg:text-5xl xl:text-5xl"
+                >
                     {{ slide.title }}
 
-                    <span v-if="slide.accent" class="mt-1.5 block text-sky-400">
+                    <span
+                        v-if="slide.accent"
+                        class="mt-1.5 block text-sky-400"
+                    >
                         {{ slide.accent }}
                     </span>
                 </h1>
 
-                <h2 v-else
+                <h2
+                    v-else
                     class="max-w-4xl text-3xl font-bold leading-[1.08] tracking-tight
-                           text-white sm:text-4xl lg:text-5xl xl:text-5xl">
+                           text-white sm:text-4xl lg:text-5xl xl:text-5xl"
+                >
                     {{ slide.title }}
 
-                    <span v-if="slide.accent" class="mt-1.5 block text-sky-400">
+                    <span
+                        v-if="slide.accent"
+                        class="mt-1.5 block text-sky-400"
+                    >
                         {{ slide.accent }}
                     </span>
                 </h2>
 
                 <!-- Описание -->
-                <p v-if="slide.description"
-                   class="mt-4 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg lg:text-xl">
+                <p
+                    v-if="slide.description"
+                    class="mt-4 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg lg:text-xl"
+                >
                     {{ slide.description }}
                 </p>
 
                 <!-- Кнопки -->
-                <div v-if="slide.actions?.length"
-                     class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                    <template v-for="(action, index) in slide.actions" :key="index">
+                <div
+                    v-if="slide.actions?.length"
+                    class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap"
+                >
+                    <template
+                        v-for="(action, index) in slide.actions"
+                        :key="index"
+                    >
+                        <!-- Inertia route -->
                         <Link
                             v-if="action.route"
                             :href="route(action.route, action.params || {})"
@@ -85,24 +118,44 @@ defineProps({
                             :class="action.primary
                                 ? 'bg-sky-600 text-white shadow-lg shadow-sky-950/20 hover:bg-sky-500'
                                 : 'border border-white/35 bg-white/10 text-white ' +
-                                 'backdrop-blur-sm hover:border-white/60 hover:bg-white/20'"
+                                  'backdrop-blur-sm hover:border-white/60 hover:bg-white/20'"
                         >
                             {{ action.label }}
 
-                            <svg v-if="action.primary"
-                                 class="h-4 w-4"
-                                 viewBox="0 0 20 20"
-                                 fill="none"
-                                 aria-hidden="true">
+                            <svg
+                                v-if="action.primary"
+                                class="h-4 w-4"
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                aria-hidden="true"
+                            >
                                 <path
                                     d="M4 10h12M11 5l5 5-5 5"
                                     stroke="currentColor"
                                     stroke-width="1.8"
                                     stroke-linecap="round"
-                                    stroke-linejoin="round" />
+                                    stroke-linejoin="round"
+                                />
                             </svg>
                         </Link>
 
+                        <!-- Модальная форма -->
+                        <button
+                            v-else-if="action.form"
+                            type="button"
+                            class="inline-flex items-center justify-center gap-2
+                                   rounded-xl px-6 py-3 text-sm font-semibold
+                                   transition sm:text-base"
+                            :class="action.primary
+                                ? 'bg-sky-600 text-white shadow-lg shadow-sky-950/20 hover:bg-sky-500'
+                                : 'border border-white/35 bg-white/10 text-white ' +
+                                  'backdrop-blur-sm hover:border-white/60 hover:bg-white/20'"
+                            @click="openForm(action.form)"
+                        >
+                            {{ action.label }}
+                        </button>
+
+                        <!-- Обычная ссылка -->
                         <a
                             v-else
                             :href="action.href || '#'"
@@ -110,10 +163,9 @@ defineProps({
                                    rounded-xl px-6 py-3 text-sm font-semibold
                                    transition sm:text-base"
                             :class="action.primary
-                                ? 'bg-sky-600 text-white shadow-lg shadow-sky-950/20 ' +
-                                 'hover:bg-sky-500'
+                                ? 'bg-sky-600 text-white shadow-lg shadow-sky-950/20 hover:bg-sky-500'
                                 : 'border border-white/35 bg-white/10 text-white ' +
-                                 'backdrop-blur-sm hover:border-white/60 hover:bg-white/20'"
+                                  'backdrop-blur-sm hover:border-white/60 hover:bg-white/20'"
                         >
                             {{ action.label }}
                         </a>
@@ -121,21 +173,31 @@ defineProps({
                 </div>
 
                 <!-- Преимущества -->
-                <div v-if="slide.advantages?.length"
-                     class="mt-6 grid max-w-3xl gap-3 border-t border-white/20 pt-5 sm:grid-cols-3">
-                    <div v-for="(advantage, index) in slide.advantages"
-                         :key="index"
-                         class="flex items-start gap-3">
+                <div
+                    v-if="slide.advantages?.length"
+                    class="mt-6 grid max-w-3xl gap-3 border-t border-white/20 pt-5 sm:grid-cols-3"
+                >
+                    <div
+                        v-for="(advantage, index) in slide.advantages"
+                        :key="index"
+                        class="flex items-start gap-3"
+                    >
                         <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center
                                      rounded-full border border-sky-400/40
                                      bg-sky-400/10 text-sky-300">
-                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                            <svg
+                                class="h-4 w-4"
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                aria-hidden="true"
+                            >
                                 <path
                                     d="m5 10 3 3 7-7"
                                     stroke="currentColor"
                                     stroke-width="1.8"
                                     stroke-linecap="round"
-                                    stroke-linejoin="round" />
+                                    stroke-linejoin="round"
+                                />
                             </svg>
                         </span>
 
@@ -144,8 +206,10 @@ defineProps({
                                 {{ advantage.title }}
                             </div>
 
-                            <div v-if="advantage.text"
-                                 class="mt-0.5 text-xs leading-5 text-slate-300">
+                            <div
+                                v-if="advantage.text"
+                                class="mt-0.5 text-xs leading-5 text-slate-300"
+                            >
                                 {{ advantage.text }}
                             </div>
                         </div>

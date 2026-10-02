@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import DefaultLayout from '@/Layouts/DefaultLayout.vue'
@@ -15,6 +16,7 @@ import HomeAdvantages from '@/Components/Public/Default/Home/HomeAdvantages.vue'
 import HomeMarketBrands from '@/Components/Public/Default/Home/HomeMarketBrands.vue'
 import HomeArticles from '@/Components/Public/Default/Home/HomeArticles.vue'
 import HomeSchool from '@/Components/Public/Default/Home/HomeSchool.vue'
+import HomeForm from '@/Components/Public/Default/Home/HomeForm.vue'
 import HomeContactCta from '@/Components/Public/Default/Home/HomeContactCta.vue'
 
 const { t } = useI18n()
@@ -24,7 +26,23 @@ const props = defineProps({
     marketProducts: { type: [Array, Object], default: () => [] },
     marketBrandCarousel: { type: [Array, Object], default: () => [] },
     blogArticles: { type: [Array, Object], default: () => [] },
+    specificationForm: { type: [Object, null], default: null },
 })
+
+const activeForm = ref(null)
+
+const openForm = (formCode) => {
+    if (
+        formCode === 'specification' &&
+        props.specificationForm
+    ) {
+        activeForm.value = props.specificationForm
+    }
+}
+
+const closeForm = () => {
+    activeForm.value = null
+}
 </script>
 
 <template>
@@ -52,7 +70,7 @@ const props = defineProps({
         <!-- Главная -->
         <main class="min-h-screen">
             <!-- Первый экран -->
-            <HomeHero />
+            <HomeHero @open-form="openForm" />
             <HomeSolutions />
             <HomeMarketCategories :categories="marketCategories" />
             <HomeMarketProducts :products="marketProducts" />
@@ -63,7 +81,15 @@ const props = defineProps({
             <HomeArticles :articles="blogArticles" />
             <HomeSchool />
             <HomeContactCta />
+
             <!-- Следующие экраны будут подключаться здесь -->
+
+            <!-- Модальное окно Форма -->
+            <HomeForm
+                :show="Boolean(activeForm)"
+                :form="activeForm"
+                @close="closeForm"
+            />
         </main>
 
         <!-- Подвал -->

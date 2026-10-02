@@ -38,6 +38,8 @@ export default {
     marketStorefronts: 'Showcases',
     marketTags: 'Product tags',
     maxFileSizeKb: 'Max file size',
+    maxNumberFiles: 'Maximum number of files',
+    maxNumberFilesText: 'Maximum number of files reached.',
     maxScore: 'Maximum score',
     meetingUrl: 'Meeting URL',
     menu: 'Menu',

@@ -16,6 +16,7 @@ export default {
     file: 'File',
     fileBackup: 'Archiving and Restoring a website',
     fileSize: 'File size',
+    filesSelected: 'Files selected',
     fillAllFields: 'All fields must be filled',
     filter: 'Filter',
     finance: 'Finance',

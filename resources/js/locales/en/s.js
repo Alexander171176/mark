@@ -52,6 +52,7 @@ export default {
     selectedSeveralAnswers: 'Several answers',
     selectedTextAnswer: 'Text response',
     send: 'Send',
+    sending: 'Sending...',
     sendingLimit: 'Sending limit',
     seo: 'seo',
     seoAlt: 'SEO Alt - Alternative Image Name',

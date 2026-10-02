@@ -940,6 +940,7 @@ Analytics
 `docker exec mark-php-app php artisan make:model Admin/Form/FormSubmission/FormSubmission -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Form/FormSubmissionValue/FormSubmissionValue -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Form/FormSubmissionFile/FormSubmissionFile -m` <br>
+`docker exec mark-php-app php artisan make:model Admin/Form/FormSubmissionStatusHistory/FormSubmissionStatusHistory -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Form/Form/FormResource` <br>
@@ -967,6 +968,10 @@ Analytics
 `docker exec mark-php-app php artisan make:controller Admin/Form/FormField/FormFieldController --resource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Form/FormFieldOption/FormFieldOptionController --resource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Form/FormSubmission/FormSubmissionController --resource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Form/Form/FormResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Form/FormField/FormFieldResource` <br>
+`docker exec mark-php-app php artisan make:resource Public/Form/FormFieldOption/FormFieldOptionResource` <br>
+`docker exec mark-php-app php artisan make:controller Public/Form/PublicFormSubmissionController` <br>
 -------------------------------------------------------------------------------------
 
 1) Группы характеристик

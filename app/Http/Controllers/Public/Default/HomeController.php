@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Public\Default;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Public\Blog\BlogArticle\BlogArticleSharedResource;
+use App\Http\Resources\Public\Form\Form\FormResource;
 use App\Http\Resources\Public\Market\MarketCategory\MarketCategorySharedResource;
 use App\Http\Resources\Public\Market\MarketProduct\MarketProductSharedResource;
 use App\Models\Admin\Blog\BlogArticle\BlogArticle;
+use App\Models\Admin\Form\Form\Form;
 use App\Models\Admin\Market\MarketCategory\MarketCategory;
 use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Traits\Public\Market\HasMarketBrandCarouselDataTrait;
@@ -228,6 +230,43 @@ class HomeController extends Controller
             ->limit(3)
             ->get();
 
+        /* ======================== Form ======================== */
+
+        /**
+         * Публичная форма отправки спецификации
+         * для главной страницы.
+         *
+         * Загружаем только current + fallback
+         * переводы формы, её активных полей
+         * и активных вариантов выбора.
+         */
+        $specificationForm = Form::query()
+            ->forPublic()
+            ->byCode('specification')
+            ->with([
+                'translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                'activeFields.translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+
+                'activeFields.activeOptions.translations' =>
+                    fn ($query) =>
+                    $query->whereIn(
+                        'locale',
+                        $locales
+                    ),
+            ])
+            ->first();
+
         /* ======================== Response ======================== */
 
         return Inertia::render(
@@ -247,6 +286,13 @@ class HomeController extends Controller
                     BlogArticleSharedResource::collection(
                         $blogArticles
                     ),
+
+                'specificationForm' =>
+                    $specificationForm
+                        ? new FormResource(
+                        $specificationForm
+                    )
+                        : null,
 
                 ...$brandCarouselData,
             ]

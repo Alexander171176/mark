@@ -38,6 +38,8 @@ export default {
     marketStorefronts: 'Көрме витриналары',
     marketTags: 'Өнім тегтері',
     maxFileSizeKb: 'Файлдың макс. өлшемі',
+    maxNumberFiles: 'Файлдардың максималды саны',
+    maxNumberFilesText: 'Файлдардың ең көп санына жетті.',
     maxScore: 'Максималды балл',
     meetingUrl: 'Кездесу URL мекенжайы',
     menu: 'Мәзір',

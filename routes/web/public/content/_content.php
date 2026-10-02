@@ -15,6 +15,8 @@ require __DIR__ . '/school/modules.php'; // Модули
 require __DIR__ . '/school/lessons.php'; // Уроки
 require __DIR__ . '/school/assignments.php'; // Задания
 
+require __DIR__ . '/form/form.php'; // Формы
+
 // market
 require __DIR__ . '/market/categories.php'; // Категории магазина
 require __DIR__ . '/market/tags.php'; // Теги магазина

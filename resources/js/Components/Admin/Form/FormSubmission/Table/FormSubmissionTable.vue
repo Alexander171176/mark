@@ -217,7 +217,7 @@ const statusBadge = (status) => {
                                    whitespace-nowrap"
                     >
                         <div class="font-medium text-left">
-                            {{ t('assignedUser') }}
+                            {{ t('responsible') }}
                         </div>
                     </th>
 

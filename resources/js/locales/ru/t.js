@@ -21,6 +21,7 @@ export default {
     text: 'Текст',
     textLeft: 'Текст в левом блоке',
     textRight: 'Текст в правом блоке',
+    theseForms: 'Данные формы',
     thisDevice: 'Это устройство',
     thousandsSeparator: 'Разделитель тысяч',
     timeFinish: 'Время в раунде завершения поединка',

@@ -81,11 +81,16 @@ const statusLabel = (status) => {
 
 const statusClass = (status) => {
     const classes = {
-        new: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-500',
-        processing: 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-500',
-        completed: 'bg-teal-100 text-teal-800 border border-teal-300 dark:bg-teal-900/40 dark:text-teal-200 dark:border-teal-500',
-        cancelled: 'bg-slate-200 text-slate-700 border border-slate-400 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-500',
-        spam: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/40 dark:text-red-200 dark:border-red-500'
+        new: 'bg-blue-100 text-blue-800 border border-blue-300 ' +
+            'dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-500',
+        processing: 'bg-amber-100 text-amber-800 border border-amber-300 ' +
+            'dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-500',
+        completed: 'bg-teal-100 text-teal-800 border border-teal-300 ' +
+            'dark:bg-teal-900/40 dark:text-teal-200 dark:border-teal-500',
+        cancelled: 'bg-slate-200 text-slate-700 border border-slate-400 ' +
+            'dark:bg-slate-700 dark:text-slate-200 dark:border-slate-500',
+        spam: 'bg-red-100 text-red-800 border border-red-300 ' +
+            'dark:bg-red-900/40 dark:text-red-200 dark:border-red-500'
     }
 
     return classes[status]

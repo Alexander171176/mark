@@ -39,6 +39,7 @@ export default {
     report: 'Отчёт:',
     reports: 'Отчёты',
     requestLocale: 'Локаль заявки',
+    requestManagement: 'Управление заявкой',
     requestProcessing: 'Обработка заявки',
     required: 'Обязательное поле',
     resendVerification: 'Повторная верификация',

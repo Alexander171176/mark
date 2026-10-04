@@ -21,6 +21,7 @@ export default {
     text: 'Мәтін',
     textLeft: 'Сол блоктағы мәтін',
     textRight: 'Мәтін оң жақ блокта',
+    theseForms: 'Форма деректері',
     thisDevice: 'Бұл құрылғы',
     thousandsSeparator: 'Мыңдық бөлгіш',
     timeFinish: 'Жекпе-жекті аяқтау раундындағы уақыт',

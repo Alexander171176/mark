@@ -39,6 +39,7 @@ export default {
     report: 'Report:',
     reports: 'Reports',
     requestLocale: 'Request locale',
+    requestManagement: 'Request Management',
     requestProcessing: 'Request processing',
     required: 'Required field',
     resendVerification: 'Resend Verification Email',

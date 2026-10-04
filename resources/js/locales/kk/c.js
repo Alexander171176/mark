@@ -126,6 +126,7 @@ export default {
     cropRotationEnabled: 'Кадрдың айналуына рұқсат беру',
     currentImage: 'Ағымдағы сурет',
     currentPassword: 'Ағымдағы құпия сөз',
+    currentPersonInCharge: 'Қазіргі жауапты тұлға',
     currencies: 'Валюталар',
     currency: 'Валюта',
     currencyApostrophe: 'Апостроф',

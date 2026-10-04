@@ -126,6 +126,7 @@ export default {
     cropRotationEnabled: 'Allow frame rotation',
     currentImage: 'Current Image',
     currentPassword: 'Current Password',
+    currentPersonInCharge: 'Current person in charge',
     currencies: 'Currencies',
     currency: 'Currency',
     currencyApostrophe: 'Apostrophe',

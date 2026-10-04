@@ -126,6 +126,7 @@ export default {
     cropRotationEnabled: 'Разрешить поворот рамки',
     currentImage: 'Текущее Изображение',
     currentPassword: 'Текущий пароль',
+    currentPersonInCharge: 'Текущий ответственный',
     currencies: 'Валюты',
     currency: 'Валюта',
     currencyApostrophe: 'Апостроф',

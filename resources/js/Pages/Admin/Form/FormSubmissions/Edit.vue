@@ -169,29 +169,20 @@ const statusLabel = (status) => {
  */
 const statusBadgeClass = (status) => {
     const classes = {
-        new:
-            'bg-blue-100 text-blue-700 border-blue-300 '
-            + 'dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-700',
-
-        processing:
-            'bg-amber-100 text-amber-700 border-amber-300 '
-            + 'dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-700',
-
-        completed:
-            'bg-green-100 text-green-700 border-green-300 '
-            + 'dark:bg-green-900/40 dark:text-green-200 dark:border-green-700',
-
-        cancelled:
-            'bg-gray-100 text-gray-700 border-gray-300 '
-            + 'dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600',
-
-        spam:
-            'bg-red-100 text-red-700 border-red-300 '
-            + 'dark:bg-red-900/40 dark:text-red-200 dark:border-red-700',
+        new: 'bg-blue-100 text-blue-800 border border-blue-300 ' +
+            'dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-500',
+        processing: 'bg-amber-100 text-amber-800 border border-amber-300 ' +
+            'dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-500',
+        completed: 'bg-teal-100 text-teal-800 border border-teal-300 ' +
+            'dark:bg-teal-900/40 dark:text-teal-200 dark:border-teal-500',
+        cancelled: 'bg-slate-200 text-slate-700 border border-slate-400 ' +
+            'dark:bg-slate-700 dark:text-slate-200 dark:border-slate-500',
+        spam: 'bg-red-100 text-red-800 border border-red-300 ' +
+            'dark:bg-red-900/40 dark:text-red-200 dark:border-red-500'
     }
 
     return classes[status]
-        || 'bg-slate-100 text-slate-700 border-slate-300 '
+        || 'bg-slate-100 text-slate-700 border-slate-400 '
         + 'dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
 }
 
@@ -409,18 +400,16 @@ const submitForm = () => {
 
                     <div class="flex flex-wrap items-center gap-2">
                         <span
+                            class="font-semibold text-xs
+                                       text-indigo-600 dark:text-indigo-200">
+                            {{ formatDate(submissionData.submitted_at) }}
+                        </span>
+                        <span
                             class="inline-flex items-center rounded-full
                                    border px-2.5 py-1 text-xs font-semibold"
                             :class="statusBadgeClass(submissionData.status)"
                         >
                             {{ statusLabel(submissionData.status) }}
-                        </span>
-
-                        <span
-                            class="text-xs text-slate-500
-                                   dark:text-slate-300"
-                        >
-                            {{ formatDate(submissionData.submitted_at) }}
                         </span>
                     </div>
                 </div>
@@ -437,10 +426,10 @@ const submitForm = () => {
                                rounded-sm"
                     >
                         <h3
-                            class="mb-3 text-sm font-semibold
+                            class="mb-3 text-md font-semibold
                                    text-slate-800 dark:text-slate-100"
                         >
-                            Управление заявкой
+                            {{ t('requestManagement') }}
                         </h3>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -480,7 +469,7 @@ const submitForm = () => {
                             <div class="flex flex-col items-start">
                                 <LabelInput
                                     for="assigned_user_id"
-                                    value="Ответственный сотрудник"
+                                    :value="t('assignedUser')"
                                 />
 
                                 <select
@@ -494,7 +483,7 @@ const submitForm = () => {
                                            dark:text-slate-100"
                                 >
                                     <option value="">
-                                        Не назначен
+                                        {{ t('notAssigned') }}
                                     </option>
 
                                     <option
@@ -521,7 +510,7 @@ const submitForm = () => {
                             class="mt-3 text-xs text-slate-500
                                    dark:text-slate-400"
                         >
-                            Текущий ответственный:
+                            {{ t('currentPersonInCharge') }}:
                             <span
                                 class="font-medium text-slate-700
                                        dark:text-slate-200"
@@ -538,30 +527,29 @@ const submitForm = () => {
                     >
                         <!-- Заявка -->
                         <div
-                            class="p-3 border border-slate-300
+                            class="p-3 border border-slate-400
                                    dark:border-slate-500 bg-white
                                    dark:bg-slate-800 rounded-sm"
                         >
                             <h3
-                                class="mb-3 text-sm font-semibold
+                                class="mb-3 text-md font-semibold
                                        text-slate-800 dark:text-slate-100"
                             >
-                                Заявка
+                                {{ t('submission') }}
                             </h3>
 
                             <dl class="space-y-2 text-sm">
                                 <div
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
+                                    <dt class="text-slate-600 dark:text-slate-400">
                                         ID
                                     </dt>
 
                                     <dd
-                                        class="font-medium text-slate-800
-                                               dark:text-slate-100"
+                                        class="font-medium text-indigo-700 dark:text-indigo-300"
                                     >
                                         {{ submissionData.id }}
                                     </dd>
@@ -569,17 +557,16 @@ const submitForm = () => {
 
                                 <div
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
-                                        Форма
+                                    <dt class="text-slate-600 dark:text-slate-400">
+                                        {{ t('form') }}
                                     </dt>
 
                                     <dd
                                         class="text-right font-medium
-                                               text-slate-800
-                                               dark:text-slate-100"
+                                               text-indigo-700 dark:text-indigo-300"
                                     >
                                         {{ formTitle }}
                                     </dd>
@@ -587,54 +574,55 @@ const submitForm = () => {
 
                                 <div
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
-                                        ID формы
+                                    <dt class="text-slate-600 dark:text-slate-400">
+                                        {{ t('form') }} ID
                                     </dt>
 
-                                    <dd class="text-slate-700 dark:text-slate-200">
+                                    <dd class="font-medium text-indigo-700 dark:text-indigo-300">
                                         {{ submissionData.form_id }}
                                     </dd>
                                 </div>
 
                                 <div
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
-                                        Источник
+                                    <dt class="text-slate-600 dark:text-slate-400">
+                                        {{ t('source') }}
                                     </dt>
 
-                                    <dd class="text-slate-700 dark:text-slate-200">
+                                    <dd class="font-medium text-indigo-700 dark:text-indigo-300">
                                         {{ submissionData.source || '—' }}
                                     </dd>
                                 </div>
 
                                 <div
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
-                                        Локаль
+                                    <dt class="text-slate-600 dark:text-slate-400">
+                                        {{ t('locale') }}
                                     </dt>
 
-                                    <dd class="text-slate-700 dark:text-slate-200">
+                                    <dd class="uppercase font-medium
+                                               text-indigo-700 dark:text-indigo-300">
                                         {{ submissionData.locale || '—' }}
                                     </dd>
                                 </div>
 
                                 <div class="flex justify-between gap-4">
-                                    <dt class="text-slate-500 dark:text-slate-400">
-                                        Отправлена
+                                    <dt class="text-slate-600 dark:text-slate-400">
+                                        {{ t('sent') }}
                                     </dt>
 
                                     <dd
-                                        class="text-right text-slate-700
-                                               dark:text-slate-200"
+                                        class="text-right font-medium
+                                               text-blue-700 dark:text-blue-300"
                                     >
                                         {{ formatDate(submissionData.submitted_at) }}
                                     </dd>
@@ -644,72 +632,68 @@ const submitForm = () => {
 
                         <!-- Отправитель -->
                         <div
-                            class="p-3 border border-slate-300
+                            class="p-3 border border-slate-400
                                    dark:border-slate-500 bg-white
                                    dark:bg-slate-800 rounded-sm"
                         >
                             <h3
-                                class="mb-3 text-sm font-semibold
+                                class="mb-3 text-md font-semibold
                                        text-slate-800 dark:text-slate-100"
                             >
-                                Отправитель
+                                {{ t('sender') }}
                             </h3>
 
                             <dl class="space-y-2 text-sm">
                                 <div
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
-                                        Тип
+                                    <dt class="text-slate-600 dark:text-slate-400">
+                                        {{ t('type') }}
                                     </dt>
 
                                     <dd
-                                        class="font-medium text-slate-800
-                                               dark:text-slate-100"
+                                        class="font-medium text-blue-700 dark:text-blue-300"
                                     >
-                                        {{ submissionData.user_id
-                                        ? 'Авторизованный пользователь'
-                                        : 'Гость'
-                                        }}
+                                    {{ submissionData.user_id ? t('authorizedUser') : t('guest') }}
                                     </dd>
                                 </div>
 
                                 <div
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
-                                        Имя
+                                    <dt class="text-slate-600 dark:text-slate-400">
+                                        {{ t('name') }}
                                     </dt>
 
-                                    <dd class="text-slate-700 dark:text-slate-200">
+                                    <dd class="font-medium text-blue-700 dark:text-blue-300">
                                         {{ senderName }}
                                     </dd>
                                 </div>
 
                                 <div
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
+                                    <dt class="text-slate-600 dark:text-slate-400">
                                         Email
                                     </dt>
 
-                                    <dd class="text-slate-700 dark:text-slate-200">
+                                    <dd class="font-medium text-blue-700 dark:text-blue-300">
                                         {{ senderEmail || '—' }}
                                     </dd>
                                 </div>
 
                                 <div class="flex justify-between gap-4">
-                                    <dt class="text-slate-500 dark:text-slate-400">
+                                    <dt class="text-slate-600 dark:text-slate-400">
                                         User ID
                                     </dt>
 
-                                    <dd class="text-slate-700 dark:text-slate-200">
+                                    <dd class="font-medium text-blue-700 dark:text-blue-300">
                                         {{ submissionData.user_id || '—' }}
                                     </dd>
                                 </div>
@@ -719,27 +703,26 @@ const submitForm = () => {
 
                     <!-- Данные формы -->
                     <div
-                        class="mb-4 p-3 border border-slate-300
-                               dark:border-slate-500 bg-white
-                               dark:bg-slate-800 rounded-sm"
+                        class="mb-4 p-3 border border-slate-400 dark:border-slate-500
+                               bg-white dark:bg-slate-800 rounded-sm"
                     >
                         <div
                             class="mb-3 flex items-center
                                    justify-between gap-3"
                         >
                             <h3
-                                class="text-sm font-semibold
-                                       text-slate-800 dark:text-slate-100"
+                                class="flex items-center justify-center gap-3
+                                       text-md font-semibold text-slate-800 dark:text-slate-100"
                             >
-                                Данные формы
-                            </h3>
+                                {{ t('theseForms') }}
 
-                            <span
-                                class="text-xs text-slate-500
+                                <span
+                                    class="text-xs text-slate-500
                                        dark:text-slate-400"
-                            >
+                                >
                                 {{ values.length }}
                             </span>
+                            </h3>
                         </div>
 
                         <div
@@ -755,25 +738,22 @@ const submitForm = () => {
                             >
                                 <div
                                     class="text-sm font-medium
-                                           text-slate-600
-                                           dark:text-slate-300"
+                                           text-indigo-700 dark:text-indigo-300"
                                 >
                                     {{ submissionValueLabel(item) }}
 
                                     <div
                                         v-if="item.field_name"
-                                        class="text-[11px] font-normal
-                                               text-slate-400"
+                                        class="text-[11px] font-normal text-slate-400"
                                     >
                                         {{ item.field_name }}
                                     </div>
                                 </div>
 
                                 <div
-                                    class="md:col-span-2 text-sm
+                                    class="md:col-span-2 text-sm font-semibold
                                            whitespace-pre-wrap break-words
-                                           text-slate-800
-                                           dark:text-slate-100"
+                                           text-blue-700 dark:text-blue-300"
                                 >
                                     {{ submissionValue(item) }}
                                 </div>
@@ -783,24 +763,24 @@ const submitForm = () => {
                         <div
                             v-else
                             class="py-3 text-center text-sm
-                                   text-slate-500 dark:text-slate-400"
+                                   text-slate-600 dark:text-slate-400"
                         >
-                            Данные отсутствуют.
+                            {{ t('dataNotAvailable') }}.
                         </div>
                     </div>
 
                     <!-- Файлы -->
                     <div
                         v-if="files.length"
-                        class="mb-4 p-3 border border-slate-300
+                        class="mb-4 p-3 border border-slate-400
                                dark:border-slate-500 bg-white
                                dark:bg-slate-800 rounded-sm"
                     >
                         <h3
-                            class="mb-3 text-sm font-semibold
+                            class="mb-3 text-md font-semibold
                                    text-slate-800 dark:text-slate-100"
                         >
-                            Прикреплённые файлы
+                            {{ t('attachedFiles') }}
                         </h3>
 
                         <div
@@ -811,76 +791,59 @@ const submitForm = () => {
                                 v-for="file in files"
                                 :key="file.id"
                                 class="flex flex-col md:flex-row
-           md:items-center md:justify-between
-           gap-3 py-2"
+                                       md:items-center md:justify-between
+                                       gap-3 py-2"
                             >
                                 <!-- Информация о файле -->
                                 <div class="min-w-0">
                                     <div
-                                        class="text-sm font-medium
-                   text-slate-800
-                   dark:text-slate-100
-                   break-all"
+                                        class="text-xs font-medium
+                                               text-blue-700 dark:text-blue-300 break-all"
                                     >
                                         {{ file.original_name || `Файл #${file.id}` }}
                                     </div>
 
                                     <div
                                         class="mt-1 flex flex-wrap gap-x-3
-                   gap-y-1 text-[11px]
-                   text-slate-500
-                   dark:text-slate-400"
-                                    >
-            <span v-if="file.field_label">
-                {{ file.field_label }}
-            </span>
+                                               gap-y-1 text-[11px]
+                                               text-slate-500 dark:text-slate-400"
+                                                                >
+                                        <span v-if="file.field_label">
+                                            {{ file.field_label }}
+                                        </span>
 
                                         <span v-if="file.mime_type">
-                {{ file.mime_type }}
-            </span>
+                                            {{ file.mime_type }}
+                                        </span>
 
                                         <span v-if="hasValue(file.size)">
-                {{ formatFileSize(file.size) }}
-            </span>
+                                            {{ formatFileSize(file.size) }}
+                                        </span>
 
                                         <span v-if="file.extension">
-                .{{ file.extension }}
-            </span>
+                                            .{{ file.extension }}
+                                        </span>
                                     </div>
                                 </div>
 
                                 <!-- Скачать -->
                                 <a
-                                    :href="route(
-            'admin.formSubmissions.files.download',
-            {
-                formSubmission: submissionData.id,
-                formSubmissionFile: file.id,
-            }
-        )"
-                                    class="group inline-flex shrink-0
-               items-center justify-center gap-2
-               rounded-sm border border-blue-400
-               bg-blue-500 px-3 py-1
-               text-xs font-medium text-white
-               transition-all duration-200 ease-out
-               hover:-translate-y-0.5
-               hover:border-blue-500
-               hover:bg-blue-600
-               hover:shadow-md
-               hover:shadow-blue-500/20
-               active:translate-y-0
-               active:scale-95
-               dark:border-blue-400
-               dark:bg-blue-600
-               dark:hover:bg-blue-500"
+:href="route('admin.formSubmissions.files.download', { formSubmission: submissionData.id,formSubmissionFile: file.id, })"
+                                    class="group inline-flex shrink-0 items-center justify-center
+                                           gap-2 rounded-sm border border-blue-400 bg-blue-500
+                                           px-3 py-1 text-xs font-medium text-white
+                                           transition-all duration-200 ease-out
+                                           hover:-translate-y-0.5 hover:border-blue-500
+                                           hover:bg-blue-600 hover:shadow-md
+                                           hover:shadow-blue-500/20 active:translate-y-0
+                                           active:scale-95 dark:border-blue-400 dark:bg-blue-600
+                                           dark:hover:bg-blue-500"
                                     :title="`Скачать ${file.original_name || 'файл'}`"
                                 >
                                     <svg
-                                        class="w-3.5 h-3.5 shrink-0
-                   fill-current
-                   transition-transform duration-200
-                   group-hover:translate-y-0.5"
+                                        class="w-3.5 h-3.5 shrink-0 fill-current
+                                               transition-transform duration-200
+                                               group-hover:translate-y-0.5"
                                         viewBox="0 0 512 512"
                                     >
                                         <path
@@ -889,8 +852,8 @@ const submitForm = () => {
                                     </svg>
 
                                     <span>
-            Скачать
-        </span>
+                                        {{ t('download') }}
+                                    </span>
                                 </a>
                             </div>
                         </div>
@@ -903,15 +866,15 @@ const submitForm = () => {
                     >
                         <!-- UTM -->
                         <div
-                            class="p-3 border border-slate-300
+                            class="p-3 border border-slate-400
                                    dark:border-slate-500 bg-white
                                    dark:bg-slate-800 rounded-sm"
                         >
                             <h3
-                                class="mb-3 text-sm font-semibold
+                                class="mb-3 text-md font-semibold
                                        text-slate-800 dark:text-slate-100"
                             >
-                                UTM-данные
+                                UTM-{{ t('data') }}
                             </h3>
 
                             <dl
@@ -928,18 +891,17 @@ const submitForm = () => {
                                     ]"
                                     :key="item[0]"
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            last:border-b-0
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
+                                    <dt class="text-slate-600 dark:text-slate-400">
                                         {{ item[0] }}
                                     </dt>
 
                                     <dd
                                         class="text-right break-all
-                                               text-slate-700
-                                               dark:text-slate-200"
+                                               text-teal-700 dark:text-teal-300"
                                     >
                                         {{ item[1] || '—' }}
                                     </dd>
@@ -948,54 +910,52 @@ const submitForm = () => {
 
                             <div
                                 v-else
-                                class="text-sm text-slate-500
-                                       dark:text-slate-400"
+                                class="text-sm text-slate-500 dark:text-slate-400"
                             >
-                                UTM-данные отсутствуют.
+                                UTM-{{ t('dataNotAvailable') }}.
                             </div>
                         </div>
 
                         <!-- Технические данные -->
                         <div
-                            class="p-3 border border-slate-300
+                            class="p-3 border border-slate-400
                                    dark:border-slate-500 bg-white
                                    dark:bg-slate-800 rounded-sm"
                         >
                             <h3
-                                class="mb-3 text-sm font-semibold
+                                class="mb-3 text-md font-semibold
                                        text-slate-800 dark:text-slate-100"
                             >
-                                Техническая информация
+                                {{ t('serviceInformation') }}
                             </h3>
 
                             <dl class="space-y-2 text-sm">
                                 <div
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
+                                    <dt class="text-slate-600 dark:text-slate-400">
                                         IP
                                     </dt>
 
-                                    <dd class="text-slate-700 dark:text-slate-200">
+                                    <dd class="font-semibold text-teal-700 dark:text-teal-300">
                                         {{ submissionData.ip || '—' }}
                                     </dd>
                                 </div>
 
                                 <div
                                     class="flex justify-between gap-4
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-1"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
+                                    <dt class="text-slate-600 dark:text-slate-400">
                                         Session ID
                                     </dt>
 
                                     <dd
                                         class="text-right break-all
-                                               text-slate-700
-                                               dark:text-slate-200"
+                                               font-semibold text-teal-700 dark:text-teal-300"
                                     >
                                         {{ submissionData.session_id || '—' }}
                                     </dd>
@@ -1003,30 +963,29 @@ const submitForm = () => {
 
                                 <div
                                     class="flex flex-col gap-1
-                                           border-b border-slate-200
+                                           border-b border-slate-300
                                            dark:border-slate-600 pb-2"
                                 >
-                                    <dt class="text-slate-500 dark:text-slate-400">
+                                    <dt class="text-slate-600 dark:text-slate-400">
                                         Page URL
                                     </dt>
 
                                     <dd
-                                        class="break-all text-slate-700
-                                               dark:text-slate-200"
+                                        class="break-all font-semibold
+                                               text-teal-700 dark:text-teal-300"
                                     >
                                         {{ submissionData.page_url || '—' }}
                                     </dd>
                                 </div>
 
                                 <div class="flex flex-col gap-1">
-                                    <dt class="text-slate-500 dark:text-slate-400">
+                                    <dt class="text-slate-600 dark:text-slate-400">
                                         User Agent
                                     </dt>
 
                                     <dd
                                         class="break-words text-xs
-                                               text-slate-700
-                                               dark:text-slate-200"
+                                               font-semibold text-teal-700 dark:text-teal-300"
                                     >
                                         {{ submissionData.user_agent || '—' }}
                                     </dd>
@@ -1038,37 +997,37 @@ const submitForm = () => {
                     <!-- Context -->
                     <div
                         v-if="hasContext"
-                        class="mb-4 p-3 border border-slate-300
+                        class="mb-4 p-3 border border-slate-400
                                dark:border-slate-500 bg-white
                                dark:bg-slate-800 rounded-sm"
                     >
                         <h3
-                            class="mb-3 text-sm font-semibold
+                            class="mb-3 text-md font-semibold
                                    text-slate-800 dark:text-slate-100"
                         >
-                            Контекст заявки
+                            {{ t('context') }}
                         </h3>
 
                         <pre
                             class="p-3 overflow-x-auto rounded-sm
+                                   border border-slate-300 dark:border-slate-700
                                    bg-slate-100 dark:bg-slate-900
-                                   text-xs text-slate-700
-                                   dark:text-slate-200
+                                   text-xs text-slate-700 dark:text-slate-300
                                    whitespace-pre-wrap break-words"
                         >{{ displayValue(submissionData.context) }}</pre>
                     </div>
 
                     <!-- Даты обработки -->
                     <div
-                        class="mb-4 p-3 border border-slate-300
+                        class="mb-4 p-3 border border-slate-400
                                dark:border-slate-500 bg-white
                                dark:bg-slate-800 rounded-sm"
                     >
                         <h3
-                            class="mb-3 text-sm font-semibold
+                            class="mb-3 text-md font-semibold
                                    text-slate-800 dark:text-slate-100"
                         >
-                            Обработка заявки
+                            {{ t('requestProcessing') }}
                         </h3>
 
                         <div
@@ -1077,15 +1036,14 @@ const submitForm = () => {
                         >
                             <div>
                                 <div
-                                    class="text-[11px] uppercase
-                                           text-slate-400"
+                                    class="text-[12px] uppercase text-slate-600 dark:text-slate-400"
                                 >
-                                    Отправлена
+                                    {{ t('sent') }}
                                 </div>
 
                                 <div
-                                    class="mt-1 text-sm text-slate-700
-                                           dark:text-slate-200"
+                                    class="mt-1 font-semibold text-xs
+                                           text-cyan-700 dark:text-cyan-200"
                                 >
                                     {{ formatDate(submissionData.submitted_at) }}
                                 </div>
@@ -1093,15 +1051,14 @@ const submitForm = () => {
 
                             <div>
                                 <div
-                                    class="text-[11px] uppercase
-                                           text-slate-400"
+                                    class="text-[12px] uppercase text-slate-600 dark:text-slate-400"
                                 >
-                                    Взята в работу
+                                    {{ t('takenProcessing') }}
                                 </div>
 
                                 <div
-                                    class="mt-1 text-sm text-slate-700
-                                           dark:text-slate-200"
+                                    class="mt-1 font-semibold text-xs
+                                           text-cyan-700 dark:text-cyan-200"
                                 >
                                     {{ formatDate(submissionData.processed_at) }}
                                 </div>
@@ -1109,15 +1066,14 @@ const submitForm = () => {
 
                             <div>
                                 <div
-                                    class="text-[11px] uppercase
-                                           text-slate-400"
+                                    class="text-[12px] uppercase text-slate-600 dark:text-slate-400"
                                 >
-                                    Завершена
+                                    {{ t('completedAt') }}
                                 </div>
 
                                 <div
-                                    class="mt-1 text-sm text-slate-700
-                                           dark:text-slate-200"
+                                    class="mt-1 font-semibold text-xs
+                                           text-cyan-700 dark:text-cyan-200"
                                 >
                                     {{ formatDate(submissionData.completed_at) }}
                                 </div>
@@ -1125,15 +1081,14 @@ const submitForm = () => {
 
                             <div>
                                 <div
-                                    class="text-[11px] uppercase
-                                           text-slate-400"
+                                    class="text-[12px] uppercase text-slate-600 dark:text-slate-400"
                                 >
-                                    Создана
+                                    {{ t('createdAt') }}
                                 </div>
 
                                 <div
-                                    class="mt-1 text-sm text-slate-700
-                                           dark:text-slate-200"
+                                    class="mt-1 font-semibold text-xs
+                                           text-cyan-700 dark:text-cyan-200"
                                 >
                                     {{ formatDate(submissionData.created_at) }}
                                 </div>
@@ -1141,15 +1096,14 @@ const submitForm = () => {
 
                             <div>
                                 <div
-                                    class="text-[11px] uppercase
-                                           text-slate-400"
+                                    class="text-[12px] uppercase text-slate-600 dark:text-slate-400"
                                 >
-                                    Обновлена
+                                    {{ t('updatedAt') }}
                                 </div>
 
                                 <div
-                                    class="mt-1 text-sm text-slate-700
-                                           dark:text-slate-200"
+                                    class="mt-1 font-semibold text-xs
+                                           text-cyan-700 dark:text-cyan-200"
                                 >
                                     {{ formatDate(submissionData.updated_at) }}
                                 </div>
@@ -1159,7 +1113,7 @@ const submitForm = () => {
 
                     <!-- История статусов -->
                     <div
-                        class="mb-4 p-3 border border-slate-300
+                        class="mb-4 p-3 border border-slate-400
                                dark:border-slate-500 bg-white
                                dark:bg-slate-800 rounded-sm"
                     >
@@ -1168,18 +1122,17 @@ const submitForm = () => {
                                    justify-between gap-3"
                         >
                             <h3
-                                class="text-sm font-semibold
-                                       text-slate-800 dark:text-slate-100"
+                                class="flex flex-row items-center justify-center gap-3
+                                       text-md font-semibold text-slate-800 dark:text-slate-100"
                             >
-                                История статусов
-                            </h3>
+                                {{ t('statusHistory') }}
 
-                            <span
-                                class="text-xs text-slate-500
-                                       dark:text-slate-400"
-                            >
-                                {{ statusHistory.length }}
-                            </span>
+                                <span
+                                    class="text-xs text-slate-500 dark:text-slate-400"
+                                >
+                                    {{ statusHistory.length }}
+                                </span>
+                            </h3>
                         </div>
 
                         <div
@@ -1193,28 +1146,28 @@ const submitForm = () => {
                                 <thead
                                     class="text-xs uppercase
                                            bg-slate-100 dark:bg-slate-700
-                                           text-slate-600
-                                           dark:text-slate-300"
+                                           border border-slate-300 dark:border-slate-600
+                                           text-slate-600 dark:text-slate-300"
                                 >
                                 <tr>
                                     <th class="px-3 py-2">
-                                        Статус
+                                        {{ t('status') }}
                                     </th>
 
                                     <th class="px-3 py-2">
-                                        Пользователь
+                                        {{ t('user') }}
                                     </th>
 
                                     <th class="px-3 py-2">
-                                        Источник
+                                        {{ t('source') }}
                                     </th>
 
                                     <th class="px-3 py-2">
-                                        Комментарий
+                                        {{ t('comment') }}
                                     </th>
 
                                     <th class="px-3 py-2 text-right">
-                                        Дата
+                                        {{ t('date') }}
                                     </th>
                                 </tr>
                                 </thead>
@@ -1223,7 +1176,7 @@ const submitForm = () => {
                                 <tr
                                     v-for="item in statusHistory"
                                     :key="item.id"
-                                    class="border-b border-slate-200
+                                    class="border-b border-slate-300
                                                dark:border-slate-600"
                                 >
                                     <td class="px-3 py-2 whitespace-nowrap">
@@ -1231,54 +1184,50 @@ const submitForm = () => {
                                             class="flex items-center
                                                        gap-1.5"
                                         >
-                                                <span
-                                                    v-if="item.from_status"
-                                                    class="text-slate-500
-                                                           dark:text-slate-400"
-                                                >
-                                                    {{ statusLabel(item.from_status) }}
-                                                </span>
+                                            <span
+                                                v-if="item.from_status"
+                                                class="text-xs text-slate-700 dark:text-slate-300"
+                                            >
+                                                {{ statusLabel(item.from_status) }}
+                                            </span>
 
                                             <span
                                                 v-if="item.from_status"
-                                                class="text-slate-400"
+                                                class="text-xs text-slate-700 dark:text-slate-300"
                                             >
-                                                    →
-                                                </span>
+                                                →
+                                            </span>
 
                                             <span
-                                                class="font-medium
-                                                           text-slate-800
-                                                           dark:text-slate-100"
+                                                class="font-medium text-xs
+                                                       text-slate-700 dark:text-slate-300"
                                             >
-                                                    {{ statusLabel(item.to_status) }}
-                                                </span>
+                                                {{ statusLabel(item.to_status) }}
+                                            </span>
                                         </div>
                                     </td>
 
-                                    <td class="px-3 py-2">
+                                    <td class="px-3 py-2 font-semibold text-xs
+                                               text-indigo-700 dark:text-indigo-300">
                                         {{ historyUserName(item) }}
                                     </td>
 
-                                    <td class="px-3 py-2">
+                                    <td class="px-3 py-2 font-semibold text-xs
+                                               text-teal-700 dark:text-teal-300">
                                         {{ item.source || '—' }}
                                     </td>
 
                                     <td
-                                        class="px-3 py-2
-                                                   whitespace-pre-wrap"
+                                        class="px-3 py-2 font-semibold text-xs whitespace-pre-wrap"
                                     >
                                         {{ item.comment || '—' }}
                                     </td>
 
                                     <td
-                                        class="px-3 py-2 text-right
-                                                   whitespace-nowrap"
+                                        class="px-3 py-2 font-semibold text-xs text-right
+                                               whitespace-nowrap text-blue-700 dark:text-blue-300"
                                     >
-                                        {{ formatDate(
-                                        item.changed_at
-                                        || item.created_at
-                                    ) }}
+                                        {{ formatDate(item.changed_at || item.created_at) }}
                                     </td>
                                 </tr>
                                 </tbody>
@@ -1288,9 +1237,9 @@ const submitForm = () => {
                         <div
                             v-else
                             class="py-3 text-center text-sm
-                                   text-slate-500 dark:text-slate-400"
+                                   text-slate-600 dark:text-slate-400"
                         >
-                            История статусов отсутствует.
+                            {{ t('dataNotAvailable') }}.
                         </div>
                     </div>
 

@@ -21,6 +21,7 @@ export default {
     text: 'Text',
     textLeft: 'Text in the left block',
     textRight: 'Text in the right block',
+    theseForms: 'These forms',
     thisDevice: 'This Device',
     thousandsSeparator: 'Thousands separator',
     timeFinish: 'Time in the match completion round',

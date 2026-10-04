@@ -39,6 +39,7 @@ export default {
     report: 'Есеп:',
     reports: 'Есептер',
     requestLocale: 'Қолданба тілі',
+    requestManagement: 'Қолданбаларды басқару',
     requestProcessing: 'Өтінімді өңдеу',
     required: 'Міндетті өріс',
     resendVerification: 'Қайта растау',

@@ -14,6 +14,7 @@ export default {
     noContests: 'The number of fights declared invalid',
     noCurrentImage: 'there is no current image',
     noData: 'No data to display.',
+    notAssigned: 'Not assigned',
     notForVariants: 'No variants',
     noHierarchyData: 'No hierarchy data',
     noImage: 'No Image',

@@ -318,6 +318,12 @@ Route::resource('/form-field-options', FormFieldOptionController::class)
     ->parameters(['form-field-options' => 'formFieldOption'])
     ->names('formFieldOptions');
 
+// Скачивание файла заявки формы
+Route::get(
+    '/form-submissions/{formSubmission}/files/{formSubmissionFile}/download',
+    [FormSubmissionController::class, 'downloadFile']
+)->name('formSubmissions.files.download');
+
 // Заявки форм
 Route::resource('/form-submissions', FormSubmissionController::class)
     ->parameters(['form-submissions' => 'formSubmission'])

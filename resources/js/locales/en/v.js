@@ -31,6 +31,7 @@ export default {
     videos: 'Videos',
     view: 'View',
     viewForm: 'View form',
+    viewSubmission: 'View submission',
     viewedAt: 'Viewed',
     viewingLogs: 'Viewing logs',
     views: 'Views',

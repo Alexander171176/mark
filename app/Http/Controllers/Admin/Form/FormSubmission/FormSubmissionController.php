@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\Form\FormSubmission\FormSubmissionRequest;
 use App\Http\Resources\Admin\Form\FormSubmission\FormSubmissionResource;
 use App\Http\Resources\Admin\Form\FormSubmission\FormSubmissionSharedResource;
 use App\Models\Admin\Form\FormSubmission\FormSubmission;
+use App\Models\Admin\Form\FormSubmissionFile\FormSubmissionFile;
 use App\Models\User;
 use App\Services\Admin\Form\FormSubmissionStatusService;
 use App\Services\Admin\ProcessingModeService;
@@ -18,8 +19,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class FormSubmissionController extends BaseFormAdminController
@@ -362,7 +365,7 @@ class FormSubmissionController extends BaseFormAdminController
 
         return redirect()
             ->route(
-                'admin.formSubmissions.edit',
+                'admin.formSubmissions.index',
                 [
                     'formSubmission' => $submission->id,
                 ]
@@ -858,5 +861,67 @@ class FormSubmissionController extends BaseFormAdminController
             'date_to' =>
                 $request->input('date_to'),
         ];
+    }
+
+    /**
+     * Скачать прикреплённый файл заявки.
+     */
+    public function downloadFile(
+        FormSubmission $formSubmission,
+        FormSubmissionFile $formSubmissionFile
+    ): StreamedResponse
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Проверка доступа к заявке
+        |--------------------------------------------------------------------------
+        |
+        | Используем ту же ownership-логику, что и для остальных
+        | административных действий с заявками.
+        |
+        */
+
+        $submission = $this->baseQuery()
+            ->whereKey($formSubmission->id)
+            ->firstOrFail();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Проверка принадлежности файла заявке
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            (int) $formSubmissionFile->form_submission_id
+            !== (int) $submission->id
+        ) {
+            abort(404);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Проверка существования файла
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$formSubmissionFile->existsOnDisk()) {
+            abort(
+                404,
+                'Файл заявки не найден.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Скачивание
+        |--------------------------------------------------------------------------
+        */
+
+        return Storage::disk(
+            $formSubmissionFile->disk
+        )->download(
+            $formSubmissionFile->path,
+            $formSubmissionFile->original_name
+        );
     }
 }

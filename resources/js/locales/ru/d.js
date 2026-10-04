@@ -2,6 +2,7 @@ export default {
     dashboard: 'Личный кабинет',
     data: 'Данные',
     databaseBackup: 'Резервное копирование базы данных',
+    dataNotAvailable: 'Данные отсутствуют',
     dataUploaded: 'данные загружаются...',
     date: 'Дата',
     dates: 'Даты',

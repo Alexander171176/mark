@@ -13,6 +13,7 @@
 
 import { computed, defineProps, ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
@@ -33,6 +34,7 @@ import SortSelect from '@/Components/Admin/Form/FormSubmission/Sort/SortSelect.v
 import FormSubmissionTable from '@/Components/Admin/Form/FormSubmission/Table/FormSubmissionTable.vue'
 import FormSubmissionCardGrid from '@/Components/Admin/Form/FormSubmission/View/FormSubmissionCardGrid.vue'
 
+const { t } = useI18n()
 const toast = useToast()
 
 const props = defineProps({
@@ -576,9 +578,9 @@ watch(
 </script>
 
 <template>
-    <AdminLayout>
+    <AdminLayout :title="t('formSubmissions')">
         <template #header>
-            <TitlePage>Заявки форм</TitlePage>
+            <TitlePage>{{ t('formSubmissions') }}</TitlePage>
         </template>
 
         <div class="py-3">

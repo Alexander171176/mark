@@ -39,6 +39,7 @@ export default {
     report: 'Отчёт:',
     reports: 'Отчёты',
     requestLocale: 'Локаль заявки',
+    requestProcessing: 'Обработка заявки',
     required: 'Обязательное поле',
     resendVerification: 'Повторная верификация',
     resendVerificationEmail: 'Нажмите здесь, чтобы повторно отправить электронное письмо с подтверждением.',

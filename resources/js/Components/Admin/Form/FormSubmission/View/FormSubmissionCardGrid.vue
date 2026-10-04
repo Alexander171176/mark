@@ -291,7 +291,7 @@ const statusBadge = (status) => {
                                 <div
                                     class="font-semibold text-violet-700
                                            dark:text-violet-300
-                                           text-center break-words"
+                                           text-sm text-center break-words"
                                 >
                                     {{ assignedUser(submission).name || '—' }}
                                 </div>

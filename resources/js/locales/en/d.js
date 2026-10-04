@@ -2,6 +2,7 @@ export default {
     dashboard: 'Dashboard',
     data: 'Data',
     databaseBackup: 'Database backup',
+    dataNotAvailable: 'Data not available',
     dataUploaded: 'the data is being uploaded...',
     date: 'Date',
     dates: 'Dates',

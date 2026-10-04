@@ -40,6 +40,7 @@ export default {
     editProfile: 'Редактировать Профиль',
     editProperty: 'Редактировать Свойство Товаров',
     editPropertyGroup: 'Редактировать Группу Свойств Товаров',
+    editSubmission: 'Редактировать заявку',
     editQuiz: 'Редактировать Викторину',
     editQuizAnswer: 'Редактировать Ответ',
     editQuizAttempt: 'Редактировать попытку прохождения викторины',

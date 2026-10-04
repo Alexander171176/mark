@@ -39,6 +39,7 @@ export default {
     report: 'Report:',
     reports: 'Reports',
     requestLocale: 'Request locale',
+    requestProcessing: 'Request processing',
     required: 'Required field',
     resendVerification: 'Resend Verification Email',
     resendVerificationEmail: 'Click here to resend the verification email.',

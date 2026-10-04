@@ -31,6 +31,7 @@ export default {
     videos: 'Бейне',
     view: 'Қарау',
     viewForm: 'Форманы қарау',
+    viewSubmission: 'Қолданбаны қарау',
     viewedAt: 'Қаралды',
     viewingLogs: 'Журналдарды қарау',
     views: 'Көрулер саны',

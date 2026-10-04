@@ -32,6 +32,7 @@ export default {
     blog: 'Блог',
     bonus: 'бонус',
     boolean: 'Логикалық мәні',
+    boundForm: 'Ұқсас форма',
     brand: 'Бренд',
     brands: 'Бренды',
     browserSessionDescription: 'Белсенді сеанстарыңызды басқарыңыз және басқа браузерлер мен құрылғылардан шығыңыз.',

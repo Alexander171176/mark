@@ -14,6 +14,7 @@ export default {
     noContests: 'Өткізілмеген деп танылған шайқастар саны',
     noCurrentImage: 'қазіргі уақытта сурет жоқ',
     noData: 'Көрсету үшін деректер жоқ.',
+    notAssigned: 'Тағайындалмаған',
     notForVariants: 'Опциялар жоқ',
     noHierarchyData: 'Иерархиялық деректер жоқ',
     noImage: 'Сурет жоқ',

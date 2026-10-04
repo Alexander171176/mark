@@ -375,8 +375,8 @@ const statusBadge = (status) => {
                             class="flex flex-col min-w-[140px]"
                         >
                             <div
-                                class="font-semibold text-violet-700
-                                           dark:text-violet-300"
+                                class="text-xs font-semibold text-violet-700
+                                       dark:text-violet-300"
                             >
                                 {{ assignedUser(submission).name || '—' }}
                             </div>
@@ -414,27 +414,25 @@ const statusBadge = (status) => {
                                    whitespace-nowrap"
                     >
                         <div
-                            class="flex flex-col items-center justify-center gap-2 text-xs"
+                            class="flex flex-row items-center justify-center gap-2 text-xs"
                         >
                             <span
-                                class="inline-flex items-center gap-1 w-full px-2 py-0.5
+                                class="inline-flex items-center gap-1 px-2 py-0.5
                                        bg-gray-100 dark:bg-gray-700
                                        rounded-sm border border-slate-300 dark:border-slate-500
                                        text-center text-slate-600 dark:text-slate-200"
                                 :title="t('values')"
                             >
-                                {{ t('values') }}:
                                 {{ submission.values_count ?? 0 }}
                             </span>
 
                             <span
-                                class="inline-flex items-center gap-1 w-full px-2 py-0.5
+                                class="inline-flex items-center gap-1 px-2 py-0.5
                                        bg-gray-100 dark:bg-gray-700
                                        rounded-sm border border-slate-300 dark:border-slate-500
                                        text-center text-slate-600 dark:text-slate-200"
                                 :title="t('files')"
                             >
-                                    {{ t('files') }}:
                                     {{ submission.files_count ?? 0 }}
                                 </span>
                         </div>

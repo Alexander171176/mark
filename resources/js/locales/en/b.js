@@ -32,6 +32,7 @@ export default {
     blog: 'Blog',
     bonus: 'bonus',
     boolean: 'Logical value',
+    boundForm: 'Bound form',
     brand: 'Brand',
     brands: 'Brands',
     browserSessionDescription: 'Manage and log out your active sessions on other browsers and devices.',

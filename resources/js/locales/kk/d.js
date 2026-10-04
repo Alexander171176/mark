@@ -2,6 +2,7 @@ export default {
     dashboard: 'Жеке кабинет',
     data: 'Деректер',
     databaseBackup: 'Дерекқордың резервтік көшірмесі',
+    dataNotAvailable: 'Деректер қолжетімді емес',
     dataUploaded: 'деректер жүктеледі...',
     date: 'Күні',
     dates: 'Күндер',

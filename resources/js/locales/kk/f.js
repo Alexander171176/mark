@@ -17,6 +17,7 @@ export default {
     files: 'Файлдар',
     fileBackup: 'Сайтты мұрағаттау және қалпына келтіру',
     fileSize: 'Файл өлшемі',
+    filesAreMissing: 'Файлдар жоқ',
     filesSelected: 'Таңдалған файлдар',
     fillAllFields: 'Барлық өрістерді толтыру қажет',
     filter: 'Сүзгі',

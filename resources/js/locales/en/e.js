@@ -40,6 +40,7 @@ export default {
     editProfile: 'Edit the Profile',
     editProperty: 'Edit the Product Property',
     editPropertyGroup: 'Edit A Group Of Product Properties',
+    editSubmission: 'Edit the Submission',
     editQuiz: 'Edit Quiz',
     editQuizAnswer: 'Edit Reply',
     editQuizAttempt: 'Edit a quiz attempt',

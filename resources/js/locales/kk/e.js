@@ -40,6 +40,7 @@ export default {
     editProfile: 'Профильді өңдеу',
     editProperty: 'Өнім сипаттамасын өңдеу',
     editPropertyGroup: 'Сипаттама тобын өңдеу',
+    editSubmission: 'Қолданбаны өңдеу',
     editQuiz: 'Викторинаны өңдеу',
     editQuizAnswer: 'Жауапты өңдеу',
     editQuizAttempt: 'Викторинаны өңдеу',

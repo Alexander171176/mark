@@ -31,6 +31,7 @@ export default {
     videos: 'Видео',
     view: 'Просмотр',
     viewForm: 'Просмотр формы',
+    viewSubmission: 'Просмотр заявки',
     viewedAt: 'Просмотрено',
     viewingLogs: 'Просмотр логов',
     views: 'Просмотры',

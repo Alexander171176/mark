@@ -39,6 +39,7 @@ export default {
     report: 'Есеп:',
     reports: 'Есептер',
     requestLocale: 'Қолданба тілі',
+    requestProcessing: 'Өтінімді өңдеу',
     required: 'Міндетті өріс',
     resendVerification: 'Қайта растау',
     resendVerificationEmail: 'Растау электрондық хатын қайта жіберу үшін осы жерді басыңыз.',

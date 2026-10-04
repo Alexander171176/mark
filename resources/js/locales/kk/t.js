@@ -2,6 +2,7 @@ export default {
     tabsTiles: 'Қойындылар мен тақтайшалар',
     tag: 'Тег',
     tags: 'Тегтер',
+    takenProcessing: 'Жұмысқа алынды',
     taxRegime: 'Салық режимі',
     taxTotal: 'Жалпы салық сомасы',
     teamInformation: 'Топ туралы ақпарат',

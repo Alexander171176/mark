@@ -78,6 +78,7 @@ export default {
     printInMenu: 'в меню',
     privacyPolicy: 'Политика конфиденциальности',
     private: 'Приватное',
+    processedAt: 'Обработана',
     products: 'Товары',
     profile: 'Профиль',
     profileInformation: 'Информация профиля',

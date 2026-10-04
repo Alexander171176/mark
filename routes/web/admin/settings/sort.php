@@ -160,6 +160,10 @@ Route::put('/update-sort/form-fields',
     [SettingController::class, 'updateAdminSortFormFields'])
     ->name('updateAdminSortFormFields');
 
+Route::put('/update-sort/form-submissions',
+    [SettingController::class, 'updateAdminSortFormSubmissions'])
+    ->name('updateAdminSortFormSubmissions');
+
 // маркет
 Route::put('/update-sort/market-companies',
     [SettingController::class, 'updateAdminSortMarketCompanies'])

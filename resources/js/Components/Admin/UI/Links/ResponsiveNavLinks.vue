@@ -31,6 +31,11 @@ const { t } = useI18n();
             {{ t('forms') }}
         </ResponsiveNavLink>
         <ResponsiveNavLink
+            :href="route('admin.formSubmissions.index')"
+            :active="route().current('admin.formSubmissions.*')">
+            {{ t('formSubmissions') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
             :href="route('admin.formFields.index')"
             :active="route().current('admin.formFields.*')">
             {{ t('formFields') }}

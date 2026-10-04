@@ -78,6 +78,7 @@ export default {
     printInMenu: 'in the menu',
     privacyPolicy: 'Privacy Policy',
     private: 'Private',
+    processedAt: 'Processed',
     products: 'Goods',
     profile: 'Profile',
     profileInformation: 'Profile Information',

@@ -221,10 +221,10 @@ const selectedSchedule = computed({
  * ========================================================== */
 
 const orderStatusLabelKeyMap = {
-    new: 'statusOrderNew',
-    processing: 'statusOrderProcessing',
-    completed: 'statusOrderCompleted',
-    cancelled: 'statusOrderCancelled',
+    new: 'statusNew',
+    processing: 'statusProcessing',
+    completed: 'statusCompleted',
+    cancelled: 'statusCancelled',
     refunded: 'statusPaidRefunded',
     archived: 'statusArchived',
 }

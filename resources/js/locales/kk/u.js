@@ -1,4 +1,5 @@
 export default {
+    unassigned: 'Жауапты адамсыз',
     underModeration: 'Модерацияда',
     undoDeletion: 'Жоюды болдырмау',
     unit: 'Өлшем бірлігі',

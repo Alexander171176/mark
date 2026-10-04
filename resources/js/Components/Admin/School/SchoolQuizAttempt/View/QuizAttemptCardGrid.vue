@@ -113,7 +113,7 @@ const formatPercent = (value) => {
 
 const statusLabel = (status) => {
     if (status === 'in_progress') return t('setStatusInProgress')
-    if (status === 'completed') return t('setStatusCompleted')
+    if (status === 'completed') return t('statusCompleted')
     if (status === 'graded') return t('setStatusGraded')
 
     return status || '—'

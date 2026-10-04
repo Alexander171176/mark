@@ -1,4 +1,5 @@
 export default {
+    unassigned: 'Without a person in charge',
     underModeration: 'On moderation',
     undoDeletion: 'Undo deletion',
     unit: 'Unit of Measurement',

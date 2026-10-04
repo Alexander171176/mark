@@ -4,6 +4,7 @@ namespace App\Http\Resources\Admin\Form\FormSubmission;
 
 use App\Http\Resources\Admin\Form\Form\FormSharedResource;
 use App\Http\Resources\Admin\Form\FormSubmissionFile\FormSubmissionFileResource;
+use App\Http\Resources\Admin\Form\FormSubmissionStatusHistory\FormSubmissionStatusHistoryResource;
 use App\Http\Resources\Admin\Form\FormSubmissionValue\FormSubmissionValueResource;
 use App\Http\Resources\Admin\System\User\UserSharedResource;
 use Illuminate\Http\Request;
@@ -36,10 +37,9 @@ class FormSubmissionResource extends JsonResource
                 ? (int) $this->user_id
                 : null,
 
-            'assigned_user_id' =>
-                $this->assigned_user_id !== null
-                    ? (int) $this->assigned_user_id
-                    : null,
+            'assigned_user_id' => $this->assigned_user_id !== null
+                ? (int) $this->assigned_user_id
+                : null,
 
             /** Состояние */
             'status' => $this->status,
@@ -69,9 +69,7 @@ class FormSubmissionResource extends JsonResource
                 'form',
                 function () {
                     return $this->form
-                        ? new FormSharedResource(
-                            $this->form
-                        )
+                        ? new FormSharedResource($this->form)
                         : null;
                 }
             ),
@@ -81,9 +79,7 @@ class FormSubmissionResource extends JsonResource
                 'user',
                 function () {
                     return $this->user
-                        ? new UserSharedResource(
-                            $this->user
-                        )
+                        ? new UserSharedResource($this->user)
                         : null;
                 }
             ),
@@ -93,28 +89,25 @@ class FormSubmissionResource extends JsonResource
                 'assignedUser',
                 function () {
                     return $this->assignedUser
-                        ? new UserSharedResource(
-                            $this->assignedUser
-                        )
+                        ? new UserSharedResource($this->assignedUser)
                         : null;
                 }
             ),
 
             /** Snapshot-значения полей */
-            'values' =>
-                FormSubmissionValueResource::collection(
-                    $this->whenLoaded(
-                        'values'
-                    )
-                ),
+            'values' => FormSubmissionValueResource::collection(
+                $this->whenLoaded('values')
+            ),
 
             /** Прикреплённые файлы */
-            'files' =>
-                FormSubmissionFileResource::collection(
-                    $this->whenLoaded(
-                        'files'
-                    )
-                ),
+            'files' => FormSubmissionFileResource::collection(
+                $this->whenLoaded('files')
+            ),
+
+            /** История изменения статуса */
+            'status_history' => FormSubmissionStatusHistoryResource::collection(
+                $this->whenLoaded('statusHistory')
+            ),
 
             /** Счётчики */
             'values_count' => $this->when(
@@ -128,22 +121,15 @@ class FormSubmissionResource extends JsonResource
             ),
 
             /** Обработка */
-            'processed_at' =>
-                $this->processed_at?->toISOString(),
-
-            'completed_at' =>
-                $this->completed_at?->toISOString(),
+            'processed_at' => $this->processed_at?->toISOString(),
+            'completed_at' => $this->completed_at?->toISOString(),
 
             /** Время отправки */
-            'submitted_at' =>
-                $this->submitted_at?->toISOString(),
+            'submitted_at' => $this->submitted_at?->toISOString(),
 
             /** Timestamps */
-            'created_at' =>
-                $this->created_at?->toISOString(),
-
-            'updated_at' =>
-                $this->updated_at?->toISOString(),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

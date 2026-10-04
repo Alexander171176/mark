@@ -1,34 +1,57 @@
 <script setup>
+import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import {computed, defineProps} from 'vue'
-import { useI18n } from 'vue-i18n';
+import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n();
+const { t } = useI18n()
 
-defineProps({
+const props = defineProps({
     href: {
         type: String,
         required: true,
     },
-    title: String
+
+    title: {
+        type: String,
+        default: '',
+    },
+})
+
+const buttonTitle = computed(() => {
+    return props.title || t('view')
 })
 
 const buttonClass = computed(() => [
-    'flex items-center p-1'
-]);
+    'group flex items-center justify-center p-1 px-1 rounded',
+    'border border-slate-300 dark:border-blue-300',
+    'transition-all duration-200 ease-out',
+    'hover:border-blue-500 dark:hover:border-blue-100',
+    'hover:bg-blue-50 dark:hover:bg-blue-900/30',
+    'hover:shadow-md hover:shadow-blue-500/20',
+    'hover:-translate-y-0.5',
+    'active:translate-y-0 active:scale-90',
+    'focus:outline-none focus:ring-2 focus:ring-blue-400/40',
+])
 </script>
 
 <template>
     <div class="text-center">
-        <Link :href="href"
-              :class="buttonClass"
-              :title="t('view')">
+        <Link
+            :href="href"
+            :class="buttonClass"
+            :title="buttonTitle"
+        >
             <svg
-                class="w-5 h-5 fill-current text-teal-500
-                       hover:text-teal-700 dark:text-teal-300 dark:hover:text-teal-100 shrink-0"
-                viewBox="0 0 576 512">
+                class="w-4 h-4 shrink-0 fill-current text-blue-500
+                       transition-all duration-200 ease-out
+                       group-hover:scale-110 group-hover:text-blue-600
+                       group-active:scale-90
+                       dark:group-hover:text-blue-300"
+                viewBox="0 0 16 16"
+            >
                 <path
-                    d="M569.354 231.631C512.969 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-75.162 0-136-60.827-136-136 0-75.162 60.826-136 136-136 75.162 0 136 60.826 136 136 0 75.162-60.826 136-136 136zm104-136c0 57.438-46.562 104-104 104s-104-46.562-104-104c0-17.708 4.431-34.379 12.236-48.973l-.001.032c0 23.651 19.173 42.823 42.824 42.823s42.824-19.173 42.824-42.823c0-23.651-19.173-42.824-42.824-42.824l-.032.001C253.621 156.431 270.292 152 288 152c57.438 0 104 46.562 104 104z" />
+                    d="M5 9h11v2H5V9zM0 9h3v2H0V9zm5 4h6v2H5v-2zm-5 0h3v2H0v-2zm5-8h7v2H5V5zM0 5h3v2H0V5zm5-4h11v2H5V1zM0 1h3v2H0V1z"
+                />
             </svg>
         </Link>
     </div>

@@ -418,6 +418,16 @@ trait CountSettingsTrait
         );
     }
 
+    /** Обновление количества элементов в заявках форм */
+    public function updateAdminCountFormSubmissions(
+        UpdateCountSettingRequest $request
+    ): RedirectResponse {
+        return $this->countSetting(
+            $request,
+            'adminFormSubmissionsPerPage'
+        );
+    }
+
     /** Обновление количества элементов в компаниях */
     public function updateAdminCountMarketCompanies(
         UpdateCountSettingRequest $request

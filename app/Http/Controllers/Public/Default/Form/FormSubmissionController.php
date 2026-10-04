@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class PublicFormSubmissionController extends Controller
+class FormSubmissionController extends Controller
 {
     public function __construct(
         private readonly FormSubmissionValidationService $validationService,

@@ -160,6 +160,10 @@ Route::put('/update-count/form-fields',
     [SettingController::class, 'updateAdminCountFormFields'])
     ->name('updateAdminCountFormFields');
 
+Route::put('/update-count/form-submissions',
+    [SettingController::class, 'updateAdminCountFormSubmissions'])
+    ->name('updateAdminCountFormSubmissions');
+
 // маркет
 Route::put('/update-count/market-companies',
     [SettingController::class, 'updateAdminCountMarketCompanies'])

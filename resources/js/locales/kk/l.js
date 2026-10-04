@@ -29,6 +29,7 @@ export default {
     limit: 'Шектеу',
     limitCount: 'Әрекеттер саны',
     limitMinutes: 'Минутпен шектеу',
+    locale: 'Жергілікті тіл',
     localeAdded: 'Тіл қосылды',
     location: 'Орналасқан жері',
     locations: 'Орналасқан жерлер',

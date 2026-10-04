@@ -120,7 +120,7 @@ const updateSort = (event) => {
             </option>
 
             <option value="completed">
-                {{ t('setStatusCompleted') }}
+                {{ t('statusCompleted') }}
             </option>
 
             <option value="graded">

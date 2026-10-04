@@ -133,7 +133,7 @@ const statusOptions = computed(() => ([
     },
     {
         value: 'completed',
-        label: t('setStatusCompleted'),
+        label: t('statusCompleted'),
     },
     {
         value: 'graded',

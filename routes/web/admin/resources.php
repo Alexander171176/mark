@@ -310,6 +310,7 @@ Route::resource('/forms', FormController::class)
 // Поля форм
 Route::resource('/form-fields', FormFieldController::class)
     ->parameters(['form-fields' => 'formField'])
+    ->except(['create', 'store'])
     ->names('formFields');
 
 // Варианты значений полей

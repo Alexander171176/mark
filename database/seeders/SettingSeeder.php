@@ -2216,6 +2216,36 @@ class SettingSeeder extends Seeder
             ], // ADMIN FORM FIELDS DEFAULT VIEW
             [
                 'type' => 'string',
+                'option' => 'adminFormSubmissionsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_FORM_SUBMISSIONS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных заявок форм в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORM SUBMISSIONS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminFormSubmissionsPerPage',
+                'value' => '20',
+                'constant' => 'ADMIN_FORM_SUBMISSIONS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество заявок форм в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORM SUBMISSIONS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminFormSubmissionsDefaultSort',
+                'value' => 'submittedAtDesc',
+                'constant' => 'ADMIN_FORM_SUBMISSIONS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка заявок форм по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN FORM SUBMISSIONS DEFAULT SORT
+            [
+                'type' => 'string',
                 'option' => 'adminMarketCompaniesProcessingMode',
                 'value' => 'auto',
                 'constant' => 'ADMIN_MARKET_COMPANIES_PROCESSING_MODE',

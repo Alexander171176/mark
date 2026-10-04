@@ -78,6 +78,7 @@ export default {
     printInMenu: 'мәзірде',
     privacyPolicy: 'Құпиялылық саясаты',
     private: 'Жеке',
+    processedAt: 'Өңделген',
     products: 'Тауарлар',
     profile: 'Профиль',
     profileInformation: 'Профиль туралы ақпарат',

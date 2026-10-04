@@ -64,6 +64,7 @@ const linkInfo = {
     cmsPages: {label: t('pages'), route: 'admin.cmsPages.index'},
     forms: {label: t('forms'), route: 'admin.forms.index'},
     formFields: {label: t('formFields'), route: 'admin.formFields.index'},
+    formSubmissions: {label: t('formSubmissions'), route: 'admin.formSubmissions.index'},
     currencies: {label: t('currencies'), route: 'admin.currencies.index'},
     comments: {label: t('comments'), route: 'admin.comments.index'},
     reviews: {label: t('reviews'), route: 'admin.reviews.index'},

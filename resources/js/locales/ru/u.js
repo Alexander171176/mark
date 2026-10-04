@@ -1,4 +1,5 @@
 export default {
+    unassigned: 'Без ответственного',
     underModeration: 'На модерации',
     undoDeletion: 'Отменить удаление',
     unit: 'Единица Измерения',

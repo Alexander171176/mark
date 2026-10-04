@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\Public\Default\Form\PublicFormSubmissionController;
+use App\Http\Controllers\Public\Default\Form\FormSubmissionController;
 use Illuminate\Support\Facades\Route;
 
 Route::post(
     '/forms/{formCode}/submit',
-    [PublicFormSubmissionController::class, 'store']
+    [FormSubmissionController::class, 'store']
 )->name('forms.submit');

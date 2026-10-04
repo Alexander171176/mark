@@ -29,6 +29,7 @@ export default {
     limit: 'Limit',
     limitCount: 'Number of attempts',
     limitMinutes: 'Limit in minutes',
+    locale: 'Locale',
     localeAdded: 'Locale added',
     location: 'Location',
     locations: 'Locations',

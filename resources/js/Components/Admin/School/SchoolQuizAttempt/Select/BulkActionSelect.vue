@@ -38,13 +38,13 @@ const { t } = useI18n()
 
             <!-- Статусы -->
             <option value="status:in_progress">
-                {{ t('setStatusInProgress') || 'Статус: В процессе' }}
+                {{ t('setStatusInProgress') }}
             </option>
             <option value="status:completed">
-                {{ t('setStatusCompleted') || 'Статус: Завершён' }}
+                {{ t('statusCompleted') }}
             </option>
             <option value="status:graded">
-                {{ t('setStatusGraded') || 'Статус: Проверен' }}
+                {{ t('setStatusGraded') }}
             </option>
 
             <option disabled>──────────────────</option>

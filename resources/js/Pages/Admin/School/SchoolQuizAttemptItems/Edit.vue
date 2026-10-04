@@ -120,7 +120,7 @@ const questionTypeLabel = (type) => {
 const attemptStatusLabel = (status) => {
     const map = {
         in_progress: t('setStatusInProgress'),
-        completed: t('setStatusCompleted'),
+        completed: t('statusCompleted'),
         graded: t('setStatusGraded'),
     }
 

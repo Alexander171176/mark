@@ -897,15 +897,16 @@ const formUrl = computed(() => {
                 <section class="mb-5">
                     <div class="flex items-center justify-between gap-3 mb-3">
                         <h3
-                            class="px-1 text-md font-semibold text-slate-900 dark:text-slate-100">
+                            class="flex flex-row items-center justify-center gap-3
+                                   px-1 text-md font-semibold text-slate-900 dark:text-slate-100">
                             {{ t('statusHistory') }}
-                        </h3>
-                        <span
-                            class="px-3 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900
-                                   border border-slate-300 dark:border-slate-600 text-sm
-                                   text-slate-700 dark:text-slate-300">
+                            <span
+                                class="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900
+                                       border border-slate-300 dark:border-slate-600 text-xs
+                                       text-slate-700 dark:text-slate-300">
                             {{ statusHistory.length }}
                         </span>
+                        </h3>
                     </div>
 
                     <div

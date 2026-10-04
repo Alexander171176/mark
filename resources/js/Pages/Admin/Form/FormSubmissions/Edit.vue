@@ -1043,7 +1043,7 @@ const submitForm = () => {
 
                                 <div
                                     class="mt-1 font-semibold text-xs
-                                           text-cyan-700 dark:text-cyan-200"
+                                           text-indigo-700 dark:text-indigo-300"
                                 >
                                     {{ formatDate(submissionData.submitted_at) }}
                                 </div>
@@ -1058,7 +1058,7 @@ const submitForm = () => {
 
                                 <div
                                     class="mt-1 font-semibold text-xs
-                                           text-cyan-700 dark:text-cyan-200"
+                                           text-indigo-700 dark:text-indigo-300"
                                 >
                                     {{ formatDate(submissionData.processed_at) }}
                                 </div>
@@ -1073,7 +1073,7 @@ const submitForm = () => {
 
                                 <div
                                     class="mt-1 font-semibold text-xs
-                                           text-cyan-700 dark:text-cyan-200"
+                                           text-indigo-700 dark:text-indigo-300"
                                 >
                                     {{ formatDate(submissionData.completed_at) }}
                                 </div>
@@ -1088,7 +1088,7 @@ const submitForm = () => {
 
                                 <div
                                     class="mt-1 font-semibold text-xs
-                                           text-cyan-700 dark:text-cyan-200"
+                                           text-indigo-700 dark:text-indigo-300"
                                 >
                                     {{ formatDate(submissionData.created_at) }}
                                 </div>
@@ -1103,7 +1103,7 @@ const submitForm = () => {
 
                                 <div
                                     class="mt-1 font-semibold text-xs
-                                           text-cyan-700 dark:text-cyan-200"
+                                           text-indigo-700 dark:text-indigo-300"
                                 >
                                     {{ formatDate(submissionData.updated_at) }}
                                 </div>
@@ -1149,87 +1149,89 @@ const submitForm = () => {
                                            border border-slate-300 dark:border-slate-600
                                            text-slate-600 dark:text-slate-300"
                                 >
-                                <tr>
-                                    <th class="px-3 py-2">
-                                        {{ t('status') }}
-                                    </th>
+                                    <tr>
+                                        <th class="px-3 py-2">
+                                            {{ t('status') }}
+                                        </th>
 
-                                    <th class="px-3 py-2">
-                                        {{ t('user') }}
-                                    </th>
+                                        <th class="px-3 py-2">
+                                            {{ t('user') }}
+                                        </th>
 
-                                    <th class="px-3 py-2">
-                                        {{ t('source') }}
-                                    </th>
+                                        <th class="px-3 py-2">
+                                            {{ t('source') }}
+                                        </th>
 
-                                    <th class="px-3 py-2">
-                                        {{ t('comment') }}
-                                    </th>
+                                        <th class="px-3 py-2">
+                                            {{ t('comment') }}
+                                        </th>
 
-                                    <th class="px-3 py-2 text-right">
-                                        {{ t('date') }}
-                                    </th>
-                                </tr>
+                                        <th class="px-3 py-2 text-right">
+                                            {{ t('date') }}
+                                        </th>
+                                    </tr>
                                 </thead>
 
                                 <tbody>
-                                <tr
-                                    v-for="item in statusHistory"
-                                    :key="item.id"
-                                    class="border-b border-slate-300
-                                               dark:border-slate-600"
-                                >
-                                    <td class="px-3 py-2 whitespace-nowrap">
-                                        <div
-                                            class="flex items-center
-                                                       gap-1.5"
+                                    <tr
+                                        v-for="item in statusHistory"
+                                        :key="item.id"
+                                        class="border-b border-slate-300
+                                                   dark:border-slate-600"
+                                    >
+                                        <td class="px-3 py-2 whitespace-nowrap">
+                                            <div
+                                                class="flex items-center
+                                                           gap-1.5"
+                                            >
+                                                <span
+                                                    v-if="item.from_status"
+                                                    class="text-xs text-slate-700
+                                                           dark:text-slate-300"
+                                                >
+                                                    {{ statusLabel(item.from_status) }}
+                                                </span>
+
+                                                <span
+                                                    v-if="item.from_status"
+                                                    class="text-xs text-slate-700
+                                                           dark:text-slate-300"
+                                                >
+                                                    →
+                                                </span>
+
+                                                <span
+                                                    class="font-medium text-xs
+                                                           text-slate-700 dark:text-slate-300"
+                                                >
+                                                    {{ statusLabel(item.to_status) }}
+                                                </span>
+                                            </div>
+                                        </td>
+
+                                        <td class="px-3 py-2 font-semibold text-xs
+                                                   text-blue-700 dark:text-blue-300">
+                                            {{ historyUserName(item) }}
+                                        </td>
+
+                                        <td class="px-3 py-2 font-semibold text-xs
+                                                   text-teal-700 dark:text-teal-300">
+                                            {{ item.source || '—' }}
+                                        </td>
+
+                                        <td
+                                            class="px-3 py-2 font-semibold text-xs whitespace-pre-wrap"
                                         >
-                                            <span
-                                                v-if="item.from_status"
-                                                class="text-xs text-slate-700 dark:text-slate-300"
-                                            >
-                                                {{ statusLabel(item.from_status) }}
-                                            </span>
+                                            {{ item.comment || '—' }}
+                                        </td>
 
-                                            <span
-                                                v-if="item.from_status"
-                                                class="text-xs text-slate-700 dark:text-slate-300"
-                                            >
-                                                →
-                                            </span>
-
-                                            <span
-                                                class="font-medium text-xs
-                                                       text-slate-700 dark:text-slate-300"
-                                            >
-                                                {{ statusLabel(item.to_status) }}
-                                            </span>
-                                        </div>
-                                    </td>
-
-                                    <td class="px-3 py-2 font-semibold text-xs
-                                               text-indigo-700 dark:text-indigo-300">
-                                        {{ historyUserName(item) }}
-                                    </td>
-
-                                    <td class="px-3 py-2 font-semibold text-xs
-                                               text-teal-700 dark:text-teal-300">
-                                        {{ item.source || '—' }}
-                                    </td>
-
-                                    <td
-                                        class="px-3 py-2 font-semibold text-xs whitespace-pre-wrap"
-                                    >
-                                        {{ item.comment || '—' }}
-                                    </td>
-
-                                    <td
-                                        class="px-3 py-2 font-semibold text-xs text-right
-                                               whitespace-nowrap text-blue-700 dark:text-blue-300"
-                                    >
-                                        {{ formatDate(item.changed_at || item.created_at) }}
-                                    </td>
-                                </tr>
+                                        <td
+                                            class="px-3 py-2 font-semibold text-xs text-right
+                                                   whitespace-nowrap text-blue-700 dark:text-blue-300"
+                                        >
+                                            {{ formatDate(item.changed_at || item.created_at) }}
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>

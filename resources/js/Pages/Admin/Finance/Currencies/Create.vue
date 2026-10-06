@@ -90,10 +90,10 @@ const submit = () => {
 </script>
 
 <template>
-    <AdminLayout :title="t('createCurrency')">
+    <AdminLayout :title="t('addCurrency')">
         <template #header>
             <TitlePage>
-                {{ t('createCurrency') }}
+                {{ t('addCurrency') }}
             </TitlePage>
         </template>
         <div

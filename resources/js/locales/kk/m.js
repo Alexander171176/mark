@@ -2,7 +2,6 @@ export default {
     main: 'Негізгі терезеде көрсету',
     mainCategory: 'Негізгі санат',
     mainCurrency: 'Негізгі валюта',
-    marketCompanyTypeCompany: 'Компания',
     marketCompanyTypeEntrepreneur: 'ЖС',
     marketCompanyTypeIndividual: 'Жеке',
     marketCompanyVat: 'ҚҚС',

@@ -24,6 +24,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified',
         // --- Маршруты для показа, очистки логов и скачивания логов ---
         require __DIR__ . '/logs.php';
 
+        // --- Маршруты для уведомлений ---
+        require __DIR__ . '/notifications.php';
+
         // --- Системные маршруты для отладки ---
         require __DIR__ . '/system.php';
 

@@ -27,6 +27,7 @@ export default {
     noSignature: 'Нет подписи',
     noStamp: 'Нет печати',
     notes: 'Заметки Администратора',
+    notifications: 'Уведомления',
     notActive: 'Не активно',
     notAvailable: 'Нет в наличии',
     notDefaultVariant: 'Не основной вариант',

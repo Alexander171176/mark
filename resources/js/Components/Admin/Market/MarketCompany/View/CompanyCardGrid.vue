@@ -199,7 +199,7 @@ const truncateText = (
 
 /** Локализованное название типа компании */
 const companyTypeLabelKeyMap = {
-    company: 'marketCompanyTypeCompany',
+    company: 'billingCompany',
     entrepreneur: 'marketCompanyTypeEntrepreneur',
     individual: 'marketCompanyTypeIndividual',
 }
@@ -207,7 +207,7 @@ const companyTypeLabelKeyMap = {
 const companyTypeLabel = (type) => {
     return t(
         companyTypeLabelKeyMap[type]
-        || 'marketCompanyTypeCompany'
+        || 'billingCompany'
     )
 }
 

@@ -4,6 +4,7 @@ import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Inertia } from '@inertiajs/inertia'
 import axios from 'axios'
+import AdminNotificationBell from '@/Components/Admin/Notification/AdminNotificationBell.vue'
 import LocaleSelectOption from '@/Components/Admin/UI/Select/LocaleSelectOption.vue'
 
 const page = usePage()
@@ -179,6 +180,9 @@ const clearCache = async () => {
                         />
                     </svg>
                 </button>
+
+                <!-- Уведомления -->
+                <AdminNotificationBell />
 
                 <LocaleSelectOption
                     v-model="selectedLocale"

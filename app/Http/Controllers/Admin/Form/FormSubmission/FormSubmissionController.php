@@ -9,6 +9,7 @@ use App\Http\Resources\Admin\Form\FormSubmission\FormSubmissionSharedResource;
 use App\Models\Admin\Form\FormSubmission\FormSubmission;
 use App\Models\Admin\Form\FormSubmissionFile\FormSubmissionFile;
 use App\Models\User;
+use App\Services\Admin\Form\FormSubmissionAssignmentService;
 use App\Services\Admin\Form\FormSubmissionStatusService;
 use App\Services\Admin\ProcessingModeService;
 use App\Services\SiteSettings\AdminSettingsService;
@@ -322,6 +323,7 @@ class FormSubmissionController extends BaseFormAdminController
     public function update(
         FormSubmissionRequest $request,
         int $formSubmission,
+        FormSubmissionAssignmentService $assignmentService,
         FormSubmissionStatusService $statusService
     ): RedirectResponse {
         /**
@@ -333,35 +335,54 @@ class FormSubmissionController extends BaseFormAdminController
 
         $validated = $request->validated();
 
-        DB::transaction(function () use (
+        /**
+         * Пользователь, выполняющий
+         * административное действие.
+         */
+        $user = auth()->user();
+
+        /**
+         * Новый ответственный сотрудник.
+         *
+         * null означает снятие назначения.
+         */
+        $assignedUser = isset($validated['assigned_user_id'])
+            ? User::query()->findOrFail(
+                $validated['assigned_user_id']
+            )
+            : null;
+
+        /**
+         * Изменение ответственного сотрудника.
+         *
+         * Сервис самостоятельно:
+         * - проверяет фактическое изменение;
+         * - сохраняет assigned_user_id;
+         * - отправляет событие после транзакции.
+         */
+        $assignmentService->assign(
             $submission,
-            $validated,
-            $statusService
-        ) {
-            /**
-             * Ответственный сотрудник.
-             */
-            $submission->assigned_user_id =
-                $validated['assigned_user_id'] ?? null;
+            $assignedUser,
+            $user,
+            'admin'
+        );
 
-            $submission->save();
-
-            /**
-             * Изменение статуса.
-             *
-             * Сервис самостоятельно:
-             * - проверяет фактическое изменение;
-             * - управляет processed_at;
-             * - управляет completed_at;
-             * - создаёт историю перехода.
-             */
-            $statusService->changeStatus(
-                submission: $submission,
-                newStatus: $validated['status'],
-                user: auth()->user(),
-                source: 'admin'
-            );
-        });
+        /**
+         * Изменение статуса.
+         *
+         * Сервис самостоятельно:
+         * - проверяет фактическое изменение;
+         * - управляет processed_at;
+         * - управляет completed_at;
+         * - создаёт историю перехода;
+         * - отправляет событие после транзакции.
+         */
+        $statusService->changeStatus(
+            $submission,
+            $validated['status'],
+            $user,
+            'admin'
+        );
 
         return redirect()
             ->route(

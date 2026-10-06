@@ -24,6 +24,12 @@ const { t } = useI18n();
             :active="route().current('admin.cmsPages.*')">
             {{ t('pages') }}
         </ResponsiveNavLink>
+        <!-- Админские маршруты Уведомлений -->
+        <ResponsiveNavLink
+            :href="route('admin.notifications.index')"
+            :active="route().current('admin.notifications.*')">
+            {{ t('notifications') }}
+        </ResponsiveNavLink>
         <!-- Админские маршруты Конструктора форм -->
         <ResponsiveNavLink
             :href="route('admin.forms.index')"

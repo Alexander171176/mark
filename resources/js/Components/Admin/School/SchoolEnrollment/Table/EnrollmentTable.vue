@@ -24,8 +24,8 @@ const emit = defineEmits([
 
 const statusLabelKeyMap = {
     active: 'statusEnrollmentActive',
-    completed: 'statusEnrollmentCompleted',
-    cancelled: 'statusEnrollmentCancelled',
+    completed: 'statusCompleted',
+    cancelled: 'cancelled',
     expired: 'statusEnrollmentExpired',
     paused: 'statusEnrollmentPaused',
 }

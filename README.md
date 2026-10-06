@@ -1000,6 +1000,22 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/Form/FormSubmissionStatusHistory/FormSubmissionStatusHistoryResource` <br>
 -------------------------------------------------------------------------------------
 
+1) События
+`docker exec mark-php-app php artisan make:event Form/FormSubmission/FormSubmissionCreated` <br>
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/LogFormSubmissionCreated --event=Form/FormSubmission/FormSubmissionCreated` <br>
+`docker exec mark-php-app php artisan make:event Form/FormSubmission/FormSubmissionStatusChanged` <br>
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/LogFormSubmissionStatusChanged` <br>
+`docker exec mark-php-app php artisan make:event Form/FormSubmission/FormSubmissionAssigned` <br>
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/LogFormSubmissionAssigned` <br>
+-------------------------------------------------------------------------------------
+
+1) Система уведомлений
+`docker exec mark-php-app php artisan notifications:table` <br>
+`docker exec mark-php-app php artisan migrate` <br>
+`docker exec mark-php-app php artisan make:resource Admin/Notification/NotificationResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/Notification/NotificationController` <br>
+-------------------------------------------------------------------------------------
+
 1) Группы характеристик
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeGroup/MarketAttributeGroup -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeGroup/MarketAttributeGroupTranslation -m` <br>

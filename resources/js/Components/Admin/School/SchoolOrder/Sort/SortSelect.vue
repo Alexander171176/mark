@@ -64,7 +64,7 @@ const updateSort = (event) => {
             <option disabled>──────────────────</option>
 
             <!-- Оплачен / не оплачен -->
-            <option value="paidFirst">{{ t('sortPaidFirst') }}</option>
+            <option value="paidFirst">{{ t('isPaid') }}</option>
             <option value="paidLast">{{ t('sortPaidLast') }}</option>
             <option disabled>──────────────────</option>
         </select>

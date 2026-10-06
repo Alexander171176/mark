@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin\Form;
 
+use App\Events\Form\FormSubmission\FormSubmissionStatusChanged;
 use App\Models\Admin\Form\FormSubmission\FormSubmission;
 use App\Models\Admin\Form\FormSubmissionStatusHistory\FormSubmissionStatusHistory;
 use App\Models\User;
@@ -17,10 +18,11 @@ class FormSubmissionStatusService
      * - изменение статуса;
      * - фиксацию начала обработки;
      * - фиксацию / очистку завершения;
-     * - создание истории перехода.
+     * - создание истории перехода;
+     * - отправку события изменения статуса.
      *
      * Если статус не изменился,
-     * запись истории не создаётся.
+     * запись истории и событие не создаются.
      */
     public function changeStatus(
         FormSubmission $submission,
@@ -34,11 +36,21 @@ class FormSubmissionStatusService
 
         $oldStatus = $submission->status;
 
+        /**
+         * Статус фактически не изменился.
+         *
+         * Не создаём ни историю,
+         * ни событие изменения статуса.
+         */
         if ($oldStatus === $newStatus) {
             return $submission;
         }
 
-        return DB::transaction(function () use (
+        /**
+         * Изменение заявки и создание истории
+         * выполняются одной транзакцией.
+         */
+        $submission = DB::transaction(function () use (
             $submission,
             $oldStatus,
             $newStatus,
@@ -46,7 +58,7 @@ class FormSubmissionStatusService
             $source,
             $comment,
             $metadata
-        ) {
+        ): FormSubmission {
             $submission->status = $newStatus;
 
             /**
@@ -76,6 +88,9 @@ class FormSubmissionStatusService
 
             $submission->save();
 
+            /**
+             * Создаём историю перехода статуса.
+             */
             FormSubmissionStatusHistory::query()->create([
                 'form_submission_id' => $submission->id,
                 'user_id' => $user?->id,
@@ -83,12 +98,30 @@ class FormSubmissionStatusService
                 'to_status' => $newStatus,
                 'source' => $source,
                 'comment' => $comment,
-                'metadata' => $metadata !== [] ? $metadata : null,
+                'metadata' => $metadata !== []
+                    ? $metadata
+                    : null,
                 'changed_at' => now(),
             ]);
 
             return $submission;
         });
+
+        /**
+         * Событие отправляем только после
+         * успешного завершения транзакции.
+         */
+        FormSubmissionStatusChanged::dispatch(
+            $submission,
+            $oldStatus,
+            $newStatus,
+            $user,
+            $source,
+            $comment,
+            $metadata
+        );
+
+        return $submission;
     }
 
     /**
@@ -98,7 +131,10 @@ class FormSubmissionStatusService
     {
         if (!in_array($status, $this->statuses(), true)) {
             throw new InvalidArgumentException(
-                sprintf('Недопустимый статус заявки: %s', $status)
+                sprintf(
+                    'Недопустимый статус заявки: %s',
+                    $status
+                )
             );
         }
     }

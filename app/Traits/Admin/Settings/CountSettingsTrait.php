@@ -428,6 +428,16 @@ trait CountSettingsTrait
         );
     }
 
+    /** Обновление количества элементов в уведомлениях */
+    public function updateAdminCountNotifications(
+        UpdateCountSettingRequest $request
+    ): RedirectResponse {
+        return $this->countSetting(
+            $request,
+            'adminNotificationsPerPage'
+        );
+    }
+
     /** Обновление количества элементов в компаниях */
     public function updateAdminCountMarketCompanies(
         UpdateCountSettingRequest $request

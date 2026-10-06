@@ -2,7 +2,6 @@ export default {
     main: 'Показать в главном окне',
     mainCategory: 'Основная категория',
     mainCurrency: 'Основная валюта',
-    marketCompanyTypeCompany: 'Компания',
     marketCompanyTypeEntrepreneur: 'ИП',
     marketCompanyTypeIndividual: 'Физ. лицо',
     marketCompanyVat: 'НДС',

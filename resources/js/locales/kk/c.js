@@ -98,7 +98,6 @@ export default {
     createBundle: 'Курс жиынтығын жасаңыз',
     createCourse: 'Оқу курсын құру',
     createCourseSchedule: 'Ағын кестесін жасаңыз',
-    createCurrency: 'Валюта қосу',
     createInstructor: 'Нұсқаушыны құру',
     createLesson: 'Сабақ жасау',
     createLocation: 'Орналасқан жерді жасау',

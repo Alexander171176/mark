@@ -1275,7 +1275,7 @@ const handleBulkAction = (event) => {
             >
                 <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
                     <DefaultButton :href="route('admin.marketCategories.create')">
-                        {{ t('addMarketCategory') }}
+                        {{ t('addCategory') }}
                     </DefaultButton>
 
                     <ProcessingModeSwitcher

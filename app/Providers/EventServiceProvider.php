@@ -2,26 +2,51 @@
 
 namespace App\Providers;
 
+use App\Events\Form\FormSubmission\FormSubmissionAssigned;
+use App\Events\Form\FormSubmission\FormSubmissionCreated;
+use App\Events\Form\FormSubmission\FormSubmissionStatusChanged;
+use App\Listeners\Form\FormSubmission\LogFormSubmissionAssigned;
+use App\Listeners\Form\FormSubmission\LogFormSubmissionCreated;
+use App\Listeners\Form\FormSubmission\LogFormSubmissionStatusChanged;
+use App\Listeners\Form\FormSubmission\SendFormSubmissionAssignedNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Event;
 
 class EventServiceProvider extends ServiceProvider
 {
     /**
-     * The event to listener mappings for the application.
+     * Сопоставления событий и слушателей приложения.
      *
      * @var array<class-string, array<int, class-string>>
      */
     protected $listen = [
+        /**
+         * Системные события Laravel.
+         */
         Registered::class => [
             SendEmailVerificationNotification::class,
+        ],
+
+        /**
+         * События заявок динамических форм.
+         */
+        FormSubmissionCreated::class => [
+            LogFormSubmissionCreated::class,
+        ],
+
+        FormSubmissionStatusChanged::class => [
+            LogFormSubmissionStatusChanged::class,
+        ],
+
+        FormSubmissionAssigned::class => [
+            LogFormSubmissionAssigned::class,
+            SendFormSubmissionAssignedNotification::class,
         ],
     ];
 
     /**
-     * Register any events for your application.
+     * Зарегистрировать события приложения.
      */
     public function boot(): void
     {
@@ -29,7 +54,8 @@ class EventServiceProvider extends ServiceProvider
     }
 
     /**
-     * Determine if events and listeners should be automatically discovered.
+     * Определяет, должны ли события и слушатели
+     * автоматически обнаруживаться Laravel.
      */
     public function shouldDiscoverEvents(): bool
     {

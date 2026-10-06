@@ -257,7 +257,7 @@ const truncateText = (text, maxLength = 70) => {
 
                     <th class="px-1 py-3 whitespace-nowrap">
                         <div class="font-semibold text-center">
-                            {{ t('attributes') }}
+                            {{ t('marketAttribute') }}
                         </div>
                     </th>
 

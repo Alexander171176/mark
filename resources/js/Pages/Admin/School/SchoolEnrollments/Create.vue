@@ -155,10 +155,10 @@ const statusLabelKeyMap = {
         'statusEnrollmentActive',
 
     completed:
-        'statusEnrollmentCompleted',
+        'statusCompleted',
 
     cancelled:
-        'statusEnrollmentCancelled',
+        'cancelled',
 
     expired:
         'statusEnrollmentExpired',

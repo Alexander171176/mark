@@ -2,6 +2,7 @@
 
 namespace App\Services\Public\Form;
 
+use App\Events\Form\FormSubmission\FormSubmissionCreated;
 use App\Models\Admin\Form\Form\Form;
 use App\Models\Admin\Form\FormField\FormField;
 use App\Models\Admin\Form\FormSubmission\FormSubmission;
@@ -92,11 +93,25 @@ class FormSubmissionService
              */
             $this->storedFiles = [];
 
-            return $submission->load([
+            /**
+             * Загружаем данные созданной заявки
+             * до отправки события.
+             */
+            $submission->load([
                 'values',
                 'files',
                 'statusHistory',
             ]);
+
+            /**
+             * Событие отправляем только после
+             * успешного завершения транзакции.
+             */
+            FormSubmissionCreated::dispatch(
+                $submission
+            );
+
+            return $submission;
         } catch (Throwable $e) {
             /**
              * Транзакция БД не умеет откатывать

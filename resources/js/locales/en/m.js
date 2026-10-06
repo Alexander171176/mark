@@ -2,7 +2,6 @@ export default {
     main: 'Show in the main window',
     mainCategory: 'Main category',
     mainCurrency: 'Main currency',
-    marketCompanyTypeCompany: 'Company',
     marketCompanyTypeEntrepreneur: 'Individual entrepreneur',
     marketCompanyTypeIndividual: 'Individual',
     marketCompanyWithoutVat: 'Without VAT',

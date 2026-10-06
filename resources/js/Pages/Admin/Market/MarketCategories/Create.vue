@@ -338,10 +338,10 @@ const submitForm = () => {
 </script>
 
 <template>
-    <AdminLayout :title="t('addMarketCategory')">
+    <AdminLayout :title="t('addCategory')">
         <template #header>
             <TitlePage>
-                {{ t('addMarketCategory') }}
+                {{ t('addCategory') }}
             </TitlePage>
         </template>
 

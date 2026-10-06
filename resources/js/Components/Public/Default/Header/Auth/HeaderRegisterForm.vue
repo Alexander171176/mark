@@ -162,7 +162,7 @@ const submit = () => {
                             {{ t('termsOfService') }}
                         </a>
 
-                        {{ t('agreeTerms2') }}
+                        {{ t('and') }}
 
                         <a
                             :href="route('policy.show')"

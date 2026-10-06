@@ -44,7 +44,7 @@ const {t} = useI18n();
 
 <template>
     <DefaultLayout>
-        <Head :title="t('twoFactorConfirmationTitle')"/>
+        <Head :title="t('twoFactorConfirmation')" />
 
         <div class="relative sm:flex sm:justify-center sm:items-center min-h-screen w-full
                     bg-dots-darker bg-center bg-gray-100 dark:bg-dots-lighter dark:bg-slate-900

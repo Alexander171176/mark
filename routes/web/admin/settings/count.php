@@ -164,6 +164,11 @@ Route::put('/update-count/form-submissions',
     [SettingController::class, 'updateAdminCountFormSubmissions'])
     ->name('updateAdminCountFormSubmissions');
 
+// уведомления
+Route::put('/update-count/notifications',
+    [SettingController::class, 'updateAdminCountNotifications'])
+    ->name('updateAdminCountNotifications');
+
 // маркет
 Route::put('/update-count/market-companies',
     [SettingController::class, 'updateAdminCountMarketCompanies'])

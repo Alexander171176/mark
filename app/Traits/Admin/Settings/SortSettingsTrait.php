@@ -431,6 +431,16 @@ trait SortSettingsTrait
         );
     }
 
+    /** Обновляет сортировку уведомлений */
+    public function updateAdminSortNotifications(
+        UpdateSortRequest $request
+    ): RedirectResponse {
+        return $this->sortSetting(
+            $request,
+            'adminNotificationsDefaultSort'
+        );
+    }
+
     /** Обновляет сортировку элементов в компаниях */
     public function updateAdminSortMarketCompanies(
         UpdateSortRequest $request

@@ -98,7 +98,6 @@ export default {
     createBundle: 'Create a Course Set',
     createCourse: 'Create a Training Course',
     createCourseSchedule: 'Create a Flow Schedule',
-    createCurrency: 'Add Currency',
     createInstructor: 'Create an Instructor',
     createLesson: 'Create a Lesson',
     createLocation: 'Create Location',

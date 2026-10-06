@@ -62,6 +62,7 @@ const linkInfo = {
     admin: {label: t('adminPanel'), route: 'admin.index'},
     home: {label: t('home'), route: 'admin.home-page.index'},
     cmsPages: {label: t('pages'), route: 'admin.cmsPages.index'},
+    notifications: {label: t('notifications'), route: 'admin.notifications.index'},
     forms: {label: t('forms'), route: 'admin.forms.index'},
     formFields: {label: t('formFields'), route: 'admin.formFields.index'},
     formSubmissions: {label: t('formSubmissions'), route: 'admin.formSubmissions.index'},

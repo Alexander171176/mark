@@ -2246,6 +2246,36 @@ class SettingSeeder extends Seeder
             ], // ADMIN FORM SUBMISSIONS DEFAULT SORT
             [
                 'type' => 'string',
+                'option' => 'adminNotificationsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_NOTIFICATIONS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных уведомлений в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN NOTIFICATIONS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminNotificationsPerPage',
+                'value' => '20',
+                'constant' => 'ADMIN_NOTIFICATIONS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Показывать количество уведомлений в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN NOTIFICATIONS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminNotificationsDefaultSort',
+                'value' => 'createdAtDesc',
+                'constant' => 'ADMIN_NOTIFICATIONS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка уведомлений по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN NOTIFICATIONS DEFAULT SORT
+            [
+                'type' => 'string',
                 'option' => 'adminMarketCompaniesProcessingMode',
                 'value' => 'auto',
                 'constant' => 'ADMIN_MARKET_COMPANIES_PROCESSING_MODE',

@@ -1,5 +1,6 @@
 export default {
     warehouse: 'Warehouse',
+    warning: 'Warning',
     watch: 'Watch',
     website: 'to the website',
     weeks: 'weeks',

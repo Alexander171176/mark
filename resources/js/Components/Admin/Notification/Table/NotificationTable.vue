@@ -3,6 +3,8 @@ import { defineEmits, defineProps } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DeleteIconButton from '@/Components/Admin/UI/Buttons/DeleteIconButton.vue'
+import IconShow from '@/Components/Admin/UI/Buttons/IconShow.vue'
+import MarkAsReadButton from '@/Components/Admin/UI/Buttons/MarkAsReadButton.vue'
 
 const { t } = useI18n()
 
@@ -53,21 +55,21 @@ const formatDate = (dateString) => {
 
 const readStatusLabel = (notification) => {
     return notification?.is_read
-        ? 'Прочитано'
-        : 'Новое'
+        ? t('read')
+        : t('new')
 }
 
 const readStatusBadge = (notification) => {
     if (notification?.is_read) {
         return (
-            'bg-gray-100 text-gray-600 border-gray-300 ' +
+            'bg-gray-100 text-gray-700 border-gray-300 ' +
             'dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500'
         )
     }
 
     return (
-        'bg-blue-100 text-blue-700 border-blue-300 ' +
-        'dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700'
+        'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-300 ' +
+        'dark:bg-fuchsia-900/40 dark:text-fuchsia-300 dark:border-fuchsia-700'
     )
 }
 
@@ -79,13 +81,13 @@ const readStatusBadge = (notification) => {
 
 const categoryLabel = (category) => {
     const labels = {
-        system: 'Система',
-        form: 'Формы',
-        blog: 'Блог',
-        comment: 'Комментарии',
-        review: 'Отзывы',
-        market: 'Маркетплейс',
-        school: 'Школа',
+        system: t('system'),
+        form: t('forms'),
+        blog: t('blog'),
+        comment: t('comments'),
+        review: t('reviews'),
+        market: t('marketplace'),
+        school: t('school'),
         crm: 'CRM',
     }
 
@@ -144,10 +146,10 @@ const categoryBadge = (category) => {
 
 const levelLabel = (level) => {
     const labels = {
-        info: 'Информация',
-        success: 'Успешно',
-        warning: 'Предупреждение',
-        error: 'Ошибка',
+        info: t('information'),
+        success: t('successfully'),
+        warning: t('warning'),
+        error: t('error'),
     }
 
     return labels[level]
@@ -206,7 +208,7 @@ const notifiableEmail = (notification) => {
 
 const entityTypeLabel = (entityType) => {
     const labels = {
-        form_submission: 'Заявка формы',
+        form_submission: t('submissionForm'),
     }
 
     return labels[entityType]
@@ -277,7 +279,7 @@ const deleteNotification = (notification) => {
                                    whitespace-nowrap w-px"
                     >
                         <div class="font-medium text-center">
-                            Состояние
+                            {{ t('submissions') }}
                         </div>
                     </th>
 
@@ -287,7 +289,7 @@ const deleteNotification = (notification) => {
                                    whitespace-nowrap"
                     >
                         <div class="font-medium text-center">
-                            Категория
+                            {{ t('category') }}
                         </div>
                     </th>
 
@@ -296,7 +298,7 @@ const deleteNotification = (notification) => {
                         class="px-2 first:pl-5 last:pr-5 py-3"
                     >
                         <div class="font-medium text-left">
-                            Уведомление
+                            {{ t('notification') }}
                         </div>
                     </th>
 
@@ -306,27 +308,7 @@ const deleteNotification = (notification) => {
                                    whitespace-nowrap"
                     >
                         <div class="font-medium text-left">
-                            Получатель
-                        </div>
-                    </th>
-
-                    <!-- Сущность -->
-                    <th
-                        class="px-2 first:pl-5 last:pr-5 py-3
-                                   whitespace-nowrap"
-                    >
-                        <div class="font-medium text-left">
-                            Сущность
-                        </div>
-                    </th>
-
-                    <!-- Дата -->
-                    <th
-                        class="px-2 first:pl-5 last:pr-5 py-3
-                                   whitespace-nowrap"
-                    >
-                        <div class="font-medium text-center">
-                            {{ t('createdAt') }}
+                            {{ t('recipient') }}
                         </div>
                     </th>
 
@@ -353,26 +335,70 @@ const deleteNotification = (notification) => {
                                 !notification.is_read,
                         }"
                 >
-                    <!-- Состояние -->
+                    <!-- Состояние, Связанная сущность, Дата -->
                     <td
-                        class="px-2 first:pl-5 last:pr-5 py-1
-                                   whitespace-nowrap"
+                        class="flex flex-col justify-center gap-1
+                               px-2 first:pl-5 last:pr-5 py-1
+                               whitespace-nowrap"
                     >
+                        <div
+                            v-if="notification.entity_type || notification.entity_id"
+                            class="flex flex-row items-center justify-center gap-2"
+                        >
+                            <div
+                                class="text-xs font-semibold text-cyan-700 dark:text-cyan-300"
+                            >
+                                {{ entityTypeLabel(notification.entity_type) }}
+                            </div>
+
+                            <div
+                                v-if="notification.entity_id"
+                                class="text-[10px]
+                                           text-slate-500 dark:text-slate-300"
+                            >
+                                ID:
+                                {{ notification.entity_id }}
+                            </div>
+                        </div>
+
+                        <div
+                            v-else
+                            class="text-xs text-center
+                                       text-slate-400 dark:text-slate-400"
+                        >
+                            —
+                        </div>
+
+                        <div
+                            class="text-[10px] text-indigo-600 dark:text-indigo-200"
+                        >
+                            {{ formatDate(notification.created_at) }}
+                        </div>
+
+                        <div
+                            v-if="notification.read_at"
+                            class="mt-1 text-[10px] text-center
+                                       text-emerald-700 dark:text-emerald-300"
+                        >
+                            {{ t('read') }}:
+                            {{ formatDate(notification.read_at) }}
+                        </div>
+
                         <div class="flex flex-col items-center justify-center gap-1">
-                                <span
-                                    class="w-full px-2 py-0.5 rounded-sm
-                                           border font-semibold text-[10px] text-center"
-                                    :class="readStatusBadge(notification)"
-                                >
-                                    {{ readStatusLabel(notification) }}
-                                </span>
+                            <span
+                                class="w-full px-2 py-0.5 rounded-sm
+                                       border font-semibold text-[10px] text-center"
+                                :class="readStatusBadge(notification)"
+                            >
+                                {{ readStatusLabel(notification) }}
+                            </span>
 
                             <span
                                 v-if="notification.is_own"
                                 class="text-[10px] text-emerald-600
                                            dark:text-emerald-300"
                             >
-                                    Моё
+                                    {{ t('my') }}
                                 </span>
 
                             <span
@@ -380,7 +406,7 @@ const deleteNotification = (notification) => {
                                 class="text-[10px] text-slate-400
                                            dark:text-slate-400"
                             >
-                                    Чужое
+                                    {{ t('SomeoneElse') }}
                                 </span>
                         </div>
                     </td>
@@ -391,30 +417,30 @@ const deleteNotification = (notification) => {
                                    whitespace-nowrap"
                     >
                         <div class="flex flex-col items-center justify-center gap-1">
-                                <span
-                                    class="w-full px-2 py-0.5 rounded-sm
-                                           border font-semibold text-[10px] text-center"
-                                    :class="categoryBadge(notification.category)"
-                                >
-                                    {{ categoryLabel(notification.category) }}
-                                </span>
-
-                            <span
-                                class="w-full px-2 py-0.5 rounded-sm
-                                           border font-semibold text-[10px] text-center"
-                                :class="levelBadge(notification.level)"
-                            >
-                                    {{ levelLabel(notification.level) }}
-                                </span>
-
                             <span
                                 v-if="notification.type"
                                 class="max-w-[160px] truncate text-[10px]
                                            text-slate-500 dark:text-slate-300"
                                 :title="notification.type"
                             >
-                                    {{ notification.type }}
-                                </span>
+                                {{ notification.type }}
+                            </span>
+
+                            <span
+                                class="w-full px-2 py-0.5 rounded-sm
+                                       border font-semibold text-[10px] text-center"
+                                :class="categoryBadge(notification.category)"
+                            >
+                                {{ categoryLabel(notification.category) }}
+                            </span>
+
+                            <span
+                                class="w-full px-2 py-0.5 rounded-sm
+                                           border font-semibold text-[10px] text-center"
+                                :class="levelBadge(notification.level)"
+                            >
+                                {{ levelLabel(notification.level) }}
+                            </span>
                         </div>
                     </td>
 
@@ -437,8 +463,7 @@ const deleteNotification = (notification) => {
 
                             <div
                                 v-if="notification.message"
-                                class="mt-1 text-xs font-normal
-                                           text-slate-600 dark:text-slate-300"
+                                class="mt-1 text-[10px] text-slate-700 dark:text-slate-300"
                             >
                                 {{ notification.message }}
                             </div>
@@ -476,8 +501,7 @@ const deleteNotification = (notification) => {
 
                             <div
                                 v-if="notification.notifiable?.id"
-                                class="text-[10px]
-                                           text-slate-500 dark:text-slate-300"
+                                class="text-[10px] text-slate-500 dark:text-slate-300"
                             >
                                 ID:
                                 {{ notification.notifiable.id }}
@@ -494,106 +518,24 @@ const deleteNotification = (notification) => {
                         </div>
                     </td>
 
-                    <!-- Связанная сущность -->
-                    <td
-                        class="px-2 first:pl-5 last:pr-5 py-1"
-                    >
-                        <div
-                            v-if="notification.entity_type || notification.entity_id"
-                            class="flex flex-col min-w-[130px]"
-                        >
-                            <div
-                                class="text-xs font-semibold
-                                           text-cyan-700 dark:text-cyan-300"
-                            >
-                                {{ entityTypeLabel(notification.entity_type) }}
-                            </div>
-
-                            <div
-                                v-if="notification.entity_id"
-                                class="text-[10px]
-                                           text-slate-500 dark:text-slate-300"
-                            >
-                                ID:
-                                {{ notification.entity_id }}
-                            </div>
-                        </div>
-
-                        <div
-                            v-else
-                            class="text-xs text-center
-                                       text-slate-400 dark:text-slate-400"
-                        >
-                            —
-                        </div>
-                    </td>
-
-                    <!-- Дата -->
-                    <td
-                        class="px-2 first:pl-5 last:pr-5 py-1
-                                   whitespace-nowrap"
-                    >
-                        <div
-                            class="text-xs text-center
-                                       text-indigo-600 dark:text-indigo-200"
-                        >
-                            {{ formatDate(notification.created_at) }}
-                        </div>
-
-                        <div
-                            v-if="notification.read_at"
-                            class="mt-1 text-[10px] text-center
-                                       text-emerald-700 dark:text-emerald-300"
-                        >
-                            Прочитано:
-                            {{ formatDate(notification.read_at) }}
-                        </div>
-                    </td>
-
                     <!-- Действия -->
                     <td
                         class="px-2 first:pl-5 last:pr-5 py-1
                                    whitespace-nowrap"
                     >
                         <div class="flex justify-end items-center space-x-1">
-                            <!-- Открыть -->
-                            <button
-                                type="button"
-                                class="flex h-7 w-7 items-center justify-center
-                                           rounded-sm bg-blue-600 text-white
-                                           transition hover:bg-blue-700"
-                                title="Открыть"
-                                @click="openNotification(notification)"
-                            >
-                                <svg
-                                    class="h-3.5 w-3.5 fill-current"
-                                    viewBox="0 0 576 512"
-                                >
-                                    <path
-                                        d="M572.52 241.4C518.29 135.59 410.93 64 288 64S57.68 135.59 3.48 241.4a32.35 32.35 0 0 0 0 29.19C57.68 376.41 165.07 448 288 448s230.32-71.59 284.52-177.4a32.35 32.35 0 0 0 0-29.2zM288 400a144 144 0 1 1 144-144 143.93 143.93 0 0 1-144 144zm0-240a96 96 0 1 0 96 96 96 96 0 0 0-96-96z"
-                                    />
-                                </svg>
-                            </button>
+                            <!-- Просмотр -->
+                            <IconShow
+                                :title="t('view')"
+                                @show="openNotification(notification)"
+                            />
 
                             <!-- Отметить как прочитанное -->
-                            <button
+                            <MarkAsReadButton
                                 v-if="notification.is_own && !notification.is_read"
-                                type="button"
-                                class="flex h-7 w-7 items-center justify-center
-                                           rounded-sm bg-emerald-600 text-white
-                                           transition hover:bg-emerald-700"
-                                title="Отметить как прочитанное"
-                                @click="markAsRead(notification)"
-                            >
-                                <svg
-                                    class="h-3.5 w-3.5 fill-current"
-                                    viewBox="0 0 448 512"
-                                >
-                                    <path
-                                        d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.2 0z"
-                                    />
-                                </svg>
-                            </button>
+                                :title="t('markAsRead')"
+                                @read="markAsRead(notification)"
+                            />
 
                             <!-- Удалить -->
                             <DeleteIconButton

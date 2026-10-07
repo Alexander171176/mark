@@ -57,11 +57,11 @@ const updateSort = (event) => {
 
             <!-- Состояние прочтения -->
             <option value="readAsc">
-                Непрочитанные сначала
+                {{ t('read') }} ↓
             </option>
 
             <option value="readDesc">
-                Прочитанные сначала
+                {{ t('read') }} ↑
             </option>
 
             <option disabled>
@@ -70,11 +70,11 @@ const updateSort = (event) => {
 
             <!-- Категория -->
             <option value="categoryAsc">
-                Категория A→Z
+                {{ t('category') }} A→Z
             </option>
 
             <option value="categoryDesc">
-                Категория Z→A
+                {{ t('category') }} Z→A
             </option>
 
             <option disabled>
@@ -83,11 +83,11 @@ const updateSort = (event) => {
 
             <!-- Уровень -->
             <option value="levelAsc">
-                Уровень A→Z
+                {{ t('level') }} A→Z
             </option>
 
             <option value="levelDesc">
-                Уровень Z→A
+                {{ t('level') }} Z→A
             </option>
 
             <option disabled>

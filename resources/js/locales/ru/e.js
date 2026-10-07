@@ -75,6 +75,7 @@ export default {
     enterText: 'Введите ответ...',
     enterTextToTranslate: 'Введите текст для перевода...',
     entities: 'Сущности',
+    error: 'Ошибка',
     errorMessage: 'Сообщение при ошибке',
     expand: 'развернуть',
     expandAll: 'Развернуть все',

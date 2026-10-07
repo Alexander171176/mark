@@ -2,6 +2,7 @@ export default {
     main: 'Show in the main window',
     mainCategory: 'Main category',
     mainCurrency: 'Main currency',
+    marketplace: 'Marketplace',
     marketCompanyTypeEntrepreneur: 'Individual entrepreneur',
     marketCompanyTypeIndividual: 'Individual',
     marketCompanyWithoutVat: 'Without VAT',
@@ -70,4 +71,5 @@ export default {
     months: 'months',
     more: 'More',
     multiselect: 'Multiple list',
+    my: 'My',
 }

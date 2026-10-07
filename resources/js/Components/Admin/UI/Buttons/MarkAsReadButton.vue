@@ -1,28 +1,27 @@
 <script setup>
 import { computed } from 'vue'
-import { Link } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
 const props = defineProps({
-    href: {
-        type: String,
-        default: '',
-    },
-
     title: {
         type: String,
         default: '',
     },
+
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
 })
 
-const emits = defineEmits([
-    'show',
+const emit = defineEmits([
+    'read',
 ])
 
 const buttonTitle = computed(() => {
-    return props.title || t('view')
+    return props.title || t('markAsRead')
 })
 
 const buttonClass = computed(() => [
@@ -38,43 +37,22 @@ const buttonClass = computed(() => [
 
 <template>
     <div class="text-center">
-        <!-- Обычная Inertia-ссылка -->
-        <Link
-            v-if="href"
-            :href="href"
-            :class="buttonClass"
-            :title="buttonTitle"
-        >
-            <svg
-                class="w-4 h-4 shrink-0 fill-current text-blue-500
-                       transition-colors duration-200 ease-out
-                       group-hover:text-blue-600
-                       dark:group-hover:text-blue-300"
-                viewBox="0 0 16 16"
-            >
-                <path
-                    d="M5 9h11v2H5V9zM0 9h3v2H0V9zm5 4h6v2H5v-2zm-5 0h3v2H0v-2zm5-8h7v2H5V5zM0 5h3v2H0V5zm5-4h11v2H5V1zM0 1h3v2H0V1z"
-                />
-            </svg>
-        </Link>
-
-        <!-- Action-кнопка -->
         <button
-            v-else
             type="button"
             :class="buttonClass"
             :title="buttonTitle"
-            @click="emits('show')"
+            :disabled="disabled"
+            @click="emit('read')"
         >
             <svg
                 class="w-4 h-4 shrink-0 fill-current text-blue-500
                        transition-colors duration-200 ease-out
                        group-hover:text-blue-600
                        dark:group-hover:text-blue-300"
-                viewBox="0 0 16 16"
+                viewBox="0 0 448 512"
             >
                 <path
-                    d="M5 9h11v2H5V9zM0 9h3v2H0V9zm5 4h6v2H5v-2zm-5 0h3v2H0v-2zm5-8h7v2H5V5zM0 5h3v2H0V5zm5-4h11v2H5V1zM0 1h3v2H0V1z"
+                    d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.2 0z"
                 />
             </svg>
         </button>

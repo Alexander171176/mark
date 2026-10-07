@@ -1,6 +1,7 @@
 export default {
     name: 'Аты',
     nameModule: 'Модуль атауы',
+    new: 'Жаңа',
     newField: 'Жаңа өріс',
     newImages: 'Жаңа суреттер',
     newOption: 'Жаңа опция',
@@ -27,6 +28,7 @@ export default {
     noSignature: 'Қолтаңба жоқ',
     noStamp: 'Мөр жоқ',
     notes: 'Әкімшінің ескертпелері',
+    notification: 'Хабарландыру',
     notifications: 'Хабарландырулар',
     notActive: 'Белсенді емес',
     notAvailable: 'Жоқ',

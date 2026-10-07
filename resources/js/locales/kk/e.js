@@ -75,6 +75,7 @@ export default {
     enterText: 'Жауабыңызды енгізіңіз...',
     enterTextToTranslate: 'Аударылатын мәтінді енгізіңіз...',
     entities: 'Ұйымдар',
+    error: 'Қате',
     errorMessage: 'Қате туралы хабарлама',
     expand: 'развернуть',
     expandAll: 'Барлығын жаю',

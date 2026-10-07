@@ -2,6 +2,7 @@ export default {
     main: 'Негізгі терезеде көрсету',
     mainCategory: 'Негізгі санат',
     mainCurrency: 'Негізгі валюта',
+    marketplace: 'Базар',
     marketCompanyTypeEntrepreneur: 'ЖС',
     marketCompanyTypeIndividual: 'Жеке',
     marketCompanyVat: 'ҚҚС',
@@ -70,4 +71,5 @@ export default {
     months: 'айлар',
     more: 'Көбірек',
     multiselect: 'Бірнеше тізім',
+    my: 'Менің',
 }

@@ -1,5 +1,6 @@
 export default {
     warehouse: 'Қойма',
+    warning: 'Ескерту',
     watch: 'Көзқарас',
     website: 'веб-сайтқа',
     weeks: 'апталар',

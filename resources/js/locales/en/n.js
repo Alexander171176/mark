@@ -1,6 +1,7 @@
 export default {
     name: 'Name',
     nameModule: 'Module name',
+    new: 'New',
     newField: 'New field',
     newImages: 'New images',
     newOption: 'New variant',
@@ -27,6 +28,7 @@ export default {
     noSignature: 'No Signature',
     noStamp: 'No Stamp',
     notes: 'Administrator\'s Notes',
+    notification: 'Notification',
     notifications: 'Notifications',
     notActive: 'Not active',
     notAvailable: 'Not available',

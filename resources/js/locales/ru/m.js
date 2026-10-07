@@ -2,6 +2,7 @@ export default {
     main: 'Показать в главном окне',
     mainCategory: 'Основная категория',
     mainCurrency: 'Основная валюта',
+    marketplace: 'Маркетплейс',
     marketCompanyTypeEntrepreneur: 'ИП',
     marketCompanyTypeIndividual: 'Физ. лицо',
     marketCompanyVat: 'НДС',
@@ -70,4 +71,5 @@ export default {
     months: 'месяцев',
     more: 'Ещё',
     multiselect: 'Множественный список',
+    my: 'Моё',
 }

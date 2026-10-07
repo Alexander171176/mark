@@ -1,5 +1,6 @@
 export default {
     warehouse: 'Склад',
+    warning: 'Предупреждение',
     watch: 'Смотреть',
     website: 'на сайт',
     weeks: 'недель',

@@ -75,6 +75,7 @@ export default {
     enterText: 'Enter your answer...',
     enterTextToTranslate: 'Enter text to translate...',
     entities: 'Entities',
+    error: 'Error',
     errorMessage: 'Error message',
     expand: 'expand',
     expandAll: 'Expand all',

@@ -228,6 +228,28 @@ const toggleSidebarGroup = (key) => {
                     :expanded="sidebarExpanded"
                 />
 
+                <!-- Ссылки Уведомлений -->
+                <span
+                    class="flex justify-between items-center cursor-pointer select-none
+                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
+                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
+                    v-if="sidebarExpanded"
+                    @click.prevent="toggleSidebarGroup('notifications')"
+                >
+                    {{ t('notifications') }}
+                    <svg
+                        class="w-3 h-3 fill-current transition-transform duration-200"
+                        :class="{ 'rotate-180': sidebarGroups.notifications }"
+                        viewBox="0 0 20 20"
+                    >
+                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
+                    </svg>
+                </span>
+                <SidebarNotifications
+                    v-show="!sidebarExpanded || sidebarGroups.notifications"
+                    :expanded="sidebarExpanded"
+                />
+
                 <!-- Ссылки Магазина -->
                 <span
                     class="flex justify-between items-center cursor-pointer select-none
@@ -357,28 +379,6 @@ const toggleSidebarGroup = (key) => {
                 </span>
                 <SidebarStatistics
                     v-show="!sidebarExpanded || sidebarGroups.statistics"
-                    :expanded="sidebarExpanded"
-                />
-
-                <!-- Ссылки Уведомлений -->
-                <span
-                    class="flex justify-between items-center cursor-pointer select-none
-                           text-xs uppercase font-semibold pl-1 pr-1 opacity-95
-                           text-indigo-200 pt-1 border-t border-dotted border-gray-50"
-                    v-if="sidebarExpanded"
-                    @click.prevent="toggleSidebarGroup('notifications')"
-                >
-                    {{ t('notifications') }}
-                    <svg
-                        class="w-3 h-3 fill-current transition-transform duration-200"
-                        :class="{ 'rotate-180': sidebarGroups.notifications }"
-                        viewBox="0 0 20 20"
-                    >
-                        <path d="M5.25 7.5L10 12.25L14.75 7.5H5.25Z" />
-                    </svg>
-                </span>
-                <SidebarNotifications
-                    v-show="!sidebarExpanded || sidebarGroups.notifications"
                     :expanded="sidebarExpanded"
                 />
 

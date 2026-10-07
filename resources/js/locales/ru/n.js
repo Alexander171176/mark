@@ -1,6 +1,7 @@
 export default {
     name: 'Имя',
     nameModule: 'Название модуля',
+    new: 'Новое',
     newField: 'Новое поле',
     newImages: 'Новые изображения',
     newOption: 'Новый вариант',
@@ -27,6 +28,7 @@ export default {
     noSignature: 'Нет подписи',
     noStamp: 'Нет печати',
     notes: 'Заметки Администратора',
+    notification: 'Уведомление',
     notifications: 'Уведомления',
     notActive: 'Не активно',
     notAvailable: 'Нет в наличии',

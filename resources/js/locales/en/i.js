@@ -2,6 +2,7 @@ export default {
     icon: 'Icon',
     id: 'ID',
     in: 'in',
+    information: 'Information',
     inStock: 'In stock',
     image: 'Image',
     imageEditor: 'Image editor',

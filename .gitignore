@@ -1,44 +1,101 @@
-# Laravel
+# ==========================================
+# Laravel / PulsarCMS
+# ==========================================
+
 /vendor
-/storage/*.key
-/storage/debugbar
-/storage/logs
-/public/storage
-storage/docker/_mysql/
-
-# Laravel cache files
-/bootstrap/cache/*
-!bootstrap/cache/.gitignore
-
-# Vite
 /node_modules
+
+# ==========================================
+# Environment / Secrets
+# ==========================================
+
+.env
+.env.*
+!.env.example
+
+# ==========================================
+# Laravel Storage
+# ==========================================
+
+/storage/*.key
+/storage/debugbar/
+/storage/logs/*
+!/storage/logs/.gitignore
+
+/storage/framework/cache/data/*
+!/storage/framework/cache/data/.gitignore
+
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+
+/storage/app/public/*
+!/storage/app/public/.gitignore
+
+/public/storage
+
+# ==========================================
+# Laravel Cache
+# ==========================================
+
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
+
+# ==========================================
+# Database
+# ==========================================
+
+/database/analytics.sqlite
+/database/analytics.sqlite-*
+/database/*.sqlite-journal
+
+# ==========================================
+# Docker
+# ==========================================
+
+/storage/docker/_mysql/
+/storage/docker/_redis/
+/storage/docker/logs/
+
+docker-compose.override.yml
+docker/tmp/
+
+# ==========================================
+# Vite
+# ==========================================
+
 /public/hot
+/public/build/
 
-# IDE и служебные
-/.idea
-/.vscode
-/.fleet
+# ==========================================
+# IDE
+# ==========================================
 
-# Логи и отладка
+/.idea/
+/.vscode/
+/.fleet/
+
+# ==========================================
+# Logs / Tests
+# ==========================================
+
 npm-debug.log*
 yarn-error.log*
+
 .phpunit.result.cache
 /.phpunit.cache
 
-# Swagger и доки
-/storage/api-docs/*
-/storage/app/public/*
+# ==========================================
+# Swagger
+# ==========================================
 
-# Homestead (если есть)
+/storage/api-docs/*
+
+# ==========================================
+# Local files
+# ==========================================
+
 Homestead.yaml
 Homestead.json
-
-# Docker (игнорируем только локальные кастомизации)
-docker-compose.override.yml
-.dockerignore
-docker/tmp/
-
-README.md
-.env
-.env.dev
-.env.example

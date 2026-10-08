@@ -3,53 +3,34 @@
 namespace App\Listeners\Form\FormSubmission;
 
 use App\Events\Form\FormSubmission\FormSubmissionCreated;
-use App\Models\User;
 use App\Notifications\Form\FormSubmission\FormSubmissionCreatedNotification;
+use App\Services\Admin\Notification\NotificationRecipientResolver;
 
-class SendFormSubmissionCreatedNotification
+readonly class SendFormSubmissionCreatedNotification
 {
+    public function __construct(
+        private NotificationRecipientResolver $recipients
+    ) {
+    }
+
     /**
-     * Отправить внутреннее уведомление
-     * о поступлении новой заявки.
+     * Отправить внутренние уведомления
+     * получателям новой заявки.
      */
     public function handle(
         FormSubmissionCreated $event
     ): void {
         $submission = $event->submission;
 
-        /**
-         * Загружаем форму и владельца.
-         */
-        $submission->loadMissing('form.user');
+        $users = $this->recipients
+            ->formSubmissionCreated($submission);
 
-        $owner = $submission->form?->user;
-
-        /**
-         * Если у формы есть владелец,
-         * уведомляем только его.
-         */
-        if ($owner !== null) {
-            $owner->notify(
+        foreach ($users as $user) {
+            $user->notify(
                 new FormSubmissionCreatedNotification(
                     $submission
                 )
             );
-
-            return;
         }
-
-        /**
-         * Если владельца нет,
-         * уведомляем администраторов PulsarCMS.
-         */
-        User::role('admin')
-            ->get()
-            ->each(function (User $admin) use ($submission) {
-                $admin->notify(
-                    new FormSubmissionCreatedNotification(
-                        $submission
-                    )
-                );
-            });
     }
 }

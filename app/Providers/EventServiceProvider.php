@@ -8,8 +8,11 @@ use App\Events\Form\FormSubmission\FormSubmissionStatusChanged;
 use App\Listeners\Form\FormSubmission\LogFormSubmissionAssigned;
 use App\Listeners\Form\FormSubmission\LogFormSubmissionCreated;
 use App\Listeners\Form\FormSubmission\LogFormSubmissionStatusChanged;
+use App\Listeners\Form\FormSubmission\SendFormSubmissionAssignedEmail;
 use App\Listeners\Form\FormSubmission\SendFormSubmissionAssignedNotification;
+use App\Listeners\Form\FormSubmission\SendFormSubmissionCreatedEmail;
 use App\Listeners\Form\FormSubmission\SendFormSubmissionCreatedNotification;
+use App\Listeners\Form\FormSubmission\SendFormSubmissionStatusChangedEmail;
 use App\Listeners\Form\FormSubmission\SendFormSubmissionStatusChangedNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -36,16 +39,19 @@ class EventServiceProvider extends ServiceProvider
         FormSubmissionCreated::class => [
             LogFormSubmissionCreated::class,
             SendFormSubmissionCreatedNotification::class,
+            SendFormSubmissionCreatedEmail::class,
         ],
 
         FormSubmissionStatusChanged::class => [
             LogFormSubmissionStatusChanged::class,
             SendFormSubmissionStatusChangedNotification::class,
+            SendFormSubmissionStatusChangedEmail::class,
         ],
 
         FormSubmissionAssigned::class => [
             LogFormSubmissionAssigned::class,
             SendFormSubmissionAssignedNotification::class,
+            SendFormSubmissionAssignedEmail::class,
         ],
     ];
 

@@ -314,6 +314,172 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // ADMIN IMAGE PRESETS DEFAULT SORT
+            // ============================================================
+            // EMAIL NOTIFICATIONS — универсальная почтовая система PulsarCMS
+            // ============================================================
+            [
+                'type' => 'checkbox',
+                'option' => 'adminEmailNotificationsEnabled',
+                'value' => 'false',
+                'constant' => 'ADMIN_EMAIL_NOTIFICATIONS_ENABLED',
+                'category' => 'admin',
+                'description' => 'Глобальное включение/выключение Email Notifications',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL NOTIFICATIONS ENABLED
+            [
+                'type' => 'string',
+                'option' => 'adminEmailMailer',
+                'value' => 'smtp',
+                'constant' => 'ADMIN_EMAIL_MAILER',
+                'category' => 'admin',
+                'description' => 'Почтовый транспорт Laravel: smtp / log / array',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL MAILER
+            [
+                'type' => 'string',
+                'option' => 'adminEmailSmtpHost',
+                'value' => 'mailpit',
+                'constant' => 'ADMIN_EMAIL_SMTP_HOST',
+                'category' => 'admin',
+                'description' => 'Адрес SMTP-сервера',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL SMTP HOST
+            [
+                'type' => 'number',
+                'option' => 'adminEmailSmtpPort',
+                'value' => '1025',
+                'constant' => 'ADMIN_EMAIL_SMTP_PORT',
+                'category' => 'admin',
+                'description' => 'Порт подключения к SMTP-серверу',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL SMTP PORT
+            [
+                'type' => 'string',
+                'option' => 'adminEmailSmtpEncryption',
+                'value' => 'none',
+                'constant' => 'ADMIN_EMAIL_SMTP_ENCRYPTION',
+                'category' => 'admin',
+                'description' => 'Режим шифрования SMTP: none / tls / ssl',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL SMTP ENCRYPTION
+            [
+                'type' => 'string',
+                'option' => 'adminEmailSmtpUsername',
+                'value' => '',
+                'constant' => 'ADMIN_EMAIL_SMTP_USERNAME',
+                'category' => 'admin',
+                'description' => 'Имя пользователя SMTP',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL SMTP USERNAME
+            [
+                'type' => 'string',
+                'option' => 'adminEmailFromAddress',
+                'value' => 'no-reply@agrovent.kz',
+                'constant' => 'ADMIN_EMAIL_FROM_ADDRESS',
+                'category' => 'admin',
+                'description' => 'Email-адрес отправителя системных писем',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL FROM ADDRESS
+            [
+                'type' => 'string',
+                'option' => 'adminEmailFromName',
+                'value' => 'PulsarCMS',
+                'constant' => 'ADMIN_EMAIL_FROM_NAME',
+                'category' => 'admin',
+                'description' => 'Имя отправителя системных писем',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL FROM NAME
+            [
+                'type' => 'string',
+                'option' => 'adminEmailNotificationsDefaultLocale',
+                'value' => 'ru',
+                'constant' => 'ADMIN_EMAIL_NOTIFICATIONS_DEFAULT_LOCALE',
+                'category' => 'admin',
+                'description' => 'Язык писем по умолчанию: ru / kk / en / zh',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL DEFAULT LOCALE
+            [
+                'type' => 'checkbox',
+                'option' => 'adminEmailNotificationsQueueEnabled',
+                'value' => 'false',
+                'constant' => 'ADMIN_EMAIL_NOTIFICATIONS_QUEUE_ENABLED',
+                'category' => 'admin',
+                'description' => 'Отправлять Email Notifications через очередь Laravel',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL QUEUE ENABLED
+            [
+                'type' => 'string',
+                'option' => 'adminEmailNotificationsQueueName',
+                'value' => 'emails',
+                'constant' => 'ADMIN_EMAIL_NOTIFICATIONS_QUEUE_NAME',
+                'category' => 'admin',
+                'description' => 'Название очереди для отправки электронных писем',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL QUEUE NAME
+            [
+                'type' => 'checkbox',
+                'option' => 'adminEmailNotificationsQueueEnabled',
+                'value' => 'false',
+                'constant' => 'ADMIN_EMAIL_NOTIFICATIONS_QUEUE_ENABLED',
+                'category' => 'admin',
+                'description' => 'Отправлять Email Notifications через очередь Laravel',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL NOTIFICATIONS QUEUE ENABLED
+            // ============================================================
+            // EMAIL NOTIFICATIONS — события Form Builder
+            // ============================================================
+            [
+                'type' => 'checkbox',
+                'option' => 'adminEmailFormSubmissionCreatedEnabled',
+                'value' => 'true',
+                'constant' => 'ADMIN_EMAIL_FORM_SUBMISSION_CREATED_ENABLED',
+                'category' => 'admin',
+                'description' => 'Отправлять Email при создании новой заявки Form Builder',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL FORM SUBMISSION CREATED
+            [
+                'type' => 'checkbox',
+                'option' => 'adminEmailFormSubmissionAssignedEnabled',
+                'value' => 'false',
+                'constant' => 'ADMIN_EMAIL_FORM_SUBMISSION_ASSIGNED_ENABLED',
+                'category' => 'admin',
+                'description' => 'Отправлять Email при назначении ответственного за заявку',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL FORM SUBMISSION ASSIGNED
+            [
+                'type' => 'checkbox',
+                'option' => 'adminEmailFormSubmissionStatusChangedEnabled',
+                'value' => 'false',
+                'constant' => 'ADMIN_EMAIL_FORM_SUBMISSION_STATUS_CHANGED_ENABLED',
+                'category' => 'admin',
+                'description' => 'Отправлять Email при изменении статуса заявки',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL FORM SUBMISSION STATUS CHANGED
+            [
+                'type' => 'checkbox',
+                'option' => 'adminEmailFormSubmissionConfirmationEnabled',
+                'value' => 'false',
+                'constant' => 'ADMIN_EMAIL_FORM_SUBMISSION_CONFIRMATION_ENABLED',
+                'category' => 'admin',
+                'description' => 'Отправлять посетителю подтверждение получения заявки',
+                'activity' => true,
+                'sort' => 0,
+            ], // EMAIL FORM SUBMISSION CONFIRMATION
             [
                 'type' => 'string',
                 'option' => 'adminCommentsProcessingMode',

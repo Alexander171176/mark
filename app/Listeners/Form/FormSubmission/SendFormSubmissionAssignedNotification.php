@@ -4,9 +4,15 @@ namespace App\Listeners\Form\FormSubmission;
 
 use App\Events\Form\FormSubmission\FormSubmissionAssigned;
 use App\Notifications\Form\FormSubmission\FormSubmissionAssignedNotification;
+use App\Services\Admin\Notification\NotificationRecipientResolver;
 
-class SendFormSubmissionAssignedNotification
+readonly class SendFormSubmissionAssignedNotification
 {
+    public function __construct(
+        private NotificationRecipientResolver $recipients
+    ) {
+    }
+
     /**
      * Отправить внутреннее уведомление
      * новому ответственному сотруднику.
@@ -14,22 +20,16 @@ class SendFormSubmissionAssignedNotification
     public function handle(
         FormSubmissionAssigned $event
     ): void {
-        /**
-         * Если назначение снято,
-         * нового получателя уведомления нет.
-         */
-        if ($event->newAssignedUser === null) {
-            return;
-        }
+        $users = $this->recipients
+            ->formSubmissionAssigned($event);
 
-        /**
-         * Уведомляем нового ответственного сотрудника.
-         */
-        $event->newAssignedUser->notify(
-            new FormSubmissionAssignedNotification(
-                $event->submission,
-                $event->user
-            )
-        );
+        foreach ($users as $user) {
+            $user->notify(
+                new FormSubmissionAssignedNotification(
+                    $event->submission,
+                    $event->user
+                )
+            );
+        }
     }
 }

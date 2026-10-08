@@ -100,6 +100,17 @@ services:
             - mark-db-network
             - mark-webserver-network
 
+
+    # Mailpit - локальный SMTP-сервер для тестирования писем
+    mailpit:
+        image: axllent/mailpit:latest
+        container_name: mark-mailpit
+        restart: unless-stopped
+        ports:
+            - "127.0.0.1:8025:8025"
+        networks:
+            - mark-webserver-network
+
 networks:
     mark-webserver-network:
     mark-db-network:

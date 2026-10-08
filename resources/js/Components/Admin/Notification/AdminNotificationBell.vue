@@ -1,96 +1,124 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { usePage } from '@inertiajs/vue3'
 import { Inertia } from '@inertiajs/inertia'
 import axios from 'axios'
 
-/**
- * Состояние панели уведомлений.
- */
-const isOpen = ref(false)
-const loading = ref(false)
-const notifications = ref([])
-const unreadCount = ref(0)
-const notificationBell = ref(null)
+const page = usePage()
 
 /**
- * Блокировка повторного перехода
- * по одному уведомлению.
+ * URL уведомлений с учётом текущей локали.
  */
-const openingNotificationId = ref(null)
+const notificationsBaseUrl = computed(() => {
+    const segment = window.location.pathname
+        .split('/')
+        .filter(Boolean)[0]?.toLowerCase()
 
-/**
- * Есть ли непрочитанные уведомления.
- */
-const hasUnread = computed(() => unreadCount.value > 0)
+    const locales = Array.isArray(page.props?.availableLocales)
+        ? page.props.availableLocales.map(item =>
+            String(item).toLowerCase()
+        )
+        : []
 
-/**
- * Текст счётчика.
- *
- * Большие значения сокращаем,
- * чтобы badge не растягивал футер.
- */
-const unreadCountLabel = computed(() => {
-    if (unreadCount.value > 99) {
-        return '99+'
-    }
+    const prefix = locales.includes(segment)
+        ? `/${segment}`
+        : ''
 
-    return String(unreadCount.value)
+    return `${prefix}/admin/notifications`
 })
 
 /**
- * Получить количество собственных
- * непрочитанных уведомлений.
+ * Состояние колокольчика.
+ */
+const isOpen = ref(false)
+const loading = ref(false)
+const loadError = ref(false)
+const notifications = ref([])
+const unreadCount = ref(0)
+const notificationBell = ref(null)
+const openingNotificationId = ref(null)
+
+const hasUnread = computed(() => unreadCount.value > 0)
+
+const unreadCountLabel = computed(() =>
+    unreadCount.value > 99 ? '99+' : String(unreadCount.value)
+)
+
+const jsonHeaders = {
+    Accept: 'application/json'
+}
+
+/**
+ * Загрузить количество непрочитанных уведомлений.
  */
 const loadUnreadCount = async () => {
     try {
         const response = await axios.get(
-            '/admin/notifications/unread-count'
+            `${notificationsBaseUrl.value}/unread-count`,
+            { headers: jsonHeaders }
         )
 
-        unreadCount.value = Number(
-            response.data?.count ?? 0
-        )
+        const count = Number(response.data?.count)
+
+        if (!Number.isFinite(count) || count < 0) {
+            throw new Error('Некорректный формат счётчика')
+        }
+
+        unreadCount.value = Math.floor(count)
     } catch (error) {
         console.error(
-            'Ошибка получения количества непрочитанных уведомлений:',
+            'Ошибка загрузки счётчика уведомлений:',
             error
         )
     }
 }
 
 /**
- * Получить последние собственные уведомления.
+ * Загрузить последние уведомления.
+ *
+ * Поддерживаем:
+ * - массив напрямую;
+ * - Laravel Resource: { data: [...] }.
  */
 const loadRecentNotifications = async () => {
     loading.value = true
+    loadError.value = false
 
     try {
         const response = await axios.get(
-            '/admin/notifications/recent',
+            `${notificationsBaseUrl.value}/recent`,
             {
-                params: {
-                    limit: 5
-                }
+                params: { limit: 5 },
+                headers: jsonHeaders
             }
         )
 
-        notifications.value = Array.isArray(response.data?.data)
-            ? response.data.data
-            : []
+        const items = Array.isArray(response.data)
+            ? response.data
+            : response.data?.data
+
+        if (!Array.isArray(items)) {
+            throw new Error(
+                'API вернул некорректный формат уведомлений'
+            )
+        }
+
+        notifications.value = items
     } catch (error) {
         console.error(
-            'Ошибка получения последних уведомлений:',
+            'Ошибка загрузки последних уведомлений:',
             error
         )
 
         notifications.value = []
+        loadError.value = true
     } finally {
         loading.value = false
     }
 }
 
 /**
- * Обновить данные колокольчика.
+ * Обновить список и счётчик.
  */
 const refreshNotifications = async () => {
     await Promise.all([
@@ -100,7 +128,7 @@ const refreshNotifications = async () => {
 }
 
 /**
- * Открыть или закрыть панель уведомлений.
+ * Открыть или закрыть панель.
  */
 const toggleNotifications = async () => {
     isOpen.value = !isOpen.value
@@ -110,28 +138,24 @@ const toggleNotifications = async () => {
     }
 }
 
-/**
- * Закрыть панель уведомлений.
- */
 const closeNotifications = () => {
     isOpen.value = false
 }
 
 /**
- * Закрыть панель при клике
- * за пределами компонента.
+ * Закрытие при клике за пределами панели.
  */
 const handleClickOutside = (event) => {
     if (
-        notificationBell.value
-        && !notificationBell.value.contains(event.target)
+        notificationBell.value &&
+        !notificationBell.value.contains(event.target)
     ) {
         closeNotifications()
     }
 }
 
 /**
- * Закрыть панель по Escape.
+ * Закрытие по Escape.
  */
 const handleKeydown = (event) => {
     if (event.key === 'Escape') {
@@ -140,20 +164,21 @@ const handleKeydown = (event) => {
 }
 
 /**
- * Отметить собственное уведомление
- * как прочитанное.
+ * Отметить собственное уведомление прочитанным.
  */
 const markAsRead = async (notification) => {
     if (
-        !notification?.id
-        || notification.is_read
-        || !notification.is_own
+        !notification?.id ||
+        notification.is_read ||
+        !notification.is_own
     ) {
         return
     }
 
     await axios.patch(
-        `/admin/notifications/${notification.id}/read`
+        `${notificationsBaseUrl.value}/${encodeURIComponent(notification.id)}/read`,
+        {},
+        { headers: jsonHeaders }
     )
 
     notification.is_read = true
@@ -167,16 +192,12 @@ const markAsRead = async (notification) => {
 
 /**
  * Открыть уведомление.
- *
- * Собственное непрочитанное уведомление
- * сначала отмечается как прочитанное.
  */
 const openNotification = async (notification) => {
-    if (!notification) {
-        return
-    }
-
-    if (openingNotificationId.value !== null) {
+    if (
+        !notification ||
+        openingNotificationId.value !== null
+    ) {
         return
     }
 
@@ -184,8 +205,8 @@ const openNotification = async (notification) => {
 
     try {
         if (
-            notification.is_own
-            && !notification.is_read
+            notification.is_own &&
+            !notification.is_read
         ) {
             await markAsRead(notification)
         }
@@ -210,38 +231,30 @@ const openNotification = async (notification) => {
  */
 const openNotificationCenter = () => {
     closeNotifications()
-
-    Inertia.visit('/admin/notifications')
+    Inertia.visit(notificationsBaseUrl.value)
 }
 
 /**
- * Получить классы индикатора
- * уровня уведомления.
+ * Цвет индикатора уровня.
  */
 const levelClasses = (level) => {
     switch (level) {
         case 'success':
             return 'bg-green-500'
-
         case 'warning':
             return 'bg-amber-500'
-
         case 'error':
             return 'bg-red-500'
-
-        case 'info':
         default:
             return 'bg-blue-500'
     }
 }
 
 /**
- * Форматирование даты уведомления.
+ * Форматирование даты.
  */
 const formatDate = (value) => {
-    if (!value) {
-        return ''
-    }
+    if (!value) return ''
 
     const date = new Date(value)
 
@@ -262,10 +275,7 @@ const formatDate = (value) => {
 }
 
 /**
- * Первичная загрузка счётчика.
- *
- * Сам список загружается только
- * при открытии панели.
+ * Инициализация.
  */
 onMounted(() => {
     loadUnreadCount()
@@ -295,11 +305,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div
-        ref="notificationBell"
-        class="relative"
-    >
-        <!-- Кнопка колокольчика -->
+    <div ref="notificationBell" class="relative">
+
+        <!-- Колокольчик -->
         <button
             type="button"
             title="Уведомления"
@@ -329,7 +337,7 @@ onBeforeUnmount(() => {
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
 
-            <!-- Счётчик непрочитанных -->
+            <!-- Счётчик -->
             <span
                 v-if="hasUnread"
                 class="absolute -top-2 -right-2 min-w-[18px] h-[18px]
@@ -342,7 +350,7 @@ onBeforeUnmount(() => {
             </span>
         </button>
 
-        <!-- Выпадающая вверх панель -->
+        <!-- Панель уведомлений -->
         <div
             v-if="isOpen"
             class="absolute bottom-full right-0 mb-2
@@ -350,7 +358,7 @@ onBeforeUnmount(() => {
                    max-w-[calc(100vw-1.5rem)]
                    overflow-hidden
                    bg-white dark:bg-slate-800
-                   border border-slate-200 dark:border-slate-600
+                   border-2 border-slate-300 dark:border-slate-600
                    rounded-md shadow-xl z-50"
             @click.stop
         >
@@ -387,7 +395,7 @@ onBeforeUnmount(() => {
                     @click="closeNotifications"
                     class="shrink-0 p-1
                            text-slate-400 hover:text-slate-700
-                           dark:text-slate-400 dark:hover:text-slate-100"
+                           dark:hover:text-slate-100"
                 >
                     <svg
                         class="w-4 h-4"
@@ -397,7 +405,6 @@ onBeforeUnmount(() => {
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        aria-hidden="true"
                     >
                         <path d="M18 6 6 18" />
                         <path d="m6 6 12 12" />
@@ -426,7 +433,6 @@ onBeforeUnmount(() => {
                         stroke="currentColor"
                         stroke-width="4"
                     />
-
                     <path
                         class="opacity-75"
                         fill="currentColor"
@@ -434,8 +440,27 @@ onBeforeUnmount(() => {
                            a4 4 0 0 0-4 4H4z"
                     />
                 </svg>
-
                 Загрузка...
+            </div>
+
+            <!-- Ошибка API -->
+            <div
+                v-else-if="loadError"
+                class="flex flex-col items-center justify-center gap-3
+                       min-h-[140px] px-4 py-6 text-center"
+            >
+                <span class="text-sm text-red-600 dark:text-red-400">
+                    Не удалось загрузить уведомления
+                </span>
+
+                <button
+                    type="button"
+                    @click="refreshNotifications"
+                    class="text-xs font-medium text-blue-600
+                           hover:underline dark:text-blue-400"
+                >
+                    Повторить
+                </button>
             </div>
 
             <!-- Список уведомлений -->
@@ -447,6 +472,7 @@ onBeforeUnmount(() => {
                     v-for="notification in notifications"
                     :key="notification.id"
                     type="button"
+                    :disabled="openingNotificationId !== null"
                     @click="openNotification(notification)"
                     class="relative w-full text-left
                            px-3 py-2.5
@@ -454,39 +480,35 @@ onBeforeUnmount(() => {
                            dark:border-slate-700
                            hover:bg-slate-50
                            dark:hover:bg-slate-700/60
-                           transition-colors"
+                           transition-colors disabled:cursor-wait"
                     :class="{
                         'bg-blue-50/60 dark:bg-blue-950/20':
                             !notification.is_read
                     }"
                 >
-                    <div class="flex items-start gap-2.5">
+                    <span class="flex items-start gap-2.5">
                         <!-- Индикатор уровня -->
                         <span
                             class="mt-1.5 w-2 h-2 shrink-0 rounded-full"
                             :class="levelClasses(notification.level)"
                         />
 
-                        <div class="min-w-0 flex-1">
+                        <span class="min-w-0 flex-1">
                             <div
-                                class="flex items-start justify-between
-                                       gap-2"
+                                class="flex items-start justify-between gap-2"
                             >
                                 <span
                                     class="block text-sm
                                            text-slate-800 dark:text-slate-100
                                            truncate"
                                     :class="{
-                                        'font-semibold':
-                                            !notification.is_read,
-                                        'font-medium':
-                                            notification.is_read
+                                        'font-semibold': !notification.is_read,
+                                        'font-medium': notification.is_read
                                     }"
                                 >
                                     {{ notification.title || 'Уведомление' }}
                                 </span>
 
-                                <!-- Непрочитанное -->
                                 <span
                                     v-if="!notification.is_read"
                                     class="mt-1 w-2 h-2 shrink-0
@@ -510,28 +532,25 @@ onBeforeUnmount(() => {
                             >
                                 <span
                                     class="text-[11px]
-                                           text-slate-400
-                                           dark:text-slate-500"
+                                           text-slate-400 dark:text-slate-500"
                                 >
                                     {{ formatDate(notification.created_at) }}
                                 </span>
 
                                 <span
                                     v-if="notification.category"
-                                    class="text-[10px] uppercase
-                                           tracking-wide
-                                           text-slate-400
-                                           dark:text-slate-500"
+                                    class="text-[10px] uppercase tracking-wide
+                                           text-slate-400 dark:text-slate-500"
                                 >
                                     {{ notification.category }}
                                 </span>
                             </div>
-                        </div>
-                    </div>
+                        </span>
+                    </span>
                 </button>
             </div>
 
-            <!-- Нет уведомлений -->
+            <!-- Пустой список -->
             <div
                 v-else
                 class="flex flex-col items-center justify-center
@@ -546,7 +565,6 @@ onBeforeUnmount(() => {
                     stroke-width="1.5"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    aria-hidden="true"
                 >
                     <path
                         d="M18 8a6 6 0 0 0-12 0
@@ -557,14 +575,13 @@ onBeforeUnmount(() => {
                 </svg>
 
                 <span
-                    class="text-sm text-slate-500
-                           dark:text-slate-400"
+                    class="text-sm text-slate-500 dark:text-slate-400"
                 >
                     Уведомлений пока нет
                 </span>
             </div>
 
-            <!-- Переход в центр уведомлений -->
+            <!-- Центр уведомлений -->
             <button
                 type="button"
                 @click="openNotificationCenter"
@@ -588,7 +605,6 @@ onBeforeUnmount(() => {
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    aria-hidden="true"
                 >
                     <path d="m9 18 6-6-6-6" />
                 </svg>

@@ -13,3 +13,56 @@ DB::table('migrations')
     )
     ->exists();
 exit
+use Illuminate\Support\Facades\Mail;
+Mail::raw(
+    'Проверка почтовой инфраструктуры PulsarCMS.',
+    function ($message) {
+        $message
+            ->to('test@example.com')
+            ->subject('PulsarCMS - Email Test');
+    }
+);
+exit
+DB::table('settings')
+    ->where('option', 'like', 'adminEmail%')
+    ->orderBy('id')
+    ->get(['id', 'option', 'value', 'type', 'category']);
+exit
+$email = app(\App\Services\Admin\Notification\EmailSettingsService::class);
+$email->summary();
+$email->smtpConfig();
+$email->eventEnabled('form_submission_created');
+$email->eventEnabled('form_submission_assigned');
+$email->eventEnabled('form_submission_status_changed');
+exit
+$resolver = app(\App\Services\Admin\Notification\NotificationRecipientResolver::class);
+$submission = \App\Models\Admin\Form\FormSubmission\FormSubmission::query()->latest('id')->first();
+$submission
+    ? $resolver->formSubmissionCreated($submission)->map(fn ($user) => [
+        'id' => $user->id,
+        'email' => $user->email,
+    ])->all()
+    : 'Заявки отсутствуют';
+$submission
+    ? $resolver->withEmail(
+        $resolver->formSubmissionCreated($submission)
+    )->pluck('email')->all()
+    : [];
+exit
+$resolver = app(
+    \App\Services\Admin\Notification\NotificationRecipientResolver::class
+);
+$submission = \App\Models\Admin\Form\FormSubmission\FormSubmission::query()
+    ->latest('id')
+    ->first();
+$submission
+    ? $resolver->formSubmissionAssigned($submission)->pluck('email')->all()
+    : [];
+$submission
+    ? $resolver->formSubmissionStatusChanged($submission)->pluck('email')->all()
+    : [];
+exit
+$submission = \App\Models\Admin\Form\FormSubmission\FormSubmission::with('form')->latest('id')->first();
+$mail = new \App\Mail\Form\FormSubmissionCreatedMail($submission);
+$mail->render();
+exit

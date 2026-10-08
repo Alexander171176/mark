@@ -1,0 +1,24 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Laravel
+.env
+.env.*
+storage/*.key
+storage/debugbar/
+storage/logs/
+storage/app/public/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+
+# Docker (оставляем только временные или ненужные файлы)
+.dockerignore
+docker/tmp/
+storage/docker/_db/
+
+# Git / IDE
+.git
+.idea

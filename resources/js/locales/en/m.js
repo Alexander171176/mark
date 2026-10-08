@@ -18,6 +18,8 @@ export default {
     managerComment: 'Manager\'s comment',
     manually: 'Manually',
     manualPrice: 'Manual price',
+    markAsRead: 'Mark as read',
+    markMineAsRead: 'Mark mine as read',
     marketAttribute: 'Characteristic',
     marketAttributeValue: 'Meaning of the characteristic',
     marketAttributes: 'Characteristics',

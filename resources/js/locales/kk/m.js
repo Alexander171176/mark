@@ -18,6 +18,8 @@ export default {
     managerComment: 'Менеджердің пікірі',
     manually: 'Қолмен',
     manualPrice: 'Қолмен баға',
+    markAsRead: 'Оқылған деп белгілеу',
+    markMineAsRead: 'Менікі оқылған деп белгілеу',
     marketAttribute: 'Сипаттамасы',
     marketAttributeValue: 'Сипаттаманың мағынасы',
     marketAttributes: 'Сипаттамалары',

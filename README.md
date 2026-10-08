@@ -1014,6 +1014,8 @@ Analytics
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Notification/NotificationResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Notification/NotificationController` <br>
+`docker exec mark-php-app php artisan make:notification Form/FormSubmission/FormSubmissionCreatedNotification` <br>
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/SendFormSubmissionCreatedNotification` <br>
 -------------------------------------------------------------------------------------
 
 1) Группы характеристик

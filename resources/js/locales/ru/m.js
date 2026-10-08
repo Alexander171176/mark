@@ -18,6 +18,8 @@ export default {
     managerComment: 'Комментарий менеджера',
     manually: 'Вручную',
     manualPrice: 'Ручная цена',
+    markAsRead: 'Отметить как прочитанное',
+    markMineAsRead: 'Отметить мои как прочитанные',
     marketAttribute: 'Характеристика',
     marketAttributeValue: 'Значение характеристики',
     marketAttributes: 'Характеристики',

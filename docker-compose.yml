@@ -1,8 +1,9 @@
-version: "3.9"
 
 services:
 
+    # ==========================================
     # Nginx Web Server
+    # ==========================================
     webserver:
         image: nginx:alpine
         container_name: mark-webserver
@@ -15,21 +16,25 @@ services:
             - ./storage/docker/logs/nginx/:/var/log/nginx
         depends_on:
             - app
-            - db
         networks:
             - mark-webserver-network
 
-    # PHP Application (Debian-based)
+    # ==========================================
+    # PHP Application
+    # ==========================================
     app:
         build:
             context: ./
             dockerfile: ./docker/php/Dockerfile
         container_name: mark-php-app
         restart: unless-stopped
+        working_dir: /var/www
         user: "${UID}:${GID}"
+
         volumes:
             - ./:/var/www/
             - ./docker/php/extend-php.ini:/usr/local/etc/php/conf.d/extend-php.ini
+
         environment:
             HOME: /var/www
             DB_CONNECTION: ${DB_CONNECTION}
@@ -38,79 +43,182 @@ services:
             DB_DATABASE: ${DB_DATABASE}
             DB_USERNAME: ${DB_USERNAME}
             DB_PASSWORD: ${DB_PASSWORD}
+            QUEUE_CONNECTION: redis
+            REDIS_CLIENT: phpredis
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+
         depends_on:
-            - db
+            db:
+                condition: service_started
+            redis:
+                condition: service_healthy
+
         networks:
             - mark-db-network
             - mark-webserver-network
 
-    # MySQL 8 Database
+    # ==========================================
+    # MySQL 8
+    # ==========================================
     db:
         image: mysql:8.0
         container_name: mark-db
         restart: unless-stopped
+
+        # Только для подключения с локального компьютера
         ports:
-            - "3306:3306"
+            - "127.0.0.1:3306:3306"
+
         environment:
             MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
             MYSQL_DATABASE: ${DB_DATABASE}
             MYSQL_USER: ${DB_USERNAME}
             MYSQL_PASSWORD: ${DB_PASSWORD}
+
         volumes:
             - ./storage/docker/_mysql:/var/lib/mysql
+
         networks:
             - mark-db-network
 
-    # PhpMyAdmin
+    # ==========================================
+    # phpMyAdmin
+    # ==========================================
     phpmyadmin:
         image: phpmyadmin/phpmyadmin
         container_name: mark-phpmyadmin
         restart: unless-stopped
+
         ports:
-            - "8081:80"
+            - "127.0.0.1:8081:80"
+
         environment:
             PMA_HOST: ${DB_HOST}
             PMA_USER: ${DB_USERNAME}
             PMA_PASSWORD: ${DB_PASSWORD}
+
         depends_on:
             - db
+
         networks:
             - mark-db-network
             - mark-webserver-network
 
-    # Redis Service
+    # ==========================================
+    # Redis
+    # ==========================================
     redis:
-        image: redis:latest
+        image: redis:7-alpine
         container_name: mark-redis
         restart: unless-stopped
-        ports:
-            - "6379:6379"
+
+        command:
+            - redis-server
+            - --appendonly
+            - "yes"
+
+        volumes:
+            - redis-data:/data
+
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 3s
+            retries: 5
+
+        networks:
+            - mark-db-network
+
+    # ==========================================
+    # Laravel Queue Worker
+    # ==========================================
+    queue:
+        build:
+            context: ./
+            dockerfile: ./docker/php/Dockerfile
+
+        container_name: mark-queue-worker
+        restart: unless-stopped
+        working_dir: /var/www
+        user: "${UID}:${GID}"
+
+        command:
+            - php
+            - artisan
+            - queue:work
+            - redis
+            - --queue=default
+            - --sleep=3
+            - --tries=3
+            - --backoff=10
+            - --timeout=60
+            - --max-time=3600
+
+        stop_grace_period: 90s
+
+        volumes:
+            - ./:/var/www/
+            - ./docker/php/extend-php.ini:/usr/local/etc/php/conf.d/extend-php.ini
+
+        environment:
+            HOME: /var/www
+            DB_CONNECTION: ${DB_CONNECTION}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_DATABASE: ${DB_DATABASE}
+            DB_USERNAME: ${DB_USERNAME}
+            DB_PASSWORD: ${DB_PASSWORD}
+            QUEUE_CONNECTION: redis
+            REDIS_CLIENT: phpredis
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+
+        depends_on:
+            db:
+                condition: service_started
+            redis:
+                condition: service_healthy
+
         networks:
             - mark-db-network
             - mark-webserver-network
 
-    # Memcached Service
+    # ==========================================
+    # Memcached
+    # ==========================================
     memcached:
         image: memcached:1.6-alpine
         container_name: mark-memcached
         restart: unless-stopped
-        ports:
-            - "11211:11211"
+
         networks:
             - mark-db-network
             - mark-webserver-network
 
-
-    # Mailpit - локальный SMTP-сервер для тестирования писем
+    # ==========================================
+    # Mailpit - локальное тестирование Email
+    # ==========================================
     mailpit:
         image: axllent/mailpit:latest
         container_name: mark-mailpit
         restart: unless-stopped
+
         ports:
             - "127.0.0.1:8025:8025"
+
         networks:
             - mark-webserver-network
 
+# ==========================================
+# Docker Networks
+# ==========================================
 networks:
     mark-webserver-network:
     mark-db-network:
+
+# ==========================================
+# Docker Volumes
+# ==========================================
+volumes:
+    redis-data:

@@ -185,6 +185,60 @@ services:
             - mark-webserver-network
 
     # ==========================================
+    # Laravel Email Queue Worker
+    # ==========================================
+    email-queue:
+        build:
+            context: ./
+            dockerfile: ./docker/php/Dockerfile
+
+        container_name: mark-email-worker
+        restart: unless-stopped
+        working_dir: /var/www
+        user: "${UID}:${GID}"
+
+        command:
+            - php
+            - artisan
+            - queue:work
+            - redis
+            - --queue=emails
+            - --sleep=3
+            - --tries=3
+            - --backoff=10
+            - --timeout=60
+            - --max-time=3600
+
+        stop_grace_period: 90s
+
+        volumes:
+            - ./:/var/www/
+            - ./docker/php/extend-php.ini:/usr/local/etc/php/conf.d/extend-php.ini
+
+        environment:
+            HOME: /var/www
+            DB_CONNECTION: ${DB_CONNECTION}
+            DB_HOST: ${DB_HOST}
+            DB_PORT: ${DB_PORT}
+            DB_DATABASE: ${DB_DATABASE}
+            DB_USERNAME: ${DB_USERNAME}
+            DB_PASSWORD: ${DB_PASSWORD}
+            QUEUE_CONNECTION: redis
+            REDIS_CLIENT: phpredis
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+
+        depends_on:
+            db:
+                condition: service_started
+            redis:
+                condition: service_healthy
+
+        networks:
+            - mark-db-network
+            - mark-webserver-network
+
+    # ==========================================
     # Memcached
     # ==========================================
     memcached:

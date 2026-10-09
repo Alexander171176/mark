@@ -22,13 +22,17 @@ class SendNotificationEmailJob implements ShouldQueue
 
     public int $timeout = 60;
 
+
     public function __construct(
         public string $event,
         public string $recipient,
         public Mailable $mailable
     ) {
+        // Асинхронная обработка через Redis.
         $this->onConnection('redis');
-        $this->onQueue('default');
+
+        // Выделенная очередь Email Notifications.
+        $this->onQueue('emails');
     }
 
     public function handle(EmailDeliveryService $delivery): void

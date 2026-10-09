@@ -2,9 +2,9 @@
 
 namespace App\Services\Admin\Notification;
 
+use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Mail\Mailable;
 use Throwable;
 
 readonly class EmailDeliveryService
@@ -17,8 +17,11 @@ readonly class EmailDeliveryService
     /**
      * Отправить письмо для разрешённого события.
      *
-     * Возвращает true при успешной передаче письма
-     * почтовому транспорту.
+     * Возвращает true при успешной передаче
+     * письма почтовому транспорту.
+     *
+     * При ошибке транспорта выбрасывает исключение,
+     * чтобы Queue Worker мог повторить задание.
      */
     public function send(
         string $event,
@@ -30,7 +33,7 @@ readonly class EmailDeliveryService
             return false;
         }
 
-        // Проверяем адрес получателя.
+        // Проверяем корректность Email.
         if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             Log::warning('Email Notifications: некорректный получатель', [
                 'event' => $event,
@@ -40,7 +43,7 @@ readonly class EmailDeliveryService
         }
 
         try {
-            // Используем настроенный Laravel Mail транспорт.
+            // Отправляем письмо через настроенный Mail транспорт.
             Mail::to($recipient)->send(
                 $mailable->from(
                     $this->settings->fromAddress(),
@@ -56,7 +59,8 @@ readonly class EmailDeliveryService
                 'message' => $exception->getMessage(),
             ]);
 
-            return false;
+            // Передаём ошибку Laravel Queue для повторной попытки.
+            throw $exception;
         }
     }
 }

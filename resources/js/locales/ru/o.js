@@ -2,6 +2,7 @@ export default {
     object: 'Объект',
     of: 'из',
     offline: 'оффлайн',
+    omitted: 'Пропущено',
     online: 'онлайн',
     onlyText: 'Только латинские буквы, цифры и нижнее подчёркивание',
     openLink: 'Открыть ссылку',

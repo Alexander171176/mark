@@ -3,16 +3,17 @@
 namespace App\Listeners\Form\FormSubmission;
 
 use App\Events\Form\FormSubmission\FormSubmissionAssigned;
-use App\Jobs\SendNotificationEmailJob;
 use App\Mail\Form\FormSubmissionAssignedMail;
 use App\Services\Admin\Notification\EmailSettingsService;
+use App\Services\Admin\Notification\NotificationEmailLogService;
 use App\Services\Admin\Notification\NotificationRecipientResolver;
 
 readonly class SendFormSubmissionAssignedEmail
 {
     public function __construct(
         private EmailSettingsService $settings,
-        private NotificationRecipientResolver $recipients
+        private NotificationRecipientResolver $recipients,
+        private NotificationEmailLogService $emailLogs
     ) {
     }
 
@@ -27,7 +28,7 @@ readonly class SendFormSubmissionAssignedEmail
         );
 
         foreach ($users as $user) {
-            SendNotificationEmailJob::dispatch(
+            $this->emailLogs->dispatch(
                 'form_submission_assigned',
                 $user->email,
                 new FormSubmissionAssignedMail(
@@ -35,7 +36,7 @@ readonly class SendFormSubmissionAssignedEmail
                     $user,
                     $event->user
                 )
-            )->afterCommit();
+            );
         }
     }
 }

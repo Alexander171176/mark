@@ -334,6 +334,11 @@ const { t } = useI18n();
             sitemap.xml
         </ResponsiveNavLink>
         <ResponsiveNavLink
+            :href="route('admin.notificationEmailLogs.index')"
+            :active="route().current('admin.notificationEmailLogs.index')">
+            {{ t('notificationEmailLogs') }}
+        </ResponsiveNavLink>
+        <ResponsiveNavLink
             :href="route('admin.reports.index')"
             :active="route().current('admin.reports.index')">
             {{ t('reports') }}

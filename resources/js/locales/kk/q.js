@@ -7,6 +7,7 @@ export default {
     questionTypeSingleChoice: 'Бір дұрыс жауап',
     questionTypeTrueFalse: 'Дұрыс / Жалған',
     questionTypeOpenText: 'Толық жауап',
+    queue: 'Кезек',
     quiz: 'Викторина',
     quizAnswers: 'Викторина сұрақтарына жауаптар',
     quizAttemptItems: 'Студенттердің жауаптары',

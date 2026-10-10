@@ -87,6 +87,7 @@ export default {
     alertLikeAlready: 'Сізге әлдеқашан ұнады)',
     alertLikeAuthRequired: 'Ұнату үшін жүйеге кіру керек',
     all: 'Барлығы',
+    allEvents: 'Барлық іс-шаралар',
     allLocales: 'Барлық жергілікті орындар',
     allProducts: 'Барлық өнімдер',
     allStatuses: 'Барлық мәртебелер',

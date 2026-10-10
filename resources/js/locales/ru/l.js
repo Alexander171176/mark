@@ -3,6 +3,7 @@ export default {
     lastActive: 'Последний активный',
     lastName: 'Фамилия',
     lastViewedAt: 'Последний просмотр',
+    lastUpdate: 'Последнее обновление',
     lastUsed: 'Последнее использование',
     latestNews: 'Последние новости',
     latitude: 'Широта',

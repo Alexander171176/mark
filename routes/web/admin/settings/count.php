@@ -169,6 +169,11 @@ Route::put('/update-count/notifications',
     [SettingController::class, 'updateAdminCountNotifications'])
     ->name('updateAdminCountNotifications');
 
+// журнал Email Notifications
+Route::put('/update-count/email-logs',
+    [SettingController::class, 'updateAdminCountEmailLogs'])
+    ->name('updateAdminCountEmailLogs');
+
 // маркет
 Route::put('/update-count/market-companies',
     [SettingController::class, 'updateAdminCountMarketCompanies'])

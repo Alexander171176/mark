@@ -124,6 +124,8 @@ const linkInfo = {
     components: {label: t('components'), route: 'admin.components.index'},
     robot: {label: t('robot'), route: 'admin.robot.index'},
     sitemap: {label: 'sitemap.xml', route: 'admin.sitemap.index'},
+    notificationEmailLogs: {label: t('notificationEmailLogs'),
+        route: 'admin.notificationEmailLogs.index'},
     reports: {label: t('reports'), route: 'admin.reports.index'},
     imagePresets: {label: t('imagePresets'), route: 'admin.imagePresets.index'},
     locations: {label: t('locations'), route: 'admin.locations.index'},

@@ -2,6 +2,7 @@ export default {
     object: 'Object',
     of: 'of',
     offline: 'offline',
+    omitted: 'Omitted',
     online: 'online',
     onlyText: 'Only Latin letters, numbers and underscores',
     openLink: 'Open link',

@@ -87,6 +87,7 @@ export default {
     alertLikeAlready: 'You\'ve already liked it.)',
     alertLikeAuthRequired: 'You need to log in for a like',
     all: 'All',
+    allEvents: 'All events',
     allLocales: 'All locales',
     allProducts: 'All products',
     allStatuses: 'All statuses',

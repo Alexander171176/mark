@@ -5,6 +5,7 @@ export default {
     unit: 'Unit of Measurement',
     unitProperty: 'Static unit of measurement',
     unknown: 'Unknown',
+    untitled: 'Untitled',
     updatedAt: 'Date of update',
     updatePassword: 'Update Password',
     updatePasswordDescription: 'Ensure your account is using a long, random password to stay secure.',

@@ -2,6 +2,7 @@ export default {
     icon: 'Иконка',
     id: 'ID',
     in: 'в',
+    inLine: 'В очереди',
     information: 'Информация',
     inStock: 'В наличии',
     image: 'Изображение',

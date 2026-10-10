@@ -87,6 +87,7 @@ export default {
     alertLikeAlready: 'Вы уже лайкнули)',
     alertLikeAuthRequired: 'Для лайка нужно авторизоваться',
     all: 'Все',
+    allEvents: 'Все события',
     allLocales: 'Все локали',
     allProducts: 'Все товары',
     allStatuses: 'Все статусы',

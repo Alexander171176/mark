@@ -1025,6 +1025,19 @@ const {t} = useI18n();
             sitemap.xml
         </template>
     </SidebarLink>
+    <SidebarLink :href="route('admin.notificationEmailLogs.index')"
+                 :active="route().current('notificationEmailLogs.index')"
+                 :expanded="props.expanded">
+        <template #default>
+            <svg class="shrink-0 h-6 w-6" viewBox="0 0 24 24">
+                <circle class="fill-current text-blue-600" cx="16" cy="8" r="8"></circle>
+                <circle class="fill-current text-blue-400" cx="8" cy="16" r="8"></circle>
+            </svg>
+        </template>
+        <template #text>
+            {{ t('notificationEmailLogs') }}
+        </template>
+    </SidebarLink>
     <SidebarLink :href="route('admin.reports.index')"
                  :active="route().current('reports.index')"
                  :expanded="props.expanded">

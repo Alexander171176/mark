@@ -3,6 +3,7 @@ export default {
     lastActive: 'Соңғы белсенділік',
     lastName: 'Тегі',
     lastViewedAt: 'Соңғы қаралған',
+    lastUpdate: 'Соңғы жаңартылған',
     lastUsed: 'Соңғы пайдалану',
     latestNews: 'Соңғы жаңалықтар',
     learningCategories: 'Оқыту санаттары',

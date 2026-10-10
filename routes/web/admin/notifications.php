@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Notification\NotificationController;
+use App\Http\Controllers\Admin\NotificationEmailLog\NotificationEmailLogController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('notifications')
@@ -59,3 +60,7 @@ Route::prefix('notifications')
             'destroy'
         )->name('destroy');
     });
+
+Route::get('notification-email-logs',
+    [NotificationEmailLogController::class, 'index'])
+    ->name('notificationEmailLogs.index');

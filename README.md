@@ -1,6 +1,80 @@
-1) `php artisan key:generate --ansi` <br><br>
+# PulsarCMS — история разработки и техническая памятка
 
-2) Install Webp, Spatie Media Library <br>
+> **Назначение:** последовательная история создания проекта Laravel / Vue 3 / Docker и справочник команд, классов, миграций, сидеров и архитектурных решений. Документ отражает этапы разработки, а **не** является скриптом для автоматического выполнения команд подряд.
+
+## Навигация
+
+1. [Первоначальная настройка Laravel, Docker и зависимостей](#этап-1-первоначальная-настройка-laravel-docker-и-зависимостей)
+2. [Дополнительные frontend-зависимости и стили](#этап-2-дополнительные-frontend-зависимости-и-стили)
+3. [Jetstream и права доступа (Spatie Permission)](#этап-3-jetstream-и-права-доступа-spatie-permission)
+4. [Технические команды и диагностика](#этап-4-технические-команды-и-диагностика)
+5. [Администрирование: роли, права и пользователи](#этап-5-администрирование-роли-права-и-пользователи)
+6. [Управление назначенными правами](#этап-6-управление-назначенными-правами)
+7. [Настройки, параметры и системные контроллеры](#этап-7-настройки-параметры-и-системные-контроллеры)
+8. [Изображения и резервное копирование](#этап-8-изображения-и-резервное-копирование)
+9. [Пресеты обработки изображений](#этап-9-пресеты-обработки-изображений)
+10. [Конфиденциальность и аналитика](#этап-10-конфиденциальность-и-аналитика)
+11. [Географические справочники](#этап-11-географические-справочники)
+12. [CMS: страницы и навигация](#этап-12-cms-страницы-и-навигация)
+13. [Блог: рубрики, статьи, теги, баннеры и видео](#этап-13-блог-рубрики-статьи-теги-баннеры-и-видео)
+14. [Комментарии блога](#этап-14-комментарии-блога)
+15. [Отчёты и графики](#этап-15-отчёты-и-графики)
+16. [Компоненты, редактор и диаграммы](#этап-16-компоненты-редактор-и-диаграммы)
+17. [API и Swagger](#этап-17-api-и-swagger)
+18. [Онлайн-школа](#этап-18-онлайн-школа)
+19. [Form Builder: конструктор форм и заявки](#этап-19-form-builder-конструктор-форм-и-заявки)
+20. [Уведомления и Email Queue](#этап-20-уведомления-и-email-queue)
+21. [Маркетплейс](#этап-21-маркетплейс)
+
+## Перед использованием команд
+
+- Команды `make:*` сохранены как **история создания классов**. Повторно запускать их для существующих файлов не требуется.
+- `migrate:rollback`, удаление файлов, очистка логов, изменение прав и повторные сидеры — **не команды ежедневного обслуживания**. Перед применением проверяйте окружение и делайте резервную копию.
+- В проекте используются контейнеры `mark-php-app`, `mark-queue-worker`, `mark-email-worker`, `mark-redis`, `mark-db` и `mark-mailpit`.
+- Команды с `php artisan` или `composer` без Docker-префикса — исторические записи; при работе в контейнере учитывайте актуальную среду исполнения.
+- Исторические команды и названия пакетов перенесены без проверки совместимости с текущими версиями Laravel. Не повторяйте установку пакетов вслепую.
+- В исходных заметках встречаются устаревшие и небезопасные диагностические обходные пути (например, `chmod 777` и отключение TLS). Они оставлены для истории, но **не рекомендуются** для production.
+- Списки сгенерированных классов и миграций не доказывают, что весь соответствующий функционал завершён. Сверяйте фактический статус с кодом и миграциями.
+
+## Быстрая памятка
+
+```powershell
+# Контейнеры и конфигурация
+docker compose config --quiet
+docker ps
+docker compose up -d
+
+# Laravel
+docker exec mark-php-app php artisan about
+docker exec mark-php-app php artisan migrate:status
+docker exec mark-php-app php artisan route:list
+docker exec mark-php-app php artisan optimize:clear
+
+# Очереди и диагностика
+docker logs --tail=50 mark-queue-worker
+docker logs --tail=50 mark-email-worker
+docker exec mark-redis redis-cli PING
+docker exec mark-redis redis-cli LLEN queues:default
+docker exec mark-redis redis-cli LLEN queues:emails
+docker exec mark-php-app php artisan queue:failed
+```
+
+---
+
+## Этапы разработки — исходная последовательность
+
+
+<a id="этап-1-первоначальная-настройка-laravel-docker-и-зависимостей"></a>
+
+## Этап 1. Первоначальная настройка Laravel, Docker и зависимостей
+
+
+### 1. `php artisan key:generate --ansi` <br>
+
+
+
+### 2. Install Webp, Spatie Media Library
+
 `прежде отключить файрвол антивируса, потом снова включить` <br>
 `composer require "laravel/framework:^10.48" -W --prefer-dist` <br>
 `composer require spatie/laravel-sitemap` <br>
@@ -13,35 +87,51 @@
 `docker exec mark-php-app php artisan migrate`<br>
 `docker exec mark-php-app php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="medialibrary-config"`<br>
 
-3) Make directory for docker: <br>
+
+### 3. Make directory for docker:
+
    `mkdir ./storage/docker` <br>
 
-4) Copy .env.example <br>
+
+### 4. Copy .env.example
+
    `cp .env.example .env` <br>
 
-5) Add host user to .env <br>
+
+### 5. Add host user to .env
+
    `echo UID=$(id -u) >> .env` <br>
    `echo GID=$(id -g) >> .env` <br>
 
-6) Run services docker <br>
+
+### 6. Run services docker
+
    `docker-compose up -d --build` <br>
 
-7) Install eslint, prettier <br>
+
+### 7. Install eslint, prettier
+
    `npm install --save-dev @rushstack/eslint-patch` <br>
    `npm install --save-dev @vue/eslint-config-prettier` <br>
    `npm install --save-dev eslint` <br>
    `npm install --save-dev eslint-plugin-vue` <br>
    `npm install --save-dev prettier` <br>
 
-8) `npm run lint` <br>
 
-9) Install npm dependencies <br>
+### 8. `npm run lint`
+
+
+
+### 9. Install npm dependencies
+
    `npm install` <br>
    `npm run dev` <br>
    `vite build` <br>
    `vite` <br>
 
-10) composer require unisharp/laravel-filemanager
+
+### 10. composer require unisharp/laravel-filemanager
+
     `php artisan vendor:publish --tag=lfm_config` <br>
     `php artisan vendor:publish --tag=lfm_public` <br>
     web.php: `Route::group(['prefix' => 'laravel-filemanager', 'middleware' => ['web', 'auth']], function () {
@@ -49,10 +139,14 @@
     });` <br>
     .env: `FILESYSTEM_DRIVER=public` <br>
 
-11) Create link Storage <br>
+
+### 11. Create link Storage
+
    `docker exec mark-php-app php artisan storage:link`<br>
 
-12)  npm install <br>
+
+### 12. npm install
+
     `npm install @inertiajs/inertia` <br>
     `npm install @mayasabha/ckeditor4-vue3` <br>
     `npm install tinymce` <br>
@@ -74,20 +168,33 @@
     `npm install swiper` <br>
      `npm i ` <br>
 
--------------------------------------------------------------------------------------
+---
+
+<a id="этап-2-дополнительные-frontend-зависимости-и-стили"></a>
+
+## Этап 2. Дополнительные frontend-зависимости и стили
 
 `npm install -D sass-embedded` <br>
 `npm install -D sass` <br>
 `npm i @fontsource-variable/roboto-flex @fontsource-variable/montserrat vue3-carousel @vueform/slider` <br>
--------------------------------------------------------------------------------------
 
-1) Install Jetstream <br>
+---
+
+<a id="этап-3-jetstream-и-права-доступа-spatie-permission"></a>
+
+## Этап 3. Jetstream и права доступа (Spatie Permission)
+
+
+### 1. Install Jetstream
+
     `composer require laravel/jetstream` <br>
     `docker exec mark-php-app php artisan jetstream:install inertia --ssr --teams` <br>
     `npm install` <br>
     `npm run dev` <br>
 
-2) Install Spatie <br>
+
+### 2. Install Spatie
+
 `composer require spatie/laravel-permission` <br>
 `docker exec mark-php-app php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"` <br>
 `docker exec mark-php-app php artisan optimize:clear` <br>
@@ -98,9 +205,16 @@
 `docker exec mark-php-app php artisan db:seed` <br>
 `// The User model requires this trait
     use HasRoles;`<br>
--------------------------------------------------------------------------------------
 
-1) Помощь в командах
+---
+
+<a id="этап-4-технические-команды-и-диагностика"></a>
+
+## Этап 4. Технические команды и диагностика
+
+
+### 1. Помощь в командах
+
  Удалите существующие символические ссылки <br>
 `docker exec -it mark-php-app rm /var/www/public/storage` <br>
 `docker exec -it mark-php-app rm /var/www/storage/api-docs` <br>
@@ -137,10 +251,17 @@
 `docker exec -it mark-php-app composer dump-autoload` <br> очистка кеша перед пересборкой
 `docker exec -it mark-php-app composer install --no-cache --no-interaction --prefer-dist` <br> пересборка зависимостей composer
 `composer config --global disable-tls false` <br> включение сертификатов обратно
-`docker exec mark-php-app php -r "echo ini_get('upload_max_filesize').PHP_EOL; echo ini_get('post_max_size').PHP_EOL;"`<br> посмотреть параметры php.ini 
--------------------------------------------------------------------------------------
+`docker exec mark-php-app php -r "echo ini_get('upload_max_filesize').PHP_EOL; echo ini_get('post_max_size').PHP_EOL;"`<br> посмотреть параметры php.ini
 
-1) creating business logic app Role <br>
+---
+
+<a id="этап-5-администрирование-роли-права-и-пользователи"></a>
+
+## Этап 5. Администрирование: роли, права и пользователи
+
+
+### 1. creating business logic app Role
+
 `docker exec mark-php-app php artisan make:controller Admin/System/Role/RoleController --resource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/Role/RoleResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/Role/RoleSharedResource` <br>
@@ -148,27 +269,45 @@
 `docker exec mark-php-app php artisan make:seeder RoleSeeder` <br>
 `docker exec mark-php-app php artisan db:seed --class=RoleSeeder` <br>
 
-2) creating business logic app Permission <br>
+
+### 2. creating business logic app Permission
+
 `docker exec mark-php-app php artisan make:controller Admin/System/Permission/PermissionController --resource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/Permission/PermissionResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/Permission/PermissionSharedResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/Permission/PermissionRequest` <br>
 
-3) creating business logic app User <br>
+
+### 3. creating business logic app User
+
 `docker exec mark-php-app php artisan make:controller Admin/System/User/UserController --resource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/User/UserResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/User/UserSharedResource` <br>
--------------------------------------------------------------------------------------
 
-1) Create revoke controllers <br>
+---
+
+<a id="этап-6-управление-назначенными-правами"></a>
+
+## Этап 6. Управление назначенными правами
+
+
+### 1. Create revoke controllers
+
 `docker exec mark-php-app php artisan make:controller Admin/Invokable/RemovePermissionFromRoleController --invokable` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Invokable/RemoveRoleFromUserController --invokable` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/User/StoreUserRequest` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/User/UpdateUserRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Invokable/RemovePermissionFromUserController --invokable` <br>
--------------------------------------------------------------------------------------
 
-1) creating business logic app Setting <br>
+---
+
+<a id="этап-7-настройки-параметры-и-системные-контроллеры"></a>
+
+## Этап 7. Настройки, параметры и системные контроллеры
+
+
+### 1. creating business logic app Setting
+
 `docker exec mark-php-app php artisan make:model Admin/System/Setting/Setting -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/System/Setting/SettingResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/Setting/SettingRequest` <br>
@@ -187,13 +326,17 @@
 `docker exec mark-php-app php artisan make:seeder SettingSeeder` <br>
 `docker exec mark-php-app php artisan db:seed --class=SettingSeeder` <br>
 
-2)  Create middleware ShareSettings <br>
+
+### 2. Create middleware ShareSettings
+
 `docker exec mark-php-app php artisan make:resource Admin/System/Setting/SettingSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/SystemController` <br>
 `docker exec mark-php-app php artisan make:controller Api/Parameter/ApiParameterController --api` <br>
 `docker exec mark-php-app php artisan make:controller Api/Setting/ApiSettingController --api` <br>
 
-3) creating business logic app System <br>
+
+### 3. creating business logic app System
+
 `docker exec mark-php-app php artisan make:controller Admin/System/Log/LogController` <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/PhpInfoController` <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/ComposerController` <br>
@@ -202,18 +345,34 @@
 `docker exec mark-php-app php artisan make:controller Admin/System/RobotController` <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/SitemapController` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/HomeController` <br>
--------------------------------------------------------------------------------------
 
-1) creating model BaseImage & BaseImageResource
+---
+
+<a id="этап-8-изображения-и-резервное-копирование"></a>
+
+## Этап 8. Изображения и резервное копирование
+
+
+### 1. creating model BaseImage & BaseImageResource
+
 `docker exec mark-php-app php artisan make:model Admin/Image/BaseImage` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Image/BaseImageResource` <br>
 
-2) creating business logic Backup
+
+### 2. creating business logic Backup
+
 `docker exec mark-php-app php artisan make:controller Admin/System/DatabaseBackupController` <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/FileBackupController` <br>
--------------------------------------------------------------------------------------
 
-1) ImagePreset - варианты обработки изображений
+---
+
+<a id="этап-9-пресеты-обработки-изображений"></a>
+
+## Этап 9. Пресеты обработки изображений
+
+
+### 1. ImagePreset - варианты обработки изображений
+
 `docker exec mark-php-app php artisan make:model Admin/System/ImagePreset/ImagePreset -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -222,9 +381,16 @@
 `docker exec mark-php-app php artisan make:resource Admin/System/ImagePreset/ImagePresetSharedResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/ImagePreset/ImagePresetRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/ImagePreset/ImagePresetController` <br>
--------------------------------------------------------------------------------------
 
-1) Privacy — согласия, cookies, политика конфиденциальности
+---
+
+<a id="этап-10-конфиденциальность-и-аналитика"></a>
+
+## Этап 10. Конфиденциальность и аналитика
+
+
+### 1. Privacy — согласия, cookies, политика конфиденциальности
+
 `docker exec mark-php-app php artisan make:model Admin/Privacy/PrivacyUserConsent/PrivacyUserConsent -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/Privacy/PrivacyUserConsent/PrivacyUserConsentRequest` <br>
@@ -233,7 +399,9 @@
 `docker exec mark-php-app php artisan make:controller Public/Privacy/PrivacyController` <br>
 `docker exec mark-php-app php artisan make:controller Public/Privacy/PrivacyUserConsentController` <br>
 
-2) Analytics — журнал посещений, отчёты, графики, очистка
+
+### 2. Analytics — журнал посещений, отчёты, графики, очистка
+
 `docker exec mark-php-app php artisan make:model Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLog -mf` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Analytics/AnalyticsVisitorLog/AnalyticsVisitorLogSharedResource` <br>
@@ -244,7 +412,9 @@
 `docker exec mark-php-app php artisan make:request Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Analytics/AnalyticsCleanup/AnalyticsCleanupController` <br>
 
-3) Services (создать вручную)
+
+### 3. Services (создать вручную)
+
 Privacy
 `app/Services/Admin/Privacy/PrivacyPolicyService.php` <br>
 Base
@@ -252,7 +422,9 @@ Base
 Analytics
 `app/Services/Admin/Analytics/AnalyticsFileWriterService.php` <br>
 
-4) SQLite Analytics
+
+### 4. SQLite Analytics
+
 `docker exec mark-php-app rm database/analytics.sqlite` <br>
 `docker exec mark-php-app touch database/analytics.sqlite` <br>
 `docker exec mark-php-app chmod 664 database/analytics.sqlite` <br>
@@ -260,12 +432,21 @@ Analytics
 `docker exec mark-php-app php artisan migrate --database=analytics --path=database/migrations_analytics` <br>
 `docker exec mark-php-app php artisan schedule:work` <br>
 
-5) Импорт JSONL в SQLite Analytics
+
+### 5. Импорт JSONL в SQLite Analytics
+
 `docker exec mark-php-app php artisan make:command ImportAnalyticsVisitorLogsCommand` <br>
 `docker exec mark-php-app php artisan analytics:import-visitor-logs` <br>
--------------------------------------------------------------------------------------
 
-1) Location <br>
+---
+
+<a id="этап-11-географические-справочники"></a>
+
+## Этап 11. Географические справочники
+
+
+### 1. Location
+
 `docker exec mark-php-app php artisan make:model Admin/System/Location/Location -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/System/Location/LocationTranslation -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
@@ -276,9 +457,16 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/System/Location/LocationTranslationResource` <br>
 `docker exec mark-php-app php artisan make:request Admin/System/Location/LocationRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/System/Location/LocationController --resource` <br>
--------------------------------------------------------------------------------------
 
-1) CMS страницы <br>
+---
+
+<a id="этап-12-cms-страницы-и-навигация"></a>
+
+## Этап 12. CMS: страницы и навигация
+
+
+### 1. CMS страницы
+
 `docker exec mark-php-app php artisan make:model Admin/Cms/CmsPage/CmsPage -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Cms/CmsPage/CmsPageTranslation -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Cms/CmsPage/CmsPageResource` <br>
@@ -292,9 +480,16 @@ Analytics
 `docker exec mark-php-app php artisan make:class Services/Public/Cms/CmsNavigationService` <br>
 `docker exec mark-php-app php artisan make:controller Public/Cms/CmsPagePublicController` <br>
 `docker exec mark-php-app php artisan make:class Services/Public/Cms/CmsPageResolverService` <br>
--------------------------------------------------------------------------------------
 
-1) creating business logic app BlogRubric <br>
+---
+
+<a id="этап-13-блог-рубрики-статьи-теги-баннеры-и-видео"></a>
+
+## Этап 13. Блог: рубрики, статьи, теги, баннеры и видео
+
+
+### 1. creating business logic app BlogRubric
+
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogRubric/BlogRubric -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogRubric/BlogRubricTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogRubric/BlogRubricImage -mf` <br>
@@ -313,7 +508,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Public/Blog/BlogRubric/BlogRubricResource` <br>
 `docker exec mark-php-app php artisan make:resource Public/Blog/BlogRubric/BlogRubricSharedResource` <br>
 
-2) creating business logic app BlogArticle <br>
+
+### 2. creating business logic app BlogArticle
+
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogArticle/BlogArticle -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogArticle/BlogArticleTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogArticle/BlogArticleImage -mf` <br>
@@ -336,7 +533,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Public/Blog/BlogArticle/BlogArticleSharedResource` <br>
 `docker exec mark-php-app php artisan make:model User/Like/BlogArticleLike -m` <br>
 
-3) creating business logic app BlogTag <br>
+
+### 3. creating business logic app BlogTag
+
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogTag/BlogTag -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogTag/BlogTagTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:migration create_blog_article_has_tag_table --create=blog_article_has_tag` <br>
@@ -351,7 +550,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Public/Blog/BlogTag/BlogTagResource` <br>
 `docker exec mark-php-app php artisan make:resource Public/Blog/BlogTag/BlogTagSharedResource` <br>
 
-4) creating business logic app BlogBanner <br>
+
+### 4. creating business logic app BlogBanner
+
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogBanner/BlogBanner -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogBanner/BlogBannerTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogBanner/BlogBannerImage -mf` <br>
@@ -366,7 +567,9 @@ Analytics
 `docker exec mark-php-app php artisan make:controller Admin/Blog/BlogBanner/BlogBannerController --resource` <br>
 `docker exec mark-php-app php artisan make:resource Public/Blog/BlogBanner/BlogBannerSharedResource` <br>
 
-5) creating business logic app BlogVideo <br>
+
+### 5. creating business logic app BlogVideo
+
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogVideo/BlogVideo -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogVideo/BlogVideoTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Blog/BlogVideo/BlogVideoImage -mf` <br>
@@ -385,9 +588,16 @@ Analytics
 `docker exec mark-php-app php artisan make:controller Public/Default/Blog/BlogVideo/BlogVideoController` <br>
 `docker exec mark-php-app php artisan make:resource Public/Blog/BlogVideo/BlogVideoResource` <br>
 `docker exec mark-php-app php artisan make:resource Public/Blog/BlogVideo/BlogVideoSharedResource` <br>
--------------------------------------------------------------------------------------
 
-1) creating business logic app Comment <br>
+---
+
+<a id="этап-14-комментарии-блога"></a>
+
+## Этап 14. Комментарии блога
+
+
+### 1. creating business logic app Comment
+
 `docker exec mark-php-app php artisan make:model Admin/Blog/Comment/Comment -m`
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan make:factory Admin/Blog/Comment/CommentFactory --model=Comment` <br>
@@ -401,26 +611,53 @@ Analytics
 `docker exec mark-php-app php artisan make:controller Public/CommentController --resource` <br>
 `docker exec mark-php-app php artisan make:resource Public/Blog/Comment/CommentResource` <br>
 `docker exec mark-php-app php artisan make:resource Public/Blog/Comment/CommentSharedResource` <br>
--------------------------------------------------------------------------------------
 
-1) creating business logic app Report <br>
+---
+
+<a id="этап-15-отчёты-и-графики"></a>
+
+## Этап 15. Отчёты и графики
+
+
+### 1. creating business logic app Report
+
 `docker exec mark-php-app php artisan make:controller Admin/System/Report/ReportController --resource` <br>
 
-2) creating business logic app Chart <br>
-`docker exec mark-php-app php artisan make:controller Admin/System/Chart/ChartController --resource` <br>
--------------------------------------------------------------------------------------
 
-1) creating business logic app Component <br>
+### 2. creating business logic app Chart
+
+`docker exec mark-php-app php artisan make:controller Admin/System/Chart/ChartController --resource` <br>
+
+---
+
+<a id="этап-16-компоненты-редактор-и-диаграммы"></a>
+
+## Этап 16. Компоненты, редактор и диаграммы
+
+
+### 1. creating business logic app Component
+
 `docker exec mark-php-app php artisan make:controller Admin/System/Component/ComponentController --resource` <br>
 
-2) creating business logic app Editor <br>
+
+### 2. creating business logic app Editor
+
 `docker exec mark-php-app php artisan make:controller Admin/System/Editor/EditorController --resource` <br>
 
-3) creating business logic app Diagram <br>
-`docker exec mark-php-app php artisan make:controller Admin/System/Diagram/DiagramController --resource` <br>
--------------------------------------------------------------------------------------
 
-1) creating business logic app API <br>
+### 3. creating business logic app Diagram
+
+`docker exec mark-php-app php artisan make:controller Admin/System/Diagram/DiagramController --resource` <br>
+
+---
+
+<a id="этап-17-api-и-swagger"></a>
+
+## Этап 17. API и Swagger
+
+
+### 1. creating business logic app API
+
 `composer require "darkaonline/l5-swagger` <br>
 `docker exec mark-php-app php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"` <br>
 `docker exec mark-php-app php artisan make:controller Api/Blog/BlogRubric/ApiBlogRubricController --api` <br>
@@ -435,9 +672,16 @@ Analytics
 `docker exec -it mark-php-app ls /var/www/storage/api-docs/api-docs.json` После генерации проверьте наличие файла <br>
 `docker-compose restart` <br>
 `docker exec mark-php-app php artisan l5-swagger:generate` <br>
--------------------------------------------------------------------------------------
 
-1) creating business logic SchoolHashtag - полиморфные хештеги онлайн-школы
+---
+
+<a id="этап-18-онлайн-школа"></a>
+
+## Этап 18. Онлайн-школа
+
+
+### 1. creating business logic SchoolHashtag - полиморфные хештеги онлайн-школы
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolHashtag/SchoolHashtag -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolHashtag/SchoolHashtagTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:migration create_school_hashtaggables_table` <br>
@@ -453,7 +697,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolHashtag/SchoolHashtagResource` <br>
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolHashtag/SchoolHashtagSharedResource` <br>
 
-2) creating business logic SchoolInstructorProfile - преподаватели онлайн-школы
+
+### 2. creating business logic SchoolInstructorProfile - преподаватели онлайн-школы
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolInstructorProfile/SchoolInstructorProfile -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolInstructorProfile/SchoolInstructorProfileTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolInstructorProfile/SchoolInstructorProfileImage -m` <br>
@@ -473,7 +719,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolInstructorProfile/SchoolInstructorProfileResource` <br>
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolInstructorProfile/SchoolInstructorProfileSharedResource` <br>
 
-3) creating business logic SchoolTrack - категории курсов обучения
+
+### 3. creating business logic SchoolTrack - категории курсов обучения
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolTrack/SchoolTrack -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolTrack/SchoolTrackTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolTrack/SchoolTrackImage -mf` <br>
@@ -493,7 +741,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolTrack/SchoolTrackTreeResource` <br>
 `docker exec mark-php-app php artisan make:model User/Like/SchoolTrackLike -m` <br>
 
-4) creating business logic SchoolCourse - курсы обучения
+
+### 4. creating business logic SchoolCourse - курсы обучения
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolCourse/SchoolCourse -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolCourse/SchoolCourseTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:migration create_school_course_related_table --create=school_course_related` <br>
@@ -514,7 +764,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolCourse/SchoolCourseResource` <br>
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolCourse/SchoolCourseSharedResource` <br>
 
-5) creating business logic SchoolModule - модули, подразделы курсов
+
+### 5. creating business logic SchoolModule - модули, подразделы курсов
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolModule/SchoolModule -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolModule/SchoolModuleTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolModule/SchoolModuleImage -m` <br>
@@ -533,7 +785,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolModule/SchoolModuleSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolModule/SchoolModuleController` <br>
 
-6) creating business logic SchoolLesson - уроки курсов обучения
+
+### 6. creating business logic SchoolLesson - уроки курсов обучения
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolLesson/SchoolLesson -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolLesson/SchoolLessonTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolLesson/SchoolLessonImage -m` <br>
@@ -552,7 +806,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolLesson/SchoolLessonSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolLesson/SchoolLessonController` <br>
 
-7) creating business logic SchoolAssignment - домашние задания/практика
+
+### 7. creating business logic SchoolAssignment - домашние задания/практика
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolAssignment/SchoolAssignment -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolAssignment/SchoolAssignmentTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolAssignment/SchoolAssignmentImage -m` <br>
@@ -570,7 +826,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Public/School/SchoolAssignment/SchoolAssignmentSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Default/School/SchoolAssignment/SchoolAssignmentController` <br>
 
-8) creating business logic SchoolCourseSchedule - расписание потоков
+
+### 8. creating business logic SchoolCourseSchedule - расписание потоков
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolCourseSchedule/SchoolCourseSchedule -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolCourseSchedule/SchoolCourseScheduleTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolCourseSchedule/SchoolCourseScheduleImage -m` <br>
@@ -585,7 +843,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolCourseSchedule/SchoolCourseScheduleImageResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolCourseSchedule/SchoolCourseScheduleController --resource` <br>
 
-9) creating business logic SchoolCohortEnrollment - запись на потоки курсов
+
+### 9. creating business logic SchoolCohortEnrollment - запись на потоки курсов
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolCohortEnrollment/SchoolCohortEnrollment -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -595,7 +855,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolCohortEnrollment/SchoolCohortEnrollmentSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolCohortEnrollment/SchoolCohortEnrollmentController --resource` <br>
 
-10) creating business logic SchoolOrder - заказы онлайн-школы
+
+### 10. creating business logic SchoolOrder - заказы онлайн-школы
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolOrder/SchoolOrder -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -605,7 +867,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolOrder/SchoolOrderSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolOrder/SchoolOrderController --resource` <br>
 
-11) creating business logic SchoolEnrollment - зачисление студентов на потоки/курсы
+
+### 11. creating business logic SchoolEnrollment - зачисление студентов на потоки/курсы
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolEnrollment/SchoolEnrollment -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -615,7 +879,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolEnrollment/SchoolEnrollmentSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolEnrollment/SchoolEnrollmentController --resource` <br>
 
-12) creating business logic SchoolQuiz - вопросники / викторины
+
+### 12. creating business logic SchoolQuiz - вопросники / викторины
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQuiz/SchoolQuiz -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQuiz/SchoolQuizTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQuiz/SchoolQuizImage -m` <br>
@@ -630,7 +896,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuiz/SchoolQuizImageResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuiz/SchoolQuizController --resource` <br>
 
-13) creating business logic SchoolQuizQuestion - вопросы викторин
+
+### 13. creating business logic SchoolQuizQuestion - вопросы викторин
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizQuestion/SchoolQuizQuestion -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizQuestion/SchoolQuizQuestionTranslation -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
@@ -642,7 +910,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizQuestion/SchoolQuizQuestionTranslationResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuizQuestion/SchoolQuizQuestionController --resource` <br>
 
-14) creating business logic SchoolQuizAnswer - ответы на вопросы викторин
+
+### 14. creating business logic SchoolQuizAnswer - ответы на вопросы викторин
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizAnswer/SchoolQuizAnswer -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizAnswer/SchoolQuizAnswerTranslation -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
@@ -654,7 +924,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAnswer/SchoolQuizAnswerTranslationResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuizAnswer/SchoolQuizAnswerController --resource` <br>
 
-15) creating business logic SchoolQuizAttempt - попытка прохождения викторины
+
+### 15. creating business logic SchoolQuizAttempt - попытка прохождения викторины
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizAttempt/SchoolQuizAttempt -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -664,7 +936,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAttempt/SchoolQuizAttemptSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuizAttempt/SchoolQuizAttemptController --resource` <br>
 
-16) creating business logic SchoolQuizAttemptItem - ответ на один конкретный вопрос в рамках попытки
+
+### 16. creating business logic SchoolQuizAttemptItem - ответ на один конкретный вопрос в рамках попытки
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItem -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -674,7 +948,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItemSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolQuizAttemptItem/SchoolQuizAttemptItemController --resource` <br>
 
-17) creating business logic SchoolBundle - набор курсов
+
+### 17. creating business logic SchoolBundle - набор курсов
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolBundle/SchoolBundle -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolBundle/SchoolBundleTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:migration create_school_bundle_has_courses_table --create=school_bundle_has_courses` <br>
@@ -690,7 +966,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolBundle/SchoolBundleImageResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolBundle/SchoolBundleController --resource` <br>
 
-18) creating business logic SchoolCoursePrice - прайсы курса
+
+### 18. creating business logic SchoolCoursePrice - прайсы курса
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolCoursePrice/SchoolCoursePrice -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -700,7 +978,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolCoursePrice/SchoolCoursePriceSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolCoursePrice/SchoolCoursePriceController --resource` <br>
 
-19) creating business logic SchoolBundlePrice - прайсы набора курсов
+
+### 19. creating business logic SchoolBundlePrice - прайсы набора курсов
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolBundlePrice/SchoolBundlePrice -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -710,7 +990,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolBundlePrice/SchoolBundlePriceSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolBundlePrice/SchoolBundlePriceController --resource` <br>
 
-20) creating business logic SchoolSubscriptionPlan - тарифные планы
+
+### 20. creating business logic SchoolSubscriptionPlan - тарифные планы
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlan -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanTranslation -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanImage -m` <br>
@@ -725,7 +1007,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanImageResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolSubscriptionPlan/SchoolSubscriptionPlanController --resource` <br>
 
-21) creating business logic SchoolOrderItem - позиции заказа онлайн-школы
+
+### 21. creating business logic SchoolOrderItem - позиции заказа онлайн-школы
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolOrderItem/SchoolOrderItem -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -734,7 +1018,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolOrderItem/SchoolOrderItemResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolOrderItem/SchoolOrderItemController --resource` <br>
 
-22) creating business logic SchoolPaymentMethod
+
+### 22. creating business logic SchoolPaymentMethod
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolPaymentMethod/SchoolPaymentMethod -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -743,7 +1029,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolPaymentMethod/SchoolPaymentMethodResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolPaymentMethod/SchoolPaymentMethodController --resource` <br>
 
-23) creating business logic SchoolUserPaymentMethod
+
+### 23. creating business logic SchoolUserPaymentMethod
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolUserPaymentMethod/SchoolUserPaymentMethod -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -752,7 +1040,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolUserPaymentMethod/SchoolUserPaymentMethodResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolUserPaymentMethod/SchoolUserPaymentMethodController --resource` <br>
 
-24) creating business logic SchoolPayment
+
+### 24. creating business logic SchoolPayment
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolPayment/SchoolPayment -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -760,7 +1050,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolPayment/SchoolPaymentResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolPayment/SchoolPaymentController --resource` <br>
 
-25) creating business logic SchoolSubscription - подписки пользователей
+
+### 25. creating business logic SchoolSubscription - подписки пользователей
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolSubscription/SchoolSubscription -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -770,7 +1062,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolSubscription/SchoolSubscriptionSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolSubscription/SchoolSubscriptionController --resource` <br>
 
-26) creating business logic SchoolRefund - возвраты платежей онлайн-школы
+
+### 26. creating business logic SchoolRefund - возвраты платежей онлайн-школы
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolRefund/SchoolRefund -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -779,7 +1073,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolRefund/SchoolRefundSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolRefund/SchoolRefundController --resource` <br>
 
-27) creating business logic SchoolCoupon - купоны/промокоды онлайн-школы
+
+### 27. creating business logic SchoolCoupon - купоны/промокоды онлайн-школы
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolCoupon/SchoolCoupon -mfs` <br>
 `docker exec mark-php-app php artisan make:migration create_school_coupon_has_courses_table --create=school_coupon_has_courses` <br>
 `docker exec mark-php-app php artisan make:migration create_school_coupon_has_bundles_table --create=school_coupon_has_bundles` <br>
@@ -791,7 +1087,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolCoupon/SchoolCouponSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolCoupon/SchoolCouponController --resource` <br>
 
-28) creating business logic SchoolInvoice - инвойсы онлайн-школы
+
+### 28. creating business logic SchoolInvoice - инвойсы онлайн-школы
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolInvoice/SchoolInvoice -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -801,7 +1099,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolInvoice/SchoolInvoiceSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolInvoice/SchoolInvoiceController --resource` <br>
 
-29) creating business logic SchoolProviderAccount - аккаунты платёжных провайдеров
+
+### 29. creating business logic SchoolProviderAccount - аккаунты платёжных провайдеров
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolProviderAccount/SchoolProviderAccount -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -811,7 +1111,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolProviderAccount/SchoolProviderAccountSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolProviderAccount/SchoolProviderAccountController --resource` <br>
 
-30) creating business logic SchoolPayout - выплаты преподавателям
+
+### 30. creating business logic SchoolPayout - выплаты преподавателям
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolPayout/SchoolPayout -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -821,7 +1123,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolPayout/SchoolPayoutSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolPayout/SchoolPayoutController --resource` <br>
 
-31) creating business logic SchoolPayoutItem - позиции выплат
+
+### 31. creating business logic SchoolPayoutItem - позиции выплат
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolPayoutItem/SchoolPayoutItem -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -831,7 +1135,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolPayoutItem/SchoolPayoutItemSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolPayoutItem/SchoolPayoutItemController --resource` <br>
 
-32) creating business logic SchoolWebhookEvent - события вебхуков
+
+### 32. creating business logic SchoolWebhookEvent - события вебхуков
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolWebhookEvent/SchoolWebhookEvent -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -841,7 +1147,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolWebhookEvent/SchoolWebhookEventSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolWebhookEvent/SchoolWebhookEventController --resource` <br>
 
-33) creating business logic SchoolAssignmentSubmission - сдачи заданий студентами
+
+### 33. creating business logic SchoolAssignmentSubmission - сдачи заданий студентами
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolAssignmentSubmission/SchoolAssignmentSubmission -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -851,7 +1159,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolAssignmentSubmission/SchoolAssignmentSubmissionSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolAssignmentSubmission/SchoolAssignmentSubmissionController --resource` <br>
 
-34) creating business logic SchoolProgressRecord - прогресс обучения
+
+### 34. creating business logic SchoolProgressRecord - прогресс обучения
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolProgressRecord/SchoolProgressRecord -mf` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -860,7 +1170,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolProgressRecord/SchoolProgressRecordSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolProgressRecord/SchoolProgressRecordController --resource` <br>
 
-35) creating business logic SchoolReview - отзывы/рейтинги онлайн-школы
+
+### 35. creating business logic SchoolReview - отзывы/рейтинги онлайн-школы
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolReview/SchoolReview -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -870,7 +1182,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolReview/SchoolReviewSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolReview/SchoolReviewController --resource` <br>
 
-36) creating business logic QaThread - темы вопросов/обсуждений
+
+### 36. creating business logic QaThread - темы вопросов/обсуждений
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQaThread/SchoolQaThread -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -880,7 +1194,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolQaThread/SchoolQaThreadSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolQaThread/SchoolQaThreadController --resource` <br>
 
-37) creating business logic QaMessage - сообщения в темах
+
+### 37. creating business logic QaMessage - сообщения в темах
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolQaMessage/SchoolQaMessage -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -889,7 +1205,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolQaMessage/SchoolQaMessageResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolQaMessage/SchoolQaMessageController --resource` <br>
 
-38) creating business logic SchoolBookmark - закладки пользователя
+
+### 38. creating business logic SchoolBookmark - закладки пользователя
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolBookmark/SchoolBookmark -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -899,7 +1217,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolBookmark/SchoolBookmarkSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolBookmark/SchoolBookmarkController --resource` <br>
 
-39) creating business logic SchoolCertificate - сертификаты об окончании курса
+
+### 39. creating business logic SchoolCertificate - сертификаты об окончании курса
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolCertificate/SchoolCertificate -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -909,7 +1229,9 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolCertificate/SchoolCertificateSharedResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolCertificate/SchoolCertificateController --resource` <br>
 
-40) creating business logic SchoolFaqCategory - категории FAQ
+
+### 40. creating business logic SchoolFaqCategory - категории FAQ
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolFaqCategory/SchoolFaqCategory -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolFaqCategory/SchoolFaqCategoryTranslation -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
@@ -920,7 +1242,9 @@ Analytics
 `docker exec mark-php-app php artisan make:request Admin/School/SchoolFaqCategory/SchoolFaqCategoryRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolFaqCategory/SchoolFaqCategoryController --resource` <br>
 
-41) creating business logic SchoolFaq - FAQ (вопросы и ответы)
+
+### 41. creating business logic SchoolFaq - FAQ (вопросы и ответы)
+
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolFaq/SchoolFaq -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/School/SchoolFaq/SchoolFaqTranslation -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
@@ -930,9 +1254,16 @@ Analytics
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolFaq/SchoolFaqResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/School/SchoolFaq/SchoolFaqTranslationResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/School/SchoolFaq/SchoolFaqController --resource` <br>
--------------------------------------------------------------------------------------
 
-1) Конструктор форм обратной связи.
+---
+
+<a id="этап-19-form-builder-конструктор-форм-и-заявки"></a>
+
+## Этап 19. Form Builder: конструктор форм и заявки
+
+
+### 1. Конструктор форм обратной связи.
+
 `docker exec mark-php-app php artisan make:model Admin/Form/Form/Form -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Form/Form/FormTranslation -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
@@ -944,7 +1275,9 @@ Analytics
 `docker exec mark-php-app php artisan make:controller Admin/Form/Form/FormController --resource` <br>
 `docker exec mark-php-app php artisan make:resource Public/Form/Form/FormResource` <br>
 
-2) Поля форм
+
+### 2. Поля форм
+
 `docker exec mark-php-app php artisan make:model Admin/Form/FormField/FormField -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Form/FormField/FormFieldTranslation -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
@@ -956,7 +1289,9 @@ Analytics
 `docker exec mark-php-app php artisan make:controller Admin/Form/FormField/FormFieldController --resource` <br>
 `docker exec mark-php-app php artisan make:resource Public/Form/FormField/FormFieldResource` <br>
 
-3) Опции для некоторых полей форм
+
+### 3. Опции для некоторых полей форм
+
 `docker exec mark-php-app php artisan make:model Admin/Form/FormFieldOption/FormFieldOption -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Form/FormFieldOption/FormFieldOptionTranslation -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
@@ -971,7 +1306,9 @@ Analytics
 `docker exec mark-php-app php artisan db:seed --class=FormFieldSeeder` <br>
 `docker exec mark-php-app php artisan db:seed --class=FormFieldOptionSeeder` <br>
 
-4) Заявки форм
+
+### 4. Заявки форм
+
 `docker exec mark-php-app php artisan make:model Admin/Form/FormSubmission/FormSubmission -mfs` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
@@ -981,45 +1318,261 @@ Analytics
 `docker exec mark-php-app php artisan make:controller Admin/Form/FormSubmission/FormSubmissionController --resource` <br>
 `docker exec mark-php-app php artisan make:controller Public/Form/FormSubmissionController` <br>
 
-5) Значения полей заявок от форм
+
+### 5. Значения полей заявок от форм
+
 `docker exec mark-php-app php artisan make:model Admin/Form/FormSubmissionValue/FormSubmissionValue -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Form/FormSubmissionValue/FormSubmissionValueResource` <br>
 
-6) Прикреплённые файлы форм
+
+### 6. Прикреплённые файлы форм
+
 `docker exec mark-php-app php artisan make:model Admin/Form/FormSubmissionFile/FormSubmissionFile -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Form/FormSubmissionFile/FormSubmissionFileResource` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Form/FormSubmissionFile/FormSubmissionFileSharedResource` <br>
 
-7) История и управления заявками форм
+
+### 7. История и управления заявками форм
+
 `docker exec mark-php-app php artisan make:model Admin/Form/FormSubmissionStatusHistory/FormSubmissionStatusHistory -m` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Form/FormSubmissionStatusHistory/FormSubmissionStatusHistoryResource` <br>
--------------------------------------------------------------------------------------
 
-1) События
-`docker exec mark-php-app php artisan make:event Form/FormSubmission/FormSubmissionCreated` <br>
-`docker exec mark-php-app php artisan make:listener Form/FormSubmission/LogFormSubmissionCreated --event=Form/FormSubmission/FormSubmissionCreated` <br>
-`docker exec mark-php-app php artisan make:event Form/FormSubmission/FormSubmissionStatusChanged` <br>
-`docker exec mark-php-app php artisan make:listener Form/FormSubmission/LogFormSubmissionStatusChanged` <br>
-`docker exec mark-php-app php artisan make:event Form/FormSubmission/FormSubmissionAssigned` <br>
-`docker exec mark-php-app php artisan make:listener Form/FormSubmission/LogFormSubmissionAssigned` <br>
--------------------------------------------------------------------------------------
+---
 
-1) Система уведомлений
+<a id="этап-20-уведомления-и-email-queue"></a>
+
+## Этап 20. Уведомления и Email Queue
+
+> **Состояние:** асинхронная Email Queue и отправка через Mailpit протестированы; журнал `notification_email_logs` и его административный интерфейс пока запланированы, миграцию ещё не выполняли.
+
+
+
+
+### 1) Система уведомлений Laravel
+
 `docker exec mark-php-app php artisan notifications:table` <br>
 `docker exec mark-php-app php artisan migrate` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Notification/NotificationResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Notification/NotificationController` <br>
-`docker exec mark-php-app php artisan make:notification Form/FormSubmission/FormSubmissionCreatedNotification` <br>
-`docker exec mark-php-app php artisan make:listener Form/FormSubmission/SendFormSubmissionCreatedNotification` <br>
--------------------------------------------------------------------------------------
 
-1) Группы характеристик
+**Основные сервисы Email Notifications:**
+
+- `app/Services/Admin/Notification/EmailSettingsService.php`
+- `app/Services/Admin/Notification/EmailDeliveryService.php`
+- `app/Services/Admin/Notification/NotificationRecipientResolver.php`
+
+**Назначение:**
+
+- `EmailSettingsService` — настройки почтовых уведомлений, проверка разрешённых событий, параметры SMTP и очереди.
+- `EmailDeliveryService` — отправка писем через Laravel Mail, обработка ошибок и передача исключений в очередь.
+- `NotificationRecipientResolver` — определение получателей уведомлений.
+
+
+### 2) Notifications и Listeners
+
+**Laravel Notification:**
+
+`docker exec mark-php-app php artisan make:notification Form/FormSubmission/FormSubmissionCreatedNotification` <br>
+
+**Listener для Notification:**
+
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/SendFormSubmissionCreatedNotification` <br>
+
+**Email Listeners для Form Builder:**
+
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/SendFormSubmissionCreatedEmail` <br>
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/SendFormSubmissionAssignedEmail` <br>
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/SendFormSubmissionStatusChangedEmail` <br>
+
+**Принцип работы:** Email Listeners обрабатывают события, определяют получателей и создают отдельное асинхронное задание `SendNotificationEmailJob` для каждого письма.
+
+
+### 3) Mails
+
+**Почтовые классы Form Builder:**
+
+- `FormSubmissionCreatedMail`
+- `FormSubmissionAssignedMail`
+- `FormSubmissionStatusChangedMail`
+
+**Команды создания:**
+
+`docker exec mark-php-app php artisan make:mail Form/FormSubmission/FormSubmissionCreatedMail` <br>
+`docker exec mark-php-app php artisan make:mail Form/FormSubmission/FormSubmissionAssignedMail` <br>
+`docker exec mark-php-app php artisan make:mail Form/FormSubmission/FormSubmissionStatusChangedMail` <br>
+
+**Назначение:**
+
+- Формирование содержимого Email.
+- Передача данных заявки в письмо.
+- Отправка уведомлений администраторам и ответственным пользователям.
+
+
+### 4) События (Events)
+
+**Создание заявки:**
+
+`docker exec mark-php-app php artisan make:event Form/FormSubmission/FormSubmissionCreated` <br>
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/LogFormSubmissionCreated --event=Form/FormSubmission/FormSubmissionCreated` <br>
+
+**Изменение статуса:**
+
+`docker exec mark-php-app php artisan make:event Form/FormSubmission/FormSubmissionStatusChanged` <br>
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/LogFormSubmissionStatusChanged` <br>
+
+**Назначение ответственного:**
+
+`docker exec mark-php-app php artisan make:event Form/FormSubmission/FormSubmissionAssigned` <br>
+`docker exec mark-php-app php artisan make:listener Form/FormSubmission/LogFormSubmissionAssigned` <br>
+
+**Email Listeners:**
+
+- `SendFormSubmissionCreatedEmail`
+- `SendFormSubmissionAssignedEmail`
+- `SendFormSubmissionStatusChangedEmail`
+
+**Схема обработки:**
+
+Event → Listener → RecipientResolver → SendNotificationEmailJob → Redis → Email Worker → EmailDeliveryService → Laravel Mail → SMTP.
+
+
+### 5) Jobs
+
+**Основное задание Email Notifications:**
+
+`docker exec mark-php-app php artisan make:job SendNotificationEmailJob` <br>
+
+**Тестирование Redis Queue:**
+
+`docker exec mark-php-app php artisan make:job TestRedisQueueJob` <br>
+
+**Тестирование ошибок и повторных попыток:**
+
+`docker exec mark-php-app php artisan make:job TestFailedQueueJob` <br>
+
+**Реализованная логика:**
+
+- Асинхронная отправка через Redis.
+- Отдельное задание для каждого получателя.
+- Три попытки выполнения.
+- Повторная попытка при временной ошибке.
+- Регистрация окончательных ошибок в `failed_jobs`.
+- Восстановление неудачных заданий через `queue:retry`.
+- Отправка заданий после фиксации транзакции (`afterCommit`).
+
+
+### 6) Docker / Redis Queue
+
+**Redis:**
+
+- Контейнер: `mark-redis`
+- Образ: `redis:7-alpine`
+- Хранение: Docker volume `redis-data`
+- Persistence: AOF
+
+**Основной Queue Worker:**
+
+- Сервис: `queue`
+- Контейнер: `mark-queue-worker`
+- Очередь: `default`
+
+**Email Queue Worker:**
+
+- Сервис: `email-queue`
+- Контейнер: `mark-email-worker`
+- Очередь: `emails`
+
+**Настройки Worker:**
+
+- `--sleep=3`
+- `--tries=3`
+- `--backoff=10`
+- `--timeout=60`
+- `--max-time=3600`
+
+**Проверка контейнеров:**
+
+`docker ps` <br>
+`docker logs --tail=30 mark-queue-worker` <br>
+`docker logs --tail=30 mark-email-worker` <br>
+
+**Проверка Redis:**
+
+`docker exec mark-redis redis-cli PING` <br>
+`docker exec mark-redis redis-cli LLEN queues:default` <br>
+`docker exec mark-redis redis-cli LLEN queues:emails` <br>
+
+**Проверка и восстановление заданий:**
+
+`docker exec mark-php-app php artisan queue:failed` <br>
+`docker exec mark-php-app php artisan queue:retry all` <br>
+`docker exec mark-php-app php artisan queue:restart` <br>
+
+**Тестовая почта:**
+
+- Контейнер: `mark-mailpit`
+- Веб-интерфейс: `http://localhost:8025`
+
+
+### 7) Проверенные сценарии
+
+- Redis Queue успешно выполняет задания.
+- Email Notifications успешно отправляют письма Form Builder.
+- Mailpit получает тестовые письма.
+- При исключении выполняются повторные попытки.
+- После исчерпания попыток задание регистрируется в `failed_jobs`.
+- После исправления ошибки `queue:retry` успешно восстанавливает задание.
+- Выделенный `mark-email-worker` обрабатывает очередь `emails`.
+- После обработки очередь `emails` пуста и неудачных заданий нет.
+
+
+### 8) Журнал Email Notifications — следующий этап
+
+**Компоненты:**
+
+`docker exec mark-php-app php artisan make:model Admin/NotificationEmailLog/NotificationEmailLog -m` <br>
+`docker exec mark-php-app php artisan make:resource Admin/NotificationEmailLog/NotificationEmailLogResource` <br>
+`docker exec mark-php-app php artisan make:controller Admin/NotificationEmailLog/NotificationEmailLogController` <br>
+
+**Функциональность:**
+
+- История отправленных Email.
+- Статусы `pending`, `processing`, `retrying`, `sent`, `failed`, `skipped`.
+- Количество попыток отправки.
+- Диагностика ошибок.
+- Поиск, фильтрация, сортировка и пагинация.
+- Статистика уведомлений.
+- Повторная отправка неудачных писем.
+- Экспорт и очистка истории.
+- Отображение журнала в административной панели PulsarCMS.
+
+
+### 9) Будущее расширение
+
+- Регистрация пользователей.
+- Подтверждение Email.
+- Восстановление и смена пароля.
+- Собственная CAPTCHA для форм.
+- Уведомления маркетплейса, школы, CRM.
+- Централизованное управление шаблонами Email.
+
+---
+
+<a id="этап-21-маркетплейс"></a>
+
+## Этап 21. Маркетплейс
+
+> **Примечание:** раздел содержит как созданные сущности, так и проектные заготовки для следующих модулей. Команды сохранены в исходном порядке.
+
+
+### 1. Группы характеристик
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeGroup/MarketAttributeGroup -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeGroup/MarketAttributeGroupTranslation -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketAttributeGroup/MarketAttributeGroupResource` <br>
@@ -1028,7 +1581,9 @@ Analytics
 `docker exec mark-php-app php artisan make:request Admin/Market/MarketAttributeGroup/MarketAttributeGroupRequest` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketAttributeGroup/MarketAttributeGroupController --resource` <br>
 
-2) Характеристики
+
+### 2. Характеристики
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketAttribute/MarketAttribute -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketAttribute/MarketAttributeTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketAttributeValue/MarketAttributeValue -mfs` <br>
@@ -1050,7 +1605,9 @@ Analytics
 `docker exec mark-php-app php artisan db:seed --class=MarketAttributeSeeder` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketAttributeValueSeeder` <br>
 
-3) Компания <br> 
+
+### 3. Компания
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompany -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCompany/MarketCompanyTranslation -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketCompany/MarketCompanyResource` <br>
@@ -1062,7 +1619,9 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketCompanySeeder` <br>
 
-4) Магазин <br>
+
+### 4. Магазин
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShop -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShopTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketShop/MarketShopImage -m` <br>
@@ -1077,7 +1636,9 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketShopSeeder` <br>
 
-5) Категории товаров / дерево категорий <br>
+
+### 5. Категории товаров / дерево категорий
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategory -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategoryTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketCategory/MarketCategoryImage -m` <br>
@@ -1096,7 +1657,9 @@ Analytics
 `docker exec mark-php-app php artisan db:seed --class=MarketCategorySeeder` <br>
 `docker exec mark-php-app php artisan make:class Services/Public/Market/MarketCatalogNavigationService` <br>
 
-6) Бренды <br>
+
+### 6. Бренды
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrand -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrandTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketBrand/MarketBrandImage -m` <br>
@@ -1115,7 +1678,9 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketBrandSeeder` <br>
 
-7) Теги <br>
+
+### 7. Теги
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketTag/MarketTag -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketTag/MarketTagTranslation -m` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketTag/MarketTagResource` <br>
@@ -1130,7 +1695,9 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketTagSeeder` <br>
 
-8) Товары <br>
+
+### 8. Товары
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProduct/MarketProduct -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProduct/MarketProductTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProduct/MarketProductImage -m` <br>
@@ -1153,7 +1720,9 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketProductSeeder` <br>
 
-9) Отзывы <br>
+
+### 9. Отзывы
+
 `docker exec mark-php-app php artisan make:model Admin/Review/Review -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Review/ReviewImage -m` <br>
 `docker exec mark-php-app php artisan make:migration create_review_has_images_table --create=review_has_images` <br>
@@ -1165,7 +1734,9 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=ReviewSeeder` <br>
 
-10) Варианты товаров <br>
+
+### 10. Варианты товаров
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProductVariant/MarketProductVariant -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProductVariant/MarketProductVariantTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProductVariant/MarketProductVariantValue -m` <br>
@@ -1182,7 +1753,9 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketProductVariantSeeder` <br>
 
-11) Комплекты товаров <br>
+
+### 11. Комплекты товаров
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProductBundle/MarketProductBundle -mfs` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProductBundle/MarketProductBundleTranslation -m` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketProductBundle/MarketProductBundleItem -m` <br>
@@ -1199,7 +1772,9 @@ Analytics
 `docker exec mark-php-app php artisan migrate:rollback` <br>
 `docker exec mark-php-app php artisan db:seed --class=MarketProductBundleSeeder` <br>
 
-12) Просмотренные товары <br>
+
+### 12. Просмотренные товары
+
 `docker exec mark-php-app php artisan make:model Admin/Market/MarketRecentlyViewedProduct/MarketRecentlyViewedProduct -mfs` <br>
 `docker exec mark-php-app php artisan make:resource Admin/Market/MarketRecentlyViewedProduct/MarketRecentlyViewedProductResource` <br>
 `docker exec mark-php-app php artisan make:controller Admin/Market/MarketRecentlyViewedProduct/MarketRecentlyViewedProductController` <br>
@@ -1210,11 +1785,15 @@ Analytics
 
    
 
-8) Склады / остатки 
+
+### 8. Склады / остатки
+
 `docker exec mark-php-app php artisan make:migration create_market_warehouses_table --create=market_warehouses` <br>
 `docker exec mark-php-app php artisan make:migration create_market_warehouse_stocks_table --create=market_warehouse_stocks` <br>
 
-9) Модуль доставки / Логистика / ПВЗ / Зоны
+
+### 9. Модуль доставки / Логистика / ПВЗ / Зоны
+
 `docker exec mark-php-app php artisan make:migration create_market_address_dictionary_table --create=market_address_dictionary` <br>
 `docker exec mark-php-app php artisan make:migration create_market_delivery_providers_table --create=market_delivery_providers` <br>
 `docker exec mark-php-app php artisan make:migration create_market_delivery_provider_services_table --create=market_delivery_provider_services` <br>
@@ -1232,7 +1811,9 @@ Analytics
 `docker exec mark-php-app php artisan make:migration create_market_delivery_method_has_providers_table --create=market_delivery_method_has_providers` <br>
 `docker exec mark-php-app php artisan make:migration create_market_delivery_quotes_cache_table --create=market_delivery_quotes_cache` <br>
 
-10) Корзина / События / Избранное
+
+### 10. Корзина / События / Избранное
+
 `docker exec mark-php-app php artisan make:model Admin/Market/Cart/Cart -fs` <br>
 `docker exec mark-php-app php artisan make:migration create_market_carts_table --create=market_carts` <br>
 `docker exec mark-php-app php artisan make:migration create_market_cart_sessions_table --create=market_cart_sessions` <br>
@@ -1243,7 +1824,9 @@ Analytics
 `docker exec mark-php-app php artisan make:migration create_market_cart_event_items_table --create=market_cart_event_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_favorites_table --create=market_favorites` <br>
 
-11) Бонусы / Программа бонусов
+
+### 11. Бонусы / Программа бонусов
+
 `docker exec mark-php-app php artisan make:migration create_market_bonus_programs_table --create=market_bonus_programs` <br>
 `docker exec mark-php-app php artisan make:migration create_market_bonus_accounts_table --create=market_bonus_accounts` <br>
 `docker exec mark-php-app php artisan make:migration create_market_bonus_operations_table --create=market_bonus_operations` <br>
@@ -1253,27 +1836,35 @@ Analytics
 `docker exec mark-php-app php artisan make:migration create_market_bonus_rule_conditions_table --create=market_bonus_rule_conditions` <br>
 `docker exec mark-php-app php artisan make:migration create_market_bonus_rule_rewards_table --create=market_bonus_rule_rewards` <br>
 
-12) Заказы / Статусы заказов / История заказов
+
+### 12. Заказы / Статусы заказов / История заказов
+
 `docker exec mark-php-app php artisan make:migration create_market_order_statuses_table --create=market_order_statuses` <br>
 `docker exec mark-php-app php artisan make:migration create_market_orders_table --create=market_orders` <br>
 `docker exec mark-php-app php artisan make:migration create_market_order_items_table --create=market_order_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_order_histories_table --create=market_order_histories` <br>
 
-13) Модуль оплаты / Провайдеры оплаты / Транзакции / История оплаты 
+
+### 13. Модуль оплаты / Провайдеры оплаты / Транзакции / История оплаты
+
 `docker exec mark-php-app php artisan make:migration create_market_payment_providers_table --create=market_payment_providers` <br>
 `docker exec mark-php-app php artisan make:migration create_market_storefront_payment_provider_settings_table --create=market_storefront_payment_provider_settings` <br>
 `docker exec mark-php-app php artisan make:migration create_market_payments_table --create=market_payments` <br>
 `docker exec mark-php-app php artisan make:migration create_market_payment_transactions_table --create=market_payment_transactions` <br>
 `docker exec mark-php-app php artisan make:migration create_market_payment_histories_table --create=market_payment_histories` <br>
 
-14) Инвойсы / Фискальные чеки / Документы
+
+### 14. Инвойсы / Фискальные чеки / Документы
+
 `docker exec mark-php-app php artisan make:migration create_market_invoices_table --create=market_invoices` <br>
 `docker exec mark-php-app php artisan make:migration create_market_invoice_items_table --create=market_invoice_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_fiscal_receipts_table --create=market_fiscal_receipts` <br>
 `docker exec mark-php-app php artisan make:migration create_market_fiscal_receipt_items_table --create=market_fiscal_receipt_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_order_documents_table --create=market_order_documents` <br>
 
-15) Возвраты / История возвратов / Документы
+
+### 15. Возвраты / История возвратов / Документы
+
 `docker exec mark-php-app php artisan make:migration create_market_refunds_table --create=market_refunds` <br>
 `docker exec mark-php-app php artisan make:migration create_market_refund_items_table --create=market_refund_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_refund_documents_table --create=market_refund_documents` <br>
@@ -1283,37 +1874,49 @@ Analytics
 `docker exec mark-php-app php artisan make:migration create_market_return_histories_table --create=market_return_histories` <br>
 `docker exec mark-php-app php artisan make:migration create_market_return_documents_table --create=market_return_documents` <br>
 
-16) Промокоды
+
+### 16. Промокоды
+
 `docker exec mark-php-app php artisan make:migration create_market_promo_campaigns_table --create=market_promo_campaigns` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_code_batches_table --create=market_promo_code_batches` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_codes_table --create=market_promo_codes` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_redemptions_table --create=market_promo_redemptions` <br>
 
-17) Реферальная система 
+
+### 17. Реферальная система
+
 `docker exec mark-php-app php artisan make:migration create_market_referral_programs_table --create=market_referral_programs` <br>
 `docker exec mark-php-app php artisan make:migration create_market_referral_codes_table --create=market_referral_codes` <br>
 `docker exec mark-php-app php artisan make:migration create_market_referral_events_table --create=market_referral_events` <br>
 `docker exec mark-php-app php artisan make:migration create_market_referral_rewards_table --create=market_referral_rewards` <br>
 
-18) Отзывы / Бонусы
+
+### 18. Отзывы / Бонусы
+
 `docker exec mark-php-app php artisan make:migration create_market_review_bonus_rules_table --create=market_review_bonus_rules` <br>
 `docker exec mark-php-app php artisan make:migration create_market_product_reviews_table --create=market_product_reviews` <br>
 `docker exec mark-php-app php artisan make:migration create_market_review_bonus_awards_table --create=market_review_bonus_awards` <br>
 `docker exec mark-php-app php artisan make:migration create_market_company_reviews_table --create=market_company_reviews` <br>
 
-19) Промо-коды
+
+### 19. Промо-коды
+
 `docker exec mark-php-app php artisan make:migration add_unique_to_market_promo_redemptions_table --create=market_promo_redemptions` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_campaign_has_products_table --create=market_promo_campaign_has_products` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_campaign_has_categories_table --create=market_promo_campaign_has_categories` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_campaign_has_brands_table --create=market_promo_campaign_has_brands` <br>
 `docker exec mark-php-app php artisan make:migration create_market_promo_campaign_has_delivery_methods_table --create=market_promo_campaign_has_delivery_methods` <br>
 
-20) Страницы (дерево) / FAQ, категории
+
+### 20. Страницы (дерево) / FAQ, категории
+
 `docker exec mark-php-app php artisan make:migration create_market_storefront_pages_table --create=market_storefront_pages` <br>
 `docker exec mark-php-app php artisan make:migration create_market_faq_categories_table --create=market_faq_categories` <br>
 `docker exec mark-php-app php artisan make:migration create_market_faq_items_table --create=market_faq_items` <br>
 
-21) Тикетная система (вопросы/ответы) / История / Теги
+
+### 21. Тикетная система (вопросы/ответы) / История / Теги
+
 `docker exec mark-php-app php artisan make:migration create_market_ticket_statuses_table --create=market_ticket_statuses` <br>
 `docker exec mark-php-app php artisan make:migration create_market_tickets_table --create=market_tickets` <br>
 `docker exec mark-php-app php artisan make:migration create_market_ticket_messages_table --create=market_ticket_messages` <br>
@@ -1322,7 +1925,9 @@ Analytics
 `docker exec mark-php-app php artisan make:migration create_market_ticket_tags_table --create=market_ticket_tags` <br>
 `docker exec mark-php-app php artisan make:migration create_market_ticket_has_tags_table --create=market_ticket_has_tags` <br>
 
-22) Конструктор форм обратной связи / Антиспам
+
+### 22. Конструктор форм обратной связи / Антиспам
+
 `docker exec mark-php-app php artisan make:migration create_market_feedback_forms_table --create=market_feedback_forms` <br>
 `docker exec mark-php-app php artisan make:migration create_market_feedback_form_fields_table --create=market_feedback_form_fields` <br>
 `docker exec mark-php-app php artisan make:migration create_market_feedback_form_rules_table --create=market_feedback_form_rules` <br>
@@ -1331,7 +1936,9 @@ Analytics
 `docker exec mark-php-app php artisan make:migration create_market_feedback_spam_blocks_table --create=market_feedback_spam_blocks` <br>
 `docker exec mark-php-app php artisan make:migration create_market_feedback_submission_events_table --create=market_feedback_submission_events` <br>
 
-23) Конструктор опросов / Опции / Результаты
+
+### 23. Конструктор опросов / Опции / Результаты
+
 `docker exec mark-php-app php artisan make:migration create_market_poll_surveys_table --create=market_poll_surveys` <br>
 `docker exec mark-php-app php artisan make:migration create_market_poll_questions_table --create=market_poll_questions` <br>
 `docker exec mark-php-app php artisan make:migration create_market_poll_options_table --create=market_poll_options` <br>
@@ -1339,7 +1946,9 @@ Analytics
 `docker exec mark-php-app php artisan make:migration create_market_poll_vote_items_table --create=market_poll_vote_items` <br>
 `docker exec mark-php-app php artisan make:migration create_market_poll_results_cache_table --create=market_poll_results_cache` <br>
 
-24) Категории вакансий / Вакансии / Отклики
+
+### 24. Категории вакансий / Вакансии / Отклики
+
 `docker exec mark-php-app php artisan make:migration create_market_job_categories_table --create=market_job_categories` <br>
 `docker exec mark-php-app php artisan make:migration create_market_jobs_table --create=market_jobs` <br>
 `docker exec mark-php-app php artisan make:migration create_market_job_applications_table --create=market_job_applications` <br>
@@ -1347,8 +1956,19 @@ Analytics
 `docker exec mark-php-app php artisan make:migration create_market_job_application_messages_table --create=market_job_application_messages` <br>
 `docker exec mark-php-app php artisan make:migration create_market_job_application_message_media_table --create=market_job_application_message_media` <br>
 
-25) Каталог групп / Группы
+
+### 25. Каталог групп / Группы
+
 `docker exec mark-php-app php artisan make:migration create_market_catalog_groups_table --create=market_catalog_groups` <br>
 `docker exec mark-php-app php artisan make:model Admin/Market/CatalogGroupItem -fs` <br>
 `docker exec mark-php-app php artisan make:migration create_market_catalog_group_items_table --create=market_catalog_group_items` <br>
--------------------------------------------------------------------------------------
+
+---
+
+## Ближайшие задачи (не реализованы в этом README)
+
+- Журнал Email Notifications: миграция `notification_email_logs`, модель `NotificationEmailLog`, фиксация жизненного цикла задания и административный интерфейс.
+- Регистрация, подтверждение Email, восстановление/смена пароля и собственная CAPTCHA для форм.
+- Production: SMTP, резервные копии, контроль доступа к сервисам и мониторинг очередей.
+
+> **Обновление документа:** при добавлении нового модуля фиксируйте команды создания, фактические классы, миграции, связи, сценарий тестирования и текущий статус. Не смешивайте реализованное с планируемым.

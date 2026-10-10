@@ -55,7 +55,7 @@ export default {
     sender: 'Отправитель',
     sending: 'Отправка...',
     sendingLimit: 'Лимит отправок',
-    sent: 'Отправлена',
+    sent: 'Отправлено',
     seo: 'seo',
     seoAlt: 'SEO alt - альтернативное наименование изображения',
     seoAltImage: 'SEO alt',

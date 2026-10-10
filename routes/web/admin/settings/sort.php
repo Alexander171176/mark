@@ -169,6 +169,11 @@ Route::put('/update-sort/notifications',
     [SettingController::class, 'updateAdminSortNotifications'])
     ->name('updateAdminSortNotifications');
 
+// журнал Email Notifications
+Route::put('/update-sort/email-logs',
+    [SettingController::class, 'updateAdminSortEmailLogs'])
+    ->name('updateAdminSortEmailLogs');
+
 // маркет
 Route::put('/update-sort/market-companies',
     [SettingController::class, 'updateAdminSortMarketCompanies'])

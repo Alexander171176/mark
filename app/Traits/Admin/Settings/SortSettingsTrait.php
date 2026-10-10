@@ -441,6 +441,16 @@ trait SortSettingsTrait
         );
     }
 
+    /** Обновляет сортировку записей журнала Email Notifications */
+    public function updateAdminSortEmailLogs(
+        UpdateSortRequest $request
+    ): RedirectResponse {
+        return $this->sortSetting(
+            $request,
+            'adminEmailLogsDefaultSort'
+        );
+    }
+
     /** Обновляет сортировку элементов в компаниях */
     public function updateAdminSortMarketCompanies(
         UpdateSortRequest $request

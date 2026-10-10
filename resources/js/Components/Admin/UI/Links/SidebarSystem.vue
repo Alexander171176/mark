@@ -45,6 +45,7 @@ const pageLinks = ref(JSON.parse(localStorage.getItem('pageLinks')) || [
     'components',
     'robot',
     'sitemap',
+    'notificationEmailLogs',
     'reports',
     'imagePresets',
     'locations',

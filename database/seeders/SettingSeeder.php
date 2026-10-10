@@ -315,6 +315,49 @@ class SettingSeeder extends Seeder
                 'sort' => 0,
             ], // ADMIN IMAGE PRESETS DEFAULT SORT
             // ============================================================
+            // EMAIL NOTIFICATION LOGS — журнал отправки Email
+            // ============================================================
+            [
+                'type' => 'string',
+                'option' => 'adminEmailLogsProcessingMode',
+                'value' => 'auto',
+                'constant' => 'ADMIN_EMAIL_LOGS_PROCESSING_MODE',
+                'category' => 'admin',
+                'description' => 'Режим обработки данных журнала Email Notifications в административной части: frontend / server / auto',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN EMAIL LOGS PROCESSING MODE
+            [
+                'type' => 'number',
+                'option' => 'adminEmailLogsPerPage',
+                'value' => '20',
+                'constant' => 'ADMIN_EMAIL_LOGS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Количество записей журнала Email Notifications на странице административной панели',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN EMAIL LOGS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminEmailLogsDefaultSort',
+                'value' => 'idDesc',
+                'constant' => 'ADMIN_EMAIL_LOGS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка записей журнала Email Notifications по умолчанию в административной панели',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN EMAIL LOGS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminEmailLogsDefaultView',
+                'value' => 'table',
+                'constant' => 'ADMIN_EMAIL_LOGS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид отображения журнала Email Notifications в административной панели: table / grid',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN EMAIL LOGS DEFAULT VIEW
+            // ============================================================
             // EMAIL NOTIFICATIONS — универсальная почтовая система PulsarCMS
             // ============================================================
             [
@@ -427,16 +470,6 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // EMAIL QUEUE NAME
-            [
-                'type' => 'checkbox',
-                'option' => 'adminEmailNotificationsQueueEnabled',
-                'value' => 'false',
-                'constant' => 'ADMIN_EMAIL_NOTIFICATIONS_QUEUE_ENABLED',
-                'category' => 'admin',
-                'description' => 'Отправлять Email Notifications через очередь Laravel',
-                'activity' => true,
-                'sort' => 0,
-            ], // EMAIL NOTIFICATIONS QUEUE ENABLED
             // ============================================================
             // EMAIL NOTIFICATIONS — события Form Builder
             // ============================================================

@@ -2,6 +2,7 @@ export default {
     object: 'Нысан',
     of: 'дан',
     offline: 'оффлайн',
+    omitted: 'Қатыспады',
     online: 'онлайн',
     onlyText: 'Тек латын әріптері, сандар және астын сызу сызықтары',
     openLink: 'Сілтемені ашу',

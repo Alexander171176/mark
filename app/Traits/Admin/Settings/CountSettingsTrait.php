@@ -438,6 +438,16 @@ trait CountSettingsTrait
         );
     }
 
+    /** Обновление количества записей в журнале Email Notifications */
+    public function updateAdminCountEmailLogs(
+        UpdateCountSettingRequest $request
+    ): RedirectResponse {
+        return $this->countSetting(
+            $request,
+            'adminEmailLogsPerPage'
+        );
+    }
+
     /** Обновление количества элементов в компаниях */
     public function updateAdminCountMarketCompanies(
         UpdateCountSettingRequest $request

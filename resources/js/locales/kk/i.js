@@ -2,6 +2,7 @@ export default {
     icon: 'Таңба',
     id: 'ID',
     in: 'в',
+    inLine: 'Кезекте',
     information: 'Ақпарат',
     inStock: 'Қоймада бар',
     image: 'Сурет',

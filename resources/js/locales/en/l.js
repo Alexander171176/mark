@@ -3,6 +3,7 @@ export default {
     lastActive: 'Last active',
     lastName: 'Surname',
     lastViewedAt: 'Last viewed',
+    lastUpdate: 'Last update',
     lastUsed: 'Last used',
     latestNews: 'Latest news',
     learningCategories: 'Training categories',

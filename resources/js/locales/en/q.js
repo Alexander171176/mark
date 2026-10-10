@@ -7,6 +7,7 @@ export default {
     questionTypeSingleChoice: 'One correct answer',
     questionTypeTrueFalse: 'True / False',
     questionTypeOpenText: 'Detailed answer',
+    queue: 'Queue',
     quiz: 'Quiz',
     quizAnswers: 'Answers to quiz questions',
     quizAttemptItems: 'Students\' answers',

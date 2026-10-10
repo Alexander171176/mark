@@ -7,6 +7,7 @@ export default {
     questionTypeSingleChoice: 'Один правильный ответ',
     questionTypeTrueFalse: 'Верно / Неверно',
     questionTypeOpenText: 'Развернутый ответ',
+    queue: 'Очередь',
     quiz: 'Викторина',
     quizAnswers: 'Ответы на вопросы викторин',
     quizAttemptItems: 'Ответы учеников',

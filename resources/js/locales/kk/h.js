@@ -8,6 +8,8 @@ export default {
     hideOwner: 'Иесін жасыру',
     hideSeo: 'SEO жасыру',
     home: 'Басты бет',
+    honeypotCheck: 'Бал құмырасын тексеру',
+    honeypotLabel: 'Бұл өрісті бос қалдырыңыз',
     horizontalView: 'көлденең көрсету',
     hourlyRate: 'Сағаттық тариф',
 }

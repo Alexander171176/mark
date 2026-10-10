@@ -1,97 +1,55 @@
 <script setup>
-import {
-    onBeforeUnmount,
-    onMounted,
-    ref,
-    watch,
-} from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import PublicForm from '@/Components/Public/Default/Form/PublicForm.vue'
 
-const props = defineProps({
-    show: {
-        type: Boolean,
-        default: false,
-    },
+const { t } = useI18n()
 
-    form: {
-        type: Object,
-        default: null,
-    },
+const props = defineProps({
+    show: { type: Boolean, default: false },
+    form: { type: Object, default: null },
 })
 
-const emit = defineEmits([
-    'close',
-])
+const emit = defineEmits(['close'])
 
-/**
- * Ключ экземпляра публичной формы.
- *
- * После успешной отправки создаём
- * новый экземпляр PublicForm,
- * чтобы при следующем открытии получить
- * полностью начальное состояние.
- */
+/** Новый экземпляр формы после успешной отправки. */
 const formKey = ref(0)
 
-/**
- * Закрытие модального окна.
- */
-const close = () => {
-    emit('close')
-}
+const close = () => emit('close')
 
-/**
- * Успешная отправка формы.
- */
 const handleSuccess = () => {
     formKey.value++
-
     close()
 }
 
-/**
- * Закрытие по клавише Escape.
- */
 const handleKeydown = (event) => {
-    if (event.key === 'Escape' && props.show) {
-        close()
-    }
+    if (event.key === 'Escape' && props.show) close()
 }
 
-/**
- * Блокировка прокрутки страницы
- * при открытом модальном окне.
- */
+/** Сохраняем исходное значение overflow, чтобы восстановить его при закрытии. */
+let previousBodyOverflow = ''
+let scrollLocked = false
+
 const updateBodyScroll = (show) => {
-    document.body.style.overflow = show
-        ? 'hidden'
-        : ''
+    if (show && !scrollLocked) {
+        previousBodyOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        scrollLocked = true
+    } else if (!show && scrollLocked) {
+        document.body.style.overflow = previousBodyOverflow
+        scrollLocked = false
+    }
 }
 
-watch(
-    () => props.show,
-    (show) => {
-        updateBodyScroll(show)
-    }
-)
+watch(() => props.show, updateBodyScroll)
 
 onMounted(() => {
-    window.addEventListener(
-        'keydown',
-        handleKeydown
-    )
-
-    if (props.show) {
-        updateBodyScroll(true)
-    }
+    window.addEventListener('keydown', handleKeydown)
+    updateBodyScroll(props.show)
 })
 
 onBeforeUnmount(() => {
-    window.removeEventListener(
-        'keydown',
-        handleKeydown
-    )
-
+    window.removeEventListener('keydown', handleKeydown)
     updateBodyScroll(false)
 })
 </script>
@@ -119,22 +77,22 @@ onBeforeUnmount(() => {
                     @click="close"
                 />
 
-                <!-- Модальное окно -->
+                <!-- Модальное окно: шапка и подвал вне прокрутки -->
                 <div
-                    class="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-3xl
+                    class="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl
                            flex-col overflow-hidden rounded-2xl bg-white shadow-sm
-                           shadow-slate-200 dark:shadow-slate-400
-                           dark:bg-gray-800 sm:max-h-[calc(100vh-3rem)]"
+                           shadow-slate-200 dark:bg-gray-800 dark:shadow-slate-400
+                           sm:max-h-[calc(100dvh-3rem)]"
                     @click.stop
                 >
-
-                    <!-- Заголовок -->
+                    <!-- Неподвижная шапка -->
                     <div
-                        class="flex items-start justify-between gap-4
-                               border-b border-gray-200 px-3 py-2
+                        class="grid shrink-0 grid-cols-[2.25rem_minmax(0,1fr)_2.25rem]
+                               items-start gap-4 border-b border-gray-200 px-3 py-2
                                dark:border-gray-700"
                     >
-                        <div></div>
+                        <div aria-hidden="true" />
+
                         <div class="min-w-0 text-center">
                             <h2
                                 :id="`home-form-title-${form.id}`"
@@ -142,7 +100,6 @@ onBeforeUnmount(() => {
                             >
                                 {{ form.translation?.title }}
                             </h2>
-
                             <p
                                 v-if="form.translation?.subtitle"
                                 class="mt-1 text-sm text-gray-600 dark:text-gray-400"
@@ -151,7 +108,6 @@ onBeforeUnmount(() => {
                             </p>
                         </div>
 
-                        <!-- Закрыть -->
                         <button
                             type="button"
                             class="flex h-9 w-9 shrink-0 items-center justify-center
@@ -160,7 +116,7 @@ onBeforeUnmount(() => {
                                    focus:ring-2 focus:ring-indigo-500
                                    dark:text-gray-400 dark:hover:bg-gray-700
                                    dark:hover:text-white"
-                            aria-label="Закрыть"
+                            :aria-label="t('close')"
                             @click="close"
                         >
                             <svg
@@ -179,23 +135,14 @@ onBeforeUnmount(() => {
                         </button>
                     </div>
 
-                    <!-- Содержимое -->
-                    <div class="overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
-                        <p
-                            v-if="form.translation?.description"
-                            class="mb-6 text-sm leading-6 text-gray-600 dark:text-gray-300"
-                        >
-                            {{ form.translation.description }}
-                        </p>
-
-                        <!-- Содержимое -->
-                        <div class="overflow-y-auto">
-                            <PublicForm
-                                :key="formKey"
-                                :form="form"
-                                @success="handleSuccess"
-                            />
-                        </div>
+                    <!-- PublicForm сам управляет прокруткой и подвалом -->
+                    <div class="flex min-h-0 flex-1 flex-col">
+                        <PublicForm
+                            :key="formKey"
+                            :form="form"
+                            :description="form.translation?.description || ''"
+                            @success="handleSuccess"
+                        />
                     </div>
                 </div>
             </div>

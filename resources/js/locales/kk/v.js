@@ -1,4 +1,5 @@
 export default {
+    validationErrors: 'Тексеру қателері:',
     validationRulesJSON: 'Тексеру ережелері (JSON)',
     value: 'Мән',
     values: 'Құндылықтар',

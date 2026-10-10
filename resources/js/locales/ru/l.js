@@ -30,6 +30,7 @@ export default {
     limit: 'Лимит',
     limitCount: 'Количество попыток',
     limitMinutes: 'Лимит в минутах',
+    loading: 'Загрузка...',
     locale: 'Локаль',
     localeAdded: 'Локаль добавлена',
     location: 'Локация',

@@ -169,6 +169,7 @@ export default {
     source: 'Источник',
     sourceText: 'Исходный текст',
     sourceType: 'Тип загрузки видеоресурса',
+    spamCheck: 'Антиспам-проверка',
     spamProtection: 'Защита от спама',
     spamProtectionAndAccess: 'Защита от спама и доступ',
     stackIcons: 'Иконки стека',

@@ -169,6 +169,7 @@ export default {
     source: 'Дереккөз',
     sourceText: 'Мәтіннің көзі',
     sourceType: 'Бейне ресурсты жүктеу түрі',
+    spamCheck: 'Спамға қарсы тексеру',
     spamProtection: 'Спамнан қорғау',
     spamProtectionAndAccess: 'Спамнан қорғау және кіру',
     stackIcons: 'Стек белгішелері',

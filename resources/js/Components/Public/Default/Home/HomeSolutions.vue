@@ -1,5 +1,17 @@
 <script setup>
 
+const emit = defineEmits([
+    'open-form',
+])
+
+const openForm = (formCode) => {
+    if (!formCode) {
+        return
+    }
+
+    emit('open-form', formCode)
+}
+
 const solutions = [
     {
         title: 'Приточные установки',
@@ -35,7 +47,7 @@ const solutions = [
         title: 'Инженерный подбор',
         description: 'Поможем подобрать оборудование по проекту, техническому заданию или готовой спецификации.',
         icon: 'engineering',
-        href: '#equipment-selection',
+        form: 'selection',
         accent: true,
     },
 ]
@@ -68,10 +80,13 @@ const solutions = [
 
             <!-- Направления -->
             <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:mt-12 lg:grid-cols-3">
-                <a
+                <component
+                    :is="solution.form ? 'button' : 'a'"
                     v-for="solution in solutions"
                     :key="solution.title"
-                    :href="solution.href"
+                    :type="solution.form ? 'button' : undefined"
+                    :href="solution.form ? undefined : solution.href"
+                    @click="solution.form && openForm(solution.form)"
                     class="group relative flex min-h-[250px] flex-col overflow-hidden rounded-2xl
                            border-2 p-4 transition duration-300 sm:p-5"
                     :class="solution.accent
@@ -168,7 +183,7 @@ const solutions = [
                     </p>
 
                     <div class="mt-auto flex items-center gap-2 pt-6 text-sm font-semibold">
-                        <span>{{ solution.accent ? 'Получить консультацию' : 'Подробнее' }}</span>
+                        <span>{{ solution.form ? 'Подобрать оборудование' : 'Подробнее' }}</span>
 
                         <svg
                             class="h-4 w-4 transition-transform group-hover:translate-x-1"
@@ -179,7 +194,7 @@ const solutions = [
                                 stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </div>
-                </a>
+                </component>
             </div>
         </div>
     </section>

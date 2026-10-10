@@ -8,6 +8,8 @@ export default {
     hideOwner: 'Hide owner',
     hideSeo: 'Hide SEO',
     home: 'Home',
+    honeypotCheck: 'Honeypot check',
+    honeypotLabel: 'Do not fill in this field',
     horizontalView: 'horizontal display',
     hourlyRate: 'Hourly rate',
 }

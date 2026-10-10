@@ -1,4 +1,5 @@
 export default {
+    validationErrors: 'Ошибки проверки:',
     validationRulesJSON: 'Правила валидации (JSON)',
     value: 'Значение',
     values: 'Значения',

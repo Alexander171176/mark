@@ -26,7 +26,7 @@ const slides = [
             },
             {
                 label: 'Подобрать оборудование',
-                href: '#equipment-selection',
+                form: 'selection',
             },
             {
                 label: 'Отправить спецификацию',
@@ -102,7 +102,7 @@ const slides = [
             },
             {
                 label: 'Подобрать систему',
-                href: '#equipment-selection',
+                form: 'selection',
             },
             {
                 label: 'Отправить спецификацию',

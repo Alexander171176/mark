@@ -30,6 +30,7 @@ export default {
     limit: 'Limit',
     limitCount: 'Number of attempts',
     limitMinutes: 'Limit in minutes',
+    loading: 'Loading...',
     locale: 'Locale',
     localeAdded: 'Locale added',
     location: 'Location',

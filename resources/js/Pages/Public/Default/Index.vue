@@ -79,7 +79,7 @@ const closeForm = () => {
             <!-- Первый экран -->
             <HomeHero @open-form="openForm" />
 
-            <HomeSolutions />
+            <HomeSolutions @open-form="openForm" />
 
             <HomeMarketCategories
                 :categories="marketCategories"

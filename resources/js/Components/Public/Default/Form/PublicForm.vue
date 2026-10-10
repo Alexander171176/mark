@@ -14,6 +14,10 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    description: {
+        type: String,
+        default: '',
+    },
 })
 
 const emit = defineEmits([
@@ -40,22 +44,14 @@ const processing = ref(false)
  */
 const errorMessage = ref('')
 
-// Диагностика доступна только при разработке.
+/**
+ * Техническая диагностика HTTP-запросов.
+ * Отключена для продакшена. При необходимости
+ * можно временно вернуть для локальной отладки.
+ */
+/*
 const showDiagnostics = import.meta.env.DEV
 const requestDiagnostics = ref(null)
-const technicalFieldLabels = {
-    _form_website: 'Проверка Honeypot',
-    _form_token: 'Токен защиты формы',
-    _form: 'Антиспам-проверка',
-    _captcha_answer: 'Код CAPTCHA',
-    _captcha_token: 'Токен CAPTCHA',
-}
-
-const validationDetails = computed(() => Object.entries(errors).map(([name, message]) => ({
-    name,
-    label: technicalFieldLabels[name] || fields.value.find(field => field.name === name)?.translation?.label || name,
-    message,
-})))
 
 const captureRequestError = (error, action = 'Отправка формы') => {
     const response = error?.response
@@ -68,6 +64,22 @@ const captureRequestError = (error, action = 'Отправка формы') => {
         errors: response?.data?.errors || null,
     }
 }
+*/
+
+/** Перевод названий технических полей для блока ошибок валидации. */
+const technicalFieldLabels = computed(() => ({
+    _form_website: t('honeypotCheck'),
+    _form_token: t('protectionToken'),
+    _form: t('spamCheck'),
+    _captcha_answer: t('captchaCode'),
+    _captcha_token: t('captchaToken'),
+}))
+
+const validationDetails = computed(() => Object.entries(errors).map(([name, message]) => ({
+    name,
+    label: technicalFieldLabels.value[name] || fields.value.find(field => field.name === name)?.translation?.label || name,
+    message,
+})))
 
 
 const honeypotValue = ref('')
@@ -99,9 +111,9 @@ const loadProtection = async (id) => {
     } catch (error) {
         if (id === initializationId) {
             protectionReady.value = false
-            errorMessage.value = 'Не удалось подготовить защиту формы. Повторите попытку.'
+            errorMessage.value = t('protectionLoadError')
         }
-        captureRequestError(error, 'Получение токена защиты')
+        // captureRequestError(error, 'Получение токена защиты')
     } finally {
         if (id === initializationId) protectionLoading.value = false
     }
@@ -130,13 +142,13 @@ const loadCaptcha = async (id = initializationId) => {
         captchaImage.value = response.data?.image || ''
         captchaReady.value = Boolean(captchaToken.value && captchaImage.value)
         if (!captchaReady.value) {
-            errorMessage.value = 'Сервер вернул некорректную CAPTCHA.'
+            errorMessage.value = t('captchaInvalidResponse')
         }
     } catch (error) {
         if (id === initializationId) {
-            errorMessage.value = 'Не удалось загрузить CAPTCHA. Обновите изображение.'
+            errorMessage.value = t('captchaLoadError')
         }
-        captureRequestError(error, 'Загрузка CAPTCHA')
+        // captureRequestError(error, 'Загрузка CAPTCHA')
     } finally {
         if (id === initializationId) captchaLoading.value = false
     }
@@ -245,7 +257,7 @@ const clearErrors = () => {
     })
 
     errorMessage.value = ''
-    requestDiagnostics.value = null
+    // requestDiagnostics.value = null
 }
 
 /**
@@ -483,11 +495,11 @@ const submit = async () => {
 
     if ((props.form?.spam_protection && !protectionReady.value) ||
         (props.form?.captcha_enabled && !captchaReady.value)) {
-        errorMessage.value = 'Защита формы ещё не готова. Обновите CAPTCHA или откройте форму заново.'
+        errorMessage.value = t('protectionNotReady')
         return
     }
     if (props.form?.captcha_enabled && !captchaAnswer.value.trim()) {
-        errors._captcha_answer = 'Введите код с изображения.'
+        errors._captcha_answer = t('captchaRequired')
         return
     }
 
@@ -518,7 +530,7 @@ const submit = async () => {
             response.data
         )
     } catch (error) {
-        captureRequestError(error)
+        // captureRequestError(error)
         if (
             error.response?.status === 422 &&
             error.response?.data?.errors
@@ -532,7 +544,7 @@ const submit = async () => {
             if (errors._captcha_answer && props.form?.captcha_enabled) {
                 await loadCaptcha()
                 // Сохраняем понятное сообщение об ошибке после обновления.
-                errors._captcha_answer = 'Код неверен или устарел. Введите новый код.'
+                errors._captcha_answer = t('captchaExpired')
             }
             // Токен времени мог истечь или быть уже использован.
             if (errors._form && props.form?.spam_protection) {
@@ -560,7 +572,7 @@ const submit = async () => {
             error.response?.data?.message ||
             t('error')
 
-        // Технические детали доступны в блоке диагностики ниже.
+        // Техническая диагностика отключена для продакшена.
     } finally {
         processing.value = false
     }
@@ -584,98 +596,118 @@ watch(
 
 <template>
     <form
-        class="space-y-4 px-1"
+        class="flex min-h-0 flex-1 flex-col"
         novalidate
         @submit.prevent="submit"
     >
-        <!-- Общая ошибка -->
-        <div
-            v-if="errorMessage"
-            class="rounded-lg border border-red-200 bg-red-50
-                   px-4 py-3 text-sm text-red-700
-                   dark:border-red-800 dark:bg-red-950/40
-                   dark:text-red-300"
-        >
-            {{ errorMessage }}
-        </div>
-
-        <!-- Ошибки Laravel: видны непосредственно в форме. -->
-        <div v-if="validationDetails.length" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm dark:border-red-800 dark:bg-red-950/40">
-            <p class="mb-2 font-semibold text-red-700 dark:text-red-300">Ошибки проверки:</p>
-            <ul class="list-disc space-y-1 pl-5 text-red-700 dark:text-red-300">
-                <li v-for="item in validationDetails" :key="item.name">
-                    <strong>{{ item.label }}:</strong> {{ item.message }}
-                </li>
-            </ul>
-        </div>
-
-        <!-- Технические детали показываем только в режиме разработки. -->
-        <details v-if="showDiagnostics && requestDiagnostics" class="rounded-lg border border-gray-300 p-3 text-xs dark:border-gray-700">
-            <summary class="cursor-pointer font-semibold">Диагностика запроса (DEV)</summary>
-            <div class="mt-3 space-y-1 break-all">
-                <p>Операция: {{ requestDiagnostics.action }}</p>
-                <p>HTTP: {{ requestDiagnostics.status ?? 'Нет ответа' }}</p>
-                <p>{{ requestDiagnostics.method }} {{ requestDiagnostics.url }}</p>
-                <p>{{ requestDiagnostics.message }}</p>
-                <pre v-if="requestDiagnostics.errors" class="mt-2 overflow-x-auto whitespace-pre-wrap">{{ JSON.stringify(requestDiagnostics.errors, null, 2) }}</pre>
+        <!-- Прокручивается только содержимое, а не кнопка отправки -->
+        <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+            <p
+                v-if="description"
+                class="text-sm leading-6 text-gray-600 dark:text-gray-300"
+            >
+                {{ description }}
+            </p>
+            <!-- Общая ошибка -->
+            <div
+                v-if="errorMessage"
+                class="rounded-lg border border-red-200 bg-red-50
+                       px-4 py-3 text-sm text-red-700
+                       dark:border-red-800 dark:bg-red-950/40
+                       dark:text-red-300"
+            >
+                {{ errorMessage }}
             </div>
-        </details>
 
-        <!-- Поля -->
-        <div
-            class="grid grid-cols-1 gap-x-5 gap-y-5
-                   md:grid-cols-2"
-        >
-            <PublicFormField
-                v-for="field in fields"
-                :key="field.id"
-                :field="field"
-                :model-value="values[field.name]"
-                :error="getFieldError(field.name)"
-                @update:model-value="
-                    updateField(
-                        field.name,
-                        $event
-                    )
-                "
+            <!-- Ошибки Laravel: видны непосредственно в форме. -->
+            <div v-if="validationDetails.length" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm dark:border-red-800 dark:bg-red-950/40">
+                <p class="mb-2 font-semibold text-red-700 dark:text-red-300">{{ t('validationErrors') }}</p>
+                <ul class="list-disc space-y-1 pl-5 text-red-700 dark:text-red-300">
+                    <li v-for="item in validationDetails" :key="item.name">
+                        <strong>{{ item.label }}:</strong> {{ item.message }}
+                    </li>
+                </ul>
+            </div>
+
+
+
+            <!-- Поля -->
+            <div
+                class="grid grid-cols-1 gap-x-5 gap-y-5
+                       md:grid-cols-2"
+            >
+                <PublicFormField
+                    v-for="field in fields"
+                    :key="field.id"
+                    :field="field"
+                    :model-value="values[field.name]"
+                    :error="getFieldError(field.name)"
+                    @update:model-value="
+                        updateField(
+                            field.name,
+                            $event
+                        )
+                    "
+                />
+            </div>
+
+            <!-- CAPTCHA -->
+            <PublicFormCaptcha
+                v-if="form.captcha_enabled"
+                :image="captchaImage"
+                :model-value="captchaAnswer"
+                :loading="captchaLoading"
+                :error="errors._captcha_answer || null"
+                @update:model-value="(value) => {
+                    captchaAnswer = value
+                    delete errors._captcha_answer
+                }"
+                @refresh="loadCaptcha()"
             />
-        </div>
 
-        <!-- CAPTCHA -->
-        <PublicFormCaptcha
-            v-if="form.captcha_enabled"
-            :image="captchaImage"
-            :model-value="captchaAnswer"
-            :loading="captchaLoading"
-            :error="errors._captcha_answer || null"
-            @update:model-value="(value) => {
-                captchaAnswer = value
-                delete errors._captcha_answer
-            }"
-            @refresh="loadCaptcha()"
-        />
+            <!-- Ошибка серверной антиспам-проверки -->
+            <p v-if="errors._form" class="text-sm text-red-600 dark:text-red-400">
+                {{ errors._form }}
+            </p>
 
-        <!-- Ошибка серверной антиспам-проверки -->
-        <p v-if="errors._form" class="text-sm text-red-600 dark:text-red-400">
-            {{ errors._form }}
-        </p>
+            <!-- Honeypot: не скрытый type=hidden, а невидимое для людей текстовое поле. -->
+            <div
+                v-if="form.honeypot_enabled"
+                class="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
+                <label for="form-website-hp">{{ t('honeypotLabel') }}</label>
+                <input
+                    id="form-website-hp"
+                    v-model="honeypotValue"
+                    type="text"
+                    name="_form_website"
+                    tabindex="-1"
+                    autocomplete="off" />
+            </div>
 
-        <!-- Honeypot: не скрытый type=hidden, а невидимое для людей текстовое поле. -->
-        <div v-if="form.honeypot_enabled" class="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
-            <label for="form-website-hp">Не заполняйте это поле</label>
-            <input id="form-website-hp" v-model="honeypotValue" type="text" name="_form_website" tabindex="-1" autocomplete="off" />
+            <!-- Нет полей -->
+            <div
+                v-if="!fields.length"
+                class="rounded-xl border border-dashed border-gray-400
+                       p-4 text-center text-sm text-gray-500
+                       dark:border-gray-500 dark:text-gray-400"
+            >
+                {{ t('noData') }}
+            </div>
         </div>
 
         <!-- Отправка -->
         <div
             v-if="fields.length"
-            class="flex items-center justify-center py-1"
+            class="z-20 flex shrink-0 items-center justify-center border-t
+                   border-gray-200 bg-white px-5 py-3
+                   shadow-[0_-4px_12px_rgba(0,0,0,0.04)]
+                   dark:border-gray-700 dark:bg-gray-800"
         >
             <button
                 type="submit"
                 :disabled="processing || protectionLoading || captchaLoading || (form.spam_protection && !protectionReady) || (form.captcha_enabled && !captchaReady)"
                 class="inline-flex items-center justify-center rounded-md
-                       bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white
+                       bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white
                        shadow-sm transition hover:bg-sky-500
                        focus:outline-none focus:ring-2 focus:ring-sky-500
                        focus:ring-offset-2
@@ -705,25 +737,17 @@ watch(
                     />
                 </svg>
 
-                {{
-                    processing
-                        ? t('sending')
-                        : (
-                            form.translation?.submit_text ||
-                            t('send')
-                        )
-                }}
+                <svg v-else
+                     class="-ml-0.5 mr-2 h-4 w-4 fill-current text-slate-100"
+                     viewBox="0 0 512 512">
+                    <path
+                        d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z" />
+                </svg>
+
+
+                {{ processing ? t('sending') : (form.translation?.submit_text || t('send')) }}
             </button>
         </div>
 
-        <!-- Нет полей -->
-        <div
-            v-else
-            class="rounded-xl border border-dashed border-gray-400
-                   p-4 text-center text-sm text-gray-500
-                   dark:border-gray-500 dark:text-gray-400"
-        >
-            {{ t('noData') }}
-        </div>
     </form>
 </template>

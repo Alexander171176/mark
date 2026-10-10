@@ -8,6 +8,8 @@ export default {
     hideOwner: 'Скрыть владельца',
     hideSeo: 'Скрыть SEO',
     home: 'Главная',
+    honeypotCheck: 'Проверка Honeypot',
+    honeypotLabel: 'Не заполняйте это поле',
     horizontalView: 'показ горизонтально',
     hourlyRate: 'Почасовая ставка',
 }

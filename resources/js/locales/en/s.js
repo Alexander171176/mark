@@ -169,6 +169,7 @@ export default {
     source: 'Source',
     sourceText: 'Source text',
     sourceType: 'Type of video resource upload',
+    spamCheck: 'Anti-spam check',
     spamProtection: 'Spam protection',
     spamProtectionAndAccess: 'Spam protection and access',
     stackIcons: 'Stack Icons',

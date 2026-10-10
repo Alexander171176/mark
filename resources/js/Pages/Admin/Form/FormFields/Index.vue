@@ -26,7 +26,6 @@ import { useToast } from 'vue-toastification'
 
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import TitlePage from '@/Components/Admin/UI/Headlines/TitlePage.vue'
-import DefaultButton from '@/Components/Admin/UI/Buttons/DefaultButton.vue'
 import ToggleViewButton from '@/Components/Admin/UI/Buttons/ToggleViewButton.vue'
 import DangerModal from '@/Components/Admin/UI/Modal/DangerModal.vue'
 import CountTable from '@/Components/Admin/UI/Count/CountTable.vue'
@@ -89,8 +88,6 @@ const safeDate = (value) => {
 /* ===================== Form context ===================== */
 
 const hasFormContext = computed(() => Boolean(props.formId))
-const formContextParams = computed(() => props.formId ? { form_id: props.formId } : {})
-const createFieldUrl = computed(() => route('admin.formFields.create', formContextParams.value))
 
 /* ===================== View mode ===================== */
 
@@ -601,11 +598,7 @@ const editField = (field) => {
             >
 
                 <!-- Управление -->
-                <div class="sm:flex sm:justify-between sm:items-center mb-3 gap-3">
-                    <DefaultButton :href="createFieldUrl">
-                        {{ t('addFormField') }}
-                    </DefaultButton>
-
+                <div class="sm:flex sm:justify-end sm:items-center mb-3 gap-3">
                     <ProcessingModeSwitcher
                         setting-key="adminFormFieldsProcessingMode"
                         :mode="adminFormFieldsProcessingMode"

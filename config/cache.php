@@ -80,6 +80,12 @@ return [
             'lock_connection' => 'default',
         ],
 
+        'form_protection' => [
+            'driver' => 'redis',
+            'connection' => 'form_protection',
+            'lock_connection' => 'form_protection',
+        ],
+
         'dynamodb' => [
             'driver' => 'dynamodb',
             'key' => env('AWS_ACCESS_KEY_ID'),

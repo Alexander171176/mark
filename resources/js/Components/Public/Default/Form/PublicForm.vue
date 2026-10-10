@@ -1,9 +1,10 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import axios from 'axios'
 import PublicFormField from '@/Components/Public/Default/Form/PublicFormField.vue'
+import PublicFormCaptcha from '@/Components/Public/Default/Form/PublicFormCaptcha.vue'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -38,6 +39,128 @@ const processing = ref(false)
  * Общая ошибка отправки.
  */
 const errorMessage = ref('')
+
+// Диагностика доступна только при разработке.
+const showDiagnostics = import.meta.env.DEV
+const requestDiagnostics = ref(null)
+const technicalFieldLabels = {
+    _form_website: 'Проверка Honeypot',
+    _form_token: 'Токен защиты формы',
+    _form: 'Антиспам-проверка',
+    _captcha_answer: 'Код CAPTCHA',
+    _captcha_token: 'Токен CAPTCHA',
+}
+
+const validationDetails = computed(() => Object.entries(errors).map(([name, message]) => ({
+    name,
+    label: technicalFieldLabels[name] || fields.value.find(field => field.name === name)?.translation?.label || name,
+    message,
+})))
+
+const captureRequestError = (error, action = 'Отправка формы') => {
+    const response = error?.response
+    requestDiagnostics.value = {
+        action,
+        status: response?.status ?? null,
+        method: error?.config?.method?.toUpperCase() || null,
+        url: error?.config?.url || null,
+        message: response?.data?.message || error?.message || 'Неизвестная ошибка',
+        errors: response?.data?.errors || null,
+    }
+}
+
+
+const honeypotValue = ref('')
+const protectionToken = ref('')
+const protectionLoading = ref(false)
+const protectionReady = ref(false)
+const captchaToken = ref('')
+const captchaImage = ref('')
+const captchaAnswer = ref('')
+const captchaLoading = ref(false)
+const captchaReady = ref(false)
+let initializationId = 0
+
+/** Получить токен серверного времени заполнения. */
+const loadProtection = async (id) => {
+    if (!props.form?.spam_protection) {
+        protectionReady.value = true
+        return
+    }
+
+    protectionLoading.value = true
+    try {
+        const response = await axios.get(route('forms.protection', {
+            formCode: props.form.code,
+        }))
+        if (id !== initializationId) return
+        protectionToken.value = response.data?.token || ''
+        protectionReady.value = Boolean(protectionToken.value)
+    } catch (error) {
+        if (id === initializationId) {
+            protectionReady.value = false
+            errorMessage.value = 'Не удалось подготовить защиту формы. Повторите попытку.'
+        }
+        captureRequestError(error, 'Получение токена защиты')
+    } finally {
+        if (id === initializationId) protectionLoading.value = false
+    }
+}
+
+/** Получить или обновить изображение CAPTCHA. */
+const loadCaptcha = async (id = initializationId) => {
+    if (!props.form?.captcha_enabled) {
+        captchaReady.value = true
+        return
+    }
+
+    captchaLoading.value = true
+    captchaReady.value = false
+    captchaAnswer.value = ''
+    captchaToken.value = ''
+    captchaImage.value = ''
+    delete errors._captcha_answer
+
+    try {
+        const response = await axios.get(route('forms.captcha', {
+            formCode: props.form.code,
+        }))
+        if (id !== initializationId) return
+        captchaToken.value = response.data?.token || ''
+        captchaImage.value = response.data?.image || ''
+        captchaReady.value = Boolean(captchaToken.value && captchaImage.value)
+        if (!captchaReady.value) {
+            errorMessage.value = 'Сервер вернул некорректную CAPTCHA.'
+        }
+    } catch (error) {
+        if (id === initializationId) {
+            errorMessage.value = 'Не удалось загрузить CAPTCHA. Обновите изображение.'
+        }
+        captureRequestError(error, 'Загрузка CAPTCHA')
+    } finally {
+        if (id === initializationId) captchaLoading.value = false
+    }
+}
+
+/** Запуск защит при каждом открытии или переключении формы. */
+const initializeProtection = () => {
+    const id = ++initializationId
+    honeypotValue.value = ''
+    protectionToken.value = ''
+    protectionReady.value = false
+    captchaToken.value = ''
+    captchaImage.value = ''
+    captchaAnswer.value = ''
+    captchaReady.value = false
+    protectionLoading.value = false
+    captchaLoading.value = false
+    if (!props.form?.code) return
+    void loadProtection(id)
+    void loadCaptcha(id)
+}
+
+onBeforeUnmount(() => { initializationId++ })
+
 
 /**
  * Активные поля формы.
@@ -122,6 +245,7 @@ const clearErrors = () => {
     })
 
     errorMessage.value = ''
+    requestDiagnostics.value = null
 }
 
 /**
@@ -290,6 +414,18 @@ const buildFormData = () => {
         )
     })
 
+    // Технические поля защиты не относятся к динамическим полям Form Builder.
+    if (props.form?.honeypot_enabled) {
+        formData.append('_form_website', honeypotValue.value)
+    }
+    if (props.form?.spam_protection) {
+        formData.append('_form_token', protectionToken.value)
+    }
+    if (props.form?.captcha_enabled) {
+        formData.append('_captcha_token', captchaToken.value)
+        formData.append('_captcha_answer', captchaAnswer.value.trim())
+    }
+
     return formData
 }
 
@@ -344,6 +480,17 @@ const submit = async () => {
     }
 
     clearErrors()
+
+    if ((props.form?.spam_protection && !protectionReady.value) ||
+        (props.form?.captcha_enabled && !captchaReady.value)) {
+        errorMessage.value = 'Защита формы ещё не готова. Обновите CAPTCHA или откройте форму заново.'
+        return
+    }
+    if (props.form?.captcha_enabled && !captchaAnswer.value.trim()) {
+        errors._captcha_answer = 'Введите код с изображения.'
+        return
+    }
+
     processing.value = true
 
     try {
@@ -371,6 +518,7 @@ const submit = async () => {
             response.data
         )
     } catch (error) {
+        captureRequestError(error)
         if (
             error.response?.status === 422 &&
             error.response?.data?.errors
@@ -379,9 +527,21 @@ const submit = async () => {
                 error.response.data.errors
             )
 
+            // Не сбрасываем обычные поля и файлы при ошибке.
+            // При ошибке CAPTCHA выдаём новый одноразовый код.
+            if (errors._captcha_answer && props.form?.captcha_enabled) {
+                await loadCaptcha()
+                // Сохраняем понятное сообщение об ошибке после обновления.
+                errors._captcha_answer = 'Код неверен или устарел. Введите новый код.'
+            }
+            // Токен времени мог истечь или быть уже использован.
+            if (errors._form && props.form?.spam_protection) {
+                await loadProtection(initializationId)
+            }
+
             errorMessage.value =
-                props.form.translation?.error_message ||
                 error.response.data?.message ||
+                props.form.translation?.error_message ||
                 t('error')
 
             return
@@ -400,10 +560,7 @@ const submit = async () => {
             error.response?.data?.message ||
             t('error')
 
-        console.error(
-            'Public form submission error:',
-            error
-        )
+        // Технические детали доступны в блоке диагностики ниже.
     } finally {
         processing.value = false
     }
@@ -415,7 +572,10 @@ const submit = async () => {
  */
 watch(
     () => props.form,
-    initializeValues,
+    () => {
+        initializeValues()
+        initializeProtection()
+    },
     {
         immediate: true,
     }
@@ -439,6 +599,28 @@ watch(
             {{ errorMessage }}
         </div>
 
+        <!-- Ошибки Laravel: видны непосредственно в форме. -->
+        <div v-if="validationDetails.length" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm dark:border-red-800 dark:bg-red-950/40">
+            <p class="mb-2 font-semibold text-red-700 dark:text-red-300">Ошибки проверки:</p>
+            <ul class="list-disc space-y-1 pl-5 text-red-700 dark:text-red-300">
+                <li v-for="item in validationDetails" :key="item.name">
+                    <strong>{{ item.label }}:</strong> {{ item.message }}
+                </li>
+            </ul>
+        </div>
+
+        <!-- Технические детали показываем только в режиме разработки. -->
+        <details v-if="showDiagnostics && requestDiagnostics" class="rounded-lg border border-gray-300 p-3 text-xs dark:border-gray-700">
+            <summary class="cursor-pointer font-semibold">Диагностика запроса (DEV)</summary>
+            <div class="mt-3 space-y-1 break-all">
+                <p>Операция: {{ requestDiagnostics.action }}</p>
+                <p>HTTP: {{ requestDiagnostics.status ?? 'Нет ответа' }}</p>
+                <p>{{ requestDiagnostics.method }} {{ requestDiagnostics.url }}</p>
+                <p>{{ requestDiagnostics.message }}</p>
+                <pre v-if="requestDiagnostics.errors" class="mt-2 overflow-x-auto whitespace-pre-wrap">{{ JSON.stringify(requestDiagnostics.errors, null, 2) }}</pre>
+            </div>
+        </details>
+
         <!-- Поля -->
         <div
             class="grid grid-cols-1 gap-x-5 gap-y-5
@@ -459,6 +641,31 @@ watch(
             />
         </div>
 
+        <!-- CAPTCHA -->
+        <PublicFormCaptcha
+            v-if="form.captcha_enabled"
+            :image="captchaImage"
+            :model-value="captchaAnswer"
+            :loading="captchaLoading"
+            :error="errors._captcha_answer || null"
+            @update:model-value="(value) => {
+                captchaAnswer = value
+                delete errors._captcha_answer
+            }"
+            @refresh="loadCaptcha()"
+        />
+
+        <!-- Ошибка серверной антиспам-проверки -->
+        <p v-if="errors._form" class="text-sm text-red-600 dark:text-red-400">
+            {{ errors._form }}
+        </p>
+
+        <!-- Honeypot: не скрытый type=hidden, а невидимое для людей текстовое поле. -->
+        <div v-if="form.honeypot_enabled" class="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
+            <label for="form-website-hp">Не заполняйте это поле</label>
+            <input id="form-website-hp" v-model="honeypotValue" type="text" name="_form_website" tabindex="-1" autocomplete="off" />
+        </div>
+
         <!-- Отправка -->
         <div
             v-if="fields.length"
@@ -466,7 +673,7 @@ watch(
         >
             <button
                 type="submit"
-                :disabled="processing"
+                :disabled="processing || protectionLoading || captchaLoading || (form.spam_protection && !protectionReady) || (form.captcha_enabled && !captchaReady)"
                 class="inline-flex items-center justify-center rounded-md
                        bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white
                        shadow-sm transition hover:bg-sky-500

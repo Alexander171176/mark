@@ -25,6 +25,7 @@
 19. [Form Builder: конструктор форм и заявки](#этап-19-form-builder-конструктор-форм-и-заявки)
 20. [Уведомления и Email Queue](#этап-20-уведомления-и-email-queue)
 21. [Маркетплейс](#этап-21-маркетплейс)
+22. [Конструктор слайдеров и анимации](#этап-22-конструктор-слайдеров-и-анимации)
 
 ## Перед использованием команд
 
@@ -166,6 +167,7 @@ docker exec mark-php-app php artisan queue:failed
     `npm install vue-toastification@next` <br>
     `npm install @popperjs/core` <br>
     `npm install swiper` <br>
+    `npm install lucide-vue-next` <br>
      `npm i ` <br>
 
 ---
@@ -1964,6 +1966,126 @@ Event → Listener → RecipientResolver → SendNotificationEmailJob → Redis 
 `docker exec mark-php-app php artisan make:migration create_market_catalog_group_items_table --create=market_catalog_group_items` <br>
 
 ---
+
+
+---
+
+<a id="этап-22-конструктор-слайдеров-и-анимации"></a>
+
+## Этап 22. Конструктор слайдеров и анимации
+
+> **Статус:** план разработки. Команды `make:*` приведены для последовательного создания файлов; не запускать повторно для уже существующих классов. Миграции восьми таблиц ранее подготовлены отдельно — не создавать дублирующие миграции через `-m`.
+
+### 1. Модели слайдеров и переводов
+
+```bash
+# Слайдеры
+docker exec mark-php-app php artisan make:model Admin/Slider/Slider/Slider -mfs
+docker exec mark-php-app php artisan make:model Admin/Slider/Slider/SliderTranslation -m
+
+# Слайды
+docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlide/SliderSlide -m
+docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlide/SliderSlideTranslation -m
+
+# Модель изображения слайда и миграция
+docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlide/SliderSlideImage -m
+
+# Связующая таблица слайда и изображений
+docker exec mark-php-app php artisan make:migration create_slider_slide_has_images_table --create=slider_slide_has_images
+
+# Кнопки слайдов
+docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlideAction/SliderSlideAction -m
+docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlideAction/SliderSlideActionTranslation -m
+
+# Преимущества слайдов
+docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantage -m
+docker exec mark-php-app php artisan make:model Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageTranslation -m
+```
+
+### 2. Миграции (уже подготовленные файлы)
+
+Таблицы: `sliders`, `slider_translations`, `slider_slides`, `slider_slide_translations`, `slider_slide_actions`, `slider_slide_action_translations`, `slider_slide_advantages`, `slider_slide_advantage_translations`.
+
+```bash
+docker exec mark-php-app php artisan migrate:status
+docker exec mark-php-app php artisan migrate
+```
+
+### 3. API Resources
+
+```bash
+docker exec mark-php-app php artisan make:resource Admin/Slider/Slider/SliderResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/Slider/SliderSharedResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/Slider/SliderTranslationResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlide/SliderSlideResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlide/SliderSlideSharedResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlide/SliderSlideTranslationResource
+# Ресурс изображения слайда
+docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlide/SliderSlideImageResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlideAction/SliderSlideActionResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlideAction/SliderSlideActionTranslationResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageResource
+docker exec mark-php-app php artisan make:resource Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageTranslationResource
+docker exec mark-php-app php artisan make:resource Public/Slider/SliderResource
+```
+
+### 4. Form Requests
+
+```bash
+docker exec mark-php-app php artisan make:request Admin/Slider/Slider/SliderRequest
+docker exec mark-php-app php artisan make:request Admin/Slider/SliderSlide/SliderSlideRequest
+docker exec mark-php-app php artisan make:request Admin/Slider/SliderSlideAction/SliderSlideActionRequest
+docker exec mark-php-app php artisan make:request Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageRequest
+docker exec mark-php-app php artisan make:request Admin/Slider/SliderSlide/UpdateSliderSlideSortRequest
+```
+
+### 5. Контроллеры
+
+```bash
+docker exec mark-php-app php artisan make:controller Admin/Slider/Slider/SliderController --resource
+docker exec mark-php-app php artisan make:controller Admin/Slider/SliderSlide/SliderSlideController --resource
+docker exec mark-php-app php artisan make:controller Admin/Slider/SliderSlideAction/SliderSlideActionController --resource
+docker exec mark-php-app php artisan make:controller Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageController --resource
+docker exec mark-php-app php artisan make:controller Admin/Slider/SliderSlide/SliderSlideSortController --invokable
+docker exec mark-php-app php artisan make:controller Public/Slider/SliderPublicController
+```
+
+### 6. Сервисы
+
+```bash
+docker exec mark-php-app php artisan make:class Services/Admin/Slider/SliderService
+docker exec mark-php-app php artisan make:class Services/Public/Slider/SliderResolverService
+```
+
+### 7. Сидер демонстрационного слайдера
+
+```bash
+docker exec mark-php-app php artisan make:seeder SliderSeeder
+# Запускать после реализации сидера:
+# docker exec mark-php-app php artisan db:seed --class=SliderSeeder
+```
+
+### 8. Frontend (план)
+
+- Админка: `Index.vue`, `Create.vue`, `Edit.vue`, редактор слайдов, кнопок, преимуществ и переводов.
+- Drag & Drop: изменение порядка `slider_slides.sort` с сохранением через `SliderSlideSortController`; библиотека `vue-draggable-next` уже указана в зависимостях проекта.
+- Настройки Swiper: autoplay, speed, loop, navigation, pagination, keyboard, touch, breakpoints.
+- **Анимация переходов:** тип перехода (`slide`, `fade`, `cube`, `coverflow`, `flip` — только при поддержке используемой версии Swiper), скорость, easing/дополнительные настройки там, где реализуемы.
+- **Анимация содержимого:** отдельно для маркера, заголовка, акцентного текста, описания, кнопок и преимуществ; тип (`none`, `fade`, `slide-up`, `slide-down`, `zoom`), задержка, длительность, последовательность и повтор при смене активного слайда.
+- **Хранение настроек анимации:** согласовать поля/JSON в `sliders` и `slider_slides` **до применения миграций**. Настройки Swiper и анимации содержимого разделять; неизвестные значения проверять на сервере по разрешённым спискам.
+- Медиа: использовать существующий механизм Spatie Media Library; не создавать отдельное файловое хранилище.
+- Публичный компонент: загружать слайдер по уникальному `code` на главной, в маркетплейсе, школе и блоге; сохранить действия `route`, `form`, `url`, `anchor`.
+- Семантика: только главный заголовок страницы использует `h1`; для остальных слайдов — `h2`.
+
+### 9. Проверка после реализации
+
+```bash
+docker exec mark-php-app php artisan migrate:status
+docker exec mark-php-app php artisan route:list
+docker exec mark-php-app php artisan optimize:clear
+```
+
+> **Важно:** наличие команды в README не означает, что соответствующий файл или функциональность уже реализованы.
 
 ## Ближайшие задачи (не реализованы в этом README)
 

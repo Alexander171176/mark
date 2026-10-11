@@ -119,6 +119,9 @@ class DatabaseSeeder extends Seeder
             FormFieldSeeder::class,
             FormFieldOptionSeeder::class,
 
+            // Слайдер на главной
+            SliderSeeder::class,
+
             //  Маркет
             MarketCompanySeeder::class, // Фирмы
             MarketShopSeeder::class,    // Магазины

@@ -63,6 +63,7 @@
         "highlight.js": "^11.10.0",
         "html2pdf.js": "^0.10.1",
         "jszip": "^3.10.1",
+        "lucide-vue-next": "^1.0.0",
         "roughjs": "^4.6.6",
         "swiper": "^14.2.0",
         "vue": "^3.4.31",

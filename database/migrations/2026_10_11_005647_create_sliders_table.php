@@ -26,8 +26,30 @@ return new class extends Migration
             // Публикация и управление отображением.
             $table->string('status', 30)->default('draft'); // Статус: draft, published, archived.
 
+            // Модерация слайдера.
             $table->unsignedTinyInteger('moderation_status')
-                ->default(0); // Модерация: 0 — ожидает, 1 — одобрен, 2 — отклонён.
+                ->default(0)
+                ->index('sliders_moderation_status_idx')
+                ->comment('Модерация: 0=pending, 1=approved, 2=rejected');
+
+            $table->unsignedBigInteger('moderated_by')
+                ->nullable()
+                ->index('sliders_moderated_by_idx')
+                ->comment('Модератор (users.id)');
+
+            $table->foreign('moderated_by', 'sliders_moderated_by_fk')
+                ->references('id')
+                ->on('users')
+                ->nullOnDelete();
+
+            $table->timestamp('moderated_at')
+                ->nullable()
+                ->index('sliders_moderated_at_idx')
+                ->comment('Дата модерации');
+
+            $table->text('moderation_note')
+                ->nullable()
+                ->comment('Комментарий модератора');
 
             $table->boolean('activity')->default(true); // Активность слайдера: включён или выключен.
 

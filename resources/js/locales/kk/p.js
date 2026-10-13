@@ -5,6 +5,7 @@ export default {
     pageNotFound: 'Бет табылмады',
     pageNotFoundText: 'Кешіріңіз, сіз сұраған бет жоқ.',
     pages: 'Беттер',
+    pagination: 'Беттеу',
     paid: 'ақылы',
     paidAt: 'Төлем күні',
     parameter: 'Параметр',

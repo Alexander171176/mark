@@ -150,4 +150,5 @@ export default {
     currencyRefreshRates: 'Обновить курсы валют провайдера',
     currencySpace: 'Пробел',
     currencyThinSpace: 'Тонкий пробел',
+    cycle: 'Цикл',
 }

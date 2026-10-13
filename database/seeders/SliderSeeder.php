@@ -12,83 +12,148 @@ class SliderSeeder extends Seeder
 {
     public function run(): void
     {
-        // Текущий публичный HomeHero: один слайдер, три слайда.
-        // Повторный запуск обновляет записи, найденные по стабильным ключам.
-        DB::transaction(function (): void {
-            $slider = Slider::updateOrCreate(
-                ['code' => 'home-hero'],
-                [
-                    'type' => 'hero', 'status' => 'published',
-                    'moderation_status' => 1, 'activity' => true, 'sort' => 0,
-                    'published_at' => now(), 'show_from_at' => null, 'show_to_at' => null,
-                    'autoplay_delay' => 7000,
-                    'autoplay_disable_on_interaction' => false,
-                    'pause_on_hover' => true, 'effect' => 'slide', 'speed' => 900,
-                    'effect_options' => null, 'loop' => true, 'keyboard' => true,
-                    'allow_touch_move' => true, 'grab_cursor' => false,
-                    'slides_per_view' => 1, 'space_between' => 0,
-                    'auto_height' => false, 'breakpoints' => null,
-                    'show_navigation' => true, 'show_pagination' => true,
-                    'settings' => ['component' => 'HomeHero'],
-                ]
-            );
-
-            $this->translations($slider, [
-                'ru' => ['title' => 'Главный слайдер', 'subtitle' => 'Оборудование для вентиляции и кондиционирования'],
-                'kk' => ['title' => 'Басты слайдер', 'subtitle' => 'Желдету және ауа баптау жабдықтары'],
-                'en' => ['title' => 'Homepage hero slider', 'subtitle' => 'Ventilation and air-conditioning equipment'],
-            ]);
-
-            foreach ($this->slides() as $index => $data) {
-                $slide = $slider->slides()->updateOrCreate(
-                    ['sort' => $index],
+        // Восемь независимых слайдеров с тремя слайдами каждый.
+        // Повторный запуск обновляет записи по уникальному code.
+        // Для проверки CRUD используйте тестовую БД: сидер перезаписывает данные.
+        foreach ($this->sliderVariants() as $index => $variant) {
+            DB::transaction(function () use ($index, $variant): void {
+                $slider = Slider::updateOrCreate(
+                    ['code' => $variant['code']],
                     [
-                        'activity' => true, 'sort' => $index, 'is_main' => $index === 0,
-                        'status' => 'published', 'published_at' => now(),
-                        'show_from_at' => null, 'show_to_at' => null,
-                        'background_color' => '#020617', 'text_color' => '#FFFFFF',
-                        'accent_color' => '#38BDF8', 'overlay_color' => '#020617',
-                        'overlay_opacity' => 45, 'image_position' => 'object-center',
-                        'content_position' => 'left', 'animation_type' => 'fade-up',
-                        'animation_duration' => 700, 'animation_delay' => 0,
-                        'animation_stagger' => 150, 'animation_once' => false,
-                        'animation_settings' => null, 'settings' => null,
+                        'user_id' => 1,
+                        'type' => $variant['type'],
+                        'status' => $variant['status'],
+                        'moderation_status' => $variant['moderation_status'],
+                        'activity' => $variant['activity'],
+                        'sort' => $index,
+                        'published_at' => $variant['status'] === 'published' ? now() : null,
+                        'show_from_at' => null,
+                        'show_to_at' => null,
+                        'autoplay_delay' => 5000 + $index * 500,
+                        'autoplay_disable_on_interaction' => false,
+                        'pause_on_hover' => true,
+                        'effect' => $variant['effect'],
+                        'speed' => 900,
+                        'effect_options' => null,
+                        'loop' => true,
+                        'keyboard' => true,
+                        'allow_touch_move' => true,
+                        'grab_cursor' => false,
+                        'slides_per_view' => 1,
+                        'space_between' => 0,
+                        'auto_height' => false,
+                        'breakpoints' => null,
+                        'show_navigation' => true,
+                        'show_pagination' => true,
+                        'settings' => $index === 0 ? ['component' => 'HomeHero'] : null,
                     ]
                 );
-                $this->translations($slide, $data['translations']);
-                $this->seedImage($slide, $data['image'], $data['alt']);
 
-                foreach ($data['actions'] as $order => $actionData) {
-                    $action = $slide->actions()->updateOrCreate(
-                        ['sort' => $order],
-                        [
-                            'sort' => $order, 'activity' => true,
-                            'is_primary' => $order === 0,
-                            'action_type' => $actionData['type'],
-                            'action_value' => $actionData['value'],
-                            'route_params' => null, 'target' => '_self',
-                            'style' => $order === 0 ? 'primary' : 'secondary',
-                            'icon' => null, 'icon_position' => 'left',
-                            'css_class' => null, 'settings' => null,
-                        ]
-                    );
-                    $this->translations($action, $actionData['translations']);
-                }
+                $this->translations($slider, $variant['translations']);
 
-                foreach ($data['advantages'] as $order => $advantageData) {
-                    $advantage = $slide->advantages()->updateOrCreate(
-                        ['sort' => $order],
+                foreach ($this->slides() as $slideIndex => $data) {
+                    $slide = $slider->slides()->updateOrCreate(
+                        ['sort' => $slideIndex],
                         [
-                            'sort' => $order, 'activity' => true,
-                            'icon_type' => 'lucide', 'icon' => 'check',
-                            'icon_color' => '#7DD3FC', 'style' => 'default',
+                            'activity' => true,
+                            'sort' => $slideIndex,
+                            'is_main' => $slideIndex === 0,
+                            'status' => 'published',
+                            'published_at' => now(),
+                            'show_from_at' => null,
+                            'show_to_at' => null,
+                            'background_color' => '#020617',
+                            'text_color' => '#FFFFFF',
+                            'accent_color' => '#38BDF8',
+                            'overlay_color' => '#020617',
+                            'overlay_opacity' => 45,
+                            'image_position' => 'object-center',
+                            'content_position' => 'left',
+                            'animation_type' => 'fade-up',
+                            'animation_duration' => 700,
+                            'animation_delay' => 0,
+                            'animation_stagger' => 150,
+                            'animation_once' => false,
+                            'animation_settings' => null,
                             'settings' => null,
                         ]
                     );
-                    $this->translations($advantage, $advantageData);
+
+                    $this->translations($slide, $data['translations']);
+                    $this->seedImage($slide, $data['image'], $data['alt']);
+
+                    foreach ($data['actions'] as $order => $actionData) {
+                        $action = $slide->actions()->updateOrCreate(
+                            ['sort' => $order],
+                            [
+                                'sort' => $order,
+                                'activity' => true,
+                                'is_primary' => $order === 0,
+                                'action_type' => $actionData['type'],
+                                'action_value' => $actionData['value'],
+                                'route_params' => null,
+                                'target' => '_self',
+                                'style' => $order === 0 ? 'primary' : 'secondary',
+                                'icon' => null,
+                                'icon_position' => 'left',
+                                'css_class' => null,
+                                'settings' => null,
+                            ]
+                        );
+                        $this->translations($action, $actionData['translations']);
+                    }
+
+                    foreach ($data['advantages'] as $order => $advantageData) {
+                        $advantage = $slide->advantages()->updateOrCreate(
+                            ['sort' => $order],
+                            [
+                                'sort' => $order,
+                                'activity' => true,
+                                'icon_type' => 'lucide',
+                                'icon' => 'check',
+                                'icon_color' => '#7DD3FC',
+                                'style' => 'default',
+                                'settings' => null,
+                            ]
+                        );
+                        $this->translations($advantage, $advantageData);
+                    }
                 }
-            }
-        });
+            });
+        }
+    }
+
+    /** Варианты для тестирования фильтров, статусов и CRUD. */
+    private function sliderVariants(): array
+    {
+        $definitions = [
+            ['home-hero', 'hero', 'published', 1, true, 'slide', ['Главный слайдер', 'Басты слайдер', 'Homepage hero slider']],
+            ['market-hero', 'hero', 'published', 1, true, 'fade', ['Маркетплейс оборудования', 'Жабдықтар маркетплейсі', 'Equipment marketplace']],
+            ['school-hero', 'hero', 'published', 1, true, 'slide', ['Онлайн-школа', 'Онлайн мектеп', 'Online school']],
+            ['blog-hero', 'hero', 'draft', 0, true, 'fade', ['Блог и статьи', 'Блог және мақалалар', 'Blog and articles']],
+            ['company-hero', 'hero', 'published', 1, false, 'slide', ['О компании', 'Компания туралы', 'About the company']],
+            ['services-hero', 'hero', 'published', 0, true, 'fade', ['Услуги и решения', 'Қызметтер мен шешімдер', 'Services and solutions']],
+            ['projects-hero', 'hero', 'archived', 2, false, 'slide', ['Наши проекты', 'Біздің жобалар', 'Our projects']],
+            ['partners-hero', 'hero', 'published', 1, true, 'fade', ['Партнёры и поставщики', 'Серіктестер мен жеткізушілер', 'Partners and suppliers']],
+        ];
+
+        return array_map(static function (array $row): array {
+            [$code, $type, $status, $moderation, $activity, $effect, $titles] = $row;
+
+            return [
+                'code' => $code,
+                'type' => $type,
+                'status' => $status,
+                'moderation_status' => $moderation,
+                'activity' => $activity,
+                'effect' => $effect,
+                'translations' => [
+                    'ru' => ['title' => $titles[0], 'subtitle' => 'Демонстрационный слайдер для проверки конструктора'],
+                    'kk' => ['title' => $titles[1], 'subtitle' => 'Конструкторды тексеруге арналған демонстрациялық слайдер'],
+                    'en' => ['title' => $titles[2], 'subtitle' => 'Demo slider for testing the builder'],
+                ],
+            ];
+        }, $definitions);
     }
 
     /** Переводы для слайдера, слайда, кнопки и преимущества. */
@@ -204,3 +269,4 @@ class SliderSeeder extends Seeder
         ];
     }
 }
+

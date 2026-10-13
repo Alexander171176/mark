@@ -21,7 +21,7 @@ class FormSeeder extends Seeder
 
             [
                 'data' => [
-                    'user_id' => null,
+                    'user_id' => 1,
                     'code' => 'consultation',
                     'status' => Form::STATUS_PUBLISHED,
                     'activity' => true,
@@ -77,7 +77,7 @@ class FormSeeder extends Seeder
 
             [
                 'data' => [
-                    'user_id' => null,
+                    'user_id' => 1,
                     'code' => 'selection',
                     'status' => Form::STATUS_PUBLISHED,
                     'activity' => true,
@@ -133,7 +133,7 @@ class FormSeeder extends Seeder
 
             [
                 'data' => [
-                    'user_id' => null,
+                    'user_id' => 1,
                     'code' => 'specification',
                     'status' => Form::STATUS_PUBLISHED,
                     'activity' => true,
@@ -189,7 +189,7 @@ class FormSeeder extends Seeder
 
             [
                 'data' => [
-                    'user_id' => null,
+                    'user_id' => 1,
                     'code' => 'callback',
                     'status' => Form::STATUS_PUBLISHED,
                     'activity' => true,
@@ -245,7 +245,7 @@ class FormSeeder extends Seeder
 
             [
                 'data' => [
-                    'user_id' => null,
+                    'user_id' => 1,
                     'code' => 'supplier',
                     'status' => Form::STATUS_PUBLISHED,
                     'activity' => true,
@@ -301,7 +301,7 @@ class FormSeeder extends Seeder
 
             [
                 'data' => [
-                    'user_id' => null,
+                    'user_id' => 1,
                     'code' => 'school',
                     'status' => Form::STATUS_PUBLISHED,
                     'activity' => true,
@@ -357,7 +357,7 @@ class FormSeeder extends Seeder
 
             [
                 'data' => [
-                    'user_id' => null,
+                    'user_id' => 1,
                     'code' => 'contact',
                     'status' => Form::STATUS_PUBLISHED,
                     'activity' => true,

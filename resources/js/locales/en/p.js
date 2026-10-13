@@ -5,6 +5,7 @@ export default {
     pageNotFound: 'Page not found',
     pageNotFoundText: 'Sorry, the page you requested is missing.',
     pages: 'Pages',
+    pagination: 'Pagination',
     paid: 'paid',
     paidAt: 'Payment date',
     parameter: 'Parameter',

@@ -2036,7 +2036,6 @@ docker exec mark-php-app php artisan make:request Admin/Slider/Slider/SliderRequ
 docker exec mark-php-app php artisan make:request Admin/Slider/SliderSlide/SliderSlideRequest
 docker exec mark-php-app php artisan make:request Admin/Slider/SliderSlideAction/SliderSlideActionRequest
 docker exec mark-php-app php artisan make:request Admin/Slider/SliderSlideAdvantage/SliderSlideAdvantageRequest
-docker exec mark-php-app php artisan make:request Admin/Slider/SliderSlide/UpdateSliderSlideSortRequest
 ```
 
 ### 5. Контроллеры

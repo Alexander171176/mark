@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizAttempt\SchoolQuizAttemptController;
 use App\Http\Controllers\Admin\School\SchoolQuizAttemptItem\SchoolQuizAttemptItemController;
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
+use App\Http\Controllers\Admin\Slider\Slider\SliderController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
 use Illuminate\Support\Facades\Route;
 
@@ -123,6 +124,11 @@ Route::delete('/forms/bulk-delete',
 Route::delete('/form-fields/bulk-delete',
     [FormFieldController::class, 'bulkDestroy'])
     ->name('formFields.bulkDestroy');
+
+// слайдеры
+Route::delete('/sliders/bulk-delete',
+    [SliderController::class, 'bulkDestroy'])
+    ->name('sliders.bulkDestroy');
 
 // маркет
 Route::delete('/market-companies/bulk-delete',

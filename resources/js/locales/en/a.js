@@ -146,6 +146,7 @@ export default {
     auto: 'automatically',
     automaticPrice: 'Automatic price',
     autoCorrect: 'autocorrect',
+    autoScroll: 'Auto-scroll',
     autoRenew: 'auto-renewal',
     avatar: 'Avatar (image in png format only)',
     availability: 'Availability',

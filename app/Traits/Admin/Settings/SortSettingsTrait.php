@@ -560,4 +560,13 @@ trait SortSettingsTrait
             'adminMarketAttributeValuesDefaultSort'
         );
     }
+
+    /** Обновление сортировки слайдеров по умолчанию */
+    public function updateAdminSortSliders(
+        UpdateSortRequest $request): RedirectResponse {
+        return $this->sortSetting(
+            $request,
+            'adminSlidersDefaultSort'
+        );
+    }
 }

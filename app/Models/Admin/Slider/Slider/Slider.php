@@ -23,6 +23,9 @@ class Slider extends Model
         'type',
         'status',
         'moderation_status',
+        'moderated_by',
+        'moderated_at',
+        'moderation_note',
         'activity',
         'sort',
         'published_at',
@@ -50,6 +53,8 @@ class Slider extends Model
     protected $casts = [
         'user_id' => 'integer',
         'moderation_status' => 'integer',
+        'moderated_by' => 'integer',
+        'moderated_at' => 'datetime',
         'activity' => 'boolean',
         'sort' => 'integer',
         'published_at' => 'datetime',
@@ -83,6 +88,12 @@ class Slider extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /** Пользователь, выполнивший модерацию слайдера */
+    public function moderator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'moderated_by');
     }
 
     /** Все переводы слайдера */
@@ -176,6 +187,24 @@ class Slider extends Model
         );
     }
 
+    /** Слайдер ожидает модерации */
+    public function isPendingModeration(): bool
+    {
+        return (int) $this->moderation_status === 0;
+    }
+
+    /** Слайдер одобрен */
+    public function isApproved(): bool
+    {
+        return (int) $this->moderation_status === 1;
+    }
+
+    /** Слайдер отклонён */
+    public function isRejected(): bool
+    {
+        return (int) $this->moderation_status === 2;
+    }
+
     /** Сортировка по умолчанию */
     public function scopeOrdered(Builder $query): Builder
     {
@@ -238,6 +267,7 @@ class Slider extends Model
                 $q->where('sliders.code', 'like', "%{$term}%")
                     ->orWhere('sliders.type', 'like', "%{$term}%")
                     ->orWhere('sliders.status', 'like', "%{$term}%")
+                    ->orWhere('sliders.moderation_note', 'like', "%{$term}%")
                     ->orWhereHas(
                         'translations',
                         function (Builder $translationQuery) use ($term, $locale) {

@@ -174,6 +174,11 @@ Route::put('/update-count/email-logs',
     [SettingController::class, 'updateAdminCountEmailLogs'])
     ->name('updateAdminCountEmailLogs');
 
+// конструктор слайдеров
+Route::put('/update-count/sliders',
+    [SettingController::class, 'updateAdminCountSliders'])
+    ->name('updateAdminCountSliders');
+
 // маркет
 Route::put('/update-count/market-companies',
     [SettingController::class, 'updateAdminCountMarketCompanies'])

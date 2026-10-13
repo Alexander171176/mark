@@ -47,6 +47,7 @@ use App\Http\Controllers\Admin\School\SchoolQuizAttemptItem\SchoolQuizAttemptIte
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
+use App\Http\Controllers\Admin\Slider\Slider\SliderController;
 use App\Http\Controllers\Admin\Statistics\Chart\ChartController;
 use App\Http\Controllers\Admin\System\Component\ComponentController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
@@ -335,6 +336,18 @@ Route::resource('/form-submissions', FormSubmissionController::class)
         'destroy',
     ])
     ->names('formSubmissions');
+
+
+/*
+|--------------------------------------------------------------------------
+| Конструктор слайдеров
+|--------------------------------------------------------------------------
+*/
+
+// Слайдеры
+Route::resource('/sliders', SliderController::class)
+    ->parameters(['sliders' => 'slider'])
+    ->names('sliders');
 
 /*
 |--------------------------------------------------------------------------

@@ -37,6 +37,7 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
+use App\Http\Controllers\Admin\Slider\Slider\SliderController;
 use App\Http\Controllers\Admin\System\ImagePreset\ImagePresetController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
@@ -177,6 +178,14 @@ Route::put('/form-fields/{formField}/sort',
     [FormFieldController::class, 'updateSort'])
     ->whereNumber('formField')
     ->name('formFields.updateSort');
+
+// Конструктор слайдеров — сортировка одной записи
+Route::put(
+    '/sliders/{id}/sort',
+    [SliderController::class, 'updateSort']
+)
+    ->whereNumber('id')
+    ->name('sliders.updateSort');
 
 // маркет
 Route::put('/market-companies/{marketCompany}/sort',

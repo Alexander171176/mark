@@ -150,4 +150,5 @@ export default {
     currencyRefreshRates: 'Провайдердің айырбас бағамдарын жаңарту',
     currencySpace: 'Кеңістік',
     currencyThinSpace: 'Жіңішке саңылау',
+    cycle: 'Цикл',
 }

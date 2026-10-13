@@ -55,6 +55,7 @@ export default {
     editTag: 'Edit the Tag',
     editTournament: 'Edit the Tournament',
     editUser: 'Edit the User',
+    effect: 'Effect',
     editVideo: 'Edit a video post',
     effectivePrice: 'Price',
     email: 'Email',

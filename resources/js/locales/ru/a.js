@@ -146,6 +146,7 @@ export default {
     auto: 'автоматически',
     automaticPrice: 'Автоматическая цена',
     autoCorrect: 'автозамена',
+    autoScroll: 'Автопрокрутка',
     autoRenew: 'автопродление',
     avatar: 'Аватар (изображение только в формате png)',
     availability: 'Доступность',

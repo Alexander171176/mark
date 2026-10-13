@@ -1,6 +1,7 @@
 export default {
     name: 'Name',
     nameModule: 'Module name',
+    navigation: 'Navigation',
     new: 'New',
     newField: 'New field',
     newImages: 'New images',

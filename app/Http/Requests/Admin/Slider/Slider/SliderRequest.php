@@ -58,6 +58,7 @@ class SliderRequest extends FormRequest
         $integerFields = [
             'sort',
             'moderation_status',
+            'moderated_by',
             'autoplay_delay',
             'speed',
             'space_between',
@@ -71,6 +72,13 @@ class SliderRequest extends FormRequest
                     ? null
                     : $value;
             }
+        }
+
+        // Комментарий модератора: пустую строку преобразуем в null.
+        if ($this->exists('moderation_note')) {
+            $prepared['moderation_note'] = $this->normalizeNullableText(
+                $this->input('moderation_note')
+            );
         }
 
         if ($this->exists('slides_per_view')) {
@@ -186,23 +194,7 @@ class SliderRequest extends FormRequest
             ? $slider->getKey()
             : (is_numeric($slider) ? $slider : null);
 
-        $availableLocales = config(
-            'app.available_locales',
-            ['ru']
-        );
-
-        $availableLocales = array_values(array_unique(
-            array_filter(
-                (array) $availableLocales,
-                'is_string'
-            )
-        ));
-
-        $isUpdate = in_array(
-            strtoupper($this->method()),
-            ['PUT', 'PATCH'],
-            true
-        );
+        $availableLocales = $this->availableLocales();
 
         return [
                 /* =================================================
@@ -239,6 +231,22 @@ class SliderRequest extends FormRequest
                     'sometimes',
                     'integer',
                     Rule::in([0, 1, 2]),
+                ],
+
+                'moderated_by' => [
+                    'nullable',
+                    'integer',
+                    Rule::exists('users', 'id'),
+                ],
+
+                'moderated_at' => [
+                    'nullable',
+                    'date',
+                ],
+
+                'moderation_note' => [
+                    'nullable',
+                    'string',
                 ],
 
                 'activity' => [
@@ -412,7 +420,7 @@ class SliderRequest extends FormRequest
 
                 'translations.*' => [
                     'required',
-                    'array',
+                    'array:title,subtitle,description,meta_title,meta_description',
                 ],
 
                 'translations.*.title' => [
@@ -457,30 +465,21 @@ class SliderRequest extends FormRequest
                 return;
             }
 
-            $availableLocales = config(
-                'app.available_locales',
-                ['ru']
-            );
-
-            foreach (array_keys($translations) as $locale) {
-                if (! in_array($locale, $availableLocales, true)) {
-                    $validator->errors()->add(
-                        "translations.{$locale}",
-                        'Указан неподдерживаемый язык перевода.'
-                    );
-                }
-            }
-
-            // Хотя бы один перевод должен иметь название.
+            $availableLocales = $this->availableLocales();
             $hasTitle = false;
 
-            foreach ($translations as $translation) {
-                if (
-                    is_array($translation)
-                    && filled($translation['title'] ?? null)
-                ) {
+            foreach ($translations as $locale => $translation) {
+                // Допускаются только локали, перечисленные в конфигурации.
+                if (! is_string($locale) || ! in_array($locale, $availableLocales, true)) {
+                    $validator->errors()->add(
+                        'translations',
+                        'Указан неподдерживаемый язык перевода.'
+                    );
+                    continue;
+                }
+
+                if (is_array($translation) && filled($translation['title'] ?? null)) {
                     $hasTitle = true;
-                    break;
                 }
             }
 
@@ -513,6 +512,10 @@ class SliderRequest extends FormRequest
             'status.in' => 'Недопустимый статус публикации.',
 
             'moderation_status.in' => 'Недопустимый статус модерации.',
+            'moderated_by.integer' => 'Идентификатор модератора должен быть целым числом.',
+            'moderated_by.exists' => 'Указанный модератор не найден.',
+            'moderated_at.date' => 'Дата модерации имеет неверный формат.',
+            'moderation_note.string' => 'Комментарий модератора должен быть текстом.',
 
             'activity.required' => 'Необходимо указать активность слайдера.',
             'activity.boolean' => 'Поле активности должно иметь логическое значение.',
@@ -582,6 +585,20 @@ class SliderRequest extends FormRequest
             'translations.*.subtitle.max' => 'Подзаголовок не должен превышать 255 символов.',
             'translations.*.meta_title.max' => 'SEO-заголовок не должен превышать 255 символов.',
         ];
+    }
+
+    /**
+     * Доступные языки берутся только из конфигурации приложения.
+     * При добавлении нового языка менять FormRequest не требуется.
+     *
+     * @return array<int, string>
+     */
+    protected function availableLocales(): array
+    {
+        return array_values(array_unique(array_filter(
+            (array) config('app.available_locales', []),
+            static fn (mixed $locale): bool => is_string($locale) && trim($locale) !== ''
+        )));
     }
 
     /**

@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
+use App\Http\Controllers\Admin\Slider\Slider\SliderController;
 use App\Http\Controllers\Admin\System\ImagePreset\ImagePresetController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
@@ -154,6 +155,12 @@ Route::put('/forms/update-sort-bulk',
 Route::put('/form-fields/update-sort-bulk',
     [FormFieldController::class, 'updateSortBulk'])
     ->name('formFields.updateSortBulk');
+
+// Конструктор слайдеров — Drag & Drop
+Route::put(
+    '/sliders/update-sort-bulk',
+    [SliderController::class, 'updateSortBulk']
+)->name('sliders.updateSortBulk');
 
 // маркет
 Route::put('/market-companies/update-sort-bulk',

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\Market\MarketProductVariant\MarketProductVariantC
 use App\Http\Controllers\Admin\Market\MarketShop\MarketShopController;
 use App\Http\Controllers\Admin\Market\MarketTag\MarketTagController;
 use App\Http\Controllers\Admin\Review\ReviewController;
+use App\Http\Controllers\Admin\Slider\Slider\SliderController;
 use Illuminate\Support\Facades\Route;
 
 // Комментарии - одобрение
@@ -52,6 +53,12 @@ Route::put('/blog-banners/{blogBanner}/approve',
 Route::put('/blog-videos/{blogVideo}/approve',
     [BlogVideoController::class, 'approve'])
     ->name('blogVideos.approve');
+
+// Слайдеры
+Route::put('/sliders/{slider}/approve',
+    [SliderController::class, 'approve'])
+    ->whereNumber('slider')
+    ->name('sliders.approve');
 
 // Маркет
 Route::put('/market-companies/{marketCompany}/approve',

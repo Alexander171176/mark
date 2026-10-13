@@ -557,4 +557,13 @@ trait CountSettingsTrait
             'adminMarketAttributeValuesPerPage'
         );
     }
+
+    /** Обновление количества слайдеров на странице */
+    public function updateAdminCountSliders(
+        UpdateCountSettingRequest $request): RedirectResponse {
+        return $this->countSetting(
+            $request,
+            'adminSlidersPerPage'
+        );
+    }
 }

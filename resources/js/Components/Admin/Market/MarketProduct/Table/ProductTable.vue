@@ -517,17 +517,24 @@ const publicationTitle = (product) => {
 </script>
 
 <template>
-    <div class="relative rounded-sm border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-slate-700">
-
+    <div
+        class="relative rounded-sm border border-slate-200
+               bg-white shadow-lg dark:border-slate-600
+               dark:bg-slate-700"
+    >
         <!-- Панель выбора -->
-        <div class="flex items-center justify-between border-b border-slate-400 px-3 py-2 dark:border-slate-500">
+        <div
+            class="flex items-center justify-between border-b
+                   border-slate-400 px-3 py-2 dark:border-slate-500"
+        >
             <div class="text-xs text-slate-600 dark:text-slate-200">
                 {{ t('selected') }}: {{ selectedProducts.length }}
             </div>
 
             <label
                 v-if="localProducts.length"
-                class="flex cursor-pointer items-center text-xs text-slate-600 dark:text-slate-200"
+                class="flex cursor-pointer items-center text-xs
+                       text-slate-600 dark:text-slate-200"
             >
                 <span>{{ t('selectAll') }}</span>
 
@@ -543,9 +550,14 @@ const publicationTitle = (product) => {
         <div class="overflow-x-auto">
             <table
                 v-if="localProducts.length"
-                class="table-auto w-full text-slate-700 dark:text-slate-100"
+                class="table-auto w-full text-slate-700
+                       dark:text-slate-100"
             >
-                <thead class="border border-solid border-gray-300 bg-slate-200 text-xs uppercase dark:border-gray-700 dark:bg-cyan-900">
+                <thead
+                    class="border border-solid border-gray-300
+                           bg-slate-200 text-xs uppercase
+                           dark:border-gray-700 dark:bg-cyan-900"
+                >
                 <tr>
                     <!-- Drag handle -->
                     <th class="w-px px-1 py-3">
@@ -558,10 +570,12 @@ const publicationTitle = (product) => {
                         </svg>
                     </th>
 
+                    <!-- ID -->
                     <th class="w-px whitespace-nowrap px-1 py-3">
                         <div class="text-center font-semibold">{{ t('id') }}</div>
                     </th>
 
+                    <!-- Owner -->
                     <th class="w-px whitespace-nowrap px-1 py-3">
                         <div class="flex justify-center" :title="t('owner')">
                             <svg class="h-6 w-6 shrink-0 fill-current" viewBox="0 0 24 24">
@@ -574,6 +588,7 @@ const publicationTitle = (product) => {
                         </div>
                     </th>
 
+                    <!-- Image -->
                     <th class="w-px px-1 py-3">
                         <div class="flex justify-center" :title="t('image')">
                             <svg class="h-6 w-6 shrink-0 fill-current" viewBox="0 0 512 512">
@@ -662,8 +677,10 @@ const publicationTitle = (product) => {
                     @end="handleDragEnd"
                 >
                     <template #item="{ element: product }">
-                        <tr class="border-b-2 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-cyan-800">
-
+                        <tr
+                            class="border-b-2 text-xs font-semibold
+                                   hover:bg-slate-100 dark:hover:bg-cyan-800"
+                        >
                             <!-- Drag -->
                             <td class="handle w-px cursor-move px-1 py-1 text-center">
                                 <svg class="h-4 w-4 text-gray-500 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
@@ -700,13 +717,17 @@ const publicationTitle = (product) => {
                                         :src="imageUrl(product)"
                                         :alt="imageAlt(product)"
                                         :title="imageTitle(product)"
-                                        class="h-10 w-14 rounded-sm border border-slate-300 object-cover dark:border-slate-600"
+                                        class="h-10 w-14 rounded-sm border
+                                               border-slate-300 object-cover
+                                               dark:border-slate-600"
+                                        loading="lazy"
                                     />
                                 </div>
 
                                 <div
                                     v-if="product.images_count"
-                                    class="mt-0.5 text-center text-[9px] text-slate-500 dark:text-slate-300"
+                                    class="text-center text-sm font-bold
+                                           text-sky-700 dark:text-sky-300"
                                 >
                                     {{ product.images_count }}
                                 </div>

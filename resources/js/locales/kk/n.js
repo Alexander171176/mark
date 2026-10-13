@@ -1,6 +1,7 @@
 export default {
     name: 'Аты',
     nameModule: 'Модуль атауы',
+    navigation: 'Навигация',
     new: 'Жаңа',
     newField: 'Жаңа өріс',
     newImages: 'Жаңа суреттер',

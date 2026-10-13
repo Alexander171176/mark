@@ -42,6 +42,8 @@ use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlan;
 use App\Models\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanImage;
 use App\Models\Admin\School\SchoolTrack\SchoolTrack;
 use App\Models\Admin\School\SchoolTrack\SchoolTrackImage;
+use App\Models\Admin\Slider\SliderSlide\SliderSlide;
+use App\Models\Admin\Slider\SliderSlide\SliderSlideImage;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGenerator;
 
@@ -111,6 +113,10 @@ class CustomPathGenerator implements PathGenerator
 
         if ($media->model_type === MarketBrand::class)      return 'market/market_brands/' . $media->model_id . '/';
         if ($media->model_type === MarketBrandImage::class) return 'market/market_brand_images/' . $media->model_id . '/';
+
+        // === слайдеры ===
+        if ($media->model_type === SliderSlide::class)      return 'slider/slider_slides/' . $media->model_id . '/';
+        if ($media->model_type === SliderSlideImage::class) return 'slider/slider_slide_images/' . $media->model_id . '/';
 
 
         // Дефолт

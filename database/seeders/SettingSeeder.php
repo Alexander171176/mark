@@ -3243,6 +3243,39 @@ class SettingSeeder extends Seeder
                 'activity' => true,
                 'sort' => 0,
             ], // PUBLIC MARKET PRODUCT BUNDLES DEFAULT VIEW
+            // ============================================================
+            // SLIDERS — конструктор слайдеров (административная панель)
+            // ============================================================
+            [
+                'type' => 'number',
+                'option' => 'adminSlidersPerPage',
+                'value' => '4',
+                'constant' => 'ADMIN_SLIDERS_PER_PAGE',
+                'category' => 'admin',
+                'description' => 'Количество слайдеров на странице в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN SLIDERS PER PAGE
+            [
+                'type' => 'string',
+                'option' => 'adminSlidersDefaultSort',
+                'value' => 'sortAsc',
+                'constant' => 'ADMIN_SLIDERS_DEFAULT_SORT',
+                'category' => 'admin',
+                'description' => 'Сортировка слайдеров по умолчанию в панели администратора',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN SLIDERS DEFAULT SORT
+            [
+                'type' => 'string',
+                'option' => 'adminSlidersDefaultView',
+                'value' => 'grid',
+                'constant' => 'ADMIN_SLIDERS_DEFAULT_VIEW',
+                'category' => 'admin',
+                'description' => 'Вид списка слайдеров в панели администратора: grid / table',
+                'activity' => true,
+                'sort' => 0,
+            ], // ADMIN SLIDERS DEFAULT VIEW
 
             // Добавьте остальные параметры
         ];

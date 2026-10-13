@@ -55,6 +55,7 @@ export default {
     editTag: 'Тегті Өңдеу',
     editTournament: 'Турнирді Өңдеу',
     editUser: 'Пайдаланушыны өңдеу',
+    effect: 'Әсер',
     editVideo: 'Бейне жазбаны өңдеу',
     effectivePrice: 'Бағалар тізімі',
     email: 'Email',

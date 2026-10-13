@@ -7,17 +7,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class SliderSharedResource extends JsonResource
 {
-    /**
-     * Компактный ресурс слайдера
-     * для Index и связанных списков.
-     */
+    /** Компактное представление слайдера для Index и связанных списков. */
     public function toArray(Request $request): array
     {
         $translation = $this->currentTranslation();
 
         return [
-            'id' => $this->id,
-            'user_id' => $this->user_id,
+            'id' => (int) $this->id,
+            'user_id' => $this->user_id !== null ? (int) $this->user_id : null,
 
             /** Основные данные */
             'code' => $this->code,
@@ -32,10 +29,12 @@ class SliderSharedResource extends JsonResource
 
             /** Модерация */
             'moderation_status' => (int) $this->moderation_status,
-
             'is_pending' => (int) $this->moderation_status === 0,
             'is_approved' => (int) $this->moderation_status === 1,
             'is_rejected' => (int) $this->moderation_status === 2,
+            'moderated_by' => $this->moderated_by !== null ? (int) $this->moderated_by : null,
+            'moderated_at' => $this->moderated_at?->toISOString(),
+            'moderation_note' => $this->moderation_note,
 
             /** Даты публикации */
             'published_at' => $this->published_at?->format('Y-m-d\TH:i'),
@@ -44,11 +43,9 @@ class SliderSharedResource extends JsonResource
 
             /** Краткие настройки Swiper */
             'effect' => $this->effect,
-
             'autoplay_delay' => $this->autoplay_delay !== null
                 ? (int) $this->autoplay_delay
                 : null,
-
             'loop' => (bool) $this->loop,
 
             /** Счётчик слайдов */
@@ -61,11 +58,15 @@ class SliderSharedResource extends JsonResource
 
             /** Владелец */
             'owner' => $this->whenLoaded('owner', function () {
+                if (! $this->owner) {
+                    return null;
+                }
+
                 return [
-                    'id' => $this->owner?->id,
-                    'name' => $this->owner?->name,
-                    'email' => $this->owner?->email,
-                    'profile_photo_url' => $this->owner?->profile_photo_url,
+                    'id' => (int) $this->owner->id,
+                    'name' => $this->owner->name,
+                    'email' => $this->owner->email,
+                    'profile_photo_url' => $this->owner->profile_photo_url,
                 ];
             }),
 
@@ -76,12 +77,8 @@ class SliderSharedResource extends JsonResource
     }
 
     /**
-     * Перевод для административного списка.
-     *
-     * Контроллер может предварительно загрузить
-     * только необходимый перевод.
-     *
-     * SQL-запросы здесь не выполняются.
+     * Текущий перевод из заранее загруженных translations.
+     * Дополнительные SQL-запросы не выполняются.
      */
     private function currentTranslation(): ?object
     {
@@ -90,7 +87,6 @@ class SliderSharedResource extends JsonResource
         }
 
         $locale = app()->getLocale();
-
         $fallback = config('app.fallback_locale', 'ru');
 
         return $this->translations->firstWhere('locale', $locale)

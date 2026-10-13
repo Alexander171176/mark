@@ -146,6 +146,7 @@ export default {
     auto: 'автоматты түрде',
     automaticPrice: 'Автоматты баға',
     autoCorrect: 'автотүзету',
+    autoScroll: 'Автоматты айналдыру',
     autoRenew: 'автоматты жаңарту',
     avatar: 'Аватар (тек PNG кескіні)',
     availability: 'Қолжетімділік',

@@ -1,6 +1,7 @@
 export default {
     name: 'Имя',
     nameModule: 'Название модуля',
+    navigation: 'Навигация',
     new: 'Новое',
     newField: 'Новое поле',
     newImages: 'Новые изображения',

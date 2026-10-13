@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\School\SchoolQuizAnswer\SchoolQuizAnswerControlle
 use App\Http\Controllers\Admin\School\SchoolQuizQuestion\SchoolQuizQuestionController;
 use App\Http\Controllers\Admin\School\SchoolSubscriptionPlan\SchoolSubscriptionPlanController;
 use App\Http\Controllers\Admin\School\SchoolTrack\SchoolTrackController;
+use App\Http\Controllers\Admin\Slider\Slider\SliderController;
 use App\Http\Controllers\Admin\System\Location\LocationController;
 use App\Http\Controllers\Admin\System\Parameter\ParameterController;
 use Illuminate\Support\Facades\Route;
@@ -157,6 +158,11 @@ Route::put('/forms/bulk-activity',
 Route::put('/form-fields/bulk-activity',
     [FormFieldController::class, 'bulkUpdateActivity'])
     ->name('formFields.bulkUpdateActivity');
+
+// слайдеры
+Route::put('/sliders/bulk-activity',
+    [SliderController::class, 'bulkUpdateActivity'])
+    ->name('sliders.bulkUpdateActivity');
 
 // маркет
 Route::put('/market-companies/bulk-activity',

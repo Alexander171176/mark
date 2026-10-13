@@ -174,6 +174,11 @@ Route::put('/update-sort/email-logs',
     [SettingController::class, 'updateAdminSortEmailLogs'])
     ->name('updateAdminSortEmailLogs');
 
+// конструктор слайдеров
+Route::put('/update-sort/sliders',
+    [SettingController::class, 'updateAdminSortSliders'])
+    ->name('updateAdminSortSliders');
+
 // маркет
 Route::put('/update-sort/market-companies',
     [SettingController::class, 'updateAdminSortMarketCompanies'])

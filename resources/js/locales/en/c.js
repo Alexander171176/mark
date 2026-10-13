@@ -150,4 +150,5 @@ export default {
     currencyRefreshRates: 'Update provider exchange rates',
     currencySpace: 'Space',
     currencyThinSpace: 'Thin space',
+    cycle: 'Cycle',
 }

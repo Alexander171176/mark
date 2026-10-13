@@ -1,6 +1,8 @@
 <script setup>
-/** Страница редактирования слайдера и просмотра его слайдов. */
+/** Страница редактирования универсального слайдера. */
 import SliderForm from './SliderForm.vue'
+
+// Данные передаются из SliderController через Inertia.
 defineProps({
     slider: { type: Object, required: true },
     currentLocale: { type: String, default: 'ru' },
@@ -8,10 +10,12 @@ defineProps({
     isAdmin: { type: Boolean, default: false },
 })
 </script>
+
 <template>
     <SliderForm
         :slider="slider"
         :current-locale="currentLocale"
         :available-locales="availableLocales"
-        :is-admin="isAdmin" />
+        :is-admin="isAdmin"
+    />
 </template>

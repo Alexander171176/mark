@@ -2,64 +2,77 @@
 
 namespace App\Http\Requests\Admin\System\Role;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Validation\Rule;
 
-// Импортируем для получения имен таблиц
-
 class RoleRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Проверка полномочий пользователя.
      */
     public function authorize(): bool
     {
-        // TODO: Заменить на реальную проверку прав доступа
-        // $permission = $this->isMethod('POST') ? 'create roles' : 'update roles';
-        // return $this->user()->can($permission);
-        return true;
+        $ability = $this->isMethod('POST')
+            ? 'create-roles'
+            : 'update-roles';
+
+        return $this->user()?->can($ability) ?? false;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array|string>
+     * Правила валидации роли.
      */
     public function rules(): array
     {
-        // Получаем ID роли из маршрута (предполагаем имя параметра 'role')
-        $roleId = $this->route('role')?->id ?? null;
-        // Получаем имя таблицы ролей из конфига Spatie
         $rolesTable = config('permission.table_names.roles', 'roles');
-        // Получаем имя таблицы разрешений из конфига Spatie
         $permissionsTable = config('permission.table_names.permissions', 'permissions');
+
+        $role = $this->route('role');
+
+        $roleId = is_object($role)
+            ? $role->getKey()
+            : $role;
 
         return [
             'name' => [
                 'required',
                 'string',
-                'max:125', // Соответствует миграции Spatie для MySQL 8+
-                Rule::unique($rolesTable, 'name') // Используем имя таблицы из конфига
-                ->where(function ($query) {
-                    // Учитываем guard_name (по умолчанию 'web')
-                    return $query->where('guard_name', $this->input('guard_name', 'web'));
-                })
-                    ->ignore($roleId), // Игнорируем текущую роль при обновлении
-            ],
-            // Валидируем guard_name, если он передается (обычно нет, но на всякий случай)
-            'guard_name' => ['sometimes', 'string', 'max:125'],
+                'max:125',
 
-            // Валидация массива ID разрешений
-            'permissions' => ['nullable', 'array'], // Массив может быть пустым
+                Rule::unique($rolesTable, 'name')
+                    ->where('guard_name', 'sanctum')
+                    ->ignore($roleId),
+            ],
+
+            'guard_name' => [
+                'required',
+                Rule::in(['sanctum']),
+            ],
+
+            'permissions' => [
+                'sometimes',
+                'array',
+            ],
+
+            'permissions.*' => [
+                'required',
+                'array',
+            ],
+
+            'permissions.*.id' => [
+                'required',
+                'integer',
+                'distinct',
+
+                Rule::exists($permissionsTable, 'id')
+                    ->where('guard_name', 'sanctum'),
+            ],
         ];
     }
 
     /**
-     * Get custom messages for validator errors.
-     *
-     * @return array<string, string>
+     * Пользовательские сообщения об ошибках.
      */
     public function messages(): array
     {
@@ -67,15 +80,12 @@ class RoleRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
-     *
-     * @return void
+     * Подготовка данных перед валидацией.
      */
     protected function prepareForValidation(): void
     {
-        // Если guard_name не передается, устанавливаем 'web' по умолчанию
-        if (!$this->has('guard_name')) {
-            $this->merge(['guard_name' => 'web']);
-        }
+        $this->merge([
+            'guard_name' => 'sanctum',
+        ]);
     }
 }

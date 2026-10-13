@@ -1,8 +1,20 @@
-import {usePage} from "@inertiajs/vue3";
+import { usePage } from '@inertiajs/vue3'
 
 export function usePermission() {
-    const hasRole = (name) => usePage().props.roles.includes(name);
-    const hasPermissions = (name) => usePage().props.permissions.includes(name);
+    const page = usePage()
 
-    return {hasRole,hasPermissions}
+    const hasRole = (name) => {
+        return page.props.isSuperAdmin === true ||
+            (page.props.roles ?? []).includes(name)
+    }
+
+    const hasPermissions = (name) => {
+        return page.props.isSuperAdmin === true ||
+            (page.props.permissions ?? []).includes(name)
+    }
+
+    return {
+        hasRole,
+        hasPermissions,
+    }
 }

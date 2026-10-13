@@ -19,6 +19,11 @@ class SliderSlideImageResource extends BaseImageResource
 
         /** Назначение изображения внутри слайда */
         $data['purpose'] = $this->resource->pivot?->purpose;
+        $media = $this->resource->getFirstMedia('images');
+        $data['desktop_url'] = $media?->getUrl();
+        $data['mobile_url'] = $media && $media->hasGeneratedConversion('slider_mobile')
+            ? $media->getUrl('slider_mobile')
+            : $media?->getUrl();
 
         return $data;
     }

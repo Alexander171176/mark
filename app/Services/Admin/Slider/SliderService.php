@@ -3,14 +3,11 @@
 namespace App\Services\Admin\Slider;
 
 use App\Models\Admin\Slider\Slider\Slider;
-use App\Models\Admin\Slider\SliderSlide\SliderSlideImage;
 use App\Traits\Admin\Slider\HasSliderTranslationsTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Throwable;
 
 /** Сервис создания, обновления и удаления слайдеров. */
 class SliderService
@@ -127,12 +124,14 @@ class SliderService
         $attributes['moderation_note'] = null;
     }
 
-    /** Удалить слайдер и изображения, больше не используемые другими слайдами. */
+    /**
+     * Удалить слайдер, а его неиспользуемые изображения — только после COMMIT.
+     * Общие изображения, привязанные к другим слайдам, сохраняются.
+     */
     public function delete(Slider $slider): void
     {
-        $orphanIds = DB::transaction(function () use ($slider): array {
+        DB::transaction(function () use ($slider): void {
             $slideIds = $slider->slides()->pluck('id');
-
             $candidateIds = DB::table('slider_slide_has_images')
                 ->whereIn('slider_slide_id', $slideIds)
                 ->distinct()
@@ -141,29 +140,9 @@ class SliderService
 
             $slider->delete();
 
-            return SliderSlideImage::query()
-                ->whereIn('id', $candidateIds)
-                ->whereDoesntHave('slides')
-                ->pluck('id')
-                ->all();
+            app(SliderImageLifecycleService::class)
+                ->deleteOrphansAfterCommit($candidateIds);
         });
-
-        foreach ($orphanIds as $id) {
-            try {
-                DB::transaction(function () use ($id): void {
-                    $image = SliderSlideImage::query()->lockForUpdate()->find($id);
-
-                    if ($image && ! $image->slides()->exists()) {
-                        $image->delete();
-                    }
-                });
-            } catch (Throwable $exception) {
-                Log::error('Не удалось очистить изображение удалённого слайдера', [
-                    'image_id' => $id,
-                    'exception' => $exception,
-                ]);
-            }
-        }
     }
 
     /** Установить дату первой публикации, если она ещё не задана. */

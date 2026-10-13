@@ -19,58 +19,58 @@ class RoleSeeder extends Seeder
 
         $permission_show_users = Permission::create(['name' => 'show-users']);
         $permission_create_users = Permission::create(['name' => 'create-users']);
-        $permission_edit_users = Permission::create(['name' => 'edit-users']);
+        $permission_update_users = Permission::create(['name' => 'update-users']);
         $permission_delete_users = Permission::create(['name' => 'delete-users']);
         $permission_show_roles = Permission::create(['name' => 'show-roles']);
         $permission_create_roles = Permission::create(['name' => 'create-roles']);
-        $permission_edit_roles = Permission::create(['name' => 'edit-roles']);
+        $permission_update_roles = Permission::create(['name' => 'update-roles']);
         $permission_delete_roles = Permission::create(['name' => 'delete-roles']);
         $permission_show_permissions = Permission::create(['name' => 'show-permissions']);
         $permission_create_permissions = Permission::create(['name' => 'create-permissions']);
-        $permission_edit_permissions = Permission::create(['name' => 'edit-permissions']);
+        $permission_update_permissions = Permission::create(['name' => 'update-permissions']);
         $permission_delete_permissions = Permission::create(['name' => 'delete-permissions']);
         $permission_show_settings = Permission::create(['name' => 'show-settings']);
         $permission_create_settings = Permission::create(['name' => 'create-settings']);
-        $permission_edit_settings = Permission::create(['name' => 'edit-settings']);
+        $permission_update_settings = Permission::create(['name' => 'update-settings']);
         $permission_delete_settings = Permission::create(['name' => 'delete-settings']);
         $permission_show_plugins = Permission::create(['name' => 'show-plugins']);
         $permission_create_plugins = Permission::create(['name' => 'create-plugins']);
-        $permission_edit_plugins = Permission::create(['name' => 'edit-plugins']);
+        $permission_update_plugins = Permission::create(['name' => 'update-plugins']);
         $permission_delete_plugins = Permission::create(['name' => 'delete-plugins']);
         $permission_show_rubrics = Permission::create(['name' => 'show-rubrics']);
         $permission_create_rubrics = Permission::create(['name' => 'create-rubrics']);
-        $permission_edit_rubrics = Permission::create(['name' => 'edit-rubrics']);
+        $permission_update_rubrics = Permission::create(['name' => 'update-rubrics']);
         $permission_delete_rubrics = Permission::create(['name' => 'delete-rubrics']);
         $permission_show_sections = Permission::create(['name' => 'show-sections']);
         $permission_create_sections = Permission::create(['name' => 'create-sections']);
-        $permission_edit_sections = Permission::create(['name' => 'edit-sections']);
+        $permission_update_sections = Permission::create(['name' => 'update-sections']);
         $permission_delete_sections = Permission::create(['name' => 'delete-sections']);
         $permission_show_articles = Permission::create(['name' => 'show-articles']);
         $permission_create_articles = Permission::create(['name' => 'create-articles']);
-        $permission_edit_articles = Permission::create(['name' => 'edit-articles']);
+        $permission_update_articles = Permission::create(['name' => 'update-articles']);
         $permission_delete_articles = Permission::create(['name' => 'delete-articles']);
         $permission_show_banners = Permission::create(['name' => 'show-banners']);
         $permission_create_banners = Permission::create(['name' => 'create-banners']);
-        $permission_edit_banners = Permission::create(['name' => 'edit-banners']);
+        $permission_update_banners = Permission::create(['name' => 'update-banners']);
         $permission_delete_banners = Permission::create(['name' => 'delete-banners']);
         $permission_show_videos = Permission::create(['name' => 'show-videos']);
         $permission_create_videos = Permission::create(['name' => 'create-videos']);
-        $permission_edit_videos = Permission::create(['name' => 'edit-videos']);
+        $permission_update_videos = Permission::create(['name' => 'update-videos']);
         $permission_delete_videos = Permission::create(['name' => 'delete-videos']);
         $permission_show_athletes = Permission::create(['name' => 'show-athletes']);
         $permission_create_athletes = Permission::create(['name' => 'create-athletes']);
-        $permission_edit_athletes = Permission::create(['name' => 'edit-athletes']);
+        $permission_update_athletes = Permission::create(['name' => 'update-athletes']);
         $permission_delete_athletes = Permission::create(['name' => 'delete-athletes']);
         $permission_show_tournaments = Permission::create(['name' => 'show-tournaments']);
         $permission_create_tournaments = Permission::create(['name' => 'create-tournaments']);
-        $permission_edit_tournaments = Permission::create(['name' => 'edit-tournaments']);
+        $permission_update_tournaments = Permission::create(['name' => 'update-tournaments']);
         $permission_delete_tournaments = Permission::create(['name' => 'delete-tournaments']);
         $permission_show_tags = Permission::create(['name' => 'show-tags']);
         $permission_create_tags = Permission::create(['name' => 'create-tags']);
-        $permission_edit_tags = Permission::create(['name' => 'edit-tags']);
+        $permission_update_tags = Permission::create(['name' => 'update-tags']);
         $permission_delete_tags = Permission::create(['name' => 'delete-tags']);
         $permission_show_components = Permission::create(['name' => 'show-components']);
-        $permission_edit_components = Permission::create(['name' => 'edit-components']);
+        $permission_update_components = Permission::create(['name' => 'update-components']);
         $permission_show_systems = Permission::create(['name' => 'show-systems']);
         $permission_show_logs = Permission::create(['name' => 'show-logs']);
         $permission_clear_logs = Permission::create(['name' => 'clear-logs']);
@@ -78,65 +78,65 @@ class RoleSeeder extends Seeder
         $permission_download_reports = Permission::create(['name' => 'download-reports']);
         $permission_show_charts = Permission::create(['name' => 'show-charts']);
         $permission_show_comments = Permission::create(['name' => 'show-comments']);
-        $permission_edit_comments = Permission::create(['name' => 'edit-comments']);
+        $permission_update_comments = Permission::create(['name' => 'update-comments']);
         $permission_delete_comments = Permission::create(['name' => 'delete-comments']);
         $permission_approve_comments = Permission::create(['name' => 'approve-comments']);
 
         $permissions_admin = [
             $permission_show_users,
             $permission_create_users,
-            $permission_edit_users,
+            $permission_update_users,
             $permission_delete_users,
             $permission_show_roles,
             $permission_create_roles,
-            $permission_edit_roles,
+            $permission_update_roles,
             $permission_delete_roles,
             $permission_show_permissions,
             $permission_create_permissions,
-            $permission_edit_permissions,
+            $permission_update_permissions,
             $permission_delete_permissions,
             $permission_show_settings,
             $permission_create_settings,
-            $permission_edit_settings,
+            $permission_update_settings,
             $permission_delete_settings,
             $permission_show_plugins,
             $permission_create_plugins,
-            $permission_edit_plugins,
+            $permission_update_plugins,
             $permission_delete_plugins,
             $permission_show_rubrics,
             $permission_create_rubrics,
-            $permission_edit_rubrics,
+            $permission_update_rubrics,
             $permission_delete_rubrics,
             $permission_show_sections,
             $permission_create_sections,
-            $permission_edit_sections,
+            $permission_update_sections,
             $permission_delete_sections,
             $permission_show_articles,
             $permission_create_articles,
-            $permission_edit_articles,
+            $permission_update_articles,
             $permission_delete_articles,
             $permission_show_banners,
             $permission_create_banners,
-            $permission_edit_banners,
+            $permission_update_banners,
             $permission_delete_banners,
             $permission_show_videos,
             $permission_create_videos,
-            $permission_edit_videos,
+            $permission_update_videos,
             $permission_delete_videos,
             $permission_show_athletes,
             $permission_create_athletes,
-            $permission_edit_athletes,
+            $permission_update_athletes,
             $permission_delete_athletes,
             $permission_show_tournaments,
             $permission_create_tournaments,
-            $permission_edit_tournaments,
+            $permission_update_tournaments,
             $permission_delete_tournaments,
             $permission_show_tags,
             $permission_create_tags,
-            $permission_edit_tags,
+            $permission_update_tags,
             $permission_delete_tags,
             $permission_show_components,
-            $permission_edit_components,
+            $permission_update_components,
             $permission_show_systems,
             $permission_show_logs,
             $permission_clear_logs,
@@ -144,7 +144,7 @@ class RoleSeeder extends Seeder
             $permission_download_reports,
             $permission_show_charts,
             $permission_show_comments,
-            $permission_edit_comments,
+            $permission_update_comments,
             $permission_delete_comments,
             $permission_approve_comments,
         ];
@@ -153,35 +153,35 @@ class RoleSeeder extends Seeder
             $permission_show_users,
             $permission_show_rubrics,
             $permission_create_rubrics,
-            $permission_edit_rubrics,
+            $permission_update_rubrics,
             $permission_delete_rubrics,
             $permission_show_sections,
             $permission_create_sections,
-            $permission_edit_sections,
+            $permission_update_sections,
             $permission_delete_sections,
             $permission_show_articles,
             $permission_create_articles,
-            $permission_edit_articles,
+            $permission_update_articles,
             $permission_delete_articles,
             $permission_show_banners,
             $permission_create_banners,
-            $permission_edit_banners,
+            $permission_update_banners,
             $permission_delete_banners,
             $permission_show_videos,
             $permission_create_videos,
-            $permission_edit_videos,
+            $permission_update_videos,
             $permission_delete_videos,
             $permission_show_athletes,
             $permission_create_athletes,
-            $permission_edit_athletes,
+            $permission_update_athletes,
             $permission_delete_athletes,
             $permission_show_tournaments,
             $permission_create_tournaments,
-            $permission_edit_tournaments,
+            $permission_update_tournaments,
             $permission_delete_tournaments,
             $permission_show_tags,
             $permission_create_tags,
-            $permission_edit_tags,
+            $permission_update_tags,
             $permission_delete_tags,
         ];
 

@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Admin\System\Permission;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Validation\Rule;
@@ -10,49 +9,53 @@ use Illuminate\Validation\Rule;
 class PermissionRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Проверка полномочий пользователя.
      */
     public function authorize(): bool
     {
-        // TODO: Заменить на реальную проверку прав доступа
-        // $permissionAction = $this->isMethod('POST') ? 'create permissions' : 'update permissions';
-        // return $this->user()->can($permissionAction);
-        return true;
+        $ability = $this->isMethod('POST')
+            ? 'create-permissions'
+            : 'update-permissions';
+
+        return $this->user()?->can($ability) ?? false;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array|string>
+     * Правила валидации разрешения.
      */
     public function rules(): array
     {
-        // Получаем ID разрешения из маршрута (предполагаем имя параметра 'permission')
-        $permissionId = $this->route('permission')?->id ?? null;
-        // Получаем имя таблицы разрешений из конфига Spatie
-        $permissionsTable = config('permission.table_names.permissions', 'permissions');
+        $permissionsTable = config(
+            'permission.table_names.permissions',
+            'permissions'
+        );
+
+        $permission = $this->route('permission');
+
+        $permissionId = is_object($permission)
+            ? $permission->getKey()
+            : $permission;
 
         return [
             'name' => [
                 'required',
                 'string',
-                'max:125', // Соответствует миграции Spatie для MySQL 8+
-                Rule::unique($permissionsTable, 'name') // Используем имя таблицы из конфига
-                ->where(function ($query) {
-                    // Учитываем guard_name (по умолчанию 'web')
-                    return $query->where('guard_name', $this->input('guard_name', 'web'));
-                })
-                    ->ignore($permissionId), // Игнорируем текущее разрешение при обновлении
+                'max:125',
+
+                Rule::unique($permissionsTable, 'name')
+                    ->where('guard_name', 'sanctum')
+                    ->ignore($permissionId),
             ],
-            // Валидируем guard_name, если он передается
-            'guard_name' => ['sometimes', 'string', 'max:125'],
+
+            'guard_name' => [
+                'required',
+                Rule::in(['sanctum']),
+            ],
         ];
     }
 
     /**
-     * Get custom messages for validator errors.
-     *
-     * @return array<string, string>
+     * Пользовательские сообщения об ошибках.
      */
     public function messages(): array
     {
@@ -60,15 +63,12 @@ class PermissionRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
-     *
-     * @return void
+     * Подготовка данных перед валидацией.
      */
     protected function prepareForValidation(): void
     {
-        // Если guard_name не передается, устанавливаем 'web' по умолчанию
-        if (!$this->has('guard_name')) {
-            $this->merge(['guard_name' => 'web']);
-        }
+        $this->merge([
+            'guard_name' => 'sanctum',
+        ]);
     }
 }

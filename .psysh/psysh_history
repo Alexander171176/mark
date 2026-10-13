@@ -66,3 +66,57 @@ $submission = \App\Models\Admin\Form\FormSubmission\FormSubmission::with('form')
 $mail = new \App\Mail\Form\FormSubmissionCreatedMail($submission);
 $mail->render();
 exit
+$user = \App\Models\User::find(1);
+$user?->can('create-roles');
+$user?->can('create-permissions');
+$user?->can('delete-roles');
+$user?->can('update-users');
+exit
+$user = \App\Models\User::findOrFail(1);
+collect([
+    'create-roles',
+    'create-permissions',
+    'delete-roles',
+    'update-users',
+])->mapWithKeys(fn ($permission) => [
+    $permission => $user->can($permission),
+])->all();
+$user = \App\Models\User::findOrFail(1);
+collect([
+    'create-roles',
+    'create-permissions',
+    'delete-roles',
+    'update-users',
+])->mapWithKeys(fn ($permission) => [
+    $permission => $user->can($permission),
+])->all();
+exit
+$user = \App\Models\User::findOrFail(1);
+collect([
+    'create-roles',
+    'create-permissions',
+    'delete-roles',
+    'update-users',
+])->mapWithKeys(fn ($permission) => [
+    $permission => $user->can($permission),
+])->all();
+dump(collect([
+    'create-roles',
+    'create-permissions',
+    'delete-roles',
+    'update-users',
+])->mapWithKeys(fn ($permission) => [
+    $permission => $user->can($permission),
+])->all());
+exit
+\App\Models\Admin\System\Role\AdminRole::query()
+    ->select('id', 'name', 'guard_name')
+    ->get();
+\App\Models\Admin\System\Permission\AdminPermission::query()
+    ->select('id', 'name', 'guard_name')
+    ->get();
+\App\Models\Admin\System\Permission\AdminPermission::query()
+    ->select('id', 'name', 'guard_name')
+    ->get()
+    ->toArray();
+exit

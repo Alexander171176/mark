@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin\Slider\Slider;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\Slider\Slider\SliderRequest;
+use App\Http\Requests\Admin\Slider\Slider\SliderBuilderRequest;
 use App\Http\Resources\Admin\Slider\Slider\SliderResource;
 use App\Http\Resources\Admin\Slider\Slider\SliderSharedResource;
 use App\Models\Admin\Slider\Slider\Slider;
 use App\Services\Admin\Slider\SliderService;
+use App\Services\Admin\Slider\SliderBuilderService;
 use App\Services\SiteSettings\AdminSettingsService;
 use App\Traits\Admin\Slider\HasSliderActivityTrait;
 use App\Traits\Admin\Slider\HasSliderAdminCoreTrait;
@@ -39,7 +40,8 @@ class SliderController extends Controller
 
     /** Сервис создания, обновления и удаления слайдеров */
     public function __construct(
-        private readonly SliderService $service
+        private readonly SliderService $service,
+        private readonly SliderBuilderService $builder
     ) {
     }
 
@@ -87,9 +89,9 @@ class SliderController extends Controller
     }
 
     /** Создание слайдера через сервис */
-    public function store(SliderRequest $request): RedirectResponse
+    public function store(SliderBuilderRequest $request): RedirectResponse
     {
-        $this->service->create(
+        $this->builder->create(
             $request->validated(),
             (int) $request->user()->getAuthIdentifier(),
             $this->isAdmin()
@@ -128,11 +130,11 @@ class SliderController extends Controller
     }
 
     /** Обновление слайдера через сервис */
-    public function update(SliderRequest $request, int $slider): RedirectResponse
+    public function update(SliderBuilderRequest $request, int $slider): RedirectResponse
     {
         $model = $this->baseQuery()->findOrFail($slider);
 
-        $this->service->update($model, $request->validated(), $this->isAdmin());
+        $this->builder->update($model, $request->validated(), $this->isAdmin());
 
         return redirect()->route('admin.sliders.index')
             ->with('success', 'Слайдер успешно обновлён.');

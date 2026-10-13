@@ -35,18 +35,29 @@ const form = useForm({
 })
 
 const submit = () => {
-    form.put(route('admin.roles.update', props.role.id), {
-        preserveScroll: true,
+    form
+        .transform((data) => ({
+            ...data,
+            permissions: data.permissions.map(permission => ({
+                id: permission.id,
+            })),
+        }))
+        .put(route('admin.roles.update', props.role.id), {
+            preserveScroll: true,
 
-        onSuccess: () => {
-            toast.success('Роль успешно обновлена!')
-        },
+            onSuccess: () => {
+                toast.success('Роль успешно обновлена!')
+            },
 
-        onError: (errors) => {
-            const firstError = errors?.[Object.keys(errors || {})[0]]
-            toast.error(firstError || 'Пожалуйста, проверьте правильность заполнения полей.')
-        },
-    })
+            onError: (errors) => {
+                const firstError = errors?.[Object.keys(errors || {})[0]]
+
+                toast.error(
+                    firstError ||
+                    'Пожалуйста, проверьте правильность заполнения полей.'
+                )
+            },
+        })
 }
 </script>
 

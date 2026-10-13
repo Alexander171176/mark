@@ -9,11 +9,13 @@ use App\Models\Admin\Market\MarketProduct\MarketProduct;
 use App\Models\Admin\School\SchoolBundle\SchoolBundle;
 use App\Models\Admin\School\SchoolCourse\SchoolCourse;
 use App\Models\Admin\School\SchoolLesson\SchoolLesson;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -34,9 +36,12 @@ class AppServiceProvider extends ServiceProvider
     {
         JsonResource::withoutWrapping();
 
+        $this->bootSuperAdmin();
+
         $this->bootLocale();
         $this->bootInertiaSharedData();
         $this->bootMorphMap();
+
         //$this->bootDatabaseQueryLogging();
     }
 
@@ -118,5 +123,25 @@ class AppServiceProvider extends ServiceProvider
             'market_product' => MarketProduct::class,
 
         ]);
+    }
+
+    /**
+     * Системные полномочия суперпользователя.
+     *
+     * Суперпользователь получает доступ ко всем Gate/Policy
+     * без необходимости создавать роли и разрешения в БД.
+     *
+     * ВАЖНО:
+     * ID=1 должен принадлежать доверенной системной учётной записи.
+     */
+    private function bootSuperAdmin(): void
+    {
+        Gate::before(function (User $user, string $ability): ?bool {
+            if ((int) $user->getKey() === 1) {
+                return true;
+            }
+
+            return null;
+        });
     }
 }

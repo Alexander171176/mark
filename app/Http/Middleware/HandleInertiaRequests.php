@@ -16,13 +16,14 @@ use Tighten\Ziggy\Ziggy;
 class HandleInertiaRequests extends Middleware
 {
     /**
+     * Корневой шаблон Inertia.
+     *
      * @var string
      */
     protected $rootView = 'app';
 
     /**
-     * @param Request $request
-     * @return string|null
+     * Версия ресурсов Inertia.
      */
     public function version(Request $request): ?string
     {
@@ -30,47 +31,132 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * @param Request $request
-     * @return array
+     * Общие данные для страниц Inertia.
      */
     public function share(Request $request): array
     {
-        $user = auth()->user();
+        $user = $request->user();
 
-        $isAdminArea = $request->segment(1) === 'admin' || $request->segment(2) === 'admin';
+        /**
+         * Определяем административную часть приложения.
+         *
+         * Учитываем маршруты с префиксом локали:
+         * /admin/...
+         * /ru/admin/...
+         */
+        $isAdminArea = $request->segment(1) === 'admin'
+            || $request->segment(2) === 'admin';
 
-        $isAdminUser = $user?->hasRole('admin') ?? false;
+        /**
+         * Системный суперпользователь.
+         *
+         * Используем ту же проверку, что и в Gate::before.
+         */
+        $isSuperAdmin = $user !== null
+            && (int) $user->getKey() === 1;
 
+        /**
+         * Администратор системы.
+         *
+         * Суперпользователь имеет доступ независимо
+         * от назначения роли admin.
+         */
+        $isAdminUser = $user !== null && (
+                $isSuperAdmin ||
+                $user->hasRole('admin')
+            );
+
+        /**
+         * Загружаем роли и прямые разрешения
+         * только для административной части.
+         */
         if ($isAdminArea && $user) {
-            $user->loadMissing(['roles', 'permissions']);
+            $user->loadMissing([
+                'roles',
+                'permissions',
+            ]);
         }
 
+        /**
+         * Общие данные для административной
+         * и публичной частей приложения.
+         */
         $shared = [
             ...parent::share($request),
 
-            'user' => fn () => $user ? (new UserSharedResource($user))->toArray($request) : null,
+            /**
+             * Авторизованный пользователь.
+             */
+            'user' => fn () => $user
+                ? (new UserSharedResource($user))->toArray($request)
+                : null,
 
+            /**
+             * Признаки административного доступа.
+             */
             'isAdmin' => fn () => $isAdminUser,
 
+            'isSuperAdmin' => fn () => $isSuperAdmin,
+
+            /**
+             * Роли текущего пользователя.
+             *
+             * Передаём массив названий:
+             * ['admin', 'manager']
+             */
+            'roles' => fn () => $user
+                ? $user->getRoleNames()->values()->all()
+                : [],
+
+            /**
+             * Все эффективные разрешения пользователя:
+             * прямые + полученные через роли.
+             *
+             * Суперпользователю не требуется
+             * физически назначать все разрешения.
+             */
+            'permissions' => fn () => $user
+                ? $user->getAllPermissions()
+                    ->pluck('name')
+                    ->unique()
+                    ->values()
+                    ->all()
+                : [],
+
+            /**
+             * Маршруты Ziggy.
+             */
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
-                'location'  => $request->url(),
+                'location' => $request->url(),
                 'routeName' => optional($request->route())->getName(),
             ],
 
+            /**
+             * Локализация и адрес приложения.
+             */
             'locale' => LaravelLocalization::getCurrentLocale(),
+
             'appUrl' => config('app.url'),
 
+            /**
+             * Flash-сообщения.
+             */
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
-                'error'   => fn () => $request->session()->get('error'),
+                'error' => fn () => $request->session()->get('error'),
                 'warning' => fn () => $request->session()->get('warning'),
-                'info'    => fn () => $request->session()->get('info'),
+                'info' => fn () => $request->session()->get('info'),
             ],
         ];
 
-        // Админка
+        /**
+         * ============================================
+         * АДМИНИСТРАТИВНАЯ ЧАСТЬ
+         * ============================================
+         */
         if ($isAdminArea) {
+
             /**
              * Настройки административной части.
              */
@@ -80,16 +166,33 @@ class HandleInertiaRequests extends Middleware
             return $shared;
         }
 
-        // Публичка
+        /**
+         * ============================================
+         * ПУБЛИЧНАЯ ЧАСТЬ
+         * ============================================
+         */
+
+        /**
+         * Публичные настройки сайта.
+         */
         $shared['publicSettings'] = fn () =>
         app(PublicSettingsService::class)->all();
 
+        /**
+         * Каталог маркетплейса.
+         */
         $shared['marketCatalog'] = fn () =>
         app(MarketCatalogNavigationService::class)->catalog();
 
+        /**
+         * Навигационное меню CMS.
+         */
         $shared['cmsMenu'] = fn () =>
         app(CmsNavigationService::class)->menu();
 
+        /**
+         * Нижнее меню CMS.
+         */
         $shared['cmsFooter'] = fn () =>
         app(CmsNavigationService::class)->footer();
 
@@ -100,8 +203,8 @@ class HandleInertiaRequests extends Middleware
          * и хранится в LocationContext.
          */
         $shared['currentLocation'] = function () {
-            $location =
-                app(LocationContext::class)->current();
+
+            $location = app(LocationContext::class)->current();
 
             if (!$location) {
                 return null;

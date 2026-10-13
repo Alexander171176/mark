@@ -29,18 +29,29 @@ const form = useForm({
 })
 
 const submit = () => {
-    form.post(route('admin.roles.store'), {
-        preserveScroll: true,
+    form
+        .transform((data) => ({
+            ...data,
+            permissions: data.permissions.map(permission => ({
+                id: permission.id,
+            })),
+        }))
+        .post(route('admin.roles.store'), {
+            preserveScroll: true,
 
-        onSuccess: () => {
-            toast.success('Роль успешно создана!')
-        },
+            onSuccess: () => {
+                toast.success('Роль успешно создана!')
+            },
 
-        onError: (errors) => {
-            const firstError = errors?.[Object.keys(errors || {})[0]]
-            toast.error(firstError || 'Пожалуйста, проверьте правильность заполнения полей.')
-        },
-    })
+            onError: (errors) => {
+                const firstError = errors?.[Object.keys(errors || {})[0]]
+
+                toast.error(
+                    firstError ||
+                    'Пожалуйста, проверьте правильность заполнения полей.'
+                )
+            },
+        })
 }
 </script>
 
